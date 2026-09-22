@@ -98,6 +98,7 @@ def _get_or_initialize(experiment: test_defs.Experiment, backend: gtx_typing.Bac
     return grid_functionality[experiment.name].get(name)
 
 
+@pytest.mark.single_precision_ready
 def test_diffusion_coefficients_with_hdiff_efdt_ratio():
     config = diffusion.DiffusionConfig()
     config.hdiff_efdt_ratio = 1.0
@@ -105,12 +106,13 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio():
 
     params = diffusion.DiffusionParams(config)
 
-    assert pytest.approx(0.125, abs=1e-12) == params.K2
-    assert pytest.approx(0.125 / 8.0, abs=1e-12) == params.K4
-    assert pytest.approx(0.125 / 64.0, abs=1e-12) == params.K6
-    assert pytest.approx(1.0 / 72.0, abs=1e-12) == params.K4W
+    assert pytest.approx(0.125, abs=test_utils.scale_tol(1e-12)) == params.K2
+    assert pytest.approx(0.125 / 8.0, abs=test_utils.scale_tol(1e-12)) == params.K4
+    assert pytest.approx(0.125 / 64.0, abs=test_utils.scale_tol(1e-12)) == params.K6
+    assert pytest.approx(1.0 / 72.0, abs=test_utils.scale_tol(1e-12)) == params.K4W
 
 
+@pytest.mark.single_precision_ready
 def test_diffusion_coefficients_without_hdiff_efdt_ratio():
     config = diffusion.DiffusionConfig()
     config.hdiff_efdt_ratio = 0.0
@@ -124,6 +126,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio():
     assert params.K4W == 0.0
 
 
+@pytest.mark.single_precision_ready
 def test_smagorinski_heights_diffusion_type_5_are_consistent():
     config = diffusion.DiffusionConfig()
     config.smagorinski_scaling_factor = 0.15
@@ -139,6 +142,7 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent():
     assert params.smagorinski_height[2] != params.smagorinski_height[3]
 
 
+@pytest.mark.single_precision_ready
 def test_smagorinski_factor_diffusion_type_5():
     params = diffusion.DiffusionParams(diffusion.DiffusionConfig())
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
@@ -242,11 +246,20 @@ def _verify_init_values_against_savepoint(
 ):
     dtime = savepoint.dtime()
 
-    assert savepoint.nudgezone_diff() == diffusion_granule.nudgezone_diff
-    assert savepoint.bdy_diff() == diffusion_granule.bdy_diff
-    assert savepoint.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
-    assert savepoint.smag_offset() == diffusion_granule.smag_offset
-    assert savepoint.diff_multfac_w() == diffusion_granule.diff_multfac_w
+    scalar_rtol = 0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL
+    test_utils.assert_dallclose(
+        savepoint.nudgezone_diff(), diffusion_granule.nudgezone_diff, rtol=scalar_rtol
+    )
+    test_utils.assert_dallclose(savepoint.bdy_diff(), diffusion_granule.bdy_diff, rtol=scalar_rtol)
+    test_utils.assert_dallclose(
+        savepoint.fac_bdydiff_v(), diffusion_granule.fac_bdydiff_v, rtol=scalar_rtol
+    )
+    test_utils.assert_dallclose(
+        savepoint.smag_offset(), diffusion_granule.smag_offset, rtol=scalar_rtol
+    )
+    test_utils.assert_dallclose(
+        savepoint.diff_multfac_w(), diffusion_granule.diff_multfac_w, rtol=scalar_rtol
+    )
 
     # this is done in diffusion.run(...) because it depends on the dtime
     diffusion_utils.scale_k.with_backend(backend)(
@@ -255,25 +268,41 @@ def _verify_init_values_against_savepoint(
         diffusion_granule.diff_multfac_smag,
         offset_provider={},
     )
-    assert test_utils.dallclose(
-        diffusion_granule.enh_smag_fac.asnumpy(), savepoint.enh_smag_fac(), rtol=1e-7
+    test_utils.assert_dallclose(
+        diffusion_granule.enh_smag_fac.asnumpy(),
+        savepoint.enh_smag_fac(),
+        rtol=test_utils.scale_tol(1e-7),
+        err_msg="enh_smag_fac",
     )
-    assert test_utils.dallclose(
-        diffusion_granule.diff_multfac_smag.asnumpy(), savepoint.diff_multfac_smag(), rtol=1e-7
+    test_utils.assert_dallclose(
+        diffusion_granule.diff_multfac_smag.asnumpy(),
+        savepoint.diff_multfac_smag(),
+        rtol=test_utils.scale_tol(1e-7),
+        err_msg="diff_multfac_smag",
     )
 
-    assert test_utils.dallclose(diffusion_granule.smag_limit.asnumpy(), savepoint.smag_limit())
-    # ICON allocates this half-level factor with only nlev entries, as the surface half level is unused.
-    assert test_utils.dallclose(
-        diffusion_granule.diff_multfac_n2w.asnumpy()[:-1], savepoint.diff_multfac_n2w()
+    test_utils.assert_dallclose(
+        diffusion_granule.smag_limit.asnumpy(), savepoint.smag_limit(), err_msg="smag_limit"
     )
-    assert test_utils.dallclose(
-        diffusion_granule.diff_multfac_vn.asnumpy(), savepoint.diff_multfac_vn()
+    # ICON allocates this half-level factor with only nlev entries, as the surface half level is unused.
+    # In single precision the relative error grows where the factor goes to zero (cancellation in
+    # the height difference), hence an absolute tolerance.
+    test_utils.assert_dallclose(
+        diffusion_granule.diff_multfac_n2w.asnumpy()[:-1],
+        savepoint.diff_multfac_n2w(),
+        atol=0.0 if test_utils.wp_is_dp else 2e-7,
+        err_msg="diff_multfac_n2w",
+    )
+    test_utils.assert_dallclose(
+        diffusion_granule.diff_multfac_vn.asnumpy(),
+        savepoint.diff_multfac_vn(),
+        err_msg="diff_multfac_vn",
     )
 
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "experiment_description,step_date_init",
     [
