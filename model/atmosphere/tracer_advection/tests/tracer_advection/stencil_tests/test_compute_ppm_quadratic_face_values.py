@@ -19,6 +19,19 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
+def compute_ppm_quadratic_face_values_numpy(
+    p_cc: np.ndarray,
+    p_cellhgt_mc_now: np.ndarray,
+) -> np.ndarray:
+    p_face = p_cc.copy()
+    p_face[:, 1:] = p_cc[:, 1:] * (
+        1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])
+    ) + (p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])) * (
+        (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1]) * p_cc[:, 1:] + p_cc[:, :-1]
+    )
+    return p_face
+
+
 outslice = (slice(None), slice(1, None))
 
 
@@ -36,12 +49,7 @@ class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
         p_cellhgt_mc_now: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        p_face = p_cc.copy()
-        p_face[:, 1:] = p_cc[:, 1:] * (
-            1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])
-        ) + (p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])) * (
-            (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1]) * p_cc[:, 1:] + p_cc[:, :-1]
-        )
+        p_face = compute_ppm_quadratic_face_values_numpy(p_cc, p_cellhgt_mc_now)
         return dict(p_face=p_face)
 
     @stencil_tests.input_data_fixture

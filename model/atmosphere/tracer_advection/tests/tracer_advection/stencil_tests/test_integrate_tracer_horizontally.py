@@ -14,9 +14,33 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
 )
+from collections.abc import Mapping
+
+import gt4py.next as gtx
+
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
+
+
+def integrate_tracer_horizontally_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    p_mflx_tracer_h: np.ndarray,
+    deepatmo_divh: np.ndarray,
+    tracer_now: np.ndarray,
+    rhodz_now: np.ndarray,
+    rhodz_new: np.ndarray,
+    geofac_div: np.ndarray,
+    p_dtime: float,
+) -> np.ndarray:
+    geofac_div = np.expand_dims(geofac_div, axis=-1)
+    tracer_new_hor = (
+        tracer_now * rhodz_now
+        - p_dtime
+        * deepatmo_divh
+        * np.sum(p_mflx_tracer_h[connectivities[dims.C2E]] * geofac_div, axis=1)
+    ) / rhodz_new
+    return tracer_new_hor
 
 
 class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
@@ -37,13 +61,16 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
         **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        geofac_div = np.expand_dims(geofac_div, axis=-1)
-        tracer_new_hor = (
-            tracer_now * rhodz_now
-            - p_dtime
-            * deepatmo_divh
-            * np.sum(p_mflx_tracer_h[connectivities[dims.C2E]] * geofac_div, axis=1)
-        ) / rhodz_new
+        tracer_new_hor = integrate_tracer_horizontally_numpy(
+            connectivities,
+            p_mflx_tracer_h,
+            deepatmo_divh,
+            tracer_now,
+            rhodz_now,
+            rhodz_new,
+            geofac_div,
+            p_dtime,
+        )
         return dict(tracer_new_hor=tracer_new_hor)
 
     @stencil_tests.input_data_fixture

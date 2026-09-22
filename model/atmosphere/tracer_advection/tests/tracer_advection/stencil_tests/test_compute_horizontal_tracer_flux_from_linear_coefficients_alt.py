@@ -14,9 +14,37 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
+from collections.abc import Mapping
+
+import gt4py.next as gtx
+
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing import stencil_tests
+
+
+def compute_horizontal_tracer_flux_from_linear_coefficients_alt_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    z_lsq_coeff_1: np.ndarray,
+    z_lsq_coeff_2: np.ndarray,
+    z_lsq_coeff_3: np.ndarray,
+    distv_bary_1: np.ndarray,
+    distv_bary_2: np.ndarray,
+    p_mass_flx_e: np.ndarray,
+    p_vn: np.ndarray,
+) -> np.ndarray:
+    e2c = connectivities[dims.E2C]
+    z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
+    z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
+    z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]
+    lvn_pos_inv = p_vn < 0.0
+    return (
+        np.where(lvn_pos_inv, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
+        + distv_bary_1
+        * np.where(lvn_pos_inv, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
+        + distv_bary_2
+        * np.where(lvn_pos_inv, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
+    ) * p_mass_flx_e
 
 
 class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(stencil_tests.StencilTest):
@@ -39,23 +67,19 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(stencil_tests.Ste
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         p_out_e_cp = p_out_e.copy()
-        e2c = connectivities[dims.E2C]
-        z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
-        z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
-        z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]
-
-        lvn_pos_inv = p_vn < 0.0
-
-        p_out_e = (
-            np.where(lvn_pos_inv, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
-            + distv_bary_1 * np.where(lvn_pos_inv, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
-            + distv_bary_2 * np.where(lvn_pos_inv, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
-        ) * p_mass_flx_e
-
+        p_out_e = compute_horizontal_tracer_flux_from_linear_coefficients_alt_numpy(
+            connectivities,
+            z_lsq_coeff_1,
+            z_lsq_coeff_2,
+            z_lsq_coeff_3,
+            distv_bary_1,
+            distv_bary_2,
+            p_mass_flx_e,
+            p_vn,
+        )
         # restriction of execution domain
         p_out_e[0 : kwargs["horizontal_start"], :] = p_out_e_cp[0 : kwargs["horizontal_start"], :]
         p_out_e[kwargs["horizontal_end"] :, :] = p_out_e_cp[kwargs["horizontal_end"] :, :]
-
         return dict(p_out_e=p_out_e)
 
     @stencil_tests.input_data_fixture

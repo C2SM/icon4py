@@ -18,6 +18,48 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
+def compute_barycentric_backtrajectory_alt_numpy(
+    p_vn: np.ndarray,
+    p_vt: np.ndarray,
+    pos_on_tplane_e_1: np.ndarray,
+    pos_on_tplane_e_2: np.ndarray,
+    primal_normal_cell_1: np.ndarray,
+    dual_normal_cell_1: np.ndarray,
+    primal_normal_cell_2: np.ndarray,
+    dual_normal_cell_2: np.ndarray,
+    p_dthalf: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    lvn_pos = p_vn >= 0.0
+    pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
+    pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)
+    primal_normal_cell_1 = np.expand_dims(primal_normal_cell_1, axis=-1)
+    dual_normal_cell_1 = np.expand_dims(dual_normal_cell_1, axis=-1)
+    primal_normal_cell_2 = np.expand_dims(primal_normal_cell_2, axis=-1)
+    dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
+
+    z_ntdistv_bary_1 = -(
+        p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
+    )
+    z_ntdistv_bary_2 = -(
+        p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
+    )
+    p_distv_bary_1 = np.where(
+        lvn_pos,
+        z_ntdistv_bary_1 * primal_normal_cell_1[:, 0]
+        + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
+        z_ntdistv_bary_1 * primal_normal_cell_1[:, 1]
+        + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
+    )
+    p_distv_bary_2 = np.where(
+        lvn_pos,
+        z_ntdistv_bary_1 * primal_normal_cell_2[:, 0]
+        + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
+        z_ntdistv_bary_1 * primal_normal_cell_2[:, 1]
+        + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
+    )
+    return p_distv_bary_1, p_distv_bary_2
+
+
 class TestComputeBarycentricBacktrajectoryAlt(stencil_tests.StencilTest):
     PROGRAM = compute_barycentric_backtrajectory_alt
     OUTPUTS = ("p_distv_bary_1", "p_distv_bary_2")
@@ -37,37 +79,17 @@ class TestComputeBarycentricBacktrajectoryAlt(stencil_tests.StencilTest):
         p_dthalf: float,
         **kwargs,
     ) -> dict:
-        lvn_pos = p_vn >= 0.0
-        pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
-        pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)
-        primal_normal_cell_1 = np.expand_dims(primal_normal_cell_1, axis=-1)
-        dual_normal_cell_1 = np.expand_dims(dual_normal_cell_1, axis=-1)
-        primal_normal_cell_2 = np.expand_dims(primal_normal_cell_2, axis=-1)
-        dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
-
-        z_ntdistv_bary_1 = -(
-            p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
+        p_distv_bary_1, p_distv_bary_2 = compute_barycentric_backtrajectory_alt_numpy(
+            p_vn,
+            p_vt,
+            pos_on_tplane_e_1,
+            pos_on_tplane_e_2,
+            primal_normal_cell_1,
+            dual_normal_cell_1,
+            primal_normal_cell_2,
+            dual_normal_cell_2,
+            p_dthalf,
         )
-        z_ntdistv_bary_2 = -(
-            p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
-        )
-
-        p_distv_bary_1 = np.where(
-            lvn_pos,
-            z_ntdistv_bary_1 * primal_normal_cell_1[:, 0]
-            + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
-            z_ntdistv_bary_1 * primal_normal_cell_1[:, 1]
-            + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
-        )
-
-        p_distv_bary_2 = np.where(
-            lvn_pos,
-            z_ntdistv_bary_1 * primal_normal_cell_2[:, 0]
-            + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
-            z_ntdistv_bary_1 * primal_normal_cell_2[:, 1]
-            + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
-        )
-
         return dict(
             p_distv_bary_1=p_distv_bary_1,
             p_distv_bary_2=p_distv_bary_2,

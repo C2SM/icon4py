@@ -19,6 +19,20 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
+def limit_vertical_slope_semi_monotonically_numpy(
+    p_cc: np.ndarray,
+    z_slope: np.ndarray,
+    elev: int,
+    num_levels: int,
+) -> np.ndarray:
+    """Return z_slope for interior levels k=1..num_levels-2 (shape: (ncells, num_levels-2))."""
+    k = np.arange(num_levels)
+    p_cc_min_last = np.minimum(p_cc[:, :-2], p_cc[:, 1:-1])
+    p_cc_min = np.where(k[1:-1] == elev, p_cc_min_last, np.minimum(p_cc_min_last, p_cc[:, 2:]))
+    slope_l = np.minimum(np.abs(z_slope[:, 1:-1]), 2.0 * (p_cc[:, 1:-1] - p_cc_min))
+    return np.where(z_slope[:, 1:-1] >= 0.0, slope_l, -slope_l)
+
+
 class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
     PROGRAM = limit_vertical_slope_semi_monotonically
     OUTPUTS = (stencil_tests.Output("z_slope", gtslice=(slice(None), slice(1, -1))),)
@@ -32,11 +46,9 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
         elev: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        k = np.arange(grid.num_levels)
-        p_cc_min_last = np.minimum(p_cc[:, :-2], p_cc[:, 1:-1])
-        p_cc_min = np.where(k[1:-1] == elev, p_cc_min_last, np.minimum(p_cc_min_last, p_cc[:, 2:]))
-        slope_l = np.minimum(np.abs(z_slope[:, 1:-1]), 2.0 * (p_cc[:, 1:-1] - p_cc_min))
-        slope = np.where(z_slope[:, 1:-1] >= 0.0, slope_l, -slope_l)
+        slope = limit_vertical_slope_semi_monotonically_numpy(
+            p_cc, z_slope, elev, grid.num_levels
+        )
         return dict(z_slope=slope)
 
     @stencil_tests.input_data_fixture
