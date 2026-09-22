@@ -121,7 +121,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     limited_area: bool,
     backend: gtx.int32,
 ) -> None:
-    on_gpu = c2e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = True  # granules are always run on GPU
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )

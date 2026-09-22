@@ -132,7 +132,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
     xp = c_lin_e.array_ns
-    on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = True  # granules are always run on GPU
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )

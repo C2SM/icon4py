@@ -21,7 +21,6 @@ import logging
 from collections.abc import Callable
 
 import gt4py.next as gtx
-import numpy as np
 
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.bindings import (
@@ -110,7 +109,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         )
 
     xp = theta_ref_mc.array_ns
-    on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = True  # granules are always run on GPU
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
