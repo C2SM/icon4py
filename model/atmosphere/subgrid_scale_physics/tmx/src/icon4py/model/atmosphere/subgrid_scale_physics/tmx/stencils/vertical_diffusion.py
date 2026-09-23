@@ -10,56 +10,13 @@ import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.math.tridiagonal import (
+    _solve_tridiagonal_matrix_back_substitution,
+    _solve_tridiagonal_matrix_back_substitution_on_half_levels_wp,
+    _solve_tridiagonal_matrix_forward_sweep,
+    _solve_tridiagonal_matrix_forward_sweep_on_half_levels_wp,
+)
 from icon4py.model.common.type_alias import wpfloat
-
-
-# The forward sweep's init state makes the first row independent of its sub-diagonal entry,
-# and the back substitution's init state makes the last row independent of its
-# super-diagonal entry.
-
-
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=(wpfloat("0.0"), wpfloat("0.0")))
-def _solve_tridiagonal_matrix_forward_sweep(
-    state_kminus1: tuple[wpfloat, wpfloat],
-    a: wpfloat,
-    b: wpfloat,
-    c: wpfloat,
-    d: wpfloat,
-) -> tuple[wpfloat, wpfloat]:
-    c_prime_kminus1, d_prime_kminus1 = state_kminus1
-    normalization = wpfloat("1.0") / (b - c_prime_kminus1 * a)
-    return c * normalization, (d - d_prime_kminus1 * a) * normalization
-
-
-@gtx.scan_operator(axis=dims.KDim, forward=False, init=wpfloat("0.0"))
-def _solve_tridiagonal_matrix_back_substitution(
-    x_kplus1: wpfloat,
-    c_prime: wpfloat,
-    d_prime: wpfloat,
-) -> wpfloat:
-    return d_prime - c_prime * x_kplus1
-
-
-@gtx.scan_operator(axis=dims.KHalfDim, forward=True, init=(wpfloat("0.0"), wpfloat("0.0")))
-def _solve_tridiagonal_matrix_forward_sweep_on_half_levels(
-    state_kminus1: tuple[wpfloat, wpfloat],
-    a: wpfloat,
-    b: wpfloat,
-    c: wpfloat,
-    d: wpfloat,
-) -> tuple[wpfloat, wpfloat]:
-    c_prime_kminus1, d_prime_kminus1 = state_kminus1
-    normalization = wpfloat("1.0") / (b - c_prime_kminus1 * a)
-    return c * normalization, (d - d_prime_kminus1 * a) * normalization
-
-
-@gtx.scan_operator(axis=dims.KHalfDim, forward=False, init=wpfloat("0.0"))
-def _solve_tridiagonal_matrix_back_substitution_on_half_levels(
-    x_kplus1: wpfloat,
-    c_prime: wpfloat,
-    d_prime: wpfloat,
-) -> wpfloat:
-    return d_prime - c_prime * x_kplus1
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -172,10 +129,8 @@ def _solve_implicit_vertical_diffusion_on_cells(
     have no effect.
     """
     inv_dtime = wpfloat("1.0") / dtime
-    c_prime, d_prime = _solve_tridiagonal_matrix_forward_sweep(
-        a, inv_dtime + b, c, var * inv_dtime + rhs
-    )
-    return tend + (_solve_tridiagonal_matrix_back_substitution(c_prime, d_prime) - var) * inv_dtime
+    q, d_prime = _solve_tridiagonal_matrix_forward_sweep(a, inv_dtime + b, c, var * inv_dtime + rhs)
+    return tend + (_solve_tridiagonal_matrix_back_substitution(q, d_prime) - var) * inv_dtime
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -195,12 +150,12 @@ def _solve_implicit_vertical_diffusion_on_cell_half_levels(
     have no effect.
     """
     inv_dtime = wpfloat("1.0") / dtime
-    c_prime, d_prime = _solve_tridiagonal_matrix_forward_sweep_on_half_levels(
+    q, d_prime = _solve_tridiagonal_matrix_forward_sweep_on_half_levels_wp(
         a, inv_dtime + b, c, var * inv_dtime + rhs
     )
     return (
         tend
-        + (_solve_tridiagonal_matrix_back_substitution_on_half_levels(c_prime, d_prime) - var)
+        + (_solve_tridiagonal_matrix_back_substitution_on_half_levels_wp(q, d_prime) - var)
         * inv_dtime
     )
 
@@ -222,10 +177,8 @@ def _solve_implicit_vertical_diffusion_on_edges(
     have no effect.
     """
     inv_dtime = wpfloat("1.0") / dtime
-    c_prime, d_prime = _solve_tridiagonal_matrix_forward_sweep(
-        a, inv_dtime + b, c, var * inv_dtime + rhs
-    )
-    return tend + (_solve_tridiagonal_matrix_back_substitution(c_prime, d_prime) - var) * inv_dtime
+    q, d_prime = _solve_tridiagonal_matrix_forward_sweep(a, inv_dtime + b, c, var * inv_dtime + rhs)
+    return tend + (_solve_tridiagonal_matrix_back_substitution(q, d_prime) - var) * inv_dtime
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
