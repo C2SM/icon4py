@@ -133,7 +133,7 @@ class EntryState:
         prognostic: prognostics.PrognosticState,
         tracers: tracer_states.TracerState,
     ) -> None:
-        """Bind the model-state pointers and compute_diagnostics the physics fields (dyn2phy).
+        """Bind the model-state pointers and diagnose the physics fields (dyn2phy).
 
         After this call the facade is complete: every model-state field the physics
         may touch is reachable as ``entry_state.<name>`` — the raw PrognosticState
@@ -300,7 +300,9 @@ class Tendencies:
         for buffer in self._acc.values():
             buffer.ndarray[...] = 0.0  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
-    def accumulate(self, outputs: dict, outputs_properties: dict[str, model.FieldMetaData]) -> None:
+    def accumulate(
+        self, outputs: dict[str, gtx.Field], outputs_properties: dict[str, model.FieldMetaData]
+    ) -> None:
         """Add a process's tendency outputs to the per-variable sums.
 
         Element-wise sum with no neighbor access, so a plain array operation on
