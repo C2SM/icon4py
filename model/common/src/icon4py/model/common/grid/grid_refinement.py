@@ -155,7 +155,8 @@ _LAST_BOUNDARY: dict[gtx.Dimension, h_grid.Zone] = {
 def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
     """There is a speciality in the setup of the ICON halos: generally halo points are located at the end of the arrays after all
     points owned by a node. This is true for global grids and for a local area model for all points with a
-    refinement control value larger than (6, 2) for HALO level 1 and (4,1) for HALO_LEVEL_2.
+    refinement control value larger than (6, 2) for HALO level 1, (4,1) for HALO_LEVEL_2 and 2 for the
+    edges of HALO_LEVEL_3 (``refine_edges_atm`` in ``mo_setup_subdivision.f90``).
 
     That is for the local area grid some (but not all!) halo points that are lateral boundary points are placed with the lateral boundary
     domains rather than the halo. The reason for this is mysterious (to me) as well as what advantage it might have.
@@ -165,7 +166,13 @@ def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
     assert domain.zone.is_halo(), "Domain must be a halo Zone."
     match domain.dim:
         case dims.EdgeDim:
-            return 6 if domain.zone == h_grid.Zone.HALO else 4
+            match domain.zone:
+                case h_grid.Zone.HALO:
+                    return 6
+                case h_grid.Zone.HALO_LEVEL_2:
+                    return 4
+                case _:
+                    return 2
         case dims.CellDim | dims.VertexDim:
             return 2 if domain.zone == h_grid.Zone.HALO else 1
         case _:
