@@ -35,7 +35,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
+from icon4py.model.common.interpolation.stencils import interpolate_cell_field_to_edge
 from icon4py.model.common.math import utils as math_utils, vertical_operations as vertical_ops
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
@@ -312,7 +312,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(ddqz_z_full_and_inverse)
 
         ddqz_full_on_edges = factory.ProgramFieldProvider(
-            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+                self._backend
+            ),
             deps={"in_field": attrs.DDQZ_Z_FULL, "coeff": interpolation_attributes.C_LIN_E},
             domain={
                 dims.EdgeDim: (
@@ -892,7 +894,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_c)
 
         compute_wgtfacq_e = factory.ProgramFieldProvider(
-            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+                self._backend
+            ),
             deps={
                 "in_field": attrs.WGTFACQ_C,
                 "coeff": interpolation_attributes.C_LIN_E,
@@ -925,7 +929,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq1_c)
 
         compute_wgtfacq1_e = factory.ProgramFieldProvider(
-            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+                self._backend
+            ),
             deps={
                 "in_field": attrs.WGTFACQ1_C,
                 "coeff": interpolation_attributes.C_LIN_E,

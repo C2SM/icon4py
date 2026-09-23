@@ -13,7 +13,7 @@ from icon4py.model.common.dimension import E2C
 
 
 @gtx.field_operator
-def _cell_2_edge_interpolation(
+def _interpolate_cell_field_to_edge(
     in_field: fa.CellKField[ta.wpfloat],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
@@ -29,7 +29,7 @@ def _cell_2_edge_interpolation(
 
 
 @gtx.field_operator
-def _cell_2_edge_interpolation_on_half_levels(
+def _interpolate_cell_field_to_edge_on_half_levels(
     in_field: fa.CellKHalfField[ta.wpfloat],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
 ) -> fa.EdgeKHalfField[ta.wpfloat]:
@@ -37,7 +37,7 @@ def _cell_2_edge_interpolation_on_half_levels(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def cell_2_edge_interpolation(
+def interpolate_cell_field_to_edge(
     in_field: fa.CellKField[ta.wpfloat],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     out_field: fa.EdgeKField[ta.wpfloat],
@@ -46,7 +46,7 @@ def cell_2_edge_interpolation(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _cell_2_edge_interpolation(
+    _interpolate_cell_field_to_edge(
         in_field=in_field,
         coeff=coeff,
         out=out_field,

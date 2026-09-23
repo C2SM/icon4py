@@ -34,10 +34,10 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
     wgtfac_c_wp, ddqz_z_half_wp = astype((wgtfac_c, ddqz_z_half), wpfloat)
 
     z_theta_v_pr_ic_vp = _interpolate_cell_field_to_half_levels_vp(
-        wgtfac_c=wgtfac_c, interpolant=z_rth_pr_2
+        interpolant=z_rth_pr_2, wgtfac_c=wgtfac_c
     )
     theta_v_ic_wp = _interpolate_cell_field_to_half_levels_wp(
-        wgtfac_c=wgtfac_c_wp, interpolant=theta_v
+        interpolant=theta_v, wgtfac_c=wgtfac_c_wp
     )
     z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic_wp * (
         exner_pr(dims.KHalfDim - 0.5) - exner_pr(dims.KHalfDim + 0.5)
@@ -90,7 +90,7 @@ def _compute_virtual_potential_temperatures(
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
     z_theta_v_pr_ic_vp = _interpolate_cell_field_to_half_levels_vp(
-        wgtfac_c=wgtfac_c, interpolant=z_rth_pr_2
+        interpolant=z_rth_pr_2, wgtfac_c=wgtfac_c
     )
     theta_v_ic_wp = wgtfac_c_wp * theta_v(dims.KHalfDim + 0.5) + (
         wpfloat("1.0") - wgtfac_c_wp
