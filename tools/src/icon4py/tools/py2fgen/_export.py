@@ -102,6 +102,7 @@ class _DecoratedFunction:
     annotation_mapping_hook: AnnotationMappingHook | None
     param_descriptors: _definitions.ParamDescriptors | None
     _mapping: Mapping[str, Callable] = dataclasses.field(init=False)
+    _writeback: Mapping[str, Callable] = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
         type_hints = typing.get_type_hints(self._fun, include_extras=True)
@@ -120,6 +121,11 @@ class _DecoratedFunction:
         self._mapping = get_param_mappings(
             type_hints, self.annotation_mapping_hook, self.param_descriptors
         )
+        self._writeback = {
+            name: mapping.writeback
+            for name, mapping in self._mapping.items()
+            if hasattr(mapping, "writeback")
+        }
 
     def __call__(self, ffi: cffi.FFI, perf_counters: dict | None, **kwargs: Any) -> Any:
         # Notes: For performance reasons we could switch to positional-only arguments
@@ -130,12 +136,26 @@ class _DecoratedFunction:
             # If `perf_counters` is injected, we store the conversion timers,
             # the `perf_counters` result is evaluated in the generated python code.
             perf_counters["convert_start_time"] = _runtime.perf_counter()
-        kwargs = {
-            k: self._mapping[k](v, ffi=ffi) if k in self._mapping else v for k, v in kwargs.items()
-        }
+        mapped = {}
+        for k, v in kwargs.items():
+            if k not in self._mapping:
+                mapped[k] = v
+                continue
+            try:
+                mapped[k] = self._mapping[k](v, ffi=ffi)
+            except Exception as e:
+                e.add_note(f"while converting argument '{k}' of '{self._fun.__name__}'")
+                raise
         if __debug__ and perf_counters is not None:
             perf_counters["convert_end_time"] = _runtime.perf_counter()
-        return self._fun(**kwargs)
+        result = self._fun(**mapped)
+        for k, writeback in self._writeback.items():
+            try:
+                writeback(kwargs[k], mapped[k], ffi=ffi)
+            except Exception as e:
+                e.add_note(f"while writing back argument '{k}' of '{self._fun.__name__}'")
+                raise
+        return result
 
 
 def export(
@@ -160,6 +180,11 @@ def export(
     therefore it is recommended to use a cache for the mapping function.
 
     A default mapping is provided, see ``_conversion.default_mapping()``.
+
+    A mapping function may carry a ``writeback(value, mapped_value, *, ffi)`` attribute. It is
+    called with the raw argument and the mapped value after the function returns, e.g. to copy
+    an array that was converted on the way in back into the caller's memory. It is not called if
+    the function raises: the caller then gets an error code, not results.
     """
 
     # precise typing is impossible since we are manipulating the args (e.g. ArrayInfo to the Python runtime objects)

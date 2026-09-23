@@ -126,3 +126,20 @@ def test_default_mapping_hook_bool(ffi):
     assert mapper(1, ffi=ffi) is True
     # NVHPC writes `.TRUE.` as 0xFF; the mapper must still produce `True`.
     assert mapper(255, ffi=ffi) is True
+
+
+def test_default_mapping_hook_array_rejects_a_buffer_of_another_dtype(ffi):
+    """The C type baked into a stale library can disagree with the Python signature."""
+    array_ptr = ffi.new("float[10]")
+    array_mapper = _conversion.default_mapping(
+        None,
+        py2fgen.ArrayParamDescriptor(
+            rank=1, dtype=py2fgen.FLOAT64, memory_space=py2fgen.MemorySpace.HOST, is_optional=False
+        ),
+    )
+
+    with pytest.raises(TypeError, match="generated from a different signature"):
+        array_mapper(
+            test_utils.array_info(ptr=array_ptr, shape=(10,), on_gpu=False, is_optional=False),
+            ffi=ffi,
+        )

@@ -113,12 +113,20 @@ def default_mapping(
     `unsigned char`); convert it to 'bool' here.
     """
     if isinstance(param_descriptor, _definitions.ArrayParamDescriptor):
+        expected = C_STR_TYPE_TO_NP_DTYPE[_codegen.BUILTIN_TO_CPP_TYPE[param_descriptor.dtype]]
+
         # one mapper per parameter, maxsize=2 covers double-buffering identical calls
         @functools.lru_cache(maxsize=2)
         def array_mapper(
             array_info: _definitions.ArrayInfo, *, ffi: cffi.FFI
         ) -> _definitions.NDArray:
-            return as_array(ffi, array_info)
+            arr = as_array(ffi, array_info)
+            if arr is not None and arr.dtype != expected:
+                raise TypeError(
+                    f"Received a {arr.dtype} buffer for an argument declared {expected}: the "
+                    "bindings were generated from a different signature. Regenerate them."
+                )
+            return arr
 
         return array_mapper
     if (
