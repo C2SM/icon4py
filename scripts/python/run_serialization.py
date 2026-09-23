@@ -45,6 +45,7 @@ class SerializationSettings:
     comm_sizes: list[int]
     experiment_descriptions: list[test_defs.ExperimentDescription]
     sbatch_partition: str
+    sbatch_gpus_per_node: int
     sbatch_time: str
     sbatch_account: str
     sbatch_uenv: str
@@ -80,6 +81,10 @@ class SerializationSettings:
 
         # Slurm settings
         SBATCH_PARTITION = "normal"
+        # santis nodes carry 4 GH200s. "normal" allocates whole exclusive nodes, so the
+        # GPUs come with them, but shared partitions such as "debug" grant none unless
+        # asked - and this is a GPU build, so ask explicitly either way.
+        SBATCH_GPUS_PER_NODE = 4
         SBATCH_TIME = "00:20:00"
         SBATCH_ACCOUNT = "cwd01"
         SBATCH_UENV = "icon/26.7:v1"
@@ -110,6 +115,7 @@ class SerializationSettings:
             comm_sizes=COMM_SIZES,
             experiment_descriptions=EXPERIMENTS,
             sbatch_partition=SBATCH_PARTITION,
+            sbatch_gpus_per_node=SBATCH_GPUS_PER_NODE,
             sbatch_time=SBATCH_TIME,
             sbatch_account=SBATCH_ACCOUNT,
             sbatch_uenv=SBATCH_UENV,
@@ -317,7 +323,10 @@ def update_slurm_variables(script_path: pathlib.Path, *, settings: Serialization
         raise RuntimeError("Could not find #SBATCH --job-name= line in script")
 
     # Prepare the new SBATCH lines to insert
-    directives = [f"#SBATCH --time={settings.sbatch_time}"]
+    directives = [
+        f"#SBATCH --time={settings.sbatch_time}",
+        f"#SBATCH --gpus-per-node={settings.sbatch_gpus_per_node}",
+    ]
     if not running_under_husk():
         directives = [
             f"#SBATCH --partition={settings.sbatch_partition}",
@@ -334,6 +343,7 @@ def update_slurm_variables(script_path: pathlib.Path, *, settings: Serialization
     content = re.sub(r"^#SBATCH\s+--time=.*$\n?", "", content, flags=re.MULTILINE)
     content = re.sub(r"^#SBATCH\s+--uenv=.*$\n?", "", content, flags=re.MULTILINE)
     content = re.sub(r"^#SBATCH\s+--view=.*$\n?", "", content, flags=re.MULTILINE)
+    content = re.sub(r"^#SBATCH\s+--gpus-per-node=.*$\n?", "", content, flags=re.MULTILINE)
 
     # Re-find job-name position in the cleaned text
     job_name_match = re.search(r"^(#SBATCH\s+--job-name=.*$)", content, flags=re.MULTILINE)
