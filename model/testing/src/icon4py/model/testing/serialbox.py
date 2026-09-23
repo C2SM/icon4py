@@ -215,7 +215,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def edge_vert_length(self):
         """length of edge midpoint to vertex"""
-        return self._get_field("edge_vert_length", dims.EdgeDim, dims.E2C2VDim)
+        return self._get_field("edge_vert_length", dims.EdgeDim, dims.E2VDim)
 
     def vct_a(self):
         return self._get_field("vct_a", dims.KHalfDim)
@@ -608,20 +608,33 @@ class IconGridSavepoint(IconSavepoint):
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
             inverse_vertex_vertex_lengths=self.inv_vert_vert_length(),
-            primal_normal_vert_x=self.primal_normal_vert_x(),
-            primal_normal_vert_y=self.primal_normal_vert_y(),
-            dual_normal_vert_x=self.dual_normal_vert_x(),
-            dual_normal_vert_y=self.dual_normal_vert_y(),
-            primal_normal_cell_x=self.primal_normal_cell_x(),
-            dual_normal_cell_x=self.dual_normal_cell_x(),
-            primal_normal_cell_y=self.primal_normal_cell_y(),
-            dual_normal_cell_y=self.dual_normal_cell_y(),
+            primal_normal_vert=(
+                self.primal_normal_vert_x(),
+                self.primal_normal_vert_y(),
+            ),
+            dual_normal_vert=(
+                self.dual_normal_vert_x(),
+                self.dual_normal_vert_y(),
+            ),
+            primal_normal_cell=(
+                self.primal_normal_cell_x(),
+                self.primal_normal_cell_y(),
+            ),
+            dual_normal_cell=(
+                self.dual_normal_cell_x(),
+                self.dual_normal_cell_y(),
+            ),
             edge_areas=self.edge_areas(),
             coriolis_frequency=self.f_e(),
-            edge_center_lat=self.edge_center_lat(),
-            edge_center_lon=self.edge_center_lon(),
-            primal_normal_x=self.primal_normal_v1(),
-            primal_normal_y=self.primal_normal_v2(),
+            edge_center=(
+                self.edge_center_lat(),
+                self.edge_center_lon(),
+            ),
+            primal_normal=(
+                self.primal_normal_v1(),
+                self.primal_normal_v2(),
+            ),
+            edge_cell_distances=self.edge_cell_length(),
         )
 
     def construct_cell_geometry(self) -> grid_states.CellParams:
@@ -1973,92 +1986,17 @@ class TmxInitSavepoint(IconSavepoint):
     def inv_ddqz_z_half(self):
         return self._get_field("inv_ddqz_z_half", dims.CellDim, dims.KHalfDim)
 
-    def inv_ddqz_z_half_e(self):
-        return self._get_field("inv_ddqz_z_half_e", dims.EdgeDim, dims.KHalfDim)
-
-    def inv_ddqz_z_half_v(self):
-        return self._get_field("inv_ddqz_z_half_v", dims.VertexDim, dims.KHalfDim)
-
     def inv_ddqz_z_full_e(self):
         return self._get_field("inv_ddqz_z_full_e", dims.EdgeDim, dims.KDim)
 
     def wgtfacq1_c(self):
-        # Top-extrapolation coefficients: unlike `wgtfacq_c` (bottom extrapolation, stored
-        # surface-first, i.e. reversed w.r.t. increasing k, hence flipped in its accessor),
-        # `wgtfacq1_c(jc,k,jb)` with k=1..3 multiplies the full level k counted from the model
-        # top (mo_vertical_grid.f90 ll. 955-968), which already matches icon4py's top-down KDim
-        # orientation. No flip needed.
         return self._get_field("wgtfacq1_c", dims.CellDim, dims.KDim)
 
     def wgtfacq1_e(self):
-        # No flip, see `wgtfacq1_c`. Usage in mo_vdf_atmo.f90 (interpolate_normal_velocity_
-        # edge_interface, ll. 1247-1250): vn_ie(je,1,jb) = sum_k wgtfacq1_e(je,k,jb)*vn(je,k,jb).
         return self._get_field("wgtfacq1_e", dims.EdgeDim, dims.KDim)
 
     def geopot_agl_ifc(self):
         return self._get_field("geopot_agl_ifc", dims.CellDim, dims.KHalfDim)
-
-    def mix_len_sq(self):
-        return self._get_field("mix_len_sq", dims.CellDim, dims.KHalfDim)
-
-    def scaling_factor_louis(self):
-        return self._get_field("scaling_factor_louis", dims.CellDim)
-
-
-class TmxEntrySavepoint(IconSavepoint):
-    """Savepoint at entry of vdf Compute in mo_vdf.f90 (inputs of the TMX scheme)."""
-
-    def ta(self):
-        return self._get_field("ta", dims.CellDim, dims.KDim)
-
-    def ta_phy(self):
-        # Sanity twin of `ta`: prm_field%ta, must be identical to the tmx input temp_c.
-        return self._get_field("ta_phy", dims.CellDim, dims.KDim)
-
-    def ua(self):
-        return self._get_field("ua", dims.CellDim, dims.KDim)
-
-    def va(self):
-        return self._get_field("va", dims.CellDim, dims.KDim)
-
-    def wa(self):
-        return self._get_field("wa", dims.CellDim, dims.KHalfDim)
-
-    def qv(self):
-        return self._get_field("qv", dims.CellDim, dims.KDim)
-
-    def qc(self):
-        return self._get_field("qc", dims.CellDim, dims.KDim)
-
-    def qi(self):
-        return self._get_field("qi", dims.CellDim, dims.KDim)
-
-    def qr(self):
-        return self._get_field("qr", dims.CellDim, dims.KDim)
-
-    def qs(self):
-        return self._get_field("qs", dims.CellDim, dims.KDim)
-
-    def qg(self):
-        return self._get_field("qg", dims.CellDim, dims.KDim)
-
-    def rho(self):
-        return self._get_field("rho", dims.CellDim, dims.KDim)
-
-    def tempv(self):
-        return self._get_field("tempv", dims.CellDim, dims.KDim)
-
-    def pres(self):
-        return self._get_field("pres", dims.CellDim, dims.KDim)
-
-    def pres_ifc(self):
-        return self._get_field("pres_ifc", dims.CellDim, dims.KHalfDim)
-
-    def mair(self):
-        return self._get_field("mair", dims.CellDim, dims.KDim)
-
-    def cvair(self):
-        return self._get_field("cvair", dims.CellDim, dims.KDim)
 
 
 class TmxSurfaceFluxesSavepoint(IconSavepoint):
@@ -2505,12 +2443,6 @@ class IconSerialDataProvider:
     def from_savepoint_tmx_init(self) -> TmxInitSavepoint:
         savepoint = self.serializer.savepoint["tmx-init"].id[1].as_savepoint()
         return TmxInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_tmx_entry(self, date: str) -> TmxEntrySavepoint:
-        savepoint = self.serializer.savepoint["tmx-entry"].id[1].date[date].as_savepoint()
-        return TmxEntrySavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 

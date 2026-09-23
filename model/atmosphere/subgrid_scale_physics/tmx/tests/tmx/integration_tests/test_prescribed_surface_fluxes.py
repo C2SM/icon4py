@@ -32,11 +32,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import SurfaceTyp
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.grid import simple
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import datatest_utils as dt_utils, definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
-from ..fixtures import load_fortran_dict
-from .utils import TMX_DATES
 
 
 if TYPE_CHECKING:
@@ -46,6 +44,10 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import icon as icon_grid_
     from icon4py.model.testing import serialbox as sb
 
+
+# Serialized timesteps of the exclaim_ape_aesPhys archive after the
+# initialization call (run start 2008-09-01T00:00:00Z, dtime = 300 s).
+TMX_DATES: tuple[str, ...] = ("2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000")
 
 # The provider reproduces the Fortran to a couple of ulp; this is the largest
 # relative deviation measured on the v08 archive with ~20x of headroom.
@@ -81,12 +83,12 @@ def test_prescribed_surface_fluxes_match_fortran(
     date: str,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
-    input_dict = load_fortran_dict(
+    input_dict = dt_utils.load_fortran_dict(
         experiment_description=experiment_description,
         process_props=process_props,
         fname=fortran_config.INPUT_DICT_FNAME,
     )
-    atm_dict = load_fortran_dict(
+    atm_dict = dt_utils.load_fortran_dict(
         experiment_description=experiment_description,
         process_props=process_props,
         fname=fortran_config.ATM_DICT_FNAME,

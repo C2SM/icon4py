@@ -50,7 +50,6 @@ import logging
 import types
 import typing
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
-from types import ModuleType
 from typing import Any, Literal, Protocol, TypeVar, overload
 
 import gt4py.next as gtx
@@ -324,15 +323,33 @@ class PrecomputedFieldProvider(FieldProvider):
         return lambda: self.fields
 
 
+def _field_extent[DomainT: (h_grid.Domain, v_grid.Domain)](
+    dim: gtx.Dimension, declared: tuple[DomainT, DomainT] | None, grid: GridProvider
+) -> tuple[int, int]:
+    """
+    The range a provider allocates for `dim`.
+
+    A declared vertical range is the field's extent: there is no vertical decomposition and no
+    exchange, and a gt4py field keeps absolute level indices, so a sub-range is a field on those
+    levels. Horizontal dimensions are always allocated at full local size, because the halo exchange
+    fills entries outside the compute range and neighbor access indexes the field by absolute local
+    index; so are local (sparse) dimensions and any dimension declared without a range.
+    """
+    if declared is not None and dim.kind == gtx.DimensionKind.VERTICAL:
+        assert grid.vertical_grid is not None
+        start, end = declared
+        return grid.vertical_grid.index(start), grid.vertical_grid.index(end)
+    return 0, grid.grid.size[dim]
+
+
 class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
     """Provider that calls a GT4Py Fieldoperator.
 
     # TODO(halungge): for now to be used only on FieldView Embedded GT4Py backend.
-    - restrictions:
-         - (if only called on FieldView-Embedded, this is not a necessary restriction)
-            calls field operators without domain args, so it can only be used for full field computations
-    - plus:
-        - can write sparse/local fields
+    The field operator is called without domain args, so it computes on the whole extent of its
+    output fields: the declared vertical range and the full horizontal size, as `_field_extent`
+    describes. A `domain` given as a tuple of dimensions allocates full size in every dimension,
+    which is how sparse/local fields are written.
     """
 
     def __init__(
@@ -346,9 +363,8 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         params: dict[str, state_utils.ScalarType] | None = None,
     ):
         self._func = func
-        self._dims: (
-            dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...]
-        ) = domain
+        self._domain = domain if isinstance(domain, dict) else dict.fromkeys(domain)
+        self._dims = tuple(self._domain)
         self._dependencies = deps
         self._output = fields
         self._params = {} if params is None else params
@@ -395,9 +411,9 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             f"{data_alloc.backend_name(compute_backend)}, target backend is: "
             f"{data_alloc.backend_name(factory.backend)}"
         )
-        xp = data_alloc.import_array_ns(factory.backend)
-        metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields}
-        self._fields = self._allocate_fields(compute_backend, grid_provider, xp, metadata)
+        dtype = {k: output_dtype(factory, k) for k in self._fields}
+        # the outputs live on the target backend's device: embedded computes in place on them
+        self._fields = self._allocate_fields(factory.backend, grid_provider, dtype)
         # call field operator
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
@@ -448,32 +464,14 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         self,
         backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
-        xp: ModuleType,
-        metadata: dict[str, model.FieldMetaData],
+        dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
-        def _map_size(dim: gtx.Dimension, grids: GridProvider) -> int:
-            match dim:
-                case dims.KHalfDim:
-                    return grids.vertical_grid.num_levels + 1
-                case dims.KDim:
-                    return grids.vertical_grid.num_levels
-                case _:
-                    return grids.grid.size[dim]
-
-        def _allocate(
-            grid_provider: GridProvider,
-            backend: gtx_typing.Backend,
-            array_ns: ModuleType,
-            dtype: state_utils.ScalarType = ta.wpfloat,
-        ) -> gtx.Field:
-            shape = tuple(_map_size(dim, grid_provider) for dim in self._dims)
-            buffer = array_ns.zeros(shape, dtype=dtype)
-            return gtx.as_field(tuple(self._dims), data=buffer, allocator=backend, dtype=dtype)
-
-        return {
-            k: _allocate(grid_provider, backend, xp, dtype=dtype_or_default(k, metadata))
-            for k in self._fields
+        allocate = gtx.constructors.zeros.partial(allocator=backend)
+        field_domain = {
+            dim: _field_extent(dim, declared, grid_provider)
+            for dim, declared in self._domain.items()
         }
+        return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
 
 class ProgramFieldProvider(FieldProvider, NeedsExchange):
@@ -485,7 +483,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
     Args:
         func: GT4Py Program that computes the fields
-        domain: the compute domain used for the stencil computation
+        domain: the domain of the computed fields and the compute domain of the program. It is
+            the fields' extent only in the vertical, see `_field_extent`.
         fields: dict[str, str], fields computed by this stencil:  the key is the variable name of
             the out arguments used in the program and the value the name the field is registered
             under and declared in the metadata.
@@ -493,8 +492,6 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
             the key is the variable name used in the `gtx.program` and the value the name
             of the field it depends on.
         params: scalar parameters used in the program
-        vertically_bounded_by_domain: the computed fields exist only on the levels in
-            `domain`, rather than on the whole column, and are allocated accordingly.
     """
 
     def __init__(
@@ -506,11 +503,9 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         deps: dict[str, str],
         do_exchange: bool,
         params: dict[str, state_utils.ScalarType] | None = None,
-        vertically_bounded_by_domain: bool = False,
     ):
         self._func = func
-        self._compute_domain = domain
-        self._vertically_bounded = vertically_bounded_by_domain
+        self._domain = domain
         self._dims = domain.keys()
         self._dependencies = deps
         self._output = fields
@@ -521,23 +516,6 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         }
         self._do_exchange = do_exchange
 
-    def _field_extent(self, dim: gtx.Dimension, grid: GridProvider) -> tuple[int, int]:
-        """The extent to allocate for ``dim``.
-
-        A vertical sub-range in the compute domain can mean two different things, and
-        only the caller knows which: either the field exists on the whole column and
-        just this part of it is computed (the default), or the field exists on these
-        levels alone, as the quadratic extrapolation weights do. The second case is
-        ``vertically_bounded_by_domain``, and it keeps the levels' absolute indices.
-
-        Horizontal dimensions are always full size: neighbour access and halo exchange
-        need the whole extent whatever part of it is computed.
-        """
-        if self._vertically_bounded and dim.kind == gtx.DimensionKind.VERTICAL:
-            start, stop = self._compute_domain[dim]
-            return grid.vertical_grid.index(start), grid.vertical_grid.index(stop)
-        return 0, grid.grid.size[dim]
-
     def _allocate(
         self,
         backend: gtx_typing.Backend | None,
@@ -545,14 +523,16 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
         allocate = gtx.constructors.zeros.partial(allocator=backend)
-        field_domain = {dim: self._field_extent(dim, grid) for dim in self._dims}
+        field_domain = {
+            dim: _field_extent(dim, declared, grid) for dim, declared in self._domain.items()
+        }
         return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
     # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
     def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
         offset_providers = {}
-        for dim in self._compute_domain:
+        for dim in self._domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 horizontal_offsets = {
                     k: v
@@ -571,26 +551,20 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
                 offset_providers.update(vertical_offsets)
         return offset_providers
 
-    def _domain_args(
-        self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid
-    ) -> dict[str : gtx.int32]:
+    def _domain_args(self, grid: GridProvider) -> dict[str, gtx.int32]:
         domain_args = {}
 
-        for dim in self._compute_domain:
+        for dim in self._domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 domain_args.update(
                     {
-                        "horizontal_start": grid.start_index(self._compute_domain[dim][0]),
-                        "horizontal_end": grid.end_index(self._compute_domain[dim][1]),
+                        "horizontal_start": grid.grid.start_index(self._domain[dim][0]),
+                        "horizontal_end": grid.grid.end_index(self._domain[dim][1]),
                     }
                 )
             elif dim.kind == gtx.DimensionKind.VERTICAL:
-                domain_args.update(
-                    {
-                        "vertical_start": vertical_grid.index(self._compute_domain[dim][0]),
-                        "vertical_end": vertical_grid.index(self._compute_domain[dim][1]),
-                    }
-                )
+                vertical_start, vertical_end = _field_extent(dim, self._domain[dim], grid)
+                domain_args.update({"vertical_start": vertical_start, "vertical_end": vertical_end})
             else:
                 raise ValueError(f"DimensionKind '{dim.kind}' not supported in Program Domain")
         return domain_args
@@ -619,18 +593,13 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         grid: GridProvider,
         backend: gtx_typing.Backend | None,
     ) -> None:
-        try:
-            metadata = {v: field_src.get(v, RetrievalType.METADATA) for v in self._output.values()}
-            dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
-        except (ValueError, KeyError):
-            dtype = {v: ta.wpfloat for v in self._output.values()}
-
+        dtype = {v: output_dtype(field_src, v) for v in self._output.values()}
         self._fields = self._allocate(backend, grid, dtype=dtype)
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
         deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})
-        dims = self._domain_args(grid.grid, grid.vertical_grid)
+        dims = self._domain_args(grid)
         offset_providers = self._get_offset_providers(grid.grid)
         deps.update(dims)
         self._func.with_backend(backend)(**deps, offset_provider=offset_providers)
@@ -654,7 +623,10 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
 
     Args:
         func: numpy function that computes the fields
-        domain: the compute domain used for the stencil computation
+        domain: the domain of the computed fields, following `_field_extent` when given with
+            ranges; as a bare tuple of dimensions the returned arrays' shapes are the extent, which
+            is how a field on a dimension without a grid size (e.g. `LsqUnkDim`) is labelled.
+            Empty for a scalar result.
         fields: Seq[str] names under which the results fo the function will be registered
         deps: dict[str, str] input fields used for computing this stencil: the key is the variable name
             used in the function and the value the name of the field it depends on.
@@ -668,7 +640,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self,
         *,
         func: Callable,
-        domain: Sequence[gtx.Dimension],
+        domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
         fields: Sequence[str],
         deps: dict[str, str],
         connectivities: dict[str, gtx.Dimension] | None = None,
@@ -676,6 +648,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         do_exchange: bool = False,
     ):
         self._func = func
+        self._domain = domain if isinstance(domain, dict) else None
         self._dims = tuple(domain)
         self._fields: dict[str, state_utils.ScalarType | state_utils.FieldType | None] = {
             name: None for name in fields
@@ -724,14 +697,19 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         # convert to tuple
         results = (results,) if not isinstance(results, tuple) else results
         self._fields = {
-            k: self._as_field(backend, results[i]) if self._dims else results[i]
+            k: self._as_field(backend, results[i], grid_provider) if self._dims else results[i]
             for i, k in enumerate(self.fields)
         }
 
     def _as_field(
-        self, backend: gtx_typing.Backend | None, value: data_alloc.NDArray
+        self, backend: gtx_typing.Backend | None, value: data_alloc.NDArray, grid: GridProvider
     ) -> state_utils.GTXFieldType:
-        return gtx.as_field(tuple(self._dims), value, allocator=backend)
+        if self._domain is None:
+            return gtx.as_field(self._dims, value, allocator=backend)
+        field_domain = gtx.domain(
+            {dim: _field_extent(dim, declared, grid) for dim, declared in self._domain.items()}
+        )
+        return gtx.as_field(field_domain, value, allocator=backend)
 
     def _validate_dependencies(self) -> None:
         # TODO(egparedes): dealing with type annotations at run-time is error prone
@@ -810,7 +788,5 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.__name__
 
 
-def dtype_or_default(
-    field_name: str, metadata: dict[str, model.FieldMetaData]
-) -> state_utils.ScalarType:
-    return metadata[field_name].get("dtype", ta.wpfloat)
+def output_dtype(field_src: FieldSource, field_name: str) -> state_utils.ScalarType:
+    return field_src.get(field_name, RetrievalType.METADATA).get("dtype", ta.wpfloat)
