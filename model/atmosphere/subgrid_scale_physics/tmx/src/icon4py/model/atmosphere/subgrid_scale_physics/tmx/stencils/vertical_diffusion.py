@@ -31,6 +31,7 @@ def _assemble_vertical_diffusion_matrix_on_cells(
     Sub-, main and super-diagonal of the vertical diffusion matrix for a full-level field.
 
     The column spans full levels minlvl..maxlvl, with no flux through its top and bottom.
+    minlvl and maxlvl must be the first and last rows of the implicit solve.
     """
     # embedded rejects a scalar branch on an unbounded region, so the zeros are a field
     zero = wpfloat("0.0") * inv_air_mass
@@ -62,6 +63,9 @@ def _assemble_vertical_diffusion_matrix_on_cell_half_levels(
     Sub-, main and super-diagonal of the vertical diffusion matrix for a half-level field.
 
     The column spans half levels minlvl..maxlvl, with no flux through its top and bottom.
+    minlvl and maxlvl must be the first and last rows of the implicit solve. A solve with
+    w = 0 at the column ends, like ICON's w diffusion, adds those terms to b on its first
+    and last rows.
     """
     # embedded rejects a scalar branch on an unbounded region, so the zeros are a field
     zero = wpfloat("0.0") * inv_air_mass
@@ -93,6 +97,7 @@ def _assemble_vertical_diffusion_matrix_on_edges(
     Sub-, main and super-diagonal of the vertical diffusion matrix for a full-level field.
 
     The column spans full levels minlvl..maxlvl, with no flux through its top and bottom.
+    minlvl and maxlvl must be the first and last rows of the implicit solve.
     """
     # embedded rejects a scalar branch on an unbounded region, so the zeros are a field
     zero = wpfloat("0.0") * inv_air_mass

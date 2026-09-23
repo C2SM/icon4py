@@ -10,9 +10,7 @@
 Solve the tridiagonal systems ``a_k x_{k-1} + b_k x_k + c_k x_{k+1} = d_k`` along the vertical
 with the Thomas algorithm: a forward sweep followed by a back substitution.
 
-The forward sweep carries ``q = -c'`` (ICON's ``z_q``) and ``d'``. Its init state makes the first row
-independent of its sub-diagonal entry, and the back substitution's init state makes the last row
-independent of its super-diagonal entry.
+The forward sweep carries ``q = -c'`` (ICON's ``z_q``) and ``d'``. Its init state makes the first row independent of its sub-diagonal entry, and the back substitution's init state makes the last row independent of its super-diagonal entry.
 """
 
 import gt4py.next as gtx
