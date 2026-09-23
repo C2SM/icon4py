@@ -28,7 +28,7 @@ from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
 from icon4py.model.common.interpolation.stencils.interpolate_cell_vector_to_edge_normal import (
     interpolate_cell_vector_to_edge_normal,
 )
-from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.model_options import customize_backend, setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -87,7 +87,7 @@ class Diagnostics:
         # mo_turb_vdiff_config.f90)
         self._rturb_prandtl = 1.0 / turb_prandtl
 
-        if not (use_louis_land and use_louis_ice):
+        if use_louis and not (use_louis_land and use_louis_ice):
             log.warning(
                 "'use_louis_land' / 'use_louis_ice' make the Louis stability correction "
                 "depend on the land and sea-ice fractions, which are not part of "
@@ -152,7 +152,9 @@ class Diagnostics:
         )
         # compute_mixing_length (mo_tmx_smagorinsky.f90): cells rl 3..min_rlcell_int,
         # all half levels
-        diag_stencils.compute_smagorinsky_mixing_length.with_backend(backend)(
+        diag_stencils.compute_smagorinsky_mixing_length.with_backend(
+            customize_backend(diag_stencils.compute_smagorinsky_mixing_length, backend)
+        )(
             ddqz_z_half=self._metric_state.ddqz_z_half,
             geopot_agl_ifc=self._metric_state.geopot_agl_ifc,
             cell_area=self._cell_params.area,
@@ -172,7 +174,9 @@ class Diagnostics:
         if self._use_louis:
             # compute_scaling_factor_louis (mo_tmx_smagorinsky.f90): cells rl
             # 3..min_rlcell_int
-            diag_stencils.compute_scaling_factor_louis.with_backend(backend)(
+            diag_stencils.compute_scaling_factor_louis.with_backend(
+                customize_backend(diag_stencils.compute_scaling_factor_louis, backend)
+            )(
                 cell_area=self._cell_params.area,
                 scaling_factor_louis=self.scaling_factor_louis,
                 horizontal_start=self._cell_start_lateral_boundary_level_3,
