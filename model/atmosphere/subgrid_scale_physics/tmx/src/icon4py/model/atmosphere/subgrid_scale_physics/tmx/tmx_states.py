@@ -6,15 +6,24 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""States of the tmx turbulent mixing granule."""
+"""States of the tmx turbulent mixing component."""
 
 from __future__ import annotations
 
 import dataclasses
+import functools
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
 
 
 @dataclasses.dataclass(frozen=True)
@@ -71,3 +80,106 @@ class TmxInterpolationState:
     """RBF coefficients for the zonal wind component at cell centers (rbf_vec_coeff_c_1)."""
     rbf_coeff_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
     """RBF coefficients for the meridional wind component at cell centers (rbf_vec_coeff_c_2)."""
+
+
+@dataclasses.dataclass(frozen=True)
+class TmxInputState:
+    """Atmospheric input fields of tmx (``t_vdf_atmo_inputs`` in mo_vdf_atmo_memory.f90)."""
+
+    temperature: fa.CellKField[ta.wpfloat]
+    """Air temperature (``ta``) on full levels [K]."""
+    virtual_temperature: fa.CellKField[ta.wpfloat]
+    """Virtual temperature (``tv``) on full levels [K]."""
+    pressure: fa.CellKField[ta.wpfloat]
+    """Air pressure (``pa``) on full levels [Pa]."""
+    u: fa.CellKField[ta.wpfloat]
+    """Zonal wind (``ua``) on full levels [m/s]."""
+    v: fa.CellKField[ta.wpfloat]
+    """Meridional wind (``va``) on full levels [m/s]."""
+    w: fa.CellKHalfField[ta.wpfloat]
+    """Vertical wind (``wa``) on half levels [m/s]."""
+    rho: fa.CellKField[ta.wpfloat]
+    """Air density on full levels [kg/m^3]."""
+
+
+@dataclasses.dataclass(frozen=True)
+class TmxDiagnosticState:
+    """Diagnostic fields of tmx (``t_vdf_atmo_diags`` in mo_vdf_atmo_memory.f90)."""
+
+    # cell, full levels
+    theta_v: fa.CellKField[ta.wpfloat]
+    """Virtual potential temperature at cell centers on full levels [K]."""
+    cptgz: fa.CellKField[ta.wpfloat]
+    """Dry static energy cp*T + g*z at cell centers on full levels [J/kg]."""
+    div_c: fa.CellKField[ta.wpfloat]
+    """Horizontal wind divergence at cell centers on full levels [1/s]."""
+    km_c: fa.CellKField[ta.wpfloat]
+    """Turbulent viscosity at cell centers on full levels [kg/(m s)]."""
+    # cell, half levels
+    rho_ic: fa.CellKHalfField[ta.wpfloat]
+    """Air density at cell centers on half levels [kg/m^3]."""
+    bruvais: fa.CellKHalfField[ta.wpfloat]
+    """Brunt-Vaisala frequency squared at cell centers on half levels [1/s^2]."""
+    mech_prod: fa.CellKHalfField[ta.wpfloat]
+    """Mechanical production term of turbulent kinetic energy on half levels [1/s^2]."""
+    km_ic: fa.CellKHalfField[ta.wpfloat]
+    """Turbulent viscosity at cell centers on half levels [kg/(m s)]."""
+    kh_ic: fa.CellKHalfField[ta.wpfloat]
+    """Turbulent diffusivity at cell centers on half levels [kg/(m s)]."""
+    # edge, full levels
+    vn: fa.EdgeKField[ta.wpfloat]
+    """Normal wind at edge midpoints on full levels [m/s]."""
+    shear: fa.EdgeKField[ta.wpfloat]
+    """Horizontal shear production term at edge midpoints on full levels [1/s^2]."""
+    div_of_stress: fa.EdgeKField[ta.wpfloat]
+    """Divergence of the stress tensor at edge midpoints on full levels [1/s]."""
+    # edge, half levels
+    vn_ie: fa.EdgeKHalfField[ta.wpfloat]
+    """Normal wind at edge midpoints on half levels [m/s]."""
+    vt_ie: fa.EdgeKHalfField[ta.wpfloat]
+    """Tangential wind at edge midpoints on half levels [m/s]."""
+    w_ie: fa.EdgeKHalfField[ta.wpfloat]
+    """Vertical wind at edge midpoints on half levels [m/s]."""
+    km_ie: fa.EdgeKHalfField[ta.wpfloat]
+    """Turbulent viscosity at edge midpoints on half levels [kg/(m s)]."""
+    # vertex, full levels
+    u_vert: fa.VertexKField[ta.wpfloat]
+    """Zonal wind at vertices on full levels [m/s]."""
+    v_vert: fa.VertexKField[ta.wpfloat]
+    """Meridional wind at vertices on full levels [m/s]."""
+    # vertex, half levels
+    w_vert: fa.VertexKHalfField[ta.wpfloat]
+    """Vertical wind at vertices on half levels [m/s]."""
+    km_iv: fa.VertexKHalfField[ta.wpfloat]
+    """Turbulent viscosity at vertices on half levels [kg/(m s)]."""
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
+    ) -> TmxDiagnosticState:
+        """Allocate a diagnostic state with all fields initialized to zero."""
+        zero_field = functools.partial(
+            data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
+        )
+        return cls(
+            theta_v=zero_field(dims.CellDim, dims.KDim),
+            cptgz=zero_field(dims.CellDim, dims.KDim),
+            div_c=zero_field(dims.CellDim, dims.KDim),
+            km_c=zero_field(dims.CellDim, dims.KDim),
+            rho_ic=zero_field(dims.CellDim, dims.KHalfDim),
+            bruvais=zero_field(dims.CellDim, dims.KHalfDim),
+            mech_prod=zero_field(dims.CellDim, dims.KHalfDim),
+            km_ic=zero_field(dims.CellDim, dims.KHalfDim),
+            kh_ic=zero_field(dims.CellDim, dims.KHalfDim),
+            vn=zero_field(dims.EdgeDim, dims.KDim),
+            shear=zero_field(dims.EdgeDim, dims.KDim),
+            div_of_stress=zero_field(dims.EdgeDim, dims.KDim),
+            vn_ie=zero_field(dims.EdgeDim, dims.KHalfDim),
+            vt_ie=zero_field(dims.EdgeDim, dims.KHalfDim),
+            w_ie=zero_field(dims.EdgeDim, dims.KHalfDim),
+            km_ie=zero_field(dims.EdgeDim, dims.KHalfDim),
+            u_vert=zero_field(dims.VertexDim, dims.KDim),
+            v_vert=zero_field(dims.VertexDim, dims.KDim),
+            w_vert=zero_field(dims.VertexDim, dims.KHalfDim),
+            km_iv=zero_field(dims.VertexDim, dims.KHalfDim),
+        )
