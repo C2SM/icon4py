@@ -48,3 +48,4 @@ if command -v g++ >/dev/null 2>&1; then
     export HIPCC_COMPILE_FLAGS_APPEND="--gcc-install-dir=${GCC_INSTALL_DIR}${HIPCC_COMPILE_FLAGS_APPEND:+ $HIPCC_COMPILE_FLAGS_APPEND}"
 fi
 export LD_PRELOAD=/user-environment/env/default/lib/libomp.so:${LD_PRELOAD:-}
+export PYTHONPATH="/user-environment/env/._default/kimox5oab243tnptgzy2i2mr3gcmlvsk/share/amd_smi:$PYTHONPATH"

@@ -108,3 +108,6 @@ known-third-party = ['gt4py']
 
 [tool.setuptools.packages]
 find = {namespaces = true, where = ['src']}
+
+[tool.uv.sources]
+ghex = {git = "https://github.com/iomaganaris/ghex", branch = "rccl-backend"}
