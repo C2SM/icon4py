@@ -82,13 +82,38 @@ def field_annotation_descriptor_hook(annotation: Any) -> py2fgen.ParamDescriptor
         return py2fgen.ScalarParamDescriptor(dtype=dtype)
 
 
-def _as_field(dims: Sequence[gtx.Dimension]) -> Callable:
+# Granules are always run on GPU, see the `on_gpu = True` in the wrappers. The `on_gpu` flag
+# inside an `ArrayInfo` is set by the generated Fortran (`#ifdef _OPENACC`) and decides whether
+# a pointer is unpacked as NumPy or CuPy. When ICON is built without OpenACC (e.g. on AMD, where
+# host memory is made device-accessible via `HSA_XNACK=1` instead of `!$acc host_data use_device`)
+# that flag is `.False.` and we would get NumPy arrays while the GT4Py allocator is on device.
+# Overriding it here keeps both sides consistent.
+FORCE_DEVICE_MEMORY_SPACE: bool = True
+
+
+def _force_device(array_info: py2fgen.ArrayInfo) -> py2fgen.ArrayInfo:
+    """Mark a 'MaybeDevice' 'ArrayInfo' as device memory, so it is unpacked as a CuPy array."""
+    ptr, shape, on_gpu, is_optional = array_info
+    if on_gpu or not FORCE_DEVICE_MEMORY_SPACE:
+        return array_info
+    return (ptr, shape, True, is_optional)
+
+
+def _as_array(force_device: bool) -> Callable:
+    @functools.cache
+    def impl(array_info: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> Any:
+        return py2fgen.as_array(ffi, _force_device(array_info) if force_device else array_info)
+
+    return impl
+
+
+def _as_field(dims: Sequence[gtx.Dimension], force_device: bool) -> Callable:
     # in case the cache lookup is still performance relevant, we can replace it by a custom swap cache
     # (only for substitution mode where we know we have exactly 2 entries)
     # or by even marking fields as constant over the whole program run and immediately return on second call
     @functools.cache
     def impl(array_info: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> gtx.Field | None:
-        arr = py2fgen.as_array(ffi, array_info)
+        arr = py2fgen.as_array(ffi, _force_device(array_info) if force_device else array_info)
         if arr is None:
             return None
         _, shape, _, _ = array_info
@@ -104,16 +129,21 @@ def field_annotation_mapping_hook(
     """
     Translates 'ArrayInfo's to 'gtx.Field' if they are annotated with 'gtx.Field'.
 
-    If the type is not a GT4Py type, we delegate to the default mappping (by returning 'None').
+    'MaybeDevice' parameters are unpacked as CuPy arrays, see ``FORCE_DEVICE_MEMORY_SPACE``.
+    'Host' parameters keep the default (NumPy) mapping.
+
+    If the type is not a GT4Py type, we only override the memory space (by returning an array
+    mapper), otherwise we delegate to the default mapping (by returning 'None').
     """
     if not isinstance(param_descriptor, py2fgen.ArrayParamDescriptor):
         return None
+    force_device = param_descriptor.memory_space == py2fgen.MemorySpace.MAYBE_DEVICE
     maybe_gt4py_type = _get_gt4py_type(annotation)
     if maybe_gt4py_type is None:
-        return None
+        return _as_array(force_device) if force_device else None
     gt4py_type, _ = maybe_gt4py_type
     dims, _ = _parse_type_spec(gt4py_type)
-    return _as_field(dims)
+    return _as_field(dims, force_device)
 
 
 export = py2fgen.export(
