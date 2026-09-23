@@ -220,7 +220,7 @@ def test_every_field_argument_is_a_view_or_refuses():
     """
     Every field argument sees ICON's own memory when ICON's dtype and icon4py's agree.
 
-    When they differ it must refuse loudly, because casting at the boundary is not implemented
+    When they differ it must refuse loudly, because no wrapper argument has a declared intent
     yet. Holds for any combination of the two precision settings.
     """
     ffi = cffi.FFI()
@@ -232,7 +232,7 @@ def test_every_field_argument_is_a_view_or_refuses():
         try:
             field = mapper(array_info, ffi=ffi)
         except TypeError as error:
-            assert "casting at the boundary is not implemented" in str(error), f"{fun_name}.{name}"
+            assert "declare whether ICON reads it back" in str(error), f"{fun_name}.{name}"
             refused.append(f"{fun_name}.{name}")
             continue
 
@@ -261,14 +261,14 @@ def _expected_refusals() -> set[str]:
 
 
 @pytest.mark.single_precision_ready
-def test_field_mapper_refuses_a_dtype_it_cannot_view():
+def test_field_mapper_refuses_to_copy_an_argument_without_declared_intent():
     ffi = cffi.FFI()
     hint = Wp[gtx.Field[gtx.Dims[SomeDim], gtx.float32]]  # ICON passes double, always
     descriptor = icon4py_export.field_annotation_descriptor_hook(hint)
     mapper = icon4py_export.field_annotation_mapping_hook(hint, descriptor)
     fortran_array = np.zeros(5, dtype=np.float64)
 
-    with pytest.raises(TypeError, match="casting at the boundary is not implemented"):
+    with pytest.raises(TypeError, match="declare whether ICON reads it back"):
         mapper(test_utils.array_to_array_info(fortran_array, ffi=ffi), ffi=ffi)
 
 
@@ -283,6 +283,7 @@ def _mapper_for(hint):
     [
         Wp[gtx.Field[gtx.Dims[SomeDim], gtx.float32]],  # wp is always double in ICON
         Vp[gtx.Field[gtx.Dims[SomeDim], gtx.float32]],  # vp is double unless ICON is mixed
+        icon4py_export.VpInOut[gtx.Field[gtx.Dims[SomeDim], gtx.float32]],
     ],
 )
 def test_pointer_contradicting_the_configured_icon_precision_raises(monkeypatch, hint):

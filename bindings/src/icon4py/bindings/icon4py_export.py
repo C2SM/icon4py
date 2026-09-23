@@ -26,6 +26,12 @@ from icon4py.bindings import config
 from icon4py.tools import py2fgen
 
 
+try:
+    import cupy as cp  # type: ignore[import-not-found]
+except ImportError:
+    cp = None
+
+
 class IconKind(eve.StrEnum):
     """Fortran kind of an ICON actual argument: `REAL(wp)` or `REAL(vp)`."""
 
@@ -33,16 +39,37 @@ class IconKind(eve.StrEnum):
     VP = "vp"
 
 
+class Intent(eve.StrEnum):
+    """
+    Whether ICON reads an array argument back after the call.
+
+    Only consulted when ICON's dtype and icon4py's differ for that argument, so that it has to
+    cross as a converted copy instead of as a view of ICON's memory.
+    """
+
+    #: Not classified yet: the argument may cross as a view, never as a copy.
+    UNDECLARED = "undeclared"
+    #: ICON does not read it back: a copy is converted in and then discarded.
+    IN = "in"
+    #: ICON reads it back: a copy is converted in, and converted back out after the call.
+    INOUT = "inout"
+
+
 @dataclasses.dataclass(frozen=True)
 class Boundary:
-    """How a float array crosses the ICON boundary. Attach with `Wp[...]` or `Vp[...]`."""
+    """How a float array crosses the ICON boundary. Attach with `Wp[...]`, `VpInOut[...]` etc."""
 
     kind: IconKind
+    intent: Intent = Intent.UNDECLARED
 
 
 # `T` is the field icon4py computes with; the prefix is how ICON declares the argument.
 type Wp[T] = Annotated[T, Boundary(IconKind.WP)]
 type Vp[T] = Annotated[T, Boundary(IconKind.VP)]
+type WpIn[T] = Annotated[T, Boundary(IconKind.WP, Intent.IN)]
+type VpIn[T] = Annotated[T, Boundary(IconKind.VP, Intent.IN)]
+type WpInOut[T] = Annotated[T, Boundary(IconKind.WP, Intent.INOUT)]
+type VpInOut[T] = Annotated[T, Boundary(IconKind.VP, Intent.INOUT)]
 
 
 _FLOAT_KINDS: Final = (ts.ScalarKind.FLOAT32, ts.ScalarKind.FLOAT64)
@@ -176,21 +203,43 @@ def field_annotation_descriptor_hook(annotation: Any) -> py2fgen.ParamDescriptor
     )
 
 
-def _as_field(dims: Sequence[gtx.Dimension], dtype: np.dtype, icon_dtype: np.dtype) -> Callable:
+def _synchronize_device() -> None:
+    """Wait for all device work, whichever stream GT4Py ran the granule on."""
+    assert cp is not None
+    cp.cuda.runtime.deviceSynchronize()
+
+
+def _synchronize_copies() -> None:
+    """Wait for this module's own copies, which run on CuPy's current stream."""
+    assert cp is not None
+    cp.cuda.get_current_stream().synchronize()
+
+
+def _as_field(
+    dims: Sequence[gtx.Dimension], dtype: np.dtype, intent: Intent, icon_dtype: np.dtype
+) -> Callable:
     """
-    Map an `ArrayInfo` to the field icon4py computes with, as a view of ICON's memory.
+    Map an `ArrayInfo` to the field icon4py computes with.
 
     `icon_dtype` is what the bindings declare ICON passes, `dtype` what icon4py computes in.
+    Zero-copy when they agree. Otherwise the field lives in a buffer owned here, refilled from
+    ICON's array on every call and, for `Intent.INOUT`, copied back after the call through the
+    `writeback` attribute that py2fgen invokes. Both copies cover ICON's whole array -- every
+    row up to `nproma`, halo and padding included, and the full vertical extent -- so points the
+    granule never writes also come back rounded to `dtype`.
     """
 
-    # in case the cache lookup is still performance relevant, we can replace it by a custom swap cache
-    # (only for substitution mode where we know we have exactly 2 entries)
-    # or by even marking fields as constant over the whole program run and immediately return on second call
-    @functools.cache
-    def impl(array_info: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> gtx.Field | None:
+    # maxsize=2 covers double-buffered arguments (the nnow/nnew swap); anything larger lets
+    # buffers pile up when ICON passes a freshly allocated array on every call.
+    # The dtype checks below run only on a cache miss. That is sound only because each
+    # parameter has its own cache and its C type is fixed by the generated cdef: CFFI pointers
+    # hash and compare by address alone, so `double*` and `float*` to one address share a key.
+    @functools.lru_cache(maxsize=2)
+    def cached(array_info: py2fgen.ArrayInfo, ffi: cffi.FFI) -> tuple[gtx.Field | None, Any]:
+        """The field handed to icon4py, and ICON's array if that field is a copy of it."""
         arr = py2fgen.as_array(ffi, array_info)
         if arr is None:
-            return None
+            return None, None
         if arr.dtype != icon_dtype:
             raise TypeError(
                 f"ICON passes {arr.dtype} for a field the bindings declare as {icon_dtype}: the "
@@ -198,14 +247,43 @@ def _as_field(dims: Sequence[gtx.Dimension], dtype: np.dtype, icon_dtype: np.dty
                 "ICON4PY_BINDINGS_ICON_PRECISION than the current "
                 f"{config.ICON_PRECISION!r}. Regenerate the bindings."
             )
-        if arr.dtype != dtype:
+        _, shape, on_gpu, _ = array_info
+        domain = gtx_common.domain({d: s for d, s in zip(dims, shape, strict=True)})
+        if arr.dtype == dtype:
+            return gtx_common._field(arr, domain=domain), None
+        if intent is Intent.UNDECLARED:
             raise TypeError(
                 f"ICON passes {arr.dtype} for a field on {[d.value for d in dims]} that icon4py "
-                f"computes in {dtype}; casting at the boundary is not implemented."
+                f"computes in {dtype}. Converting it needs a copy, so declare whether ICON reads "
+                "it back: annotate it `WpIn`/`VpIn` or `WpInOut`/`VpInOut`."
             )
-        _, shape, _, _ = array_info
-        domain = {d: s for d, s in zip(dims, shape, strict=True)}
-        return gtx_common._field(arr, domain=gtx_common.domain(domain))
+        xp = cp if on_gpu else np
+        buffer = xp.empty_like(arr, dtype=dtype)  # order="K" keeps ICON's column-major layout
+        return gtx_common._field(buffer, domain=domain), arr
+
+    def impl(array_info: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> gtx.Field | None:
+        field, fortran = cached(array_info, ffi)
+        if fortran is not None:
+            field.ndarray[...] = fortran
+            if array_info[2]:
+                _synchronize_copies()  # before GT4Py launches work that reads the buffer
+        return field
+
+    if intent is Intent.INOUT:
+
+        def writeback(array_info: py2fgen.ArrayInfo, field: gtx.Field | None, *, ffi: cffi.FFI):
+            if field is None:
+                return
+            _, fortran = cached(array_info, ffi)
+            if fortran is None:
+                return  # zero-copy: icon4py already wrote into ICON's memory
+            if array_info[2]:
+                _synchronize_device()  # the granule's last write
+            fortran[...] = field.ndarray
+            if array_info[2]:
+                _synchronize_copies()  # ICON's `!$ACC WAIT` does not cover CuPy's stream
+
+        impl.writeback = writeback  # type: ignore[attr-defined] # py2fgen's writeback protocol
 
     return impl
 
@@ -220,13 +298,14 @@ def field_annotation_mapping_hook(
     """
     if not isinstance(param_descriptor, py2fgen.ArrayParamDescriptor):
         return None
-    base, _ = _split_boundary(annotation)
+    base, boundary = _split_boundary(annotation)
     maybe_gt4py_type = _get_gt4py_type(base)
     if maybe_gt4py_type is None:
         return None
     gt4py_type, _ = maybe_gt4py_type
     dims, dtype = _parse_type_spec(gt4py_type)
-    return _as_field(dims, _NUMPY_DTYPE[dtype], _NUMPY_DTYPE[param_descriptor.dtype])
+    intent = boundary.intent if boundary is not None else Intent.UNDECLARED
+    return _as_field(dims, _NUMPY_DTYPE[dtype], intent, _NUMPY_DTYPE[param_descriptor.dtype])
 
 
 export = py2fgen.export(
