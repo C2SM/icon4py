@@ -23,6 +23,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_trace
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_advection import (
+    compute_ppm4gpu_flux,
     compute_tracer_advection_after_horizontal_limiter,
     compute_tracer_advection_before_horizontal_limiter,
 )
@@ -282,6 +283,10 @@ class GodunovSplittingAdvection(Advection):
             dtype=gtx.int32,
             allocator=allocator,
         )
+        self._ivadv_tracer_is_ppm = vertical_advection_type == VerticalAdvectionType.THIRD_ORDER_PPM
+        self._p_mflx_tracer_v_zero = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
+        )
 
         self._apply_interpolated_tracer_time_tendency = setup_program(
             backend=self._backend,
@@ -354,12 +359,36 @@ class GodunovSplittingAdvection(Advection):
             vertical_sizes=vertical_domains,
             offset_provider=self._grid.connectivities,
         )
+        _before_limiter_vertical_args = {
+            key: val
+            for key, val in shared_vertical_args.items()
+            if key not in ("p_cellhgt_mc_now", "k_half", "slevp1_ti", "itype_vlimit")
+        }
         self._compute_before_horizontal_limiter = setup_program(
             backend=self._backend,
             program=compute_tracer_advection_before_horizontal_limiter,
-            constant_args={**shared_vertical_args, **shared_horizontal_args},
+            constant_args={**_before_limiter_vertical_args, **shared_horizontal_args},
             horizontal_sizes=horizontal_domains,
             vertical_sizes=vertical_domains,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_ppm4gpu_flux = setup_program(
+            backend=self._backend,
+            program=compute_ppm4gpu_flux,
+            constant_args={
+                "p_cellhgt_mc_now": metric_state.ddqz_z_full,
+                "k": self._k_half,
+                "slev": gtx.int32(0),
+                "slevp1_ti": gtx.int32(1),
+                "elev": gtx.int32(self._grid.num_levels - 1),
+                "dbl_eps": constants.DBL_EPS,
+                "itype_vlimit": gtx.int32(vertical_advection_limiter.value),
+            },
+            horizontal_sizes={
+                "start_cell": self._start_cell_lateral_boundary_level_2,
+                "end_cell": self._end_cell_end,
+            },
+            vertical_sizes={"vertical_end": gtx.int32(self._grid.num_levels)},
             offset_provider=self._grid.connectivities,
         )
         log.debug("tracer_advection class init - end")
@@ -403,9 +432,21 @@ class GodunovSplittingAdvection(Advection):
             stream=decomposition.DEFAULT_STREAM,
         )
 
+        if self._even_timestep and self._ivadv_tracer_is_ppm:
+            self._compute_ppm4gpu_flux(
+                p_upflux=diagnostic_state.vfl_tracer,
+                p_cc=p_tracer_now,
+                p_cellmass_now=diagnostic_state.airmass_now,
+                p_mflx_contra_v=prep_adv.mass_flx_ic,
+                p_dtime=dtime,
+            )
+            _p_mflx_tracer_v = diagnostic_state.vfl_tracer
+        else:
+            _p_mflx_tracer_v = self._p_mflx_tracer_v_zero
+
         self._compute_before_horizontal_limiter(
             rhodz_ast2=self._rhodz_ast2,
-            p_mflx_tracer_v=diagnostic_state.vfl_tracer,
+            p_mflx_tracer_v=_p_mflx_tracer_v,
             p_tracer_after_vertical=self._p_tracer_after_vertical,
             p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
             r_m=self._r_m,

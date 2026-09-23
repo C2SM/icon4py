@@ -152,6 +152,44 @@ def _compute_ppm4gpu_flux(
     )
 
 
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_ppm4gpu_flux(
+    p_upflux: fa.CellKHalfField[ta.wpfloat],
+    p_cc: fa.CellKField[ta.wpfloat],
+    p_cellmass_now: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
+    k: fa.KHalfField[gtx.int32],
+    slev: gtx.int32,
+    slevp1_ti: gtx.int32,
+    elev: gtx.int32,
+    dbl_eps: ta.wpfloat,
+    p_dtime: ta.wpfloat,
+    itype_vlimit: gtx.int32,
+    start_cell: gtx.int32,
+    end_cell: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _compute_ppm4gpu_flux(
+        p_cc=p_cc,
+        p_cellmass_now=p_cellmass_now,
+        p_mflx_contra_v=p_mflx_contra_v,
+        p_cellhgt_mc_now=p_cellhgt_mc_now,
+        k=k,
+        slev=slev,
+        slevp1_ti=slevp1_ti,
+        elev=elev,
+        dbl_eps=dbl_eps,
+        p_dtime=p_dtime,
+        itype_vlimit=itype_vlimit,
+        out=p_upflux,
+        domain={
+            dims.CellDim: (start_cell, end_cell),
+            dims.KHalfDim: (0, vertical_end + 1),
+        },
+    )
+
+
 @gtx.field_operator
 def _compute_2nd_order_miura_horizontal_flux(
     p_cc: fa.CellKField[ta.wpfloat],
@@ -200,20 +238,17 @@ def _compute_tracer_advection_before_horizontal_limiter(
     rhodz_new: fa.CellKField[ta.wpfloat],
     p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_tracer_now: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
-    p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     k: fa.KField[gtx.int32],
-    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
-    slevp1_ti: gtx.int32,
     elev: gtx.int32,
     ivadv_tracer: gtx.int32,
     ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
-    itype_vlimit: gtx.int32,
     iadv_slev_jt: gtx.int32,
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
@@ -230,11 +265,17 @@ def _compute_tracer_advection_before_horizontal_limiter(
     even_timestep: bool,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
-    fa.CellKHalfField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
+    # p_mflx_tracer_v is pre-computed by the caller via compute_ppm4gpu_flux
+    # (zeros for ivadv_tracer != 3 or odd timestep; PPM flux otherwise).
+    # It is NOT re-computed here to avoid fusing the large _compute_ppm4gpu_flux
+    # kernel (which uses concat_where on KHalfDim with fractional K-shifts) into
+    # this already-large field_operator, which causes CUDA shared-memory overflow
+    # on aarch64/Santis.
+
     rhodz_ast2 = _apply_density_increment(
         rhodz_in=rhodz_now if even_timestep else rhodz_new,
         p_mflx_contra_v=p_mflx_contra_v,
@@ -242,27 +283,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
         deepatmo_divzu=deepatmo_divzu,
         p_dtime=p_dtime,
         even_timestep=even_timestep,
-    )
-
-    p_mflx_tracer_v = (
-        _compute_ppm4gpu_flux(
-            p_cc=p_tracer_now,
-            p_cellmass_now=rhodz_now,
-            p_mflx_contra_v=p_mflx_contra_v,
-            p_cellhgt_mc_now=p_cellhgt_mc_now,
-            k=k_half,
-            slev=slev,
-            slevp1_ti=slevp1_ti,
-            elev=elev,
-            dbl_eps=dbl_eps,
-            p_dtime=p_dtime,
-            itype_vlimit=itype_vlimit,
-        )
-        if (ivadv_tracer == 3)
-        else broadcast(0.0, (dims.CellDim, dims.KHalfDim))
-    )
-    p_mflx_tracer_v = (
-        p_mflx_tracer_v if even_timestep else broadcast(0.0, (dims.CellDim, dims.KHalfDim))
     )
 
     p_tracer_after_vertical = (
@@ -322,7 +342,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
 
     return (
         rhodz_ast2,
-        p_mflx_tracer_v,
         p_tracer_after_vertical,
         p_mflx_tracer_h_unlimited,
         r_m,
@@ -332,7 +351,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_tracer_advection_before_horizontal_limiter(
     rhodz_ast2: fa.CellKField[ta.wpfloat],
-    p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
     p_tracer_after_vertical: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h_unlimited: fa.EdgeKField[ta.wpfloat],
     r_m: fa.CellKField[ta.wpfloat],
@@ -340,20 +358,17 @@ def compute_tracer_advection_before_horizontal_limiter(
     rhodz_new: fa.CellKField[ta.wpfloat],
     p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_tracer_now: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
-    p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     k: fa.KField[gtx.int32],
-    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
-    slevp1_ti: gtx.int32,
     elev: gtx.int32,
     ivadv_tracer: gtx.int32,
     ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
-    itype_vlimit: gtx.int32,
     iadv_slev_jt: gtx.int32,
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
@@ -380,20 +395,17 @@ def compute_tracer_advection_before_horizontal_limiter(
         rhodz_new=rhodz_new,
         p_mflx_contra_v=p_mflx_contra_v,
         p_tracer_now=p_tracer_now,
+        p_mflx_tracer_v=p_mflx_tracer_v,
         p_mass_flx_e=p_mass_flx_e,
         p_vn=p_vn,
-        p_cellhgt_mc_now=p_cellhgt_mc_now,
         deepatmo_divzl=deepatmo_divzl,
         deepatmo_divzu=deepatmo_divzu,
         k=k,
-        k_half=k_half,
         slev=slev,
-        slevp1_ti=slevp1_ti,
         elev=elev,
         ivadv_tracer=ivadv_tracer,
         ihadv_tracer=ihadv_tracer,
         itype_hlimit=itype_hlimit,
-        itype_vlimit=itype_vlimit,
         iadv_slev_jt=iadv_slev_jt,
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         pos_on_tplane_e_1=pos_on_tplane_e_1,
@@ -410,7 +422,6 @@ def compute_tracer_advection_before_horizontal_limiter(
         even_timestep=even_timestep,
         out=(
             rhodz_ast2,
-            p_mflx_tracer_v,
             p_tracer_after_vertical,
             p_mflx_tracer_h_unlimited,
             r_m,
@@ -419,10 +430,6 @@ def compute_tracer_advection_before_horizontal_limiter(
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_2, end_cell_end),
                 dims.KDim: (0, vertical_end),
-            },
-            {
-                dims.CellDim: (start_cell_lateral_boundary_level_2, end_cell_end),
-                dims.KHalfDim: (0, vertical_end + 1),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_2, end_cell_end),
