@@ -222,10 +222,16 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # Create separate fields for the two components of the RBF vector coefficients and swap.
     # TODO(havogt): we could use GT4Py's named collections.
     rbf_coeff_1 = gtx.as_field(
-        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 0, :]), allocator=allocator
+        [dims.VertexDim, dims.V2EDim],
+        xp.transpose(rbf_vec_coeff_v[:, 0, :]),
+        dtype=wpfloat,
+        allocator=allocator,
     )
     rbf_coeff_2 = gtx.as_field(
-        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 1, :]), allocator=allocator
+        [dims.VertexDim, dims.V2EDim],
+        xp.transpose(rbf_vec_coeff_v[:, 1, :]),
+        dtype=wpfloat,
+        allocator=allocator,
     )
 
     # Interpolation state
@@ -290,13 +296,13 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     )
 
     if hdef_ic is None:
-        hdef_ic = granule.dummy_field_factory("hdef_ic", domain=w.domain, dtype=w.dtype)
+        hdef_ic = granule.dummy_field_factory("hdef_ic", domain=w.domain, dtype=vpfloat)
     if div_ic is None:
-        div_ic = granule.dummy_field_factory("div_ic", domain=w.domain, dtype=w.dtype)
+        div_ic = granule.dummy_field_factory("div_ic", domain=w.domain, dtype=vpfloat)
     if dwdx is None:
-        dwdx = granule.dummy_field_factory("dwdx", domain=w.domain, dtype=w.dtype)
+        dwdx = granule.dummy_field_factory("dwdx", domain=w.domain, dtype=vpfloat)
     if dwdy is None:
-        dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=w.dtype)
+        dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=vpfloat)
     diagnostic_state = DiffusionDiagnosticState(
         hdef_ic=hdef_ic,
         div_ic=div_ic,

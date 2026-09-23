@@ -148,7 +148,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     pg_exdist_domain = rho_ref_me.domain
     if any(field is None for field in [pg_edgeidx, pg_vertidx, pg_exdist]):
         assert all(field is None for field in [pg_edgeidx, pg_vertidx, pg_exdist])
-        pg_exdist_dsl = gtx.zeros(pg_exdist_domain, dtype=gtx.float64, allocator=allocator)
+        pg_exdist_dsl = gtx.zeros(pg_exdist_domain, dtype=ta.vpfloat, allocator=allocator)
     else:
         pg_exdist_dsl = data_alloc.scattered_field(
             domain=pg_exdist_domain,
@@ -157,7 +157,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
                 data_alloc.adjust_fortran_indices(pg_edgeidx),
                 data_alloc.adjust_fortran_indices(pg_vertidx),
             ),
-            default_value=gtx.float64(0.0),
+            default_value=ta.vpfloat(0.0),
             allocator=allocator,
         )
 
@@ -188,15 +188,24 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # Create separate fields for the two components of the RBF vector coefficients and swap.
     # TODO(havogt): we could use GT4Py's named collections.
     rbf_coeff_1 = gtx.as_field(
-        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 0, :]), allocator=allocator
+        [dims.VertexDim, dims.V2EDim],
+        xp.transpose(rbf_vec_coeff_v[:, 0, :]),
+        dtype=ta.wpfloat,
+        allocator=allocator,
     )
     rbf_coeff_2 = gtx.as_field(
-        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 1, :]), allocator=allocator
+        [dims.VertexDim, dims.V2EDim],
+        xp.transpose(rbf_vec_coeff_v[:, 1, :]),
+        dtype=ta.wpfloat,
+        allocator=allocator,
     )
 
     # Swap indices in rbf_vec_coeff_e. TODO(havogt): Should eventually be done on the Fortran side.
     rbf_vec_coeff_e_transposed = gtx.as_field(
-        [dims.EdgeDim, dims.E2C2EDim], xp.transpose(rbf_vec_coeff_e), allocator=allocator
+        [dims.EdgeDim, dims.E2C2EDim],
+        xp.transpose(rbf_vec_coeff_e),
+        dtype=ta.wpfloat,
+        allocator=allocator,
     )
     interpolation_state = dycore_states.InterpolationState(
         c_lin_e=c_lin_e,
@@ -360,16 +369,14 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     xp = rho_now.array_ns
 
     if vn_incr is None:
-        vn_incr = granule.dummy_field_factory("vn_incr", domain=vn_now.domain, dtype=vn_now.dtype)
+        vn_incr = granule.dummy_field_factory("vn_incr", domain=vn_now.domain, dtype=ta.vpfloat)
 
     if rho_incr is None:
-        rho_incr = granule.dummy_field_factory(
-            "rho_incr", domain=rho_now.domain, dtype=rho_now.dtype
-        )
+        rho_incr = granule.dummy_field_factory("rho_incr", domain=rho_now.domain, dtype=ta.vpfloat)
 
     if exner_incr is None:
         exner_incr = granule.dummy_field_factory(
-            "exner_incr", domain=exner_now.domain, dtype=exner_now.dtype
+            "exner_incr", domain=exner_now.domain, dtype=ta.vpfloat
         )
 
     prep_adv = dycore_states.PrepAdvection(
@@ -381,7 +388,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
 
     # Make `max_vcfl` a 0-d array to avoid cupy synchronization, see `_update_max_vertical_cfl`.
     # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
-    max_vcfl = data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)
+    max_vcfl = data_alloc.scalar_like_array(ta.wpfloat(max_vcfl_size1_array[0]), xp)
 
     diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=max_vcfl,
