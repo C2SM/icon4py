@@ -740,7 +740,10 @@ def shear_and_viscosity_input_data(
     )
     edge_end_halo_level_2 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
     edge_end_halo_level_3 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_3))
-    assert edge_start_lateral_boundary_level_4 < edge_end_halo_level_2
+    # A single-rank grid has no halo, so every halo zone ends at the end of the field;
+    # pull the second halo level's end in so that vn_ie is masked with its own bound.
+    edge_end_halo_level_2 = min(edge_end_halo_level_2, edge_end_halo_level_3 - 1)
+    assert edge_start_lateral_boundary_level_4 < edge_end_halo_level_2 < edge_end_halo_level_3
 
     cell_domain = h_grid.domain(dims.CellDim)
     cell_start_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
@@ -756,6 +759,9 @@ def shear_and_viscosity_input_data(
     # starts well after lateral boundary level 3.
     cell_start_nudging = max(cell_start_nudging, cell_start_lateral_boundary_level_3 + 1)
     assert cell_start_lateral_boundary_level_3 < cell_start_nudging < cell_end_halo
+    # Likewise LOCAL and HALO end together without a halo; pull the km_ic / kh_ic end in.
+    cell_end_local = min(cell_end_local, cell_end_halo - 1)
+    assert cell_start_nudging < cell_end_local < cell_end_halo
 
     zero_edge_half = data_alloc.zero_field(dims.EdgeDim, dims.KHalfDim, dtype=ta.wpfloat)
     return dict(
