@@ -11,10 +11,9 @@ from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.math.tridiagonal import (
-    _solve_tridiagonal_matrix_back_substitution,
-    _solve_tridiagonal_matrix_back_substitution_on_half_levels_wp,
-    _solve_tridiagonal_matrix_forward_sweep,
-    _solve_tridiagonal_matrix_forward_sweep_on_half_levels_wp,
+    _solve_tridiagonal_matrix_on_cell_half_levels,
+    _solve_tridiagonal_matrix_on_cells,
+    _solve_tridiagonal_matrix_on_edges,
 )
 from icon4py.model.common.type_alias import wpfloat
 
@@ -129,8 +128,8 @@ def _solve_implicit_vertical_diffusion_on_cells(
     have no effect.
     """
     inv_dtime = wpfloat("1.0") / dtime
-    q, d_prime = _solve_tridiagonal_matrix_forward_sweep(a, inv_dtime + b, c, var * inv_dtime + rhs)
-    return tend + (_solve_tridiagonal_matrix_back_substitution(q, d_prime) - var) * inv_dtime
+    x = _solve_tridiagonal_matrix_on_cells(a, inv_dtime + b, c, var * inv_dtime + rhs)
+    return tend + (x - var) * inv_dtime
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -150,14 +149,8 @@ def _solve_implicit_vertical_diffusion_on_cell_half_levels(
     have no effect.
     """
     inv_dtime = wpfloat("1.0") / dtime
-    q, d_prime = _solve_tridiagonal_matrix_forward_sweep_on_half_levels_wp(
-        a, inv_dtime + b, c, var * inv_dtime + rhs
-    )
-    return (
-        tend
-        + (_solve_tridiagonal_matrix_back_substitution_on_half_levels_wp(q, d_prime) - var)
-        * inv_dtime
-    )
+    x = _solve_tridiagonal_matrix_on_cell_half_levels(a, inv_dtime + b, c, var * inv_dtime + rhs)
+    return tend + (x - var) * inv_dtime
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -177,5 +170,5 @@ def _solve_implicit_vertical_diffusion_on_edges(
     have no effect.
     """
     inv_dtime = wpfloat("1.0") / dtime
-    q, d_prime = _solve_tridiagonal_matrix_forward_sweep(a, inv_dtime + b, c, var * inv_dtime + rhs)
-    return tend + (_solve_tridiagonal_matrix_back_substitution(q, d_prime) - var) * inv_dtime
+    x = _solve_tridiagonal_matrix_on_edges(a, inv_dtime + b, c, var * inv_dtime + rhs)
+    return tend + (x - var) * inv_dtime

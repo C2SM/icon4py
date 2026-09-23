@@ -18,7 +18,7 @@ independent of its super-diagonal entry.
 import gt4py.next as gtx
 from gt4py.next import astype
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -97,3 +97,37 @@ def _solve_tridiagonal_matrix_back_substitution_on_half_levels_mixed_precision(
     d_prime: wpfloat,
 ) -> wpfloat:
     return d_prime + x_kplus1 * astype(q, wpfloat)  # type: ignore[return-value] # return type hints for scan operator broken in GT4Py
+
+
+# one per field type: field operators are not generic over dimensions
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def _solve_tridiagonal_matrix_on_cells(
+    a: fa.CellKField[wpfloat],
+    b: fa.CellKField[wpfloat],
+    c: fa.CellKField[wpfloat],
+    d: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    q, d_prime = _solve_tridiagonal_matrix_forward_sweep(a, b, c, d)
+    return _solve_tridiagonal_matrix_back_substitution(q, d_prime)
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def _solve_tridiagonal_matrix_on_cell_half_levels(
+    a: fa.CellKHalfField[wpfloat],
+    b: fa.CellKHalfField[wpfloat],
+    c: fa.CellKHalfField[wpfloat],
+    d: fa.CellKHalfField[wpfloat],
+) -> fa.CellKHalfField[wpfloat]:
+    q, d_prime = _solve_tridiagonal_matrix_forward_sweep_on_half_levels_wp(a, b, c, d)
+    return _solve_tridiagonal_matrix_back_substitution_on_half_levels_wp(q, d_prime)
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def _solve_tridiagonal_matrix_on_edges(
+    a: fa.EdgeKField[wpfloat],
+    b: fa.EdgeKField[wpfloat],
+    c: fa.EdgeKField[wpfloat],
+    d: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
+    q, d_prime = _solve_tridiagonal_matrix_forward_sweep(a, b, c, d)
+    return _solve_tridiagonal_matrix_back_substitution(q, d_prime)

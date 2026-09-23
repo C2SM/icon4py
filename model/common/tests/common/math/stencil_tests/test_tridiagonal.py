@@ -13,37 +13,14 @@ import numpy as np
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import base
 from icon4py.model.common.math.tridiagonal import (
-    _solve_tridiagonal_matrix_back_substitution,
     _solve_tridiagonal_matrix_back_substitution_on_half_levels_mixed_precision,
-    _solve_tridiagonal_matrix_back_substitution_on_half_levels_wp,
-    _solve_tridiagonal_matrix_forward_sweep,
     _solve_tridiagonal_matrix_forward_sweep_on_half_levels_mixed_precision,
-    _solve_tridiagonal_matrix_forward_sweep_on_half_levels_wp,
+    _solve_tridiagonal_matrix_on_cell_half_levels,
+    _solve_tridiagonal_matrix_on_cells,
+    _solve_tridiagonal_matrix_on_edges,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
-
-
-@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def _solve_on_full_levels(
-    a: fa.CellKField[wpfloat],
-    b: fa.CellKField[wpfloat],
-    c: fa.CellKField[wpfloat],
-    d: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
-    q, d_prime = _solve_tridiagonal_matrix_forward_sweep(a, b, c, d)
-    return _solve_tridiagonal_matrix_back_substitution(q, d_prime)
-
-
-@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def _solve_on_half_levels_wp(
-    a: fa.CellKHalfField[wpfloat],
-    b: fa.CellKHalfField[wpfloat],
-    c: fa.CellKHalfField[wpfloat],
-    d: fa.CellKHalfField[wpfloat],
-) -> fa.CellKHalfField[wpfloat]:
-    q, d_prime = _solve_tridiagonal_matrix_forward_sweep_on_half_levels_wp(a, b, c, d)
-    return _solve_tridiagonal_matrix_back_substitution_on_half_levels_wp(q, d_prime)
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -71,29 +48,32 @@ def solve_tridiagonal_numpy(
 def tridiagonal_input_data(
     data_alloc: stencil_tests.DataAllocationWrapper,
     grid: base.Grid,
+    horizontal_dim: gtx.Dimension,
     vertical_dim: gtx.Dimension,
-    coefficient_dtype: type,
+    coefficient_dtype: type = wpfloat,
 ) -> dict[str, Any]:
-    num_rows = grid.num_levels + (1 if vertical_dim == dims.KHalfDim else 0)
     # diagonally dominant, so that the system is well conditioned
     return dict(
         a=data_alloc.random_field(
-            dims.CellDim, vertical_dim, low=-1.0, high=1.0, dtype=coefficient_dtype
+            horizontal_dim, vertical_dim, low=-1.0, high=1.0, dtype=coefficient_dtype
         ),
         b=data_alloc.random_field(
-            dims.CellDim, vertical_dim, low=3.0, high=4.0, dtype=coefficient_dtype
+            horizontal_dim, vertical_dim, low=3.0, high=4.0, dtype=coefficient_dtype
         ),
         c=data_alloc.random_field(
-            dims.CellDim, vertical_dim, low=-1.0, high=1.0, dtype=coefficient_dtype
+            horizontal_dim, vertical_dim, low=-1.0, high=1.0, dtype=coefficient_dtype
         ),
-        d=data_alloc.random_field(dims.CellDim, vertical_dim, dtype=wpfloat),
-        domain={dims.CellDim: (0, grid.num_cells), vertical_dim: (0, num_rows)},
-        out=data_alloc.zero_field(dims.CellDim, vertical_dim, dtype=wpfloat),
+        d=data_alloc.random_field(horizontal_dim, vertical_dim, dtype=wpfloat),
+        domain={
+            horizontal_dim: (0, grid.size[horizontal_dim]),
+            vertical_dim: (0, grid.size[vertical_dim]),
+        },
+        out=data_alloc.zero_field(horizontal_dim, vertical_dim, dtype=wpfloat),
     )
 
 
-class TestSolveTridiagonalMatrixOnFullLevels(stencil_tests.StencilTest):
-    PROGRAM = _solve_on_full_levels
+class TestSolveTridiagonalMatrixOnCells(stencil_tests.StencilTest):
+    PROGRAM = _solve_tridiagonal_matrix_on_cells
     OUTPUTS = ("out",)
 
     @stencil_tests.static_reference
@@ -112,11 +92,11 @@ class TestSolveTridiagonalMatrixOnFullLevels(stencil_tests.StencilTest):
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, Any]:
-        return tridiagonal_input_data(data_alloc, grid, dims.KDim, wpfloat)
+        return tridiagonal_input_data(data_alloc, grid, dims.CellDim, dims.KDim)
 
 
-class TestSolveTridiagonalMatrixOnHalfLevelsWp(stencil_tests.StencilTest):
-    PROGRAM = _solve_on_half_levels_wp
+class TestSolveTridiagonalMatrixOnEdges(stencil_tests.StencilTest):
+    PROGRAM = _solve_tridiagonal_matrix_on_edges
     OUTPUTS = ("out",)
 
     @stencil_tests.static_reference
@@ -135,7 +115,30 @@ class TestSolveTridiagonalMatrixOnHalfLevelsWp(stencil_tests.StencilTest):
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, Any]:
-        return tridiagonal_input_data(data_alloc, grid, dims.KHalfDim, wpfloat)
+        return tridiagonal_input_data(data_alloc, grid, dims.EdgeDim, dims.KDim)
+
+
+class TestSolveTridiagonalMatrixOnCellHalfLevels(stencil_tests.StencilTest):
+    PROGRAM = _solve_tridiagonal_matrix_on_cell_half_levels
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        a: np.ndarray,
+        b: np.ndarray,
+        c: np.ndarray,
+        d: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
+        return dict(out=solve_tridiagonal_numpy(a, b, c, d))
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        return tridiagonal_input_data(data_alloc, grid, dims.CellDim, dims.KHalfDim)
 
 
 class TestSolveTridiagonalMatrixOnHalfLevelsMixedPrecision(stencil_tests.StencilTest):
@@ -160,4 +163,4 @@ class TestSolveTridiagonalMatrixOnHalfLevelsMixedPrecision(stencil_tests.Stencil
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, Any]:
-        return tridiagonal_input_data(data_alloc, grid, dims.KHalfDim, vpfloat)
+        return tridiagonal_input_data(data_alloc, grid, dims.CellDim, dims.KHalfDim, vpfloat)
