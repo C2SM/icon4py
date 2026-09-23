@@ -19,11 +19,11 @@ def _compute_results_for_thermodynamic_variables(
     z_rho_expl: fa.CellKField[wpfloat],
     vwind_impl_wgt: fa.CellField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
-    rho_ic: fa.CellKField[wpfloat],
-    w: fa.CellKField[wpfloat],
+    rho_ic: fa.CellKHalfField[wpfloat],
+    w: fa.CellKHalfField[wpfloat],
     z_exner_expl: fa.CellKField[wpfloat],
     exner_ref_mc: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
+    z_alpha: fa.CellKHalfField[vpfloat],
     z_beta: fa.CellKField[vpfloat],
     rho_now: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],
@@ -40,12 +40,16 @@ def _compute_results_for_thermodynamic_variables(
     )
 
     rho_new_wp = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full_wp * (
-        rho_ic * w - rho_ic(dims.KDim + 1) * w(dims.KDim + 1)
+        rho_ic(dims.KDim - 0.5) * w(dims.KDim - 0.5) - rho_ic(dims.KDim + 0.5) * w(dims.KDim + 0.5)
     )
     exner_new_wp = (
         z_exner_expl
         + exner_ref_mc_wp
-        - z_beta_wp * (z_alpha_wp * w - z_alpha_wp(dims.KDim + 1) * w(dims.KDim + 1))
+        - z_beta_wp
+        * (
+            z_alpha_wp(dims.KDim - 0.5) * w(dims.KDim - 0.5)
+            - z_alpha_wp(dims.KDim + 0.5) * w(dims.KDim + 0.5)
+        )
     )
     theta_v_new_wp = (
         rho_now
@@ -61,11 +65,11 @@ def compute_results_for_thermodynamic_variables(
     z_rho_expl: fa.CellKField[wpfloat],
     vwind_impl_wgt: fa.CellField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
-    rho_ic: fa.CellKField[wpfloat],
-    w: fa.CellKField[wpfloat],
+    rho_ic: fa.CellKHalfField[wpfloat],
+    w: fa.CellKHalfField[wpfloat],
     z_exner_expl: fa.CellKField[wpfloat],
     exner_ref_mc: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
+    z_alpha: fa.CellKHalfField[vpfloat],
     z_beta: fa.CellKField[vpfloat],
     rho_now: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],

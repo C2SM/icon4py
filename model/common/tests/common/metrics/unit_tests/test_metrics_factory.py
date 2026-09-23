@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 import pytest
 from numpy import testing as np_testing
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
@@ -49,7 +49,7 @@ def _get_metrics_factory(
     experiment: test_defs.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    exchange: decomposition.ExchangeRuntime,
+    process_props: decomposition.ProcessProperties,
 ) -> metrics_factory.MetricsFieldsFactory:
     registry_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = metrics_factories.get(registry_name)
@@ -70,7 +70,7 @@ def _get_metrics_factory(
             backend=backend,
             config=experiment.config.interpolation,
             metadata=interpolation_attributes.attrs,
-            exchange=exchange,
+            process_props=process_props,
         )
         factory = metrics_factory.MetricsFieldsFactory(
             grid=geometry.grid,
@@ -82,7 +82,7 @@ def _get_metrics_factory(
             config=experiment.config.metrics,
             backend=backend,
             metadata=attrs.attrs,
-            exchange=exchange,
+            process_props=process_props,
         )
         metrics_factories[registry_name] = factory
     return factory
@@ -102,7 +102,7 @@ def test_factory_nflat_gradp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     value = factory.get(attrs.NFLAT_GRADP)
     assert value_ref == value
@@ -123,7 +123,7 @@ def test_factory_z_mc(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.Z_MC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-10)
@@ -145,7 +145,7 @@ def test_factory_ddqz_z_and_inverse(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     inverse_field = factory.get(attrs.INV_DDQZ_Z_FULL)
     field = factory.get(attrs.DDQZ_Z_FULL)
@@ -167,7 +167,7 @@ def test_factory_ddqz_full_e(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.DDQZ_Z_FULL_E)
     assert test_helpers.dallclose(field_ref, field.asnumpy(), rtol=1e-8)
@@ -189,7 +189,7 @@ def test_factory_ddqz_z_half(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.DDQZ_Z_HALF)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
@@ -210,7 +210,7 @@ def test_factory_scaling_factor_for_3d_divdamp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.SCALING_FACTOR_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -231,7 +231,7 @@ def test_factory_rayleigh_w(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.RAYLEIGH_W)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -253,7 +253,7 @@ def test_factory_coeffs_dwdz(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.COEFF1_DWDZ)
     field_2 = factory.get(attrs.COEFF2_DWDZ)
@@ -277,7 +277,7 @@ def test_factory_ref_mc(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.THETA_REF_MC)
     field_2 = factory.get(attrs.EXNER_REF_MC)
@@ -301,7 +301,7 @@ def test_factory_d2dexdz2_facs_mc(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.D2DEXDZ2_FAC1_MC)
     field_2 = factory.get(attrs.D2DEXDZ2_FAC2_MC)
@@ -323,7 +323,7 @@ def test_factory_ddxn_z_full(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.DDXN_Z_FULL)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1e-8)
@@ -344,7 +344,7 @@ def test_factory_ddxt_z_full(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.DDXT_Z_FULL)
     # TODO(halungge): these are the np.allclose default values: single precision
@@ -366,7 +366,7 @@ def test_factory_exner_w_implicit_weight_parameter(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
@@ -387,7 +387,7 @@ def test_factory_exner_w_explicit_weight_parameter(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
@@ -409,7 +409,7 @@ def test_factory_exner_exfac(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.EXNER_EXFAC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1e-8)
@@ -431,7 +431,7 @@ def test_factory_pressure_gradient_fields(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.PG_EXDIST_DSL)
     assert test_helpers.dallclose(field_1_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
@@ -451,7 +451,7 @@ def test_factory_mask_prog_halo_c(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.MASK_PROG_HALO_C)
     assert (field_ref.asnumpy() == field.asnumpy()).all()
@@ -472,7 +472,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -496,7 +496,7 @@ def test_factory_zdiff_gradp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.ZDIFF_GRADP)
     field_2 = factory.get(attrs.VERTOFFSET_GRADP)
@@ -533,7 +533,7 @@ def test_factory_coeff_gradekin(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.COEFF_GRADEKIN)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
@@ -553,7 +553,7 @@ def test_factory_wgtfacq_c(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.WGTFACQ_C)
     field_ref = metrics_savepoint.wgtfacq_c()
@@ -574,7 +574,7 @@ def test_factory_wgtfacq_e(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.WGTFACQ_E)
     field_ref = metrics_savepoint.wgtfacq_e()
@@ -598,7 +598,7 @@ def test_vertical_coordinates_on_half_levels(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.CELL_HEIGHT_ON_HALF_LEVEL)
     field_ref = metrics_savepoint.z_ifc()
@@ -620,7 +620,7 @@ def test_compute_wgtfac_c(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.WGTFAC_C)
     field_ref = metrics_savepoint.wgtfac_c()
@@ -643,7 +643,7 @@ def test_factory_compute_diffusion_mask_and_coef(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.ZD_DIFFCOEF)
 
@@ -667,9 +667,133 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
-        exchange=decomposition.single_node_exchange,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.ZD_INTCOEF)
     field_2 = factory.get(attrs.ZD_VERTOFFSET)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
+
+
+# The AES physics archive is the only one whose 'tmx-init' savepoint (written by
+# 'mo_vdf_atmo.f90') carries reference values for the fields below.
+_aes_physics_experiment = pytest.mark.parametrize(
+    "experiment_description", [test_defs.Experiments.EXCLAIM_APE_AES]
+)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@pytest.mark.uses_concat_where
+@_aes_physics_experiment
+def test_factory_inv_ddqz_z_half(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    field_ref = data_provider.from_savepoint_tmx_init().inv_ddqz_z_half()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field = factory.get(attrs.INV_DDQZ_Z_HALF)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@_aes_physics_experiment
+def test_factory_inv_ddqz_z_full_e(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    field_ref = data_provider.from_savepoint_tmx_init().inv_ddqz_z_full_e()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field = factory.get(attrs.INV_DDQZ_Z_FULL_E)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=5.0e-18)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@_aes_physics_experiment
+def test_factory_wgtfacq1_c_and_e(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    init_savepoint = data_provider.from_savepoint_tmx_init()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field_c = factory.get(attrs.WGTFACQ1_C)
+    field_e = factory.get(attrs.WGTFACQ1_E)
+    assert test_helpers.dallclose(init_savepoint.wgtfacq1_c().asnumpy(), field_c.asnumpy())
+    assert test_helpers.dallclose(
+        init_savepoint.wgtfacq1_e().asnumpy(), field_e.asnumpy(), atol=4.0e-16
+    )
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@_aes_physics_experiment
+def test_factory_geopot_agl_ifc(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    field_ref = data_provider.from_savepoint_tmx_init().geopot_agl_ifc()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field = factory.get(attrs.GEOPOT_AGL_IFC)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=5.0e-11)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@_aes_physics_experiment
+def test_factory_height_above_ground(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    geopot_agl_ifc = data_provider.from_savepoint_tmx_init().geopot_agl_ifc().asnumpy()
+    # ICON's full levels are the midpoints of its half levels (mo_vertical_grid.f90)
+    field_ref = 0.5 * (geopot_agl_ifc[:, :-1] + geopot_agl_ifc[:, 1:]) / constants.GRAV
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field = factory.get(attrs.HEIGHT_ABOVE_GROUND)
+    assert test_helpers.dallclose(field_ref, field.asnumpy())

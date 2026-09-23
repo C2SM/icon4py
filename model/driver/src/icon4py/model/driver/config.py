@@ -13,7 +13,6 @@ import datetime
 import json
 import logging
 import pathlib
-import re
 import typing
 from typing import Any
 
@@ -34,7 +33,7 @@ from icon4py.model.common import (
     topography,
     type_alias as ta,
 )
-from icon4py.model.common.config import options as common_conf_opt
+from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file
@@ -43,6 +42,7 @@ from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_states
 from icon4py.model.common.utils import fortran_config
+from icon4py.model.common.utils.time_utils import relativetime_from_iso8601
 
 
 log = logging.getLogger(__name__)
@@ -65,29 +65,6 @@ class ProfilingConfig:
     gt4py_metrics_level: int = gtx_metrics.ALL
     gt4py_metrics_output_file: str = "gt4py_metrics.json"
     skip_first_timestep: bool = True
-
-
-# ISO 8601 duration, restricted to the fixed-length components (weeks, days,
-# hours, minutes, seconds). Years and months are intentionally not matched since
-# their length is not fixed, and this is currently only used for dtime.
-_ISO8601_DURATION = re.compile(
-    r"P(?:(?P<weeks>\d+)W)?(?:(?P<days>\d+)D)?"
-    r"(?:T(?=\d)(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?"
-)
-
-
-def relativetime_from_iso8601(duration: str) -> time.RelativeTime:
-    """
-    Parse an ISO 8601 duration such as 'PT300S' into a 'time.RelativeTime'.
-
-    Only the components convertible to a fixed duration are supported (weeks,
-    days, hours, minutes, seconds).
-    """
-    match = _ISO8601_DURATION.fullmatch(duration)
-    if match is None or not any(match.groups()):
-        raise ValueError(f"Invalid ISO 8601 duration: '{duration}'.")
-    components = {name: float(value) for name, value in match.groupdict().items() if value}
-    return time.RelativeTime(**components)
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -211,19 +188,6 @@ class DriverConfig:
             ),
         ),
     ] = False
-    do_prep_adv: typing.Annotated[
-        bool,
-        common_conf_opt.ConfigOption(
-            description="No description available yet.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="ltransport",
-                path=(
-                    "model_cfg",
-                    "run_nml",
-                ),
-            ),
-        ),
-    ] = False  # lprep_adv in fortran
     diffuse_before_time_loop: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
@@ -288,9 +252,9 @@ class DriverConfig:
         backend_cfg.BackendConfig | None,
         common_conf_opt.ConfigOption(
             description=(
-                "Configuration of the external DaCe workspace. `None` falls back "
-                "to the 'ICON4PY_BACKEND_WORKSPACE_<SIZE|ALIGNMENT>' environment "
-                "variables, if set, otherwise the workspace is disabled."
+                "Backend configuration options, which affect performance but not "
+                "the scientific outcome. `None` falls back to environment variables, "
+                "if set, otherwise the default configuration is used."
             ),
             icon_equivalent=None,
         ),
@@ -342,14 +306,14 @@ class DriverConfig:
         )
 
 
-@dataclasses.dataclass(frozen=True)
-class ExperimentConfig:
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class ExperimentConfig(config_io.ConfigWithShared):
     geometry: GeometryConfig
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
-    topography: topography.TopographyConfig
-    initial_condition: initial_condition.InitialConditionConfig
+    initial_condition: initial_condition.IC_CONFIG
+    topography: topography.TOPO_CONFIG
     prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
@@ -363,7 +327,7 @@ class ExperimentConfig:
         # The file-based initial condition needs the clock of the driver to know which
         # savepoint to read: the initial state, or the state of a later time step when
         # restarting. 'with_overrides' rebuilds the config, so the two stay in sync.
-        initial_condition_config = self.initial_condition.config
+        initial_condition_config = self.initial_condition
         if isinstance(initial_condition_config, from_file.FromFileConfig):
             initial_condition_config.start_of_simulation = self.driver.start_of_simulation
             initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
@@ -412,18 +376,16 @@ def read_experiment_config_from_fortran(
 
     vertical_grid_cfg = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
 
-    topography_cfg = topography.TopographyConfig.from_fortran_dict(
+    topography_cfg = topography.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
 
     nonhydro_cfg = solve_nh.NonHydrostaticConfig.from_fortran_dict(
         atm_dict,
-        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
     )
 
     diffusion_cfg = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,
-        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
     )
 
     do_tracer_advection = not (
@@ -476,7 +438,7 @@ def read_experiment_config_from_fortran(
 
     # the file-based initial condition needs the clock of the driver to know which
     # savepoint to read: the initial state, or a later one when restarting
-    initial_condition_cfg = initial_condition.InitialConditionConfig.from_fortran_dict(
+    initial_condition_cfg = initial_condition.from_fortran_dict(
         atm_dict=atm_dict,
         input_dict=input_dict,
         data_path=config_file_path,
@@ -485,13 +447,8 @@ def read_experiment_config_from_fortran(
         dtime=driver_cfg.dtime,
     )
 
-    if not do_tracer_advection and isinstance(
-        initial_condition_cfg.config, from_file.FromFileConfig
-    ):
-        initial_condition_cfg = dataclasses.replace(
-            initial_condition_cfg,
-            config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
-        )
+    if not do_tracer_advection and isinstance(initial_condition_cfg, from_file.FromFileConfig):
+        initial_condition_cfg = dataclasses.replace(initial_condition_cfg, ntracer=0)
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
@@ -500,13 +457,13 @@ def read_experiment_config_from_fortran(
         metrics=metrics_cfg,
         interpolation=interpolation_cfg,
         vertical_grid=vertical_grid_cfg,
-        topography=topography_cfg,
         nonhydrostatic=nonhydro_cfg,
         diffusion=diffusion_cfg,
         tracer_config=tracer_cfg,
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         muphys=muphys_cfg,
+        topography=topography_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
             atm_dict=atm_dict, data_path=config_file_path

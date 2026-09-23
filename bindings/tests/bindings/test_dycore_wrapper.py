@@ -205,7 +205,7 @@ def solve_nh_init(
         extra_diffu=cfg.extra_diffu,
         rhotheta_offctr=cfg.rhotheta_offctr,
         veladv_offctr=cfg.veladv_offctr,
-        nudge_max_coeff=cfg.max_nudging_coefficient,
+        nudge_max_coeff=experiment.config.interpolation.max_nudging_coefficient,
         divdamp_fac=cfg.fourth_order_divdamp_factor,
         divdamp_fac2=cfg.fourth_order_divdamp_factor2,
         divdamp_fac3=cfg.fourth_order_divdamp_factor3,
@@ -269,7 +269,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
 
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
 
     # metric state parameters
     mask_prog_halo_c = test_utils.array_to_array_info(metrics_savepoint.mask_prog_halo_c().ndarray)
@@ -535,7 +535,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     )
     expected_second_order_divdamp_factor = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
-    expected_lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    expected_prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
     expected_at_first_substep = substep_init == 1
     expected_at_last_substep = substep_init == ndyn_substeps
 
@@ -610,7 +610,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
             extra_diffu=cfg.extra_diffu,
             rhotheta_offctr=cfg.rhotheta_offctr,
             veladv_offctr=cfg.veladv_offctr,
-            nudge_max_coeff=cfg.max_nudging_coefficient,
+            nudge_max_coeff=experiment.config.interpolation.max_nudging_coefficient,
             divdamp_fac=cfg.fourth_order_divdamp_factor,
             divdamp_fac2=cfg.fourth_order_divdamp_factor2,
             divdamp_fac3=cfg.fourth_order_divdamp_factor3,
@@ -716,7 +716,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
             vn_traj=vn_traj,
             dtime=dtime,
             max_vcfl_size1_array=max_vcfl_size1_array,
-            lprep_adv=lprep_adv,
+            lprep_adv=prepare_fluxes_for_advection,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
             ndyn_substeps_var=ndyn_substeps,
@@ -752,7 +752,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         assert result, f"dtime comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
-            captured_kwargs["lprep_adv"], expected_lprep_adv
+            captured_kwargs["prepare_fluxes_for_advection"], expected_prepare_fluxes_for_advection
         )
         assert result, f"Prep Advection flag comparison failed: {error_message}"
 
@@ -810,7 +810,7 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
 
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
 
     # solve nh run parameters
     second_order_divdamp_factor = sp.divdamp_fac_o2()  # This is a scalar, don't convert
@@ -913,7 +913,7 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
         vol_flx_ic=vol_flx_ic,
         dtime=dtime,
         max_vcfl_size1_array=max_vcfl_size1_array,
-        lprep_adv=lprep_adv,
+        lprep_adv=prepare_fluxes_for_advection,
         at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=second_order_divdamp_factor,  # This is a scalar
         ndyn_substeps_var=ndyn_substeps,
@@ -992,7 +992,7 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
 
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
 
     # solve nh run parameters
     linit = sp.get_metadata("linit").get("linit")
@@ -1104,7 +1104,7 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
             vol_flx_ic=vol_flx_ic,
             dtime=dtime,
             max_vcfl_size1_array=max_vcfl_size1_array,
-            lprep_adv=lprep_adv,
+            lprep_adv=prepare_fluxes_for_advection,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
             ndyn_substeps_var=ndyn_substeps,

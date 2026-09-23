@@ -33,7 +33,7 @@ class DiagnosticState:
     #: air pressure [Pa] at cell center and full levels, originally defined as pres in ICON
     pressure: fa.CellKField[ta.wpfloat]
     #: air pressure [Pa] at cell center and half levels, originally defined as pres_ifc and pres_sfc for surface pressure in ICON.
-    pressure_ifc: fa.CellKField[ta.wpfloat]
+    pressure_ifc: fa.CellKHalfField[ta.wpfloat]
     #: air temperature [K] at cell center, originally defined as temp in ICON
     temperature: fa.CellKField[ta.wpfloat]
     #: air virtual temperature [K] at cell center, originally defined as tempv in ICON
@@ -72,8 +72,7 @@ def initialize_diagnostic_state(
     pressure_ifc = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )

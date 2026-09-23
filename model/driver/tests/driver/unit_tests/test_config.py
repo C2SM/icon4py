@@ -38,29 +38,6 @@ def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
     return atm_dict, master_dict
 
 
-@pytest.mark.parametrize(
-    ("duration", "expected_seconds"),
-    [
-        ("PT300S", 300.0),
-        ("PT1H", 3600.0),
-        ("PT10M", 600.0),
-        ("PT1H30M", 5400.0),
-        ("P1DT6H", 108000.0),
-        ("PT0.5S", 0.5),
-    ],
-)
-def test_relativetime_from_iso8601_valid(duration: str, expected_seconds: float) -> None:
-    assert driver_config.relativetime_from_iso8601(duration) == datetime.timedelta(
-        seconds=expected_seconds
-    )
-
-
-@pytest.mark.parametrize("duration", ["", "P", "PT", "P1Y", "P1M", "300", "PT300", "P1DT", "P1WT"])
-def test_relativetime_from_iso8601_invalid(duration: str) -> None:
-    with pytest.raises(ValueError, match="Invalid ISO 8601 duration"):
-        driver_config.relativetime_from_iso8601(duration)
-
-
 def test_modeltimestep_takes_priority_over_dtime() -> None:
     # trailing whitespace mimics the fixed-width Fortran string
     atm_dict, master_dict = _make_dicts(
@@ -78,19 +55,6 @@ def test_empty_modeltimestep_falls_back_to_dtime() -> None:
         atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
     )
     assert config.dtime == datetime.timedelta(seconds=120)
-
-
-# ltransport is true for MCH_CH_R04B09, EXCLAIM_APE_AES and Weisman-Klemp, false for
-# the dry testcases (JW, GAUSS3D).
-@pytest.mark.parametrize("ltransport", [True, False])
-def test_do_prep_adv_from_ltransport(ltransport: bool) -> None:
-    atm_dict, master_dict = _make_dicts(
-        {"dtime": 10.0, "modeltimestep": "  ", "ltransport": ltransport}
-    )
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
-    assert config.do_prep_adv is ltransport
 
 
 # The extra diffusion call before the time loop is only made for real data runs, which
@@ -180,16 +144,14 @@ def test_io_roundtrip_cls_cls() -> None:
             vertical_grid:
                 num_levels: 10
             topography:
-                config:
-                    type: jablonowski_williamson
+                type: jablonowski_williamson
             initial_condition:
-                config:
-                    type: jablonowski_williamson
+                type: jablonowski_williamson
             prescribed_tendencies: {}
             driver:
                 experiment_name: foo
                 profiling_options:
-                dtime: 10
+                dtime: 10 seconds
                 start_of_simulation: 2020-01-01T00:00:00
                 start_of_timestepping: 2020-01-01T00:00:00
                 end_of_simulation:

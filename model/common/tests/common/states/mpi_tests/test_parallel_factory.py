@@ -14,11 +14,7 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
-from icon4py.model.common.decomposition import (
-    decomposer as decomp,
-    definitions as decomp_defs,
-    mpi_decomposition,
-)
+from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -31,10 +27,6 @@ from ..unit_tests.test_factory import SimpleFieldSource
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
 @gtx.field_operator
