@@ -307,10 +307,8 @@ def extrapolate_quadratically_to_top_on_cells(
     """
     Extrapolate quadratically to the top half level from the first three full levels.
 
-    ``weights`` holds three coefficient rows aligned to the levels they multiply: the row
-    at absolute K index ``j`` is the weight of full level ``j``, so the field is defined
-    on ``KDim in [0, 3)``. Only valid at half level 0, where the half-level
-    shifts stay inside that range.
+    ``weights`` holds three coefficient rows aligned to the levels they multiply.
+    Only valid at half level 0, where the half-level shifts stay inside that range.
     """
     return (
         weights(dims.KHalfDim + 0.5) * interpolant(dims.KHalfDim + 0.5)
@@ -340,10 +338,8 @@ def extrapolate_quadratically_to_surface_on_cells(
     """
     Extrapolate quadratically to the surface half level from the last three full levels.
 
-    ``weights`` holds three coefficient rows aligned to the levels they multiply: the row
-    at absolute K index ``j`` is the weight of full level ``j``, so the field is defined
-    on ``KDim in [nlev - 3, nlev)``. Only valid at half level nlev, where the half-level
-    shifts stay inside that range.
+    ``weights`` holds three coefficient rows aligned to the levels they multiply.
+    Only valid at half level nlev, where the half-level shifts stay inside that range.
     """
     return (
         weights(dims.KHalfDim - 0.5) * interpolant(dims.KHalfDim - 0.5)

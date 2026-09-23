@@ -196,13 +196,6 @@ class Diagnostics:
     ) -> None:
         """Bind the diagnostics step programs (``Compute_diagnostics`` l. 343-482 in
         mo_vdf_atmo.f90)."""
-        # ---------------------------------------------------------------------
-        # In the Fortran call order of Compute_diagnostics
-        # (mo_vdf_atmo.f90 l. 343-482). One program per halo-exchange interval
-        # and horizontal dimension.
-        # ---------------------------------------------------------------------
-        # compute_static_energy, get_virtual_potential_temperature,
-        # vert_intp_full2half_cell_3d (rho -> rho_ic) and brunt_vaisala_freq
         self.compute_thermodynamic_diagnostics = setup_program(
             backend=backend,
             program=diag_stencils.compute_thermodynamic_diagnostics,
@@ -230,8 +223,6 @@ class Diagnostics:
             },
             offset_provider={},
         )
-        # compute_normal_velocity_edge: edges rl grf_bdywidth_e+1..min_rledge_int,
-        # all full levels
         self.interpolate_cell_vector_to_edge_normal = setup_program(
             backend=backend,
             program=interpolate_cell_vector_to_edge_normal,
@@ -250,8 +241,6 @@ class Diagnostics:
             },
             offset_provider=self._grid.connectivities,
         )
-        # cells2verts_scalar (w -> w_vert) and rbf_vec_interpol_vertex
-        # (vn -> u_vert, v_vert), the three fields synced afterwards
         self.interpolate_wind_to_vertices = setup_program(
             backend=backend,
             program=diag_stencils.interpolate_wind_to_vertices,
@@ -272,13 +261,6 @@ class Diagnostics:
             },
             offset_provider=self._grid.connectivities,
         )
-        # cells2edges_scalar (w -> w_ie),
-        # interpolate_normal_velocity_edge_interface (vn -> vn_ie),
-        # rbf_vec_interpol_edge (vn_ie -> vt_ie),
-        # compute_velocity_gradient_tensor + compute_shear,
-        # get_horizontal_divergence_strain_rate_cell (div_of_stress -> div_c),
-        # interpolate_rate_of_strain_full2half_edge2cell (shear -> mech_prod) and
-        # Smagorinsky_model / Assign_constant_eddy_viscosity (-> km_ic, kh_ic)
         self.compute_shear_and_viscosity_diagnostics = setup_program(
             backend=backend,
             program=diag_stencils.compute_shear_and_viscosity_diagnostics,
@@ -331,10 +313,6 @@ class Diagnostics:
             },
             offset_provider=self._grid.connectivities,
         )
-        # the km/kh loops that follow the kh_ic/km_ic exchange
-        # ('interpolate_eddy_viscosity2cell' / '2vertex' / '2edge' in
-        # mo_vdf_atmo.f90): one program, three entities. Halo rows are computed
-        # on purpose, they are read by the diffusion later.
         self.interpolate_km = setup_program(
             backend=backend,
             program=diag_stencils.interpolate_km,
@@ -344,13 +322,10 @@ class Diagnostics:
                 "km_min": self._km_min,
             },
             horizontal_sizes={
-                # cells rl 4..min_rlcell_int-1
                 "cell_start": self._cell_start_lateral_boundary_level_4,
                 "cell_end": self._cell_end_halo,
-                # vertices rl 5..min_rlvert_int-1
                 "vertex_start": self._vertex_start_nudging,
                 "vertex_end": self._vertex_end_halo,
-                # edges rl grf_bdywidth_e..min_rledge_int-1
                 "edge_start": self._edge_start_nudging,
                 "edge_end": self._edge_end_halo,
             },
@@ -376,7 +351,6 @@ class Diagnostics:
         """
         log.debug("tmx diagnostics (Compute_diagnostics): start")
 
-        # overlaps with the thermodynamic diagnostics, which read neither u nor v
         log.debug("communication of input u, v (cells): start")
         u_v_exchange = self._exchange.start(dims.CellDim, input_state.u, input_state.v)
 
