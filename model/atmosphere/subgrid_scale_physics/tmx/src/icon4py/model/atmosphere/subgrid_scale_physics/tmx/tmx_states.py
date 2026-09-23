@@ -83,6 +83,41 @@ class TmxInterpolationState:
 
 
 @dataclasses.dataclass(frozen=True)
+class TmxSurfaceFluxState:
+    """Surface fluxes provided by the surface scheme (inputs to the atmospheric diffusion)."""
+
+    evapotranspiration: fa.CellField[ta.wpfloat]
+    """Surface evapotranspiration flux (``evspsbl``) [kg/(m^2 s)]."""
+    sensible_heat_flux: fa.CellField[ta.wpfloat]
+    """Surface sensible heat flux (``hfss``) [W/m^2]."""
+    u_stress: fa.CellField[ta.wpfloat]
+    """Zonal surface wind stress (``tauu``) [N/m^2]."""
+    v_stress: fa.CellField[ta.wpfloat]
+    """Meridional surface wind stress (``tauv``) [N/m^2]."""
+    q_snocpymlt: fa.CellField[ta.wpfloat]
+    """Heating used to melt snow on the canopy [W/m^2]."""
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
+    ) -> TmxSurfaceFluxState:
+        """Allocate a surface flux state with all fields initialized to zero."""
+
+        def surface(horizontal_dim: gtx.Dimension) -> gtx.Field:
+            return data_alloc.zero_field(
+                grid, horizontal_dim, dtype=ta.wpfloat, allocator=allocator
+            )
+
+        return cls(
+            evapotranspiration=surface(dims.CellDim),
+            sensible_heat_flux=surface(dims.CellDim),
+            u_stress=surface(dims.CellDim),
+            v_stress=surface(dims.CellDim),
+            q_snocpymlt=surface(dims.CellDim),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
 class TmxInputState:
     """Atmospheric input fields of tmx (``t_vdf_atmo_inputs`` in mo_vdf_atmo_memory.f90)."""
 
@@ -98,8 +133,22 @@ class TmxInputState:
     """Meridional wind (``va``) on full levels [m/s]."""
     w: fa.CellKHalfField[ta.wpfloat]
     """Vertical wind (``wa``) on half levels [m/s]."""
+    qv: fa.CellKField[ta.wpfloat]
+    """Specific humidity on full levels [kg/kg]."""
+    qc: fa.CellKField[ta.wpfloat]
+    """Cloud water mixing ratio on full levels [kg/kg]."""
+    qi: fa.CellKField[ta.wpfloat]
+    """Cloud ice mixing ratio on full levels [kg/kg]."""
+    qr: fa.CellKField[ta.wpfloat]
+    """Rain mixing ratio on full levels [kg/kg]."""
+    qs: fa.CellKField[ta.wpfloat]
+    """Snow mixing ratio on full levels [kg/kg]."""
+    qg: fa.CellKField[ta.wpfloat]
+    """Graupel mixing ratio on full levels [kg/kg]."""
     rho: fa.CellKField[ta.wpfloat]
     """Air density on full levels [kg/m^3]."""
+    air_mass: fa.CellKField[ta.wpfloat]
+    """Air mass per unit area (``mair``) on full levels [kg/m^2]."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -182,4 +231,62 @@ class TmxDiagnosticState:
             v_vert=zero_field(dims.VertexDim, dims.KDim),
             w_vert=zero_field(dims.VertexDim, dims.KHalfDim),
             km_iv=zero_field(dims.VertexDim, dims.KHalfDim),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class TmxNewState:
+    """Fields updated by the tmx diffusion: ``new = state + tend * dtime``."""
+
+    temperature: fa.CellKField[ta.wpfloat]
+    """Updated air temperature on full levels [K]."""
+    qv: fa.CellKField[ta.wpfloat]
+    """Updated specific humidity on full levels [kg/kg]."""
+    qc: fa.CellKField[ta.wpfloat]
+    """Updated cloud water mixing ratio on full levels [kg/kg]."""
+    qi: fa.CellKField[ta.wpfloat]
+    """Updated cloud ice mixing ratio on full levels [kg/kg]."""
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
+    ) -> TmxNewState:
+        """Allocate a new state with all fields initialized to zero."""
+        zero_field = functools.partial(
+            data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
+        )
+        return cls(
+            temperature=zero_field(dims.CellDim, dims.KDim),
+            qv=zero_field(dims.CellDim, dims.KDim),
+            qc=zero_field(dims.CellDim, dims.KDim),
+            qi=zero_field(dims.CellDim, dims.KDim),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class TmxTendencyState:
+    """Tendencies computed by tmx."""
+
+    tend_temperature: fa.CellKField[ta.wpfloat]
+    """Air temperature tendency on full levels [K/s]."""
+    tend_qv: fa.CellKField[ta.wpfloat]
+    """Specific humidity tendency on full levels [kg/(kg s)]."""
+    tend_qc: fa.CellKField[ta.wpfloat]
+    """Cloud water mixing ratio tendency on full levels [kg/(kg s)]."""
+    tend_qi: fa.CellKField[ta.wpfloat]
+    """Cloud ice mixing ratio tendency on full levels [kg/(kg s)]."""
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
+    ) -> TmxTendencyState:
+        """Allocate a tendency state with all fields initialized to zero."""
+        zero_field = functools.partial(
+            data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
+        )
+        return cls(
+            tend_temperature=zero_field(dims.CellDim, dims.KDim),
+            tend_qv=zero_field(dims.CellDim, dims.KDim),
+            tend_qc=zero_field(dims.CellDim, dims.KDim),
+            tend_qi=zero_field(dims.CellDim, dims.KDim),
         )
