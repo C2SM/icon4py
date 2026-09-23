@@ -15,6 +15,7 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
+    _compute_tangential_wind_on_half_levels,
     compute_tangential_wind,
 )
 from icon4py.model.testing import reference_funcs, stencil_tests
@@ -49,10 +50,10 @@ def tangential_wind_reference(
 def tangential_wind_input_data(
     data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid, on_half_levels: bool
 ) -> dict[str, Any]:
-    extend = {dims.KDim: 1} if on_half_levels else {}
-    vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, extend=extend, dtype=ta.wpfloat)
+    vertical_dim = dims.KHalfDim if on_half_levels else dims.KDim
+    vn = data_alloc.random_field(dims.EdgeDim, vertical_dim, dtype=ta.wpfloat)
     rbf_vec_coeff_e = data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim, dtype=ta.wpfloat)
-    vt = data_alloc.zero_field(dims.EdgeDim, dims.KDim, extend=extend, dtype=ta.wpfloat)
+    vt = data_alloc.zero_field(dims.EdgeDim, vertical_dim, dtype=ta.wpfloat)
 
     edge_domain = h_grid.domain(dims.EdgeDim)
     horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
@@ -72,24 +73,51 @@ def tangential_wind_input_data(
     )
 
 
-class TestComputeTangentialWindWpHalfLevels(stencil_tests.StencilTest):
+class TestComputeTangentialWindOnHalfLevels(stencil_tests.StencilTest):
     """Half-level input (nlev + 1 rows)."""
 
-    PROGRAM = compute_tangential_wind
-    OUTPUTS = ("vt",)
+    PROGRAM = _compute_tangential_wind_on_half_levels
+    OUTPUTS = ("out",)
 
     @stencil_tests.static_reference
-    def reference(grid: base.Grid, **kwargs: Any) -> dict:
-        return tangential_wind_reference(grid, **kwargs)
+    def reference(
+        grid: base.Grid,
+        *,
+        vn_ie: np.ndarray,
+        rbf_vec_coeff_e: np.ndarray,
+        domain: dict[gtx.Dimension, tuple[int, int]],
+        **kwargs: Any,
+    ) -> dict:
+        (horizontal_start, horizontal_end) = domain[dims.EdgeDim]
+        (vertical_start, vertical_end) = domain[dims.KHalfDim]
+        vt = tangential_wind_reference(
+            grid,
+            vn=vn_ie,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=vertical_start,
+            vertical_end=vertical_end,
+        )["vt"]
+        return dict(out=vt)
 
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, Any]:
-        return tangential_wind_input_data(data_alloc, grid, on_half_levels=True)
+        data = tangential_wind_input_data(data_alloc, grid, on_half_levels=True)
+        return dict(
+            vn_ie=data["vn"],
+            rbf_vec_coeff_e=data["rbf_vec_coeff_e"],
+            domain={
+                dims.EdgeDim: (data["horizontal_start"], data["horizontal_end"]),
+                dims.KHalfDim: (data["vertical_start"], data["vertical_end"]),
+            },
+            out=data["vt"],
+        )
 
 
-class TestComputeTangentialWindWpFullLevels(stencil_tests.StencilTest):
+class TestComputeTangentialWindFullLevels(stencil_tests.StencilTest):
     """Full-level input (nlev rows)."""
 
     PROGRAM = compute_tangential_wind

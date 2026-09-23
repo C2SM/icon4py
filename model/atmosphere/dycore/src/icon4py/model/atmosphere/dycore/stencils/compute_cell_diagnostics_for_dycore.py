@@ -101,22 +101,22 @@ def _compute_perturbed_quantities_and_interpolation(
         reference_theta_at_cells_on_model_levels,
     )
 
-    rho_at_cells_on_half_levels = _interpolate_cell_field_to_half_levels_wp(wgtfac_c, current_rho)
+    rho_at_cells_on_half_levels = _interpolate_cell_field_to_half_levels_wp(current_rho, wgtfac_c)
 
     perturbed_theta_v_at_cells_on_half_levels = (
         _interpolate_cell_field_to_half_levels_with_surface_value_vp(
-            wgtfac_c=wgtfac_c,
             interpolant=perturbed_theta_v_at_cells_on_model_levels,
+            wgtfac_c=wgtfac_c,
             surface_value=_extrapolate_quadratically_to_surface(
-                wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
+                interpolant=perturbed_theta_v_at_cells_on_model_levels, wgtfacq_c=wgtfacq_c
             ),
             surface_level=surface_level,
         )
     )
 
     theta_v_at_cells_on_half_levels = _interpolate_cell_field_to_half_levels_with_surface_value_wp(
-        wgtfac_c=astype(wgtfac_c, wpfloat),
         interpolant=current_theta_v,
+        wgtfac_c=astype(wgtfac_c, wpfloat),
         surface_value=reference_theta_at_cells_on_half_levels
         + perturbed_theta_v_at_cells_on_half_levels,
         surface_level=surface_level,
@@ -134,10 +134,10 @@ def _compute_perturbed_quantities_and_interpolation(
     if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
         exner_at_cells_on_half_levels = (
             _interpolate_cell_field_to_half_levels_with_surface_value_vp(
-                wgtfac_c=wgtfac_c,
                 interpolant=temporal_extrapolation_of_perturbed_exner,
+                wgtfac_c=wgtfac_c,
                 surface_value=_extrapolate_quadratically_to_surface(
-                    wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
+                    interpolant=temporal_extrapolation_of_perturbed_exner, wgtfacq_c=wgtfacq_c
                 ),
                 surface_level=surface_level,
             )

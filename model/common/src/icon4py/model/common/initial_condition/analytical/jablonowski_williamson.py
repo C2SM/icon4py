@@ -29,7 +29,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.interpolation import interpolation_attributes
-from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
+from icon4py.model.common.interpolation.stencils import interpolate_cell_field_to_edge
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.physics.thermodynamics import compute_pressure
 from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
@@ -223,7 +223,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         )
     log.info("Newton iteration completed.")
 
-    cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
+    interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(backend)(
         in_field=eta_v,
         coeff=c_lin_e,
         out_field=eta_v_at_edge,

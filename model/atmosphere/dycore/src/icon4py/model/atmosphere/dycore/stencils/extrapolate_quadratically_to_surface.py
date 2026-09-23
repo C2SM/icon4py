@@ -13,8 +13,8 @@ from icon4py.model.common.type_alias import vpfloat
 
 @gtx.field_operator
 def _extrapolate_quadratically_to_surface(
-    wgtfacq_c: fa.CellKField[vpfloat],
     interpolant: fa.CellKField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
 ) -> fa.CellKHalfField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_04."""
     extrapolate_quadratically_to_surface = (
@@ -27,8 +27,8 @@ def _extrapolate_quadratically_to_surface(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def extrapolate_quadratically_to_surface(
-    wgtfacq_c: fa.CellKField[vpfloat],
     interpolant: fa.CellKField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
     interpolation_to_surface: fa.CellKHalfField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -36,8 +36,8 @@ def extrapolate_quadratically_to_surface(
     vertical_end: gtx.int32,
 ) -> None:
     _extrapolate_quadratically_to_surface(
-        wgtfacq_c=wgtfacq_c,
         interpolant=interpolant,
+        wgtfacq_c=wgtfacq_c,
         out=interpolation_to_surface,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

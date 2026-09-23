@@ -13,8 +13,15 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.utils import fortran_config
 from icon4py.model.testing import datatest_utils as dt_utils, definitions
 from icon4py.model.testing.fixtures.datatest import (
+    backend,
+    data_provider,
     download_ser_data,
+    experiment,
     experiment_description,
+    grid_savepoint,
+    icon_grid,
+    interpolation_savepoint,
+    metrics_savepoint,
     process_props,
 )
 
