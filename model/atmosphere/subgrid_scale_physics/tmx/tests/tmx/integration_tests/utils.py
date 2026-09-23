@@ -32,9 +32,6 @@ if TYPE_CHECKING:
 # so the verification tests parametrize over the subsequent steps only.
 TMX_DATES: tuple[str, ...] = ("2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000")
 
-# 'dt_vdf' of the archive's aes_phy_config [s].
-TMX_DTIME: float = 300.0
-
 # Relative tolerance of all tmx integration datatests.
 RTOL: float = 3.0e-12
 

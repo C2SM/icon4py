@@ -30,7 +30,6 @@ from ..fixtures import *  # noqa: F403
 from .utils import (
     RTOL,
     TMX_DATES,
-    TMX_DTIME,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -115,6 +114,7 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
     backend: gtx_typing.Backend | None,
     date: str,
     tmx_config: TmxConfig,
+    tmx_dtime: float,
 ) -> None:
     setup = _setup(
         data_provider=data_provider,
@@ -134,7 +134,7 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
         diagnostic_state=setup.diagnostic_state,
         tendency_state=setup.tendency_state,
         new_state=setup.new_state,
-        dtime=TMX_DTIME,
+        dtime=tmx_dtime,
     )
 
     fields = (
@@ -166,6 +166,7 @@ def test_tmx_run_temperature_diffusion_single_step(
     backend: gtx_typing.Backend | None,
     date: str,
     tmx_config: TmxConfig,
+    tmx_dtime: float,
 ) -> None:
     setup = _setup(
         data_provider=data_provider,
@@ -192,7 +193,7 @@ def test_tmx_run_temperature_diffusion_single_step(
         diagnostic_state=setup.diagnostic_state,
         tendency_state=setup.tendency_state,
         new_state=new_state,
-        dtime=TMX_DTIME,
+        dtime=tmx_dtime,
     )
 
     fields = (
