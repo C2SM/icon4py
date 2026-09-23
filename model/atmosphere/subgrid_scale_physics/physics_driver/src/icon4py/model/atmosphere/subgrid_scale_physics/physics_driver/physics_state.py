@@ -120,7 +120,7 @@ class EntryState:
             grid, dims.CellDim, dims.KDim, allocator=backend
         )
 
-        # Pointers into the model state — bound by every diagnose call
+        # Pointers into the model state — bound by every compute_diagnostics call
         self.exner: gtx.Field | None = None
         self.theta_v: gtx.Field | None = None
         self.rho: gtx.Field | None = None
@@ -128,12 +128,12 @@ class EntryState:
         self.w: gtx.Field | None = None
         self.tracers: tracer_states.TracerState | None = None
 
-    def diagnose(
+    def compute_diagnostics(
         self,
         prognostic: prognostics.PrognosticState,
         tracers: tracer_states.TracerState,
     ) -> None:
-        """Bind the model-state pointers and diagnose the physics fields (dyn2phy).
+        """Bind the model-state pointers and compute_diagnostics the physics fields (dyn2phy).
 
         After this call the facade is complete: every model-state field the physics
         may touch is reachable as ``entry_state.<name>`` — the raw PrognosticState
@@ -189,58 +189,20 @@ class EntryState:
         )
 
 
-class TendencyAccumulators:
-    """Per-variable tendency sums over the processes of one timestep.
+class Tendencies:
+    """The tendency sums of one timestep, and their single application to the state.
 
-    Buffers are keyed by output name (``tend_*``) and allocated lazily on first
-    contribution. Only outputs whose metadata carries ``kind`` ``TENDENCY``
-    accumulate; the rest are diagnostics, written by the components directly into
-    the buffers of the ``DiagnosticsStore``.
-    """
+    One timestep is ``zero``, then ``accumulate`` once per process, then ``apply``.
 
-    def __init__(self, *, backend: gtx_typing.Backend | None = None) -> None:
-        self._backend = backend
-        self._acc: dict[str, gtx.Field] = {}
+    Sums are keyed by output name (``tend_*``) and their buffers allocated lazily
+    on first contribution. Only outputs whose metadata carries ``kind``
+    ``TENDENCY`` accumulate; the rest are diagnostics, written by the components
+    directly into the buffers of the ``DiagnosticsStore``.
 
-    @property
-    def acc(self) -> Mapping[str, gtx.Field]:
-        """The tendencies accumulated so far this step, keyed by output name."""
-        return self._acc
-
-    def zero(self) -> None:
-        """Reset all accumulators; called by the driver at the start of every run."""
-        for buffer in self._acc.values():
-            buffer.ndarray[...] = 0.0  # type: ignore[index] # NDArrayObject Protocol doesn't support this
-
-    def accumulate(self, outputs: dict, outputs_properties: dict[str, model.FieldMetaData]) -> None:
-        """Add a process's tendency outputs to the per-variable sums.
-
-        Element-wise sum with no neighbor access, so a plain array operation on
-        the field buffers rather than a stencil. A process that did not run this
-        step has no outputs and contributes nothing.
-        """
-        if not outputs:
-            return
-        for name, props in outputs_properties.items():
-            if props.kind != model.FieldKind.TENDENCY:
-                continue
-            field = outputs[name]
-            if (buffer := self._acc.get(name)) is None:
-                buffer = self._acc[name] = gtx.zeros(
-                    field.domain, dtype=field.dtype, allocator=self._backend
-                )
-            buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
-
-
-class ApplyToPrognostic:
-    """The single application of the accumulated tendencies to the model state.
-
-    Runs once per timestep. The order matters: the tracers are updated first,
-    because the exner/theta_v update uses the final moisture, then the
-    temperature, then the winds.
-
-    Which tendencies exist depends on which processes are enabled, so a tendency
-    that no enabled process produced is simply not applied.
+    In ``apply`` the order matters: the tracers are updated first, because the
+    exner/theta_v update uses the final moisture, then the temperature, then the
+    winds. Which tendencies exist depends on which processes ran, so a tendency
+    that nothing produced is simply not applied.
     """
 
     def __init__(
@@ -325,19 +287,43 @@ class ApplyToPrognostic:
         self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._ddt_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
-    def __call__(
-        self,
-        entry_state: EntryState,
-        acc: Mapping[str, gtx.Field],
-        dt_seconds: float,
-    ) -> None:
-        """Write the accumulated tendencies to the model state — through the facade's pointers.
+        self._backend = backend
+        self._acc: dict[str, gtx.Field] = {}
 
-        Takes the summed tendencies themselves, not the object that summed them,
-        so the application depends on nothing but a mapping of fields by name.
+    @property
+    def acc(self) -> Mapping[str, gtx.Field]:
+        """The tendencies accumulated so far this step, keyed by output name."""
+        return self._acc
+
+    def zero(self) -> None:
+        """Reset all sums; called by the driver at the start of every run."""
+        for buffer in self._acc.values():
+            buffer.ndarray[...] = 0.0  # type: ignore[index] # NDArrayObject Protocol doesn't support this
+
+    def accumulate(self, outputs: dict, outputs_properties: dict[str, model.FieldMetaData]) -> None:
+        """Add a process's tendency outputs to the per-variable sums.
+
+        Element-wise sum with no neighbor access, so a plain array operation on
+        the field buffers rather than a stencil. A process that did not run this
+        step has no outputs and contributes nothing.
         """
+        if not outputs:
+            return
+        for name, props in outputs_properties.items():
+            if props.kind != model.FieldKind.TENDENCY:
+                continue
+            field = outputs[name]
+            if (buffer := self._acc.get(name)) is None:
+                buffer = self._acc[name] = gtx.zeros(
+                    field.domain, dtype=field.dtype, allocator=self._backend
+                )
+            buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
+
+    def apply(self, entry_state: EntryState, dt_seconds: float) -> None:
+        """Write the accumulated tendencies to the model state — through the facade's pointers."""
+        acc = self._acc
         tracers = entry_state.tracers
-        assert tracers is not None, "diagnose must run before apply"
+        assert tracers is not None, "compute_diagnostics must run before apply"
 
         # 1. Tracers: q += dt * sum of tendencies (mo_interface_iconam_aes:513)
         for name in MOISTURE_SPECIES:

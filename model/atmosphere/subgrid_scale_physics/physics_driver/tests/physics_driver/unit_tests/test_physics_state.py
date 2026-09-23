@@ -125,7 +125,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     exner_before = prognostic.exner.asnumpy().copy()
     vn_before = prognostic.vn.asnumpy().copy()
 
-    ws.diagnose(prognostic, tracers)
+    ws.compute_diagnostics(prognostic, tracers)
 
     # wiring smoke test: physically plausible diagnostics
     assert 200.0 < ws.diagnostics.temperature.asnumpy().mean() < 320.0
@@ -149,13 +149,13 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 
 
 # ---------------------------------------------------------------------------
-# TendencyAccumulators
+# Accumulating the tendencies
 # ---------------------------------------------------------------------------
 
 
 def test_accumulate_sums_tendencies_and_skips_diagnostics():
     grid = simple.simple_grid()
-    acc = physics_state.TendencyAccumulators()
+    acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY), "km": _meta()}
     out = {
         "tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim),
@@ -172,7 +172,7 @@ def test_accumulate_sums_tendencies_and_skips_diagnostics():
 
 def test_zero_resets_between_steps():
     grid = simple.simple_grid()
-    acc = physics_state.TendencyAccumulators()
+    acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY)}
     out = {"tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
@@ -185,11 +185,11 @@ def test_zero_resets_between_steps():
 
 
 # ---------------------------------------------------------------------------
-# ApplyToPrognostic
+# Applying the tendencies
 # ---------------------------------------------------------------------------
 
 
-def _apply_to_prognostic(grid) -> physics_state.ApplyToPrognostic:
+def _tendencies(grid) -> physics_state.Tendencies:
     # neutral geometry: primal_normal_x = 1, primal_normal_y = 0, c_lin_e = 0.5
     # => two-neighbor projection of a uniform u-tendency is the identity
     geometry = _StubFieldSource(
@@ -209,14 +209,14 @@ def _apply_to_prognostic(grid) -> physics_state.ApplyToPrognostic:
             ),
         }
     )
-    return physics_state.ApplyToPrognostic(
+    return physics_state.Tendencies(
         grid=grid, geometry=geometry, interpolation=interpolation, backend=None
     )
 
 
-def _accumulated(grid, **tendencies) -> physics_state.TendencyAccumulators:
-    """Accumulators pre-filled with the given constant tendencies (single process)."""
-    acc = physics_state.TendencyAccumulators()
+def _accumulated(grid, **tendencies) -> physics_state.Tendencies:
+    """Tendencies pre-filled with the given constant tendencies (single process)."""
+    acc = _tendencies(grid)
     props = {name: _meta(kind=_TENDENCY) for name in tendencies}
     acc.zero()
     acc.accumulate(tendencies, props)
@@ -226,10 +226,9 @@ def _accumulated(grid, **tendencies) -> physics_state.TendencyAccumulators:
 def test_apply_updates_tracers_w_and_thermodynamics_once():
     grid = simple.simple_grid()
     ws = _entry_state(grid)
-    apply_once = _apply_to_prognostic(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
-    ws.diagnose(prognostic, tracers)
+    ws.compute_diagnostics(prognostic, tracers)
     exner_before = prognostic.exner.asnumpy().copy()
     theta_v_before = prognostic.theta_v.asnumpy().copy()
 
@@ -245,7 +244,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
         tend_w=tend_w,
     )
 
-    apply_once(ws, acc.acc, dt_seconds=dt)
+    acc.apply(ws, dt_seconds=dt)
 
     np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)
     np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
@@ -261,10 +260,9 @@ def test_apply_projects_accumulated_wind_tendency_to_vn():
     # => ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on all edges of the periodic simple grid
     grid = simple.simple_grid()
     ws = _entry_state(grid)
-    apply_once = _apply_to_prognostic(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
-    ws.diagnose(prognostic, tracers)
+    ws.compute_diagnostics(prognostic, tracers)
     dt = 300.0
     acc = _accumulated(
         grid,
@@ -272,7 +270,7 @@ def test_apply_projects_accumulated_wind_tendency_to_vn():
         tend_v=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
 
-    apply_once(ws, acc.acc, dt_seconds=dt)
+    acc.apply(ws, dt_seconds=dt)
 
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
 
@@ -282,12 +280,13 @@ def test_apply_rejects_a_lone_horizontal_wind_tendency():
     # silently lose the other half of the momentum: an error, not a no-op.
     grid = simple.simple_grid()
     ws = _entry_state(grid)
-    apply_once = _apply_to_prognostic(grid)
-    ws.diagnose(_uniform_prognostic(grid, exner=0.95, theta_v=300.0), _tracer_state(grid))
+    ws.compute_diagnostics(
+        _uniform_prognostic(grid, exner=0.95, theta_v=300.0), _tracer_state(grid)
+    )
     acc = _accumulated(grid, tend_u=data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KDim))
 
     with pytest.raises(ValueError, match="applied as a pair"):
-        apply_once(ws, acc.acc, dt_seconds=300.0)
+        acc.apply(ws, dt_seconds=300.0)
 
 
 def test_entry_state_groups_diagnostics_in_common_container():

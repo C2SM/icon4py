@@ -178,22 +178,17 @@ class RecordingCoupling:
     events: list = dataclasses.field(default_factory=list)
 
     # EntryState surface
-    def diagnose(self, prognostic, tracers) -> None:
-        self.events.append(("diagnose", prognostic))
+    def compute_diagnostics(self, prognostic, tracers) -> None:
+        self.events.append(("compute_diagnostics", prognostic))
 
-    # TendencyAccumulators surface
-    @property
-    def acc(self) -> dict:
-        return {}
-
+    # Tendencies surface
     def zero(self) -> None:
         self.events.append(("zero",))
 
     def accumulate(self, outputs, outputs_properties) -> None:
         self.events.append(("accumulate", dict(outputs)))
 
-    # ApplyToPrognostic surface
-    def __call__(self, entry_state, accumulators, dt_seconds) -> None:
+    def apply(self, entry_state, dt_seconds) -> None:
         self.events.append(("apply", dt_seconds))
 
     # DiagnosticsStore surface
@@ -218,8 +213,7 @@ def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
     driver = PhysicsDriver(
         processes=processes,
         entry_state=coupling,
-        accumulators=coupling,
-        apply_to_prognostic=coupling,
+        tendencies=coupling,
         diagnostics=coupling,
     )
     return driver, coupling
@@ -251,12 +245,12 @@ def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
 
     assert comp_a.call_count == 1
     assert comp_b.call_count == 1
-    # parallel coupling: buffers allocated at construction, diagnose + zero once at
+    # parallel coupling: buffers allocated at construction, compute_diagnostics + zero once at
     # entry, one accumulate per process, exactly one apply at the very end
     assert coupling.events == [
         ("allocate", "A"),
         ("allocate", "B"),
-        ("diagnose", "prog"),
+        ("compute_diagnostics", "prog"),
         ("zero",),
         ("accumulate", {"tend_temperature": "A"}),
         ("accumulate", {"tend_temperature": "B", "kh": "KH"}),
@@ -318,7 +312,7 @@ def test_out_of_window_process_does_nothing() -> None:
     # the accumulate call still happens, with nothing in it to add
     assert coupling.events == [
         ("allocate", "future"),
-        ("diagnose", "prog"),
+        ("compute_diagnostics", "prog"),
         ("zero",),
         ("accumulate", {}),
         ("apply", 300.0),

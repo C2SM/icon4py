@@ -107,14 +107,12 @@ class PhysicsDriver:
         self,
         processes: list[PhysicsProcess],
         entry_state: physics_state.EntryState,
-        accumulators: physics_state.TendencyAccumulators,
-        apply_to_prognostic: physics_state.ApplyToPrognostic,
+        tendencies: physics_state.Tendencies,
         diagnostics: physics_state.DiagnosticsStore,
     ) -> None:
         self._processes = processes
         self._entry = entry_state
-        self._accumulators = accumulators
-        self._apply = apply_to_prognostic
+        self._tendencies = tendencies
         self.diagnostics = diagnostics
         for process in processes:
             process.component.bind_output_buffers(
@@ -142,8 +140,7 @@ class PhysicsDriver:
             entry_state=physics_state.EntryState(
                 grid=grid, interpolation=interpolation, metrics=metrics, backend=backend
             ),
-            accumulators=physics_state.TendencyAccumulators(backend=backend),
-            apply_to_prognostic=physics_state.ApplyToPrognostic(
+            tendencies=physics_state.Tendencies(
                 grid=grid, geometry=geometry, interpolation=interpolation, backend=backend
             ),
             diagnostics=physics_state.DiagnosticsStore(grid=grid, backend=backend),
@@ -157,10 +154,10 @@ class PhysicsDriver:
         simulation_current_datetime: datetime.datetime,
     ) -> None:
         step_start_datetime = simulation_current_datetime - dtime
-        self._entry.diagnose(prognostic, tracers)
-        self._accumulators.zero()
+        self._entry.compute_diagnostics(prognostic, tracers)
+        self._tendencies.zero()
         dt_seconds = dtime.total_seconds()
         for process in self._processes:
             outputs = process.run(self._entry, step_start_datetime, dtime)
-            self._accumulators.accumulate(outputs, process.component.outputs_properties)
-        self._apply(self._entry, self._accumulators.acc, dt_seconds)
+            self._tendencies.accumulate(outputs, process.component.outputs_properties)
+        self._tendencies.apply(self._entry, dt_seconds)
