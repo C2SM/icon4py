@@ -120,9 +120,10 @@ def diffuse_scalar_numpy(
 
 def _cells(grid: base.Grid) -> tuple[gtx.int32, gtx.int32]:
     cell_domain = h_grid.domain(dims.CellDim)
+    # strictly inside the field, so that an output written on the whole field is caught
     return (
-        grid.start_index(cell_domain(h_grid.Zone.NUDGING)),
-        grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
+        grid.start_index(cell_domain(h_grid.Zone.NUDGING)) + 1,
+        grid.end_index(cell_domain(h_grid.Zone.LOCAL)) - 1,
     )
 
 
