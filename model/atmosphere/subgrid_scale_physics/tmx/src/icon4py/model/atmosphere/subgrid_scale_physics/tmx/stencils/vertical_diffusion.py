@@ -179,27 +179,3 @@ def _solve_implicit_vertical_diffusion_on_edges(
     inv_dtime = wpfloat("1.0") / dtime
     q, d_prime = _solve_tridiagonal_matrix_forward_sweep(a, inv_dtime + b, c, var * inv_dtime + rhs)
     return tend + (_solve_tridiagonal_matrix_back_substitution(q, d_prime) - var) * inv_dtime
-
-
-@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def _apply_explicit_vertical_diffusion_on_cells(
-    var: fa.CellKField[wpfloat],
-    a: fa.CellKField[wpfloat],
-    b: fa.CellKField[wpfloat],
-    c: fa.CellKField[wpfloat],
-    rhs: fa.CellKField[wpfloat],
-    tend: fa.CellKField[wpfloat],
-    minlvl: gtx.int32,
-    maxlvl: gtx.int32,
-) -> fa.CellKField[wpfloat]:
-    """
-    tend plus the explicit vertical diffusion tendency rhs - (a, b, c) var.
-
-    The column spans full levels minlvl..maxlvl; a on row minlvl and c on row maxlvl have
-    no effect.
-    """
-    # embedded rejects a scalar branch on an unbounded region, so the zeros are a field
-    zero = wpfloat("0.0") * var
-    from_above = concat_where(dims.KDim > minlvl, a * var(dims.KDim - 1), zero)
-    from_below = concat_where(dims.KDim < maxlvl, c * var(dims.KDim + 1), zero)
-    return tend - from_above - b * var - from_below + rhs

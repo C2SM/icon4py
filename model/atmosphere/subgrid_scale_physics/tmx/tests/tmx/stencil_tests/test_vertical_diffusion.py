@@ -11,7 +11,6 @@ import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.vertical_diffusion import (
-    _apply_explicit_vertical_diffusion_on_cells,
     _assemble_vertical_diffusion_matrix_on_cell_half_levels,
     _assemble_vertical_diffusion_matrix_on_cells,
     _assemble_vertical_diffusion_matrix_on_edges,
@@ -292,47 +291,4 @@ class TestSolveImplicitVerticalDiffusionOnEdges(stencil_tests.StencilTest):
             vertical_dim=dims.KDim,
             vertical_start=0,
             vertical_end=grid.num_levels,
-        )
-
-
-class TestApplyExplicitVerticalDiffusionOnCells(stencil_tests.StencilTest):
-    PROGRAM = _apply_explicit_vertical_diffusion_on_cells
-    OUTPUTS = ("out",)
-
-    @stencil_tests.static_reference
-    def reference(
-        grid: base.Grid,
-        *,
-        var: np.ndarray,
-        a: np.ndarray,
-        b: np.ndarray,
-        c: np.ndarray,
-        rhs: np.ndarray,
-        tend: np.ndarray,
-        domain: dict,
-        **kwargs: Any,
-    ) -> dict:
-        rows = vertical_rows(domain, dims.KDim)
-        matrix = tridiagonal_matrix_numpy(a[:, rows], b[:, rows], c[:, rows])
-        out = np.zeros_like(var)
-        out[:, rows] = tend[:, rows] + rhs[:, rows] - np.einsum("nij,nj->ni", matrix, var[:, rows])
-        return dict(out=out)
-
-    @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
-        vertical_start, vertical_end = 0, grid.num_levels
-        return dict(
-            var=data_alloc.random_field(dims.CellDim, dims.KDim),
-            a=data_alloc.random_field(dims.CellDim, dims.KDim),
-            b=data_alloc.random_field(dims.CellDim, dims.KDim),
-            c=data_alloc.random_field(dims.CellDim, dims.KDim),
-            rhs=data_alloc.random_field(dims.CellDim, dims.KDim),
-            tend=data_alloc.random_field(dims.CellDim, dims.KDim),
-            minlvl=gtx.int32(vertical_start),
-            maxlvl=gtx.int32(vertical_end - 1),
-            out=data_alloc.zero_field(dims.CellDim, dims.KDim),
-            domain={
-                dims.CellDim: (0, gtx.int32(grid.num_cells)),
-                dims.KDim: (gtx.int32(vertical_start), gtx.int32(vertical_end)),
-            },
         )
