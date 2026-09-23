@@ -55,7 +55,8 @@ class JablonowskiWilliamsonConfig:
     p_sfc: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??", icon_equivalent=common_conf_opt.IconOption(name="zp_ape", path=())
+            description="??",
+            icon_equivalent=common_conf_opt.IconOption(name="zp_ape", path=(), optional=True),
         ),
     ] = 100000.0
     baroclinic_amplitude: typing.Annotated[
@@ -64,23 +65,25 @@ class JablonowskiWilliamsonConfig:
             description="Amplitude of the u-perturbation [m/s].",
             icon_equivalent=common_conf_opt.IconMultiOption(
                 options=[
-                    common_conf_opt.IconOption(name="jw_up", path=()),
-                    common_conf_opt.IconOption(name="nh_test_name", path=()),
+                    common_conf_opt.IconOption(name="jw_up", path=(), optional=True),
+                    common_conf_opt.IconOption(name="nh_test_name", path=(), optional=True),
                 ],
-                converter=lambda jw_up, test_name: 0.0 if test_name == "jabw_s" else jw_up,
+                converter=lambda jw_up, nh_test_name: 0.0 if nh_test_name == "jabw_s" else jw_up,
             ),
         ),
     ] = 1.0
     u0: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??", icon_equivalent=common_conf_opt.IconOption(name="jw_u0", path=())
+            description="??",
+            icon_equivalent=common_conf_opt.IconOption(name="jw_u0", path=(), optional=True),
         ),
     ] = 35.0
     temp0: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??", icon_equivalent=common_conf_opt.IconOption(name="jw_temp0", path=())
+            description="??",
+            icon_equivalent=common_conf_opt.IconOption(name="jw_temp0", path=(), optional=True),
         ),
     ] = 288.0
     eta_0: typing.Annotated[
@@ -103,13 +106,16 @@ class JablonowskiWilliamsonConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Moist tracer initialization (inwp tracers). Relevant only when transport is active",
-            icon_equivalent=common_conf_opt.IconOption(name="rh_at_1000hpa", path=()),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="rh_at_1000hpa", path=(), optional=True
+            ),
         ),
     ] = 0.7
     qv_max: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??", icon_equivalent=common_conf_opt.IconOption(name="qv_max", path=())
+            description="??",
+            icon_equivalent=common_conf_opt.IconOption(name="qv_max", path=(), optional=True),
         ),
     ] = 20e-3
     # Fortran l_rediag=.TRUE. => 10 iterations
@@ -123,7 +129,7 @@ class JablonowskiWilliamsonConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Target column-integrated moisture for APE cases [kg/m^2].",
-            icon_equivalent=common_conf_opt.IconOption(name="ztmc_ape", path=()),
+            icon_equivalent=common_conf_opt.IconOption(name="ztmc_ape", path=(), optional=True),
         ),
     ] = 25.006
     normalize_global_moisture: typing.Annotated[
@@ -134,6 +140,7 @@ class JablonowskiWilliamsonConfig:
                 name="nh_test_name",
                 path=(),
                 converter=lambda test_name: test_name in ("APE_nwp", "APE_aes"),
+                optional=True,
             ),
         ),
     ] = False

@@ -84,56 +84,60 @@ class WeismanKlempConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Maximum horizontal wind speed [m/s].",
-            icon_equivalent=common_conf_opt.IconOption(name="u_infty_wk", path=()),
+            icon_equivalent=common_conf_opt.IconOption(name="u_infty_wk", path=(), optional=True),
         ),
     ] = 15.0
     qv_max: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
             description="Maximum moisture content below the tropopause [kg/kg].",
-            icon_equivalent=common_conf_opt.IconOption(name="qv_max_wk", path=()),
+            icon_equivalent=common_conf_opt.IconOption(name="qv_max_wk", path=(), optional=True),
         ),
     ] = 0.014
     bubble_center_x: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
             description="X coordinate (torus) or longitude in degrees (sphere) of the bubble centre.",
-            icon_equivalent=common_conf_opt.IconOption(name="bubctr_lon", path=()),
+            icon_equivalent=common_conf_opt.IconOption(name="bubctr_lon", path=(), optional=True),
         ),
     ] = 0.0
     bubble_center_y: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
             description="Y coordinate (torus) or latitude in degrees (sphere) of the bubble centre.",
-            icon_equivalent=common_conf_opt.IconOption(name="bubctr_lat", path=()),
+            icon_equivalent=common_conf_opt.IconOption(name="bubctr_lat", path=(), optional=True),
         ),
     ] = 0.0
     bubble_center_z: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
             description="Altitude of the bubble centre [m].",
-            icon_equivalent=common_conf_opt.IconOption(name="bubctr_z", path=()),
+            icon_equivalent=common_conf_opt.IconOption(name="bubctr_z", path=(), optional=True),
         ),
     ] = 1400.0
     bubble_horizontal_width: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
             description="Horizontal size of the warm bubble [m].",
-            icon_equivalent=common_conf_opt.IconOption(name="bub_hor_width", path=()),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="bub_hor_width", path=(), optional=True
+            ),
         ),
     ] = 5000.0
     bubble_vertical_width: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
             description="Vertical size of the warm bubble [m].",
-            icon_equivalent=common_conf_opt.IconOption(name="bub_ver_width", path=()),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="bub_ver_width", path=(), optional=True
+            ),
         ),
     ] = 1400.0
     bubble_amplitude: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
             description="Temperature amplitude of the warm bubble [K].",
-            icon_equivalent=common_conf_opt.IconOption(name="bub_amp", path=()),
+            icon_equivalent=common_conf_opt.IconOption(name="bub_amp", path=(), optional=True),
         ),
     ] = 2.0
     bubble_radius: typing.Annotated[

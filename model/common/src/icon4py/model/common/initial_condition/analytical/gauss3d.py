@@ -40,20 +40,24 @@ class Gauss3DConfig:
     u0: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??", icon_equivalent=common_conf_opt.IconOption(name="nh_u0", path=())
+            description="??",
+            icon_equivalent=common_conf_opt.IconOption(name="nh_u0", path=(), optional=True),
         ),
     ] = 0.0
     t0: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??", icon_equivalent=common_conf_opt.IconOption(name="nh_t0", path=())
+            description="??",
+            icon_equivalent=common_conf_opt.IconOption(name="nh_t0", path=(), optional=True),
         ),
     ] = 300.0
     brunt_vais: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
             description="??",
-            icon_equivalent=common_conf_opt.IconOption(name="nh_brunt_vais", path=()),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="nh_brunt_vais", path=(), optional=True
+            ),
         ),
     ] = 0.01
     # The default values are from mo_nh_testcases.f90 and mo_nh_testcases_nml.f90
