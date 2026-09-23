@@ -55,7 +55,12 @@ class ScalarDiffusion:
         energy_type: tmx_config.EnergyType,
         use_scale_turb_energy_flux: bool,
         scale_turb_energy_flux: float,
+        solver_type: tmx_config.SolverType,
     ) -> None:
+        if solver_type != tmx_config.SolverType.IMPLICIT:
+            raise NotImplementedError(
+                "the scalar diffusion only implements the implicit vertical diffusion solver."
+            )
         self._exchange = exchange
         # ``zfactor`` in Compute_diffusion_temperature
         energy_flux_factor = scale_turb_energy_flux if use_scale_turb_energy_flux else 1.0
