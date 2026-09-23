@@ -27,7 +27,7 @@ dependencies = [
   # workspace members
   "icon4py-common~=0.4.1",
   # external dependencies
-  "gt4py==1.2.1",
+  "gt4py==1.2.2",
   'packaging>=20.0'
 ]
 description = "ICON diffusion."

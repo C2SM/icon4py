@@ -35,10 +35,10 @@ class TestApplyNabla2ToWInUpperDampingLayer(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
-        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        diff_multfac_n2w = data_alloc.random_field(dims.KDim, dtype=wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        diff_multfac_n2w = data_alloc.random_field(dims.KHalfDim, dtype=wpfloat)
         cell_area = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        z_nabla2_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_nabla2_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
 
         return dict(
             w=w,
@@ -48,7 +48,7 @@ class TestApplyNabla2ToWInUpperDampingLayer(stencil_tests.StencilTest):
             horizontal_start=0,
             horizontal_end=int(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )
 
     @stencil_tests.static_reference

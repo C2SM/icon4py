@@ -61,9 +61,7 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(stencil_tests.StencilTest)
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_theta_v_pr_ic = data_alloc.random_field(
-            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
-        )
+        z_theta_v_pr_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         d2dexdz2_fac1_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr_2 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         d2dexdz2_fac2_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)

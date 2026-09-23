@@ -35,7 +35,8 @@ def set_theta_v_prime_ic_at_lower_boundary_numpy(
         interpolant=z_rth_pr,
         interpolation_to_surface=z_theta_v_pr_ic,
     )
-    theta_v_ic[:, 3:] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3:]
+    nlev = z_rth_pr.shape[1]
+    theta_v_ic[:, 3 : nlev + 1] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3 : nlev + 1]
     return (z_theta_v_pr_ic, theta_v_ic)
 
 
@@ -69,9 +70,9 @@ class TestInitThetaVPrimeIcAtLowerBoundary(stencil_tests.StencilTest):
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfacq_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_ref_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_theta_v_pr_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_ref_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        z_theta_v_pr_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        theta_v_ic = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
 
         return dict(
             wgtfacq_c=wgtfacq_c,
@@ -82,5 +83,5 @@ class TestInitThetaVPrimeIcAtLowerBoundary(stencil_tests.StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=3,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

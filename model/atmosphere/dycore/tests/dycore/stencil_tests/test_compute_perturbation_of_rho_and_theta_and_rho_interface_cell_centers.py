@@ -28,8 +28,10 @@ def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
     theta_v: np.ndarray,
     theta_ref_mc: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    rho_offset_1 = np.roll(rho, shift=1, axis=1)
-    rho_ic = wgtfac_c * rho + (1.0 - wgtfac_c) * rho_offset_1
+    _nlev = rho.shape[1]
+    rho_ic = np.zeros((rho.shape[0], _nlev + 1))
+    _w = wgtfac_c[:, 1:_nlev]
+    rho_ic[:, 1:_nlev] = _w * rho[:, 1:_nlev] + (1.0 - _w) * rho[:, 0 : _nlev - 1]
     rho_ic[:, 0] = 0
     z_rth_pr_1 = rho - rho_ref_mc
     z_rth_pr_1[:, 0] = 0
@@ -70,12 +72,12 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(stencil_tes
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         rho = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         rho_ref_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         theta_ref_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        rho_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ic = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
         z_rth_pr_1 = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr_2 = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 

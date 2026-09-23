@@ -15,7 +15,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import vpfloat
 
 
-# TODO(dastrm): this stencil has no test
+# TODO(nfarabullini, OngChia): this stencil has no test
 
 
 sys.setrecursionlimit(5500)

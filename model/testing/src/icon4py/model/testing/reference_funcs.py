@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections.abc import Mapping
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -49,3 +50,46 @@ def nabla2_on_cell_k_numpy(
         np.where((c2e2cO != -1)[:, :, np.newaxis], psi_c[c2e2cO] * geofac_n2s, 0), axis=1
     )
     return nabla2_psi_c
+
+
+def compute_tangential_wind_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    vn: np.ndarray,
+    rbf_vec_coeff_e: np.ndarray,
+) -> np.ndarray:
+    """RBF interpolation of the normal wind to the edge-tangential direction."""
+    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
+    e2c2e = connectivities[dims.E2C2E]
+    return np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
+
+
+def interpolate_to_cell_center_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    interpolant: np.ndarray,
+    e_bln_c_s: np.ndarray,
+    **kwargs: Any,
+) -> np.ndarray:
+    """Interpolate an edge field to the cell centers with the bilinear C2E weights."""
+    e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
+    c2e = connectivities[dims.C2E]
+    return np.sum(interpolant[c2e] * e_bln_c_s, axis=1)
+
+
+def interpolate_cell_field_to_vertex_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    cell_field: np.ndarray,
+    c_intp: np.ndarray,
+) -> np.ndarray:
+    v2c = connectivities[dims.V2C]
+    c_intp = np.expand_dims(c_intp, axis=-1)
+    return np.sum(np.where((v2c != -1)[:, :, np.newaxis], cell_field[v2c] * c_intp, 0), axis=1)
+
+
+def compute_curl_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    edge_field: np.ndarray,
+    geofac_rot: np.ndarray,
+) -> np.ndarray:
+    v2e = connectivities[dims.V2E]
+    geofac_rot = np.expand_dims(geofac_rot, axis=-1)
+    return np.sum(np.where((v2e != -1)[:, :, np.newaxis], edge_field[v2e] * geofac_rot, 0), axis=1)

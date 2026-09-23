@@ -137,7 +137,7 @@ class TracerState:
         """A new state with a copy of each active field, for the other time level."""
         return TracerState(
             **{
-                tracer.name: data_alloc.as_field(tracer.field, allocator=allocator)
+                tracer.name: data_alloc.reallocate(tracer.field, allocator=allocator)
                 for tracer in self.active_fields()
             }
         )

@@ -65,7 +65,7 @@ granule: DiffusionGranule | None = None
 @icon4py_export.export
 def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     theta_ref_mc: fa.CellKField[wpfloat],
-    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
@@ -138,9 +138,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         smagorinski_scaling_height3=smagorinski_scaling_height3,
         smagorinski_scaling_height4=smagorinski_scaling_height4,
         apply_to_temperature=hdiff_temp,
-        ndyn_substeps=int(ndyn_substeps),
         velocity_boundary_diffusion_denominator=denom_diffu_v,
-        max_nudging_coefficient=nudge_max_coeff,
         shear_type=TurbulenceShearForcingType(itype_sher),
         iforcing=ForcingType(iforcing),
         a_hshr=a_hshr,
@@ -149,7 +147,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     diffusion_params = DiffusionParams(config)
 
-    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
+    nlev = wgtfac_c.domain[dims.KHalfDim].unit_range.stop - 1
     cell_k_domain = gtx.domain(
         {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
     )
@@ -178,7 +176,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
         zd_vertidx = zd_vertidx[0, :]
 
-        zd_diffcoef = data_alloc.list2field(
+        zd_diffcoef = data_alloc.scattered_field(
             domain=cell_k_domain,
             values=zd_diffcoef,
             indices=(
@@ -188,7 +186,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             default_value=gtx.float64(0.0),
             allocator=allocator,
         )
-        zd_intcoef = data_alloc.list2field(
+        zd_intcoef = data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
             values=zd_intcoef.T,
             indices=(
@@ -199,7 +197,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             default_value=gtx.float64(0.0),
             allocator=allocator,
         )
-        zd_vertoffset = data_alloc.list2field(
+        zd_vertoffset = data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(
@@ -255,6 +253,8 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             cell_params=grid_wrapper.grid_state.cell_geometry,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
+            ndyn_substeps=ndyn_substeps,
+            max_nudging_coefficient=nudge_max_coeff,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
@@ -264,15 +264,15 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @icon4py_export.export
 def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
-    w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     vn: fa.EdgeKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     rho: fa.CellKField[wpfloat],
-    hdef_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
-    div_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
-    dwdx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
-    dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
+    hdef_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
+    div_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
+    dwdx: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
+    dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
     dtime: gtx.float64,
     linit: bool,
 ):

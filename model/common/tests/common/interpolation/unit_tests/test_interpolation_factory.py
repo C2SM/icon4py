@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.decomposition.definitions import single_node_exchange
+from icon4py.model.common.decomposition.definitions import SingleNodeProcessProperties
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_meta,
@@ -79,7 +79,7 @@ def _get_interpolation_factory(
             config=experiment.config.interpolation,
             backend=backend,
             metadata=attrs.attrs,
-            exchange=single_node_exchange,
+            process_props=SingleNodeProcessProperties(),
         )
         interpolation_factories[registry_key] = factory
     return factory
@@ -99,7 +99,7 @@ def test_factory_raises_error_on_unknown_field(
         config=experiment.config.interpolation,
         backend=backend,
         metadata=attrs.attrs,
-        exchange=single_node_exchange,
+        process_props=SingleNodeProcessProperties(),
     )
     with pytest.raises(ValueError, match="Field 'foo' not provided by the source"):
         interpolation_source.get("foo", factory.RetrievalType.METADATA)

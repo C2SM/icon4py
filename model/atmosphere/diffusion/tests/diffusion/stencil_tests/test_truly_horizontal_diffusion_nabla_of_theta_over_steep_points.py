@@ -103,7 +103,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(stencil_tests.Sten
                 high=grid.num_levels - k - 1,
                 size=zd_vertoffset_buffer.shape[:2],
             )
-        zd_vertoffset = data_alloc.field_from_array(
+        zd_vertoffset = data_alloc.as_field(
             zd_vertoffset_buffer, dims.CellDim, dims.C2E2CDim, dims.KDim
         )
 

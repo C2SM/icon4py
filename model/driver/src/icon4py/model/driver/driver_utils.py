@@ -170,8 +170,6 @@ def create_static_field_factories(
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
     process_props: decomposition_defs.ProcessProperties,
-    exchange: decomposition_defs.ExchangeRuntime,
-    global_reductions: decomposition_defs.Reductions,
     geometry_config: geometry_configuration.GeometryConfig,
     interpolation_config: interpolation_factory.InterpolationConfig,
     metrics_config: metrics_factory.MetricsConfig,
@@ -185,8 +183,6 @@ def create_static_field_factories(
         metadata=geometry_meta.attrs,
         config=geometry_config,
         process_props=process_props,
-        exchange=exchange,
-        global_reductions=global_reductions,
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
@@ -196,7 +192,7 @@ def create_static_field_factories(
         geometry_source=geometry_field_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=exchange,
+        process_props=process_props,
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
@@ -209,8 +205,7 @@ def create_static_field_factories(
         backend=backend,
         metadata=metrics_attributes.attrs,
         config=metrics_config,
-        exchange=exchange,
-        global_reductions=global_reductions,
+        process_props=process_props,
     )
 
     return static_fields.StaticFieldFactories(
@@ -255,20 +250,33 @@ def initialize_granules(
         inverse_vertex_vertex_lengths=geometry_field_source.get(
             f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
         ),
-        primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-        primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
-        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
-        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
-        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        primal_normal_vert=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        ),
+        dual_normal_vert=(
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+        ),
+        primal_normal_cell=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
+        ),
+        dual_normal_cell=(
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        ),
         edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
         coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
-        edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
-        edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
-        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
-        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        edge_center=(
+            geometry_field_source.get(geometry_meta.EDGE_LAT),
+            geometry_field_source.get(geometry_meta.EDGE_LON),
+        ),
+        primal_normal=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        ),
+        edge_cell_distances=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE),
     )
 
     log.info("creating diffusion interpolation state")
@@ -391,6 +399,7 @@ def initialize_granules(
             cell_geometry=cell_geometry,
             owner_mask=owner_mask,
             exchange=exchange,
+            max_nudging_coefficient=config.interpolation.max_nudging_coefficient,
         )
 
     diffusion_granule: diffusion.Diffusion | None = None
@@ -407,6 +416,8 @@ def initialize_granules(
             cell_params=cell_geometry,
             backend=backend,
             exchange=exchange,
+            ndyn_substeps=config.driver.ndyn_substeps,
+            max_nudging_coefficient=config.interpolation.max_nudging_coefficient,
         )
 
     tracer_advection_granule: tracer_advection.Advection | None = None
@@ -465,7 +476,6 @@ def initialize_granules(
                 dtime=config.driver.dtime,
                 qnc=config.muphys.qnc,
                 backend=backend,
-                scheme=config.muphys.scheme,
             ),
             state=muphys_state.State(grid=grid, metrics=metrics_field_source, backend=backend),
             time_control=physics_driver.ProcessTimeControl(
@@ -607,7 +617,6 @@ def display_driver_setup_in_log_file(
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
-    log.info(f"Prepare advection      : {config.do_prep_adv}")
     log.info(f"Initial diffusion      : {config.diffuse_before_time_loop}")
     log.info(f"Statistics enabled     : {config.enable_statistics_logging}")
     log.info(f"Active tracers         : {tracer_config}")
