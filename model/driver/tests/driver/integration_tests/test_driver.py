@@ -114,8 +114,9 @@ def timeloop_diffusion_linit_exit() -> bool:
             "2008-09-01T00:05:00.000",
         ),
         # `embedded_remap_error`: on the limited-area grid, diffusion's `_calculate_nabla2_of_theta`
-        # gathers `z_nabla2_e(C2E)` from a `theta_v(E2C)` intermediate whose edge domain excludes
-        # the boundary edges (E2C skip values); the second gather's inverse image is not contiguous.
+        # gathers `z_nabla2_e(C2E)` from a `theta_v(E2C)` intermediate that starts only at the first
+        # edge with two neighbouring cells; embedded requires every edge of every cell it touches to
+        # lie in that range, which the cells owning a boundary edge break.
         # Behind it, the same operator hits the steep-points failure noted on GAUSS3D above.
         pytest.param(
             test_defs.Experiments.MCH_CH_R04B09,
