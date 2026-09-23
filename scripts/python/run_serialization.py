@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import dataclasses
 import itertools
+import os
 import pathlib
 import re
 import shlex
@@ -24,7 +25,7 @@ import tarfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Final
 
 import typer
 
@@ -126,6 +127,16 @@ class SerializationSettings:
         # ======================================
         # END DEFAULT USER CONFIGURATION
         # ======================================
+
+
+#: Set by the husk sandbox, whose slurm broker builds its own submission. It refuses a
+#: job that names a partition in the script body, or that chooses an account or a uenv at
+#: all: those come from the launching session.
+HUSK_SENTINEL_ENV_VAR: Final = "HUSK_SLURM_SPOOL"
+
+
+def running_under_husk() -> bool:
+    return bool(os.environ.get(HUSK_SENTINEL_ENV_VAR))
 
 
 def get_f90exp_name(experiment_description: test_defs.ExperimentDescription) -> str:
@@ -293,7 +304,11 @@ def parse_extra_mpi_ranks(script_path: pathlib.Path, comm_size: int) -> int:
 
 
 def update_slurm_variables(script_path: pathlib.Path, *, settings: SerializationSettings) -> None:
-    """Update SBATCH directives in the Slurm script (partition, account, time, uenv, view)."""
+    """Update SBATCH directives in the Slurm script (partition, account, time, uenv, view).
+
+    Under husk only ``--time`` survives here: the broker takes the partition from the
+    sbatch command line (see `submit_job`) and supplies the account and the uenv itself.
+    """
     content = script_path.read_text()
 
     # Find the position after #SBATCH --job-name= line
@@ -302,13 +317,16 @@ def update_slurm_variables(script_path: pathlib.Path, *, settings: Serialization
         raise RuntimeError("Could not find #SBATCH --job-name= line in script")
 
     # Prepare the new SBATCH lines to insert
-    new_lines = (
-        f"#SBATCH --partition={settings.sbatch_partition}\n"
-        f"#SBATCH --account={settings.sbatch_account}\n"
-        f"#SBATCH --time={settings.sbatch_time}\n"
-        f"#SBATCH --uenv='{settings.sbatch_uenv}'\n"
-        f"#SBATCH --view='{settings.sbatch_uenv_view}'"
-    )
+    directives = [f"#SBATCH --time={settings.sbatch_time}"]
+    if not running_under_husk():
+        directives = [
+            f"#SBATCH --partition={settings.sbatch_partition}",
+            f"#SBATCH --account={settings.sbatch_account}",
+            *directives,
+            f"#SBATCH --uenv='{settings.sbatch_uenv}'",
+            f"#SBATCH --view='{settings.sbatch_uenv_view}'",
+        ]
+    new_lines = "\n".join(directives)
 
     # Remove existing partition, account, time, uenv, and view lines if they exist
     content = re.sub(r"^#SBATCH\s+--partition=.*$\n?", "", content, flags=re.MULTILINE)
@@ -359,7 +377,10 @@ def update_slurm_ranks(script_path: pathlib.Path, mpi_ranks: int, extra_mpi_rank
 
 
 def submit_job(script_path: pathlib.Path, *, settings: SerializationSettings) -> str:
-    cmd = ["sbatch", str(script_path)]
+    cmd = ["sbatch"]
+    if running_under_husk():
+        cmd.append(f"--partition={settings.sbatch_partition}")
+    cmd.append(str(script_path))
     result = run_command(cmd, cwd=settings.runscript_dir)
     match = re.search(r"Submitted batch job\s+(\d+)", result.stdout)
     if not match:
