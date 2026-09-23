@@ -9,7 +9,7 @@
 """Stencils of the tmx wind diffusion (horizontal wind vn and vertical wind w)."""
 
 import gt4py.next as gtx
-from gt4py.next import neighbor_sum
+from gt4py.next import broadcast, neighbor_sum
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.vertical_diffusion import (
@@ -521,6 +521,11 @@ def _compute_w_diffusion_tendency_and_update(
     return tend_w, w + tend_w * dtime
 
 
+@gtx.field_operator
+def _zero_on_cell_half_levels() -> fa.CellKHalfField[wpfloat]:
+    return broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim))
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_w_diffusion_tendency_and_update(
     w: fa.CellKHalfField[wpfloat],
@@ -561,6 +566,10 @@ def compute_w_diffusion_tendency_and_update(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
+    """
+    Diffuse w on half levels vertical_start..vertical_end - 1 of the cells; new_w is zero on the
+    half levels vertical_start - 1 and vertical_end bounding them.
+    """
     _compute_w_horizontal_stress_tendency(
         u=u,
         v=v,
@@ -605,5 +614,19 @@ def compute_w_diffusion_tendency_and_update(
         domain={
             dims.CellDim: (cell_start, cell_end),
             dims.KHalfDim: (vertical_start, vertical_end),
+        },
+    )
+    _zero_on_cell_half_levels(
+        out=new_w,
+        domain={
+            dims.CellDim: (cell_start, cell_end),
+            dims.KHalfDim: (vertical_start - 1, vertical_start),
+        },
+    )
+    _zero_on_cell_half_levels(
+        out=new_w,
+        domain={
+            dims.CellDim: (cell_start, cell_end),
+            dims.KHalfDim: (vertical_end, vertical_end + 1),
         },
     )

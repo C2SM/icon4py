@@ -6,11 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""The wind diffusion component of tmx.
-
-Port of ``Compute_diffusion_hor_wind`` and ``Compute_diffusion_vert_wind`` in ICON's
-``mo_vdf.f90``.
-"""
+"""The wind diffusion component of tmx."""
 
 from __future__ import annotations
 
@@ -179,8 +175,9 @@ class WindDiffusion:
         Diffuse u, v and w: write their tendencies to tendency_state and the updated winds to
         new_state.
 
-        Needs the diagnostics of diagnostic_state for the current input_state. Only the rows
-        the Fortran computes are written; the others keep their values.
+        Needs the diagnostics of diagnostic_state for the current input_state. new_state.w is
+        zero on the top and bottom half levels. Otherwise only the rows the Fortran computes
+        are written; the others keep their values.
         """
         log.debug("tmx wind diffusion: start")
 

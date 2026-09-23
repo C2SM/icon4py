@@ -20,13 +20,11 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_vertical_diffusion import diffusion_matrix_numpy
-
-
-def implicit_step_numpy(matrix: np.ndarray, var: np.ndarray, rhs: np.ndarray, dtime: float):
-    """New value of var after one implicit step of d(var)/dt = -matrix @ var + rhs."""
-    system = matrix + np.eye(matrix.shape[1]) / dtime
-    return np.linalg.solve(system, (var / dtime + rhs)[..., np.newaxis])[..., 0]
+from .test_vertical_diffusion import (
+    diffusion_matrix_numpy,
+    implicit_diffusion_tendency_numpy,
+    matrix_diagonals_on_rows,
+)
 
 
 def on_rows(values: np.ndarray, rows: slice, levels: slice) -> np.ndarray:
@@ -127,8 +125,11 @@ class TestComputeVnDiffusionTendency(stencil_tests.StencilTest):
         matrix = diffusion_matrix_numpy(
             km_ie[:, 1:nlev] * inv_ddqz_z_half_e[:, 1:nlev], inv_air_mass
         )
-        new_vn = implicit_step_numpy(matrix, vn, rhs, dtime)
-        tendency = horizontal_tendency + (new_vn - vn) / dtime
+        rows = slice(0, nlev)
+        a, b, c = matrix_diagonals_on_rows(matrix, vn.shape, rows)
+        tendency = implicit_diffusion_tendency_numpy(
+            var=vn, a=a, b=b, c=c, rhs=rhs, tend=horizontal_tendency, dtime=dtime, rows=rows
+        )
         return dict(
             vn_tendency=on_rows(
                 tendency,
@@ -267,6 +268,7 @@ class TestComputeWDiffusionTendencyAndUpdate(stencil_tests.StencilTest):
         inv_primal_edge_length: np.ndarray,
         inv_vert_vert_length: np.ndarray,
         inv_dual_edge_length: np.ndarray,
+        new_w: np.ndarray,
         dtime: float,
         edge_start: int,
         edge_end: int,
@@ -339,17 +341,21 @@ class TestComputeWDiffusionTendencyAndUpdate(stencil_tests.StencilTest):
         # w = 0 on the top and bottom half levels: diffuse over all half levels and keep the
         # interior block, which then carries the boundary fluxes on its diagonal
         matrix = diffusion_matrix_numpy(2.0 * km_c * inv_ddqz_z_full, inv_air_mass)
-        matrix = matrix[:, interior, interior]
-        new_w_interior = implicit_step_numpy(matrix, w[:, interior], rhs[:, interior], dtime)
-        tend_w = horizontal_tendency.copy()
-        tend_w[:, interior] += (new_w_interior - w[:, interior]) / dtime
+        a, b, c = matrix_diagonals_on_rows(matrix[:, interior, interior], w.shape, interior)
+        tend_w = implicit_diffusion_tendency_numpy(
+            var=w, a=a, b=b, c=c, rhs=rhs, tend=horizontal_tendency, dtime=dtime, rows=interior
+        )
 
         cells = slice(cell_start, cell_end)
         levels = slice(vertical_start, vertical_end)
+        # the diffused rows, zero on the two bounding half levels, and the input elsewhere
+        expected_new_w = new_w.copy()
+        expected_new_w[cells, vertical_start - 1 : vertical_end + 1] = 0.0
+        expected_new_w[cells, levels] = (w + tend_w * dtime)[cells, levels]
         return dict(
             horizontal_stress_tendency=stress_tendency,
             tend_w=on_rows(tend_w, cells, levels),
-            new_w=on_rows(w + tend_w * dtime, cells, levels),
+            new_w=expected_new_w,
         )
 
     @stencil_tests.input_data_fixture
@@ -387,7 +393,7 @@ class TestComputeWDiffusionTendencyAndUpdate(stencil_tests.StencilTest):
             inv_dual_edge_length=data_alloc.random_field(dims.EdgeDim, low=0.1),
             horizontal_stress_tendency=data_alloc.zero_field(dims.EdgeDim, dims.KHalfDim),
             tend_w=data_alloc.zero_field(dims.CellDim, dims.KHalfDim),
-            new_w=data_alloc.zero_field(dims.CellDim, dims.KHalfDim),
+            new_w=data_alloc.random_field(dims.CellDim, dims.KHalfDim),
             dtime=wpfloat(0.5),
             edge_start=gtx.int32(edge_start),
             edge_end=gtx.int32(edge_end),
