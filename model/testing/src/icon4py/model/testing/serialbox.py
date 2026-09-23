@@ -1999,6 +1999,13 @@ class TmxInitSavepoint(IconSavepoint):
         return self._get_field("geopot_agl_ifc", dims.CellDim, dims.KHalfDim)
 
 
+class TmxEntrySavepoint(IconSavepoint):
+    """Savepoint at entry of vdf Compute in mo_vdf.f90 (inputs of the TMX scheme)."""
+
+    def pres_ifc(self):
+        return self._get_field("pres_ifc", dims.CellDim, dims.KHalfDim)
+
+
 class TmxSurfaceFluxesSavepoint(IconSavepoint):
     """Savepoint after the surface model call in vdf Compute in mo_vdf.f90."""
 
@@ -2443,6 +2450,12 @@ class IconSerialDataProvider:
     def from_savepoint_tmx_init(self) -> TmxInitSavepoint:
         savepoint = self.serializer.savepoint["tmx-init"].id[1].as_savepoint()
         return TmxInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_entry(self, date: str) -> TmxEntrySavepoint:
+        savepoint = self.serializer.savepoint["tmx-entry"].id[1].date[date].as_savepoint()
+        return TmxEntrySavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
