@@ -12,7 +12,7 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 
 
 def enhanced_smagorinski_factor_numpy(
@@ -93,3 +93,43 @@ def compute_curl_numpy(
     v2e = connectivities[dims.V2E]
     geofac_rot = np.expand_dims(geofac_rot, axis=-1)
     return np.sum(np.where((v2e != -1)[:, :, np.newaxis], edge_field[v2e] * geofac_rot, 0), axis=1)
+
+
+def compute_dry_static_energy_numpy(
+    temperature: np.ndarray,
+    height_above_ground: np.ndarray,
+    *,
+    grav: float,
+) -> np.ndarray:
+    return constants.CPD * temperature + grav * height_above_ground
+
+
+def compute_virtual_potential_temperature_numpy(
+    virtual_temperature: np.ndarray,
+    pressure: np.ndarray,
+) -> np.ndarray:
+    return virtual_temperature * (constants.P0REF / pressure) ** constants.RD_O_CPD
+
+
+def compute_brunt_vaisala_frequency_numpy(
+    theta_v: np.ndarray,
+    wgtfac_c: np.ndarray,
+    inv_ddqz_z_half: np.ndarray,
+    *,
+    grav: float,
+) -> np.ndarray:
+    nlev = theta_v.shape[1]
+    bruvais = np.zeros((theta_v.shape[0], nlev + 1), dtype=theta_v.dtype)
+    # Fortran jk = 2..nlev (1-based) -> k = 1..nlev-1 (0-based); the top and
+    # bottom half levels (k = 0 and k = nlev) stay untouched (zero-initialized).
+    theta_v_ic = (
+        wgtfac_c[:, 1:nlev] * theta_v[:, 1:nlev]
+        + (1.0 - wgtfac_c[:, 1:nlev]) * theta_v[:, 0 : nlev - 1]
+    )
+    bruvais[:, 1:nlev] = (
+        grav
+        * (theta_v[:, 0 : nlev - 1] - theta_v[:, 1:nlev])
+        * inv_ddqz_z_half[:, 1:nlev]
+        / theta_v_ic
+    )
+    return bruvais
