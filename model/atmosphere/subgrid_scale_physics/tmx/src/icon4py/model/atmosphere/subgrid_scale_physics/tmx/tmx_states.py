@@ -90,31 +90,6 @@ class TmxSurfaceFluxState:
     """Surface evapotranspiration flux (``evspsbl``) [kg/(m^2 s)]."""
     sensible_heat_flux: fa.CellField[ta.wpfloat]
     """Surface sensible heat flux (``hfss``) [W/m^2]."""
-    u_stress: fa.CellField[ta.wpfloat]
-    """Zonal surface wind stress (``tauu``) [N/m^2]."""
-    v_stress: fa.CellField[ta.wpfloat]
-    """Meridional surface wind stress (``tauv``) [N/m^2]."""
-    q_snocpymlt: fa.CellField[ta.wpfloat]
-    """Heating used to melt snow on the canopy [W/m^2]."""
-
-    @classmethod
-    def allocate(
-        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
-    ) -> TmxSurfaceFluxState:
-        """Allocate a surface flux state with all fields initialized to zero."""
-
-        def surface(horizontal_dim: gtx.Dimension) -> gtx.Field:
-            return data_alloc.zero_field(
-                grid, horizontal_dim, dtype=ta.wpfloat, allocator=allocator
-            )
-
-        return cls(
-            evapotranspiration=surface(dims.CellDim),
-            sensible_heat_flux=surface(dims.CellDim),
-            u_stress=surface(dims.CellDim),
-            v_stress=surface(dims.CellDim),
-            q_snocpymlt=surface(dims.CellDim),
-        )
 
 
 @dataclasses.dataclass(frozen=True)

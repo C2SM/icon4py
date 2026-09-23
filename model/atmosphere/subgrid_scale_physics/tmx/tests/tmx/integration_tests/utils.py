@@ -113,7 +113,4 @@ def construct_surface_flux_state(
     return tmx_states.TmxSurfaceFluxState(
         evapotranspiration=surface_fluxes_savepoint.evspsbl(),
         sensible_heat_flux=surface_fluxes_savepoint.hfss(),
-        u_stress=surface_fluxes_savepoint.tauu(),
-        v_stress=surface_fluxes_savepoint.tauv(),
-        q_snocpymlt=surface_fluxes_savepoint.q_snocpymlt(),
     )

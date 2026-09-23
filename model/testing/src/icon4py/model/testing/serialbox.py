@@ -2060,15 +2060,6 @@ class TmxSurfaceFluxesSavepoint(IconSavepoint):
     def hfss(self):
         return self._get_field("hfss", dims.CellDim)
 
-    def tauu(self):
-        return self._get_field("tauu", dims.CellDim)
-
-    def tauv(self):
-        return self._get_field("tauv", dims.CellDim)
-
-    def q_snocpymlt(self):
-        return self._get_field("q_snocpymlt", dims.CellDim)
-
 
 class TmxDiagnosticsExitSavepoint(IconSavepoint):
     """Savepoint at exit of vdf Compute_diagnostics in mo_vdf_atmo.f90."""
