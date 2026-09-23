@@ -242,8 +242,8 @@ def compute_horizontal_velocity_quantities_and_fluxes(
     )
 
     _extrapolate_at_top(
-        wgtfacq_e,
         vn,
+        wgtfacq_e,
         out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

@@ -59,7 +59,7 @@ def _compute_diagnostics_from_normal_wind(
     vn_on_half_levels = concat_where(
         dims.KHalfDim < nlev,
         _interpolate_to_half_levels(vn, wgtfac_e),
-        _extrapolate_at_top(wgtfacq_e, vn),
+        _extrapolate_at_top(vn, wgtfacq_e),
     )
 
     tangential_wind_on_half_levels = (

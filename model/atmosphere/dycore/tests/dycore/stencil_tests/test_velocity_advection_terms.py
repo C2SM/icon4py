@@ -42,7 +42,7 @@ from .test_interpolate_cell_field_to_half_levels import (
 from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
 
 
-def interpolate_vn_to_half_levels_numpy(wgtfac_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
+def interpolate_vn_to_half_levels_numpy(vn: np.ndarray, wgtfac_e: np.ndarray) -> np.ndarray:
     nlev = vn.shape[1]
     vn_ie = np.zeros((vn.shape[0], nlev + 1))
     w = wgtfac_e[:, 1:nlev]
@@ -55,7 +55,7 @@ def compute_horizontal_kinetic_energy_at_edges_numpy(vn: np.ndarray, vt: np.ndar
     return 0.5 * (vn * vn + vt * vt)
 
 
-def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
+def extrapolate_to_surface_numpy(vn: np.ndarray, wgtfacq_e: np.ndarray) -> np.ndarray:
     vn_k_minus_1 = vn[:, -1]
     vn_k_minus_2 = vn[:, -2]
     vn_k_minus_3 = vn[:, -3]
@@ -89,13 +89,13 @@ def compute_diagnostics_from_normal_wind_numpy(
     horizontal_kinetic_energy_at_edges_on_model_levels = (
         compute_horizontal_kinetic_energy_at_edges_numpy(vn, tangential_wind)
     )
-    vn_on_half_levels = interpolate_vn_to_half_levels_numpy(wgtfac_e, vn)
-    vn_on_half_levels[:, nlev] = extrapolate_to_surface_numpy(wgtfacq_e, vn)
+    vn_on_half_levels = interpolate_vn_to_half_levels_numpy(vn, wgtfac_e)
+    vn_on_half_levels[:, nlev] = extrapolate_to_surface_numpy(vn, wgtfacq_e)
 
     tangential_wind_on_half_levels = tangential_wind_on_half_levels.copy()
     if not skip_compute_predictor_vertical_advection:
         tangential_wind_on_half_levels[:, :nlev] = interpolate_vt_to_interface_edges_numpy(
-            wgtfac_e, tangential_wind
+            tangential_wind, wgtfac_e
         )[:, :nlev]
 
     contravariant_correction_at_edges_on_model_levels = compute_contravariant_correction_numpy(

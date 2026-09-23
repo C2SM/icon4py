@@ -41,10 +41,10 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     wgtfac_e: np.ndarray,
     wgtfacq_e: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
-    vn_on_half_levels[:, :-1] = interpolate_vn_to_half_levels_numpy(wgtfac_e, vn)[:, :-1]
-    vn_on_half_levels[:, -1] = extrapolate_to_surface_numpy(wgtfacq_e, vn)
+    vn_on_half_levels[:, :-1] = interpolate_vn_to_half_levels_numpy(vn, wgtfac_e)[:, :-1]
+    vn_on_half_levels[:, -1] = extrapolate_to_surface_numpy(vn, wgtfacq_e)
     tangential_wind_on_half_levels[:, :-1] = interpolate_vt_to_interface_edges_numpy(
-        wgtfac_e, tangential_wind
+        tangential_wind, wgtfac_e
     )[:, :-1]
     horizontal_kinetic_energy_at_edges_on_model_levels = (
         compute_horizontal_kinetic_energy_at_edges_numpy(vn, tangential_wind)
