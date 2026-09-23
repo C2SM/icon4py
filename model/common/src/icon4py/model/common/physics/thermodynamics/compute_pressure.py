@@ -202,3 +202,13 @@ def sat_pres_ice(temperature: data_alloc.NDArray) -> data_alloc.NDArray:
         * (temperature - phy_const.MELTING_TEMPERATURE)
         / (temperature - phy_const.TETENS_B_ICE)
     )
+
+
+@gtx.field_operator
+def sat_pres_water_on_cells(temperature: fa.CellField[ta.wpfloat]) -> fa.CellField[ta.wpfloat]:
+    """Saturation vapour pressure over liquid water [Pa] (Tetens formula), on a surface field."""
+    return PhysicsConstants.tetens_p0 * exp(
+        PhysicsConstants.tetens_a_water
+        * (temperature - PhysicsConstants.tmelt)
+        / (temperature - PhysicsConstants.tetens_b_water)
+    )

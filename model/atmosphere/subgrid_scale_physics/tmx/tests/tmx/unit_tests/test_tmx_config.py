@@ -7,10 +7,21 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import dataclasses
+from typing import TYPE_CHECKING
+
+import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config, tmx_states
+from icon4py.model.common import model_backends
 from icon4py.model.common.config import config_io
+from icon4py.model.testing.fixtures.datatest import backend_like
+from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
 
 
 @pytest.mark.parametrize("turb_prandtl", [0.0, -1.0])
@@ -88,7 +99,7 @@ def test_config_from_fortran_dict() -> None:
             )
         }
     }
-    config = tmx_config.TmxConfig.from_fortran_dict(atm_dict=fortran_dict)
+    config = tmx_config.TmxConfig.from_fortran_dict(atm_dict=fortran_dict, input_dict={})
     assert config.solver_type is tmx_config.SolverType.EXPLICIT
     assert config.energy_type is tmx_config.EnergyType.DRY_STATIC
     assert config.dissipation_factor == 0.5
@@ -110,7 +121,7 @@ def test_config_from_fortran_dict_rejects_changed_member_count() -> None:
     record = _echoed_vdf_record()
     with pytest.raises(ValueError, match="not a multiple"):
         tmx_config.TmxConfig.from_fortran_dict(
-            atm_dict={"aes_vdf_nml": {"aes_vdf_config": [*record, 0.0]}}
+            atm_dict={"aes_vdf_nml": {"aes_vdf_config": [*record, 0.0]}}, input_dict={}
         )
 
 
@@ -118,7 +129,57 @@ def test_config_from_fortran_dict_rejects_missing_use_tmx() -> None:
     record = _echoed_vdf_record()
     record[22] = False
     with pytest.raises(ValueError, match="use_tmx"):
-        tmx_config.TmxConfig.from_fortran_dict(atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}})
+        tmx_config.TmxConfig.from_fortran_dict(
+            atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}}, input_dict={}
+        )
+
+
+def _expected_shapes(
+    grid: base_grid.Grid,
+) -> dict[str, tuple[int, ...]]:
+    nlev = grid.num_levels
+    return {
+        "cell_full": (grid.num_cells, nlev),
+        "cell_half": (grid.num_cells, nlev + 1),
+        "edge_full": (grid.num_edges, nlev),
+        "edge_half": (grid.num_edges, nlev + 1),
+        "vertex_full": (grid.num_vertices, nlev),
+        "vertex_half": (grid.num_vertices, nlev + 1),
+        "cell_2d": (grid.num_cells,),
+    }
+
+
+SURFACE_FLUX_FIELD_KINDS = {
+    "evapotranspiration": "cell_2d",
+    "sensible_heat_flux": "cell_2d",
+    "u_stress": "cell_2d",
+    "v_stress": "cell_2d",
+    "q_snocpymlt": "cell_2d",
+}
+
+
+@pytest.mark.parametrize(
+    ("state_cls", "field_kinds"),
+    [(tmx_states.TmxSurfaceFluxState, SURFACE_FLUX_FIELD_KINDS)],
+    ids=["surface_flux"],
+)
+def test_state_allocation_produces_zero_fields_with_correct_shapes(
+    grid: base_grid.Grid,
+    backend_like: model_backends.BackendLike,
+    state_cls: type,
+    field_kinds: dict[str, str],
+) -> None:
+    allocator = model_backends.get_allocator(backend_like)
+    state = state_cls.allocate(grid, allocator=allocator)
+    shapes = _expected_shapes(grid)
+
+    state_field_names = {f.name for f in dataclasses.fields(state_cls)}
+    assert state_field_names == set(field_kinds.keys())
+
+    for name, kind in field_kinds.items():
+        field = getattr(state, name).asnumpy()
+        assert field.shape == shapes[kind], f"Wrong shape for field '{name}'."
+        assert np.all(field == 0.0), f"Field '{name}' is not zero-initialized."
 
 
 def test_config_round_trips_through_config_io() -> None:
@@ -128,4 +189,17 @@ def test_config_round_trips_through_config_io() -> None:
 
     assert unstructured["solver_type"] == "implicit"
     assert unstructured["energy_type"] == "internal"
+    assert unstructured["surface_type"] == "interactive"
     assert config_io.CONV.structure(unstructured, tmx_config.TmxConfig) == config
+
+
+def test_surface_flux_options_come_from_the_input_namelist() -> None:
+    """Absent 'nh_testcase_nml' members keep the TmxConfig default."""
+    record = _echoed_vdf_record(solver_type=2, energy_type=2, turb_prandtl=0.33333333333)
+    config = tmx_config.TmxConfig.from_fortran_dict(
+        atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}},
+        input_dict={"nh_testcase_nml": {"isrfc_type": 1, "shflx": 0.2}},
+    )
+    assert config.surface_type is tmx_config.SurfaceType.FIXED_HEAT_FLUXES
+    assert config.shflx == 0.2
+    assert config.lhflx == 0.0

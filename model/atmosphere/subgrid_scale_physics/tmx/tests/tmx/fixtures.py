@@ -13,8 +13,13 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.utils import fortran_config
 from icon4py.model.testing import datatest_utils as dt_utils, definitions
 from icon4py.model.testing.fixtures.datatest import (
+    backend,
+    data_provider,
     download_ser_data,
+    experiment,
     experiment_description,
+    grid_savepoint,
+    icon_grid,
     process_props,
 )
 
@@ -31,4 +36,9 @@ def tmx_config(
         process_props=process_props,
         fname=fortran_config.ATM_DICT_FNAME,
     )
-    return TmxConfig.from_fortran_dict(atm_dict=atm_dict)
+    input_dict = dt_utils.load_fortran_dict(
+        experiment_description=experiment_description,
+        process_props=process_props,
+        fname=fortran_config.INPUT_DICT_FNAME,
+    )
+    return TmxConfig.from_fortran_dict(atm_dict=atm_dict, input_dict=input_dict)
