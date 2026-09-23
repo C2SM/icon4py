@@ -238,15 +238,28 @@ def compute_domain_bounds(
         else (refinement_ctrl.size, refinement_ctrl.size)
     )
     for domain in halo_domains:
-        my_flag = decomposition.DecompositionFlag(domain.zone.level)
-        if my_flag == h_grid.Zone.HALO.level:
-            start_index = (
-                array_ns.min(halo_region_1).item() if halo_region_1.size > 0 else start_halo_2
-            )
-            end_index = start_halo_2
-        else:
-            start_index = start_halo_2
-            end_index = end_halo_2
+        match domain.zone:
+            case h_grid.Zone.HALO:
+                start_index = (
+                    array_ns.min(halo_region_1).item() if halo_region_1.size > 0 else start_halo_2
+                )
+                end_index = start_halo_2
+            case h_grid.Zone.HALO_LEVEL_2:
+                start_index = start_halo_2
+                end_index = end_halo_2
+            case h_grid.Zone.HALO_LEVEL_3:
+                halo_level_3 = decomposition_info.halo_level_mask(
+                    dim, decomposition.DecompositionFlag.THIRD_HALO_LEVEL
+                )
+                not_lateral_boundary_3 = (refinement_ctrl < 1) | (
+                    refinement_ctrl > _refinement_level_placed_with_halo(domain)
+                )
+                halo_region_3 = array_ns.nonzero(halo_level_3 & not_lateral_boundary_3)[0]
+                start_index, end_index = (
+                    (array_ns.min(halo_region_3).item(), array_ns.max(halo_region_3).item() + 1)
+                    if halo_region_3.size > 0
+                    else (refinement_ctrl.size, refinement_ctrl.size)
+                )
         start_indices[domain] = gtx.int32(start_index)  # type: ignore [attr-defined]
         end_indices[domain] = gtx.int32(end_index)  # type: ignore [attr-defined]
 
