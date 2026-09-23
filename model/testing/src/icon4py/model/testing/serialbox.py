@@ -2041,14 +2041,14 @@ class TmxEntrySavepoint(IconSavepoint):
     def rho(self):
         return self._get_field("rho", dims.CellDim, dims.KDim)
 
+    def mair(self):
+        return self._get_field("mair", dims.CellDim, dims.KDim)
+
     def tempv(self):
         return self._get_field("tempv", dims.CellDim, dims.KDim)
 
     def pres(self):
         return self._get_field("pres", dims.CellDim, dims.KDim)
-
-    def mair(self):
-        return self._get_field("mair", dims.CellDim, dims.KDim)
 
 
 class TmxSurfaceFluxesSavepoint(IconSavepoint):
