@@ -32,6 +32,9 @@ if TYPE_CHECKING:
 # so the verification tests parametrize over the subsequent steps only.
 TMX_DATES: tuple[str, ...] = ("2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000")
 
+# 'dt_vdf' of the archive's aes_phy_config [s].
+TMX_DTIME: float = 300.0
+
 # Relative tolerance of all tmx integration datatests.
 RTOL: float = 3.0e-12
 
@@ -96,5 +99,24 @@ def construct_input_state(entry_savepoint: sb.TmxEntrySavepoint) -> tmx_states.T
         u=entry_savepoint.ua(),
         v=entry_savepoint.va(),
         w=entry_savepoint.wa(),
+        qv=entry_savepoint.qv(),
+        qc=entry_savepoint.qc(),
+        qi=entry_savepoint.qi(),
+        qr=entry_savepoint.qr(),
+        qs=entry_savepoint.qs(),
+        qg=entry_savepoint.qg(),
         rho=entry_savepoint.rho(),
+        air_mass=entry_savepoint.mair(),
+    )
+
+
+def construct_surface_flux_state(
+    surface_fluxes_savepoint: sb.TmxSurfaceFluxesSavepoint,
+) -> tmx_states.TmxSurfaceFluxState:
+    return tmx_states.TmxSurfaceFluxState(
+        evapotranspiration=surface_fluxes_savepoint.evspsbl(),
+        sensible_heat_flux=surface_fluxes_savepoint.hfss(),
+        u_stress=surface_fluxes_savepoint.tauu(),
+        v_stress=surface_fluxes_savepoint.tauv(),
+        q_snocpymlt=surface_fluxes_savepoint.q_snocpymlt(),
     )
