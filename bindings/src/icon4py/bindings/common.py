@@ -20,6 +20,7 @@ from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
 from gt4py.next.type_system import type_specifications as ts
 
+from icon4py.bindings import icon4py_export
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, horizontal as h_grid, icon
@@ -77,54 +78,30 @@ type OptionalInt32Array2D = Annotated[
     ),
 ]
 
-type Float64Array1D = Annotated[
-    data_alloc.NDArray,
-    py2fgen.ArrayParamDescriptor(
-        rank=1,
-        dtype=ts.ScalarKind.FLOAT64,
-        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
-        is_optional=False,
-    ),
-]
 
-type Float64Array2D = Annotated[
-    data_alloc.NDArray,
-    py2fgen.ArrayParamDescriptor(
-        rank=2,
-        dtype=ts.ScalarKind.FLOAT64,
+def _icon_array(rank: int, kind: icon4py_export.IconKind, is_optional: bool):
+    return py2fgen.ArrayParamDescriptor(
+        rank=rank,
+        dtype=icon4py_export.icon_scalar_kind(kind),
         memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
-        is_optional=False,
-    ),
-]
+        is_optional=is_optional,
+    )
 
-type Float64Array3D = Annotated[
-    data_alloc.NDArray,
-    py2fgen.ArrayParamDescriptor(
-        rank=3,
-        dtype=ts.ScalarKind.FLOAT64,
-        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
-        is_optional=False,
-    ),
-]
 
-type OptionalFloat64Array1D = Annotated[
-    data_alloc.NDArray | None,
-    py2fgen.ArrayParamDescriptor(
-        rank=1,
-        dtype=ts.ScalarKind.FLOAT64,
-        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
-        is_optional=True,
-    ),
+# Raw arrays are not converted by the export layer: the wrapper body builds the field icon4py
+# computes with, and must give it the dtype the consumer declares. The prefix is how ICON
+# declares the argument (`REAL(wp)` or `REAL(vp)`); it fixes the generated C kind.
+_WP, _VP = icon4py_export.IconKind.WP, icon4py_export.IconKind.VP
+type IconWpArray2D = Annotated[data_alloc.NDArray, _icon_array(2, _WP, is_optional=False)]
+type IconWpArray3D = Annotated[data_alloc.NDArray, _icon_array(3, _WP, is_optional=False)]
+type OptionalIconWpArray1D = Annotated[
+    data_alloc.NDArray | None, _icon_array(1, _WP, is_optional=True)
 ]
-
-type OptionalFloat64Array2D = Annotated[
-    data_alloc.NDArray | None,
-    py2fgen.ArrayParamDescriptor(
-        rank=2,
-        dtype=ts.ScalarKind.FLOAT64,
-        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
-        is_optional=True,
-    ),
+type OptionalIconWpArray2D = Annotated[
+    data_alloc.NDArray | None, _icon_array(2, _WP, is_optional=True)
+]
+type OptionalIconVpArray1D = Annotated[
+    data_alloc.NDArray | None, _icon_array(1, _VP, is_optional=True)
 ]
 
 

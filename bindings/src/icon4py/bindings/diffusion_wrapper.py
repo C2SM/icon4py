@@ -30,6 +30,7 @@ from icon4py.bindings import (
     grid_wrapper,
     icon4py_export,
 )
+from icon4py.bindings.icon4py_export import Vp, Wp
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -47,7 +48,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 logger = logging.getLogger(__name__)
@@ -64,19 +65,19 @@ granule: DiffusionGranule | None = None
 
 @icon4py_export.export
 def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
-    theta_ref_mc: fa.CellKField[wpfloat],
-    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
-    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
-    geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
-    geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
-    nudgecoeff_e: fa.EdgeField[wpfloat],
-    rbf_vec_coeff_v: wrapper_common.Float64Array3D,
+    theta_ref_mc: Vp[fa.CellKField[vpfloat]],
+    wgtfac_c: Vp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat]],
+    e_bln_c_s: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat]],
+    geofac_div: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat]],
+    geofac_grg_x: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat]],
+    geofac_grg_y: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat]],
+    geofac_n2s: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat]],
+    nudgecoeff_e: Wp[fa.EdgeField[wpfloat]],
+    rbf_vec_coeff_v: wrapper_common.IconWpArray3D,
     zd_cellidx: wrapper_common.OptionalInt32Array2D,
     zd_vertidx: wrapper_common.OptionalInt32Array2D,
-    zd_intcoef: wrapper_common.OptionalFloat64Array2D,
-    zd_diffcoef: wrapper_common.OptionalFloat64Array1D,
+    zd_intcoef: wrapper_common.OptionalIconWpArray2D,
+    zd_diffcoef: wrapper_common.OptionalIconWpArray1D,
     ndyn_substeps: gtx.int32,
     diffusion_type: gtx.int32,
     hdiff_w: bool,
@@ -264,15 +265,15 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @icon4py_export.export
 def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
-    w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
-    vn: fa.EdgeKField[wpfloat],
-    exner: fa.CellKField[wpfloat],
-    theta_v: fa.CellKField[wpfloat],
-    rho: fa.CellKField[wpfloat],
-    hdef_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
-    div_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
-    dwdx: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
-    dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
+    w: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], wpfloat]],
+    vn: Wp[fa.EdgeKField[wpfloat]],
+    exner: Wp[fa.CellKField[wpfloat]],
+    theta_v: Wp[fa.CellKField[wpfloat]],
+    rho: Wp[fa.CellKField[wpfloat]],
+    hdef_ic: Vp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
+    div_ic: Vp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
+    dwdx: Vp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
+    dwdy: Vp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
     dtime: gtx.float64,
     linit: bool,
 ):
