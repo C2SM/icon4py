@@ -2039,20 +2039,11 @@ class TmxEntrySavepoint(IconSavepoint):
 class TmxSurfaceFluxesSavepoint(IconSavepoint):
     """Savepoint after the surface model call in vdf Compute in mo_vdf.f90."""
 
-    def evspsbl(self):
-        return self._get_field("evspsbl", dims.CellDim)
-
-    def hfss(self):
-        return self._get_field("hfss", dims.CellDim)
-
     def tauu(self):
         return self._get_field("tauu", dims.CellDim)
 
     def tauv(self):
         return self._get_field("tauv", dims.CellDim)
-
-    def q_snocpymlt(self):
-        return self._get_field("q_snocpymlt", dims.CellDim)
 
 
 class TmxDiagnosticsExitSavepoint(IconSavepoint):
