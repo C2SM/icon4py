@@ -23,9 +23,12 @@ from icon4py.tools.py2fgen import _definitions, _utils
 #   2 -> Python wrapper raised an exception
 CFFI_DECORATOR = "@ffi.def_extern(error=2)"
 
-# Parameter name that triggers the OpenACC/CUDA stream interop code path: when a
-# function declares a parameter with this name, the generated Fortran wrapper
-# fetches the CUDA stream in the OpenACC context for the given queue.
+# A function parameter literally named "external_gpu_stream" triggers the
+# OpenACC/CUDA stream interop code path (see `has_external_gpu_stream` in
+# FortranBindingsFunctionGenerator.visit_Func): rather than exposing
+# `external_gpu_stream` itself to the caller, the generated Fortran wrapper exposes
+# this `acc_queue` selector argument instead, and derives the actual CUDA stream
+# handle from it via `acc_get_cuda_stream`.
 ACC_QUEUE_PARAM_NAME: Final[str] = "acc_queue"
 
 BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
