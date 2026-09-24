@@ -1975,6 +1975,30 @@ class TopographySavepoint(IconSavepoint):
         return self._get_field("smooth_topography", dims.CellDim)
 
 
+class TmxInitSavepoint(IconSavepoint):
+    """
+    Static savepoint of the TMX (AES turbulent mixing) scheme.
+
+    Written once at the initial time step of vdf Compute_diagnostics in mo_vdf_atmo.f90,
+    after Smagorinsky_init has filled mix_len_sq and the Louis scaling factor.
+    """
+
+    def inv_ddqz_z_half(self):
+        return self._get_field("inv_ddqz_z_half", dims.CellDim, dims.KHalfDim)
+
+    def inv_ddqz_z_full_e(self):
+        return self._get_field("inv_ddqz_z_full_e", dims.EdgeDim, dims.KDim)
+
+    def wgtfacq1_c(self):
+        return self._get_field("wgtfacq1_c", dims.CellDim, dims.KDim)
+
+    def wgtfacq1_e(self):
+        return self._get_field("wgtfacq1_e", dims.EdgeDim, dims.KDim)
+
+    def geopot_agl_ifc(self):
+        return self._get_field("geopot_agl_ifc", dims.CellDim, dims.KHalfDim)
+
+
 class IconTimeStepExitSavepoint(IconSavepoint):
     """End-of-timestep prognostic state, written in perform_nh_timeloop right after
     integrate_nh returns: all physics tendencies applied, time levels swapped."""
@@ -2394,5 +2418,11 @@ class IconSerialDataProvider:
     def from_savepoint_muphys_exit(self, date: str) -> IconMuphysExitSavepoint:
         savepoint = self.serializer.savepoint["aes-graupel-exit"].id[1].date[date].as_savepoint()
         return IconMuphysExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_init(self) -> TmxInitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-init"].id[1].as_savepoint()
+        return TmxInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )

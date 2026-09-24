@@ -239,7 +239,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
 
     dtime = 10.0 if mesh.limited_area else 90.0
 
-    lprep_adv = True
+    prepare_fluxes_for_advection = True
     ndyn_substeps = 5
     at_initial_timestep = False
     second_order_divdamp_factor = 0.02
@@ -332,7 +332,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         dtime=dtime,
         ndyn_substeps_var=ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
     )
 
     benchmark(

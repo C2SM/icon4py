@@ -29,10 +29,17 @@ class TestRainToVapor(stencil_tests.StencilTest):
         qc: np.ndarray,
         qr: np.ndarray,
         dvsw: np.ndarray,
-        dt: wpfloat,
+        dt: np.ndarray,
         **kwargs,
     ) -> dict:
-        return dict(conversion_rate=np.full(t.shape, 2.8556697055499901e-19))
+        # mirrors ICON mo_aes_graupel.f90 rain_to_vapor
+        a_ev = [-5.532194e00, 2.432848e-01, -4.145391e-02, -1.798439e-03, -1.405764e-05]
+        tc = t - 273.15
+        evap_max = (0.61 + tc * (-0.0163 + 1.111e-4 * tc)) * (-dvsw) / dt
+        x = np.log(np.clip(qr * rho, 3.26216e-08, 6.97604e-03))
+        evap = -np.exp(a_ev[0] + x * (a_ev[1] + x * (a_ev[2] + x * (a_ev[3] + x * a_ev[4])))) * dvsw
+        rate = np.where((qr > 1.0e-15) & (dvsw + qc <= 0.0), np.minimum(evap, evap_max), 0.0)
+        return dict(conversion_rate=rate)
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper):

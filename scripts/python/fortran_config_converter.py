@@ -32,6 +32,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, prescribed_tendencies, time
 from icon4py.model.common.grid import vertical as v_grid
@@ -124,6 +125,12 @@ class IconOption:
     list_to_value: bool = False
     #: applied to the namelist value; defaults to the type annotation of the field
     converter: typing.Callable[[Any], Any] | None = None
+    #: position within an unnamed (positional) namelist record.
+    #: Derived-type namelists (e.g. the AES physics `aes_*_nml`) are echoed by ICON as an
+    #: anonymous array of the member values in declaration order, one record per domain.
+    #: For these, `path` leads to that array and `unnamed_index` is the 0-based member
+    #: position within the first record, while the option name only serves as documentation.
+    unnamed_index: int | None = None
 
 
 def _field_type(config_cls: type, field: str) -> typing.Callable[[Any], Any]:
@@ -146,6 +153,8 @@ def _kwargs_from_table(
         value: Any = icon_config
         for key in opt.path:
             value = value[key]
+        if opt.unnamed_index is not None:
+            value = value[opt.unnamed_index]
         if opt.list_to_value:
             value = list_to_value(value)
         converter = opt.converter or _field_type(config_cls, opt.field)
@@ -291,8 +300,6 @@ _DRIVER_OPTIONS = [
         ("model_cfg", "run_nml", "ltestcase"),
         converter=lambda ltestcase: not ltestcase,
     ),
-    # lprep_adv in fortran
-    IconOption("do_prep_adv", ("model_cfg", "run_nml", "ltransport")),
     IconOption(
         "diffuse_before_time_loop",
         ("model_cfg", "run_nml", "ltestcase"),
@@ -399,6 +406,70 @@ def make_graupel_config(
         snow2graupel_riming_coeff=nwp_tuning_nml["tune_zcsg"],
         **overrides,
     )
+
+
+# ICON echoes `aes_vdf_nml` as an anonymous array of the `t_vdiff_config` members in
+# declaration order, one record per domain; each option is pinned to its member position.
+# Keep `_TMX_VDIFF_MEMBERS`, `_TMX_USE_TMX_INDEX` and the indices below in sync with
+# `t_vdiff_config` in `mo_turb_vdiff_config.f90`.
+_TMX_VDIFF_PATH: typing.Final = ("aes_vdf_nml", "aes_vdf_config")
+#: number of members of `t_vdiff_config`, i.e. the length of one domain's record
+_TMX_VDIFF_MEMBERS: typing.Final = 42
+#: position of the `use_tmx` switch within a record
+_TMX_USE_TMX_INDEX: typing.Final = 22
+
+_TMX_OPTIONS = [
+    IconOption("solver_type", _TMX_VDIFF_PATH, unnamed_index=23),
+    IconOption("energy_type", _TMX_VDIFF_PATH, unnamed_index=24),
+    IconOption("dissipation_factor", _TMX_VDIFF_PATH, unnamed_index=25),
+    IconOption("use_louis", _TMX_VDIFF_PATH, unnamed_index=26),
+    IconOption("use_louis_land", _TMX_VDIFF_PATH, unnamed_index=27),
+    IconOption("use_louis_ice", _TMX_VDIFF_PATH, unnamed_index=28),
+    IconOption("louis_constant_b", _TMX_VDIFF_PATH, unnamed_index=29),
+    IconOption("use_km_const", _TMX_VDIFF_PATH, unnamed_index=30),
+    IconOption("km_const", _TMX_VDIFF_PATH, unnamed_index=31),
+    IconOption("use_scale_turb_energy_flux", _TMX_VDIFF_PATH, unnamed_index=32),
+    IconOption("scale_turb_energy_flux", _TMX_VDIFF_PATH, unnamed_index=33),
+    IconOption("smag_constant", _TMX_VDIFF_PATH, unnamed_index=34),
+    IconOption("turb_prandtl", _TMX_VDIFF_PATH, unnamed_index=35),
+    IconOption("km_min", _TMX_VDIFF_PATH, unnamed_index=37),
+    IconOption("max_turb_scale", _TMX_VDIFF_PATH, unnamed_index=38),
+]
+
+
+def _read_use_tmx(atm_dict: dict[str, Any]) -> bool:
+    """Read the `use_tmx` switch, checking the layout the pinned positions rely on.
+
+    The options are located positionally, so a change to `t_vdiff_config` must fail
+    loudly rather than silently shift every value by one member.
+    """
+    flat = atm_dict["aes_vdf_nml"]["aes_vdf_config"]
+    if len(flat) % _TMX_VDIFF_MEMBERS != 0:
+        raise ValueError(
+            f"'aes_vdf_config' has {len(flat)} values, not a multiple of the "
+            f"{_TMX_VDIFF_MEMBERS} members of t_vdiff_config: the Fortran type changed "
+            "and the pinned 'unnamed_index' positions must be revised."
+        )
+    use_tmx = flat[_TMX_USE_TMX_INDEX]
+    if not isinstance(use_tmx, bool):
+        raise ValueError(
+            f"expected the 'use_tmx' switch at position {_TMX_USE_TMX_INDEX} of "
+            f"'aes_vdf_config', found {use_tmx!r}: the t_vdiff_config member order "
+            "changed and the pinned 'unnamed_index' positions must be revised."
+        )
+    return use_tmx
+
+
+def tmx_is_active(atm_dict: dict[str, Any]) -> bool:
+    """Whether the experiment ran the tmx turbulent mixing scheme."""
+    return "aes_vdf_nml" in atm_dict and _read_use_tmx(atm_dict)
+
+
+def make_tmx_config(atm_dict: dict[str, Any], **overrides: Any) -> tmx_config.TmxConfig:
+    """Read the tmx configuration from the echoed `aes_vdf_nml` namelist."""
+    if not _read_use_tmx(atm_dict):
+        raise ValueError("'use_tmx' is False in 'aes_vdf_config': the run does not use tmx.")
+    return _build_from_table(tmx_config.TmxConfig, _TMX_OPTIONS, atm_dict, overrides)
 
 
 # Fortran namelist keys of the analytical test cases → ICON4Py dataclass fields.
@@ -641,6 +712,10 @@ def convert_experiment(
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
+    # tmx is configured by the AES vertical-diffusion namelist; the driver does not run
+    # the granule yet (icon4py#1360), but the config travels with the experiment.
+    tmx_cfg = make_tmx_config(atm_dict) if tmx_is_active(atm_dict) else None
+
     return driver_config.ExperimentConfig(
         geometry=geometry_cfg,
         metrics=metrics_cfg,
@@ -652,6 +727,7 @@ def convert_experiment(
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         muphys=muphys_cfg,
+        tmx=tmx_cfg,
         topography=topography_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=make_prescribed_tendencies_config(atm_dict),

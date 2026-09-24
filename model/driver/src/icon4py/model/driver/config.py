@@ -12,7 +12,6 @@ import dataclasses
 import datetime
 import logging
 import pathlib
-import re
 import typing
 from typing import Any
 
@@ -24,8 +23,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
+    backend_configuration as backend_cfg,
     initial_condition,
     prescribed_tendencies,
     time,
@@ -40,6 +41,7 @@ from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_states
+from icon4py.model.common.utils.time_utils import relativetime_from_iso8601
 
 
 log = logging.getLogger(__name__)
@@ -62,29 +64,6 @@ class ProfilingConfig:
     gt4py_metrics_level: int = gtx_metrics.ALL
     gt4py_metrics_output_file: str = "gt4py_metrics.json"
     skip_first_timestep: bool = True
-
-
-# ISO 8601 duration, restricted to the fixed-length components (weeks, days,
-# hours, minutes, seconds). Years and months are intentionally not matched since
-# their length is not fixed, and this is currently only used for dtime.
-_ISO8601_DURATION = re.compile(
-    r"P(?:(?P<weeks>\d+)W)?(?:(?P<days>\d+)D)?"
-    r"(?:T(?=\d)(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?"
-)
-
-
-def relativetime_from_iso8601(duration: str) -> time.RelativeTime:
-    """
-    Parse an ISO 8601 duration such as 'PT300S' into a 'time.RelativeTime'.
-
-    Only the components convertible to a fixed duration are supported (weeks,
-    days, hours, minutes, seconds).
-    """
-    match = _ISO8601_DURATION.fullmatch(duration)
-    if match is None or not any(match.groups()):
-        raise ValueError(f"Invalid ISO 8601 duration: '{duration}'.")
-    components = {name: float(value) for name, value in match.groupdict().items() if value}
-    return time.RelativeTime(**components)
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -145,12 +124,6 @@ class DriverConfig:
             ),
         ),
     ] = False
-    do_prep_adv: typing.Annotated[
-        bool,
-        common_conf_opt.ConfigOption(
-            description="No description available yet.",
-        ),
-    ] = False  # lprep_adv in fortran
     diffuse_before_time_loop: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
@@ -187,6 +160,16 @@ class DriverConfig:
             ),
         ),
     ] = False
+    backend_config: typing.Annotated[
+        backend_cfg.BackendConfig | None,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Backend configuration options, which affect performance but not "
+                "the scientific outcome. `None` falls back to environment variables, "
+                "if set, otherwise the default configuration is used."
+            ),
+        ),
+    ] = dataclasses.field(default_factory=backend_cfg.backend_config_from_env)
     output_backend: typing.Annotated[
         common_io.OutputBackend,
         common_conf_opt.ConfigOption(
@@ -234,6 +217,9 @@ class ExperimentConfig(config_io.ConfigWithShared):
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     muphys: muphys_config.MuphysConfig | None = None
+    #: Read from the AES vertical-diffusion namelist; the driver does not run the
+    #: granule yet (icon4py#1360), so it is carried but unused.
+    tmx: tmx_config.TmxConfig | None = None
 
     def __post_init__(self) -> None:
         # The file-based initial condition needs the clock of the driver to know which

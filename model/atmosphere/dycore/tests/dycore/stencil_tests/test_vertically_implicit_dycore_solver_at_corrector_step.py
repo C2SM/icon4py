@@ -73,7 +73,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             "vertical_end_index_model_surface",
             "at_first_substep",
             "at_last_substep",
-            "lprep_adv",
+            "prepare_fluxes_for_advection",
             "is_iau_active",
             "rayleigh_type",
         ),
@@ -84,7 +84,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             "vertical_end_index_model_surface",
             "at_first_substep",
             "at_last_substep",
-            "lprep_adv",
+            "prepare_fluxes_for_advection",
             "is_iau_active",
             "rayleigh_type",
         ),
@@ -126,7 +126,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         reference_exner_at_cells_on_model_levels: np.ndarray,
         advection_explicit_weight_parameter: float,
         advection_implicit_weight_parameter: float,
-        lprep_adv: bool,
+        prepare_fluxes_for_advection: bool,
         r_nsubsteps: float,
         ndyn_substeps_var: float,
         iau_wgt_dyn: float,
@@ -335,7 +335,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             (next_rho, next_exner, next_theta_v),
         )
 
-        if lprep_adv:
+        if prepare_fluxes_for_advection:
             if at_first_substep:
                 dynamical_vertical_mass_flux_at_cells_on_half_levels = np.zeros_like(
                     vertical_mass_flux_at_cells_on_half_levels
@@ -399,7 +399,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture(
         params=[
-            {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la, "is_iau_active": ia}
+            {
+                "at_first_substep": afs,
+                "at_last_substep": als,
+                "prepare_fluxes_for_advection": la,
+                "is_iau_active": ia,
+            }
             for afs, als, la, ia in [
                 (True, True, True, True),  # For testing the whole functionality of the stencil
                 (True, False, True, False),  # For benchmarking against MCH experiments
@@ -410,7 +415,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         ids=lambda p: (
             f"at_first_substep[{p['at_first_substep']}]__"
             f"at_last_substep[{p['at_last_substep']}]__"
-            f"lprep_adv[{p['lprep_adv']}]__"
+            f"prepare_fluxes_for_advection[{p['prepare_fluxes_for_advection']}]__"
             f"is_iau_active[{p['is_iau_active']}]"
         ),
     )
@@ -467,7 +472,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             dims.CellDim, dims.KHalfDim
         )
 
-        lprep_adv = request.param["lprep_adv"]
+        prepare_fluxes_for_advection = request.param["prepare_fluxes_for_advection"]
         r_nsubsteps = 0.5
         is_iau_active = request.param["is_iau_active"]
         at_first_substep = request.param["at_first_substep"]
@@ -519,7 +524,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
-            lprep_adv=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=ndyn_substeps_var,
             iau_wgt_dyn=iau_wgt_dyn,
