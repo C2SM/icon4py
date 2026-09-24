@@ -26,7 +26,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
     interpolation_field_source,
@@ -179,4 +179,9 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
         max_nudging_coefficient=0.375,
     )
 
-    benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)
+    benchmark(
+        device_utils.synchronized_function(diffusion_granule.run, allocator=allocator),
+        diagnostic_state,
+        prognostic_state,
+        dtime,
+    )
