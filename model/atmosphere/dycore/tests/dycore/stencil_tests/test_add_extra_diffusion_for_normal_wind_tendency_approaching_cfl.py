@@ -15,6 +15,7 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
+from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import VerticalCflConstants
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
@@ -35,8 +36,6 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
     geofac_grdiv: np.ndarray,
     vn: np.ndarray,
     ddt_vn_apc: np.ndarray,
-    cfl_w_limit: ta.wpfloat,
-    scalfac_exdiff: ta.wpfloat,
     dtime: ta.wpfloat,
 ) -> np.ndarray:
     w_con_e = np.zeros_like(vn)
@@ -66,11 +65,12 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
     )
     difcoef = np.where(
         ((levelmask_offset_0) | (levelmask_offset_1))
-        & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
-        scalfac_exdiff
+        & (np.abs(w_con_e) * dtime / ddqz_z_full_e > VerticalCflConstants.W_LIMIT),
+        VerticalCflConstants.EXTRA_DIFFUSION_SCALING
+        / dtime
         * np.minimum(
-            0.85 - cfl_w_limit * dtime,
-            np.abs(w_con_e) * dtime / ddqz_z_full_e - cfl_w_limit * dtime,
+            VerticalCflConstants.W_MAX - VerticalCflConstants.W_LIMIT,
+            np.abs(w_con_e) * dtime / ddqz_z_full_e - VerticalCflConstants.W_LIMIT,
         ),
         difcoef,
     )
@@ -78,7 +78,7 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
     e2c2eo = connectivities[dims.E2C2EO]
     ddt_vn_apc = np.where(
         ((levelmask_offset_0) | (levelmask_offset_1))
-        & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
+        & (np.abs(w_con_e) * dtime / ddqz_z_full_e > VerticalCflConstants.W_LIMIT),
         ddt_vn_apc
         + difcoef
         * area_edge
@@ -117,8 +117,6 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(stencil_tests.Ste
         geofac_grdiv = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
         vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         ddt_vn_apc = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        cfl_w_limit = ta.vpfloat("4.0")
-        scalfac_exdiff = 6.0
         dtime = 2.0
         return dict(
             levelmask=levelmask,
@@ -130,8 +128,6 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(stencil_tests.Ste
             geofac_grdiv=geofac_grdiv,
             vn=vn,
             ddt_vn_apc=ddt_vn_apc,
-            cfl_w_limit=cfl_w_limit,
-            scalfac_exdiff=scalfac_exdiff,
             dtime=dtime,
             c_lin_e=c_lin_e,
             z_w_con_c_full=z_w_con_c_full,
@@ -156,8 +152,6 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(stencil_tests.Ste
         geofac_grdiv: np.ndarray,
         vn: np.ndarray,
         ddt_vn_apc: np.ndarray,
-        cfl_w_limit: ta.wpfloat,
-        scalfac_exdiff: ta.wpfloat,
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
@@ -175,8 +169,6 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(stencil_tests.Ste
             geofac_grdiv=geofac_grdiv,
             vn=vn,
             ddt_vn_apc=ddt_vn_apc,
-            cfl_w_limit=cfl_w_limit,
-            scalfac_exdiff=scalfac_exdiff,
             dtime=dtime,
         )
         return dict(ddt_vn_apc=ddt_vn_apc)

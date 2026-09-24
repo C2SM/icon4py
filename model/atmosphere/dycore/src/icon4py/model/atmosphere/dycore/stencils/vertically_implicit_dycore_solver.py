@@ -35,9 +35,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_
 from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_variables import (
     _compute_results_for_thermodynamic_variables,
 )
-from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_back_substitution import (
-    _solve_tridiagonal_matrix_for_w_back_substitution_scan,
-)
 from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     _solve_tridiagonal_matrix_for_w_forward_sweep,
 )
@@ -49,6 +46,9 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants, RayleighType
+from icon4py.model.common.math.tridiagonal import (
+    _solve_tridiagonal_matrix_back_substitution_on_half_levels_mixed_precision,
+)
 from icon4py.model.common.math.value_of_size import (
     value_of_size_on_cells_on_half_levels_vp,
     value_of_size_on_cells_on_half_levels_wp,
@@ -204,9 +204,9 @@ def solve_w(
     )
     next_w = concat_where(
         dims.KHalfDim < last_inner_level,
-        _solve_tridiagonal_matrix_for_w_back_substitution_scan(
-            z_q=tridiagonal_intermediate_result,
-            w=next_w_intermediate_result,
+        _solve_tridiagonal_matrix_back_substitution_on_half_levels_mixed_precision(
+            q=tridiagonal_intermediate_result,
+            d_prime=next_w_intermediate_result,
         ),
         next_w,
     )
@@ -581,7 +581,7 @@ def _vertically_implicit_solver_at_corrector_step(
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
-    lprep_adv: bool,
+    prepare_fluxes_for_advection: bool,
     r_nsubsteps: ta.wpfloat,
     ndyn_substeps_var: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
@@ -708,7 +708,7 @@ def _vertically_implicit_solver_at_corrector_step(
         dtime=dtime,
     )
 
-    if lprep_adv:
+    if prepare_fluxes_for_advection:
         if at_first_substep:
             (
                 dynamical_vertical_mass_flux_at_cells_on_half_levels,
@@ -796,7 +796,7 @@ def vertically_implicit_solver_at_corrector_step(
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
-    lprep_adv: bool,
+    prepare_fluxes_for_advection: bool,
     r_nsubsteps: ta.wpfloat,
     ndyn_substeps_var: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
@@ -853,7 +853,7 @@ def vertically_implicit_solver_at_corrector_step(
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=ndyn_substeps_var,
         iau_wgt_dyn=iau_wgt_dyn,

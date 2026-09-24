@@ -23,7 +23,7 @@ def _set_theta_v_prime_ic_at_lower_boundary(
 ) -> tuple[fa.CellKHalfField[vpfloat], fa.CellKHalfField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_11_upper."""
     z_theta_v_pr_ic_vp = _extrapolate_quadratically_to_surface(
-        wgtfacq_c=wgtfacq_c, interpolant=z_rth_pr
+        interpolant=z_rth_pr, wgtfacq_c=wgtfacq_c
     )
     theta_v_ic_vp = theta_ref_ic + z_theta_v_pr_ic_vp
     return z_theta_v_pr_ic_vp, astype(theta_v_ic_vp, wpfloat)

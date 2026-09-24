@@ -29,7 +29,7 @@ from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C2EO
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
-    _compute_tangential_wind_vp,
+    _compute_tangential_wind,
 )
 from icon4py.model.common.type_alias import vpfloat
 
@@ -65,7 +65,9 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
     horizontal_gradient_of_normal_wind_divergence = astype(
         neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=dims.E2C2EODim), vpfloat
     )
-    tangential_wind = _compute_tangential_wind_vp(vn=vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
+    tangential_wind = astype(
+        _compute_tangential_wind(vn=vn, rbf_vec_coeff_e=rbf_vec_coeff_e), vpfloat
+    )
 
     (
         mass_flux_at_edges_on_model_levels,
@@ -81,8 +83,8 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
         vn, tangential_wind
     )
 
-    vn_on_half_levels = _interpolate_to_half_levels(wgtfac_e, vn)
-    tangential_wind_on_half_levels = _interpolate_to_half_levels(wgtfac_e, tangential_wind)
+    vn_on_half_levels = _interpolate_to_half_levels(vn, wgtfac_e)
+    tangential_wind_on_half_levels = _interpolate_to_half_levels(tangential_wind, wgtfac_e)
 
     contravariant_correction_at_edges_on_model_levels = concat_where(
         nflatlev <= dims.KDim,
@@ -240,8 +242,8 @@ def compute_horizontal_velocity_quantities_and_fluxes(
     )
 
     _extrapolate_at_top(
-        wgtfacq_e,
         vn,
+        wgtfacq_e,
         out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -259,7 +261,7 @@ def _compute_averaged_vn_and_fluxes(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    prepare_advection: bool,
+    prepare_fluxes_for_advection: bool,
     at_first_substep: bool,
     r_nsubsteps: ta.wpfloat,
 ) -> tuple[
@@ -281,7 +283,7 @@ def _compute_averaged_vn_and_fluxes(
         theta_v_at_edges_on_model_levels,
     )
 
-    if prepare_advection:
+    if prepare_fluxes_for_advection:
         substep_and_spatially_averaged_vn, substep_averaged_mass_flux = (
             (r_nsubsteps * spatially_averaged_vn, r_nsubsteps * mass_flux_at_edges_on_model_levels)
             if at_first_substep
@@ -315,7 +317,7 @@ def compute_averaged_vn_and_fluxes(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    prepare_advection: bool,
+    prepare_fluxes_for_advection: bool,
     at_first_substep: bool,
     r_nsubsteps: ta.wpfloat,
     horizontal_start: gtx.int32,
@@ -340,7 +342,7 @@ def compute_averaged_vn_and_fluxes(
         - rho_at_edges_on_model_levels: air density at edges on model levels [kg m⁻³]
         - ddqz_z_full_e: vertical derivative of qz at edges [1/m]
         - theta_v_at_edges_on_model_levels: virtual potential temperature at edges [K]
-        - prepare_advection: whether to prepare fields for tracer advection (True if in preparation phase)
+        - prepare_fluxes_for_advection: whether to prepare fields for tracer advection (True if in preparation phase)
         - at_first_substep: True if currently at the first substep of the time integration
         - r_nsubsteps: reciprocal of the total number of substeps (1 / N)
         - horizontal_start: start index of the horizontal domain
@@ -363,7 +365,7 @@ def compute_averaged_vn_and_fluxes(
         rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
         ddqz_z_full_e=ddqz_z_full_e,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
-        prepare_advection=prepare_advection,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         at_first_substep=at_first_substep,
         r_nsubsteps=r_nsubsteps,
         out=(

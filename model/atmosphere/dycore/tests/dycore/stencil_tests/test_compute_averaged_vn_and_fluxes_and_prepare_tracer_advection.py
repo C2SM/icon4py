@@ -41,14 +41,14 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
             "horizontal_end",
             "vertical_start",
             "vertical_end",
-            "prepare_advection",
+            "prepare_fluxes_for_advection",
             "at_first_substep",
             "r_nsubsteps",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
-            "prepare_advection",
+            "prepare_fluxes_for_advection",
             "at_first_substep",
             "r_nsubsteps",
         ),
@@ -68,7 +68,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         rho_at_edges_on_model_levels: np.ndarray,
         ddqz_z_full_e: np.ndarray,
         theta_v_at_edges_on_model_levels: np.ndarray,
-        prepare_advection: bool,
+        prepare_fluxes_for_advection: bool,
         at_first_substep: bool,
         r_nsubsteps: ta.wpfloat,
         horizontal_start: int,
@@ -95,7 +95,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
             )
         )
 
-        if prepare_advection:
+        if prepare_fluxes_for_advection:
             substep_and_spatially_averaged_vn, substep_averaged_mass_flux = (
                 (
                     r_nsubsteps * spatially_averaged_vn,
@@ -156,14 +156,14 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
 
     @stencil_tests.input_data_fixture(
         params=[
-            {"prepare_advection": pa, "at_first_substep": afs}
+            {"prepare_fluxes_for_advection": pa, "at_first_substep": afs}
             for pa, afs in [
                 (True, True),
                 (True, False),
             ]
         ],
         ids=lambda p: (
-            f"prepare_advection[{p['prepare_advection']}]__at_first_substep[{p['at_first_substep']}]"
+            f"prepare_fluxes_for_advection[{p['prepare_fluxes_for_advection']}]__at_first_substep[{p['at_first_substep']}]"
         ),
     )
     def input_data(
@@ -182,7 +182,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         z_rho_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         ddqz_z_full_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         z_theta_v_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        prepare_advection = request.param["prepare_advection"]
+        prepare_fluxes_for_advection = request.param["prepare_fluxes_for_advection"]
         at_first_substep = request.param["at_first_substep"]
         r_nsubsteps = 0.5
 
@@ -201,7 +201,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
             rho_at_edges_on_model_levels=z_rho_e,
             ddqz_z_full_e=ddqz_z_full_e,
             theta_v_at_edges_on_model_levels=z_theta_v_e,
-            prepare_advection=prepare_advection,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=horizontal_start,

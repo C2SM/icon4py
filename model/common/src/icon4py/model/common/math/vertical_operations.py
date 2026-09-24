@@ -88,8 +88,24 @@ def with_boundaries_on_half_levels_on_cells(
     Each branch is evaluated only on its own region, so vertical (``Koff``) shifts in the
     arguments need to be in bounds only within that region.
     """
+    # TODO(havogt): one-sided masks, because with `==` GT4Py infers the branches over the
+    # whole column and dace reads out of bounds, see https://github.com/GridTools/gt4py/issues/2205.
     return concat_where(
-        dims.KHalfDim == 0, top, concat_where(dims.KHalfDim == nlev, bottom, interior)
+        dims.KHalfDim < 1, top, concat_where(dims.KHalfDim >= nlev, bottom, interior)
+    )
+
+
+@gtx.field_operator
+def with_boundaries_on_half_levels_on_edges(
+    top: fa.EdgeKHalfField[wpfloat],
+    interior: fa.EdgeKHalfField[wpfloat],
+    bottom: fa.EdgeKHalfField[wpfloat],
+    nlev: gtx.int32,
+) -> fa.EdgeKHalfField[wpfloat]:
+    """Edge counterpart of :func:`with_boundaries_on_half_levels_on_cells`."""
+    # TODO(havogt): one-sided masks, see `with_boundaries_on_half_levels_on_cells`.
+    return concat_where(
+        dims.KHalfDim < 1, top, concat_where(dims.KHalfDim >= nlev, bottom, interior)
     )
 
 
@@ -280,4 +296,66 @@ def set_constant_on_model_levels_on_cells(  # noqa: PLR0917 [too-many-positional
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
         },
+    )
+
+
+@gtx.field_operator
+def extrapolate_quadratically_to_top_on_cells(
+    interpolant: fa.CellKField[wpfloat],
+    weights: fa.CellKField[wpfloat],
+) -> fa.CellKHalfField[wpfloat]:
+    """
+    Extrapolate quadratically to the top half level from the first three full levels.
+
+    ``weights`` holds three coefficient rows aligned to the levels they multiply.
+    Only valid at half level 0, where the half-level shifts stay inside that range.
+    """
+    return (
+        weights(dims.KHalfDim + 0.5) * interpolant(dims.KHalfDim + 0.5)
+        + weights(dims.KHalfDim + 1.5) * interpolant(dims.KHalfDim + 1.5)
+        + weights(dims.KHalfDim + 2.5) * interpolant(dims.KHalfDim + 2.5)
+    )
+
+
+@gtx.field_operator
+def extrapolate_quadratically_to_top_on_edges(
+    interpolant: fa.EdgeKField[wpfloat],
+    weights: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKHalfField[wpfloat]:
+    """Edge counterpart of :func:`extrapolate_quadratically_to_top_on_cells`."""
+    return (
+        weights(dims.KHalfDim + 0.5) * interpolant(dims.KHalfDim + 0.5)
+        + weights(dims.KHalfDim + 1.5) * interpolant(dims.KHalfDim + 1.5)
+        + weights(dims.KHalfDim + 2.5) * interpolant(dims.KHalfDim + 2.5)
+    )
+
+
+@gtx.field_operator
+def extrapolate_quadratically_to_surface_on_cells(
+    interpolant: fa.CellKField[wpfloat],
+    weights: fa.CellKField[wpfloat],
+) -> fa.CellKHalfField[wpfloat]:
+    """
+    Extrapolate quadratically to the surface half level from the last three full levels.
+
+    ``weights`` holds three coefficient rows aligned to the levels they multiply.
+    Only valid at half level nlev, where the half-level shifts stay inside that range.
+    """
+    return (
+        weights(dims.KHalfDim - 0.5) * interpolant(dims.KHalfDim - 0.5)
+        + weights(dims.KHalfDim - 1.5) * interpolant(dims.KHalfDim - 1.5)
+        + weights(dims.KHalfDim - 2.5) * interpolant(dims.KHalfDim - 2.5)
+    )
+
+
+@gtx.field_operator
+def extrapolate_quadratically_to_surface_on_edges(
+    interpolant: fa.EdgeKField[wpfloat],
+    weights: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKHalfField[wpfloat]:
+    """Edge counterpart of :func:`extrapolate_quadratically_to_surface_on_cells`."""
+    return (
+        weights(dims.KHalfDim - 0.5) * interpolant(dims.KHalfDim - 0.5)
+        + weights(dims.KHalfDim - 1.5) * interpolant(dims.KHalfDim - 1.5)
+        + weights(dims.KHalfDim - 2.5) * interpolant(dims.KHalfDim - 2.5)
     )

@@ -35,8 +35,8 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
-from icon4py.model.common.math import vertical_operations as vertical_ops
+from icon4py.model.common.interpolation.stencils import interpolate_cell_field_to_edge
+from icon4py.model.common.math import utils as math_utils, vertical_operations as vertical_ops
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
@@ -285,6 +285,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddqz_z_half)
 
+        height_above_ground = factory.NumpyDataProvider(
+            func=mf.compute_height_above_surface,
+            domain=(dims.CellDim, dims.KDim),
+            fields=(attrs.HEIGHT_ABOVE_GROUND,),
+            deps={"z": attrs.Z_MC, "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
+        )
+        self.register_provider(height_above_ground)
+
         ddqz_z_full_and_inverse = factory.ProgramFieldProvider(
             func=mf.compute_ddqz_z_full_and_inverse.with_backend(self._backend),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
@@ -304,7 +312,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(ddqz_z_full_and_inverse)
 
         ddqz_full_on_edges = factory.ProgramFieldProvider(
-            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+                self._backend
+            ),
             deps={"in_field": attrs.DDQZ_Z_FULL, "coeff": interpolation_attributes.C_LIN_E},
             domain={
                 dims.EdgeDim: (
@@ -345,8 +355,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={"vct_a": "vct_a"},
             domain={
                 dims.KHalfDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    v_grid.Domain(dims.KHalfDim, v_grid.Zone.DAMPING, 1),
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
                 )
             },
             fields={"rayleigh_w": attrs.RAYLEIGH_W},
@@ -356,6 +366,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "rayleigh_coeff": self._config.rayleigh_coeff,
                 "vct_a_1": self._vct_a_1,
                 "pi_const": math.pi,
+                "end_index_of_damping_layer": self._vertical_grid.end_index_of_damping_layer,
             },
             do_exchange=False,
         )
@@ -373,7 +384,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
-                    v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1),
+                    vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
@@ -865,43 +876,121 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(coeff_gradekin)
 
-        compute_wgtfacq_c = factory.NumpyDataProvider(
-            func=weight_factors.compute_wgtfacq_c_dsl,
-            domain=gtx.domain(
-                {
-                    dims.CellDim: (0, self._grid.num_cells),
-                    dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
-                }
-            ),
-            fields=(attrs.WGTFACQ_C,),
+        compute_wgtfacq_c = factory.ProgramFieldProvider(
+            func=weight_factors.compute_wgtfacq_c.with_backend(self._backend),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
+            domain={
+                dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
+                dims.KDim: (
+                    v_grid.Domain(dims.KDim, v_grid.Zone.BOTTOM, -3),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"wgtfacq_c": attrs.WGTFACQ_C},
             params={"nlev": self._grid.num_levels},
+            do_exchange=False,
         )
 
         self.register_provider(compute_wgtfacq_c)
 
-        compute_wgtfacq_e = factory.NumpyDataProvider(
-            func=functools.partial(
-                weight_factors.compute_wgtfacq_e_dsl,
-                exchange=self._exchange,
+        compute_wgtfacq_e = factory.ProgramFieldProvider(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+                self._backend
             ),
             deps={
-                "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
-                "c_lin_e": interpolation_attributes.C_LIN_E,
-                "wgtfacq_c_dsl": attrs.WGTFACQ_C,
+                "in_field": attrs.WGTFACQ_C,
+                "coeff": interpolation_attributes.C_LIN_E,
             },
-            connectivities={"e2c": dims.E2CDim},
-            domain=gtx.domain(
-                {
-                    dims.EdgeDim: (0, self._grid.num_edges),
-                    dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
-                }
-            ),
-            fields=(attrs.WGTFACQ_E,),
-            params={"n_edges": self._grid.num_edges, "nlev": self._grid.num_levels},
+            domain={
+                dims.EdgeDim: (edge_domain(h_grid.Zone.LOCAL), edge_domain(h_grid.Zone.END)),
+                dims.KDim: (
+                    v_grid.Domain(dims.KDim, v_grid.Zone.BOTTOM, -3),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"out_field": attrs.WGTFACQ_E},
+            do_exchange=True,
         )
-
         self.register_provider(compute_wgtfacq_e)
+
+        compute_wgtfacq1_c = factory.ProgramFieldProvider(
+            func=weight_factors.compute_wgtfacq1_c.with_backend(self._backend),
+            deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
+            domain={
+                dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
+                dims.KDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 3),
+                ),
+            },
+            fields={"wgtfacq1_c": attrs.WGTFACQ1_C},
+            do_exchange=False,
+        )
+        self.register_provider(compute_wgtfacq1_c)
+
+        compute_wgtfacq1_e = factory.ProgramFieldProvider(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+                self._backend
+            ),
+            deps={
+                "in_field": attrs.WGTFACQ1_C,
+                "coeff": interpolation_attributes.C_LIN_E,
+            },
+            domain={
+                dims.EdgeDim: (edge_domain(h_grid.Zone.LOCAL), edge_domain(h_grid.Zone.END)),
+                dims.KDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 3),
+                ),
+            },
+            fields={"out_field": attrs.WGTFACQ1_E},
+            do_exchange=True,
+        )
+        self.register_provider(compute_wgtfacq1_e)
+
+        inv_ddqz_z_half = factory.ProgramFieldProvider(
+            func=math_utils.compute_inverse_on_cell_khalf.with_backend(self._backend),
+            deps={"f": attrs.DDQZ_Z_HALF},
+            domain={
+                dims.CellDim: (
+                    cell_domain(h_grid.Zone.LOCAL),
+                    cell_domain(h_grid.Zone.END),
+                ),
+                dims.KHalfDim: (
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"f_inverse": attrs.INV_DDQZ_Z_HALF},
+            do_exchange=False,
+        )
+        self.register_provider(inv_ddqz_z_half)
+
+        inv_ddqz_z_full_e = factory.ProgramFieldProvider(
+            func=math_utils.compute_inverse_on_edge_k.with_backend(self._backend),
+            deps={"f": attrs.DDQZ_Z_FULL_E},
+            domain={
+                dims.EdgeDim: (
+                    edge_domain(h_grid.Zone.LOCAL),
+                    edge_domain(h_grid.Zone.END),
+                ),
+                dims.KDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"f_inverse": attrs.INV_DDQZ_Z_FULL_E},
+            do_exchange=False,
+        )
+        self.register_provider(inv_ddqz_z_full_e)
+
+        geopot_agl_ifc = factory.NumpyDataProvider(
+            func=mf.compute_geopotential_above_ground_on_half_levels,
+            deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
+            domain=(dims.CellDim, dims.KHalfDim),
+            fields=(attrs.GEOPOT_AGL_IFC,),
+        )
+        self.register_provider(geopot_agl_ifc)
 
         compute_maxslp_maxhgtd = factory.ProgramFieldProvider(
             func=mf.compute_maxslp_maxhgtd.with_backend(self._backend),

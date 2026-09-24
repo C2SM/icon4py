@@ -489,7 +489,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
-    lprep_adv = init_savepoint.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = init_savepoint.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=init_savepoint.vn_traj(),
         mass_flx_me=init_savepoint.mass_flx_me(),
@@ -551,7 +551,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
         ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
         is_iau_active=is_iau_active,
@@ -685,7 +685,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
@@ -729,7 +729,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         dtime=dtime,
         ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         at_first_substep=substep_init == 1,
         at_last_substep=substep_init == experiment.config.driver.ndyn_substeps,
         is_iau_active=is_iau_active,
@@ -809,7 +809,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
@@ -864,7 +864,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
             dtime=dtime,
             ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
             at_initial_timestep=at_initial_timestep,
-            lprep_adv=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
             is_iau_active=is_iau_active,
@@ -1820,7 +1820,7 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
         rho_at_edges_on_model_levels=z_rho_e,
         ddqz_z_full_e=ddqz_z_full_e,
         theta_v_at_edges_on_model_levels=z_theta_v_e,
-        prepare_advection=True,
+        prepare_fluxes_for_advection=True,
         at_first_substep=at_first_substep,
         r_nsubsteps=r_nsubsteps,
         horizontal_start=horizontal_start,
@@ -2184,7 +2184,9 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
-        lprep_adv=savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv"),
+        prepare_fluxes_for_advection=savepoint_nonhydro_init.get_metadata("prep_adv").get(
+            "prep_adv"
+        ),
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=float(experiment.config.driver.ndyn_substeps),
         iau_wgt_dyn=iau_wgt_dyn,

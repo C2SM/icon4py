@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-def extrapolate_at_top_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
+def extrapolate_at_top_numpy(vn: np.ndarray, wgtfacq_e: np.ndarray) -> np.ndarray:
     vn_k_minus_1 = vn[:, -1]
     vn_k_minus_2 = vn[:, -2]
     vn_k_minus_3 = vn[:, -3]
@@ -48,7 +48,7 @@ class TestExtrapolateAtTop(stencil_tests.StencilTest):
         vn: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        vn_ie = extrapolate_at_top_numpy(wgtfacq_e, vn)
+        vn_ie = extrapolate_at_top_numpy(vn, wgtfacq_e)
         return dict(vn_ie=vn_ie)
 
     @stencil_tests.input_data_fixture

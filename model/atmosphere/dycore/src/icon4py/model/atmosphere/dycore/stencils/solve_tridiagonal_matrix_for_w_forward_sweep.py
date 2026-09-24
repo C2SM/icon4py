@@ -9,38 +9,10 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-@gtx.scan_operator(
-    axis=dims.KHalfDim,
-    forward=True,
-    init=(  # type: ignore[call-overload] # GT4Py misses type hint for tuples here
-        vpfloat("0.0"),
-        0.0,
-    ),  # boundary condition for upper tridiagonal element and w at model top
+from icon4py.model.common.math.tridiagonal import (
+    _solve_tridiagonal_matrix_forward_sweep_on_half_levels_mixed_precision,
 )
-def tridiagonal_forward_sweep_for_w(
-    state_kminus1: tuple[vpfloat, float],
-    a: vpfloat,
-    b: vpfloat,
-    c: vpfloat,
-    d: wpfloat,
-) -> tuple[wpfloat, wpfloat]:
-    """
-    |  1   0                  |  | w_0 |    |  0  |          | 1   0                     |  | w_0 |    |  0     |
-    | a_1 b_1 c_1             |  | w_1 |    | d_1 |          | 0   1  cnew_1             |  | w_1 |    | dnew_1 |
-    |     a_2 b_2 c_2         |  | w_2 |  = | d_2 |    ==>   |     0   1  cnew_2         |  | w_2 |  = | dnew_2 |
-    |         a_3 b_3 c_3     |  | w_3 |    | d_3 |          |         0   1  cnew_3     |  | w_3 |    | dnew_3 |
-    |             a_4 b_4 c_4 |  | w_4 |    | d_4 |          |             0   1  cnew_4 |  | w_4 |    | dnew_4 |
-    |                 ...     |  | ... |    | ... |          |                 ...       |  | ... |    | ...    |
-    """
-    c_kminus1 = astype(state_kminus1[0], vpfloat)
-    d_kminus1 = state_kminus1[1]
-    normalization = vpfloat("1.0") / (b + a * c_kminus1)  # normalize diagonal element to 1
-    c_new = (vpfloat("0.0") - c) * normalization
-    d_new = (d - astype(a, wpfloat) * d_kminus1) * astype(normalization, wpfloat)
-    return c_new, d_new  # type: ignore[return-value] # return type hints for scan operators broken in GT4Py
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
@@ -68,7 +40,9 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     w_prep = z_w_expl - z_gamma_wp * (
         z_exner_expl(dims.KHalfDim - 0.5) - z_exner_expl(dims.KHalfDim + 0.5)
     )
-    z_q_res, w_res = tridiagonal_forward_sweep_for_w(a=z_a, b=z_b, c=z_c, d=w_prep)
+    z_q_res, w_res = _solve_tridiagonal_matrix_forward_sweep_on_half_levels_mixed_precision(
+        a=z_a, b=z_b, c=z_c, d=w_prep
+    )
     return z_q_res, w_res
 
 

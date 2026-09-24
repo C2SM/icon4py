@@ -188,7 +188,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
                 & (max(1, nflatlev) <= vert_idx)
                 & (vert_idx < surface_level - 1),
                 interpolate_cell_field_to_half_levels_vp_numpy(
-                    wgtfac_c=wgtfac_c, interpolant=temporal_extrapolation_of_perturbed_exner
+                    interpolant=temporal_extrapolation_of_perturbed_exner, wgtfac_c=wgtfac_c
                 )[:, :-1],
                 exner_at_cells_on_half_levels,
             )
