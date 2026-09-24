@@ -26,7 +26,8 @@ from icon4py.model.testing import (
 from ..fixtures import *  # noqa: F403
 
 
-# Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends
+# Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends (GAUSS3D vn and w also
+# on embedded)
 _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
     test_defs.Experiments.JW: {
         "vn": (5.3e-7, 0.0),
@@ -36,8 +37,8 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "rho": (1.5e-10, 2.2e-10),
     },
     test_defs.Experiments.GAUSS3D: {
-        "vn": (4.1e-13, 0.0),
-        "w": (8.1e-14, 0.0),
+        "vn": (5.1e-13, 0.0),
+        "w": (9.3e-14, 0.0),
         "exner": (1.3e-10, 1.3e-10),
         "theta_v": (9.3e-8, 3.1e-10),
         "rho": (1.8e-15, 3.7e-15),
@@ -94,18 +95,11 @@ def timeloop_diffusion_linit_exit() -> bool:
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
         ),
-        # `embedded_remap_error`: over the steep points, diffusion's
-        # `_truly_horizontal_diffusion_nabla_of_theta_over_steep_points` reads
-        # `theta_v(as_offset(Koff, zd_vertoffset + 1))` below the bottom level wherever
-        # `zd_diffcoef == 0`; the enclosing `where` masks all of those points, but embedded
-        # evaluates both branches over the whole domain and cannot remap the partial image.
-        # MCH_CH_R04B09 has the same shape, behind the failure noted on its cases below.
-        pytest.param(
+        (
             test_defs.Experiments.GAUSS3D,
             "2001-01-01T00:00:00.000",
             "2001-01-01T00:00:04.000",
             "2001-01-01T00:00:04.000",
-            marks=pytest.mark.embedded_remap_error,
         ),
         (
             test_defs.Experiments.EXCLAIM_APE_AES,
@@ -116,8 +110,7 @@ def timeloop_diffusion_linit_exit() -> bool:
         # `embedded_remap_error`: on the limited-area grid, diffusion's `_calculate_nabla2_of_theta`
         # gathers `z_nabla2_e(C2E)` from a `theta_v(E2C)` intermediate that starts only at the first
         # edge with two neighbouring cells; embedded requires every edge of every cell it touches to
-        # lie in that range, which the cells owning a boundary edge break.
-        # Behind it, the same operator hits the steep-points failure noted on GAUSS3D above.
+        # lie in that range, which the cells owning a boundary edge break (GridTools/gt4py#2916).
         pytest.param(
             test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:00.000",

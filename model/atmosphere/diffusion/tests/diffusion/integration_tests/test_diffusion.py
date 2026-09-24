@@ -340,10 +340,7 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
 # `z_nabla2_e(C2E)` from a `theta_v(E2C)` intermediate that starts only at the first edge with two
 # neighbouring cells, the leading boundary edges having one; embedded then requires every edge of
 # every cell it touches to lie in that range, which the cells owning a boundary edge break. gtfn and
-# dace evaluate only the program's cells, whose edges all lie inside. Behind it, in the same operator,
-# `_truly_horizontal_diffusion_nabla_of_theta_over_steep_points` reads
-# `theta_v(as_offset(Koff, zd_vertoffset + 1))` below the bottom level at every point its `where`
-# masks out (`zd_diffcoef == 0`), which embedded cannot remap either.
+# dace evaluate only the program's cells, whose edges all lie inside (GridTools/gt4py#2916).
 # The APE case: the savepoint has no dwdx/dwdy, the state holds 1x1 placeholders and the w
 # program writes them over its whole domain; embedded rejects that out-of-bounds write, gtfn and
 # dace perform it silently.
@@ -414,10 +411,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
 # `z_nabla2_e(C2E)` from a `theta_v(E2C)` intermediate that starts only at the first edge with two
 # neighbouring cells, the leading boundary edges having one; embedded then requires every edge of
 # every cell it touches to lie in that range, which the cells owning a boundary edge break. gtfn and
-# dace evaluate only the program's cells, whose edges all lie inside. Behind it, in the same operator,
-# `_truly_horizontal_diffusion_nabla_of_theta_over_steep_points` reads
-# `theta_v(as_offset(Koff, zd_vertoffset + 1))` below the bottom level at every point its `where`
-# masks out (`zd_diffcoef == 0`), which embedded cannot remap either.
+# dace evaluate only the program's cells, whose edges all lie inside (GridTools/gt4py#2916).
 @pytest.mark.embedded_remap_error
 def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
