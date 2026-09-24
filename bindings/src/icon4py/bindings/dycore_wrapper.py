@@ -127,7 +127,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     divdamp_z4: gtx.float64,
     nflat_gradp: gtx.int32,
     backend: gtx.int32,
-    external_gpu_stream: gtx.int32,
+    external_gpu_stream: gtx.int64,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")

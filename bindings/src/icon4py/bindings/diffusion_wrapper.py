@@ -103,7 +103,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     a_hshr: gtx.float64,
     loutshs: bool,
     backend: gtx.int32,
-    external_gpu_stream: gtx.int32,
+    external_gpu_stream: gtx.int64,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception(

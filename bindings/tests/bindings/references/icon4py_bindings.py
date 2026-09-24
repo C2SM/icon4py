@@ -91,6 +91,7 @@ def diffusion_init_wrapper(
     a_hshr,
     loutshs,
     backend,
+    external_gpu_stream,
     on_gpu,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["diffusion_init"]:
@@ -275,6 +276,7 @@ def diffusion_init_wrapper(
                 a_hshr=a_hshr,
                 loutshs=loutshs,
                 backend=backend,
+                external_gpu_stream=external_gpu_stream,
             )
 
             if __debug__:
@@ -2030,6 +2032,7 @@ def solve_nh_init_wrapper(
     divdamp_z4,
     nflat_gradp,
     backend,
+    external_gpu_stream,
     on_gpu,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["solve_nh_init"]:
@@ -2537,6 +2540,7 @@ def solve_nh_init_wrapper(
                 divdamp_z4=divdamp_z4,
                 nflat_gradp=nflat_gradp,
                 backend=backend,
+                external_gpu_stream=external_gpu_stream,
             )
 
             if __debug__:

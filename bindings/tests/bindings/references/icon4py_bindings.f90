@@ -78,6 +78,7 @@ module icon4py_bindings
                                       a_hshr, &
                                       loutshs, &
                                       backend, &
+                                      external_gpu_stream, &
                                       on_gpu) bind(c, name="diffusion_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
@@ -209,6 +210,8 @@ module icon4py_bindings
          logical(c_bool), value, target :: loutshs
 
          integer(c_int), value, target :: backend
+
+         integer(c_long), value, target :: external_gpu_stream
 
          logical(c_bool), value :: on_gpu
 
@@ -827,6 +830,7 @@ module icon4py_bindings
                                      divdamp_z4, &
                                      nflat_gradp, &
                                      backend, &
+                                     external_gpu_stream, &
                                      on_gpu) bind(c, name="solve_nh_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
@@ -1154,6 +1158,8 @@ module icon4py_bindings
          integer(c_int), value, target :: nflat_gradp
 
          integer(c_int), value, target :: backend
+
+         integer(c_long), value, target :: external_gpu_stream
 
          logical(c_bool), value :: on_gpu
 
@@ -1555,6 +1561,7 @@ contains
                              a_hshr, &
                              loutshs, &
                              backend, &
+                             external_gpu_stream, &
                              rc)
       use, intrinsic :: iso_c_binding
 
@@ -1635,6 +1642,8 @@ contains
       logical(c_bool), value, target :: loutshs
 
       integer(c_int), value, target :: backend
+
+      integer(c_long), value, target :: external_gpu_stream
 
       logical(c_bool) :: on_gpu
 
@@ -1841,6 +1850,7 @@ contains
                                   a_hshr=a_hshr, &
                                   loutshs=loutshs, &
                                   backend=backend, &
+                                  external_gpu_stream=external_gpu_stream, &
                                   on_gpu=on_gpu)
       !$acc end host_data
       !$acc end host_data
@@ -2705,6 +2715,7 @@ contains
                             divdamp_z4, &
                             nflat_gradp, &
                             backend, &
+                            external_gpu_stream, &
                             rc)
       use, intrinsic :: iso_c_binding
 
@@ -2851,6 +2862,8 @@ contains
       integer(c_int), value, target :: nflat_gradp
 
       integer(c_int), value, target :: backend
+
+      integer(c_long), value, target :: external_gpu_stream
 
       logical(c_bool) :: on_gpu
 
@@ -3415,6 +3428,7 @@ contains
                                  divdamp_z4=divdamp_z4, &
                                  nflat_gradp=nflat_gradp, &
                                  backend=backend, &
+                                 external_gpu_stream=external_gpu_stream, &
                                  on_gpu=on_gpu)
       !$acc end host_data
       !$acc end host_data
