@@ -49,7 +49,7 @@ PROFILING: bool = _env_flag_to_bool("PY2FGEN_PROFILING", False)
 
 USE_DEVICE: bool | None = _env_flag_to_bool("PY2FGEN_USE_DEVICE", None)
 """
-Run on the device even if the Fortran side passes host pointers (requires unified memory, e.g. MI300A).
+Run on the device even if the Fortran side passes host pointers (requires unified memory).
 
 If unset, the device is used if and only if the Fortran bindings were compiled with OpenACC.
 Disabling it while the Fortran side passes device pointers is an error.
