@@ -134,9 +134,7 @@ class BackendIntEnum(eve.IntEnum):
     GTFN = 2
 
 
-def select_backend(
-    selector: BackendIntEnum, on_gpu: bool
-) -> gtx_typing.Backend | model_backends.BackendDescriptor:
+def select_backend(selector: BackendIntEnum, on_gpu: bool) -> model_backends.BackendDescriptor:
     backend_descriptor: model_backends.BackendDescriptor = {}
     backend_descriptor["device"] = model_backends.GPU if on_gpu else model_backends.CPU
     if selector == BackendIntEnum.DEFAULT:
