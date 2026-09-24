@@ -6,7 +6,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from icon4py_bindings import ffi
-from icon4py.tools.py2fgen import _runtime, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion, _definitions
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -277,6 +277,7 @@ def diffusion_init_wrapper(
                 a_hshr=a_hshr,
                 loutshs=loutshs,
                 backend=backend,
+                _metadata=_definitions.Metadata(use_device),
             )
 
             if use_device and not device_enabled:
@@ -1239,6 +1240,7 @@ def grid_init_wrapper(
                 vertical_size=vertical_size,
                 limited_area=limited_area,
                 backend=backend,
+                _metadata=_definitions.Metadata(use_device),
             )
 
             if use_device and not device_enabled:
@@ -2554,6 +2556,7 @@ def solve_nh_init_wrapper(
                 divdamp_z4=divdamp_z4,
                 nflat_gradp=nflat_gradp,
                 backend=backend,
+                _metadata=_definitions.Metadata(use_device),
             )
 
             if use_device and not device_enabled:

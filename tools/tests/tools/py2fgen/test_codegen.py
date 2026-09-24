@@ -271,7 +271,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from libtest_plugin import ffi
-from icon4py.tools.py2fgen import _runtime, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion, _definitions
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -484,3 +484,17 @@ def test_bool_param_codegen():
     interface = generate_f90_interface(plugin)
     assert "logical(c_bool), value, target :: flag" in interface
     assert "logical(c_bool), dimension(:), contiguous, intent(inout), target :: mask" in interface
+
+
+def test_python_wrapper_passes_metadata():
+    func = Func(
+        name="with_metadata",
+        module_name="libtest",
+        args={"one": py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32)},
+        with_metadata=True,
+    )
+    plugin = BindingsLibrary(library_name="libtest_plugin", functions=[func, foo])
+    wrapper = generate_python_wrapper(plugin).translate({ord(c): None for c in string.whitespace})
+
+    assert wrapper.count("_metadata=") == 1
+    assert "one=one,_metadata=_definitions.Metadata(use_device),)" in wrapper

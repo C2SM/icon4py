@@ -50,6 +50,7 @@ class Func(Node):
     name: str
     module_name: str
     args: dict[str, _definitions.ArrayParamDescriptor | _definitions.ScalarParamDescriptor]
+    with_metadata: bool = False
 
 
 class BindingsLibrary(Node):
@@ -142,7 +143,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from {{ library_name }} import ffi
-from icon4py.tools.py2fgen import _runtime, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion, _definitions
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -199,6 +200,9 @@ def {{ func.name }}_wrapper(
             {%- for name, arg in func.args.items() -%}
             {{ name }} = {{ name }}{{ "," }}
             {%- endfor -%}
+            {%- if func.with_metadata -%}
+            _metadata = _definitions.Metadata(use_device),
+            {%- endif -%}
             )
 
             if use_device and not device_enabled:

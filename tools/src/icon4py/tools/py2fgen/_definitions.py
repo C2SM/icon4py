@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import dataclasses
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any, TypeAlias
 
@@ -70,6 +71,20 @@ type ParamDescriptors = Mapping[str, ParamDescriptor]
 """
 Mapping of parameter names to their descriptors.
 """
+
+METADATA_PARAM_NAME = "_metadata"
+
+
+@dataclasses.dataclass(slots=True)
+class Metadata:
+    """
+    Runtime information of a call from Fortran.
+
+    Passed to exported functions that have a parameter named `_metadata`.
+    """
+
+    use_device: bool
+    """If the arrays are on the device."""
 
 
 # cffi.FFI.CData is not available at runtime, therefore we provide a runtime
