@@ -495,13 +495,21 @@ def test_external_gpu_stream_codegen():
     interface = generate_f90_interface(plugin)
 
     # The caller-facing subroutine does not expose `external_gpu_stream` as an
-    # argument: it is fetched from the OpenACC runtime instead.
+    # argument: instead it takes an `acc_queue` selector and derives the raw
+    # stream handle from the OpenACC runtime.
     subroutine_start = interface.index("subroutine stream_fn(")
     subroutine_signature = interface[subroutine_start : interface.index(")", subroutine_start)]
     assert "external_gpu_stream" not in subroutine_signature
-    assert "use openacc, only: acc_get_cuda_stream, acc_async_sync" in interface
+    assert "acc_queue" in subroutine_signature
+    assert "use openacc, only: acc_get_cuda_stream, acc_handle_kind" in interface
+    # `acc_queue` uses a portable ISO C kind so the declaration compiles even
+    # without OpenACC; only the (guarded) call site needs `acc_handle_kind`.
+    assert "integer(c_int), value, target :: acc_queue" in interface
     assert "integer(c_long) :: external_gpu_stream" in interface
-    assert "external_gpu_stream = acc_get_cuda_stream(acc_async_sync)" in interface
+    assert (
+        "external_gpu_stream = acc_get_cuda_stream(int(acc_queue, kind=acc_handle_kind))"
+        in interface
+    )
     assert "external_gpu_stream = 0_c_long" in interface
-    # ... yet it is still forwarded to the low-level wrapper call.
+    # ... yet the derived stream is still forwarded to the low-level wrapper call.
     assert "external_gpu_stream=external_gpu_stream" in interface

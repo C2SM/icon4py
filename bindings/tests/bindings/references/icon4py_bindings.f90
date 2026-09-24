@@ -1561,11 +1561,12 @@ contains
                              a_hshr, &
                              loutshs, &
                              backend, &
+                             acc_queue, &
                              rc)
       use, intrinsic :: iso_c_binding
 
 #ifdef _OPENACC
-      use openacc, only: acc_get_cuda_stream, acc_async_sync
+      use openacc, only: acc_get_cuda_stream, acc_handle_kind
 #endif
 
       real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_ref_mc
@@ -1645,6 +1646,8 @@ contains
       logical(c_bool), value, target :: loutshs
 
       integer(c_int), value, target :: backend
+
+      integer(c_int), value, target :: acc_queue
 
       logical(c_bool) :: on_gpu
 
@@ -1736,7 +1739,7 @@ contains
 #ifdef _OPENACC
       on_gpu = .True.
 
-      external_gpu_stream = acc_get_cuda_stream(acc_async_sync)
+      external_gpu_stream = acc_get_cuda_stream(int(acc_queue, kind=acc_handle_kind))
 
 #else
       on_gpu = .False.
@@ -2728,11 +2731,12 @@ contains
                             divdamp_z4, &
                             nflat_gradp, &
                             backend, &
+                            acc_queue, &
                             rc)
       use, intrinsic :: iso_c_binding
 
 #ifdef _OPENACC
-      use openacc, only: acc_get_cuda_stream, acc_async_sync
+      use openacc, only: acc_get_cuda_stream, acc_handle_kind
 #endif
 
       real(c_double), dimension(:, :), contiguous, intent(inout), target :: c_lin_e
@@ -2878,6 +2882,8 @@ contains
       integer(c_int), value, target :: nflat_gradp
 
       integer(c_int), value, target :: backend
+
+      integer(c_int), value, target :: acc_queue
 
       logical(c_bool) :: on_gpu
 
@@ -3131,7 +3137,7 @@ contains
 #ifdef _OPENACC
       on_gpu = .True.
 
-      external_gpu_stream = acc_get_cuda_stream(acc_async_sync)
+      external_gpu_stream = acc_get_cuda_stream(int(acc_queue, kind=acc_handle_kind))
 
 #else
       on_gpu = .False.
