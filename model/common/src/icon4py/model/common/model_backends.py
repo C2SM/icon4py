@@ -81,7 +81,7 @@ def make_custom_dace_backend(
     *,
     device: DeviceType,
     auto_optimize: bool = True,
-    async_sdfg_call: bool = True,
+    sync_sdfg_call: bool = False,
     optimization_args: dict[str, Any] | None = None,
     use_metrics: bool = True,
     use_zero_origin: bool = False,
@@ -94,8 +94,8 @@ def make_custom_dace_backend(
     Args:
         device: The target device.
         auto_optimize: Enable the SDFG auto-optimize pipeline.
-        async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
-            of GPU kernel execution with the Python driver code.
+        sync_sdfg_call: Make a synchronous SDFG call on GPU to ensure that the GPU
+            kernel execution is completed before the Python driver code continues.
         optimization_args: A `dict` containing configuration parameters for
             the SDFG auto-optimize pipeline.
         use_metrics: Add SDFG instrumentation to collect the metric for stencil
@@ -129,7 +129,7 @@ def make_custom_dace_backend(
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
         auto_optimize=auto_optimize,
-        async_sdfg_call=async_sdfg_call,
+        sync_sdfg_call=sync_sdfg_call,
         external_workspace=external_workspace,
         optimization_args=optimization_args,
         unstructured_horizontal_has_unit_stride=True,
