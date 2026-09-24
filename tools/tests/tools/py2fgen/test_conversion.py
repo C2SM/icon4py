@@ -91,7 +91,7 @@ def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):  # noqa: PLR0917
     arr = xp.array(rawdata, dtype=rawdtype)
     ptr = ffi.cast(f"{ctype}*", _get_ptr(xp, arr))
     array_info = test_utils.array_info(
-        ptr, shape=expected_result.shape, on_gpu=xp != np, is_optional=False
+        ptr, shape=expected_result.shape, use_device=xp != np, is_optional=False
     )
 
     result = _conversion.as_array(ffi, array_info)
@@ -110,7 +110,7 @@ def test_default_mapping_hook_array(ffi):
         ),
     )
     result = array_mapper(
-        test_utils.array_info(ptr=array_ptr, shape=(10,), on_gpu=False, is_optional=False),
+        test_utils.array_info(ptr=array_ptr, shape=(10,), use_device=False, is_optional=False),
         ffi=ffi,
     )
 

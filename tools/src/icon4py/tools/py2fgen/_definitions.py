@@ -82,7 +82,7 @@ if TYPE_CHECKING:
     Attributes:
         pointer: The CFFI pointer.
         shape: Shape of the buffer.
-        on_gpu: If the ptr is for device memory (needs to be `False` if the ArrayParamDescriptor.memory_space is `Host`).
+        use_device: If the ptr is for device memory (needs to be `False` if the ArrayParamDescriptor.memory_space is `Host`).
         is_optional: If True, the pointer can be NULL.
 
     Note: We use a plain tuple to minimize runtime overhead in the bindings.

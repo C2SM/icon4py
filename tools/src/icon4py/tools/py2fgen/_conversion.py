@@ -92,8 +92,8 @@ def as_array(ffi: cffi.FFI, array_info: _definitions.ArrayInfo) -> np.ndarray | 
         ffi:        The CFFI FFI instance.
         array_info: The ArrayInfo object containing the pointer and shape information.
     """
-    ptr, shape, on_gpu, is_optional = array_info
-    xp = cp if on_gpu else np
+    ptr, shape, use_device, is_optional = array_info
+    xp = cp if use_device else np
     if ptr == ffi.NULL:
         if is_optional:
             return None

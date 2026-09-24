@@ -78,7 +78,7 @@ module icon4py_bindings
                                       a_hshr, &
                                       loutshs, &
                                       backend, &
-                                      on_gpu) bind(c, name="diffusion_init_wrapper") result(rc)
+                                      device_enabled) bind(c, name="diffusion_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -210,7 +210,7 @@ module icon4py_bindings
 
          integer(c_int), value, target :: backend
 
-         logical(c_bool), value :: on_gpu
+         logical(c_bool), value :: device_enabled
 
       end function diffusion_init_wrapper
 
@@ -243,7 +243,7 @@ module icon4py_bindings
                                      dwdy_size_1, &
                                      dtime, &
                                      linit, &
-                                     on_gpu) bind(c, name="diffusion_run_wrapper") result(rc)
+                                     device_enabled) bind(c, name="diffusion_run_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -305,7 +305,7 @@ module icon4py_bindings
 
          logical(c_bool), value, target :: linit
 
-         logical(c_bool), value :: on_gpu
+         logical(c_bool), value :: device_enabled
 
       end function diffusion_run_wrapper
 
@@ -425,7 +425,7 @@ module icon4py_bindings
                                  vertical_size, &
                                  limited_area, &
                                  backend, &
-                                 on_gpu) bind(c, name="grid_init_wrapper") result(rc)
+                                 device_enabled) bind(c, name="grid_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -661,7 +661,7 @@ module icon4py_bindings
 
          integer(c_int), value, target :: backend
 
-         logical(c_bool), value :: on_gpu
+         logical(c_bool), value :: device_enabled
 
       end function grid_init_wrapper
 
@@ -827,7 +827,7 @@ module icon4py_bindings
                                      divdamp_z4, &
                                      nflat_gradp, &
                                      backend, &
-                                     on_gpu) bind(c, name="solve_nh_init_wrapper") result(rc)
+                                     device_enabled) bind(c, name="solve_nh_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -1155,7 +1155,7 @@ module icon4py_bindings
 
          integer(c_int), value, target :: backend
 
-         logical(c_bool), value :: on_gpu
+         logical(c_bool), value :: device_enabled
 
       end function solve_nh_init_wrapper
 
@@ -1274,7 +1274,7 @@ module icon4py_bindings
                                     idyn_timestep, &
                                     is_iau_active, &
                                     iau_wgt_dyn, &
-                                    on_gpu) bind(c, name="solve_nh_run_wrapper") result(rc)
+                                    device_enabled) bind(c, name="solve_nh_run_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -1508,7 +1508,7 @@ module icon4py_bindings
 
          real(c_double), value, target :: iau_wgt_dyn
 
-         logical(c_bool), value :: on_gpu
+         logical(c_bool), value :: device_enabled
 
       end function solve_nh_run_wrapper
 
@@ -1636,7 +1636,7 @@ contains
 
       integer(c_int), value, target :: backend
 
-      logical(c_bool) :: on_gpu
+      logical(c_bool) :: device_enabled
 
       integer(c_int) :: theta_ref_mc_size_0
 
@@ -1722,9 +1722,9 @@ contains
       !$acc host_data use_device(zd_diffcoef) if(associated(zd_diffcoef))
 
 #ifdef _OPENACC
-      on_gpu = .True.
+      device_enabled = .True.
 #else
-      on_gpu = .False.
+      device_enabled = .False.
 #endif
 
       theta_ref_mc_size_0 = SIZE(theta_ref_mc, 1)
@@ -1841,7 +1841,7 @@ contains
                                   a_hshr=a_hshr, &
                                   loutshs=loutshs, &
                                   backend=backend, &
-                                  on_gpu=on_gpu)
+                                  device_enabled=device_enabled)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
@@ -1893,7 +1893,7 @@ contains
 
       logical(c_bool), value, target :: linit
 
-      logical(c_bool) :: on_gpu
+      logical(c_bool) :: device_enabled
 
       integer(c_int) :: w_size_0
 
@@ -1961,9 +1961,9 @@ contains
       !$acc host_data use_device(dwdy) if(associated(dwdy))
 
 #ifdef _OPENACC
-      on_gpu = .True.
+      device_enabled = .True.
 #else
-      on_gpu = .False.
+      device_enabled = .False.
 #endif
 
       w_size_0 = SIZE(w, 1)
@@ -2034,7 +2034,7 @@ contains
                                  dwdy_size_1=dwdy_size_1, &
                                  dtime=dtime, &
                                  linit=linit, &
-                                 on_gpu=on_gpu)
+                                 device_enabled=device_enabled)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
@@ -2217,7 +2217,7 @@ contains
 
       integer(c_int), value, target :: backend
 
-      logical(c_bool) :: on_gpu
+      logical(c_bool) :: device_enabled
 
       integer(c_int) :: cell_starts_size_0
 
@@ -2375,9 +2375,9 @@ contains
       !$acc host_data use_device(vct_a)
 
 #ifdef _OPENACC
-      on_gpu = .True.
+      device_enabled = .True.
 #else
-      on_gpu = .False.
+      device_enabled = .False.
 #endif
 
       cell_starts_size_0 = SIZE(cell_starts, 1)
@@ -2599,7 +2599,7 @@ contains
                              vertical_size=vertical_size, &
                              limited_area=limited_area, &
                              backend=backend, &
-                             on_gpu=on_gpu)
+                             device_enabled=device_enabled)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
@@ -2852,7 +2852,7 @@ contains
 
       integer(c_int), value, target :: backend
 
-      logical(c_bool) :: on_gpu
+      logical(c_bool) :: device_enabled
 
       integer(c_int) :: c_lin_e_size_0
 
@@ -3100,9 +3100,9 @@ contains
       !$acc host_data use_device(pg_exdist) if(associated(pg_exdist))
 
 #ifdef _OPENACC
-      on_gpu = .True.
+      device_enabled = .True.
 #else
-      on_gpu = .False.
+      device_enabled = .False.
 #endif
 
       c_lin_e_size_0 = SIZE(c_lin_e, 1)
@@ -3415,7 +3415,7 @@ contains
                                  divdamp_z4=divdamp_z4, &
                                  nflat_gradp=nflat_gradp, &
                                  backend=backend, &
-                                 on_gpu=on_gpu)
+                                 device_enabled=device_enabled)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
@@ -3602,7 +3602,7 @@ contains
 
       real(c_double), value, target :: iau_wgt_dyn
 
-      logical(c_bool) :: on_gpu
+      logical(c_bool) :: device_enabled
 
       integer(c_int) :: rho_now_size_0
 
@@ -3798,9 +3798,9 @@ contains
       !$acc host_data use_device(exner_incr) if(associated(exner_incr))
 
 #ifdef _OPENACC
-      on_gpu = .True.
+      device_enabled = .True.
 #else
-      on_gpu = .False.
+      device_enabled = .False.
 #endif
 
       rho_now_size_0 = SIZE(rho_now, 1)
@@ -4034,7 +4034,7 @@ contains
                                 idyn_timestep=idyn_timestep, &
                                 is_iau_active=is_iau_active, &
                                 iau_wgt_dyn=iau_wgt_dyn, &
-                                on_gpu=on_gpu)
+                                device_enabled=device_enabled)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
