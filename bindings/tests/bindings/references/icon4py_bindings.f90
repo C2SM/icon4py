@@ -1561,9 +1561,12 @@ contains
                              a_hshr, &
                              loutshs, &
                              backend, &
-                             external_gpu_stream, &
                              rc)
       use, intrinsic :: iso_c_binding
+
+#ifdef _OPENACC
+      use openacc, only: acc_get_cuda_stream, acc_async_sync
+#endif
 
       real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_ref_mc
 
@@ -1643,9 +1646,9 @@ contains
 
       integer(c_int), value, target :: backend
 
-      integer(c_long), value, target :: external_gpu_stream
-
       logical(c_bool) :: on_gpu
+
+      integer(c_long) :: external_gpu_stream
 
       integer(c_int) :: theta_ref_mc_size_0
 
@@ -1732,8 +1735,14 @@ contains
 
 #ifdef _OPENACC
       on_gpu = .True.
+
+      external_gpu_stream = acc_get_cuda_stream(acc_async_sync)
+
 #else
       on_gpu = .False.
+
+      external_gpu_stream = 0_c_long
+
 #endif
 
       theta_ref_mc_size_0 = SIZE(theta_ref_mc, 1)
@@ -1972,8 +1981,10 @@ contains
 
 #ifdef _OPENACC
       on_gpu = .True.
+
 #else
       on_gpu = .False.
+
 #endif
 
       w_size_0 = SIZE(w, 1)
@@ -2386,8 +2397,10 @@ contains
 
 #ifdef _OPENACC
       on_gpu = .True.
+
 #else
       on_gpu = .False.
+
 #endif
 
       cell_starts_size_0 = SIZE(cell_starts, 1)
@@ -2715,9 +2728,12 @@ contains
                             divdamp_z4, &
                             nflat_gradp, &
                             backend, &
-                            external_gpu_stream, &
                             rc)
       use, intrinsic :: iso_c_binding
+
+#ifdef _OPENACC
+      use openacc, only: acc_get_cuda_stream, acc_async_sync
+#endif
 
       real(c_double), dimension(:, :), contiguous, intent(inout), target :: c_lin_e
 
@@ -2863,9 +2879,9 @@ contains
 
       integer(c_int), value, target :: backend
 
-      integer(c_long), value, target :: external_gpu_stream
-
       logical(c_bool) :: on_gpu
+
+      integer(c_long) :: external_gpu_stream
 
       integer(c_int) :: c_lin_e_size_0
 
@@ -3114,8 +3130,14 @@ contains
 
 #ifdef _OPENACC
       on_gpu = .True.
+
+      external_gpu_stream = acc_get_cuda_stream(acc_async_sync)
+
 #else
       on_gpu = .False.
+
+      external_gpu_stream = 0_c_long
+
 #endif
 
       c_lin_e_size_0 = SIZE(c_lin_e, 1)
@@ -3813,8 +3835,10 @@ contains
 
 #ifdef _OPENACC
       on_gpu = .True.
+
 #else
       on_gpu = .False.
+
 #endif
 
       rho_now_size_0 = SIZE(rho_now, 1)
