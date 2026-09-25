@@ -40,7 +40,23 @@ if TYPE_CHECKING:
 
 
 class MuphysComponent:
-    """Per-process adapter wrapping the muphys microphysics program."""
+    """Presents the muphys microphysics granule as a model component.
+
+    The granule and the component contract disagree in two ways, and this class
+    is where both are settled:
+
+    * The granule **overwrites the fields it is given** (its ``t_out``/``q_out``
+      arguments are the same buffers as its ``te``/``q_in`` inputs), whereas a
+      component has to report *tendencies*. So ``__call__`` runs it on private
+      copies and derives ``(new - old) / dt``, leaving the caller's fields alone.
+    * The granule also produces precipitation diagnostics. Those are not
+      tendencies and are never applied to the model state, so they are reported
+      as they come.
+
+    Every buffer the granule writes into is allocated once in ``__init__`` and
+    reused, so a timestep allocates nothing. The diagnostic buffers are the one
+    exception: a caller can swap in its own via ``bind_output_buffers``.
+    """
 
     # TODO (Yilu): inherit the Component protocol once it is formalized (deferred to a separate PR).
     inputs_properties = muphys_data.INPUTS_PROPERTIES
@@ -61,19 +77,16 @@ class MuphysComponent:
         self._qnc = qnc
         self._backend = model_options.customize_backend(program=None, backend=backend)
 
-        cell_domain = h_grid.domain(dims.CellDim)
-        # ICON applies physics on the prognostic cells only:
-        # grf_bdywidth_c+1 .. min_rlcell_int (NUDGING start .. LOCAL end).
-        cell_start = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        cell_end = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-
-        # Inputs are copied over the full range: the muphys step reads whole fields.
         full_horizontal_sizes = {
             "horizontal_start": gtx.int32(0),
             "horizontal_end": gtx.int32(self._ncells),
         }
-        # Tendencies only on the prognostic subdomain -- the tendency buffers stay
-        # zero outside, so scattering is a no-op on boundary/halo rows, as in ICON.
+
+        cell_domain = h_grid.domain(dims.CellDim)
+        cell_start = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        cell_end = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        # Tendencies only on the prognostic subdomain -- the tendency buffers stay zero outside
+
         prognostic_horizontal_sizes = {
             "horizontal_start": cell_start,
             "horizontal_end": cell_end,
@@ -109,12 +122,11 @@ class MuphysComponent:
         self._step = step
 
         cell_k_domain = gtx.domain({dims.CellDim: self._ncells, dims.KDim: self._nlev})
-        self._pflx = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._pr = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._ps = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._pi = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._pg = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._pre = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
+        self._cell_k_domain = cell_k_domain
+        self._allocator = allocator
+        # Left unallocated: under a driver these are bound to caller-owned buffers
+        # before the first step, so allocating them here would be thrown away.
+        self._precip: dict[str, fa.CellKField[ta.wpfloat]] | None = None
 
         self._tendencies: dict[str, fa.CellKField[ta.wpfloat]] = {
             "tend_temperature": gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
@@ -139,23 +151,28 @@ class MuphysComponent:
     def __call__(
         self, state: dict[str, model.DataField], time_step: time.AbsoluteTime
     ) -> dict[str, model.DataField]:
-        """Run muphys, then convert its updated state into tendencies.
+        """Run the granule on private copies of the inputs and report tendencies.
 
-        muphys updates the state in place (t_out/q_out alias te/q_in); this boundary
-        converts it to tendencies ``(new - old) / dt``. Precip outputs are diagnostics,
-        passed straight through.
+        Three steps. Copy the caller's temperature and tracers into our own
+        buffers, because the granule overwrites whatever it is handed and the
+        original values are still needed afterwards. Run the granule, which
+        updates those copies in place and fills the precip diagnostics. Then
+        difference old against new to get ``(new - old) / dt`` per field.
+
+        The caller's fields are never written to. Layer thickness, pressure and
+        density go straight in without a copy, since the granule only reads them.
+
+        Returns the tendencies together with the precip diagnostics. After
+        ``bind_output_buffers`` those diagnostic entries are the caller's own
+        buffers, already filled in place.
         """
-        # cast from generic ``DataField`` to bare gt4py fields
         fields = cast("dict[str, fa.CellKField[ta.wpfloat]]", state)
+        precip = self._precip_buffers()
 
         self._copy_field(field=fields["te"], output_field=self._te_in)
         for s in SPECIES:
             self._copy_field(field=fields[f"q{s}"], output_field=getattr(self._q_in, s))
 
-        # muphys must be invoked in place (the outputs alias the inputs), following
-        # the same convention as the muphys driver: the dace backend compiles the
-        # program with this aliasing baked in and leaves distinct output buffers
-        # unwritten.
         self._step(
             dz=fields["dz"],
             te=self._te_in,
@@ -164,12 +181,12 @@ class MuphysComponent:
             q_in=self._q_in,
             q_out=self._q_in,
             t_out=self._te_in,
-            pflx=self._pflx,
-            pr=self._pr,
-            ps=self._ps,
-            pi=self._pi,
-            pg=self._pg,
-            pre=self._pre,
+            pflx=precip["pflx"],
+            pr=precip["pr"],
+            ps=precip["ps"],
+            pi=precip["pi"],
+            pg=precip["pg"],
+            pre=precip["pre"],
         )
 
         self._calculate_tendency(
@@ -188,13 +205,32 @@ class MuphysComponent:
 
         return cast(
             "dict[str, model.DataField]",
-            {
-                **self._tendencies,
-                "pflx": self._pflx,
-                "pr": self._pr,
-                "ps": self._ps,
-                "pi": self._pi,
-                "pg": self._pg,
-                "pre": self._pre,
-            },
+            {**self._tendencies, **precip},
         )
+
+    def _precip_buffers(self) -> dict[str, fa.CellKField[ta.wpfloat]]:
+        """The precip outputs: the caller's if bound, else our own, allocated on first use.
+
+        Allocating on demand rather than in ``__init__`` keeps the driver path
+        from ever creating buffers that ``bind_output_buffers`` replaces.
+        """
+        if self._precip is None:
+            self._precip = {
+                port: gtx.zeros(self._cell_k_domain, dtype=ta.wpfloat, allocator=self._allocator)
+                for port in muphys_data.PRECIP_PORTS
+            }
+        return self._precip
+
+    def bind_output_buffers(self, buffers: dict[str, fa.CellKField[ta.wpfloat]]) -> None:
+        """Redirect the precip diagnostics into buffers the caller owns.
+
+        ``__call__`` hands these to the granule as its output arguments on every
+        step, so binding them once here redirects every write that follows: the
+        driver never copies a diagnostic out of our results.
+
+        ``PhysicsDriver`` calls this once per process while it is being built,
+        passing the buffers its ``DiagnosticsStore`` owns. If nobody calls it the
+        component allocates its own on the first step, which is what lets it run
+        on its own in the granule datatests.
+        """
+        self._precip = {port: buffers[port] for port in muphys_data.PRECIP_PORTS}

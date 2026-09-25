@@ -10,7 +10,11 @@
 
 from __future__ import annotations
 
+import dataclasses
+from typing import Final
+
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.states import data, model
 
 
@@ -24,6 +28,9 @@ _PRECIP_KEY = dict(
     pre="precipitation_energy_flux",
 )
 
+#: the granule's precip output ports, in declaration order
+PRECIP_PORTS: Final = tuple(_PRECIP_KEY)
+
 INPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     "dz": model.FieldMetaData(standard_name="layer_thickness", units="m"),
     "te": data.DIAGNOSTIC_CF_ATTRIBUTES["temperature"],
@@ -35,5 +42,12 @@ INPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
 OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     "tend_temperature": data.TENDENCY_CF_ATTRIBUTES["temperature"],
     **{f"tend_q{s}": data.TENDENCY_CF_ATTRIBUTES[f"q{s}"] for s in SPECIES},
-    **{port: data.PRECIPITATION_CF_ATTRIBUTES[key] for port, key in _PRECIP_KEY.items()},
+    # Dimensions are added where the field is used, keeping the shared registry
+    # dimension-agnostic. DiagnosticsStore uses them to allocate output buffers.
+    **{
+        port: dataclasses.replace(
+            data.PRECIPITATION_CF_ATTRIBUTES[key], dims=(dims.CellDim, dims.KDim)
+        )
+        for port, key in _PRECIP_KEY.items()
+    },
 }
