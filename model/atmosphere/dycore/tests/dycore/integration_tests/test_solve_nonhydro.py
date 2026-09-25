@@ -1353,7 +1353,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
             vertical_start=icon_grid.num_levels - 1,
             vertical_end=icon_grid.num_levels,
             offset_provider={
-                "E2C": icon_grid.get_connectivity("E2C"),
+                dims.E2C: icon_grid.get_connectivity(dims.E2C),
             },
         )
         lowest_level = icon_grid.num_levels - 1
@@ -1414,9 +1414,9 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
-            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
-            "E2C": icon_grid.get_connectivity("E2C"),
-            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
+            dims.C2E2CO: icon_grid.get_connectivity(dims.C2E2CO),
+            dims.E2C: icon_grid.get_connectivity(dims.E2C),
+            dims.E2C2EO: icon_grid.get_connectivity(dims.E2C2EO),
         },
     )
 
@@ -1575,9 +1575,9 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={
-            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
-            "E2C": icon_grid.get_connectivity("E2C"),
-            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
+            dims.C2E2CO: icon_grid.get_connectivity(dims.C2E2CO),
+            dims.E2C: icon_grid.get_connectivity(dims.E2C),
+            dims.E2C2EO: icon_grid.get_connectivity(dims.E2C2EO),
         },
     )
 
@@ -1687,8 +1687,8 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [to
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={
-            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
-            "E2C2E": icon_grid.get_connectivity("E2C2E"),
+            dims.E2C2EO: icon_grid.get_connectivity(dims.E2C2EO),
+            dims.E2C2E: icon_grid.get_connectivity(dims.E2C2E),
         },
     )
 
@@ -1825,7 +1825,7 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
+            dims.E2C2EO: icon_grid.get_connectivity(dims.E2C2EO),
         },
     )
 
@@ -1949,7 +1949,7 @@ def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-man
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
     offset_provider = {
-        "C2E": icon_grid.get_connectivity("C2E"),
+        dims.C2E: icon_grid.get_connectivity(dims.C2E),
     }
 
     vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step.with_backend(
@@ -2139,7 +2139,7 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
     end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
     offset_provider = {
-        "C2E": icon_grid.get_connectivity("C2E"),
+        dims.C2E: icon_grid.get_connectivity(dims.C2E),
     }
 
     vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step.with_backend(

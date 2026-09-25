@@ -285,7 +285,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
                 "geofac_div": attrs.GEOFAC_DIV,
             },
-            connectivities={"c2e": dims.C2EDim, "e2c": dims.E2CDim, "c2e2c": dims.C2E2CDim},
+            connectivities={"c2e": dims.C2E, "e2c": dims.E2C, "c2e2c": dims.C2E2C},
             params={
                 "horizontal_start": self._grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -304,7 +304,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "inv_dual_edge_length": f"inverse_of_{geometry_attrs.DUAL_EDGE_LENGTH}",
                 "owner_mask": "edge_owner_mask",
             },
-            connectivities={"c2e": dims.C2EDim, "e2c": dims.E2CDim, "e2c2e": dims.E2C2EDim},
+            connectivities={"c2e": dims.C2E, "e2c": dims.E2C, "e2c2e": dims.E2C2E},
             params={
                 "horizontal_start": self._grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -371,7 +371,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "cell_lon": geometry_attrs.CELL_LON,
                 "cell_owner_mask": "cell_owner_mask",
             },
-            connectivities={"c2e2c": dims.C2E2CDim},
+            connectivities={"c2e2c": dims.C2E2C},
             params={
                 "domain_length": self._domain_length,
                 "domain_height": self._domain_height,
@@ -403,7 +403,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "cell_areas": geometry_attrs.CELL_AREA,
                         "cell_owner_mask": "cell_owner_mask",
                     },
-                    connectivities={"c2e2c0": dims.C2E2CODim},
+                    connectivities={"c2e2c0": dims.C2E2CO},
                     params={
                         "horizontal_start": self.grid.start_index(
                             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -428,7 +428,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "edges_lat": geometry_attrs.EDGE_LAT,
                         "edges_lon": geometry_attrs.EDGE_LON,
                     },
-                    connectivities={"c2e": dims.C2EDim},
+                    connectivities={"c2e": dims.C2E},
                 )
                 self.register_provider(e_bln_c_s)
 
@@ -447,7 +447,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "edges_lat": geometry_attrs.EDGE_LAT,
                         "owner_mask": "edge_owner_mask",
                     },
-                    connectivities={"e2c": dims.E2CDim},
+                    connectivities={"e2c": dims.E2C},
                     params={
                         "grid_sphere_radius": constants.EARTH_RADIUS,
                         "horizontal_start": self.grid.start_index(
@@ -470,7 +470,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "cell_areas": geometry_attrs.CELL_AREA,
                         "cell_owner_mask": "cell_owner_mask",
                     },
-                    connectivities={"c2e2c0": dims.C2E2CODim},
+                    connectivities={"c2e2c0": dims.C2E2CO},
                     params={
                         "horizontal_start": self.grid.start_index(
                             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -490,7 +490,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     fields=(attrs.E_BLN_C_S,),
                     domain=(dims.CellDim, dims.C2EDim),
                     deps={},
-                    connectivities={"c2e": dims.C2EDim},
+                    connectivities={"c2e": dims.C2E},
                     params={},
                 )
                 self.register_provider(e_bln_c_s)
@@ -502,7 +502,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     deps={
                         "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
                     },
-                    connectivities={"e2c": dims.E2CDim},
+                    connectivities={"e2c": dims.E2C},
                     params={},
                     do_exchange=True,
                 )
@@ -540,7 +540,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "geofac_div": attrs.GEOFAC_DIV,
                 "c_lin_e": attrs.C_LIN_E,
             },
-            connectivities={"c2e": dims.C2EDim, "e2c": dims.E2CDim, "c2e2c": dims.C2E2CDim},
+            connectivities={"c2e": dims.C2E, "e2c": dims.E2C, "c2e2c": dims.C2E2C},
             params={
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -565,10 +565,10 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "primal_cart_normal_z": geometry_attrs.EDGE_NORMAL_Z,
             },
             connectivities={
-                "e2c": dims.E2CDim,
-                "c2e": dims.C2EDim,
-                "c2e2c": dims.C2E2CDim,
-                "e2c2e": dims.E2C2EDim,
+                "e2c": dims.E2C,
+                "c2e": dims.C2E,
+                "c2e2c": dims.C2E2C,
+                "e2c2e": dims.E2C2E,
             },
             params={
                 "horizontal_start_p3": self.grid.start_index(
@@ -591,10 +591,10 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edge_cell_length": geometry_attrs.EDGE_CELL_DISTANCE,
             },
             connectivities={
-                "v2e": dims.V2EDim,
-                "e2v": dims.E2VDim,
-                "v2c": dims.V2CDim,
-                "e2c": dims.E2CDim,
+                "v2e": dims.V2E,
+                "e2v": dims.E2V,
+                "v2c": dims.V2C,
+                "e2c": dims.E2C,
             },
             params={
                 "horizontal_start": self.grid.start_index(
@@ -623,7 +623,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
                 "scale_factor": attrs.RBF_SCALE_CELL,
             },
-            connectivities={"rbf_offset": dims.C2E2C2EDim},
+            connectivities={"rbf_offset": dims.C2E2C2E},
             params={
                 "rbf_kernel": self._config.rbf_kernel_cell.value,
                 "geometry_type": self._grid.grid_params.geometry_type.value,
@@ -659,7 +659,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edge_dual_normal_v": geometry_attrs.EDGE_DUAL_V,
                 "scale_factor": attrs.RBF_SCALE_EDGE,
             },
-            connectivities={"rbf_offset": dims.E2C2EDim},
+            connectivities={"rbf_offset": dims.E2C2E},
             params={
                 "rbf_kernel": self._config.rbf_kernel_edge.value,
                 "geometry_type": self._grid.grid_params.geometry_type.value,
@@ -696,7 +696,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
                 "scale_factor": attrs.RBF_SCALE_VERTEX,
             },
-            connectivities={"rbf_offset": dims.V2EDim},
+            connectivities={"rbf_offset": dims.V2E},
             params={
                 "rbf_kernel": self._config.rbf_kernel_vertex.value,
                 "geometry_type": self._grid.grid_params.geometry_type.value,

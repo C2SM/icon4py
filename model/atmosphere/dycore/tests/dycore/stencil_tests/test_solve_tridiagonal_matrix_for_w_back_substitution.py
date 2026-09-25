@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def solve_tridiagonal_matrix_for_w_back_substitution_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     z_q: np.ndarray,
     w: np.ndarray,
 ) -> np.ndarray:

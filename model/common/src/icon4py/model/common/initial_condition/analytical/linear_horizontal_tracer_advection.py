@@ -14,6 +14,7 @@ import math
 import typing
 from typing import TYPE_CHECKING, ClassVar
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid
 from icon4py.model.common.math import distance_array_ns
@@ -367,7 +368,7 @@ def linear_horizontal_advection(
         vertex_y=vertex_y,
         cell_center_x=cell_center_x,
         cell_center_y=cell_center_y,
-        c2v_connectivity=grid.connectivities["C2V"].ndarray,
+        c2v_connectivity=grid.connectivities[dims.C2V].ndarray,
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
     )
@@ -419,7 +420,7 @@ def construct_reference_tracer(
         vertex_y=vertex_y,
         cell_center_x=cell_center_x,
         cell_center_y=cell_center_y,
-        c2v_connectivity=grid.connectivities["C2V"].ndarray,
+        c2v_connectivity=grid.connectivities[dims.C2V].ndarray,
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
     )

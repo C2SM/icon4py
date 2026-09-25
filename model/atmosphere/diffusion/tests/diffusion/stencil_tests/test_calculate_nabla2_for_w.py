@@ -20,7 +20,9 @@ from icon4py.model.testing import stencil_tests
 
 
 def calculate_nabla2_for_w_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray], w: np.ndarray, geofac_n2s: np.ndarray
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
+    w: np.ndarray,
+    geofac_n2s: np.ndarray,
 ) -> np.ndarray:
     c2e2cO = connectivities[dims.C2E2CO]
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)

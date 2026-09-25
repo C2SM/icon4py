@@ -231,14 +231,14 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         vertical_start=gtx.int32(0),
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "C2E": icon_grid.get_connectivity("C2E"),
-            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
-            "E2C": icon_grid.get_connectivity("E2C"),
-            "E2C2E": icon_grid.get_connectivity("E2C2E"),
-            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
-            "E2V": icon_grid.get_connectivity("E2V"),
-            "V2C": icon_grid.get_connectivity("V2C"),
-            "V2E": icon_grid.get_connectivity("V2E"),
+            dims.C2E: icon_grid.get_connectivity(dims.C2E),
+            dims.C2E2CO: icon_grid.get_connectivity(dims.C2E2CO),
+            dims.E2C: icon_grid.get_connectivity(dims.E2C),
+            dims.E2C2E: icon_grid.get_connectivity(dims.E2C2E),
+            dims.E2C2EO: icon_grid.get_connectivity(dims.E2C2EO),
+            dims.E2V: icon_grid.get_connectivity(dims.E2V),
+            dims.V2C: icon_grid.get_connectivity(dims.V2C),
+            dims.V2E: icon_grid.get_connectivity(dims.V2E),
         },
     )
     solve_nonhydro._update_max_vertical_cfl(
@@ -458,13 +458,13 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         vertical_start=gtx.int32(0),
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "C2E": icon_grid.get_connectivity("C2E"),
-            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
-            "E2C": icon_grid.get_connectivity("E2C"),
-            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
-            "E2V": icon_grid.get_connectivity("E2V"),
-            "V2C": icon_grid.get_connectivity("V2C"),
-            "V2E": icon_grid.get_connectivity("V2E"),
+            dims.C2E: icon_grid.get_connectivity(dims.C2E),
+            dims.C2E2CO: icon_grid.get_connectivity(dims.C2E2CO),
+            dims.E2C: icon_grid.get_connectivity(dims.E2C),
+            dims.E2C2EO: icon_grid.get_connectivity(dims.E2C2EO),
+            dims.E2V: icon_grid.get_connectivity(dims.E2V),
+            dims.V2C: icon_grid.get_connectivity(dims.V2C),
+            dims.V2E: icon_grid.get_connectivity(dims.V2E),
         },
     )
     solve_nonhydro._update_max_vertical_cfl(

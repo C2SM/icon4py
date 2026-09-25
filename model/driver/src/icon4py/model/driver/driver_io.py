@@ -203,7 +203,7 @@ class DiagnosticsComputer:
             horizontal_end=end_cell_end,
             vertical_start=0,
             vertical_end=num_levels,
-            offset_provider={"C2E2C2E": self._grid.get_connectivity("C2E2C2E")},
+            offset_provider={dims.C2E2C2E: self._grid.get_connectivity(dims.C2E2C2E)},
         )
 
         compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(backend)(

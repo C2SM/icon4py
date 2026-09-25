@@ -20,7 +20,7 @@ from icon4py.model.testing import stencil_tests
 
 def apply_nabla2_to_w_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     area: np.ndarray,
     z_nabla2_c: np.ndarray,
     geofac_n2s: np.ndarray,

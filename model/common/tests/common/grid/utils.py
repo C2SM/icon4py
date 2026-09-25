@@ -21,9 +21,9 @@ from icon4py.model.testing import definitions as test_defs, grid_utils as gridte
 managers: dict[str, gm.GridManager] = {}
 
 
-def horizontal_offsets() -> Iterator[gtx.FieldOffset]:
+def horizontal_offsets() -> Iterator[type[gtx.NeighborConnectivity]]:
     for d in vars(dims).values():
-        if isinstance(d, gtx.FieldOffset) and len(d.target) == 2:
+        if isinstance(d, type) and issubclass(d, gtx.NeighborConnectivity):
             yield d
 
 

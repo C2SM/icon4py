@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     inv_dual_edge_length: np.ndarray,
     z_exner_ex_pr: np.ndarray,
     zdiff_gradp: np.ndarray,

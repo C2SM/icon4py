@@ -439,7 +439,9 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         return out_fields
 
     # TODO(): do we need that here?
-    def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
+    def _get_offset_providers(
+        self, grid: icon_grid.IconGrid
+    ) -> dict[type[gtx.NeighborConnectivity], gtx_common.NeighborTable]:
         offset_providers = {}
         for dim in self._dims:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
@@ -454,7 +456,8 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
                 vertical_offsets = {
                     k: v
                     for k, v in grid.connectivities.items()
-                    if isinstance(v, gtx.Dimension) and v.kind == gtx.DimensionKind.VERTICAL
+                    if isinstance(v, gtx_common.DimensionMeta)
+                    and v.kind == gtx.DimensionKind.VERTICAL
                 }
                 offset_providers.update(vertical_offsets)
                 # used for different compute backend in function call
@@ -530,7 +533,9 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
     # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
-    def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
+    def _get_offset_providers(
+        self, grid: icon_grid.IconGrid
+    ) -> dict[type[gtx.NeighborConnectivity], gtx_common.NeighborTable]:
         offset_providers = {}
         for dim in self._domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
@@ -546,7 +551,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
                 vertical_offsets = {
                     k: v
                     for k, v in grid.connectivities.items()
-                    if isinstance(v, gtx.Dimension) and v.kind == gtx.DimensionKind.VERTICAL
+                    if isinstance(v, gtx_common.DimensionMeta)
+                    and v.kind == gtx.DimensionKind.VERTICAL
                 }
                 offset_providers.update(vertical_offsets)
         return offset_providers
@@ -630,8 +636,8 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         fields: Seq[str] names under which the results fo the function will be registered
         deps: dict[str, str] input fields used for computing this stencil: the key is the variable name
             used in the function and the value the name of the field it depends on.
-        connectivities: dict[str, Dimension] dict where the key is the variable named used in the
-            function and the value the sparse Dimension of the connectivity field
+        connectivities: dict[str, type[NeighborConnectivity]] dict where the key is the variable
+            name used in the function and the value the connectivity whose table is passed
         params: scalar arguments for the function
         do_exchange: a flag that governs whether or not a halo exchange is needed after the field has been computed. Defaults to False
     """
@@ -643,7 +649,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
         fields: Sequence[str],
         deps: dict[str, str],
-        connectivities: dict[str, gtx.Dimension] | None = None,
+        connectivities: dict[str, type[gtx.NeighborConnectivity]] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
         do_exchange: bool = False,
     ):
@@ -688,7 +694,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
             for k, v in self._dependencies.items()
         }
         offsets = {
-            k: grid_provider.grid.get_connectivity(v.value).ndarray
+            k: grid_provider.grid.get_connectivity(v).ndarray
             for k, v in self._connectivities.items()
         }
         args.update(offsets)

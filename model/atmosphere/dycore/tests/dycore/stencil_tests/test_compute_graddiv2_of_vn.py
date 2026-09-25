@@ -21,7 +21,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def compute_graddiv2_of_vn_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     geofac_grdiv: np.ndarray,
     z_graddiv_vn: np.ndarray,
 ) -> np.ndarray:

@@ -567,7 +567,7 @@ class GridGeometry(factory.FieldSource):
                 "y": attrs.EDGE_NORMAL_Y,
                 "z": attrs.EDGE_NORMAL_Z,
             },
-            connectivities={"e2c": dims.E2CDim},
+            connectivities={"e2c": dims.E2C},
             params={
                 "horizontal_start": self.grid.start_index(
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
@@ -629,7 +629,7 @@ class GridGeometry(factory.FieldSource):
                 "y": attrs.EDGE_TANGENT_Y,
                 "z": attrs.EDGE_TANGENT_Z,
             },
-            connectivities={"e2c": dims.E2CDim},
+            connectivities={"e2c": dims.E2C},
             params={
                 "horizontal_start": self.grid.start_index(
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY)

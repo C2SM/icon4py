@@ -12,6 +12,7 @@ from collections.abc import Callable
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next import common as gtx_common
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -127,14 +128,16 @@ class IconGrid(base.Grid):
         return self.grid_params.geometry_type
 
 
-def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool) -> bool:
+def _has_skip_values(
+    offset: type[gtx.NeighborConnectivity], limited_area_or_distributed: bool
+) -> bool:
     """
     For the icosahedral global grid skip values are only present for the pentagon points.
 
     In the local area model or a distributed grid there are also skip values at the boundaries or halos when
     accessing neighbouring cells or edges from vertices.
     """
-    dimension = offset.target[1]
+    dimension = gtx_common.local_dimension_of(offset)
     assert dimension.kind == gtx.DimensionKind.LOCAL, "only local dimensions can have skip values"
     return dimension in CONNECTIVITIES_ON_PENTAGONS or (
         limited_area_or_distributed and dimension in CONNECTIVITIES_ON_BOUNDARIES
@@ -142,7 +145,9 @@ def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool)
 
 
 def _should_replace_skip_values(
-    offset: gtx.FieldOffset, keep_skip_values: bool, limited_area_or_distributed: bool
+    offset: type[gtx.NeighborConnectivity],
+    keep_skip_values: bool,
+    limited_area_or_distributed: bool,
 ) -> bool:
     """
     Check if the skip_values in a neighbor table  should be replaced.
@@ -176,7 +181,7 @@ def icon_grid(
     id_: str,
     allocator: gtx_typing.Allocator | None,
     config: base.GridConfig,
-    neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
+    neighbor_tables: dict[type[gtx.NeighborConnectivity], data_alloc.NDArray],
     start_index: Callable[[h_grid.Domain], gtx.int32],
     end_index: Callable[[h_grid.Domain], gtx.int32],
     grid_params: GridParams,
@@ -184,7 +189,7 @@ def icon_grid(
 ) -> IconGrid:
     limited_area_or_distributed = config.limited_area or config.distributed
     connectivities = {
-        offset.value: base.construct_connectivity(
+        offset: base.construct_connectivity(
             offset,
             data_alloc.import_array_ns(allocator).asarray(table),
             skip_value=-1 if _has_skip_values(offset, limited_area_or_distributed) else None,

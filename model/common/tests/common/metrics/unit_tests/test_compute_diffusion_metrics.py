@@ -85,7 +85,7 @@ def test_compute_diffusion_mask_and_coeff(  # noqa: PLR0917 [too-many-positional
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlev,
-        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        offset_provider={dims.C2E: icon_grid.get_connectivity(dims.C2E)},
     )
 
     compute_weighted_cell_neighbor_sum.with_backend(backend)(
@@ -99,7 +99,7 @@ def test_compute_diffusion_mask_and_coeff(  # noqa: PLR0917 [too-many-positional
         vertical_start=0,
         vertical_end=nlev,
         offset_provider={
-            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
+            dims.C2E2CO: icon_grid.get_connectivity(dims.C2E2CO),
         },
     )
 
@@ -108,7 +108,7 @@ def test_compute_diffusion_mask_and_coeff(  # noqa: PLR0917 [too-many-positional
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E2C": icon_grid.get_connectivity("C2E2C")},
+        offset_provider={dims.C2E2C: icon_grid.get_connectivity(dims.C2E2C)},
     )
 
     zd_diffcoef = compute_diffusion_mask_and_coef(
@@ -168,7 +168,7 @@ def test_compute_diffusion_intcoef_and_vertoffset(  # noqa: PLR0917 [too-many-po
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlev,
-        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        offset_provider={dims.C2E: icon_grid.get_connectivity(dims.C2E)},
     )
 
     compute_weighted_cell_neighbor_sum.with_backend(backend)(
@@ -182,7 +182,7 @@ def test_compute_diffusion_intcoef_and_vertoffset(  # noqa: PLR0917 [too-many-po
         vertical_start=0,
         vertical_end=nlev,
         offset_provider={
-            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
+            dims.C2E2CO: icon_grid.get_connectivity(dims.C2E2CO),
         },
     )
 
@@ -191,7 +191,7 @@ def test_compute_diffusion_intcoef_and_vertoffset(  # noqa: PLR0917 [too-many-po
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E2C": icon_grid.get_connectivity("C2E2C")},
+        offset_provider={dims.C2E2C: icon_grid.get_connectivity(dims.C2E2C)},
     )
 
     zd_intcoef, zd_vertoffset = compute_diffusion_intcoef_and_vertoffset(
