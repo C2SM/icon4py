@@ -504,7 +504,7 @@ class TestDataAllocationWrapper:
         A raw `NeighborTable` cannot be passed as a program argument, so stencils that
         consume a connectivity as data need it re-allocated as an ordinary field.
         """
-        field = wrapper.connectivity_field("E2C")
+        field = wrapper.connectivity_field(dims.E2C)
 
         assert isinstance(field, gtx.Field)
         assert not gtx_common.is_neighbor_table(field)
