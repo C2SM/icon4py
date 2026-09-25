@@ -207,7 +207,6 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     assert test_utils.dallclose(diffusion_granule.v_vert.asnumpy(), 0.0)
     assert test_utils.dallclose(diffusion_granule.u_vert.asnumpy(), 0.0)
-    assert test_utils.dallclose(diffusion_granule.kh_smag_ec.asnumpy(), 0.0)
     assert test_utils.dallclose(diffusion_granule.kh_smag_e.asnumpy(), 0.0)
 
     shape_k = (grid.num_levels,)

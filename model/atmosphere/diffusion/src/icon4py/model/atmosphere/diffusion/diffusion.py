@@ -34,14 +34,11 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import ap
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
-    calculate_diagnostic_quantities_for_turbulence,
-)
 from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
-    calculate_nabla2_and_smag_coefficients_for_vn,
+from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_smag_and_turbulence_diagnostics import (
+    calculate_nabla2_smag_and_turbulence_diagnostics,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.config import config_io, options as common_conf_opt
@@ -542,9 +539,15 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
 
-        self.calculate_nabla2_and_smag_coefficients_for_vn = setup_program(
+        self._compute_diagnostic_quantities = (
+            self.config.shear_type
+            >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
+            or self.config.loutshs
+            or self.config.a_hshr > 0.0
+        )
+        self.calculate_nabla2_smag_and_turbulence_diagnostics = setup_program(
             backend=backend,
-            program=calculate_nabla2_and_smag_coefficients_for_vn,
+            program=calculate_nabla2_smag_and_turbulence_diagnostics,
             constant_args={
                 "tangent_orientation": self._edge_params.tangent_orientation,
                 "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
@@ -553,28 +556,25 @@ class Diffusion:
                 "primal_normal_vert_y": self._edge_params.primal_normal_vert[1],
                 "dual_normal_vert_x": self._edge_params.dual_normal_vert[0],
                 "dual_normal_vert_y": self._edge_params.dual_normal_vert[1],
-            },
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_lateral_boundary_level_5,
-                "horizontal_end": self._edge_end_halo_level_2,
-            },
-            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
-            offset_provider=self._grid.connectivities,
-        )
-
-        self.calculate_diagnostic_quantities_for_turbulence = setup_program(
-            backend=backend,
-            program=calculate_diagnostic_quantities_for_turbulence,
-            constant_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
                 "geofac_div": self._interpolation_state.geofac_div,
                 "wgtfac_c": self._metric_state.wgtfac_c,
             },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
+            variants={
+                "compute_diagnostic_quantities": [True, False],
             },
-            vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
+            horizontal_sizes={
+                "edge_horizontal_start": self._edge_start_lateral_boundary_level_5,
+                "edge_horizontal_end": self._edge_end_halo_level_2,
+                "cell_horizontal_start": self._cell_start_nudging,
+                "cell_horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "edge_vertical_start": gtx.int32(0),
+                "edge_vertical_end": gtx.int32(self._grid.num_levels),
+                "cell_vertical_start": gtx.int32(1),
+                "cell_vertical_end": gtx.int32(self._grid.num_levels),
+            },
             offset_provider=self._grid.connectivities,
         )
         self.apply_diffusion_to_vn = setup_program(
@@ -738,9 +738,6 @@ class Diffusion:
         self.kh_smag_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
-        self.kh_smag_ec = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
-        )
         self.z_nabla2_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
@@ -850,39 +847,25 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of vn - end")
 
-        log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
-        self.calculate_nabla2_and_smag_coefficients_for_vn(
+        log.debug(
+            "running stencils 01 02 03 (calculate_nabla2_smag_and_turbulence_diagnostics): start"
+        )
+        self.calculate_nabla2_smag_and_turbulence_diagnostics(
             diff_multfac_smag=self.diff_multfac_smag,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             vn=prognostic_state.vn,
             smag_limit=smag_limit,
             kh_smag_e=self.kh_smag_e,
-            kh_smag_ec=self.kh_smag_ec,
             z_nabla2_e=self.z_nabla2_e,
+            div_ic=diagnostic_state.div_ic,
+            hdef_ic=diagnostic_state.hdef_ic,
             smag_offset=smag_offset,
+            compute_diagnostic_quantities=self._compute_diagnostic_quantities,
         )
-        log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
-
-        if (
-            self.config.shear_type
-            >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
-            or self.config.loutshs
-            or self.config.a_hshr > 0.0
-        ):
-            log.debug(
-                "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
-            )
-            self.calculate_diagnostic_quantities_for_turbulence(
-                kh_smag_ec=self.kh_smag_ec,
-                vn=prognostic_state.vn,
-                diff_multfac_smag=self.diff_multfac_smag,
-                div_ic=diagnostic_state.div_ic,
-                hdef_ic=diagnostic_state.hdef_ic,
-            )
-            log.debug(
-                "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
-            )
+        log.debug(
+            "running stencils 01 02 03 (calculate_nabla2_smag_and_turbulence_diagnostics): end"
+        )
 
         # 5.  HALO EXCHANGE -- CALL sync_patch_array(SYNC_E, z_nabla2_e)
         # ICON: mo_nh_diffusion.f90:853. Fill halo edges before second RBF.
