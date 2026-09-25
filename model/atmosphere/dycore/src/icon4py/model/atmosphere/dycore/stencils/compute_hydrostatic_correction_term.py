@@ -10,7 +10,7 @@ from gt4py.next import astype
 from gt4py.next.experimental import as_offset
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, Koff
+from icon4py.model.common.dimension import E2C, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -27,27 +27,27 @@ def _compute_hydrostatic_correction_term(
     """Formerly known as _mo_solve_nonhydro_stencil_21."""
     zdiff_gradp_wp = zdiff_gradp  # astype(zdiff_gradp, wpfloat) # TODO(): fix this cast
 
-    theta_v_0 = theta_v(E2C[0])(as_offset(Koff, ikoffset[dims.E2CDim(0)]))
-    theta_v_1 = theta_v(E2C[1])(as_offset(Koff, ikoffset[dims.E2CDim(1)]))
+    theta_v_0 = theta_v(E2C[0])(as_offset(KDim, ikoffset[dims.E2CDim(0)]))
+    theta_v_1 = theta_v(E2C[1])(as_offset(KDim, ikoffset[dims.E2CDim(1)]))
 
     # Each `theta_v_ic` chain must stay written out. Binding the shifted access to a local
     # emits a shared `let` that the dace lowering of `as_offset` cannot fuse, and the program
     # then fails to compile.
-    theta_v_ic_0 = theta_v_ic(E2C[0])(dims.KDim - 0.5)(as_offset(Koff, ikoffset[dims.E2CDim(0)]))
-    theta_v_ic_1 = theta_v_ic(E2C[1])(dims.KDim - 0.5)(as_offset(Koff, ikoffset[dims.E2CDim(1)]))
+    theta_v_ic_0 = theta_v_ic(E2C[0])(dims.KDim - 0.5)(as_offset(KDim, ikoffset[dims.E2CDim(0)]))
+    theta_v_ic_1 = theta_v_ic(E2C[1])(dims.KDim - 0.5)(as_offset(KDim, ikoffset[dims.E2CDim(1)]))
 
     theta_v_ic_p1_0 = theta_v_ic(E2C[0])(dims.KDim - 0.5)(
-        as_offset(Koff, ikoffset[dims.E2CDim(0)] + 1)
+        as_offset(KDim, ikoffset[dims.E2CDim(0)] + 1)
     )
     theta_v_ic_p1_1 = theta_v_ic(E2C[1])(dims.KDim - 0.5)(
-        as_offset(Koff, ikoffset[dims.E2CDim(1)] + 1)
+        as_offset(KDim, ikoffset[dims.E2CDim(1)] + 1)
     )
 
     inv_ddqz_z_full_0_wp = astype(
-        inv_ddqz_z_full(E2C[0])(as_offset(Koff, ikoffset[dims.E2CDim(0)])), wpfloat
+        inv_ddqz_z_full(E2C[0])(as_offset(KDim, ikoffset[dims.E2CDim(0)])), wpfloat
     )
     inv_ddqz_z_full_1_wp = astype(
-        inv_ddqz_z_full(E2C[1])(as_offset(Koff, ikoffset[dims.E2CDim(1)])), wpfloat
+        inv_ddqz_z_full(E2C[1])(as_offset(KDim, ikoffset[dims.E2CDim(1)])), wpfloat
     )
 
     z_theta_0 = (
