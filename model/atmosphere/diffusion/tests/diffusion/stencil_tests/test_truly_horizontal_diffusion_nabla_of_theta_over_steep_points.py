@@ -42,6 +42,8 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     for ic in range(full_shape[0]):
         for isparse in range(full_shape[1]):
             for ik in range(full_shape[2]):
+                if zd_diffcoef[ic, ik] == 0.0:
+                    continue
                 theta_v_at_zd_vertidx[ic, isparse, ik] = theta_v[
                     c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik]
                 ]
@@ -103,11 +105,21 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(stencil_tests.Sten
                 high=grid.num_levels - k - 1,
                 size=zd_vertoffset_buffer.shape[:2],
             )
+        # Non-steep points carry a zero offset and a zero coefficient, as the metric produces them;
+        # cell 0 is non-steep on every level, the bottom one included.
+        is_steep = rng.random((grid.num_cells, grid.num_levels)) < 0.5
+        is_steep[0, :] = False
+        zd_vertoffset_buffer = np.where(is_steep[:, np.newaxis, :], zd_vertoffset_buffer, 0)
         zd_vertoffset = data_alloc.as_field(
             zd_vertoffset_buffer, dims.CellDim, dims.C2E2CDim, dims.KDim
         )
 
-        zd_diffcoef = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        zd_diffcoef = data_alloc.as_field(
+            np.where(is_steep, rng.uniform(-1.0, 1.0, is_steep.shape), 0.0),
+            dims.CellDim,
+            dims.KDim,
+            dtype=wpfloat,
+        )
         geofac_n2s_c = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
         geofac_n2s_nbh = data_alloc.random_field(dims.CellDim, dims.C2E2CDim, dtype=wpfloat)
         vcoef = data_alloc.random_field(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=wpfloat)
