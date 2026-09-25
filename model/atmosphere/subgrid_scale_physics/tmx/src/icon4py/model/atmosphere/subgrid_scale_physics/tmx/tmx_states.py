@@ -40,6 +40,10 @@ class TmxMetricState:
     """Inverse vertical distance between full levels, at cell centers on half levels [1/m]."""
     inv_ddqz_z_full_e: fa.EdgeKField[ta.wpfloat]
     """Inverse layer thickness at edge midpoints on full levels [1/m]."""
+    inv_ddqz_z_half_e: fa.EdgeKHalfField[ta.wpfloat]
+    """Inverse vertical distance between full levels, at edge midpoints on half levels [1/m]."""
+    inv_ddqz_z_half_v: fa.VertexKHalfField[ta.wpfloat]
+    """Inverse vertical distance between full levels, at vertices on half levels [1/m]."""
     wgtfac_c: fa.CellKHalfField[ta.wpfloat]
     """Weighting factor for interpolation from full to half levels at cell centers (half levels)."""
     wgtfac_e: fa.EdgeKHalfField[ta.wpfloat]
@@ -80,6 +84,16 @@ class TmxInterpolationState:
     """RBF coefficients for the zonal wind component at cell centers (rbf_vec_coeff_c_1)."""
     rbf_coeff_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
     """RBF coefficients for the meridional wind component at cell centers (rbf_vec_coeff_c_2)."""
+
+
+@dataclasses.dataclass(frozen=True)
+class TmxSurfaceFluxState:
+    """Surface fluxes provided by the surface scheme (inputs to the atmospheric diffusion)."""
+
+    u_stress: fa.CellField[ta.wpfloat]
+    """Zonal surface wind stress (``tauu``) [N/m^2]."""
+    v_stress: fa.CellField[ta.wpfloat]
+    """Meridional surface wind stress (``tauv``) [N/m^2]."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -182,4 +196,60 @@ class TmxDiagnosticState:
             v_vert=zero_field(dims.VertexDim, dims.KDim),
             w_vert=zero_field(dims.VertexDim, dims.KHalfDim),
             km_iv=zero_field(dims.VertexDim, dims.KHalfDim),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class TmxNewState:
+    """
+    Prognostic fields updated by tmx: ``new = state + tend * dtime``.
+
+    The ``new_states`` of mo_vdf.f90.
+    """
+
+    u: fa.CellKField[ta.wpfloat]
+    """Updated zonal wind on full levels [m/s]."""
+    v: fa.CellKField[ta.wpfloat]
+    """Updated meridional wind on full levels [m/s]."""
+    w: fa.CellKHalfField[ta.wpfloat]
+    """Updated vertical wind on half levels [m/s]."""
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
+    ) -> TmxNewState:
+        """Allocate a new state with all fields initialized to zero."""
+        zero_field = functools.partial(
+            data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
+        )
+        return cls(
+            u=zero_field(dims.CellDim, dims.KDim),
+            v=zero_field(dims.CellDim, dims.KDim),
+            w=zero_field(dims.CellDim, dims.KHalfDim),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class TmxTendencyState:
+    """Tendencies computed by tmx (the ``tendencies`` of mo_vdf.f90)."""
+
+    tend_u: fa.CellKField[ta.wpfloat]
+    """Zonal wind tendency on full levels [m/s^2]."""
+    tend_v: fa.CellKField[ta.wpfloat]
+    """Meridional wind tendency on full levels [m/s^2]."""
+    tend_w: fa.CellKHalfField[ta.wpfloat]
+    """Vertical wind tendency on half levels [m/s^2]."""
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
+    ) -> TmxTendencyState:
+        """Allocate a tendency state with all fields initialized to zero."""
+        zero_field = functools.partial(
+            data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
+        )
+        return cls(
+            tend_u=zero_field(dims.CellDim, dims.KDim),
+            tend_v=zero_field(dims.CellDim, dims.KDim),
+            tend_w=zero_field(dims.CellDim, dims.KHalfDim),
         )
