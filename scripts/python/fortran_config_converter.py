@@ -19,6 +19,7 @@ the model packages.
 from __future__ import annotations
 
 import dataclasses
+import functools
 import logging
 import pathlib
 import typing
@@ -84,42 +85,14 @@ def list_to_value[T](obj: list[T] | T) -> T:
     return obj[0] if isinstance(obj, list) else obj
 
 
-def _translate_fields(
-    source: dict[str, Any],
-    name_map: dict[str, str],
-    known_fields: set[str],
-) -> dict[str, Any]:
-    """Map Fortran namelist keys to Python field names, keeping only known dataclass fields."""
-    params: dict[str, Any] = {}
-    for key, value in source.items():
-        python_name = name_map.get(key, key)
-        if python_name in known_fields:
-            params[python_name] = value
-    return params
-
-
-def config_dataclass_from_dict[T](
-    cls: type[T], source: dict[str, Any], name_map: dict[str, str]
-) -> T:
-    """Construct a dataclass from a Fortran namelist dict.
-
-    Unknown keys are ignored (e.g. topography params mixed into the same nml block).
-    Missing keys fall back to the dataclass field defaults.
-    Fortran→Python name translation is driven by ``name_map``:
-    ``{fortran_key: python_field_name}``.
-    """
-    known_fields = {f.name for f in dataclasses.fields(cls)}  # type: ignore[arg-type]
-    kwargs = _translate_fields(source, name_map, known_fields)
-    return cls(**kwargs)
-
-
 @dataclasses.dataclass(frozen=True)
 class IconOption:
     """Where to find a config field in the ICON namelists and how to convert it."""
 
     #: ICON4Py config field name
     field: str
-    #: path through nested namelist sections, ending with the option name
+    #: path through nested namelist sections, ending with the option name, or with
+    #: a section when `converter` combines several of its options
     path: tuple[str, ...]
     #: take the first element of a `max_dom`-sized list, see `list_to_value`
     list_to_value: bool = False
@@ -131,44 +104,49 @@ class IconOption:
     #: For these, `path` leads to that array and `unnamed_index` is the 0-based member
     #: position within the first record, while the option name only serves as documentation.
     unnamed_index: int | None = None
+    #: when False, a missing namelist entry leaves the ICON4Py default in place
+    required: bool = True
 
 
 def _field_type(config_cls: type, field: str) -> typing.Callable[[Any], Any]:
-    """Base type of a (possibly `typing.Annotated`) dataclass field, used as fallback converter."""
+    """Base type of a (possibly `Annotated` or `Final`) dataclass field, used as fallback converter."""
     hint = typing.get_type_hints(config_cls, include_extras=True)[field]
-    return typing.get_args(hint)[0] if typing.get_origin(hint) is typing.Annotated else hint
+    while typing.get_origin(hint) in (typing.Annotated, typing.Final):
+        hint = typing.get_args(hint)[0]
+    return hint
 
 
-def _kwargs_from_table(
-    config_cls: type, table: list[IconOption], icon_config: dict[str, Any]
-) -> dict[str, Any]:
-    """Read the `config_cls` constructor arguments listed in `table` from `icon_config`.
+@dataclasses.dataclass(frozen=True)
+class ConfigMapping[T]:
+    """The ICON namelist options a config class is read from."""
 
-    All namelist entries in `table` must be present: ICON dumps every namelist in
-    full, so a missing key means the mapping drifted from Fortran and must not be
-    silently replaced by the ICON4Py default.
-    """
-    kwargs: dict[str, Any] = {}
-    for opt in table:
-        value: Any = icon_config
-        for key in opt.path:
-            value = value[key]
-        if opt.unnamed_index is not None:
-            value = value[opt.unnamed_index]
-        if opt.list_to_value:
-            value = list_to_value(value)
-        converter = opt.converter or _field_type(config_cls, opt.field)
-        kwargs[opt.field] = converter(value)
-    return kwargs
+    config_cls: type[T]
+    options: list[IconOption]
 
+    def build(self, icon_config: dict[str, Any], **overrides: Any) -> T:
+        """Construct `config_cls` from the `options` in `icon_config`, plus `overrides`.
 
-def _build_from_table(
-    config_cls: type,
-    table: list[IconOption],
-    icon_config: dict[str, Any],
-    overrides: dict[str, Any],
-) -> Any:
-    return config_cls(**_kwargs_from_table(config_cls, table, icon_config), **overrides)
+        Options are required by default: ICON dumps every namelist in full, so a
+        missing key means the mapping drifted from Fortran and must not be silently
+        replaced by the ICON4Py default.
+        """
+        kwargs: dict[str, Any] = {}
+        for opt in self.options:
+            value: Any = icon_config
+            try:
+                for key in opt.path:
+                    value = value[key]
+            except KeyError:
+                if opt.required:
+                    raise
+                continue
+            if opt.unnamed_index is not None:
+                value = value[opt.unnamed_index]
+            if opt.list_to_value:
+                value = list_to_value(value)
+            converter = opt.converter or _field_type(self.config_cls, opt.field)
+            kwargs[opt.field] = converter(value)
+        return self.config_cls(**kwargs, **overrides)
 
 
 # ---------------------------------------------------------------------------
@@ -176,236 +154,231 @@ def _build_from_table(
 # ---------------------------------------------------------------------------
 
 
-_DIFFUSION_OPTIONS = [
-    IconOption("diffusion_type", ("diffusion_nml", "hdiff_order")),
-    IconOption("apply_to_vertical_wind", ("diffusion_nml", "lhdiff_w")),
-    IconOption("apply_to_horizontal_wind", ("diffusion_nml", "lhdiff_vn")),
-    IconOption("apply_to_temperature", ("diffusion_nml", "lhdiff_temp")),
-    IconOption(
-        "apply_smag_diff_to_vertical_wind", ("diffusion_nml", "lhdiff_smag_w"), list_to_value=True
-    ),
-    IconOption("compute_3d_smag_coeff", ("diffusion_nml", "lsmag_3d"), list_to_value=True),
-    IconOption("type_vn_diffu", ("diffusion_nml", "itype_vn_diffu")),
-    IconOption("type_t_diffu", ("diffusion_nml", "itype_t_diffu")),
-    IconOption("hdiff_efdt_ratio", ("diffusion_nml", "hdiff_efdt_ratio")),
-    IconOption("hdiff_w_efdt_ratio", ("diffusion_nml", "hdiff_w_efdt_ratio")),
-    IconOption("smagorinski_scaling_factor", ("diffusion_nml", "hdiff_smag_fac")),
-    IconOption("smagorinski_scaling_factor2", ("diffusion_nml", "hdiff_smag_fac2")),
-    IconOption("smagorinski_scaling_factor3", ("diffusion_nml", "hdiff_smag_fac3")),
-    IconOption("smagorinski_scaling_factor4", ("diffusion_nml", "hdiff_smag_fac4")),
-    IconOption("smagorinski_scaling_height", ("diffusion_nml", "hdiff_smag_z")),
-    IconOption("smagorinski_scaling_height2", ("diffusion_nml", "hdiff_smag_z2")),
-    IconOption("smagorinski_scaling_height3", ("diffusion_nml", "hdiff_smag_z3")),
-    IconOption("smagorinski_scaling_height4", ("diffusion_nml", "hdiff_smag_z4")),
-    IconOption("apply_zdiffusion_t", ("nonhydrostatic_nml", "l_zdiffu_t")),
-    IconOption("temperature_boundary_diffusion_denominator", ("gridref_nml", "denom_diffu_t")),
-    IconOption("velocity_boundary_diffusion_denominator", ("gridref_nml", "denom_diffu_v")),
-    IconOption("shear_type", ("turbdiff_nml", "itype_sher")),
-    IconOption("iforcing", ("run_nml", "iforcing")),
-    IconOption("a_hshr", ("turbdiff_nml", "a_hshr")),
-]
+DIFFUSION = ConfigMapping(
+    diffusion.DiffusionConfig,
+    [
+        IconOption("diffusion_type", ("diffusion_nml", "hdiff_order")),
+        IconOption("apply_to_vertical_wind", ("diffusion_nml", "lhdiff_w")),
+        IconOption("apply_to_horizontal_wind", ("diffusion_nml", "lhdiff_vn")),
+        IconOption("apply_to_temperature", ("diffusion_nml", "lhdiff_temp")),
+        IconOption(
+            "apply_smag_diff_to_vertical_wind",
+            ("diffusion_nml", "lhdiff_smag_w"),
+            list_to_value=True,
+        ),
+        IconOption("compute_3d_smag_coeff", ("diffusion_nml", "lsmag_3d"), list_to_value=True),
+        IconOption("type_vn_diffu", ("diffusion_nml", "itype_vn_diffu")),
+        IconOption("type_t_diffu", ("diffusion_nml", "itype_t_diffu")),
+        IconOption("hdiff_efdt_ratio", ("diffusion_nml", "hdiff_efdt_ratio")),
+        IconOption("hdiff_w_efdt_ratio", ("diffusion_nml", "hdiff_w_efdt_ratio")),
+        IconOption("smagorinski_scaling_factor", ("diffusion_nml", "hdiff_smag_fac")),
+        IconOption("smagorinski_scaling_factor2", ("diffusion_nml", "hdiff_smag_fac2")),
+        IconOption("smagorinski_scaling_factor3", ("diffusion_nml", "hdiff_smag_fac3")),
+        IconOption("smagorinski_scaling_factor4", ("diffusion_nml", "hdiff_smag_fac4")),
+        IconOption("smagorinski_scaling_height", ("diffusion_nml", "hdiff_smag_z")),
+        IconOption("smagorinski_scaling_height2", ("diffusion_nml", "hdiff_smag_z2")),
+        IconOption("smagorinski_scaling_height3", ("diffusion_nml", "hdiff_smag_z3")),
+        IconOption("smagorinski_scaling_height4", ("diffusion_nml", "hdiff_smag_z4")),
+        IconOption("apply_zdiffusion_t", ("nonhydrostatic_nml", "l_zdiffu_t")),
+        IconOption("temperature_boundary_diffusion_denominator", ("gridref_nml", "denom_diffu_t")),
+        IconOption("velocity_boundary_diffusion_denominator", ("gridref_nml", "denom_diffu_v")),
+        IconOption("shear_type", ("turbdiff_nml", "itype_sher")),
+        IconOption("iforcing", ("run_nml", "iforcing")),
+        IconOption("a_hshr", ("turbdiff_nml", "a_hshr")),
+    ],
+)
 
 
-def make_diffusion_config(atm_dict: dict[str, Any], **overrides: Any) -> diffusion.DiffusionConfig:
-    return _build_from_table(diffusion.DiffusionConfig, _DIFFUSION_OPTIONS, atm_dict, overrides)
-
-
-_NONHYDROSTATIC_OPTIONS = [
-    IconOption("itime_scheme", ("nonhydrostatic_nml", "itime_scheme")),
-    IconOption("iadv_rhotheta", ("nonhydrostatic_nml", "iadv_rhotheta")),
-    IconOption("igradp_method", ("nonhydrostatic_nml", "igradp_method")),
-    IconOption("rayleigh_type", ("nonhydrostatic_nml", "rayleigh_type")),
-    IconOption("divdamp_order", ("nonhydrostatic_nml", "divdamp_order")),
-    IconOption("divdamp_type", ("nonhydrostatic_nml", "divdamp_type")),
-    IconOption("l_vert_nested", ("run_nml", "lvert_nest")),
-    IconOption("deepatmos_mode", ("dynamics_nml", "ldeepatmo")),
-    IconOption(
-        "iau_init", ("initicon_nml", "init_mode"), converter=lambda init_mode: init_mode == 5
-    ),
-    IconOption("extra_diffu", ("nonhydrostatic_nml", "lextra_diffu")),
-    IconOption("rhotheta_offctr", ("nonhydrostatic_nml", "rhotheta_offctr")),
-    IconOption("veladv_offctr", ("nonhydrostatic_nml", "veladv_offctr")),
-    IconOption("fourth_order_divdamp_factor", ("nonhydrostatic_nml", "divdamp_fac")),
-    IconOption("fourth_order_divdamp_factor2", ("nonhydrostatic_nml", "divdamp_fac2")),
-    IconOption("fourth_order_divdamp_factor3", ("nonhydrostatic_nml", "divdamp_fac3")),
-    IconOption("fourth_order_divdamp_factor4", ("nonhydrostatic_nml", "divdamp_fac4")),
-    IconOption("fourth_order_divdamp_z", ("nonhydrostatic_nml", "divdamp_z")),
-    IconOption("fourth_order_divdamp_z2", ("nonhydrostatic_nml", "divdamp_z2")),
-    IconOption("fourth_order_divdamp_z3", ("nonhydrostatic_nml", "divdamp_z3")),
-    IconOption("fourth_order_divdamp_z4", ("nonhydrostatic_nml", "divdamp_z4")),
-]
-
-
-def make_nonhydrostatic_config(
-    atm_dict: dict[str, Any], **overrides: Any
-) -> solve_nh.NonHydrostaticConfig:
-    return _build_from_table(
-        solve_nh.NonHydrostaticConfig, _NONHYDROSTATIC_OPTIONS, atm_dict, overrides
-    )
+NONHYDROSTATIC = ConfigMapping(
+    solve_nh.NonHydrostaticConfig,
+    [
+        IconOption("itime_scheme", ("nonhydrostatic_nml", "itime_scheme")),
+        IconOption("iadv_rhotheta", ("nonhydrostatic_nml", "iadv_rhotheta")),
+        IconOption("igradp_method", ("nonhydrostatic_nml", "igradp_method")),
+        IconOption("rayleigh_type", ("nonhydrostatic_nml", "rayleigh_type")),
+        IconOption("divdamp_order", ("nonhydrostatic_nml", "divdamp_order")),
+        IconOption("divdamp_type", ("nonhydrostatic_nml", "divdamp_type")),
+        IconOption("l_vert_nested", ("run_nml", "lvert_nest")),
+        IconOption("deepatmos_mode", ("dynamics_nml", "ldeepatmo")),
+        IconOption(
+            "iau_init", ("initicon_nml", "init_mode"), converter=lambda init_mode: init_mode == 5
+        ),
+        IconOption("extra_diffu", ("nonhydrostatic_nml", "lextra_diffu")),
+        IconOption("rhotheta_offctr", ("nonhydrostatic_nml", "rhotheta_offctr")),
+        IconOption("veladv_offctr", ("nonhydrostatic_nml", "veladv_offctr")),
+        IconOption("fourth_order_divdamp_factor", ("nonhydrostatic_nml", "divdamp_fac")),
+        IconOption("fourth_order_divdamp_factor2", ("nonhydrostatic_nml", "divdamp_fac2")),
+        IconOption("fourth_order_divdamp_factor3", ("nonhydrostatic_nml", "divdamp_fac3")),
+        IconOption("fourth_order_divdamp_factor4", ("nonhydrostatic_nml", "divdamp_fac4")),
+        IconOption("fourth_order_divdamp_z", ("nonhydrostatic_nml", "divdamp_z")),
+        IconOption("fourth_order_divdamp_z2", ("nonhydrostatic_nml", "divdamp_z2")),
+        IconOption("fourth_order_divdamp_z3", ("nonhydrostatic_nml", "divdamp_z3")),
+        IconOption("fourth_order_divdamp_z4", ("nonhydrostatic_nml", "divdamp_z4")),
+    ],
+)
 
 
 def _convert_nudge_max_coeff(nudge_max_coeff: float) -> float:
     return constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * nudge_max_coeff
 
 
-_INTERPOLATION_OPTIONS = [
-    IconOption("divergence_averaging_central_cell_weight", ("dynamics_nml", "divavg_cntrwgt")),
-    IconOption(
-        "max_nudging_coefficient",
-        ("interpol_nml", "nudge_max_coeff"),
-        converter=_convert_nudge_max_coeff,
-    ),
-    IconOption("nudge_efold_width", ("interpol_nml", "nudge_efold_width")),
-    IconOption("nudge_zone_width", ("interpol_nml", "nudge_zone_width")),
-    IconOption("rbf_kernel_cell", ("interpol_nml", "rbf_vec_kern_c")),
-    IconOption("rbf_kernel_edge", ("interpol_nml", "rbf_vec_kern_e")),
-    IconOption("rbf_kernel_vertex", ("interpol_nml", "rbf_vec_kern_v")),
-    IconOption("lsq_high_ord", ("interpol_nml", "lsq_high_ord")),
-]
-
-
-def make_interpolation_config(
-    atm_dict: dict[str, Any], **overrides: Any
-) -> interpolation_factory.InterpolationConfig:
-    return _build_from_table(
-        interpolation_factory.InterpolationConfig, _INTERPOLATION_OPTIONS, atm_dict, overrides
-    )
+INTERPOLATION = ConfigMapping(
+    interpolation_factory.InterpolationConfig,
+    [
+        IconOption("divergence_averaging_central_cell_weight", ("dynamics_nml", "divavg_cntrwgt")),
+        IconOption(
+            "max_nudging_coefficient",
+            ("interpol_nml", "nudge_max_coeff"),
+            converter=_convert_nudge_max_coeff,
+        ),
+        IconOption("nudge_efold_width", ("interpol_nml", "nudge_efold_width")),
+        IconOption("nudge_zone_width", ("interpol_nml", "nudge_zone_width")),
+        IconOption("rbf_kernel_cell", ("interpol_nml", "rbf_vec_kern_c")),
+        IconOption("rbf_kernel_edge", ("interpol_nml", "rbf_vec_kern_e")),
+        IconOption("rbf_kernel_vertex", ("interpol_nml", "rbf_vec_kern_v")),
+        IconOption("lsq_high_ord", ("interpol_nml", "lsq_high_ord")),
+    ],
+)
 
 
 def _experiment_name_from_namelist_filename(model_namelist_filename: str) -> str:
     return model_namelist_filename.removeprefix("NAMELIST_").removesuffix("_sb_atm")
 
 
-# The driver reads from both the master and the model namelists.
-_DRIVER_OPTIONS = [
-    IconOption(
-        "experiment_name",
-        ("master_cfg", "master_model_nml", "model_namelist_filename"),
-        converter=_experiment_name_from_namelist_filename,
-    ),
-    IconOption(
-        "start_of_simulation",
-        ("master_cfg", "master_time_control_nml", "experimentstartdate"),
-        converter=driver_config.absolutetime_from_iconformat,
-    ),
-    IconOption(
-        "end_of_simulation",
-        ("master_cfg", "master_time_control_nml", "experimentstopdate"),
-        converter=driver_config.absolutetime_from_iconformat,
-    ),
-    # Not a namelist variable, coded as follows in mo_nh_stepping.f90:
-    # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)
-    IconOption(
-        "apply_extra_second_order_divdamp",
-        ("model_cfg", "run_nml", "ltestcase"),
-        converter=lambda ltestcase: not ltestcase,
-    ),
-    IconOption(
-        "diffuse_before_time_loop",
-        ("model_cfg", "run_nml", "ltestcase"),
-        converter=lambda ltestcase: not ltestcase,
-    ),
-    IconOption("vertical_cfl_threshold", ("model_cfg", "nonhydrostatic_nml", "vcfl_threshold")),
-    IconOption("ndyn_substeps", ("model_cfg", "nonhydrostatic_nml", "ndyn_substeps")),
-]
-
-
-def make_driver_config(
-    *, atm_dict: dict[str, Any], master_dict: dict[str, Any], **overrides: Any
-) -> driver_config.DriverConfig:
-    icon_config = {"master_cfg": master_dict, "model_cfg": atm_dict}
-    kwargs = _kwargs_from_table(driver_config.DriverConfig, _DRIVER_OPTIONS, icon_config)
+def _dtime_from_run_nml(run_nml: dict[str, Any]) -> time.RelativeTime:
     # `modeltimestep` (ISO 8601 duration) takes priority over the legacy `dtime`
     # (seconds); ICON writes it as a fixed-width, blank-padded string.
-    run_nml = atm_dict["run_nml"]
-    kwargs["dtime"] = driver_config.relativetime_from_iconformat(
+    return driver_config.relativetime_from_iconformat(
         run_nml["dtime"], run_nml["modeltimestep"].strip()
     )
-    # start_of_timestepping is always equal to start_of_simulation when reading from ICON
-    return driver_config.DriverConfig.make_initial(**kwargs, **overrides)
 
 
-def make_metrics_config(
-    atm_dict: dict[str, Any], **overrides: Any
-) -> metrics_factory.MetricsConfig:
-    nonhydrostatic_nml = atm_dict["nonhydrostatic_nml"]
-    return metrics_factory.MetricsConfig(
-        exner_expol=nonhydrostatic_nml["exner_expol"],
-        vwind_offctr=nonhydrostatic_nml["vwind_offctr"],
-        thslp_zdiffu=nonhydrostatic_nml["thslp_zdiffu"],
-        thhgtd_zdiffu=nonhydrostatic_nml["thhgtd_zdiffu"],
-        rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
-        rayleigh_coeff=list_to_value(nonhydrostatic_nml["rayleigh_coeff"]),
-        divdamp_trans_start=nonhydrostatic_nml["divdamp_trans_start"],
-        divdamp_trans_end=nonhydrostatic_nml["divdamp_trans_end"],
-        divdamp_type=nonhydrostatic_nml["divdamp_type"],
-        igradp_method=nonhydrostatic_nml["igradp_method"],
-        **overrides,
-    )
-
-
-def make_vertical_grid_config(
-    atm_dict: dict[str, Any], **overrides: Any
-) -> v_grid.VerticalGridConfig:
-    sleve_nml = atm_dict["sleve_nml"]
-    nonhydrostatic_nml = atm_dict["nonhydrostatic_nml"]
-    run_nml = atm_dict["run_nml"]
-    return v_grid.VerticalGridConfig(
-        num_levels=list_to_value(run_nml["num_lev"]),
-        maximal_layer_thickness=sleve_nml["max_lay_thckn"],
-        top_height_limit_for_maximal_layer_thickness=sleve_nml["htop_thcknlimit"],
-        lowest_layer_thickness=sleve_nml["min_lay_thckn"],
-        model_top_height=sleve_nml["top_height"],
-        flat_height=sleve_nml["flat_height"],
-        stretch_factor=sleve_nml["stretch_fac"],
-        rayleigh_damping_height=list_to_value(nonhydrostatic_nml["damp_height"]),
-        htop_moist_proc=nonhydrostatic_nml["htop_moist_proc"],
-        SLEVE_decay_scale_1=sleve_nml["decay_scale_1"],
-        SLEVE_decay_scale_2=sleve_nml["decay_scale_2"],
-        SLEVE_decay_exponent=sleve_nml["decay_exp"],
-        **overrides,
-    )
-
-
-def make_advection_config(
-    atm_dict: dict[str, Any], **overrides: Any
-) -> tracer_advection.AdvectionConfig:
-    transport_nml = atm_dict["transport_nml"]
-    return tracer_advection.AdvectionConfig(
-        horizontal_advection_type=tracer_advection.HorizontalAdvectionType(
-            list_to_value(transport_nml["ihadv_tracer"])
+# The driver reads from both the master and the model namelists:
+# `{"master_cfg": master_dict, "model_cfg": atm_dict}`.
+DRIVER = ConfigMapping(
+    driver_config.DriverConfig,
+    [
+        IconOption(
+            "experiment_name",
+            ("master_cfg", "master_model_nml", "model_namelist_filename"),
+            converter=_experiment_name_from_namelist_filename,
         ),
-        horizontal_advection_limiter=tracer_advection.HorizontalAdvectionLimiter(
-            list_to_value(transport_nml["itype_hlimit"])
+        IconOption("dtime", ("model_cfg", "run_nml"), converter=_dtime_from_run_nml),
+        IconOption(
+            "start_of_simulation",
+            ("master_cfg", "master_time_control_nml", "experimentstartdate"),
+            converter=driver_config.absolutetime_from_iconformat,
         ),
-        vertical_advection_type=tracer_advection.VerticalAdvectionType(
-            list_to_value(transport_nml["ivadv_tracer"])
+        # start_of_timestepping is always equal to start_of_simulation when reading from ICON
+        IconOption(
+            "start_of_timestepping",
+            ("master_cfg", "master_time_control_nml", "experimentstartdate"),
+            converter=driver_config.absolutetime_from_iconformat,
         ),
-        vertical_advection_limiter=tracer_advection.VerticalAdvectionLimiter(
-            list_to_value(transport_nml["itype_vlimit"])
+        IconOption(
+            "end_of_simulation",
+            ("master_cfg", "master_time_control_nml", "experimentstopdate"),
+            converter=driver_config.absolutetime_from_iconformat,
         ),
-        **overrides,
-    )
+        # Not a namelist variable, coded as follows in mo_nh_stepping.f90:
+        # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)
+        IconOption(
+            "apply_extra_second_order_divdamp",
+            ("model_cfg", "run_nml", "ltestcase"),
+            converter=lambda ltestcase: not ltestcase,
+        ),
+        IconOption(
+            "diffuse_before_time_loop",
+            ("model_cfg", "run_nml", "ltestcase"),
+            converter=lambda ltestcase: not ltestcase,
+        ),
+        IconOption("vertical_cfl_threshold", ("model_cfg", "nonhydrostatic_nml", "vcfl_threshold")),
+        IconOption("ndyn_substeps", ("model_cfg", "nonhydrostatic_nml", "ndyn_substeps")),
+    ],
+)
 
 
-def make_graupel_config(
-    atm_dict: dict[str, Any], **overrides: Any
-) -> graupel.SingleMomentSixClassIconGraupelConfig:
-    run_nml = atm_dict["run_nml"]
-    nwp_phy_nml = atm_dict["nwp_phy_nml"]
-    nwp_tuning_nml = atm_dict["nwp_tuning_nml"]
-    return graupel.SingleMomentSixClassIconGraupelConfig(
-        do_latent_heat_nudging=run_nml["ldass_lhn"],
-        use_constant_latent_heat=list_to_value(nwp_phy_nml["ithermo_water"]) == 0,
-        ice_stickeff_min=nwp_tuning_nml["tune_zceff_min"],
-        power_law_coeff_for_ice_mean_fall_speed=nwp_tuning_nml["tune_zvz0i"],
-        exponent_for_density_factor_in_ice_sedimentation=nwp_tuning_nml["tune_icesedi_exp"],
-        power_law_coeff_for_snow_fall_speed=nwp_tuning_nml["tune_v0snow"],
-        rain_mu=nwp_phy_nml["mu_rain"],
-        rain_n0=nwp_phy_nml["rain_n0_factor"],
-        snow2graupel_riming_coeff=nwp_tuning_nml["tune_zcsg"],
-        **overrides,
-    )
+METRICS = ConfigMapping(
+    metrics_factory.MetricsConfig,
+    [
+        IconOption("exner_expol", ("nonhydrostatic_nml", "exner_expol")),
+        IconOption("vwind_offctr", ("nonhydrostatic_nml", "vwind_offctr")),
+        IconOption("thslp_zdiffu", ("nonhydrostatic_nml", "thslp_zdiffu")),
+        IconOption("thhgtd_zdiffu", ("nonhydrostatic_nml", "thhgtd_zdiffu")),
+        IconOption("rayleigh_type", ("nonhydrostatic_nml", "rayleigh_type")),
+        IconOption("rayleigh_coeff", ("nonhydrostatic_nml", "rayleigh_coeff"), list_to_value=True),
+        IconOption("divdamp_trans_start", ("nonhydrostatic_nml", "divdamp_trans_start")),
+        IconOption("divdamp_trans_end", ("nonhydrostatic_nml", "divdamp_trans_end")),
+        IconOption("divdamp_type", ("nonhydrostatic_nml", "divdamp_type")),
+        IconOption("igradp_method", ("nonhydrostatic_nml", "igradp_method")),
+    ],
+)
+
+
+VERTICAL_GRID = ConfigMapping(
+    v_grid.VerticalGridConfig,
+    [
+        IconOption("num_levels", ("run_nml", "num_lev"), list_to_value=True),
+        IconOption("maximal_layer_thickness", ("sleve_nml", "max_lay_thckn")),
+        IconOption(
+            "top_height_limit_for_maximal_layer_thickness", ("sleve_nml", "htop_thcknlimit")
+        ),
+        IconOption("lowest_layer_thickness", ("sleve_nml", "min_lay_thckn")),
+        IconOption("model_top_height", ("sleve_nml", "top_height")),
+        IconOption("flat_height", ("sleve_nml", "flat_height")),
+        IconOption("stretch_factor", ("sleve_nml", "stretch_fac")),
+        IconOption(
+            "rayleigh_damping_height", ("nonhydrostatic_nml", "damp_height"), list_to_value=True
+        ),
+        IconOption("htop_moist_proc", ("nonhydrostatic_nml", "htop_moist_proc")),
+        IconOption("SLEVE_decay_scale_1", ("sleve_nml", "decay_scale_1")),
+        IconOption("SLEVE_decay_scale_2", ("sleve_nml", "decay_scale_2")),
+        IconOption("SLEVE_decay_exponent", ("sleve_nml", "decay_exp")),
+    ],
+)
+
+
+ADVECTION = ConfigMapping(
+    tracer_advection.AdvectionConfig,
+    [
+        IconOption(
+            "horizontal_advection_type", ("transport_nml", "ihadv_tracer"), list_to_value=True
+        ),
+        IconOption(
+            "horizontal_advection_limiter", ("transport_nml", "itype_hlimit"), list_to_value=True
+        ),
+        IconOption(
+            "vertical_advection_type", ("transport_nml", "ivadv_tracer"), list_to_value=True
+        ),
+        IconOption(
+            "vertical_advection_limiter", ("transport_nml", "itype_vlimit"), list_to_value=True
+        ),
+    ],
+)
+
+
+GRAUPEL = ConfigMapping(
+    graupel.SingleMomentSixClassIconGraupelConfig,
+    [
+        IconOption("do_latent_heat_nudging", ("run_nml", "ldass_lhn")),
+        IconOption(
+            "use_constant_latent_heat",
+            ("nwp_phy_nml", "ithermo_water"),
+            list_to_value=True,
+            converter=lambda ithermo_water: ithermo_water == 0,
+        ),
+        IconOption("ice_stickeff_min", ("nwp_tuning_nml", "tune_zceff_min")),
+        IconOption("power_law_coeff_for_ice_mean_fall_speed", ("nwp_tuning_nml", "tune_zvz0i")),
+        IconOption(
+            "exponent_for_density_factor_in_ice_sedimentation",
+            ("nwp_tuning_nml", "tune_icesedi_exp"),
+        ),
+        IconOption("power_law_coeff_for_snow_fall_speed", ("nwp_tuning_nml", "tune_v0snow")),
+        IconOption("rain_mu", ("nwp_phy_nml", "mu_rain")),
+        IconOption("rain_n0", ("nwp_phy_nml", "rain_n0_factor")),
+        IconOption("snow2graupel_riming_coeff", ("nwp_tuning_nml", "tune_zcsg")),
+    ],
+)
 
 
 # ICON echoes `aes_vdf_nml` as an anonymous array of the `t_vdiff_config` members in
@@ -418,23 +391,26 @@ _TMX_VDIFF_MEMBERS: typing.Final = 42
 #: position of the `use_tmx` switch within a record
 _TMX_USE_TMX_INDEX: typing.Final = 22
 
-_TMX_OPTIONS = [
-    IconOption("solver_type", _TMX_VDIFF_PATH, unnamed_index=23),
-    IconOption("energy_type", _TMX_VDIFF_PATH, unnamed_index=24),
-    IconOption("dissipation_factor", _TMX_VDIFF_PATH, unnamed_index=25),
-    IconOption("use_louis", _TMX_VDIFF_PATH, unnamed_index=26),
-    IconOption("use_louis_land", _TMX_VDIFF_PATH, unnamed_index=27),
-    IconOption("use_louis_ice", _TMX_VDIFF_PATH, unnamed_index=28),
-    IconOption("louis_constant_b", _TMX_VDIFF_PATH, unnamed_index=29),
-    IconOption("use_km_const", _TMX_VDIFF_PATH, unnamed_index=30),
-    IconOption("km_const", _TMX_VDIFF_PATH, unnamed_index=31),
-    IconOption("use_scale_turb_energy_flux", _TMX_VDIFF_PATH, unnamed_index=32),
-    IconOption("scale_turb_energy_flux", _TMX_VDIFF_PATH, unnamed_index=33),
-    IconOption("smag_constant", _TMX_VDIFF_PATH, unnamed_index=34),
-    IconOption("turb_prandtl", _TMX_VDIFF_PATH, unnamed_index=35),
-    IconOption("km_min", _TMX_VDIFF_PATH, unnamed_index=37),
-    IconOption("max_turb_scale", _TMX_VDIFF_PATH, unnamed_index=38),
-]
+TMX = ConfigMapping(
+    tmx_config.TmxConfig,
+    [
+        IconOption("solver_type", _TMX_VDIFF_PATH, unnamed_index=23),
+        IconOption("energy_type", _TMX_VDIFF_PATH, unnamed_index=24),
+        IconOption("dissipation_factor", _TMX_VDIFF_PATH, unnamed_index=25),
+        IconOption("use_louis", _TMX_VDIFF_PATH, unnamed_index=26),
+        IconOption("use_louis_land", _TMX_VDIFF_PATH, unnamed_index=27),
+        IconOption("use_louis_ice", _TMX_VDIFF_PATH, unnamed_index=28),
+        IconOption("louis_constant_b", _TMX_VDIFF_PATH, unnamed_index=29),
+        IconOption("use_km_const", _TMX_VDIFF_PATH, unnamed_index=30),
+        IconOption("km_const", _TMX_VDIFF_PATH, unnamed_index=31),
+        IconOption("use_scale_turb_energy_flux", _TMX_VDIFF_PATH, unnamed_index=32),
+        IconOption("scale_turb_energy_flux", _TMX_VDIFF_PATH, unnamed_index=33),
+        IconOption("smag_constant", _TMX_VDIFF_PATH, unnamed_index=34),
+        IconOption("turb_prandtl", _TMX_VDIFF_PATH, unnamed_index=35),
+        IconOption("km_min", _TMX_VDIFF_PATH, unnamed_index=37),
+        IconOption("max_turb_scale", _TMX_VDIFF_PATH, unnamed_index=38),
+    ],
+)
 
 
 def _read_use_tmx(atm_dict: dict[str, Any]) -> bool:
@@ -465,39 +441,65 @@ def tmx_is_active(atm_dict: dict[str, Any]) -> bool:
     return "aes_vdf_nml" in atm_dict and _read_use_tmx(atm_dict)
 
 
-def make_tmx_config(atm_dict: dict[str, Any], **overrides: Any) -> tmx_config.TmxConfig:
-    """Read the tmx configuration from the echoed `aes_vdf_nml` namelist."""
-    if not _read_use_tmx(atm_dict):
-        raise ValueError("'use_tmx' is False in 'aes_vdf_config': the run does not use tmx.")
-    return _build_from_table(tmx_config.TmxConfig, _TMX_OPTIONS, atm_dict, overrides)
+# The analytical test cases are read from `nh_testcase_nml`, which ICON does not dump
+# to NAMELIST_ICON_output_atm: it comes from the experiment's input namelist, which
+# only lists the values that differ from the ICON defaults.
+_testcase_option = functools.partial(IconOption, required=False)
 
+JW_TOPOGRAPHY = ConfigMapping(
+    jw_topo.JablonowskiWilliamsonConfig,
+    [_testcase_option("u0", ("jw_u0",))],
+)
 
-# Fortran namelist keys of the analytical test cases → ICON4Py dataclass fields.
-_JW_TOPO_NAME_MAP = {"jw_u0": "u0"}
-_JW_IC_NAME_MAP = {
-    "jw_up": "baroclinic_amplitude",
-    "jw_u0": "u0",
-    "jw_temp0": "temp0",
-    "zp_ape": "p_sfc",
-    "rh_at_1000hpa": "rh_at_1000hpa",
-    "qv_max": "qv_max",
-    "ztmc_ape": "global_moisture_content",
-}
-_GAUSS3D_IC_NAME_MAP = {
-    "nh_u0": "u0",
-    "nh_t0": "t0",
-    "nh_brunt_vais": "brunt_vais",
-}
-_WK_IC_NAME_MAP = {
-    "qv_max_wk": "qv_max",
-    "u_infty_wk": "max_wind_speed",
-    "bub_hor_width": "bubble_horizontal_width",
-    "bub_ver_width": "bubble_vertical_width",
-    "bubctr_lon": "bubble_center_x",
-    "bubctr_lat": "bubble_center_y",
-    "bubctr_z": "bubble_center_z",
-    "bub_amp": "bubble_amplitude",
-}
+GAUSSIAN_HILL_TOPOGRAPHY = ConfigMapping(
+    gausshill_topo.GaussianHillConfig,
+    [
+        _testcase_option("mount_height", ("mount_height",)),
+        _testcase_option("mount_width", ("mount_width",)),
+    ],
+)
+
+JW_INITIAL_CONDITION = ConfigMapping(
+    jw_ic.JablonowskiWilliamsonConfig,
+    [
+        _testcase_option("baroclinic_amplitude", ("jw_up",)),
+        _testcase_option("u0", ("jw_u0",)),
+        _testcase_option("temp0", ("jw_temp0",)),
+        _testcase_option("p_sfc", ("zp_ape",)),
+        _testcase_option("rh_at_1000hpa", ("rh_at_1000hpa",)),
+        _testcase_option("qv_max", ("qv_max",)),
+        _testcase_option("global_moisture_content", ("ztmc_ape",)),
+        # Only the APE cases rescale qv to a prescribed global moisture content.
+        IconOption(
+            "normalize_global_moisture",
+            ("nh_test_name",),
+            converter=lambda nh_test_name: nh_test_name in ("APE_nwp", "APE_aes"),
+        ),
+    ],
+)
+
+GAUSS3D_INITIAL_CONDITION = ConfigMapping(
+    gauss_ic.Gauss3DConfig,
+    [
+        _testcase_option("u0", ("nh_u0",)),
+        _testcase_option("t0", ("nh_t0",)),
+        _testcase_option("brunt_vais", ("nh_brunt_vais",)),
+    ],
+)
+
+WK_INITIAL_CONDITION = ConfigMapping(
+    wk_ic.WeismanKlempConfig,
+    [
+        _testcase_option("qv_max", ("qv_max_wk",)),
+        _testcase_option("max_wind_speed", ("u_infty_wk",)),
+        _testcase_option("bubble_horizontal_width", ("bub_hor_width",)),
+        _testcase_option("bubble_vertical_width", ("bub_ver_width",)),
+        _testcase_option("bubble_center_x", ("bubctr_lon",)),
+        _testcase_option("bubble_center_y", ("bubctr_lat",)),
+        _testcase_option("bubble_center_z", ("bubctr_z",)),
+        _testcase_option("bubble_amplitude", ("bub_amp",)),
+    ],
+)
 
 
 def make_topography_config(
@@ -522,12 +524,10 @@ def make_topography_config(
             return flat_topo.FlatTopographyConfig()
         case "jabw" | "jabw_s":
             log.info("Analytical topography for Jablonowski-Williamson test case")
-            return config_dataclass_from_dict(
-                jw_topo.JablonowskiWilliamsonConfig, testcase_nml, _JW_TOPO_NAME_MAP
-            )
+            return JW_TOPOGRAPHY.build(testcase_nml)
         case "gauss3D":
             log.info("Analytical Gaussian hill topography")
-            return config_dataclass_from_dict(gausshill_topo.GaussianHillConfig, testcase_nml, {})
+            return GAUSSIAN_HILL_TOPOGRAPHY.build(testcase_nml)
         case name:
             raise ValueError(f"Unknown or missing test case name: {name!r}")
 
@@ -561,25 +561,17 @@ def make_initial_condition_config(
     match test_name:
         case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
             log.info("Analytical initial condition for Jablonowski-Williamson test case")
-            config = config_dataclass_from_dict(
-                jw_ic.JablonowskiWilliamsonConfig, testcase_nml, _JW_IC_NAME_MAP
-            )
-            # Only the APE cases rescale qv to a prescribed global moisture content.
-            config.normalize_global_moisture = test_name in ("APE_nwp", "APE_aes")
+            config = JW_INITIAL_CONDITION.build(testcase_nml)
             # Fortran resets jw_up to 0 only for jabw_s; other cases keep the default (1.0).
             if test_name == "jabw_s":
                 config.baroclinic_amplitude = 0.0
             return config
         case "gauss3D":
             log.info("Analytical initial condition for Gauss 3D test case")
-            return config_dataclass_from_dict(
-                gauss_ic.Gauss3DConfig, testcase_nml, _GAUSS3D_IC_NAME_MAP
-            )
+            return GAUSS3D_INITIAL_CONDITION.build(testcase_nml)
         case "wk82":
             log.info("Analytical initial condition for Weisman-Klemp test case")
-            return config_dataclass_from_dict(
-                wk_ic.WeismanKlempConfig, testcase_nml, _WK_IC_NAME_MAP
-            )
+            return WK_INITIAL_CONDITION.build(testcase_nml)
         case name:
             raise ValueError(f"Unknown or missing test case name: {name!r}")
 
@@ -653,12 +645,12 @@ def convert_experiment(
     input_dict = _namelist_to_dict(namelist_dir, input_fname)
 
     geometry_cfg = GeometryConfig(use_analytical_means=True)
-    metrics_cfg = make_metrics_config(atm_dict)
-    interpolation_cfg = make_interpolation_config(atm_dict)
-    vertical_grid_cfg = make_vertical_grid_config(atm_dict)
+    metrics_cfg = METRICS.build(atm_dict)
+    interpolation_cfg = INTERPOLATION.build(atm_dict)
+    vertical_grid_cfg = VERTICAL_GRID.build(atm_dict)
     topography_cfg = make_topography_config(atm_dict=atm_dict, input_dict=input_dict)
-    nonhydro_cfg = make_nonhydrostatic_config(atm_dict)
-    diffusion_cfg = make_diffusion_config(atm_dict)
+    nonhydro_cfg = NONHYDROSTATIC.build(atm_dict)
+    diffusion_cfg = DIFFUSION.build(atm_dict)
 
     do_tracer_advection = not (
         "exclaim_ch_r04b09_dsl" in namelist_dir.name or "exclaim_ape_R02B04" in namelist_dir.name
@@ -671,7 +663,7 @@ def convert_experiment(
     # way (their datatests do not compare tracers yet).
     # TODO (jcanton): this isn't the right place to keep a special case
     # handling. Either fix these experiments or move the special case handling.
-    tracer_advection_cfg = make_advection_config(atm_dict) if do_tracer_advection else None
+    tracer_advection_cfg = ADVECTION.build(atm_dict) if do_tracer_advection else None
     ntracer = list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
 
     # AES physics implies muphys is active for the experiments we support today; the presence
@@ -688,12 +680,11 @@ def convert_experiment(
     # without microphysics and we have to skip parsing the graupel config which
     # relies on some of these parameters.
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
-    graupel_cfg = make_graupel_config(atm_dict) if do_physics else None
+    graupel_cfg = GRAUPEL.build(atm_dict) if do_physics else None
 
     profiling_stats = driver_config.ProfilingConfig() if enable_profiling else None
-    driver_cfg = make_driver_config(
-        atm_dict=atm_dict,
-        master_dict=master_dict,
+    driver_cfg = DRIVER.build(
+        {"master_cfg": master_dict, "model_cfg": atm_dict},
         profiling_options=profiling_stats,
         enable_statistics_logging=enable_statistics_output,
     )
@@ -714,7 +705,7 @@ def convert_experiment(
 
     # tmx is configured by the AES vertical-diffusion namelist; the driver does not run
     # the granule yet (icon4py#1360), but the config travels with the experiment.
-    tmx_cfg = make_tmx_config(atm_dict) if tmx_is_active(atm_dict) else None
+    tmx_cfg = TMX.build(atm_dict) if tmx_is_active(atm_dict) else None
 
     return driver_config.ExperimentConfig(
         geometry=geometry_cfg,

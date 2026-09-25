@@ -17,6 +17,7 @@ import pathlib
 
 import f90nml
 import fortran_config_converter as fcc
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
@@ -153,38 +154,35 @@ def _write_namelists(
     f90nml.Namelist(INPUT_NML).write(namelist_dir / input_fname)
 
 
-def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
-    """Minimal atm/master dicts for exercising make_driver_config."""
-    atm_dict = {
-        "nonhydrostatic_nml": {"vcfl_threshold": 0.85, "ndyn_substeps": 5},
-        "run_nml": {"ltestcase": True, "ltransport": False} | run_nml,
-    }
-    master_dict = {
-        "master_time_control_nml": {
-            "experimentstartdate": "2000-01-01T00:00:00Z",
-            "experimentstopdate": "2000-01-01T01:00:00Z",
+def _driver_namelists(run_nml: dict) -> dict:
+    """Minimal master/model namelists for exercising the DRIVER mapping."""
+    return {
+        "master_cfg": {
+            "master_time_control_nml": {
+                "experimentstartdate": "2000-01-01T00:00:00Z",
+                "experimentstopdate": "2000-01-01T01:00:00Z",
+            },
+            "master_model_nml": {"model_namelist_filename": "NAMELIST_test_sb_atm"},
         },
-        "master_model_nml": {"model_namelist_filename": "NAMELIST_test_sb_atm"},
+        "model_cfg": {
+            "nonhydrostatic_nml": {"vcfl_threshold": 0.85, "ndyn_substeps": 5},
+            "run_nml": {"ltestcase": True, "ltransport": False} | run_nml,
+        },
     }
-    return atm_dict, master_dict
 
 
 def test_modeltimestep_takes_priority_over_dtime() -> None:
     # Trailing whitespace mimics the fixed-width Fortran string.
-    atm_dict, master_dict = _make_dicts(
+    icon_config = _driver_namelists(
         {"dtime": 999.0, "modeltimestep": "PT300S                          "}
     )
-    config = fcc.make_driver_config(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
+    config = fcc.DRIVER.build(icon_config, profiling_options=None)
     assert config.dtime == datetime.timedelta(seconds=300)
 
 
 def test_empty_modeltimestep_falls_back_to_dtime() -> None:
-    atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "        "})
-    config = fcc.make_driver_config(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
+    icon_config = _driver_namelists({"dtime": 120.0, "modeltimestep": "        "})
+    config = fcc.DRIVER.build(icon_config, profiling_options=None)
     assert config.dtime == datetime.timedelta(seconds=120)
 
 
@@ -192,32 +190,33 @@ def test_empty_modeltimestep_falls_back_to_dtime() -> None:
 # are the ones that are not a testcase. MCH_CH_R04B09 is the only one.
 @pytest.mark.parametrize("ltestcase", [True, False])
 def test_diffuse_before_time_loop(ltestcase: bool) -> None:
-    atm_dict, master_dict = _make_dicts(
-        {"dtime": 10.0, "modeltimestep": "  ", "ltestcase": ltestcase}
-    )
-    config = fcc.make_driver_config(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
+    icon_config = _driver_namelists({"dtime": 10.0, "modeltimestep": "  ", "ltestcase": ltestcase})
+    config = fcc.DRIVER.build(icon_config, profiling_options=None)
     assert config.diffuse_before_time_loop is (not ltestcase)
     assert config.apply_extra_second_order_divdamp is (not ltestcase)
 
 
 def test_max_dom_lists_are_reduced_to_their_first_entry() -> None:
-    config = fcc.make_diffusion_config(ATM_NML)
+    config = fcc.DIFFUSION.build(ATM_NML)
     assert config.apply_smag_diff_to_vertical_wind is False
     assert config.compute_3d_smag_coeff is False
 
 
 def test_field_type_is_the_fallback_converter() -> None:
-    config = fcc.make_nonhydrostatic_config(ATM_NML)
+    config = fcc.NONHYDROSTATIC.build(ATM_NML)
     assert config.rayleigh_type is constants.RayleighType.KLEMP
+
+
+def test_final_field_type_is_unwrapped_for_the_fallback_converter() -> None:
+    config = fcc.VERTICAL_GRID.build(ATM_NML)
+    assert type(config.model_top_height) is np.float64
 
 
 def test_missing_namelist_entry_is_an_error() -> None:
     atm = copy.deepcopy(ATM_NML)
     del atm["diffusion_nml"]["hdiff_order"]
     with pytest.raises(KeyError, match="hdiff_order"):
-        fcc.make_diffusion_config(atm)
+        fcc.DIFFUSION.build(atm)
 
 
 @dataclasses.dataclass
@@ -226,12 +225,15 @@ class _SampleConfig:
     field_b: str = "default"
 
 
-def test_config_dataclass_from_dict_uses_name_map() -> None:
-    config = fcc.config_dataclass_from_dict(
+def test_missing_optional_entry_keeps_the_default() -> None:
+    mapping = fcc.ConfigMapping(
         _SampleConfig,
-        {"fortran_a": 42, "unknown": "ignored"},
-        name_map={"fortran_a": "field_a"},
+        [
+            fcc.IconOption("field_a", ("fortran_a",), required=False),
+            fcc.IconOption("field_b", ("fortran_b",), required=False),
+        ],
     )
+    config = mapping.build({"fortran_a": "42"})
     assert config.field_a == 42
     assert config.field_b == "default"
 
@@ -323,7 +325,7 @@ def _echoed_vdf_record(**overrides: object) -> list[object]:
     return record
 
 
-def test_make_tmx_config() -> None:
+def test_tmx_config() -> None:
     fortran_dict = {
         "aes_vdf_nml": {
             "aes_vdf_config": _echoed_vdf_record(
@@ -345,7 +347,8 @@ def test_make_tmx_config() -> None:
             )
         }
     }
-    config = fcc.make_tmx_config(fortran_dict)
+    assert fcc.tmx_is_active(fortran_dict)
+    config = fcc.TMX.build(fortran_dict)
     assert config.solver_type is tmx_config.SolverType.EXPLICIT
     assert config.energy_type is tmx_config.EnergyType.DRY_STATIC
     assert config.dissipation_factor == 0.5
@@ -363,14 +366,13 @@ def test_make_tmx_config() -> None:
     assert config.max_turb_scale == 150.0
 
 
-def test_make_tmx_config_rejects_changed_member_count() -> None:
+def test_tmx_rejects_changed_member_count() -> None:
     record = _echoed_vdf_record()
     with pytest.raises(ValueError, match="not a multiple"):
-        fcc.make_tmx_config({"aes_vdf_nml": {"aes_vdf_config": [*record, 0.0]}})
+        fcc.tmx_is_active({"aes_vdf_nml": {"aes_vdf_config": [*record, 0.0]}})
 
 
-def test_make_tmx_config_rejects_missing_use_tmx() -> None:
+def test_tmx_is_inactive_when_use_tmx_is_false() -> None:
     record = _echoed_vdf_record()
     record[22] = False
-    with pytest.raises(ValueError, match="use_tmx"):
-        fcc.make_tmx_config({"aes_vdf_nml": {"aes_vdf_config": record}})
+    assert not fcc.tmx_is_active({"aes_vdf_nml": {"aes_vdf_config": record}})
