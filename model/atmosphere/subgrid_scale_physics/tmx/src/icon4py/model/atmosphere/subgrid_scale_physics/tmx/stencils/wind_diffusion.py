@@ -129,7 +129,7 @@ def _solve_vn_vertical_diffusion(
     rhs = concat_where(
         dims.KDim > minlvl,
         (dwdn_flux_above - dwdn_flux_below) * inv_air_mass,
-        (wpfloat("0.0") - dwdn_flux_below) * inv_air_mass,
+        -dwdn_flux_below * inv_air_mass,
     )
     rhs = concat_where(
         dims.KDim < maxlvl,

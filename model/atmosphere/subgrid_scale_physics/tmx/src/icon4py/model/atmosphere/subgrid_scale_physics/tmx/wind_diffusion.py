@@ -16,7 +16,7 @@ import typing
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config, tmx_states
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import (
     wind_diffusion as wind_stencils,
 )
@@ -47,12 +47,7 @@ class WindDiffusion:
         edge_params: grid_states.EdgeParams,
         backend: model_backends.BackendLike,
         exchange: decomposition.ExchangeRuntime,
-        solver_type: tmx_config.SolverType,
     ) -> None:
-        if solver_type != tmx_config.SolverType.IMPLICIT:
-            raise NotImplementedError(
-                "the wind diffusion only implements the implicit vertical diffusion solver."
-            )
         assert edge_params.edge_cell_distances is not None
 
         self._exchange = exchange

@@ -21,7 +21,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states, wind_diffusion
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import TmxConfig
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
@@ -58,7 +57,6 @@ def test_tmx_run_wind_diffusion_single_step(
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
     date: str,
-    tmx_config: TmxConfig,
     tmx_dtime: float,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
@@ -80,7 +78,6 @@ def test_tmx_run_wind_diffusion_single_step(
         edge_params=grid_savepoint.construct_edge_geometry(),
         backend=backend,
         exchange=decomposition.SingleNodeExchange(),
-        solver_type=tmx_config.solver_type,
     )
     diagnostic_state = dataclasses.replace(
         tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),
