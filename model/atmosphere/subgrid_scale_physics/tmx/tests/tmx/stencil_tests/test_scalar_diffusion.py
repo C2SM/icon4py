@@ -11,6 +11,7 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.scalar_diffusion import (
     compute_energy_from_temperature,
@@ -239,7 +240,7 @@ def _tracers(data_alloc: stencil_tests.DataAllocationWrapper, prefix: str = "") 
     }
 
 
-class _ComputeEnergyFromTemperature:
+class TestComputeEnergyFromTemperature(stencil_tests.StencilTest):
     PROGRAM = compute_energy_from_temperature
     OUTPUTS = ("energy",)
     STATIC_PARAMS = {
@@ -285,6 +286,16 @@ class _ComputeEnergyFromTemperature:
         )[cells, rows]
         return dict(energy=energy)
 
+    @stencil_tests.input_data_fixture(
+        params=[True, False], ids=["internal_energy", "dry_static_energy"]
+    )
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
+    ) -> dict:
+        return _compute_energy_input_data(data_alloc, grid, use_internal_energy=request.param)
+
 
 def _compute_energy_input_data(
     data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid, use_internal_energy: bool
@@ -304,23 +315,7 @@ def _compute_energy_input_data(
     )
 
 
-class TestComputeInternalEnergyFromTemperature(
-    _ComputeEnergyFromTemperature, stencil_tests.StencilTest
-):
-    @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
-        return _compute_energy_input_data(data_alloc, grid, use_internal_energy=True)
-
-
-class TestComputeDryStaticEnergyFromTemperature(
-    _ComputeEnergyFromTemperature, stencil_tests.StencilTest
-):
-    @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
-        return _compute_energy_input_data(data_alloc, grid, use_internal_energy=False)
-
-
-class _DiffuseEnergyAndUpdateTemperature:
+class TestDiffuseEnergyAndUpdateTemperature(stencil_tests.StencilTest):
     PROGRAM = diffuse_energy_and_update_temperature
     OUTPUTS = ("new_temperature", "tend_temperature")
     STATIC_PARAMS = {
@@ -416,6 +411,16 @@ class _DiffuseEnergyAndUpdateTemperature:
         ) / dtime
         return dict(new_temperature=new_temperature, tend_temperature=tend_temperature)
 
+    @stencil_tests.input_data_fixture(
+        params=[True, False], ids=["internal_energy", "dry_static_energy"]
+    )
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
+    ) -> dict:
+        return _diffuse_energy_input_data(data_alloc, grid, use_internal_energy=request.param)
+
 
 def _diffuse_energy_input_data(
     data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid, use_internal_energy: bool
@@ -435,19 +440,3 @@ def _diffuse_energy_input_data(
         grav=constants.GRAV,
         use_internal_energy=use_internal_energy,
     )
-
-
-class TestDiffuseInternalEnergyAndUpdateTemperature(
-    _DiffuseEnergyAndUpdateTemperature, stencil_tests.StencilTest
-):
-    @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
-        return _diffuse_energy_input_data(data_alloc, grid, use_internal_energy=True)
-
-
-class TestDiffuseDryStaticEnergyAndUpdateTemperature(
-    _DiffuseEnergyAndUpdateTemperature, stencil_tests.StencilTest
-):
-    @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
-        return _diffuse_energy_input_data(data_alloc, grid, use_internal_energy=False)
