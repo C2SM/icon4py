@@ -27,6 +27,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 if TYPE_CHECKING:
     from icon4py.model.common.metrics import metrics_factory
+    from icon4py.model.driver import config as driver_config
 
 
 @config_io.register_enum
@@ -194,8 +195,7 @@ def _fill_tracer_from_analytical_profile(
 
 def linear_vertical_advection(
     *,
-    config: LinearVerticalAdvectionConfig,
-    vertical_config: v_grid.VerticalGridConfig,
+    config: driver_config.ExperimentConfig,
     metrics: metrics_factory.MetricsFieldsFactory,
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
@@ -205,6 +205,8 @@ def linear_vertical_advection(
     Initial condition for the idealized vertical advection test case.
 
     """
+    ic_config = config.initial_condition
+    assert isinstance(ic_config, LinearVerticalAdvectionConfig)
     if tracer_state_now.qv is None:
         raise ValueError(
             "The initial condition for the linear vertical advection test case requires the 'qv' to be active."
@@ -216,18 +218,18 @@ def linear_vertical_advection(
     prognostic_state_now.rho.ndarray[:, :] = 1.0
 
     _fill_prep_adv_from_prescribed_wind_field(
-        velocity_field=config.velocity_field,
+        velocity_field=ic_config.velocity_field,
         prep_adv_state=tracer_prep_adv_state,
-        model_top_height=vertical_config.model_top_height,
+        model_top_height=config.vertical_grid.model_top_height,
     )
 
     _fill_tracer_from_analytical_profile(
-        config=config,
+        config=ic_config,
         tracer_buffer=tracer_state_now.qv.ndarray,
         z_mc=z_mc,
         z_ifc=z_ifc,
-        center_z=config.initial_center * vertical_config.model_top_height,
-        model_top_height=vertical_config.model_top_height,
+        center_z=ic_config.initial_center * config.vertical_grid.model_top_height,
+        model_top_height=config.vertical_grid.model_top_height,
     )
 
 

@@ -25,6 +25,9 @@ class MultipleOptionAnnotationsError(Exception): ...
 class NotRead: ...
 
 
+class NotFound: ...
+
+
 @dataclasses.dataclass(frozen=True)
 class IconOption:
     """
@@ -45,12 +48,13 @@ class IconOption:
     # is the 0-based member position within one record (i.e. one domain),
     # while ``name`` only serves as documentation.
     unnamed_index: int | None = None
+    optional: bool = False
 
     def convert(
         self: Self,
         icon_config: dict,
         fallback_converter: typing.Callable[[typing.Any], typing.Any] | None,
-    ) -> typing.Any | type[NotRead]:
+    ) -> typing.Any:
         """
         Convert from ICON namelist value.
 
@@ -70,15 +74,22 @@ class IconOption:
             ...     {"c": 3}, fallback_converter=int
             ... )
             NotRead
+
+            >>> IconOption(name="foo", path=(), optional=True).convert({})
+            NotFound
         """
         if self.read_from_icon:
             data = icon_config
             for subsection in self.path:
+                if self.optional and subsection not in data:
+                    return NotFound
                 data = data[subsection]
             if self.unnamed_index is not None:
                 # 'data' is the positional record of a derived-type namelist
                 raw_value = data[self.unnamed_index]
             else:
+                if self.optional and self.name not in data:
+                    return NotFound
                 raw_value = data[self.name]
             de_listified = (
                 fortran_config.list_to_value(raw_value) if self.list_to_value else raw_value
@@ -225,7 +236,7 @@ def iter_pairs_from_icon(
     for name, opt in ConfigOption.iter_from_config_class(config_cls):
         if opt.icon_equivalent:
             converted = opt.icon_equivalent.convert(icon_config, annotations[name])
-            if converted is not NotRead:
+            if converted not in {NotRead, NotFound}:
                 yield name, converted
 
 

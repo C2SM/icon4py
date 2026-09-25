@@ -28,6 +28,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 if TYPE_CHECKING:
     from icon4py.model.common.states import static_fields
+    from icon4py.model.driver import config as driver_config
 
 
 @config_io.register_enum
@@ -334,9 +335,11 @@ def _fill_tracer_from_analytical_profile(
     tracer_buffer[:, :] = array_ns.sum(weights * vertex_tracer, axis=0)[:, None]
 
 
+# TODO(ricoh): fix to take ExperimentConfig like the other ones
 def linear_horizontal_advection(
     *,
-    config: LinearHorizontalAdvectionConfig,
+    config: driver_config.ExperimentConfig,
+    # config: LinearHorizontalAdvectionConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
@@ -347,6 +350,8 @@ def linear_horizontal_advection(
     Initial condition for the idealized horizontal advection test case.
 
     """
+    ic_config = config.initial_condition
+    assert isinstance(ic_config, LinearHorizontalAdvectionConfig)
     if tracer_state_now.qv is None:
         raise ValueError(
             "The initial condition for the linear horizontal advection test case requires the 'qv' to be active."
@@ -373,7 +378,7 @@ def linear_horizontal_advection(
     )
 
     _fill_prep_adv_from_prescribed_wind_field(
-        velocity_field=config.velocity_field,
+        velocity_field=ic_config.velocity_field,
         prep_adv_state=tracer_prep_adv_state,
         primal_normal_x=geometry.get(geometry_meta.EDGE_NORMAL_U).ndarray,
         primal_normal_y=geometry.get(geometry_meta.EDGE_NORMAL_V).ndarray,
@@ -382,14 +387,14 @@ def linear_horizontal_advection(
     )
 
     center_x, center_y = _compute_tracer_center(
-        initial_center=config.initial_center,
+        initial_center=ic_config.initial_center,
         origin_x=vertex_x.min(),
         origin_y=vertex_y.min(),
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
     )
     _fill_tracer_from_analytical_profile(
-        config=config,
+        config=ic_config,
         tracer_buffer=tracer_state_now.qv.ndarray,
         weights=weights,
         nodes=nodes,
