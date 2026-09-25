@@ -10,7 +10,6 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid

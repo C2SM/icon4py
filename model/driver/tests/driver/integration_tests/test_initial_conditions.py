@@ -71,7 +71,6 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
 }
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description",
     [

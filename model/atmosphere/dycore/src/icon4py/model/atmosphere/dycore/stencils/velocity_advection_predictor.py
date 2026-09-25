@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import astype, broadcast
+from gt4py.next import astype
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
@@ -31,6 +31,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
 )
+from icon4py.model.common.math.value_of_size import value_of_size_on_cells_on_half_levels_vp
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -100,7 +101,7 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
         ),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
+        value_of_size_on_cells_on_half_levels_vp(vpfloat("0.0"), wgtfac_c),
     )
 
     return contravariant_correction_at_cells_on_half_levels

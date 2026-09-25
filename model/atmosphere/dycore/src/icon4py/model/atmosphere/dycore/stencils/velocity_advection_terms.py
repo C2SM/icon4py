@@ -28,6 +28,10 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center impo
     _interpolate_to_cell_center,
 )
 from icon4py.model.common.math.stencils.compute_curl import _compute_curl
+from icon4py.model.common.math.value_of_size import (
+    value_of_size_on_cells_on_half_levels_bool,
+    value_of_size_on_cells_on_half_levels_vp,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -235,8 +239,8 @@ def _compute_contravariant_corrected_w_and_cfl(
             dtime=dtime,
         ),
         (
-            broadcast(False, (dims.CellDim, dims.KHalfDim)),
-            broadcast(vpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
+            value_of_size_on_cells_on_half_levels_bool(False, ddqz_z_half),
+            value_of_size_on_cells_on_half_levels_vp(vpfloat("0.0"), ddqz_z_half),
         ),
     )
 

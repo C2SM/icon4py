@@ -18,7 +18,6 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-@pytest.mark.embedded_remap_error
 class TestTemporaryFieldForGridPointColdPoolsEnhancement(stencil_tests.StencilTest):
     PROGRAM = temporary_field_for_grid_point_cold_pools_enhancement
     OUTPUTS = ("enh_diffu_3d",)

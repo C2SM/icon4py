@@ -83,7 +83,6 @@ def test_extra_diffusion_constants_match_icon(experiment, step_date_init, savepo
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
@@ -324,7 +323,6 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(

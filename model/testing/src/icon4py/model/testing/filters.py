@@ -42,12 +42,6 @@ item_marker_filters: dict[str, ItemFilter] = {
         ),
         action=functools.partial(pytest.skip, "stencil runs only on embedded backend"),
     ),
-    pytest.mark.embedded_remap_error.name: ItemFilter(
-        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
-        action=functools.partial(
-            pytest.xfail, "Embedded backend currently fails in remap function."
-        ),
-    ),
     pytest.mark.embedded_static_args.name: ItemFilter(
         condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
         action=functools.partial(
@@ -56,7 +50,16 @@ item_marker_filters: dict[str, ItemFilter] = {
     ),
     pytest.mark.uses_concat_where.name: ItemFilter(
         condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
-        action=functools.partial(pytest.xfail, "Embedded backend does not support concat_where."),
+        action=functools.partial(
+            pytest.xfail,
+            "Embedded backend cannot run a scan program with a per-output tuple domain (gt4py 1.2.2).",
+        ),
+    ),
+    pytest.mark.embedded_remap_error.name: ItemFilter(
+        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
+        action=functools.partial(
+            pytest.xfail, "Embedded backend fails in a shift or neighbor access (premap)."
+        ),
     ),
     pytest.mark.gtfn_too_slow.name: ItemFilter(
         condition=lambda item: test_utils.is_gtfn_backend(
