@@ -163,7 +163,9 @@ def height_coordinate_source(
 def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> None:
     field_op = coord_trans.geographical_to_cartesian_on_cells.with_backend(None)
 
-    domain = {dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))}
+    domain: dict[gtx.Dimension, tuple[h_grid.Domain, h_grid.Domain]] = {
+        dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))
+    }
     deps = {"lat": "lat", "lon": "lon"}
     fields = {"x": "x", "y": "y", "z": "z"}
 

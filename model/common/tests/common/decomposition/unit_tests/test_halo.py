@@ -84,7 +84,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     my_halo_levels = decomp_info.halo_levels(dim)
-    print(f"{dim.value}: rank {process_props.rank} has halo levels {my_halo_levels} ")
+    print(f"{dim.__name__}: rank {process_props.rank} has halo levels {my_halo_levels} ")
     assert np.all(my_halo_levels != definitions.DecompositionFlag.UNDEFINED), (
         "All indices should have a defined DecompositionFlag"
     )
@@ -161,7 +161,7 @@ def test_no_halo():
 
 def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tables):
     process_props = utils.DummyProps(rank=2)
-    num_cells = simple_neighbor_tables["C2E2C"].shape[0]
+    num_cells = simple_neighbor_tables[dims.C2E2C].shape[0]
     with pytest.raises(exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
             connectivities=simple_neighbor_tables,
@@ -174,7 +174,7 @@ def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tabl
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor_tables):
     process_props = utils.DummyProps(rank=rank)
-    num_cells = simple_neighbor_tables["C2E2C"].shape[0]
+    num_cells = simple_neighbor_tables[dims.C2E2C].shape[0]
     distribution = np.full(num_cells, process_props.comm_size + 1, dtype=int)
     with pytest.raises(expected_exception=exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
