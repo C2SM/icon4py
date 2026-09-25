@@ -451,9 +451,7 @@ def copy_ser_data(
     # Copy ser_data folder
     shutil.copytree(src_dir, dest_dir / test_defs.SERIALIZED_DATA_SUBDIR)
 
-    from icon4py.model.common.utils import (  # noqa: PLC0415 [import-outside-top-level]
-        fortran_config,
-    )
+    from icon4py.model.common.utils import fortran_config  # noqa: PLC0415 [import-outside-top-level]
 
     # Translate to json and copy NAMELIST_ICON_output_atm
     nml = f90nml.read(exp_dir / fortran_config.NAMELIST_ATM_FNAME)
@@ -626,9 +624,7 @@ def run_serialization(
     # Import here to reduce startup time for the CLI
     global dt_utils, test_defs  # noqa: PLW0603 [global-statement]
     import icon4py.model.testing.datatest_utils as dt_utils  # noqa: PLC0415 [import-outside-top-level]
-    from icon4py.model.testing import (  # noqa: PLC0415 [import-outside-top-level]
-        definitions as test_defs,
-    )
+    from icon4py.model.testing import definitions as test_defs  # noqa: PLC0415 [import-outside-top-level]
 
     settings = SerializationSettings.defaults()
 

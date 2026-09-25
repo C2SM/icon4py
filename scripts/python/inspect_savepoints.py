@@ -76,10 +76,7 @@ def experiment_data_path(
     description: test_defs.ExperimentDescription, comm_size: int
 ) -> pathlib.Path:
     """Path of the ``ser_data`` directory of an experiment archive."""
-    from icon4py.model.testing import (  # noqa: PLC0415 [import-outside-top-level]
-        datatest_utils,
-        definitions,
-    )
+    from icon4py.model.testing import datatest_utils, definitions  # noqa: PLC0415 [import-outside-top-level]
 
     directory = datatest_utils.get_ranked_experiment_name_with_version(description, comm_size)
     return definitions.serialized_data_path() / directory / definitions.SERIALIZED_DATA_SUBDIR
@@ -137,9 +134,7 @@ def component_labels(field: str, size: int) -> tuple[str, ...] | None:
     if TRACER_FIELD_MARKER not in field:
         return None
     # the serialization order of the tracers, as the model itself defines it
-    from icon4py.model.common.states.tracer_states import (  # noqa: PLC0415 [import-outside-top-level]
-        _TRACER_FIELDS as known,
-    )
+    from icon4py.model.common.states.tracer_states import _TRACER_FIELDS as known  # noqa: PLC0415 [import-outside-top-level]
 
     return tuple(known[i] if i < len(known) else f"idx{i}" for i in range(size))
 
