@@ -25,14 +25,20 @@ def test_config_rejects_negative_km_min() -> None:
 
 
 def test_config_coerces_enums_from_ints() -> None:
-    config = tmx_config.TmxConfig(solver_type=1, energy_type=1)
-    assert config.solver_type is tmx_config.SolverType.EXPLICIT
+    config = tmx_config.TmxConfig(solver_type=2, energy_type=1)
+    assert config.solver_type is tmx_config.SolverType.IMPLICIT
     assert config.energy_type is tmx_config.EnergyType.DRY_STATIC
+
+
+@pytest.mark.parametrize("solver_type", [1, 3])
+def test_config_rejects_unimplemented_solver_types(solver_type: int) -> None:
+    with pytest.raises(ValueError, match="solver_type"):
+        tmx_config.TmxConfig(solver_type=solver_type)
 
 
 def test_config_rejects_invalid_enum_values() -> None:
     with pytest.raises(ValueError):
-        tmx_config.TmxConfig(solver_type=3)
+        tmx_config.TmxConfig(energy_type=3)
 
 
 def _echoed_vdf_record(**overrides: object) -> list[object]:
@@ -70,7 +76,7 @@ def test_config_from_fortran_dict() -> None:
     fortran_dict = {
         "aes_vdf_nml": {
             "aes_vdf_config": _echoed_vdf_record(
-                solver_type=1,
+                solver_type=2,
                 energy_type=1,
                 dissipation_factor=0.5,
                 use_louis=False,
@@ -89,7 +95,7 @@ def test_config_from_fortran_dict() -> None:
         }
     }
     config = tmx_config.TmxConfig.from_fortran_dict(atm_dict=fortran_dict)
-    assert config.solver_type is tmx_config.SolverType.EXPLICIT
+    assert config.solver_type is tmx_config.SolverType.IMPLICIT
     assert config.energy_type is tmx_config.EnergyType.DRY_STATIC
     assert config.dissipation_factor == 0.5
     assert config.use_louis is False
@@ -104,6 +110,12 @@ def test_config_from_fortran_dict() -> None:
     assert config.turb_prandtl == 0.5
     assert config.km_min == 0.002
     assert config.max_turb_scale == 150.0
+
+
+def test_config_from_fortran_dict_rejects_explicit_solver() -> None:
+    record = _echoed_vdf_record(solver_type=1)
+    with pytest.raises(ValueError, match="only the implicit solver"):
+        tmx_config.TmxConfig.from_fortran_dict(atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}})
 
 
 def test_config_from_fortran_dict_rejects_changed_member_count() -> None:
