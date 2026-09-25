@@ -199,7 +199,9 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     provider = factory.ProgramFieldProvider(
         func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
-    height_coordinate_source.with_metadata({"output_f": {"standard_name": "output_f", "units": ""}})
+    height_coordinate_source.with_metadata(
+        {"output_f": model.FieldMetaData(standard_name="output_f", units="")}
+    )
     height_coordinate_source.register_provider(provider)
     provider(
         field_name="output_f",
@@ -262,7 +264,9 @@ def test_provider_vertical_extent_is_declared_domain(
             dims.KDim: (v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1), k_domain(v_grid.Zone.BOTTOM)),
         }
     )
-    height_coordinate_source.with_metadata({"output_f": {"standard_name": "output_f", "units": ""}})
+    height_coordinate_source.with_metadata(
+        {"output_f": model.FieldMetaData(standard_name="output_f", units="")}
+    )
     height_coordinate_source.register_provider(provider)
     provider(
         field_name="output_f",
