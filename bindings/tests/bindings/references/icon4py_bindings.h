@@ -24,7 +24,8 @@ extern int diffusion_init_wrapper(
     double smagorinski_scaling_height2, double smagorinski_scaling_height3,
     double smagorinski_scaling_height4, unsigned char hdiff_temp,
     double denom_diffu_v, double nudge_max_coeff, int itype_sher, int iforcing,
-    double a_hshr, unsigned char loutshs, int backend, unsigned char on_gpu);
+    double a_hshr, unsigned char loutshs, int backend, long external_gpu_stream,
+    unsigned char on_gpu);
 extern int diffusion_run_wrapper(
     double *w, int w_size_0, int w_size_1, double *vn, int vn_size_0,
     int vn_size_1, double *exner, int exner_size_0, int exner_size_1,
@@ -135,7 +136,8 @@ extern int solve_nh_init_wrapper(
     double veladv_offctr, double nudge_max_coeff, double divdamp_fac,
     double divdamp_fac2, double divdamp_fac3, double divdamp_fac4,
     double divdamp_z, double divdamp_z2, double divdamp_z3, double divdamp_z4,
-    int nflat_gradp, int backend, unsigned char on_gpu);
+    int nflat_gradp, int backend, long external_gpu_stream,
+    unsigned char on_gpu);
 extern int solve_nh_run_wrapper(
     double *rho_now, int rho_now_size_0, int rho_now_size_1, double *rho_new,
     int rho_new_size_0, int rho_new_size_1, double *exner_now,

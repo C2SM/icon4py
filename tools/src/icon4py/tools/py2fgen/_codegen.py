@@ -23,6 +23,14 @@ from icon4py.tools.py2fgen import _definitions, _utils
 #   2 -> Python wrapper raised an exception
 CFFI_DECORATOR = "@ffi.def_extern(error=2)"
 
+# A function parameter literally named "external_gpu_stream" triggers the
+# OpenACC/CUDA stream interop code path (see `has_external_gpu_stream` in
+# FortranBindingsFunctionGenerator.visit_Func): rather than exposing
+# `external_gpu_stream` itself to the caller, the generated Fortran wrapper exposes
+# this `acc_queue` selector argument instead, and derives the actual CUDA stream
+# handle from it via `acc_get_cuda_stream`.
+ACC_QUEUE_PARAM_NAME: Final[str] = "acc_queue"
+
 BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "real(c_double)",
     _definitions.FLOAT32: "real(c_float)",
@@ -323,7 +331,12 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
                     return f"{name} = c_loc({name})"
             return f"{name} = {name}"
 
-        param_names = ", &\n ".join([name for name in func.args] + ["rc"])
+        has_external_gpu_stream = "external_gpu_stream" in func.args
+
+        param_names = ", &\n ".join(
+            [name if name != "external_gpu_stream" else ACC_QUEUE_PARAM_NAME for name in func.args]
+            + ["rc"]
+        )
         args = []
         for name, param in func.args.items():
             args.append(render_args(name, param))
@@ -339,9 +352,17 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
 
         param_declarations = [
             _render_parameter_declaration(
-                name=name,
+                # the caller passes an `acc_queue` selector, not the raw stream
+                # handle: `external_gpu_stream` (below) is derived from it.
+                name=name if name != "external_gpu_stream" else ACC_QUEUE_PARAM_NAME,
                 attributes=[
-                    to_iso_c_type(param.dtype),
+                    # `acc_queue` uses a portable ISO C kind so the declaration
+                    # compiles even when built without OpenACC (where
+                    # `acc_handle_kind` is unavailable); it is converted to
+                    # `acc_handle_kind` at the (OpenACC-guarded) call site below.
+                    to_iso_c_type(param.dtype)
+                    if name != "external_gpu_stream"
+                    else "integer(c_int)",
                     render_fortran_array_dimensions(param, False),
                     as_f90_value(param),
                     # arrays are passed to C via `c_loc`, which requires contiguity
@@ -355,6 +376,13 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
 
         # on_gpu flag
         param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)} :: on_gpu")
+
+        # external_gpu_stream is not a caller-facing argument: it is a local
+        # variable filled in from the OpenACC runtime just below.
+        if has_external_gpu_stream:
+            param_declarations.append(
+                f"{to_iso_c_type(func.args['external_gpu_stream'].dtype)} :: external_gpu_stream"
+            )
 
         def get_sizes_maker(name: str, param: _definitions.ArrayParamDescriptor) -> str:
             return "\n".join(
@@ -392,12 +420,19 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
             render_fortran_array_dimensions=render_fortran_array_dimensions,
             get_sizes_maker=get_sizes_maker,
             is_array=is_array,
+            has_external_gpu_stream=has_external_gpu_stream,
+            acc_queue_param_name=ACC_QUEUE_PARAM_NAME,
         )
 
     Func = as_jinja(
         """
 subroutine {{name}}({{param_names}})
    use, intrinsic :: iso_c_binding
+   {% if has_external_gpu_stream %}
+   #ifdef _OPENACC
+   use openacc, only : acc_get_cuda_stream, acc_handle_kind
+   #endif
+   {% endif %}
    {% for arg in param_declarations %}
    {{ arg }}
    {% endfor %}
@@ -420,8 +455,14 @@ subroutine {{name}}({{param_names}})
    
    #ifdef _OPENACC
    on_gpu = .True.
+   {% if has_external_gpu_stream %}
+   external_gpu_stream = acc_get_cuda_stream(int({{ acc_queue_param_name }}, kind=acc_handle_kind))
+   {% endif %}
    #else
    on_gpu = .False.
+   {% if has_external_gpu_stream %}
+   external_gpu_stream = 0_c_long
+   {% endif %}
    #endif
 
    {% for name, param in _this_node.args.items() if is_array(param) and not param.is_optional %}

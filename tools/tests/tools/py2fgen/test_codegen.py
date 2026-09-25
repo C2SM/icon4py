@@ -474,3 +474,42 @@ def test_bool_param_codegen():
     interface = generate_f90_interface(plugin)
     assert "logical(c_bool), value, target :: flag" in interface
     assert "logical(c_bool), dimension(:), contiguous, intent(inout), target :: mask" in interface
+
+
+def test_external_gpu_stream_codegen():
+    stream_func = Func(
+        name="stream_fn",
+        module_name="libtest",
+        args={
+            "one": py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32),
+            "external_gpu_stream": py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT64),
+        },
+    )
+    plugin = BindingsLibrary(library_name="libtest_plugin", functions=[stream_func])
+
+    # The low-level ISO C interface still receives `external_gpu_stream` like any
+    # other scalar argument, unaffected by the special-casing below.
+    header = CHeaderGenerator.apply(plugin)
+    assert "long external_gpu_stream" in header
+
+    interface = generate_f90_interface(plugin)
+
+    # The caller-facing subroutine does not expose `external_gpu_stream` as an
+    # argument: instead it takes an `acc_queue` selector and derives the raw
+    # stream handle from the OpenACC runtime.
+    subroutine_start = interface.index("subroutine stream_fn(")
+    subroutine_signature = interface[subroutine_start : interface.index(")", subroutine_start)]
+    assert "external_gpu_stream" not in subroutine_signature
+    assert "acc_queue" in subroutine_signature
+    assert "use openacc, only: acc_get_cuda_stream, acc_handle_kind" in interface
+    # `acc_queue` uses a portable ISO C kind so the declaration compiles even
+    # without OpenACC; only the (guarded) call site needs `acc_handle_kind`.
+    assert "integer(c_int), value, target :: acc_queue" in interface
+    assert "integer(c_long) :: external_gpu_stream" in interface
+    assert (
+        "external_gpu_stream = acc_get_cuda_stream(int(acc_queue, kind=acc_handle_kind))"
+        in interface
+    )
+    assert "external_gpu_stream = 0_c_long" in interface
+    # ... yet the derived stream is still forwarded to the low-level wrapper call.
+    assert "external_gpu_stream=external_gpu_stream" in interface

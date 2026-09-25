@@ -103,6 +103,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     a_hshr: gtx.float64,
     loutshs: bool,
     backend: gtx.int32,
+    external_gpu_stream: gtx.int64,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception(
@@ -114,8 +115,8 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
-    backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
-    logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
+    actual_backend["external_gpu_stream"] = external_gpu_stream
+    logger.info(f"Using Backend {actual_backend} with on_gpu={on_gpu}")
     allocator = model_backends.get_allocator(actual_backend)
 
     # Diffusion parameters

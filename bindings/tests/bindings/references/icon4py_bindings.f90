@@ -78,6 +78,7 @@ module icon4py_bindings
                                       a_hshr, &
                                       loutshs, &
                                       backend, &
+                                      external_gpu_stream, &
                                       on_gpu) bind(c, name="diffusion_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
@@ -209,6 +210,8 @@ module icon4py_bindings
          logical(c_bool), value, target :: loutshs
 
          integer(c_int), value, target :: backend
+
+         integer(c_long), value, target :: external_gpu_stream
 
          logical(c_bool), value :: on_gpu
 
@@ -827,6 +830,7 @@ module icon4py_bindings
                                      divdamp_z4, &
                                      nflat_gradp, &
                                      backend, &
+                                     external_gpu_stream, &
                                      on_gpu) bind(c, name="solve_nh_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
@@ -1154,6 +1158,8 @@ module icon4py_bindings
          integer(c_int), value, target :: nflat_gradp
 
          integer(c_int), value, target :: backend
+
+         integer(c_long), value, target :: external_gpu_stream
 
          logical(c_bool), value :: on_gpu
 
@@ -1555,8 +1561,13 @@ contains
                              a_hshr, &
                              loutshs, &
                              backend, &
+                             acc_queue, &
                              rc)
       use, intrinsic :: iso_c_binding
+
+#ifdef _OPENACC
+      use openacc, only: acc_get_cuda_stream, acc_handle_kind
+#endif
 
       real(c_double), dimension(:, :), contiguous, intent(inout), target :: theta_ref_mc
 
@@ -1636,7 +1647,11 @@ contains
 
       integer(c_int), value, target :: backend
 
+      integer(c_int), value, target :: acc_queue
+
       logical(c_bool) :: on_gpu
+
+      integer(c_long) :: external_gpu_stream
 
       integer(c_int) :: theta_ref_mc_size_0
 
@@ -1723,8 +1738,14 @@ contains
 
 #ifdef _OPENACC
       on_gpu = .True.
+
+      external_gpu_stream = acc_get_cuda_stream(int(acc_queue, kind=acc_handle_kind))
+
 #else
       on_gpu = .False.
+
+      external_gpu_stream = 0_c_long
+
 #endif
 
       theta_ref_mc_size_0 = SIZE(theta_ref_mc, 1)
@@ -1841,6 +1862,7 @@ contains
                                   a_hshr=a_hshr, &
                                   loutshs=loutshs, &
                                   backend=backend, &
+                                  external_gpu_stream=external_gpu_stream, &
                                   on_gpu=on_gpu)
       !$acc end host_data
       !$acc end host_data
@@ -1962,8 +1984,10 @@ contains
 
 #ifdef _OPENACC
       on_gpu = .True.
+
 #else
       on_gpu = .False.
+
 #endif
 
       w_size_0 = SIZE(w, 1)
@@ -2376,8 +2400,10 @@ contains
 
 #ifdef _OPENACC
       on_gpu = .True.
+
 #else
       on_gpu = .False.
+
 #endif
 
       cell_starts_size_0 = SIZE(cell_starts, 1)
@@ -2705,8 +2731,13 @@ contains
                             divdamp_z4, &
                             nflat_gradp, &
                             backend, &
+                            acc_queue, &
                             rc)
       use, intrinsic :: iso_c_binding
+
+#ifdef _OPENACC
+      use openacc, only: acc_get_cuda_stream, acc_handle_kind
+#endif
 
       real(c_double), dimension(:, :), contiguous, intent(inout), target :: c_lin_e
 
@@ -2852,7 +2883,11 @@ contains
 
       integer(c_int), value, target :: backend
 
+      integer(c_int), value, target :: acc_queue
+
       logical(c_bool) :: on_gpu
+
+      integer(c_long) :: external_gpu_stream
 
       integer(c_int) :: c_lin_e_size_0
 
@@ -3101,8 +3136,14 @@ contains
 
 #ifdef _OPENACC
       on_gpu = .True.
+
+      external_gpu_stream = acc_get_cuda_stream(int(acc_queue, kind=acc_handle_kind))
+
 #else
       on_gpu = .False.
+
+      external_gpu_stream = 0_c_long
+
 #endif
 
       c_lin_e_size_0 = SIZE(c_lin_e, 1)
@@ -3415,6 +3456,7 @@ contains
                                  divdamp_z4=divdamp_z4, &
                                  nflat_gradp=nflat_gradp, &
                                  backend=backend, &
+                                 external_gpu_stream=external_gpu_stream, &
                                  on_gpu=on_gpu)
       !$acc end host_data
       !$acc end host_data
@@ -3799,8 +3841,10 @@ contains
 
 #ifdef _OPENACC
       on_gpu = .True.
+
 #else
       on_gpu = .False.
+
 #endif
 
       rho_now_size_0 = SIZE(rho_now, 1)
