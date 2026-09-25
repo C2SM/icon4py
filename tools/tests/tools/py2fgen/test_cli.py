@@ -198,13 +198,22 @@ def test_py2fgen_compilation_and_execution_bool_cpu(
 
 @pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 @pytest.mark.parametrize(
-    "function_name, library_name, test_name, extra_flags",
+    "function_name, library_name, test_name, extra_flags, env_vars",
     [
         (
             "square_from_function",
             "square_plugin",
             "test_square",
             ("-acc", "-Minfo=acc", "-DUSE_SQUARE_FROM_FUNCTION"),
+            {"ICON4PY_BACKEND": "GPU"},
+        ),
+        # host pointers used on the device, requires unified memory
+        (
+            "square_from_function",
+            "square_plugin",
+            "test_square",
+            ("-DUSE_SQUARE_FROM_FUNCTION",),
+            {"ICON4PY_BACKEND": "GPU", "PY2FGEN_USE_DEVICE": "1"},
         ),
     ],
 )
@@ -216,6 +225,7 @@ def test_py2fgen_compilation_and_execution_gpu(  # noqa: PLR0917 [too-many-posit
     samples_path,
     square_wrapper_module,
     extra_flags,
+    env_vars,
     test_temp_dir,
     fortran_subprocess_env,
 ):
@@ -229,7 +239,7 @@ def test_py2fgen_compilation_and_execution_gpu(  # noqa: PLR0917 [too-many-posit
         test_temp_dir=test_temp_dir,
         compiler=os.environ["NVFORTRAN_COMPILER"],
         extra_compiler_flags=extra_flags,
-        env_vars={"ICON4PY_BACKEND": "GPU"},
+        env_vars=env_vars,
     )
 
 

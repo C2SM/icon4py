@@ -50,6 +50,7 @@ class Func(Node):
     name: str
     module_name: str
     args: dict[str, _definitions.ArrayParamDescriptor | _definitions.ScalarParamDescriptor]
+    with_metadata: bool = False
 
 
 class BindingsLibrary(Node):
@@ -119,7 +120,7 @@ class PythonWrapperGenerator(codegen.TemplatedGenerator):
                 params.append(name)
                 if is_array(param):
                     params.extend(_size_arg_name(name, i) for i in range(param.rank))
-            params.append("on_gpu")
+            params.append("device_enabled")
             return ", ".join(params)
 
         return self.generic_visit(
@@ -142,7 +143,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from {{ library_name }} import ffi
-from icon4py.tools.py2fgen import _runtime, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion, _definitions
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -169,6 +170,8 @@ def {{ func.name }}_wrapper(
             if __debug__:
                 logger.info("Python execution of {{ func.name }} started.")
 
+            use_device = _runtime.use_device(device_enabled)
+
             if __debug__:
                 if runtime_config.PROFILING:
                     unpack_start_time = _runtime.perf_counter()
@@ -176,7 +179,7 @@ def {{ func.name }}_wrapper(
             # ArrayInfos
             {% for name, arg in func.args.items() %}
             {% if is_array(arg) %}
-            {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == MemorySpace.HOST %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
+            {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == MemorySpace.HOST %}False{% else %}use_device{% endif %}, {{ arg.is_optional }})
             {% endif %}
             {% endfor %}
 
@@ -197,7 +200,13 @@ def {{ func.name }}_wrapper(
             {%- for name, arg in func.args.items() -%}
             {{ name }} = {{ name }}{{ "," }}
             {%- endfor -%}
+            {%- if func.with_metadata -%}
+            _metadata = _definitions.Metadata(use_device),
+            {%- endif -%}
             )
+
+            if use_device and not device_enabled:
+                _runtime.device_synchronize()
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -242,7 +251,7 @@ class CHeaderGenerator(codegen.TemplatedGenerator):
             params.append(self.visit_Parameter(name, param))
             if is_array(param):
                 params.extend(f"int {_size_arg_name(name, i)}" for i in range(param.rank))
-        params.append(f"{to_c_type(_definitions.BOOL)} on_gpu")
+        params.append(f"{to_c_type(_definitions.BOOL)} device_enabled")
 
         rendered_params = ", ".join(params)
         return self.generic_visit(func, rendered_params=rendered_params)
@@ -287,9 +296,9 @@ class FortranISOCBindingsGenerator(codegen.TemplatedGenerator):
                     param_names.append(size_name)
                     param_declarations.append(_size_param_declaration(size_name))
 
-        # on_gpu flag
-        param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)}, value :: on_gpu")
-        param_names.append("on_gpu")
+        # device_enabled flag
+        param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)}, value :: device_enabled")
+        param_names.append("device_enabled")
 
         param_names_str = ", &\n ".join(param_names)
 
@@ -333,8 +342,8 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
                     for i in range(param.rank)
                 )
 
-        # on_gpu flag
-        args.append("on_gpu = on_gpu")
+        # device_enabled flag
+        args.append("device_enabled = device_enabled")
         compiled_arg_names = ", &\n".join(args)
 
         param_declarations = [
@@ -353,8 +362,8 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
             for name, param in func.args.items()
         ]
 
-        # on_gpu flag
-        param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)} :: on_gpu")
+        # device_enabled flag
+        param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)} :: device_enabled")
 
         def get_sizes_maker(name: str, param: _definitions.ArrayParamDescriptor) -> str:
             return "\n".join(
@@ -419,9 +428,9 @@ subroutine {{name}}({{param_names}})
    {%- endfor %}
    
    #ifdef _OPENACC
-   on_gpu = .True.
+   device_enabled = .True.
    #else
-   on_gpu = .False.
+   device_enabled = .False.
    #endif
 
    {% for name, param in _this_node.args.items() if is_array(param) and not param.is_optional %}

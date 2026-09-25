@@ -21,7 +21,6 @@ import logging
 from collections.abc import Callable
 
 import gt4py.next as gtx
-import numpy as np
 
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.bindings import (
@@ -48,6 +47,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.tools import py2fgen
 
 
 logger = logging.getLogger(__name__)
@@ -103,6 +103,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     a_hshr: gtx.float64,
     loutshs: bool,
     backend: gtx.int32,
+    _metadata: py2fgen.Metadata,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception(
@@ -110,12 +111,11 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         )
 
     xp = theta_ref_mc.array_ns
-    on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
-        wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
+        wrapper_common.BackendIntEnum(backend), on_gpu=_metadata.use_device
     )
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
-    logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
+    logger.info(f"Using Backend {backend_name} with use_device={_metadata.use_device}")
     allocator = model_backends.get_allocator(actual_backend)
 
     # Diffusion parameters
