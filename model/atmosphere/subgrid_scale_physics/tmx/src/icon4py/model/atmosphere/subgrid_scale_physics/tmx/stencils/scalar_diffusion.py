@@ -76,7 +76,8 @@ def _diffuse_scalar(
     a: fa.CellKField[wpfloat],
     b: fa.CellKField[wpfloat],
     c: fa.CellKField[wpfloat],
-    rhs: fa.CellKField[wpfloat],
+    surface_flux: fa.CellKField[wpfloat],
+    air_mass: fa.CellKField[wpfloat],
     rho: fa.CellKField[wpfloat],
     km_ie: fa.EdgeKHalfField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
@@ -84,14 +85,19 @@ def _diffuse_scalar(
     rturb_prandtl: wpfloat,
     prefactor: wpfloat,
     dtime: wpfloat,
+    maxlvl: gtx.int32,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """
     New value and tendency of a cell scalar after one diffusion step: implicit in the vertical
-    with matrix (a, b, c), explicit and conservative in the horizontal.
+    with matrix (a, b, c) and the surface flux entering the bottom row maxlvl, explicit and
+    conservative in the horizontal.
 
-    var must be valid on the halo cells.
+    Only the bottom row of surface_flux is read. var must be valid on the halo cells.
     """
     zero = wpfloat("0.0") * var
+    rhs = concat_where(
+        dims.KDim < maxlvl, zero, -surface_flux * prefactor * (wpfloat("1.0") / air_mass)
+    )
     vertical_tend = _solve_implicit_vertical_diffusion_on_cells(var, a, b, c, rhs, zero, dtime)
     flux = (
         wpfloat("0.5")
@@ -122,18 +128,13 @@ def _diffuse_tracer(
     dtime: wpfloat,
     maxlvl: gtx.int32,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    """:func:`_diffuse_scalar` with the surface flux entering the bottom row maxlvl."""
-    rhs = concat_where(
-        dims.KDim < maxlvl,
-        wpfloat("0.0") * var,
-        wpfloat("0.0") - surface_flux * prefactor * (wpfloat("1.0") / air_mass),
-    )
     return _diffuse_scalar(
         var,
         a,
         b,
         c,
-        rhs,
+        broadcast(surface_flux, (dims.CellDim, dims.KDim)),
+        air_mass,
         rho,
         km_ie,
         inv_dual_edge_length,
@@ -141,6 +142,7 @@ def _diffuse_tracer(
         rturb_prandtl,
         prefactor,
         dtime,
+        maxlvl,
     )
 
 
@@ -190,6 +192,71 @@ def diffuse_tracer(
 
 
 @gtx.field_operator
+def _compute_internal_energy_from_temperature(
+    temperature: fa.CellKField[wpfloat],
+    qv: fa.CellKField[wpfloat],
+    q_liquid: fa.CellKField[wpfloat],
+    q_solid: fa.CellKField[wpfloat],
+    height_above_ground: fa.CellKField[wpfloat],
+    grav: wpfloat,
+) -> fa.CellKField[wpfloat]:
+    """Specific internal energy plus cvd / cpd times the geopotential above ground."""
+    one = broadcast(wpfloat("1.0"), (dims.CellDim, dims.KDim))
+    return (
+        compute_internal_energy_per_area(temperature, qv, q_liquid, q_solid, one, one)
+        + grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd
+    )
+
+
+@gtx.field_operator
+def _compute_temperature_from_internal_energy(
+    energy: fa.CellKField[wpfloat],
+    qv: fa.CellKField[wpfloat],
+    q_liquid: fa.CellKField[wpfloat],
+    q_solid: fa.CellKField[wpfloat],
+    height_above_ground: fa.CellKField[wpfloat],
+    grav: wpfloat,
+) -> fa.CellKField[wpfloat]:
+    """Inverse of :func:`_compute_internal_energy_from_temperature`."""
+    one = broadcast(wpfloat("1.0"), (dims.CellDim, dims.KDim))
+    return compute_temperature_from_internal_energy_per_area(
+        energy - grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd,
+        qv,
+        q_liquid,
+        q_solid,
+        one,
+        one,
+    )
+
+
+@gtx.field_operator
+def _compute_temperature_from_dry_static_energy(
+    energy: fa.CellKField[wpfloat],
+    height_above_ground: fa.CellKField[wpfloat],
+    grav: wpfloat,
+) -> fa.CellKField[wpfloat]:
+    return (energy - grav * height_above_ground) / PhysicsConstants.cpd
+
+
+@gtx.field_operator
+def _compute_surface_internal_energy_flux(
+    sensible_heat_flux: fa.CellField[wpfloat],
+    evapotranspiration: fa.CellField[wpfloat],
+    temperature: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    return sensible_heat_flux + temperature * evapotranspiration * (
+        PhysicsConstants.cvv - PhysicsConstants.cvd
+    )
+
+
+@gtx.field_operator
+def _compute_surface_dry_static_energy_flux(
+    sensible_heat_flux: fa.CellField[wpfloat],
+) -> fa.CellField[wpfloat]:
+    return sensible_heat_flux * PhysicsConstants.cpd / PhysicsConstants.cvd
+
+
+@gtx.field_operator
 def _compute_energy_from_temperature(
     temperature: fa.CellKField[wpfloat],
     qv: fa.CellKField[wpfloat],
@@ -202,19 +269,13 @@ def _compute_energy_from_temperature(
     grav: wpfloat,
     use_internal_energy: bool,
 ) -> fa.CellKField[wpfloat]:
-    """
-    Specific energy diffused by the heat diffusion: the internal energy plus cvd / cpd times the
-    geopotential above ground, or the dry static energy.
-    """
-    if use_internal_energy:
-        one = broadcast(wpfloat("1.0"), (dims.CellDim, dims.KDim))
-        energy = (
-            compute_internal_energy_per_area(temperature, qv, qc + qr, qi + qs + qg, one, one)
-            + grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd
+    return (
+        _compute_internal_energy_from_temperature(
+            temperature, qv, qc + qr, qi + qs + qg, height_above_ground, grav
         )
-    else:
-        energy = _compute_dry_static_energy(temperature, height_above_ground, grav)
-    return energy
+        if use_internal_energy
+        else _compute_dry_static_energy(temperature, height_above_ground, grav)
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -257,9 +318,8 @@ def compute_energy_from_temperature(
 @gtx.field_operator
 def _diffuse_energy_and_update_temperature(
     energy: fa.CellKField[wpfloat],
-    a: fa.CellKField[wpfloat],
-    b: fa.CellKField[wpfloat],
-    c: fa.CellKField[wpfloat],
+    diffusivity: fa.CellKHalfField[wpfloat],
+    inv_dz: fa.CellKHalfField[wpfloat],
     sensible_heat_flux: fa.CellField[wpfloat],
     evapotranspiration: fa.CellField[wpfloat],
     temperature: fa.CellKField[wpfloat],
@@ -279,45 +339,32 @@ def _diffuse_energy_and_update_temperature(
     prefactor: wpfloat,
     grav: wpfloat,
     dtime: wpfloat,
+    minlvl: gtx.int32,
     maxlvl: gtx.int32,
     use_internal_energy: bool,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """
     New temperature and its tendency after one diffusion step of the energy of
-    :func:`_compute_energy_from_temperature`, with the surface energy flux entering the bottom
-    row maxlvl.
-
-    The new temperature is recovered with the new qv, qc and qi.
+    :func:`_compute_energy_from_temperature`, converted back with the new qv, qc and qi.
     """
-    inv_air_mass = wpfloat("1.0") / air_mass
-    # only the bottom row of the surface term is used, where 'temperature' is that of the
-    # lowest level
-    if use_internal_energy:
-        surface_term = (
-            wpfloat("0.0")
-            - (
-                sensible_heat_flux
-                + temperature * evapotranspiration * (PhysicsConstants.cvv - PhysicsConstants.cvd)
-            )
-            * prefactor
-            * inv_air_mass
+    a, b, c = _assemble_scalar_diffusion_matrix(
+        diffusivity, inv_dz, air_mass, prefactor, minlvl, maxlvl
+    )
+    # only the bottom row is used, where 'temperature' is that of the lowest level
+    surface_flux = (
+        _compute_surface_internal_energy_flux(sensible_heat_flux, evapotranspiration, temperature)
+        if use_internal_energy
+        else broadcast(
+            _compute_surface_dry_static_energy_flux(sensible_heat_flux), (dims.CellDim, dims.KDim)
         )
-    else:
-        surface_term = (
-            wpfloat("0.0")
-            - sensible_heat_flux
-            * PhysicsConstants.cpd
-            / PhysicsConstants.cvd
-            * prefactor
-            * inv_air_mass
-        )
-    rhs = concat_where(dims.KDim < maxlvl, wpfloat("0.0") * energy, surface_term)
+    )
     new_energy, _ = _diffuse_scalar(
         energy,
         a,
         b,
         c,
-        rhs,
+        surface_flux,
+        air_mass,
         rho,
         km_ie,
         inv_dual_edge_length,
@@ -325,28 +372,25 @@ def _diffuse_energy_and_update_temperature(
         rturb_prandtl,
         prefactor,
         dtime,
+        maxlvl,
     )
-    if use_internal_energy:
-        one = broadcast(wpfloat("1.0"), (dims.CellDim, dims.KDim))
-        new_temperature = compute_temperature_from_internal_energy_per_area(
-            new_energy - grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd,
-            new_qv,
-            new_qc + qr,
-            new_qi + qs + qg,
-            one,
-            one,
+    q_liquid = new_qc + qr
+    q_solid = new_qi + qs + qg
+    new_temperature = (
+        _compute_temperature_from_internal_energy(
+            new_energy, new_qv, q_liquid, q_solid, height_above_ground, grav
         )
-    else:
-        new_temperature = (new_energy - grav * height_above_ground) / PhysicsConstants.cpd
+        if use_internal_energy
+        else _compute_temperature_from_dry_static_energy(new_energy, height_above_ground, grav)
+    )
     return new_temperature, (new_temperature - temperature) * (wpfloat("1.0") / dtime)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def diffuse_energy_and_update_temperature(
     energy: fa.CellKField[wpfloat],
-    a: fa.CellKField[wpfloat],
-    b: fa.CellKField[wpfloat],
-    c: fa.CellKField[wpfloat],
+    diffusivity: fa.CellKHalfField[wpfloat],
+    inv_dz: fa.CellKHalfField[wpfloat],
     sensible_heat_flux: fa.CellField[wpfloat],
     evapotranspiration: fa.CellField[wpfloat],
     temperature: fa.CellKField[wpfloat],
@@ -376,9 +420,8 @@ def diffuse_energy_and_update_temperature(
 ) -> None:
     _diffuse_energy_and_update_temperature(
         energy,
-        a,
-        b,
-        c,
+        diffusivity,
+        inv_dz,
         sensible_heat_flux,
         evapotranspiration,
         temperature,
@@ -398,6 +441,7 @@ def diffuse_energy_and_update_temperature(
         prefactor,
         grav,
         dtime,
+        vertical_start,
         vertical_end - 1,
         use_internal_energy,
         out=(new_temperature, tend_temperature),

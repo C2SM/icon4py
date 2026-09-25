@@ -24,9 +24,8 @@ from icon4py.model.common.config import config_io, options as common_conf_opt
 
 @config_io.register_enum
 class SolverType(int, enum.Enum):
-    """Type of the vertical diffusion solver."""
+    """Type of the vertical diffusion solver; ICON's explicit solver (1) is not ported."""
 
-    EXPLICIT = 1  # explicit time stepping
     IMPLICIT = 2  # implicit time stepping
 
 
@@ -48,7 +47,7 @@ class TmxConfig:
     solver_type: typing.Annotated[
         SolverType,
         common_conf_opt.ConfigOption(
-            description="Type of the vertical diffusion solver (explicit or implicit).",
+            description="Type of the vertical diffusion solver (only implicit).",
             icon_equivalent=common_conf_opt.IconOption(
                 "solver_type", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=23
             ),
@@ -201,7 +200,13 @@ class TmxConfig:
     ] = 300.0
 
     def __post_init__(self) -> None:
-        self.solver_type = SolverType(self.solver_type)
+        try:
+            self.solver_type = SolverType(self.solver_type)
+        except ValueError:
+            raise ValueError(
+                f"Invalid argument 'solver_type': only the implicit solver "
+                f"({SolverType.IMPLICIT.value}) is implemented, got {self.solver_type}."
+            ) from None
         self.energy_type = EnergyType(self.energy_type)
 
         if self.turb_prandtl <= 0.0:
@@ -226,6 +231,7 @@ class TmxConfig:
         # Keep these values and the options' unnamed_index positions in sync
         num_members = 42
         use_tmx_index = 22
+        solver_type_index = 23
 
         flat = atm_dict["aes_vdf_nml"]["aes_vdf_config"]
         if len(flat) % num_members != 0:
@@ -240,5 +246,12 @@ class TmxConfig:
                 f"expected 'use_tmx' (True) at position {use_tmx_index} of "
                 f"'aes_vdf_config', found {use_tmx!r}: either the run does not use tmx or "
                 "the t_vdiff_config member order changed."
+            )
+        # checked here because the enum conversion of the option fails before __post_init__
+        solver_type = flat[solver_type_index]
+        if solver_type != SolverType.IMPLICIT.value:
+            raise ValueError(
+                f"Invalid 'solver_type' {solver_type!r} in 'aes_vdf_config': only the implicit "
+                f"solver ({SolverType.IMPLICIT.value}) is implemented."
             )
         return common_conf_opt.construct_config_from_icon(cls, atm_dict, **overrides)

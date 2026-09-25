@@ -23,7 +23,11 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_vertical_diffusion import implicit_diffusion_tendency_numpy
+from .test_vertical_diffusion import (
+    diffusion_matrix_numpy,
+    implicit_diffusion_tendency_numpy,
+    matrix_diagonals_on_rows,
+)
 
 
 _DOMAIN_ARGS = ("horizontal_start", "horizontal_end", "vertical_start", "vertical_end")
@@ -133,9 +137,6 @@ def _diffusion_input_data(
     horizontal_start, horizontal_end = _cells(grid)
     return {
         var_name: data_alloc.random_field(dims.CellDim, dims.KDim),
-        "a": data_alloc.random_field(dims.CellDim, dims.KDim, low=-1.0, high=0.0),
-        "b": data_alloc.random_field(dims.CellDim, dims.KDim, low=2.0, high=3.0),
-        "c": data_alloc.random_field(dims.CellDim, dims.KDim, low=-1.0, high=0.0),
         "air_mass": data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0, high=2.0),
         "rho": data_alloc.random_field(dims.CellDim, dims.KDim, low=0.5, high=1.5),
         "km_ie": data_alloc.random_field(dims.EdgeDim, dims.KHalfDim, low=0.0),
@@ -214,6 +215,9 @@ class TestDiffuseTracer(stencil_tests.StencilTest):
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
         return dict(
             **_diffusion_input_data(data_alloc, grid, "var"),
+            a=data_alloc.random_field(dims.CellDim, dims.KDim, low=-1.0, high=0.0),
+            b=data_alloc.random_field(dims.CellDim, dims.KDim, low=2.0, high=3.0),
+            c=data_alloc.random_field(dims.CellDim, dims.KDim, low=-1.0, high=0.0),
             surface_flux=data_alloc.random_field(dims.CellDim),
             new_var=data_alloc.zero_field(dims.CellDim, dims.KDim),
             tend=data_alloc.zero_field(dims.CellDim, dims.KDim),
@@ -345,6 +349,9 @@ class _DiffuseEnergyAndUpdateTemperature:
         qs: np.ndarray,
         qg: np.ndarray,
         height_above_ground: np.ndarray,
+        diffusivity: np.ndarray,
+        inv_dz: np.ndarray,
+        air_mass: np.ndarray,
         prefactor: float,
         grav: float,
         dtime: float,
@@ -356,6 +363,12 @@ class _DiffuseEnergyAndUpdateTemperature:
         **kwargs: Any,
     ) -> dict:
         cells, rows = _slices(horizontal_start, horizontal_end, vertical_start, vertical_end)
+        interfaces = slice(rows.start + 1, rows.stop)
+        matrix = diffusion_matrix_numpy(
+            prefactor * diffusivity[:, interfaces] * inv_dz[:, interfaces],
+            1.0 / air_mass[:, rows],
+        )
+        a, b, c = matrix_diagonals_on_rows(matrix, air_mass.shape, rows)
         if use_internal_energy:
             temperature_sfc = temperature[:, vertical_end - 1]
             surface_flux = sensible_heat_flux + temperature_sfc * evapotranspiration * (
@@ -366,6 +379,10 @@ class _DiffuseEnergyAndUpdateTemperature:
         new_energy, _ = diffuse_scalar_numpy(
             stencil_tests.connectivities_asnumpy(grid),
             var=energy,
+            a=a,
+            b=b,
+            c=c,
+            air_mass=air_mass,
             surface_flux=surface_flux,
             prefactor=prefactor,
             dtime=dtime,
@@ -374,10 +391,6 @@ class _DiffuseEnergyAndUpdateTemperature:
             **{
                 name: kwargs[name]
                 for name in (
-                    "a",
-                    "b",
-                    "c",
-                    "air_mass",
                     "rho",
                     "km_ie",
                     "inv_dual_edge_length",
@@ -409,6 +422,8 @@ def _diffuse_energy_input_data(
 ) -> dict:
     return dict(
         **_diffusion_input_data(data_alloc, grid, "energy"),
+        diffusivity=data_alloc.random_field(dims.CellDim, dims.KHalfDim, low=0.0),
+        inv_dz=data_alloc.random_field(dims.CellDim, dims.KHalfDim, low=0.1),
         **_tracers(data_alloc, prefix="new_"),
         sensible_heat_flux=data_alloc.random_field(dims.CellDim),
         evapotranspiration=data_alloc.random_field(dims.CellDim),

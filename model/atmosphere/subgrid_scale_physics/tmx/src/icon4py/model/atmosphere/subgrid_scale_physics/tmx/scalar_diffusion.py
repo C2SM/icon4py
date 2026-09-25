@@ -55,12 +55,7 @@ class ScalarDiffusion:
         energy_type: tmx_config.EnergyType,
         use_scale_turb_energy_flux: bool,
         scale_turb_energy_flux: float,
-        solver_type: tmx_config.SolverType,
     ) -> None:
-        if solver_type != tmx_config.SolverType.IMPLICIT:
-            raise NotImplementedError(
-                "the scalar diffusion only implements the implicit vertical diffusion solver."
-            )
         self._exchange = exchange
         # ``zfactor`` in Compute_diffusion_temperature
         energy_flux_factor = scale_turb_energy_flux if use_scale_turb_energy_flux else 1.0
@@ -73,7 +68,7 @@ class ScalarDiffusion:
         zero_field = functools.partial(
             data_alloc.zero_field, grid, allocator=model_backends.get_allocator(backend)
         )
-        # the matrix is assembled once for the three tracers and once for the energy
+        # assembled once and reused for the three tracers
         self._matrix_a: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
         self._matrix_b: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
         self._matrix_c: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
@@ -88,22 +83,13 @@ class ScalarDiffusion:
             "vertical_start": gtx.int32(0),
             "vertical_end": gtx.int32(grid.num_levels),
         }
-        assemble_matrix = functools.partial(
-            setup_program,
+        self.assemble_tracer_diffusion_matrix = setup_program(
             backend=backend,
             program=scalar_stencils.assemble_scalar_diffusion_matrix,
+            constant_args={"inv_dz": metric_state.inv_ddqz_z_half, "prefactor": 1.0},
             horizontal_sizes=horizontal_sizes,
             vertical_sizes=vertical_sizes,
             offset_provider={},
-        )
-        self.assemble_tracer_diffusion_matrix = assemble_matrix(
-            constant_args={"inv_dz": metric_state.inv_ddqz_z_half, "prefactor": 1.0}
-        )
-        self.assemble_energy_diffusion_matrix = assemble_matrix(
-            constant_args={
-                "inv_dz": metric_state.inv_ddqz_z_half,
-                "prefactor": energy_flux_factor,
-            }
         )
         horizontal_diffusion_args = {
             "inv_dual_edge_length": edge_params.inverse_dual_edge_lengths,
@@ -135,6 +121,7 @@ class ScalarDiffusion:
             program=scalar_stencils.diffuse_energy_and_update_temperature,
             constant_args={
                 **horizontal_diffusion_args,
+                "inv_dz": metric_state.inv_ddqz_z_half,
                 "height_above_ground": metric_state.height_above_ground,
                 "prefactor": energy_flux_factor,
                 "grav": constants.GRAV,
@@ -237,24 +224,12 @@ class ScalarDiffusion:
         )
 
         log.debug("communication of energy (cells): start")
-        energy_exchange = self._exchange.start(dims.CellDim, self.energy)
-
-        self.assemble_energy_diffusion_matrix(
-            diffusivity=diagnostic_state.kh_ic,
-            air_mass=input_state.air_mass,
-            a=self._matrix_a,
-            b=self._matrix_b,
-            c=self._matrix_c,
-        )
-
-        energy_exchange.finish()
+        self._exchange.exchange(dims.CellDim, self.energy)
         log.debug("communication of energy (cells): end")
 
         self.diffuse_energy_and_update_temperature(
             energy=self.energy,
-            a=self._matrix_a,
-            b=self._matrix_b,
-            c=self._matrix_c,
+            diffusivity=diagnostic_state.kh_ic,
             sensible_heat_flux=surface_flux_state.sensible_heat_flux,
             evapotranspiration=surface_flux_state.evapotranspiration,
             temperature=input_state.temperature,
