@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def cell_horizontal_gradients_by_green_gauss_method_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     scalar_field: np.ndarray,
     geofac_grg_x: np.ndarray,
     geofac_grg_y: np.ndarray,

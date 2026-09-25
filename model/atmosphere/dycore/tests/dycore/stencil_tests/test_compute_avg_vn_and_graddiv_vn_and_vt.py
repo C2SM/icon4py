@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def compute_avg_vn_and_graddiv_vn_and_vt_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     e_flx_avg: np.ndarray,
     vn: np.ndarray,
     geofac_grdiv: np.ndarray,

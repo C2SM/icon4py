@@ -22,7 +22,7 @@ from icon4py.model.testing import stencil_tests
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     zd_vertoffset: np.ndarray,
     zd_diffcoef: np.ndarray,
     geofac_n2s_c: np.ndarray,

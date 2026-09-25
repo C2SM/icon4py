@@ -185,10 +185,10 @@ def test_grid_size(icon_grid: base_grid.Grid) -> None:
     "grid_description",
     (test_defs.Grids.MCH_CH_R04B09_DSL, test_defs.Grids.R02B04_GLOBAL),
 )
-@pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.value)
+@pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.__name__)
 def test_when_keep_skip_value_then_neighbor_table_matches_config(
     grid_description: test_defs.GridDescription,
-    offset: gtx.FieldOffset,
+    offset: type[gtx.NeighborConnectivity],
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid

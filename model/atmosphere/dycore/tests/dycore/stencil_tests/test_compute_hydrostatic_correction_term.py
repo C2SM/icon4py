@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 def compute_hydrostatic_correction_term_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     theta_v: np.ndarray,
     ikoffset: np.ndarray,
     zdiff_gradp: np.ndarray,

@@ -72,7 +72,7 @@ def extrapolate_to_surface_numpy(vn: np.ndarray, wgtfacq_e: np.ndarray) -> np.nd
 
 def compute_diagnostics_from_normal_wind_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     tangential_wind_on_half_levels: np.ndarray,
     vn: np.ndarray,
     rbf_vec_coeff_e: np.ndarray,
@@ -113,7 +113,7 @@ def compute_diagnostics_from_normal_wind_numpy(
 
 def interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     contravariant_correction_at_edges_on_model_levels: np.ndarray,
     e_bln_c_s: np.ndarray,
     wgtfac_c: np.ndarray,
@@ -197,7 +197,7 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
 
 def compute_horizontal_advection_of_w_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     w: np.ndarray,
     tangential_wind_on_half_levels: np.ndarray,
     vn_on_half_levels: np.ndarray,
@@ -223,7 +223,7 @@ def compute_horizontal_advection_of_w_numpy(
 
 def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
@@ -287,7 +287,7 @@ def compute_advective_vertical_wind_tendency_numpy(
 
 def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     vertical_wind_advective_tendency: np.ndarray,
     w: np.ndarray,
     horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
@@ -348,7 +348,7 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
 
 def _compute_advective_normal_wind_tendency_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
     coeff_gradekin: np.ndarray,
     horizontal_kinetic_energy_at_cells_on_model_levels: np.ndarray,
@@ -388,7 +388,7 @@ def _compute_advective_normal_wind_tendency_numpy(
 
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     c_lin_e: np.ndarray,
     contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
     ddqz_z_full_e: np.ndarray,
@@ -460,7 +460,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
 
 def compute_advection_in_horizontal_momentum_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     vn: np.ndarray,
     horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
     tangential_wind: np.ndarray,
@@ -540,7 +540,7 @@ def _restore_outside(
 
 
 def compute_interpolated_horizontal_advection_of_w_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     e_bln_c_s: np.ndarray,
     horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
     **kwargs: Any,
@@ -555,7 +555,7 @@ def compute_interpolated_horizontal_advection_of_w_numpy(
 
 def compute_extra_diffusion_for_w_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
     ddqz_z_half: np.ndarray,
     area: np.ndarray,

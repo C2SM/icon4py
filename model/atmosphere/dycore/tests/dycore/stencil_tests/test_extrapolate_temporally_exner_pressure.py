@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def extrapolate_temporally_exner_pressure_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     exner: np.ndarray,
     exner_ref_mc: np.ndarray,
     exner_pr: np.ndarray,

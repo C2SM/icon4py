@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from icon4py.model.common import topography as topo
+from icon4py.model.common import dimension as dims, topography as topo
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures import *  # noqa: F403
@@ -47,7 +47,7 @@ def test_topography_smoothing_with_serialized_data(
         topography=topography.ndarray,
         cell_areas=cell_geometry.area.ndarray,
         geofac_n2s=geofac_n2s.ndarray,
-        c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
+        c2e2co=icon_grid.get_connectivity(dims.C2E2CO).ndarray,
         num_iterations=num_iterations,
         exchange=decomposition.SingleNodeExchange(),
     )

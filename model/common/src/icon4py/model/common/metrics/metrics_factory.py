@@ -230,7 +230,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "cell_areas": geometry_attrs.CELL_AREA,
                 "geofac_n2s": interpolation_attributes.GEOFAC_N2S,
             },
-            connectivities={"c2e2co": dims.C2E2CODim},
+            connectivities={"c2e2co": dims.C2E2CO},
             params={
                 "nflatlev": self._vertical_grid.nflatlev,
                 "model_top_height": self._vertical_grid.config.model_top_height,
@@ -616,7 +616,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_exner_w_implicit_weight_parameter_np = factory.NumpyDataProvider(
             func=mf.compute_exner_w_implicit_weight_parameter,
             domain=(dims.CellDim,),
-            connectivities={"c2e": dims.C2EDim},
+            connectivities={"c2e": dims.C2E},
             fields=(attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,),
             deps={
                 "vct_a": "vct_a",
@@ -728,7 +728,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
                 "k_lev": "k_lev",
             },
-            connectivities={"e2c": dims.E2CDim},
+            connectivities={"e2c": dims.E2C},
             domain={
                 dims.EdgeDim: (
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
@@ -841,7 +841,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "flat_idx": attrs.FLAT_IDX_MAX,
                 "topography": "topography",
             },
-            connectivities={"e2c": dims.E2CDim},
+            connectivities={"e2c": dims.E2C},
             domain=(dims.EdgeDim, dims.E2CDim, dims.KDim),
             fields=(
                 attrs.ZDIFF_GRADP,
@@ -1040,7 +1040,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "z_mc": attrs.Z_MC,
             },
-            connectivities={"c2e2c": dims.C2E2CDim},
+            connectivities={"c2e2c": dims.C2E2C},
             domain=(dims.CellDim,),
             fields=(attrs.MAX_NBHGT,),
             params={
@@ -1059,7 +1059,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "maxslp_avg": attrs.MAXSLP_AVG,
                 "maxhgtd_avg": attrs.MAXHGTD_AVG,
             },
-            connectivities={"c2e2c": dims.C2E2CDim},
+            connectivities={"c2e2c": dims.C2E2C},
             domain=(dims.CellDim, dims.KDim),
             fields=(attrs.ZD_DIFFCOEF,),
             params={
@@ -1083,7 +1083,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "maxslp_avg": attrs.MAXSLP_AVG,
                 "maxhgtd_avg": attrs.MAXHGTD_AVG,
             },
-            connectivities={"c2e2c": dims.C2E2CDim},
+            connectivities={"c2e2c": dims.C2E2C},
             domain=(dims.CellDim, dims.C2E2CDim, dims.KDim),
             fields=(
                 attrs.ZD_INTCOEF,

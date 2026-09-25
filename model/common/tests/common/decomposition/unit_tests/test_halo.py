@@ -218,10 +218,10 @@ def test_global_to_local_index(offset, rank):
     process_props = dummy_four_ranks(rank)
     halo_constructor = halo.IconLikeHaloConstructor(process_props, neighbor_tables)
     decomposition_info = halo_constructor(utils.SIMPLE_DISTRIBUTION)
-    source_indices_on_local_grid = decomposition_info.global_index(offset.target[0])
+    source_indices_on_local_grid = decomposition_info.global_index(offset.domain)
 
-    offset_full_grid = grid.connectivities[offset.value].ndarray[source_indices_on_local_grid]
-    neighbor_dim = offset.source
+    offset_full_grid = grid.connectivities[offset].ndarray[source_indices_on_local_grid]
+    neighbor_dim = offset.codomain
     neighbor_index_full_grid = decomposition_info.global_index(neighbor_dim)
 
     local_offset = halo.global_to_local(

@@ -8,7 +8,7 @@
 import dataclasses
 import functools
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -83,7 +83,7 @@ class Grid:
     UUID from icon grid files are UUID v1.
     """
     config: GridConfig
-    connectivities: gtx_common.OffsetProvider
+    connectivities: Mapping[type[gtx.NeighborConnectivity], gtx_common.NeighborTable]
     start_index: Callable[[h_grid.Domain], gtx.int32]
     end_index: Callable[[h_grid.Domain], gtx.int32]
 
@@ -134,10 +134,7 @@ class Grid:
     def limited_area(self) -> bool:
         return self.config.limited_area
 
-    def get_connectivity(self, offset: str | gtx.FieldOffset) -> gtx_common.NeighborTable:
-        """Get the connectivity by its name."""
-        if isinstance(offset, gtx.FieldOffset):
-            offset = offset.value
+    def get_connectivity(self, offset: type[gtx.NeighborConnectivity]) -> gtx_common.NeighborTable:
         if offset not in self.connectivities:
             raise exceptions.MissingConnectivityError(
                 f"Missing connectivity for offset {offset} in grid {self.id}."
@@ -148,15 +145,15 @@ class Grid:
 
 
 def construct_connectivity(
-    offset: gtx.FieldOffset,
+    offset: type[gtx.NeighborConnectivity],
     table: data_alloc.NDArray,
     skip_value: int | None = None,
     *,
     allocator: gtx_typing.Allocator | None = None,
     replace_skip_values: bool = False,
 ):
-    from_dim, dim = offset.target
-    to_dim = offset.source
+    from_dim, dim = offset.domain, gtx_common.local_dimension_of(offset)
+    to_dim = offset.codomain
     if replace_skip_values:
         _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
         skip_value = None

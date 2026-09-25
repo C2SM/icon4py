@@ -21,7 +21,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def calculate_nabla2_for_z_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     kh_smag_e: np.ndarray,
     inv_dual_edge_length: np.ndarray,
     theta_v: np.ndarray,

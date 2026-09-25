@@ -15,6 +15,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
+from gt4py.next import common as gtx_common
 
 import icon4py.model.common.grid.gridfile
 from icon4py.model.common import dimension as dims, model_backends
@@ -83,7 +84,7 @@ def test_grid_manager_eval_v2e(
     # 6 neighbors hence there are "Missing values" in the grid file
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(seralized_v2e)
-    v2e_table = grid.get_connectivity("V2E").asnumpy()
+    v2e_table = grid.get_connectivity(dims.V2E).asnumpy()
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
     assert (
@@ -124,7 +125,7 @@ def test_grid_manager_eval_v2c(
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
     serialized_v2c = data_alloc.as_numpy(grid_savepoint.v2c())
-    v2c_table = grid.get_connectivity("V2C").asnumpy()
+    v2c_table = grid.get_connectivity(dims.V2C).asnumpy()
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
     # vertices at the boundary of the domain for a limited area mode
     # hence in the grid file there are "missing values"
@@ -179,7 +180,7 @@ def test_grid_manager_eval_e2v(
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
     serialized_e2v = data_alloc.as_numpy(grid_savepoint.e2v())
-    e2v_table = grid.get_connectivity("E2V").asnumpy()
+    e2v_table = grid.get_connectivity(dims.E2V).asnumpy()
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
     # hence this connectivity has no "missing values" in the grid file
     assert not has_invalid_index(serialized_e2v)
@@ -202,7 +203,7 @@ def test_grid_manager_eval_e2c(
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
     serialized_e2c = data_alloc.as_numpy(grid_savepoint.e2c())
-    e2c_table = grid.get_connectivity("E2C").asnumpy()
+    e2c_table = grid.get_connectivity(dims.E2C).asnumpy()
     assert has_invalid_index(serialized_e2c) == grid.limited_area
     assert has_invalid_index(e2c_table) == grid.limited_area
     assert np.allclose(e2c_table, serialized_e2c)
@@ -219,7 +220,7 @@ def test_grid_manager_eval_c2e(
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
     serialized_c2e = data_alloc.as_numpy(grid_savepoint.c2e())
-    c2e_table = grid.get_connectivity("C2E").asnumpy()
+    c2e_table = grid.get_connectivity(dims.C2E).asnumpy()
     # no cells with less than 3 neighboring edges exist, otherwise the cell is not there in the
     # first place
     # hence there are no "missing values" in the grid file
@@ -238,7 +239,7 @@ def test_grid_manager_eval_c2e2c(
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
     assert np.allclose(
-        grid.get_connectivity("C2E2C").asnumpy(),
+        grid.get_connectivity(dims.C2E2C).asnumpy(),
         data_alloc.as_numpy(grid_savepoint.c2e2c()),
     )
 
@@ -253,8 +254,8 @@ def test_grid_manager_eval_c2e2cO(
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(backend=backend)
     assert np.allclose(
-        grid.get_connectivity("C2E2CO").asnumpy(),
-        serialized_grid.get_connectivity("C2E2CO").asnumpy(),
+        grid.get_connectivity(dims.C2E2CO).asnumpy(),
+        serialized_grid.get_connectivity(dims.C2E2CO).asnumpy(),
     )
 
 
@@ -268,12 +269,12 @@ def test_grid_manager_eval_e2c2e(
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(backend=backend)
-    serialized_e2c2e = serialized_grid.get_connectivity("E2C2E").asnumpy()
-    serialized_e2c2eO = serialized_grid.get_connectivity("E2C2EO").asnumpy()
+    serialized_e2c2e = serialized_grid.get_connectivity(dims.E2C2E).asnumpy()
+    serialized_e2c2eO = serialized_grid.get_connectivity(dims.E2C2EO).asnumpy()
     assert has_invalid_index(serialized_e2c2e) == grid.limited_area
 
-    e2c2e_table = grid.get_connectivity("E2C2E").asnumpy()
-    e2c2eO_table = grid.get_connectivity("E2C2EO").asnumpy()
+    e2c2e_table = grid.get_connectivity(dims.E2C2E).asnumpy()
+    e2c2eO_table = grid.get_connectivity(dims.E2C2EO).asnumpy()
     assert has_invalid_index(e2c2e_table) == grid.limited_area
     # ICON calculates diamond edges only from rl_start = 2 (lateral_boundary(dims.EdgeDim) + 1 for
     # boundaries all values are INVALID even though the half diamond exists (see mo_model_domimp_setup.f90 ll 163ff.)
@@ -295,13 +296,13 @@ def test_grid_manager_eval_e2c2v(
     serialized_ref = data_alloc.as_numpy(grid_savepoint.e2c2v())
     # the "far" (adjacent to edge normal ) is not always there, because ICON only calculates those starting from
     #   (lateral_boundary(dims.EdgeDim) + 1) to end(dims.EdgeDim)  (see mo_intp_coeffs.f90) and only for owned cells
-    table = grid.get_connectivity("E2C2V").asnumpy()
+    table = grid.get_connectivity(dims.E2C2V).asnumpy()
     start_index = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     # e2c2e in ICON (quad_idx) has a different neighbor ordering than the e2c2e constructed in grid_manager.py
     assert_up_to_order(table, serialized_ref, start_index)
-    assert np.allclose(table[:, :2], grid.get_connectivity("E2V").asnumpy())
+    assert np.allclose(table[:, :2], grid.get_connectivity(dims.E2V).asnumpy())
 
 
 @pytest.mark.datatest
@@ -312,7 +313,7 @@ def test_grid_manager_eval_c2v(
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
-    c2v = grid.get_connectivity("C2V").asnumpy()
+    c2v = grid.get_connectivity(dims.C2V).asnumpy()
     assert np.allclose(c2v, data_alloc.as_numpy(grid_savepoint.c2v()))
 
 
@@ -406,10 +407,10 @@ def test_grid_manager_eval_c2e2c2e(
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(backend=backend)
     assert np.allclose(
-        grid.get_connectivity("C2E2C2E").asnumpy(),
-        serialized_grid.get_connectivity("C2E2C2E").asnumpy(),
+        grid.get_connectivity(dims.C2E2C2E).asnumpy(),
+        serialized_grid.get_connectivity(dims.C2E2C2E).asnumpy(),
     )
-    assert grid.get_connectivity("C2E2C2E").asnumpy().shape == (grid.num_cells, 9)
+    assert grid.get_connectivity(dims.C2E2C2E).asnumpy().shape == (grid.num_cells, 9)
 
 
 # TODO (halungge): check EXCOAIM APE with new serialized data ( standard grid, start_idx/end_idx arrays
@@ -609,12 +610,12 @@ def test_decomposition_info_single_rank(
         dims.E2C2E,
         dims.E2C2EO,
     ],
-    ids=lambda offset: offset.value,
+    ids=lambda offset: offset.__name__,
 )
 def test_local_connectivity(
     rank: int,
     caplog: Iterator,
-    field_offset: gtx.FieldOffset,
+    field_offset: type[gtx.NeighborConnectivity],
     backend_like: model_backends.BackendLike,
 ) -> None:
     process_props = decomp_utils.DummyProps(rank=rank)
@@ -637,22 +638,22 @@ def test_local_connectivity(
     assert (
         connectivity.shape[0]
         == decomposition_info.global_index(
-            field_offset.target[0], decomp_defs.DecompositionInfo.EntryType.ALL
+            field_offset.domain, decomp_defs.DecompositionInfo.EntryType.ALL
         ).size
     ), "connectivity shapes do not match"
 
     # all neighbor indices are valid local indices
     max_local_index = np.max(
         decomposition_info.local_index(
-            field_offset.source, decomp_defs.DecompositionInfo.EntryType.ALL
+            field_offset.codomain, decomp_defs.DecompositionInfo.EntryType.ALL
         )
     )
     assert np.max(connectivity) == max_local_index, (
         f"max value in the connectivity is {np.max(connectivity)} is larger than the local patch size {max_local_index}"
     )
     # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
-    neighbor_dim = field_offset.target[1]  # type: ignore [misc]
-    dim = field_offset.target[0]
+    neighbor_dim = gtx_common.local_dimension_of(field_offset)
+    dim = field_offset.domain
     last_halo_level = (
         decomp_defs.DecompositionFlag.THIRD_HALO_LEVEL
         if dim == dims.EdgeDim

@@ -24,7 +24,7 @@ from icon4py.model.testing import stencil_tests
 
 def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     w_nnow: np.ndarray,
     ddt_w_adv_ntl1: np.ndarray,
     z_th_ddz_exner_c: np.ndarray,

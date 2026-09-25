@@ -21,7 +21,7 @@ from icon4py.model.testing import stencil_tests
 
 def update_mass_volume_flux_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     z_contr_w_fl_l: np.ndarray,
     rho_ic: np.ndarray,
     vwind_impl_wgt: np.ndarray,

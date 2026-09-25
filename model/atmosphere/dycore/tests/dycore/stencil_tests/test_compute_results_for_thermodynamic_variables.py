@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 def compute_results_for_thermodynamic_variables_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     z_rho_expl: np.ndarray,
     vwind_impl_wgt: np.ndarray,
     inv_ddqz_z_full: np.ndarray,

@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def apply_rayleigh_damping_mechanism_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     z_raylfac: np.ndarray,
     w: np.ndarray,
 ) -> np.ndarray:
