@@ -15,69 +15,23 @@ import textwrap
 
 import pytest
 
-import icon4py.model.common.exceptions as errors
 from icon4py.model.common.config import config_io
 from icon4py.model.common.io import io as common_io, netcdf_writers
 from icon4py.model.driver import config as driver_config, driver_states
-
-
-def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
-    # fortran dumps the whole namelist, so the variables the driver read_yaml_strs are always
-    # present. Here they only need a value when the test does not care about it.
-    atm_dict = {
-        "nonhydrostatic_nml": {"vcfl_threshold": 0.85, "ndyn_substeps": 5},
-        "run_nml": {"ltestcase": True, "ltransport": False} | run_nml,
-    }
-    master_dict = {
-        "master_time_control_nml": {
-            "experimentstartdate": "2000-01-01T00:00:00Z",
-            "experimentstopdate": "2000-01-01T01:00:00Z",
-        },
-        "master_model_nml": {"model_namelist_filename": "NAMELIST_test_sb_atm"},
-    }
-    return atm_dict, master_dict
-
-
-def test_modeltimestep_takes_priority_over_dtime() -> None:
-    # trailing whitespace mimics the fixed-width Fortran string
-    atm_dict, master_dict = _make_dicts(
-        {"dtime": 999.0, "modeltimestep": "PT300S                          "}
-    )
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
-    assert config.dtime == datetime.timedelta(seconds=300)
-
-
-def test_empty_modeltimestep_falls_back_to_dtime() -> None:
-    atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "        "})
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
-    assert config.dtime == datetime.timedelta(seconds=120)
-
-
-# The extra diffusion call before the time loop is only made for real data runs, which
-# are the ones that are not a testcase. MCH_CH_R04B09 is the only one.
-@pytest.mark.parametrize("ltestcase", [True, False])
-def test_diffuse_before_time_loop(ltestcase: bool) -> None:
-    atm_dict, master_dict = _make_dicts(
-        {"dtime": 10.0, "modeltimestep": "  ", "ltestcase": ltestcase}
-    )
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
-    assert config.diffuse_before_time_loop is (not ltestcase)
-    assert config.apply_extra_second_order_divdamp is (not ltestcase)
 
 
 def _driver_config(
     start_of_timestepping: datetime.datetime | None = None,
 ) -> driver_config.DriverConfig:
     # the experiment runs from 2000-01-01T00:00:00 to 01:00:00, with a 120 s time step
-    atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "  "})
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
+    start = datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
+    end = datetime.datetime(2000, 1, 1, 1, 0, 0, tzinfo=datetime.UTC)
+    config = driver_config.DriverConfig.make_initial(
+        experiment_name="test",
+        profiling_options=None,
+        dtime=driver_config.relativetime_from_iso8601("PT120S"),
+        start_of_simulation=start,
+        end_of_simulation=end,
     )
     if start_of_timestepping is None:
         return config
@@ -122,11 +76,8 @@ def test_driver_config_accepts_distributed_netcdf_on_any_installation(
     (see ``netcdf_writers.NETCDFWriter``), not at config construction.
     """
     monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: "<serial build>")
-    atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "PT300S"})
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict,
-        master_dict=master_dict,
-        profiling_options=None,
+    config = dataclasses.replace(
+        _driver_config(),
         output_backend=common_io.OutputBackend.NETCDF,
         output_mode=common_io.OutputMode.DISTRIBUTED,
     )
@@ -134,33 +85,59 @@ def test_driver_config_accepts_distributed_netcdf_on_any_installation(
     assert config.output_mode is common_io.OutputMode.DISTRIBUTED
 
 
-def test_io_roundtrip_cls_cls() -> None:
-    conf = config_io.read_yaml_str(
-        textwrap.dedent(
-            """
-            geometry: {}
-            metrics: {}
-            interpolation: {}
-            vertical_grid:
-                num_levels: 10
-            topography:
-                type: jablonowski_williamson
-            initial_condition:
-                type: jablonowski_williamson
-            prescribed_tendencies: {}
-            driver:
-                experiment_name: foo
-                profiling_options:
-                dtime: 10 seconds
-                start_of_simulation: 2020-01-01T00:00:00
-                start_of_timestepping: 2020-01-01T00:00:00
-                end_of_simulation:
-                    type: numsteps
-                    value: 5
-            """
-        ),
-        driver_config.ExperimentConfig,
+EXPERIMENT_CONFIG_YAML = textwrap.dedent(
+    """
+    geometry: {}
+    metrics: {}
+    interpolation: {}
+    vertical_grid:
+        num_levels: 10
+    topography:
+        type: jablonowski_williamson
+    initial_condition:
+        type: jablonowski_williamson
+    prescribed_tendencies: {}
+    driver:
+        experiment_name: foo
+        profiling_options:
+        dtime: 10 seconds
+        start_of_simulation: 2020-01-01T00:00:00
+        start_of_timestepping: 2020-01-01T00:00:00
+        end_of_simulation:
+            type: numsteps
+            value: 5
+    """
+)
+
+
+def test_read_experiment_config_from_yaml_resolves_relative_data_path(
+    tmp_path: pathlib.Path,
+) -> None:
+    config_file = tmp_path / "config.yml"
+    config_file.write_text(
+        EXPERIMENT_CONFIG_YAML.replace(
+            "prescribed_tendencies: {}", "prescribed_tendencies:\n    data_path: ser_data"
+        )
     )
+    config = driver_config.read_experiment_config_from_yaml(config_file)
+    assert config.prescribed_tendencies.data_path == tmp_path.resolve() / "ser_data"
+
+
+def test_read_experiment_config_from_yaml_keeps_absolute_data_path(
+    tmp_path: pathlib.Path,
+) -> None:
+    config_file = tmp_path / "config.yml"
+    config_file.write_text(
+        EXPERIMENT_CONFIG_YAML.replace(
+            "prescribed_tendencies: {}", "prescribed_tendencies:\n    data_path: /abs/ser_data"
+        )
+    )
+    config = driver_config.read_experiment_config_from_yaml(config_file)
+    assert config.prescribed_tendencies.data_path == pathlib.Path("/abs/ser_data")
+
+
+def test_io_roundtrip_cls_cls() -> None:
+    conf = config_io.read_yaml_str(EXPERIMENT_CONFIG_YAML, driver_config.ExperimentConfig)
     assert conf.driver.experiment_name == "foo"
     assert (
         config_io.read_yaml_str(config_io.write_yaml_str(conf), driver_config.ExperimentConfig)

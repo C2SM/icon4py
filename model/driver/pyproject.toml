@@ -30,6 +30,7 @@ dependencies = [
   "icon4py-atmosphere-physics-driver~=0.4.1",
   "icon4py-atmosphere-microphysics~=0.4.1",
   "icon4py-atmosphere-muphys~=0.4.1",
+  "icon4py-atmosphere-tmx~=0.4.1",
   "icon4py-atmosphere-tracer_advection~=0.4.1",
   "icon4py-common[io]~=0.4.1",
   # external dependencies

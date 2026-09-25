@@ -28,14 +28,14 @@ from __future__ import annotations
 import dataclasses
 import logging
 import pathlib
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.states import nonhydro_states
-from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
@@ -51,18 +51,6 @@ log = logging.getLogger(__name__)
 class PrescribedTendenciesConfig:
     #: None for the testcases, which are neither limited area nor forced by physics.
     data_path: pathlib.Path | None = None
-
-    @classmethod
-    def from_fortran_dict(
-        cls,
-        *,
-        atm_dict: dict[str, Any],
-        data_path: pathlib.Path,
-    ) -> PrescribedTendenciesConfig:
-        run_nml = atm_dict["run_nml"]
-        if run_nml["ltestcase"]:
-            return cls(data_path=None)
-        return cls(data_path=data_path / fortran_config.SER_DATA_SUBDIR)
 
 
 class PrescribedTendencies:

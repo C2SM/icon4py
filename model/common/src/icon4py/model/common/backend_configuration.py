@@ -49,7 +49,6 @@ class BackendConfig:
                 "call. Note that the memory buffer is allocated once and shared "
                 "across all compiled programs."
             ),
-            icon_equivalent=None,
         ),
     ] = 256 * 1024 * 1024  # 256 MiB
 

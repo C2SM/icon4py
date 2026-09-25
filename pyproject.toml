@@ -52,6 +52,8 @@ test = [
   "icon4py-testing~=0.4.1",
   # external dependencies
   "coverage[toml]>=7.5.0",
+  # reading the experiments' raw namelists, to cross-check the converted config
+  "f90nml>=1.5",
   "nox>=2025.5.1",
   "pytest>=8.0.1",
   "pytest-benchmark>=5.0.0",
