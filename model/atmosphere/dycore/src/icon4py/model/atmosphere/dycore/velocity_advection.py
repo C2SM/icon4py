@@ -292,9 +292,11 @@ class VelocityAdvection:
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
         max_vertical_cfl = self._vertical_cfl.array_ns.max(  # type: ignore[attr-defined]
-            self._vertical_cfl.ndarray[
-                self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
-            ].ravel(order="K")  # type: ignore[attr-defined]
+            self._vertical_cfl.array_ns.abs(  # type: ignore[attr-defined]
+                self._vertical_cfl.ndarray[
+                    self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
+                ].ravel(order="K")  # type: ignore[attr-defined]
+            )
         )
         diagnostic_state.max_vertical_cfl = self._vertical_cfl.array_ns.maximum(  # type: ignore[attr-defined]
             max_vertical_cfl, diagnostic_state.max_vertical_cfl
@@ -364,9 +366,11 @@ class VelocityAdvection:
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
         max_vertical_cfl = self._vertical_cfl.array_ns.max(  # type: ignore[attr-defined]
-            self._vertical_cfl.ndarray[
-                self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
-            ].ravel(order="K")  # type: ignore[attr-defined]
+            self._vertical_cfl.array_ns.abs(  # type: ignore[attr-defined]
+                self._vertical_cfl.ndarray[
+                    self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
+                ].ravel(order="K")  # type: ignore[attr-defined]
+            )
         )
 
         diagnostic_state.max_vertical_cfl = self._vertical_cfl.array_ns.maximum(  # type: ignore[attr-defined]
