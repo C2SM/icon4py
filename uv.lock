@@ -1181,7 +1181,7 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/spcl/dace?branch=new-gpu-codegen-dev#d8ce4fb23bd293e642b811d03db6ca74ce7f601f"}
+source = {git = "https://github.com/edopao/dace?branch=fix-experimental-cuda-gpu-copy-fallback#440a35bb08f9a18fc2c2123182ce52093ccc2d3a"}
 version = "2.0.0a9"
 
 [[package]]
@@ -1660,7 +1660,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=dace_external_stream#580c8519f40348b54ac0f315702545b74f6cbc0c"}
+source = {git = "https://github.com/edopao/gt4py?branch=dace_external_stream#13a999a5a12a3eead694777dd953b9caeeb7b63b"}
 version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
