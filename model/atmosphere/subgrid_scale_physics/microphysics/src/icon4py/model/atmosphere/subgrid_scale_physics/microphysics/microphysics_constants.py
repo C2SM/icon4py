@@ -111,7 +111,7 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
     RCVD = ta.wpfloat(1.0) / PhysicsConstants.cvd
 
     #: parameter for snow intercept parameter when snow_intercept_option=FIELD_BEST_FIT_ESTIMATION, see Field et al. (2005). Originally expressed as zn0s1 in ICON.
-    SNOW_INTERCEPT_PARAMETER_N0S1 = ta.wpfloat(13.5) * ta.wpfloat(5.65e5)
+    SNOW_INTERCEPT_PARAMETER_N0S1 = ta.wpfloat(13.5 * 5.65e5)
     #: parameter for snow intercept parameter when snow_intercept_option=FIELD_BEST_FIT_ESTIMATION, see Field et al. (2005). Originally expressed as zn0s2 in ICON.
     SNOW_INTERCEPT_PARAMETER_N0S2 = ta.wpfloat(-0.107)
     #: parameter for snow intercept parameter when snow_intercept_option=FIELD_GENERAL_MOMENT_ESTIMATION. Originally expressed as mma in ICON.
@@ -209,9 +209,7 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
     CCDVTP = (
         ta.wpfloat(2.22e-5) * PhysicsConstants.tmelt ** (ta.wpfloat(-1.94)) * ta.wpfloat(101325.0)
     )
-    CCIDEP = ta.wpfloat(4.0) * POWER_LAW_EXPONENT_FOR_ICE_MD_RELATION ** (
-        ta.wpfloat(-1.0) / ta.wpfloat(3.0)
-    )
+    CCIDEP = ta.wpfloat(4.0) * POWER_LAW_EXPONENT_FOR_ICE_MD_RELATION ** ta.wpfloat(-1.0 / 3.0)
     CCSWXP_LN1O2 = gtx.exp(CCSWXP * gtx.log(ta.wpfloat(0.5)))
 
     PVSW0 = TETENS_P0 * gtx.exp(

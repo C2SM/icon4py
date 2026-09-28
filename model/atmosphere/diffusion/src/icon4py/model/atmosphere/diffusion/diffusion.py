@@ -543,7 +543,7 @@ class Diffusion:
             wpfloat(0.25) * params.K4 * ndyn_substeps_as_float, vpfloat
         )
         self.diff_multfac_w: wpfloat = gtx.astype(
-            min(wpfloat(1.0) / wpfloat(48.0), params.K4W * ndyn_substeps_as_float), wpfloat
+            min(1.0 / 48.0, params.K4W * ndyn_substeps_as_float), wpfloat
         )
         self._determine_horizontal_domains()
 
