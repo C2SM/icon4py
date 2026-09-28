@@ -477,15 +477,21 @@ def initialize_granules(
                 qnc=config.muphys.qnc,
                 backend=backend,
             ),
-            state=muphys_state.State(grid=grid, metrics=metrics_field_source, backend=backend),
+            state=muphys_state.State(metrics=metrics_field_source),
             time_control=physics_driver.ProcessTimeControl(
                 interval=config.driver.dtime,
                 start_date=config.driver.start_of_simulation,
                 end_date=model_time_variables.simulation_end_datetime,
-                enable_process=True,
             ),
         )
-        physics_granule = physics_driver.PhysicsDriver([muphys_process])
+        physics_granule = physics_driver.PhysicsDriver.from_sources(
+            [muphys_process],
+            grid=grid,
+            geometry=geometry_field_source,
+            interpolation=interpolation_field_source,
+            metrics=metrics_field_source,
+            backend=backend,
+        )
 
     return Granules(
         solve_nonhydro=solve_nonhydro_granule,
