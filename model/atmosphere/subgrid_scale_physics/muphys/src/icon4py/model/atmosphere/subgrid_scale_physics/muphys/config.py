@@ -16,7 +16,7 @@ class MuphysScheme(enum.Enum):
     """Selects between the two graupel microphysics formulations.
 
     KOKKOS_MUPHYS follows the muphys C++/Kokkos reference implementation (the
-    original source of this port, validated by the netCDF-based muphys tests).
+    original source of this port).
     AES_GRAUPEL follows the newer MPIM rain-microphysics revisions in
     ICON (mo_aes_graupel.f90), validated against the aes-graupel serialbox
     savepoints.

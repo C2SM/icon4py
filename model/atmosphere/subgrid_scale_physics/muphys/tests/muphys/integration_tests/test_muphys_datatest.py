@@ -10,12 +10,18 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
+from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     component as muphys_component,
     config as muphys_config,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_full_muphys
+from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.testing import definitions, test_utils
 
@@ -32,7 +38,7 @@ if TYPE_CHECKING:
 # Validation of the muphys granule against Fortran ICON: the aes-graupel-init/exit
 # savepoints are written around the mig block in aes_phy_main (cloud_mig =
 # satad + graupel + satad), which is exactly the composition MuphysComponent runs
-# (setup_muphys with single_program=False). Inputs are captured after ICON's
+# in both setup_muphys execution modes. Inputs are captured after ICON's
 # dyn2phy negative-tracer clipping, so the granule sees identical state.
 #
 # ICON only computes the scheme on levels jks_cloudy..nlev (zmaxcloudy cutoff)
@@ -66,8 +72,10 @@ if TYPE_CHECKING:
     "date",
     ["2008-09-01T00:00:00.000", "2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000"],
 )
+@pytest.mark.parametrize("single_program", [False, True], ids=lambda sp: f"single_program={sp}")
 def test_muphys_granule(
     date: str,
+    single_program: bool,
     *,
     data_provider: sb.IconSerialDataProvider,
     icon_grid: icon_grid_types.IconGrid,
@@ -83,14 +91,6 @@ def test_muphys_granule(
     # MuphysConfig().qnc matches the Fortran cloud_num = 50.0e6 m^-3 (mo_cloud_mig.f90);
     # the default scheme is AES_GRAUPEL, matching the Fortran that generated the data
     muphys_configuration = muphys_config.MuphysConfig()
-    component = muphys_component.MuphysComponent(
-        grid=icon_grid,
-        dtime=datetime.timedelta(seconds=dtime),
-        qnc=muphys_configuration.qnc,
-        backend=backend,
-        scheme=muphys_configuration.scheme,
-    )
-
     state = {
         "dz": init_savepoint.dz(),
         "te": init_savepoint.temperature(),
@@ -103,7 +103,89 @@ def test_muphys_granule(
         "qi": init_savepoint.qi(),
         "qg": init_savepoint.qg(),
     }
+    initial_state = {name: field.asnumpy().copy() for name, field in state.items()}
+    inp = common.GraupelInput(
+        ncells=icon_grid.num_cells,
+        nlev=icon_grid.num_levels,
+        t=state["te"],
+        **{name: field for name, field in state.items() if name != "te"},
+    )
+    muphys_program = run_full_muphys.setup_muphys(
+        inp=inp,
+        dt=dtime,
+        qnc=muphys_configuration.qnc,
+        backend=backend,
+        single_program=single_program,
+        scheme=muphys_configuration.scheme,
+    )
+    component = muphys_component.MuphysComponent(
+        grid=icon_grid,
+        dtime=datetime.timedelta(seconds=dtime),
+        qnc=muphys_configuration.qnc,
+        backend=backend,
+        scheme=muphys_configuration.scheme,
+        # Exercise the default Component setup for the separate-program mode.
+        step=muphys_program if single_program else None,
+    )
     outputs = component(state, datetime.datetime.fromisoformat(date))
+    assert outputs.keys() == component.outputs_properties.keys()
+    for name, field in state.items():
+        np.testing.assert_array_equal(field.asnumpy(), initial_state[name], err_msg=name)
+
+    # Keep the required in-place aliasing, but use independent buffers so the
+    # direct run cannot change the Component's inputs or outputs.
+    direct = common.GraupelOutput.allocate(
+        allocator=model_backends.get_allocator(backend),
+        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+    )
+    direct.t.ndarray[...] = inp.t.ndarray
+    for species in SPECIES:
+        getattr(direct, f"q{species}").ndarray[...] = getattr(inp, f"q{species}").ndarray
+    muphys_program(
+        dz=inp.dz,
+        te=direct.t,
+        p=inp.p,
+        rho=inp.rho,
+        q_in=direct.q,
+        t_out=direct.t,
+        q_out=direct.q,
+        pflx=direct.pflx,
+        pr=direct.pr,
+        ps=direct.ps,
+        pi=direct.pi,
+        pg=direct.pg,
+        pre=direct.pre,
+    )
+
+    cell_domain = h_grid.domain(dims.CellDim)
+    cell_start = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+    cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+    cells = slice(cell_start, cell_end)
+    # Check all seven tendency conversions, including zero boundary/halo rows.
+    for name, updated in (
+        ("temperature", direct.t),
+        *((f"q{species}", getattr(direct, f"q{species}")) for species in SPECIES),
+    ):
+        old = initial_state["te" if name == "temperature" else name]
+        expected = np.zeros_like(old)
+        expected[cells, :] = (updated.asnumpy()[cells, :] - old[cells, :]) / dtime
+        test_utils.assert_dallclose(
+            outputs[f"tend_{name}"].asnumpy(), expected, atol=1e-15, err_msg=f"tend_{name}"
+        )
+
+    # ICON saves only aggregate surface diagnostics. Verify the full pflx
+    # profile and each surface diagnostic against the direct muphys call.
+    test_utils.assert_dallclose(
+        outputs["pflx"].asnumpy(), direct.pflx.asnumpy(), rtol=0.0, atol=0.0, err_msg="pflx"
+    )
+    for name in ("pr", "ps", "pi", "pg", "pre"):
+        test_utils.assert_dallclose(
+            outputs[name].asnumpy()[:, -1],
+            getattr(direct, name).asnumpy()[:, -1],
+            rtol=0.0,
+            atol=0.0,
+            err_msg=name,
+        )
 
     # provisional tolerances; measure on the archive
     # (ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL=true) and tighten
@@ -115,28 +197,42 @@ def test_muphys_granule(
         ("tend_qi", QI),
         ("tend_qg", QG),
     ):
+        test_utils.assert_dallclose(
+            getattr(direct, name.removeprefix("tend_")).asnumpy()[cells, jks:],
+            exit_savepoint.tracer(tracer_index).asnumpy()[cells, jks:],
+            atol=1e-13,
+            err_msg=f"{name.removeprefix('tend_')} in cloud",
+        )
         reference = (
             exit_savepoint.tend_tracer(tracer_index).asnumpy()
             - init_savepoint.tend_tracer(tracer_index).asnumpy()
         )
         actual = outputs[name].asnumpy()
         test_utils.assert_dallclose(
-            actual[:, jks:], reference[:, jks:], atol=1e-13, err_msg=f"{name} in cloud"
+            actual[cells, jks:], reference[cells, jks:], atol=1e-13, err_msg=f"{name} in cloud"
         )
         # above the cloudy region ICON does not run the scheme; the full-column
         # granule must produce (near-)zero tendencies there
-        test_utils.assert_dallclose(actual[:, :jks], 0.0, atol=1e-12, err_msg=f"{name} above cloud")
+        test_utils.assert_dallclose(
+            actual[cells, :jks], 0.0, atol=1e-12, err_msg=f"{name} above cloud"
+        )
 
+    test_utils.assert_dallclose(
+        direct.t.asnumpy()[cells, jks:],
+        exit_savepoint.temperature().asnumpy()[cells, jks:],
+        atol=1e-10,
+        err_msg="temperature in cloud",
+    )
     tend_ta_reference = exit_savepoint.tend_ta().asnumpy() - init_savepoint.tend_ta().asnumpy()
     tend_ta_actual = outputs["tend_temperature"].asnumpy()
     test_utils.assert_dallclose(
-        tend_ta_actual[:, jks:],
-        tend_ta_reference[:, jks:],
+        tend_ta_actual[cells, jks:],
+        tend_ta_reference[cells, jks:],
         atol=1e-10,
         err_msg="tend_temperature in cloud",
     )
     test_utils.assert_dallclose(
-        tend_ta_actual[:, :jks], 0.0, atol=1e-10, err_msg="tend_temperature above cloud"
+        tend_ta_actual[cells, :jks], 0.0, atol=1e-10, err_msg="tend_temperature above cloud"
     )
 
     # surface precip: the granule keeps the surface value in the last level; ICON
