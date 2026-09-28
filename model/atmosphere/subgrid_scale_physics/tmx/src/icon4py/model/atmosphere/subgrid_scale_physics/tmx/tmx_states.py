@@ -87,9 +87,9 @@ class TmxSurfaceFluxState:
     """Surface fluxes provided by the surface scheme (inputs to the atmospheric diffusion)."""
 
     evapotranspiration: fa.CellField[ta.wpfloat]
-    """Surface evapotranspiration flux (``evspsbl``) [kg/(m^2 s)]."""
+    """Surface evapotranspiration flux (`evspsbl`) [kg/(m^2 s)]."""
     sensible_heat_flux: fa.CellField[ta.wpfloat]
-    """Surface sensible heat flux (``hfss``) [W/m^2]."""
+    """Surface sensible heat flux (`hfss`) [W/m^2]."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -123,7 +123,7 @@ class TmxInputState:
     rho: fa.CellKField[ta.wpfloat]
     """Air density on full levels [kg/m^3]."""
     air_mass: fa.CellKField[ta.wpfloat]
-    """Air mass per unit area (``mair``) on full levels [kg/m^2]."""
+    """Air mass per unit area (`mair`) on full levels [kg/m^2]."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -211,7 +211,7 @@ class TmxDiagnosticState:
 
 @dataclasses.dataclass(frozen=True)
 class TmxNewState:
-    """Fields updated by the tmx diffusion: ``new = state + tend * dtime``."""
+    """Fields updated by the tmx diffusion: `new = state + tend * dtime`."""
 
     temperature: fa.CellKField[ta.wpfloat]
     """Updated air temperature on full levels [K]."""

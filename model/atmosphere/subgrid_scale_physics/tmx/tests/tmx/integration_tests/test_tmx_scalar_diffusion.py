@@ -8,7 +8,7 @@
 
 """Integration tests of the tmx scalar diffusion component.
 
-Both stages are seeded from the tmx-diagnostics-exit savepoint (``kh_ic``, ``km_ie``) and the
+Both stages are seeded from the tmx-diagnostics-exit savepoint (`kh_ic`, `km_ie`) and the
 temperature stage also from the tmx-hydro-exit savepoint (the new qv, qc, qi), so that failures
 do not cascade between them.
 """

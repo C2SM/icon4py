@@ -47,7 +47,7 @@ def tmx_dtime(
     process_props: decomposition.ProcessProperties,
     download_ser_data: None,  # downloads data as side-effect
 ) -> float:
-    """The tmx time step [s]: ``dt_vdf`` of the experiment's ``aes_phy_nml``."""
+    """The tmx time step [s]: `dt_vdf` of the experiment's `aes_phy_nml`."""
     input_dict = dt_utils.load_fortran_dict(
         experiment_description=experiment_description,
         process_props=process_props,

@@ -8,8 +8,8 @@
 
 """The scalar diffusion component of tmx.
 
-Port of ``Compute_diffusion_hydrometeors`` and ``Compute_diffusion_temperature`` in ICON's
-``mo_vdf.f90``, with the implicit vertical solver.
+Port of `Compute_diffusion_hydrometeors` and `Compute_diffusion_temperature` in ICON's
+`mo_vdf.f90`, with the implicit vertical solver.
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ class ScalarDiffusion:
         scale_turb_energy_flux: float,
     ) -> None:
         self._exchange = exchange
-        # ``zfactor`` in Compute_diffusion_temperature
+        # `zfactor` in Compute_diffusion_temperature
         energy_flux_factor = scale_turb_energy_flux if use_scale_turb_energy_flux else 1.0
         use_internal_energy = energy_type == tmx_config.EnergyType.INTERNAL
 
@@ -143,10 +143,10 @@ class ScalarDiffusion:
         dtime: float,
     ) -> None:
         """
-        Diffuse qv, qc and qi (``Compute_diffusion_hydrometeors`` in mo_vdf.f90, without CO2).
+        Diffuse qv, qc and qi (`Compute_diffusion_hydrometeors` in mo_vdf.f90, without CO2).
 
-        Only qv has a surface flux, the evapotranspiration. Needs ``kh_ic`` and ``km_ie`` of
-        ``diagnostic_state``.
+        Only qv has a surface flux, the evapotranspiration. Needs `kh_ic` and `km_ie` of
+        `diagnostic_state`.
         """
         log.debug("tmx hydrometeor diffusion (Compute_diffusion_hydrometeors): start")
 
@@ -203,12 +203,12 @@ class ScalarDiffusion:
         dtime: float,
     ) -> None:
         """
-        Diffuse the temperature as dry static or internal energy (``Compute_diffusion_temperature``
+        Diffuse the temperature as dry static or internal energy (`Compute_diffusion_temperature`
         in mo_vdf.f90).
 
         The energy is computed with the input tracers and converted back with the new qv, qc and
-        qi of ``new_state``, so this runs after ``run_hydrometeor_diffusion``. Needs
-        ``kh_ic`` and ``km_ie`` of ``diagnostic_state``.
+        qi of `new_state`, so this runs after `run_hydrometeor_diffusion`. Needs
+        `kh_ic` and `km_ie` of `diagnostic_state`.
         """
         log.debug("tmx temperature diffusion (Compute_diffusion_temperature): start")
 
