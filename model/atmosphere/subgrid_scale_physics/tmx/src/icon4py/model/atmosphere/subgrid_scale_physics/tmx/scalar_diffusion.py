@@ -207,7 +207,7 @@ class ScalarDiffusion:
         in mo_vdf.f90).
 
         The energy is computed with the input tracers and converted back with the new qv, qc and
-        qi of ``new_state``, so this runs after :meth:`run_hydrometeor_diffusion`. Needs
+        qi of ``new_state``, so this runs after ``run_hydrometeor_diffusion``. Needs
         ``kh_ic`` and ``km_ie`` of ``diagnostic_state``.
         """
         log.debug("tmx temperature diffusion (Compute_diffusion_temperature): start")

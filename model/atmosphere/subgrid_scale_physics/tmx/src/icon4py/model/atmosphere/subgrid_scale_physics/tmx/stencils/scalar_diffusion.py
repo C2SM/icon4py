@@ -128,12 +128,13 @@ def _diffuse_tracer(
     dtime: wpfloat,
     maxlvl: gtx.int32,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+    surface_flux_on_levels = broadcast(surface_flux, (dims.CellDim, dims.KDim))
     return _diffuse_scalar(
         var,
         a,
         b,
         c,
-        broadcast(surface_flux, (dims.CellDim, dims.KDim)),
+        surface_flux_on_levels,
         air_mass,
         rho,
         km_ie,
@@ -217,7 +218,7 @@ def _compute_temperature_from_internal_energy(
     height_above_ground: fa.CellKField[wpfloat],
     grav: wpfloat,
 ) -> fa.CellKField[wpfloat]:
-    """Inverse of :func:`_compute_internal_energy_from_temperature`."""
+    """Inverse of ``_compute_internal_energy_from_temperature``."""
     one = broadcast(wpfloat("1.0"), (dims.CellDim, dims.KDim))
     return compute_temperature_from_internal_energy_per_area(
         energy - grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd,
@@ -345,7 +346,7 @@ def _diffuse_energy_and_update_temperature(
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """
     New temperature and its tendency after one diffusion step of the energy of
-    :func:`_compute_energy_from_temperature`, converted back with the new qv, qc and qi.
+    ``_compute_energy_from_temperature``, converted back with the new qv, qc and qi.
     """
     a, b, c = _assemble_scalar_diffusion_matrix(
         diffusivity, inv_dz, air_mass, prefactor, minlvl, maxlvl
