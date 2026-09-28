@@ -14,13 +14,14 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 @gtx.field_operator
 def _apply_vertical_density_increment(
     rhodz_ast: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     k_offset_up_low = p_dtime * (
-        p_mflx_contra_v(dims.KDim + 1) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
+        p_mflx_contra_v(dims.KDim + 0.5) * deepatmo_divzl
+        - p_mflx_contra_v(dims.KDim - 0.5) * deepatmo_divzu
     )
     return rhodz_ast + k_offset_up_low
 
@@ -28,7 +29,7 @@ def _apply_vertical_density_increment(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_vertical_density_increment(
     rhodz_ast: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_ast2: fa.CellKField[ta.wpfloat],

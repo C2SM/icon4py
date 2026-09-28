@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_trace
     compute_horizontal_tracer_flux_from_cubic_coefficients,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -22,8 +22,9 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(stencil_tests.Stencil
     PROGRAM = compute_horizontal_tracer_flux_from_cubic_coefficients
     OUTPUTS = ("p_out_e_hybrid_2",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
+        grid: base.Grid,
         *,
         p_out_e_hybrid_2: np.ndarray,
         p_mass_flx_e: np.ndarray,
@@ -34,11 +35,11 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(stencil_tests.Stencil
 
         return dict(p_out_e_hybrid_2=p_out_e_hybrid_2)
 
-    @pytest.fixture
-    def input_data(self, grid) -> dict:
-        p_out_e_hybrid_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_dreg_area = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_out_e_hybrid_2 = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_mass_flx_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        z_dreg_area = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         return dict(
             p_mass_flx_e=p_mass_flx_e,
             z_dreg_area=z_dreg_area,

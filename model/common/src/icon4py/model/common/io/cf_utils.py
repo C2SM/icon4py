@@ -16,7 +16,6 @@ from icon4py.model.common.states import metadata
 
 #: from standard name table https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
 SLEVE_COORD_STANDARD_NAME: Final[str] = "atmosphere_sleve_coordinate"
-LEVEL_STANDARD_NAME: Final[str] = "model_level_number"
 
 
 DEFAULT_CALENDAR: Final[str] = "proleptic_gregorian"
@@ -35,12 +34,8 @@ CF conventions encourage to use the COARDS conventions for the order of the dime
     `Y` (latitude),
     `X` (longitude).
 In the unstructured case `Y` and `X`  combine to the horizontal dimension.
+The axis labels live in ``common.states.metadata`` (``COARDS_*_COORDINATE_NAME``).
 """
-
-COARDS_VERTICAL_COORDINATE_NAME: Final[str] = "Z"
-COARDS_TIME_COORDINATE_NAME: Final[str] = "T"
-COARDS_LONGITUDE_COORDINATE_NAME: Final[str] = "X"
-COARDS_LATITUDE_COORDINATE_NAME: Final[str] = "Y"
 
 
 def date2num(

@@ -17,23 +17,23 @@ from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_f
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat
-from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
+class TestEnhanceDiffusionCoefficientForGridPointColdPools(stencil_tests.StencilTest):
     PROGRAM = enhance_diffusion_coefficient_for_grid_point_cold_pools
     OUTPUTS = ("kh_smag_e",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         kh_smag_e: np.ndarray,
         enh_diffu_3d: np.ndarray,
         **kwargs,
     ) -> dict:
-        e2c = connectivities[dims.E2CDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        e2c = connectivities[dims.E2C]
         kh_smag_e = np.maximum(
             kh_smag_e,
             np.max(
@@ -43,10 +43,10 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
         )
         return dict(kh_smag_e=kh_smag_e)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        enh_diffu_3d = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        kh_smag_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        enh_diffu_3d = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             kh_smag_e=kh_smag_e,

@@ -85,8 +85,6 @@ def geometry_from_savepoint(
         gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX: grid_savepoint.vertex_edge_orientation(),
     }
 
-    exchange = decomposition.create_exchange(process_props, decomposition_info)
-    global_reductions = decomposition.create_reduction(process_props, decomposition_info)
     grid_geometry = geometry.GridGeometry(
         grid=grid,
         decomposition_info=decomposition_info,
@@ -96,8 +94,6 @@ def geometry_from_savepoint(
         extra_fields=extra_fields,
         config=geometry_config.GeometryConfig(),
         process_props=process_props,
-        exchange=exchange,
-        global_reductions=global_reductions,
     )
     yield grid_geometry
 
@@ -113,7 +109,6 @@ def interpolation_factory_from_savepoint(
     geometry_from_savepoint: geometry.GridGeometry,
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory]:
     geometry_source = geometry_from_savepoint
-    exchange = decomposition.create_exchange(process_props, decomposition_info)
     intp_factory = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry_source.grid,
         decomposition_info=decomposition_info,
@@ -121,7 +116,7 @@ def interpolation_factory_from_savepoint(
         config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=exchange,
+        process_props=process_props,
     )
     yield intp_factory
 
@@ -138,8 +133,6 @@ def metrics_factory_from_savepoint(
     geometry_from_savepoint: geometry.GridGeometry,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> Generator[metrics_factory.MetricsFieldsFactory]:
-    exchange = decomposition.create_exchange(process_props, decomposition_info)
-    global_reductions = decomposition.create_reduction(process_props, decomposition_info)
     geometry_source = geometry_from_savepoint
     interpolation_field_source = interpolation_factory_from_savepoint
     topography = topography_savepoint.topo_c()
@@ -157,8 +150,7 @@ def metrics_factory_from_savepoint(
         config=experiment.config.metrics,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        exchange=exchange,
-        global_reductions=global_reductions,
+        process_props=process_props,
     )
 
     yield factory

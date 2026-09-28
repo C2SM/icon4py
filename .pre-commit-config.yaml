@@ -113,3 +113,10 @@ repos:
         entry: uv run --group dev --frozen --isolated validate-pyproject pyproject.toml
         files: ^pyproject\.toml$
         pass_filenames: false
+
+      - <<: *uv-managed-hook
+        id: check-versions
+        name: check package version consistency
+        entry: ./scripts/run check-versions
+        pass_filenames: false
+        always_run: true

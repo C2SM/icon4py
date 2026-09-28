@@ -16,6 +16,8 @@ env:
   ICON4PY_ENABLE_GRID_DOWNLOAD: false
   ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
   PYTEST_ADDOPTS: "--durations=0"
+  # gt4py skips formatting generated code when `$CLANG_FORMAT_EXECUTABLE --version` fails.
+  CLANG_FORMAT_EXECUTABLE: /bin/false
 
 jobs:
   test-model:
@@ -24,7 +26,7 @@ jobs:
       matrix:
         python-version: ["3.12"]
         backend: ["embedded", "dace_cpu", "gtfn_cpu"]
-        component: ["tracer_advection", "diffusion", "dycore", "microphysics", "muphys", "physics_driver", "common", "driver"]
+        component: ["tracer_advection", "diffusion", "dycore", "microphysics", "muphys", "tmx", "physics_driver", "common", "driver"]
     steps:
       - name: Checkout
         uses: actions/checkout@v7

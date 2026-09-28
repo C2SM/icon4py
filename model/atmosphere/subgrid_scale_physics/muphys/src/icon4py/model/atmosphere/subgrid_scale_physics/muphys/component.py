@@ -14,10 +14,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
-    config as muphys_config,
-    data as muphys_data,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import data as muphys_data
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES, Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.run_full_muphys import (
     setup_muphys,
@@ -30,9 +27,9 @@ from icon4py.model.common import (
     time,
     type_alias as ta,
 )
-from icon4py.model.common.diagnostic_calculations.stencils import calculate_tendency
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.math.stencils import generic_math_operations
+from icon4py.model.common.physics.thermodynamics import compute_tendencies
 
 
 if TYPE_CHECKING:
@@ -56,7 +53,6 @@ class MuphysComponent:
         qnc: float,
         backend: gtx_typing.Backend | None = None,
         *,
-        scheme: muphys_config.MuphysScheme = muphys_config.MuphysScheme.KOKKOS_MUPHYS,
         step: Callable[..., Any] | None = None,
     ) -> None:
         self._ncells = grid.num_cells
@@ -85,7 +81,7 @@ class MuphysComponent:
         vertical_sizes = {"vertical_start": gtx.int32(0), "vertical_end": gtx.int32(self._nlev)}
 
         self._calculate_tendency = model_options.setup_program(
-            program=calculate_tendency.calculate_cell_kdim_field_tendency,
+            program=compute_tendencies.compute_cell_kdim_field_tendency,
             backend=self._backend,
             horizontal_sizes=prognostic_horizontal_sizes,
             vertical_sizes=vertical_sizes,
@@ -109,7 +105,6 @@ class MuphysComponent:
                 qnc=qnc,
                 backend=backend,
                 single_program=False,
-                scheme=scheme,
             )
         self._step = step
 

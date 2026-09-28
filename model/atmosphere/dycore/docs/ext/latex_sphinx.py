@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import pathlib
+
 import TexSoup
 
 
@@ -23,7 +25,7 @@ def tex_macros_to_mathjax(filename: str) -> dict[str, str]:
         and the second element is the number of arguments.
     """
     latex_macros = {}
-    with open(filename) as f:
+    with pathlib.Path(filename).open() as f:
         soup = TexSoup.TexSoup(f.read())
         for command in ["newcommand", "renewcommand"]:
             for macro in soup.find_all(command):

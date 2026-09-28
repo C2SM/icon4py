@@ -6,6 +6,8 @@ ICON4Py is a Python implementation of the Fortran [ICON climate and weather mode
 
 Always read the CODING_GUIDELINES.md document first and follow it.
 
+In particular, before adding a stencil, a helper, an enum or an options dictionary to a component, check the "Shared code and generic naming" section: if it can be described using only grid entities and mathematical operations, it belongs in `model/common` and must be named after the operation, not after the calling code's variables.
+
 ## Monorepo structure
 
 uv workspace with 10 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
@@ -23,10 +25,10 @@ model/
   driver/               # icon4py.model.driver
   testing/              # icon4py.model.testing ← pytest plugin, fixtures, serialbox helpers
 tools/                  # icon4py.tools ← Fortran integration (py2fgen CLI), independent of model
-bindings/               # icon4py.bindings ← Fortran wrappers for diffusion/dycore/muphys, depends on tools.py2fgen
+bindings/               # icon4py.bindings ← Fortran wrappers for diffusion/dycore, depends on tools.py2fgen
 ```
 
-Tach enforces the dependency graph in `tach.toml`. All model atmosphere packages and driver depend only on `common`. Driver depends on diffusion + dycore + common + testing. Tools is independent. Bindings depends on diffusion + dycore + muphys + common + tools.py2fgen.
+Tach enforces the dependency graph in `tach.toml`. All model atmosphere packages and driver depend only on `common`. Driver depends on diffusion + dycore + common + testing. Tools is independent. Bindings depends on diffusion + dycore + common + tools.py2fgen.
 
 **Always run `uv sync` from the repo root.** Running it from a subpackage only installs that package's deps.
 
@@ -118,7 +120,7 @@ uv run --group test --frozen pytest --datatest-skip model/<component>/
 uv run --group test --frozen pytest --datatest-only model/<component>/
 
 # MPI tests (requires mpi4py, distributed extra; always use -n0 for sequential):
-mpirun -np 4 ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pytest -v -s --with-mpi -n0 -k mpi_tests model/<component>/
+mpirun -np 4 .cscs-ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pytest -v -s --with-mpi -n0 -k mpi_tests model/<component>/
 #   --with-mpi: enables MPI test mode (from pytest-mpi plugin)
 #   -k mpi_tests: selects tests by directory/class name convention
 #   ci-mpi-wrapper.sh: suppresses stdout from non-zero ranks

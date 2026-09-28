@@ -38,18 +38,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_parabol
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_tracer_flux_upwind import (
     compute_vertical_tracer_flux_upwind,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field import (
-    copy_cell_kdim_field,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field_koff_minus1 import (
-    copy_cell_kdim_field_koff_minus1,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field_koff_plus1 import (
-    copy_cell_kdim_field_koff_plus1,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.init_constant_cell_kdim_field import (
-    init_constant_cell_kdim_field,
-)
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_vertically import (
     integrate_tracer_vertically,
 )
@@ -68,6 +56,9 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.math import vertical_operations
+from icon4py.model.common.math.stencils import generic_math_operations
+from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -79,12 +70,12 @@ log = logging.getLogger(__name__)
 
 
 class BoundaryConditions(abc.ABC):
-    """Class that sets the upper and lower boundary conditions."""
+    """Abstract base class that sets the upper and lower boundary conditions."""
 
     @abc.abstractmethod
     def run(
         self,
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
     ) -> None:
@@ -101,7 +92,7 @@ class BoundaryConditions(abc.ABC):
 
 
 class NoFluxCondition(BoundaryConditions):
-    """Class that sets the upper and lower boundary fluxes to zero."""
+    """Sets the upper and lower boundary fluxes to zero."""
 
     def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
@@ -109,21 +100,21 @@ class NoFluxCondition(BoundaryConditions):
         self._backend = backend
 
         # stencils
-        self._init_constant_cell_kdim_field = init_constant_cell_kdim_field.with_backend(
-            self._backend
+        self._set_constant_on_half_levels_on_cells = (
+            vertical_operations.set_constant_on_half_levels_on_cells.with_backend(self._backend)
         )
 
     def run(
         self,
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
     ) -> None:
         log.debug("vertical boundary conditions computation - start")
 
         # set upper boundary conditions
-        log.debug("running stencil init_constant_cell_kdim_field - start")
-        self._init_constant_cell_kdim_field(
+        log.debug("running stencil set_constant_on_half_levels_on_cells - start")
+        self._set_constant_on_half_levels_on_cells(
             field=p_mflx_tracer_v,
             value=0.0,
             horizontal_start=horizontal_start,
@@ -132,11 +123,11 @@ class NoFluxCondition(BoundaryConditions):
             vertical_end=1,
             offset_provider=self._grid.connectivities,
         )
-        log.debug("running stencil init_constant_cell_kdim_field - end")
+        log.debug("running stencil set_constant_on_half_levels_on_cells - end")
 
         # set lower boundary conditions
-        log.debug("running stencil init_constant_cell_kdim_field - start")
-        self._init_constant_cell_kdim_field(
+        log.debug("running stencil set_constant_on_half_levels_on_cells - start")
+        self._set_constant_on_half_levels_on_cells(
             field=p_mflx_tracer_v,
             value=0.0,
             horizontal_start=horizontal_start,
@@ -145,13 +136,13 @@ class NoFluxCondition(BoundaryConditions):
             vertical_end=self._grid.num_levels + 1,
             offset_provider=self._grid.connectivities,
         )
-        log.debug("running stencil init_constant_cell_kdim_field - end")
+        log.debug("running stencil set_constant_on_half_levels_on_cells - end")
 
         log.debug("vertical boundary conditions computation - end")
 
 
 class VerticalLimiter(abc.ABC):
-    """Class that limits the vertical reconstructed fields and the fluxes."""
+    """Abstract base class for limiters of the vertical reconstructed field and tracer flux."""
 
     @abc.abstractmethod
     def limit_slope(
@@ -167,7 +158,7 @@ class VerticalLimiter(abc.ABC):
         self,
         *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_face: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_face: fa.CellKHalfField[ta.wpfloat],
         p_face_up: fa.CellKField[ta.wpfloat],
         p_face_low: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
@@ -183,25 +174,25 @@ class VerticalLimiter(abc.ABC):
 
 
 class NoLimiter(VerticalLimiter):
-    """Class that implements no vertical parabola limiter."""
+    """Disable limiter."""
 
     def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
 
         # stencils
-        self._copy_cell_kdim_field = model_options.setup_program(
+        self._copy_half_level_above_to_model_levels_on_cells = model_options.setup_program(
             backend=backend,
-            program=copy_cell_kdim_field,
+            program=vertical_operations.copy_half_level_above_to_model_levels_on_cells,
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
             offset_provider=self._grid.connectivities,
         )
-        self._copy_cell_kdim_field_koff_plus1 = model_options.setup_program(
+        self._copy_half_level_below_to_model_levels_on_cells = model_options.setup_program(
             backend=backend,
-            program=copy_cell_kdim_field_koff_plus1,
+            program=vertical_operations.copy_half_level_below_to_model_levels_on_cells,
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
@@ -221,30 +212,30 @@ class NoLimiter(VerticalLimiter):
         self,
         *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_face: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_face: fa.CellKHalfField[ta.wpfloat],
         p_face_up: fa.CellKField[ta.wpfloat],
         p_face_low: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
     ) -> None:
         # simply copy to up/low face values
-        log.debug("running stencil copy_cell_kdim_field - start")
-        self._copy_cell_kdim_field(
-            field_in=p_face,
-            field_out=p_face_up,
+        log.debug("running stencil copy_half_level_above_to_model_levels_on_cells - start")
+        self._copy_half_level_above_to_model_levels_on_cells(
+            half_level_field=p_face,
+            model_level_field=p_face_up,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil copy_cell_kdim_field - end")
+        log.debug("running stencil copy_half_level_above_to_model_levels_on_cells - end")
 
-        log.debug("running stencil copy_cell_kdim_field_koff_plus1 - start")
-        self._copy_cell_kdim_field_koff_plus1(
-            field_in=p_face,
-            field_out=p_face_low,
+        log.debug("running stencil copy_half_level_below_to_model_levels_on_cells - start")
+        self._copy_half_level_below_to_model_levels_on_cells(
+            half_level_field=p_face,
+            model_level_field=p_face_low,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil copy_cell_kdim_field_koff_plus1 - end")
+        log.debug("running stencil copy_half_level_below_to_model_levels_on_cells - end")
 
     def limit_fluxes(
         self,
@@ -254,7 +245,7 @@ class NoLimiter(VerticalLimiter):
 
 
 class SemiMonotonicLimiter(VerticalLimiter):
-    """Class that implements a semi-monotonic vertical parabola limiter."""
+    """Semi-monotonic vertical parabola limiter."""
 
     def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
@@ -265,7 +256,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
         allocator = model_backends.get_allocator(self._backend)
         self._k_field = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=allocator
-        )  # TODO(dastrm): should be KHalfDim
+        )
         self._l_limit = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, dtype=gtx.int32, allocator=allocator
         )
@@ -323,7 +314,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
         self,
         *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_face: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_face: fa.CellKHalfField[ta.wpfloat],
         p_face_up: fa.CellKField[ta.wpfloat],
         p_face_low: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
@@ -361,18 +352,18 @@ class SemiMonotonicLimiter(VerticalLimiter):
 
 
 class VerticalAdvection(abc.ABC):
-    """Class that does one vertical tracer_advection step."""
+    """Abstract base class for vertical tracer advection."""
 
     @abc.abstractmethod
     def run(
         self,
         *,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool = False,
     ) -> None:
@@ -400,7 +391,7 @@ class VerticalAdvection(abc.ABC):
 
 
 class NoAdvection(VerticalAdvection):
-    """Class that implements disabled vertical tracer_advection."""
+    """Disable vertical tracer advection."""
 
     def __init__(
         self,
@@ -422,9 +413,9 @@ class NoAdvection(VerticalAdvection):
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         # stencils
-        self._copy_cell_kdim_field = model_options.setup_program(
+        self._copy_field_on_cell_k = model_options.setup_program(
             backend=backend,
-            program=copy_cell_kdim_field,
+            program=generic_math_operations.copy_field_on_cell_k,
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
@@ -447,12 +438,12 @@ class NoAdvection(VerticalAdvection):
     def run(
         self,
         *,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool = False,
     ) -> None:
@@ -462,29 +453,34 @@ class NoAdvection(VerticalAdvection):
             even_timestep=even_timestep
         )
 
-        log.debug("running stencil copy_cell_kdim_field - start")
-        self._copy_cell_kdim_field(
-            field_in=p_tracer_now,
-            field_out=p_tracer_new,
+        log.debug("running stencil copy_field_on_cell_k - start")
+        self._copy_field_on_cell_k(
+            field=p_tracer_now,
+            output_field=p_tracer_new,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil copy_cell_kdim_field - end")
+        log.debug("running stencil copy_field_on_cell_k - end")
         log.debug("vertical tracer_advection run - end")
 
 
 class FiniteVolume(VerticalAdvection):
-    """Class that defines a finite volume vertical tracer_advection scheme."""
+    """
+    Abstract base class for finite-volume vertical tracer advection schemes.
+    Implements the two-step update pattern: subclasses supply
+    ``_compute_numerical_flux`` (flux reconstruction) and ``_update_unknowns``
+    (tracer field integration).
+    """
 
     def run(
         self,
         *,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool = False,
     ) -> None:
@@ -515,10 +511,10 @@ class FiniteVolume(VerticalAdvection):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None: ...
@@ -531,14 +527,14 @@ class FiniteVolume(VerticalAdvection):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None: ...
 
 
 class FirstOrderUpwind(FiniteVolume):
-    """Class that does one vertical first-order accurate upwind finite volume tracer_advection step."""
+    """First-order upwind finite-volume vertical tracer advection."""
 
     def __init__(
         self,
@@ -574,7 +570,7 @@ class FirstOrderUpwind(FiniteVolume):
             extend={dims.KDim: 1},
             dtype=gtx.int32,
             allocator=model_backends.get_allocator(self._backend),
-        )  # TODO(dastrm): should be KHalfDim
+        )
 
         # stencils
         self._compute_vertical_tracer_flux_upwind = model_options.setup_program(
@@ -618,10 +614,10 @@ class FirstOrderUpwind(FiniteVolume):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None:
@@ -656,7 +652,7 @@ class FirstOrderUpwind(FiniteVolume):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None:
@@ -683,7 +679,7 @@ class FirstOrderUpwind(FiniteVolume):
 
 
 class PiecewiseParabolicMethod(FiniteVolume):
-    """Class that does one vertical PPM finite volume tracer_advection step."""
+    """Piecewise Parabolic Method (PPM) vertical finite-volume tracer advection scheme."""
 
     def __init__(
         self,
@@ -716,16 +712,19 @@ class PiecewiseParabolicMethod(FiniteVolume):
         allocator = model_backends.get_allocator(self._backend)
         self._k_field = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=allocator
-        )  # TODO(dastrm): should be KHalfDim
+        )
+        self._k_half_field = data_alloc.index_field(
+            self._grid, dims.KHalfDim, dtype=gtx.int32, allocator=allocator
+        )
         self._z_cfl = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        )  # TODO(dastrm): should be KHalfDim
+            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
+        )
         self._z_slope = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
         self._z_face = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        )  # TODO(dastrm): should be KHalfDim
+            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
+        )
         self._z_face_up = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
@@ -746,9 +745,9 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._iadv_slev_jt = 0
 
         # stencils
-        self._init_constant_cell_kdim_field = model_options.setup_program(
+        self._set_constant_on_half_levels_on_cells = model_options.setup_program(
             backend=self._backend,
-            program=init_constant_cell_kdim_field,
+            program=vertical_operations.set_constant_on_half_levels_on_cells,
             constant_args={
                 "value": 0.0,
             },
@@ -763,7 +762,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=compute_ppm4gpu_courant_number,
             constant_args={
-                "k": self._k_field,
+                "k_half": self._k_half_field,
                 "slevp1_ti": self._slevp1_ti,
                 "nlev": self._nlev,
                 "dbl_eps": constants.DBL_EPS,
@@ -807,9 +806,9 @@ class PiecewiseParabolicMethod(FiniteVolume):
             },
             offset_provider=self._grid.connectivities,
         )
-        self._copy_cell_kdim_field = model_options.setup_program(
+        self._copy_model_level_below_to_half_levels_on_cells = model_options.setup_program(
             backend=self._backend,
-            program=copy_cell_kdim_field,
+            program=vertical_operations.copy_model_level_below_to_half_levels_on_cells,
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(1),
@@ -817,9 +816,9 @@ class PiecewiseParabolicMethod(FiniteVolume):
             offset_provider=self._grid.connectivities,
         )
 
-        self._copy_cell_kdim_field_koff_minus1 = model_options.setup_program(
+        self._copy_model_level_above_to_half_levels_on_cells = model_options.setup_program(
             backend=self._backend,
-            program=copy_cell_kdim_field_koff_minus1,
+            program=vertical_operations.copy_model_level_above_to_half_levels_on_cells,
             vertical_sizes={
                 "vertical_start": gtx.int32(self._grid.num_levels),
                 "vertical_end": gtx.int32(self._grid.num_levels + 1),
@@ -840,7 +839,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=compute_ppm4gpu_fractional_flux,
             constant_args={
-                "k": self._k_field,
+                "k_half": self._k_half_field,
                 "slev": self._slev,
             },
             vertical_sizes={
@@ -853,7 +852,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=compute_ppm4gpu_integer_flux,
             constant_args={
-                "k": self._k_field,
+                "k_half": self._k_half_field,
                 "slev": self._slev,
             },
             vertical_sizes={
@@ -894,10 +893,10 @@ class PiecewiseParabolicMethod(FiniteVolume):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None:
@@ -909,13 +908,13 @@ class PiecewiseParabolicMethod(FiniteVolume):
 
         ## compute density-weighted Courant number
 
-        log.debug("running stencil init_constant_cell_kdim_field - start")
-        self._init_constant_cell_kdim_field(
+        log.debug("running stencil set_constant_on_half_levels_on_cells - start")
+        self._set_constant_on_half_levels_on_cells(
             field=self._z_cfl,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil init_constant_cell_kdim_field - end")
+        log.debug("running stencil set_constant_on_half_levels_on_cells - end")
 
         log.debug("running stencil compute_ppm4gpu_courant_number - start")
         self._compute_ppm4gpu_courant_number(
@@ -973,24 +972,24 @@ class PiecewiseParabolicMethod(FiniteVolume):
         log.debug("running stencil compute_ppm_quadratic_face_values - end")
 
         # compute highest face value
-        log.debug("running stencil copy_cell_kdim_field - start")
-        self._copy_cell_kdim_field(
-            field_in=p_tracer_now,
-            field_out=self._z_face,
+        log.debug("running stencil copy_model_level_below_to_half_levels_on_cells - start")
+        self._copy_model_level_below_to_half_levels_on_cells(
+            model_level_field=p_tracer_now,
+            half_level_field=self._z_face,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil copy_cell_kdim_field - end")
+        log.debug("running stencil copy_model_level_below_to_half_levels_on_cells - end")
 
         # compute lowest face value
-        log.debug("running stencil copy_cell_kdim_field_koff_minus1 - start")
-        self._copy_cell_kdim_field_koff_minus1(
-            field_in=p_tracer_now,
-            field_out=self._z_face,
+        log.debug("running stencil copy_model_level_above_to_half_levels_on_cells - start")
+        self._copy_model_level_above_to_half_levels_on_cells(
+            model_level_field=p_tracer_now,
+            half_level_field=self._z_face,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil copy_cell_kdim_field_koff_minus1 - end")
+        log.debug("running stencil copy_model_level_above_to_half_levels_on_cells - end")
 
         # compute all other face values
         log.debug("running stencil compute_ppm_quartic_face_values - start")
@@ -1077,7 +1076,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None:

@@ -28,6 +28,16 @@ __all__ = [
 _TEST_LEVELS = ("any", "unit", "integration", "validation")
 
 
+@pytest.fixture(autouse=True)
+def _clear_decomposition_cache():
+    yield
+    from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
+        mpi_decomposition,
+    )
+
+    mpi_decomposition.clear_caches()
+
+
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
     config.addinivalue_line(

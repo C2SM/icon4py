@@ -31,6 +31,7 @@ from icon4py.model.common.states import (
     nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
+    tracer_prep_adv_states as prep_adv_states,
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -64,7 +65,7 @@ class DriverStates(NamedTuple):
     solve_nonhydro_diagnostic: nonhydro_states.DiagnosticStateNonHydro | None
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
     tracer_advection_diagnostic: tracer_advection_states.AdvectionDiagnosticState | None
-    prep_tracer_advection_prognostic: tracer_advection_states.AdvectionPrepAdvState | None
+    prep_tracer_advection_prognostic: prep_adv_states.TracerPrepAdvState | None
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     tracers: common_utils.TimeStepPair[tracer_states.TracerState]
     diagnostic: diagnostics.DiagnosticState
@@ -178,6 +179,11 @@ class DriverTimers(enum.Enum):
     SOLVE_NH = "solve_nh"
     DIFFUSION_FIRST_STEP = "diffusion_first_step"
     DIFFUSION = "diffusion"
+    #: assembly of the output state: diagnostics computation + host transfer (every step)
+    OUTPUT_ASSEMBLE = "output_assemble"
+    #: handover to the IO monitor: gather/halo stripping + file writing (writes only at
+    #: capture steps; a near-zero sample otherwise)
+    OUTPUT_STORE = "output_store"
 
 
 @dataclasses.dataclass
@@ -196,8 +202,17 @@ class TimerCollection:
 
     def show_timer_report(
         self,
+        total_wall_time: float,
     ) -> None:
+        """Log the per-timer statistics.
+
+        ``total_wall_time`` is the wall-clock duration of the whole simulation, in
+        seconds; an extra column reports each timer's cumulative time as a percentage
+        of it. The percentages need not sum to 100: the difference is time spent
+        outside any timer.
+        """
         log.info("===== ICON4Py timer report =====")
+        wall_time = total_wall_time if total_wall_time > 0 else None
         table_titles = (
             f"|{'timer name':^30}|"
             f"{'no. of times called':^23}|"
@@ -205,9 +220,11 @@ class TimerCollection:
             f"{'std. deviation (s)':^23}|"
             f"{'min time (s)':^23}|"
             f"{'max time (s)':^23}|"
+            f"{'% of wall time':^23}|"
         )
         log.info(table_titles)
         log.info("-" * len(table_titles))
+        timed_total = 0.0
         for timer_name, timer in self.timers.items():
             times = []
             for r in timer.results:
@@ -215,6 +232,8 @@ class TimerCollection:
                     r.capture()
                 times.append(r.elapsed())
             if len(times) > 0:
+                timed_total += sum(times)
+                share = f"{100 * sum(times) / wall_time:.2f}" if wall_time is not None else "n/a"
                 log.info(
                     f"|{timer_name:^30}|"
                     f"{len(times):^23}|"
@@ -222,45 +241,45 @@ class TimerCollection:
                     f"{statistics.stdev(times) if len(times) > 1 else 0:^23.8f}|"
                     f"{min(times):^23.8f}|"
                     f"{max(times):^23.8f}|"
+                    f"{share:^23}|"
                 )
             else:
                 log.info(
-                    f"|{timer_name:^30}|{'not started':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|"
+                    f"|{timer_name:^30}|{'not started':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|"
                 )
+        if wall_time is not None:
+            log.info("-" * len(table_titles))
+            log.info(f"total wall-clock time of the simulation: {wall_time:.8f} s")
+            timed_share = 100 * timed_total / wall_time
+            log.info(
+                f"timed regions total: {timed_total:.8f} s  "
+                f"({timed_share:.2f}% of wall time; {100 - timed_share:.2f}% untimed)"
+            )
 
 
-def initialize_prep_tracer_advection(
-    grid: base_grid.Grid,
-    allocator: gtx_typing.Allocator | None,
+def link_tracer_prep_adv_to_dycore(
     *,
-    tracer_advection_enabled: bool,
-    prep_adv: dycore_states.PrepAdvection | None,
-) -> tracer_advection_states.AdvectionPrepAdvState | None:
-    """Build the tracer-advection prep state, sharing the dycore's accumulated buffers.
-
-    Tracer advection reads the velocities/mass fluxes that the dycore accumulates over
-    the dynamics substeps (``lprep_adv``), so it must reference the dycore's
-    ``PrepAdvection`` buffers (ICON's ``mass_flx_ic`` is the vertical mass flux at cell
-    half levels). Without a dycore there is nothing accumulating them, so fall back to
-    zero fields.
+    grid: base_grid.Grid,
+    allocator: gtx_typing.Allocator,
+    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
+    solve_nonhydro_enabled: bool,
+) -> dycore_states.PrepAdvection | None:
     """
-    if not tracer_advection_enabled:
+    Build the tracer-advection prep adv state for dycore.
+    If tracer advection is enabled, both tracer-advection and dycore prep adv state share the same buffer.
+    """
+    if not solve_nonhydro_enabled:
         return None
-    if prep_adv is not None:
-        return tracer_advection_states.AdvectionPrepAdvState(
-            vn_traj=prep_adv.vn_traj,
-            mass_flx_me=prep_adv.mass_flx_me,
-            mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+    if tracer_prep_adv_state is not None:
+        return dycore_states.PrepAdvection(
+            vn_traj=tracer_prep_adv_state.vn_traj,
+            mass_flx_me=tracer_prep_adv_state.mass_flx_me,
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=tracer_prep_adv_state.mass_flx_ic,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
+                grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.wpfloat
+            ),
         )
-    return tracer_advection_states.AdvectionPrepAdvState(
-        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-        # vertical mass flux at cell half levels: one more level than KDim, like the
-        # dycore's dynamical_vertical_mass_flux_at_cells_on_half_levels it stands in for
-        mass_flx_ic=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
-    )
+    return dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
 
 
 def assemble_driver_states(
@@ -275,13 +294,14 @@ def assemble_driver_states(
     diagnostic_state: diagnostics.DiagnosticState,
     experiment_config: driver_config.ExperimentConfig,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
+    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
 ) -> DriverStates:
     prognostic_state_next = prognostics.PrognosticState(
-        vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
-        w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),
-        exner=data_alloc.as_field(prognostic_state_now.exner, allocator=allocator),
-        rho=data_alloc.as_field(prognostic_state_now.rho, allocator=allocator),
-        theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
+        vn=data_alloc.reallocate(prognostic_state_now.vn, allocator=allocator),
+        w=data_alloc.reallocate(prognostic_state_now.w, allocator=allocator),
+        exner=data_alloc.reallocate(prognostic_state_now.exner, allocator=allocator),
+        rho=data_alloc.reallocate(prognostic_state_now.rho, allocator=allocator),
+        theta_v=data_alloc.reallocate(prognostic_state_now.theta_v, allocator=allocator),
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
     tracer_states = common_utils.TimeStepPair(
@@ -320,10 +340,11 @@ def assemble_driver_states(
         if diffusion_enabled
         else None
     )
-    prep_adv = (
-        dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
-        if solve_nonhydro_enabled
-        else None
+    prep_adv = link_tracer_prep_adv_to_dycore(
+        grid=grid,
+        allocator=allocator,
+        tracer_prep_adv_state=tracer_prep_adv_state,
+        solve_nonhydro_enabled=solve_nonhydro_enabled,
     )
     tracer_advection_diagnostic_state = (
         tracer_advection_states.initialize_advection_diagnostic_state(
@@ -332,17 +353,11 @@ def assemble_driver_states(
         if tracer_advection_enabled
         else None
     )
-    prep_tracer_adv = initialize_prep_tracer_advection(
-        grid,
-        allocator,
-        tracer_advection_enabled=tracer_advection_enabled,
-        prep_adv=prep_adv,
-    )
 
     return DriverStates(
         prep_advection_prognostic=prep_adv,
         solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
-        prep_tracer_advection_prognostic=prep_tracer_adv,
+        prep_tracer_advection_prognostic=tracer_prep_adv_state,
         tracer_advection_diagnostic=tracer_advection_diagnostic_state,
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,

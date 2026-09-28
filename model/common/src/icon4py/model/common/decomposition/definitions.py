@@ -17,6 +17,7 @@ from enum import Enum
 from typing import Any, ClassVar, Literal, Protocol, overload, runtime_checkable
 
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base
@@ -174,6 +175,32 @@ class DecompositionInfo:
 
     def is_distributed(self) -> bool:
         return max(self._halo_levels[dims.CellDim]).item() > DecompositionFlag.OWNED
+
+    def as_host(self) -> DecompositionInfo:
+        """This decomposition info with host (numpy) buffers.
+
+        Returns ``self`` if all buffers already live on host, otherwise a new instance
+        with numpy copies. Host-side consumers (e.g. IO) convert once through this
+        instead of transferring device buffers at every access.
+        """
+        arrays = [
+            array
+            for dim in self._global_index
+            for array in (self._global_index[dim], self._owner_mask[dim], self._halo_levels[dim])
+            if array is not None
+        ]
+        if all(isinstance(array, np.ndarray) for array in arrays):
+            return self
+        host = DecompositionInfo()
+        for dim in self._global_index:
+            halo_levels = self._halo_levels[dim]
+            host.set_dimension(
+                dim,
+                data_alloc.as_numpy(self._global_index[dim]),
+                data_alloc.as_numpy(self._owner_mask[dim]),
+                None if halo_levels is None else data_alloc.as_numpy(halo_levels),
+            )
+        return host
 
     def local_index(
         self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
@@ -607,9 +634,10 @@ def create_reduction(
     process_props: ProcessProperties, decomposition_info: DecompositionInfo
 ) -> Reductions:
     """
-    Create a Global Reduction depending on the runtime size.
+    Create a reductions object depending on the runtime size.
 
-    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+    For a single-rank run, returns a `SingleNodeReductions` object.
+    For a distributed run, returns a `GlobalReductions` object.
     """
     raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
 
@@ -673,7 +701,3 @@ class ParallelLogger(logging.Filter):
         return record.levelno >= logging.WARNING or (
             self._print_distributed_debug_msg and record.levelno == logging.DEBUG
         )
-
-
-single_node_exchange = SingleNodeExchange()
-single_node_reductions = SingleNodeReductions()

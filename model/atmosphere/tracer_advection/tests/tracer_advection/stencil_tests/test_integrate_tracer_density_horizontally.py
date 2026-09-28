@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_density
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -29,9 +28,9 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
         "z_tracer_new_dsl",
     )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         p_mass_flx_e: np.ndarray,
         geofac_div: np.ndarray,
@@ -43,7 +42,8 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
         nsub: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        c2e = connectivities[dims.C2EDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        c2e = connectivities[dims.C2E]
         p_mass_flx_e_c2e = p_mass_flx_e[c2e]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         z_tracer_mflx_c2e = z_tracer_mflx[c2e]
@@ -62,18 +62,18 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
             z_tracer_new_dsl=z_tracer_new_dsl,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        z_rhofluxdiv_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_mflx = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_rhofluxdiv_c_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_fluxdiv_c_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_rho_new_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_new_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_mass_flx_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        z_rhofluxdiv_c = data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_tracer_mflx = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        z_rho_now = data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_tracer_now = data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_rhofluxdiv_c_out = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_fluxdiv_c_dsl = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_rho_new_dsl = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_tracer_new_dsl = data_alloc.zero_field(dims.CellDim, dims.KDim)
         z_dtsub = 0.5
         nsub = 1
         return dict(

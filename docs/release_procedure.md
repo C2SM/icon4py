@@ -36,8 +36,8 @@ To see the current list of packages:
 
 ### 1. Bump the version
 
-Create a new branch for bumping the version. Open PR against the main branch
-with the bumped versions.
+Create a new branch for bumping the version. You can find the current icon4py version in the main pyproject.toml file.
+Open PR against the main branch with the bumped versions.
 
 Use the `bump-versions` script to update all packages to the new version:
 
@@ -52,11 +52,15 @@ This updates `version` in every `pyproject.toml` and `__init__.py`, and also
 updates cross-package dependency constraints (e.g., `icon4py-common~=0.1.0` ->
 `icon4py-common~=0.2.0`).
 
+Before making changes, the script verifies that every package `pyproject.toml`
+has a `[tool.bumpversion]` section, all `icon4py.*` package versions agree, and all pinned
+cross-package dependency constraints use that version.
+
 Use `--dry-run` to preview changes without writing files.
 
 ### 2. Create a GitHub Release
 
-Once the all PRs for the new release, including the one frome the previous step,
+Once all PRs for the new release, including the one frome the previous step,
 are merged to main:
 
 1. Go to **Releases -> Draft a new release**.
@@ -71,7 +75,7 @@ are merged to main:
 Publishing the GitHub Release automatically triggers the
 `deploy-release.yml` workflow, which publishes all packages to TestPyPI.
 
-1. Go to **Actions -> Deploy Python Distribution** and wait for the
+1. Go to **GitHub Actions -> Deploy Python Distribution** and wait for the
    `publish-test-pypi` jobs to complete.
 
 2. Verify the packages appear on TestPyPI, e.g.:
@@ -83,11 +87,13 @@ Publishing the GitHub Release automatically triggers the
    pip install --index-url https://test.pypi.org/simple/ icon4py==<new_version>
    ```
 
-   **Note:** TestPyPI may not have all transitive dependencies. Use
-   `--extra-index-url https://pypi.org/simple/` as a fallback.
-   You may also need `--index-strategy unsafe-best-match` to allow picking the
-   best match from pypi.org and test.pypi.org. Finally, `--refresh` may be
-   needed to update cached package information.
+   If installation fails, try again with PyPI as an extra index because TestPyPI may not have all transitive dependencies:
+
+   ```bash
+   pip install --extra-index-url https://pypi.org/simple -i https://test.pypi.org/simple icon4py==<new_version>
+   ```
+
+   For `uv pip install`, also use `--index-strategy unsafe-best-match` to allow picking the best match from pypi.org and test.pypi.org. Finally, `--refresh` may be needed to update cached package information.
 
    Test in dependent projects if needed, like in ICON.
 
@@ -95,7 +101,7 @@ Publishing the GitHub Release automatically triggers the
 
 Once TestPyPI is verified, manually trigger the production publish:
 
-1. Go to **Actions -> Deploy Python Distribution**.
+1. Go to **GitHub Actions -> Deploy Python Distribution**.
 2. Click **Run workflow** on the `main` branch.
 3. Wait for the `publish-pypi` jobs to complete.
 4. Verify on <https://pypi.org/project/icon4py/>.

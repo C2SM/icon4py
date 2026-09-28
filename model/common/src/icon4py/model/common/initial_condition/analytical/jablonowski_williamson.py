@@ -11,7 +11,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import math
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
@@ -22,7 +22,6 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.diagnostic_calculations import pressure as pressure_diagnostics
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
@@ -30,8 +29,9 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.interpolation import interpolation_attributes
-from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
+from icon4py.model.common.interpolation.stencils import interpolate_cell_field_to_edge
 from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.physics.thermodynamics import compute_pressure
 from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -51,7 +51,7 @@ class JablonowskiWilliamsonConfig:
     # reads zp_ape from the nh_testcase_nml
     # The default values are from mo_nh_jabw_exp.f90 and mo_nh_testcases_nml.f90
     p_sfc: float = 100000.0
-    # amplitude of the u-perturbation [m/s] (jw_up); jabw_s resets it to 0.0.
+    # amplitude of the u-perturbation [m/s] (jw_up); jabw_s resets it to 0.0 (matches the ICON namelist default).
     baroclinic_amplitude: float = 1.0
     u0: float = 35.0
     temp0: float = 288.0
@@ -72,16 +72,6 @@ class JablonowskiWilliamsonConfig:
     global_moisture_content: float = 25.006
     # rescale qv to global_moisture_content (APE only; Fortran opt_global_moist).
     normalize_global_moisture: bool = False
-
-    fortran_name_map: ClassVar[dict[str, str]] = {
-        "jw_up": "baroclinic_amplitude",
-        "jw_u0": "u0",
-        "jw_temp0": "temp0",
-        "zp_ape": "p_sfc",
-        "rh_at_1000hpa": "rh_at_1000hpa",
-        "qv_max": "qv_max",
-        "ztmc_ape": "global_moisture_content",
-    }
 
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
@@ -223,7 +213,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         )
     log.info("Newton iteration completed.")
 
-    cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
+    interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(backend)(
         in_field=eta_v,
         coeff=c_lin_e,
         out_field=eta_v_at_edge,
@@ -297,7 +287,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         virtual_temperature = gtx.as_field(
             (dims.CellDim, dims.KDim), theta_v_ndarray * exner_ndarray, allocator=allocator
         )
-        pressure_ndarray = pressure_diagnostics.diagnose_pressure_surface_to_top_ndarray(
+        pressure_ndarray = compute_pressure.compute_surface_and_hydrostatic_pressure_ndarray(
             grid=grid,
             backend=backend,
             allocator=allocator,

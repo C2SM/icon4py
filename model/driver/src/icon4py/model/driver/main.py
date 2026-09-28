@@ -18,6 +18,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
+from icon4py.model.common.io import io as common_io
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 
 
@@ -30,7 +31,16 @@ app = typer.Typer(no_args_is_help=True)
 def main(
     *,
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
-    config_file_path: Annotated[pathlib.Path, typer.Option(help="Configuration file path.")],
+    config_file_path: Annotated[
+        pathlib.Path,
+        typer.Option(
+            help=(
+                "YAML configuration file path. Use "
+                "'scripts/python/convert_fortran_config_to_yaml.py' to generate a YAML configuration from a "
+                "directory of Fortran namelists if conversion from Fortran namelists is needed."
+            )
+        ),
+    ],
     output_path: Annotated[
         pathlib.Path | None,
         typer.Option(help="Optional override output path. Normally read from config."),
@@ -63,19 +73,27 @@ def main(
             help="Write the prognostic and diagnostic fields to output.",
         ),
     ] = False,
+    output_backend: Annotated[
+        common_io.OutputBackend,
+        typer.Option(help="Output file format."),
+    ] = common_io.OutputBackend.ZARR,
+    output_mode: Annotated[
+        common_io.OutputMode,
+        typer.Option(
+            help=(
+                "How ranks write output in distributed runs ('distributed' netCDF "
+                "needs an MPI-parallel netCDF4 installation)."
+            )
+        ),
+    ] = common_io.OutputMode.DISTRIBUTED,
 ) -> None:
     """
     CLI entry point that runs the icon4py driver.
 
-    The configuration is read from ``config_file_path``, the driver is
-    initialized, an initial condition is generated, and the time integration is
-    run.
+    The configuration is read from the YAML file at ``config_file_path``, the
+    driver is initialized, an initial condition is generated, and the time
+    integration is run.
     """
-
-    backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(icon4py_backend)
-    )
-    allocator = model_backends.get_allocator(backend)
 
     process_props = decomposition_defs.get_process_properties(
         decomposition_defs.get_runtype(with_mpi=mpi_decomp.mpi4py is not None)
@@ -86,11 +104,22 @@ def main(
         process_props=process_props,
     )
 
-    config = driver_config.read_experiment_config_from_fortran(config_file_path)
-    driver_overrides: dict[str, object] = {"enable_output": enable_output}
+    config = driver_config.read_experiment_config_from_yaml(config_file_path)
+    driver_overrides: dict[str, object] = {
+        "enable_output": enable_output,
+        "output_backend": output_backend,
+        "output_mode": output_mode,
+    }
     if output_path is not None:
         driver_overrides["output_path"] = output_path
     config = config.with_overrides(driver=driver_overrides)
+
+    backend = model_options.customize_backend(
+        program=None,
+        backend=driver_utils.get_backend_from_name(icon4py_backend),
+        backend_config=config.driver.backend_config,
+    )
+    allocator = model_backends.get_allocator(backend)
 
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

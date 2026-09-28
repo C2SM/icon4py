@@ -85,6 +85,7 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
     exchange = decomp_defs.create_exchange(process_props, decomposition_info)
+    assert experiment.config.interpolation.max_nudging_coefficient is not None
     diffusion = diffusion_.Diffusion(
         grid=icon_grid,
         config=config,
@@ -100,6 +101,8 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
         cell_params=cell_geometry,
         exchange=exchange,
         backend=backend,
+        ndyn_substeps=experiment.config.driver.ndyn_substeps,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: diffusion initialized ")

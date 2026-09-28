@@ -35,15 +35,15 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.vertical import VerticalGridConfig
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 DEFAULT_NUM_LEVELS: Final = 10
 
 
 class SimpleGridData:
-    def __init__(self, on_gpu: bool = False):
-        self.xp = data_alloc.array_ns(on_gpu)
+    def __init__(self, allocator: gtx_typing.Allocator | None = None):
+        self.xp = data_alloc.import_array_ns(allocator)
 
     @functools.cached_property
     def c2v_table(self):
@@ -443,8 +443,7 @@ def simple_grid(
         limited_area=False,
     )
 
-    on_gpu = False if allocator is None else device_utils.is_cupy_device(allocator)
-    simple_grid_data = SimpleGridData(on_gpu=on_gpu)
+    simple_grid_data = SimpleGridData(allocator=allocator)
 
     neighbor_tables = {
         dims.C2V: simple_grid_data.c2v_table,
