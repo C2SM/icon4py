@@ -11,7 +11,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import math
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
@@ -72,16 +72,6 @@ class JablonowskiWilliamsonConfig:
     global_moisture_content: float = 25.006
     # rescale qv to global_moisture_content (APE only; Fortran opt_global_moist).
     normalize_global_moisture: bool = False
-
-    fortran_name_map: ClassVar[dict[str, str]] = {
-        "jw_up": "baroclinic_amplitude",
-        "jw_u0": "u0",
-        "jw_temp0": "temp0",
-        "zp_ape": "p_sfc",
-        "rh_at_1000hpa": "rh_at_1000hpa",
-        "qv_max": "qv_max",
-        "ztmc_ape": "global_moisture_content",
-    }
 
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
