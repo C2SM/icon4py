@@ -24,8 +24,8 @@ from icon4py.model.common.dimension import C2E, C2E2CO, E2C, E2C2EO, E2V
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_vertex import (
     _interpolate_cell_field_to_vertex,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp import (
-    _interpolate_to_cell_center_vp,
+from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
+    _interpolate_to_cell_center,
 )
 from icon4py.model.common.math.stencils.compute_curl import _compute_curl
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -403,11 +403,11 @@ def _compute_advective_normal_wind_tendency(
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
 ) -> fa.EdgeKField[ta.vpfloat]:
     #: intermediate variable horizontal_kinetic_energy_at_cells_on_model_levels is originally declared as z_ekinh in ICON
-    horizontal_kinetic_energy_at_cells_on_model_levels = _interpolate_to_cell_center_vp(
-        horizontal_kinetic_energy_at_edges_on_model_levels, e_bln_c_s
-    )
     horizontal_kinetic_energy_at_cells_on_model_levels = astype(
-        horizontal_kinetic_energy_at_cells_on_model_levels, vpfloat
+        _interpolate_to_cell_center(
+            astype(horizontal_kinetic_energy_at_edges_on_model_levels, wpfloat), e_bln_c_s
+        ),
+        vpfloat,
     )
 
     (

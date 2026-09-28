@@ -10,13 +10,15 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.physics.thermodynamics.compute_energy import (
+    _compute_dry_static_energy,
     compute_internal_energy_per_area,
 )
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 class TestComputeInternalEnergyPerArea(stencil_tests.StencilTest):
@@ -46,6 +48,48 @@ class TestComputeInternalEnergyPerArea(stencil_tests.StencilTest):
             qice=data_alloc.constant_field(1.09462e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho=data_alloc.constant_field(0.83444, dims.CellDim, dims.KDim, dtype=wpfloat),
             dz=data_alloc.constant_field(249.569, dims.CellDim, dims.KDim, dtype=wpfloat),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+            out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+        )
+
+
+class TestComputeDryStaticEnergy(stencil_tests.StencilTest):
+    PROGRAM = _compute_dry_static_energy
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        temperature: np.ndarray,
+        height_above_ground: np.ndarray,
+        grav: float,
+        **kwargs,
+    ) -> dict:
+        dry_static_energy = reference_funcs.compute_dry_static_energy_numpy(
+            temperature,
+            height_above_ground,
+            grav=grav,
+        )
+        return dict(out=dry_static_energy)
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        temperature = data_alloc.random_field(
+            dims.CellDim, dims.KDim, low=180.0, high=320.0, dtype=wpfloat
+        )
+        height_above_ground = data_alloc.random_field(
+            dims.CellDim, dims.KDim, low=0.0, high=3.0e4, dtype=wpfloat
+        )
+        return dict(
+            temperature=temperature,
+            height_above_ground=height_above_ground,
+            grav=constants.GRAV,
             domain={
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
                 dims.KDim: (0, gtx.int32(grid.num_levels)),

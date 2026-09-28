@@ -25,16 +25,18 @@ def _compute_tangential_wind(
 
     Working-precision port of ``rbf_vec_interpol_edge`` in ICON's
     ``mo_intp_rbf.f90`` (``rbf_vec_interpol_edge_lib`` in iconmath's
-    ``mo_lib_intp_rbf.F90``):
-
-        vt(e, k) = sum over the four E2C2E neighbor edges e' of
-                   rbf_vec_coeff_e(e, e') * vn(e', k)
-
-    The stencil is agnostic of the vertical staggering: it can be applied to
-    half-level input (e.g. vn_ie -> vt_ie) as well as full-level input
-    (vn -> vt); the K extent is just a domain argument.
+    ``mo_lib_intp_rbf.F90``).
     """
     return neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=dims.E2C2EDim)
+
+
+@gtx.field_operator
+def _compute_tangential_wind_on_half_levels(
+    vn_ie: fa.EdgeKHalfField[wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
+) -> fa.EdgeKHalfField[wpfloat]:
+    """Half-level counterpart of :func:`_compute_tangential_wind` (vn_ie -> vt_ie)."""
+    return neighbor_sum(rbf_vec_coeff_e * vn_ie(E2C2E), axis=dims.E2C2EDim)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
 from icon4py.model.common.grid import (
@@ -75,17 +75,6 @@ class WeismanKlempConfig:
     bubble_amplitude: float = 2.0
     #: normalized radius below which the bubble perturbation is applied
     bubble_radius: float = 1.0
-
-    fortran_name_map: ClassVar[dict[str, str]] = {
-        "qv_max_wk": "qv_max",
-        "u_infty_wk": "max_wind_speed",
-        "bub_hor_width": "bubble_horizontal_width",
-        "bub_ver_width": "bubble_vertical_width",
-        "bubctr_lon": "bubble_center_x",
-        "bubctr_lat": "bubble_center_y",
-        "bubctr_z": "bubble_center_z",
-        "bub_amp": "bubble_amplitude",
-    }
 
 
 def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
