@@ -256,20 +256,29 @@ def compute_horizontal_velocity_quantities_and_fluxes(
 def _compute_averaged_vn_and_fluxes(
     substep_and_spatially_averaged_vn: fa.EdgeKField[ta.wpfloat],
     substep_averaged_mass_flux: fa.EdgeKField[ta.wpfloat],
+    tangential_wind: fa.EdgeKField[ta.vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
+    ddxn_z_full: fa.EdgeKField[ta.vpfloat],
+    ddxt_z_full: fa.EdgeKField[ta.vpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     prepare_fluxes_for_advection: bool,
     at_first_substep: bool,
+    recompute_contravariant_correction: bool,
     r_nsubsteps: ta.wpfloat,
+    nflatlev: gtx.int32,
 ) -> tuple[
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
 ]:
     spatially_averaged_vn = _spatially_average_flux_or_velocity(e_flx_avg, vn)
 
@@ -296,12 +305,24 @@ def _compute_averaged_vn_and_fluxes(
             )
         )
 
+    if recompute_contravariant_correction:
+        tangential_wind = astype(
+            _compute_tangential_wind(vn=vn, rbf_vec_coeff_e=rbf_vec_coeff_e), vpfloat
+        )
+        contravariant_correction_at_edges_on_model_levels = concat_where(
+            nflatlev <= dims.KDim,
+            _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
+            contravariant_correction_at_edges_on_model_levels,
+        )
+
     return (
         spatially_averaged_vn,
         mass_flux_at_edges_on_model_levels,
         theta_v_flux_at_edges_on_model_levels,
         substep_and_spatially_averaged_vn,
         substep_averaged_mass_flux,
+        tangential_wind,
+        contravariant_correction_at_edges_on_model_levels,
     )
 
 
@@ -312,14 +333,21 @@ def compute_averaged_vn_and_fluxes(
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     substep_and_spatially_averaged_vn: fa.EdgeKField[ta.wpfloat],
     substep_averaged_mass_flux: fa.EdgeKField[ta.wpfloat],
+    tangential_wind: fa.EdgeKField[ta.vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
+    ddxn_z_full: fa.EdgeKField[ta.vpfloat],
+    ddxt_z_full: fa.EdgeKField[ta.vpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     prepare_fluxes_for_advection: bool,
     at_first_substep: bool,
+    recompute_contravariant_correction: bool,
     r_nsubsteps: ta.wpfloat,
+    nflatlev: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -331,20 +359,29 @@ def compute_averaged_vn_and_fluxes(
     - Calculating mass flux and theta_v flux on edges
     - Optional initialization of tracer advection preparation
     depending on current substep and solver configuration.
+    - Optional recomputation of the tangential wind and the contravariant correction
+    (`itime_scheme >= 5`).
     Args:
         - spatially_averaged_vn: temporally averaged normal wind at edges [m s⁻¹]
         - mass_flux_at_edges_on_model_levels: temporally averaged mass flux at edges [kg m⁻² s⁻¹]
         - theta_v_flux_at_edges_on_model_levels: temporally averaged θ_v flux at edges [K kg m⁻² s⁻¹]
         - substep_and_spatially_averaged_vn: combined substep and spatially averaged vn [m s⁻¹]
         - substep_averaged_mass_flux: substep-averaged mass flux field [kg m⁻² s⁻¹]
+        - tangential_wind: tangential component of the horizontal wind [m s⁻¹]
+        - contravariant_correction_at_edges_on_model_levels: contravariant correction term at edges on model levels [m s⁻¹]
         - e_flx_avg: average energy flux
+        - rbf_vec_coeff_e: radial basis function coefficients for edge vector interpolation
         - vn: normal wind component at edges [m s⁻¹]
         - rho_at_edges_on_model_levels: air density at edges on model levels [kg m⁻³]
         - ddqz_z_full_e: vertical derivative of qz at edges [1/m]
+        - ddxn_z_full: zonal horizontal derivative of scalar field at edges [1/m]
+        - ddxt_z_full: meridional horizontal derivative of scalar field at edges [1/m]
         - theta_v_at_edges_on_model_levels: virtual potential temperature at edges [K]
         - prepare_fluxes_for_advection: whether to prepare fields for tracer advection (True if in preparation phase)
         - at_first_substep: True if currently at the first substep of the time integration
+        - recompute_contravariant_correction: whether to recompute tangential_wind and contravariant_correction_at_edges_on_model_levels from vn
         - r_nsubsteps: reciprocal of the total number of substeps (1 / N)
+        - nflatlev: number of flat vertical levels near the model top
         - horizontal_start: start index of the horizontal domain
         - horizontal_end: end index of the horizontal domain
         - vertical_start: start index of the vertical domain
@@ -355,25 +392,36 @@ def compute_averaged_vn_and_fluxes(
         - theta_v_flux_at_edges_on_model_levels
         - substep_and_spatially_averaged_vn
         - substep_averaged_mass_flux
+        - tangential_wind
+        - contravariant_correction_at_edges_on_model_levels
     """
 
     _compute_averaged_vn_and_fluxes(
         substep_and_spatially_averaged_vn=substep_and_spatially_averaged_vn,
         substep_averaged_mass_flux=substep_averaged_mass_flux,
+        tangential_wind=tangential_wind,
+        contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         e_flx_avg=e_flx_avg,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
         vn=vn,
         rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
         ddqz_z_full_e=ddqz_z_full_e,
+        ddxn_z_full=ddxn_z_full,
+        ddxt_z_full=ddxt_z_full,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         at_first_substep=at_first_substep,
+        recompute_contravariant_correction=recompute_contravariant_correction,
         r_nsubsteps=r_nsubsteps,
+        nflatlev=nflatlev,
         out=(
             spatially_averaged_vn,
             mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels,
             substep_and_spatially_averaged_vn,
             substep_averaged_mass_flux,
+            tangential_wind,
+            contravariant_correction_at_edges_on_model_levels,
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

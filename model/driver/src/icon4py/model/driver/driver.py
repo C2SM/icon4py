@@ -399,7 +399,9 @@ class Icon4pyDriver:
         .corrector for the corrector step) and interpoolated at the end of the
         corrector step to get the final output.
 
-        No other time stepping schemes are currently supported.
+        `TimeSteppingScheme.STABLE` (itime_scheme=5) treats the tendencies the same way.
+        With `TimeSteppingScheme.EXPENSIVE` (itime_scheme=6) both steps recompute their
+        tendencies in every substep, so the swaps do not change the result.
 
         Args:
             diagnostic_state_nh: Diagnostic fields calculated in the dynamical core (SolveNonHydro)

@@ -1775,6 +1775,7 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
     experiment,
     icon_grid,
     at_first_substep,
+    grid_savepoint,
     savepoint_dycore_30_to_38_init,
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
@@ -1783,9 +1784,12 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
+    vertical_params = utils.create_vertical_params(experiment.config.vertical_grid, grid_savepoint)
 
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
 
+    vt = savepoint_dycore_30_to_38_init.vt()
+    z_w_concorr_me = savepoint_dycore_30_to_38_init.z_w_concorr_me()
     z_vn_avg = savepoint_dycore_30_to_38_init.z_vn_avg()
     mass_fl_e = savepoint_dycore_30_to_38_init.mass_fl_e()
     z_theta_v_fl_e = savepoint_dycore_30_to_38_init.z_theta_v_fl_e()
@@ -1805,6 +1809,8 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
     z_theta_v_fl_e_ref = savepoint_dycore_30_to_38_exit.z_theta_v_fl_e()
     vn_traj_ref = savepoint_dycore_30_to_38_exit.vn_traj()
     mass_flx_me_ref = savepoint_dycore_30_to_38_exit.mass_flx_me()
+    vt_ref = savepoint_dycore_30_to_38_exit.vt()
+    z_w_concorr_me_ref = savepoint_dycore_30_to_38_exit.z_w_concorr_me()
 
     compute_horizontal_velocity_quantities.compute_averaged_vn_and_fluxes.with_backend(backend)(
         spatially_averaged_vn=z_vn_avg,
@@ -1812,22 +1818,34 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
         theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
         substep_and_spatially_averaged_vn=vn_traj,
         substep_averaged_mass_flux=mass_flx_me,
+        tangential_wind=vt,
+        contravariant_correction_at_edges_on_model_levels=z_w_concorr_me,
         e_flx_avg=e_flx_avg,
+        rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
         vn=vn,
         rho_at_edges_on_model_levels=z_rho_e,
         ddqz_z_full_e=ddqz_z_full_e,
+        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
+        ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         theta_v_at_edges_on_model_levels=z_theta_v_e,
         prepare_fluxes_for_advection=True,
         at_first_substep=at_first_substep,
+        recompute_contravariant_correction=experiment.config.nonhydrostatic.itime_scheme
+        >= dycore_states.TimeSteppingScheme.STABLE,
         r_nsubsteps=r_nsubsteps,
+        nflatlev=vertical_params.nflatlev,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
+            "E2C2E": icon_grid.get_connectivity("E2C2E"),
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
         },
     )
+
+    assert test_utils.dallclose(vt_ref.asnumpy(), vt.asnumpy())
+    assert test_utils.dallclose(z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy())
 
     assert test_utils.dallclose(
         z_vn_avg_ref.asnumpy(),
@@ -1857,6 +1875,94 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
         mass_flx_me_ref.asnumpy(),
         mass_flx_me.asnumpy(),
         rtol=1.0e-6,
+    )
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment_description, step_date_init, step_date_exit",
+    [
+        (
+            test_defs.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            test_defs.Experiments.EXCLAIM_APE,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
+    ],
+)
+def test_compute_averaged_vn_and_fluxes_recomputes_tangential_wind_and_contravariant_correction(  # noqa: PLR0917 [too-many-positional-arguments]
+    step_date_init,
+    step_date_exit,
+    experiment,
+    icon_grid,
+    grid_savepoint,
+    savepoint_dycore_30_to_38_init,
+    savepoint_dycore_30_to_38_exit,
+    interpolation_savepoint,
+    metrics_savepoint,
+    savepoint_nonhydro_init,
+    backend,
+):
+    # ICON computes `vt` and `z_w_concorr_me` in the corrector (itime_scheme >= 5) with the same
+    # expressions as in the predictor, so the predictor savepoints (istep = 1) are the reference.
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    vertical_params = utils.create_vertical_params(experiment.config.vertical_grid, grid_savepoint)
+    nflatlev = vertical_params.nflatlev
+
+    vt = savepoint_dycore_30_to_38_init.vt()
+    z_w_concorr_me = savepoint_dycore_30_to_38_init.z_w_concorr_me()
+
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+
+    vt_ref = savepoint_dycore_30_to_38_exit.vt()
+    z_w_concorr_me_ref = savepoint_dycore_30_to_38_exit.z_w_concorr_me()
+
+    compute_horizontal_velocity_quantities.compute_averaged_vn_and_fluxes.with_backend(backend)(
+        spatially_averaged_vn=savepoint_dycore_30_to_38_init.z_vn_avg(),
+        mass_flux_at_edges_on_model_levels=savepoint_dycore_30_to_38_init.mass_fl_e(),
+        theta_v_flux_at_edges_on_model_levels=savepoint_dycore_30_to_38_init.z_theta_v_fl_e(),
+        substep_and_spatially_averaged_vn=savepoint_nonhydro_init.vn_traj(),
+        substep_averaged_mass_flux=savepoint_nonhydro_init.mass_flx_me(),
+        tangential_wind=vt,
+        contravariant_correction_at_edges_on_model_levels=z_w_concorr_me,
+        e_flx_avg=interpolation_savepoint.e_flx_avg(),
+        rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
+        vn=savepoint_dycore_30_to_38_init.vn(),
+        rho_at_edges_on_model_levels=savepoint_dycore_30_to_38_init.z_rho_e(),
+        ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
+        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
+        ddxt_z_full=metrics_savepoint.ddxt_z_full(),
+        theta_v_at_edges_on_model_levels=savepoint_dycore_30_to_38_init.z_theta_v_e(),
+        prepare_fluxes_for_advection=False,
+        at_first_substep=True,
+        recompute_contravariant_correction=True,
+        r_nsubsteps=1.0 / experiment.config.driver.ndyn_substeps,
+        nflatlev=nflatlev,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
+        offset_provider={
+            "E2C2E": icon_grid.get_connectivity("E2C2E"),
+            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
+        },
+    )
+
+    assert test_utils.dallclose(
+        vt_ref.asnumpy()[horizontal_start:horizontal_end],
+        vt.asnumpy()[horizontal_start:horizontal_end],
+        rtol=1.0e-6,
+    )
+    assert test_utils.dallclose(
+        z_w_concorr_me_ref.asnumpy()[horizontal_start:horizontal_end, nflatlev:],
+        z_w_concorr_me.asnumpy()[horizontal_start:horizontal_end, nflatlev:],
+        rtol=1.0e-7,
     )
 
 
@@ -2160,6 +2266,9 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
         nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+        contravariant_correction_at_edges_on_model_levels=data_alloc.zero_field(
+            icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
+        ),
         exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
         current_exner=current_exner,
         current_rho=current_rho,
@@ -2175,6 +2284,9 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         rayleigh_damping_factor=rayleigh_damping_factor,
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         prepare_fluxes_for_advection=savepoint_nonhydro_init.get_metadata("prep_adv").get(
@@ -2188,10 +2300,17 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
         rayleigh_type=config.rayleigh_type,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
+        recompute_contravariant_correction=config.itime_scheme
+        >= dycore_states.TimeSteppingScheme.STABLE,
         end_index_of_damping_layer=grid_savepoint.nrdmax(),
         kstart_moist=kstart_moist,
+        flat_level_index_plus1=gtx.int32(vertical_params.nflatlev + 1),
         start_cell_index_nudging=start_cell_nudging,
         end_cell_index_local=end_cell_local,
+        start_cell_index_lateral_lvl3=icon_grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+        ),
+        end_cell_index_halo_lvl1=icon_grid.end_index(cell_domain(h_grid.Zone.HALO)),
         vertical_start_index_model_top=gtx.int32(0),
         vertical_end_index_model_surface=gtx.int32(icon_grid.num_levels + 1),
         offset_provider=offset_provider,
