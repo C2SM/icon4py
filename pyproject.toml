@@ -422,6 +422,7 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
+dace = {git = "https://github.com/spcl/dace", branch = "new-gpu-codegen-dev"}
 # dace = {index = "gridtools"}
 gt4py = {git = "https://github.com/edopao/gt4py", branch = "dace_external_stream"}
 # gt4py = {index = "test.pypi"}

@@ -1181,8 +1181,7 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-sdist = {url = "https://files.pythonhosted.org/packages/76/34/a6e66f329ea94167c1c0da89dfaf053b1d90836ccab7161176dd12f10f9e/dace-2.0.0a9.tar.gz", hash = "sha256:ee9cd2a40c16fb09d559556433bb4f51b71fa88760fbc04306d54552775b5c4a", size = 6572070, upload-time = "2026-09-17T09:31:23.155Z"}
-source = {registry = "https://pypi.org/simple"}
+source = {git = "https://github.com/spcl/dace?branch=new-gpu-codegen-dev#d8ce4fb23bd293e642b811d03db6ca74ce7f601f"}
 version = "2.0.0a9"
 
 [[package]]
@@ -1661,7 +1660,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=dace_external_stream#decf32f99a38b542cea66cffc265e7a06663c926"}
+source = {git = "https://github.com/edopao/gt4py?branch=dace_external_stream#580c8519f40348b54ac0f315702545b74f6cbc0c"}
 version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
