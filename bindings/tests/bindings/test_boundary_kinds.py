@@ -92,6 +92,41 @@ ICON_VP_ARGUMENTS: typing.Final = {
     },
 }
 
+# Float fields the granules write, so their converted copies go back to ICON. Measured 2026-09-28
+# by diffing every float argument of `solve_nh_run` and `diffusion_run` around the real granules on
+# the ch_r04b09_dsl test data (one rank, IAU off, first and later substeps): all others stayed
+# unchanged. icon4py passes the other dycore ones only as stencil inputs, diffusion never reads
+# `rho`, and no wrapper body writes into an init argument.
+ICON_INOUT_ARGUMENTS: typing.Final = {
+    "diffusion_init": set(),
+    "diffusion_run": {"w", "vn", "exner", "theta_v", "hdef_ic", "div_ic", "dwdx", "dwdy"},
+    "grid_init": set(),
+    "solve_nh_init": set(),
+    "solve_nh_run": {
+        "rho_new",
+        "exner_new",
+        "w_new",
+        "theta_v_new",
+        "vn_new",
+        "w_concorr_c",
+        "ddt_vn_apc_ntl1",
+        "ddt_vn_apc_ntl2",
+        "ddt_w_adv_ntl1",
+        "ddt_w_adv_ntl2",
+        "theta_v_ic",
+        "rho_ic",
+        "exner_pr",
+        "exner_dyn_incr",
+        "mass_fl_e",
+        "vn_ie",
+        "vt",
+        "mass_flx_me",
+        "mass_flx_ic",
+        "vol_flx_ic",
+        "vn_traj",
+    },
+}
+
 _FLOAT32_ARGUMENTS_SCRIPT = """
 import json
 from icon4py.bindings import all_bindings
@@ -216,36 +251,67 @@ def _field_mappers():
 
 
 @pytest.mark.single_precision_ready
-def test_every_field_argument_is_a_view_or_refuses():
+def test_every_float_field_argument_declares_its_intent():
+    inout, written_back = {}, {}
+    for fun in all_bindings.FUNCTIONS:
+        hints = typing.get_type_hints(fun.__wrapped__, include_extras=True)
+        inout[fun.__name__] = set()
+        written_back[fun.__name__] = set(fun._writeback)
+        for name, descriptor in fun.param_descriptors.items():
+            base, boundary = icon4py_export._split_boundary(hints[name])
+            if (
+                not isinstance(descriptor, py2fgen.ArrayParamDescriptor)
+                or descriptor.dtype not in (py2fgen.FLOAT32, py2fgen.FLOAT64)
+                or icon4py_export._get_gt4py_type(base) is None
+            ):
+                continue
+            assert boundary.intent is not icon4py_export.Intent.UNDECLARED, f"{fun.__name__}.{name}"
+            if boundary.intent is icon4py_export.Intent.INOUT:
+                inout[fun.__name__].add(name)
+
+    assert inout == ICON_INOUT_ARGUMENTS
+    assert written_back == ICON_INOUT_ARGUMENTS
+
+
+@pytest.mark.single_precision_ready
+def test_every_field_argument_is_a_view_or_a_converted_copy():
     """
     Every field argument sees ICON's own memory when ICON's dtype and icon4py's agree.
 
-    When they differ it must refuse loudly, because no wrapper argument has a declared intent
-    yet. Holds for any combination of the two precision settings.
+    When they differ it gets a converted copy, which goes back to ICON only for the fields the
+    granules write. Holds for any combination of the two precision settings.
     """
     ffi = cffi.FFI()
-    viewed, refused = [], []
+    viewed, copied = [], []
     for fun_name, name, descriptor, mapper in _field_mappers():
+        where = f"{fun_name}.{name}"
         icon_dtype = icon4py_export._NUMPY_DTYPE[descriptor.dtype]
-        fortran_array = np.zeros((2, 3, 4)[: descriptor.rank], dtype=icon_dtype, order="F")
+        shape = (2, 3, 4)[: descriptor.rank]
+        values = np.arange(1, 1 + np.prod(shape)).reshape(shape) / 3  # not float32-exact
+        fortran_array = np.asfortranarray(values.astype(icon_dtype))
+        original = fortran_array.copy(order="F")
         array_info = test_utils.array_to_array_info(fortran_array, ffi=ffi)
-        try:
-            field = mapper(array_info, ffi=ffi)
-        except TypeError as error:
-            assert "declare whether ICON reads it back" in str(error), f"{fun_name}.{name}"
-            refused.append(f"{fun_name}.{name}")
-            continue
+        field = mapper(array_info, ffi=ffi)
 
-        assert field.dtype.scalar_type == icon_dtype, f"{fun_name}.{name}"
-        assert np.shares_memory(field.ndarray, fortran_array), f"{fun_name}.{name} was copied"
-        viewed.append(f"{fun_name}.{name}")
+        if np.shares_memory(field.ndarray, fortran_array):
+            assert field.dtype.scalar_type == icon_dtype, where
+            viewed.append(where)
+            continue
+        assert field.ndarray.dtype != icon_dtype, where
+        np.testing.assert_array_equal(field.ndarray, original.astype(field.ndarray.dtype), where)
+        field.ndarray[...] = -1
+        if (writeback := getattr(mapper, "writeback", None)) is not None:
+            writeback(array_info, field, ffi=ffi)
+        written = name in ICON_INOUT_ARGUMENTS[fun_name]
+        np.testing.assert_array_equal(fortran_array, -1 if written else original, where)
+        copied.append(where)
 
     # 115 float fields and 12 integer or bool fields; guards against checking nothing
-    assert len(viewed) + len(refused) == 127
-    assert set(refused) == _expected_refusals()
+    assert len(viewed) + len(copied) == 127
+    assert set(copied) == _expected_copies()
 
 
-def _expected_refusals() -> set[str]:
+def _expected_copies() -> set[str]:
     """Float fields whose ICON dtype differs from icon4py's, derived from the ICON oracle."""
     icon_vp_is_single = config.ICON_PRECISION == "mixed"
     expected = set()

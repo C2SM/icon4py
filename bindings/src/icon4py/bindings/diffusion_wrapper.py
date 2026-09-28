@@ -30,7 +30,7 @@ from icon4py.bindings import (
     grid_wrapper,
     icon4py_export,
 )
-from icon4py.bindings.icon4py_export import Vp, Wp
+from icon4py.bindings.icon4py_export import VpIn, VpInOut, WpIn, WpInOut
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -65,14 +65,14 @@ granule: DiffusionGranule | None = None
 
 @icon4py_export.export
 def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
-    theta_ref_mc: Vp[fa.CellKField[vpfloat]],
-    wgtfac_c: Vp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat]],
-    e_bln_c_s: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat]],
-    geofac_div: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat]],
-    geofac_grg_x: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat]],
-    geofac_grg_y: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat]],
-    geofac_n2s: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat]],
-    nudgecoeff_e: Wp[fa.EdgeField[wpfloat]],
+    theta_ref_mc: VpIn[fa.CellKField[vpfloat]],
+    wgtfac_c: VpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat]],
+    e_bln_c_s: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat]],
+    geofac_div: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat]],
+    geofac_grg_x: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat]],
+    geofac_grg_y: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat]],
+    geofac_n2s: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat]],
+    nudgecoeff_e: WpIn[fa.EdgeField[wpfloat]],
     rbf_vec_coeff_v: wrapper_common.IconWpArray3D,
     zd_cellidx: wrapper_common.OptionalInt32Array2D,
     zd_vertidx: wrapper_common.OptionalInt32Array2D,
@@ -271,15 +271,15 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @icon4py_export.export
 def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
-    w: Wp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], wpfloat]],
-    vn: Wp[fa.EdgeKField[wpfloat]],
-    exner: Wp[fa.CellKField[wpfloat]],
-    theta_v: Wp[fa.CellKField[wpfloat]],
-    rho: Wp[fa.CellKField[wpfloat]],
-    hdef_ic: Vp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
-    div_ic: Vp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
-    dwdx: Vp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
-    dwdy: Vp[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
+    w: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], wpfloat]],
+    vn: WpInOut[fa.EdgeKField[wpfloat]],
+    exner: WpInOut[fa.CellKField[wpfloat]],
+    theta_v: WpInOut[fa.CellKField[wpfloat]],
+    rho: WpIn[fa.CellKField[wpfloat]],
+    hdef_ic: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
+    div_ic: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
+    dwdx: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
+    dwdy: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], vpfloat] | None],
     dtime: gtx.float64,
     linit: bool,
 ):
