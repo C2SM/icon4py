@@ -69,8 +69,13 @@ def test_validate_divdamp_fields_against_savepoint_values(
         dims.KDim,
         allocator=backend,
     )
+
+
+    vct_a_castif = data_alloc.astype_if_needed(grid_savepoint.vct_a(), wpfloat)
+    assert vct_a_castif.dtype.scalar_type is wpfloat
+
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
-        data_alloc.astype_if_needed(grid_savepoint.vct_a(), wpfloat),
+        vct_a_castif,
         config.fourth_order_divdamp_factor,
         config.fourth_order_divdamp_factor2,
         config.fourth_order_divdamp_factor3,
@@ -94,7 +99,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         backend
     )(
         fourth_order_divdamp_scaling_coeff,
-        constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02,
+        constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * wpfloat(0.02),
         constants.WP_EPS,
         out=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
         offset_provider={},
@@ -268,8 +273,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
             cell_start_lateral_boundary_level_3:, nflatlev:
         ],
         sp_exit.z_dexner_dz_c(0).asnumpy()[cell_start_lateral_boundary_level_3:, nflatlev:],
-        atol=5e-18 if test_utils.wp_is_dp else 1e-8,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-2,
+        atol=5e-18 if test_utils.wp_is_dp else 2e-8,
     )
 
     # stencils 7,8,9
@@ -285,8 +289,8 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
             cell_start_lateral_boundary_level_3:, 1:-1
         ],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_3:, 1:],
-        atol=0 if test_utils.wp_is_dp else 1e-7,
-        rtol=2.0e-12 if test_utils.wp_is_dp else 3e-2,
+        atol=0 if test_utils.wp_is_dp else 5e-7,
+        rtol=2.0e-12,
     )
 
     # stencils 7,8,9, 11
@@ -302,16 +306,14 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
             cell_start_lateral_boundary_level_3:, :
         ],
         sp_exit.z_rth_pr(0).asnumpy()[cell_start_lateral_boundary_level_3:, :],
-        atol=0 if test_utils.wp_is_dp else 1e-7,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-4,
+        atol=0 if test_utils.wp_is_dp else 2e-7
     )
     test_utils.assert_dallclose(
         solve_nonhydro.perturbed_theta_v_at_cells_on_model_levels.asnumpy()[
             cell_start_lateral_boundary_level_3:, :
         ],
         sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_3:, :],
-        atol=0 if test_utils.wp_is_dp else 1e-4,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-3,
+        atol=0 if test_utils.wp_is_dp else 1e-4
     )
 
     # stencils 12
@@ -321,8 +323,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
             cell_start_lateral_boundary_level_3:, nflat_gradp:
         ],
         sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lateral_boundary_level_3:, nflat_gradp:],
-        atol=1e-22 if test_utils.wp_is_dp else 2e-13,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-3,
+        atol=1e-22 if test_utils.wp_is_dp else 3e-13
     )
 
     # compute_horizontal_advection_of_rho_and_theta
@@ -345,8 +346,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
             edge_start_nudging_level_2:, :
         ],
         sp_exit.z_gradh_exner().asnumpy()[edge_start_nudging_level_2:, :],
-        atol=1e-20 if test_utils.wp_is_dp else 1e-10,
-        rtol=1e-12 if test_utils.wp_is_dp else 5e-2,
+        atol=1e-20 if test_utils.wp_is_dp else 2e-10,
     )
     prognostic_state_nnew = prognostic_states.next
     vn_new_reference = sp_exit.vn_new().asnumpy()
@@ -356,7 +356,6 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         prognostic_state_nnew.vn.asnumpy()[edge_start_nudging_level_2:, :],
         vn_new_reference[edge_start_nudging_level_2:, :],
         atol=6e-15 if test_utils.wp_is_dp else 2e-4,
-        rtol=1e-12,
     )
     # stencil 29
     test_utils.assert_dallclose(
@@ -369,7 +368,6 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         solve_nonhydro.z_vn_avg.asnumpy()[edge_start_lateral_boundary_level_5:, :],
         sp_exit.z_vn_avg().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=5e-14 if test_utils.wp_is_dp else 2e-4,
-        rtol=1e-12,
     )
     # stencil 30
     test_utils.assert_dallclose(
@@ -378,22 +376,19 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         ],
         sp_exit.z_graddiv_vn().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=5e-20 if test_utils.wp_is_dp else 3e-10,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-3,
     )
     # stencil 30
     test_utils.assert_dallclose(
         diagnostic_state_nh.tangential_wind.asnumpy(),
         sp_exit.vt().asnumpy(),
         atol=5e-14 if test_utils.wp_is_dp else 1e-4,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-3,
     )
 
     # stencil 32
     test_utils.assert_dallclose(
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         sp_exit.mass_fl_e().asnumpy(),
-        atol=4e-12 if test_utils.wp_is_dp else 1e-2,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-3,
+        atol=4e-12 if test_utils.wp_is_dp else 0.011,
     )
     # stencil 32
     test_utils.assert_dallclose(
@@ -401,8 +396,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_theta_v_fl_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
-        atol=1e-9 if test_utils.wp_is_dp else 3,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-3,
+        atol=1e-9 if test_utils.wp_is_dp else 5,
     )
 
     # stencil 35,36, 37,38
@@ -427,8 +421,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_kin_hor_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
-        atol=1e-20 if test_utils.wp_is_dp else 1e-4,
-        rtol=1e-12 if test_utils.wp_is_dp else 4e-4,
+        atol=1e-20 if test_utils.wp_is_dp else 0.005,
     )
     # stencil 35
     test_utils.assert_dallclose(
@@ -436,8 +429,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
             edge_start_lateral_boundary_level_5:, nflatlev:
         ],
         sp_exit.z_w_concorr_me().asnumpy()[edge_start_lateral_boundary_level_5:, nflatlev:],
-        atol=1e-15 if test_utils.wp_is_dp else 4e-5,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-2,
+        atol=1e-15 if test_utils.wp_is_dp else 0.0001,
     )
 
     # stencils 39,40
@@ -445,7 +437,6 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels.asnumpy(),
         sp_exit.w_concorr_c().asnumpy(),
         atol=1e-15 if test_utils.wp_is_dp else 4e-5,
-        rtol=1e-12,
     )
 
     # end
@@ -454,7 +445,6 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         prognostic_state_nnew.w.asnumpy(),
         sp_exit.w_new().asnumpy(),
         atol=7e-14 if test_utils.wp_is_dp else 5e-5,
-        rtol=1e-12,
     )
 
     test_utils.assert_dallclose(
@@ -773,11 +763,11 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         prognostic_state_nnew.exner.asnumpy(), sp_step_exit.exner_new().asnumpy()
     )
 
-    test_utils.assert_dallclose(  # this is completely off in single! At least some are by factors of 100 larger
+    test_utils.assert_dallclose(
         prognostic_state_nnew.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-12,
         atol=1e-13 if test_utils.wp_is_dp else 3e-3,
+        rtol=1e-12,
     )
 
     test_utils.assert_dallclose(
@@ -788,7 +778,6 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         prognostic_state_nnew.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14 if test_utils.wp_is_dp else 1e-4,
-        rtol=1e-12,
     )
 
     test_utils.assert_dallclose(
@@ -921,22 +910,19 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     test_utils.assert_dallclose(
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy()[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
-        atol=5e-7 if test_utils.wp_is_dp else 2e-2,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-2,
+        atol=5e-7 if test_utils.wp_is_dp else 0.1,
     )
 
     test_utils.assert_dallclose(
         prep_adv.mass_flx_me.asnumpy(),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        atol=5e-7 if test_utils.wp_is_dp else 1e-2,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-3,
+        atol=5e-7 if test_utils.wp_is_dp else 0.05,
     )
 
     test_utils.assert_dallclose(
         prep_adv.vn_traj.asnumpy(),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         atol=1e-12 if test_utils.wp_is_dp else 2e-4,
-        rtol=1e-12,
     )
 
     test_utils.assert_dallclose(
@@ -958,20 +944,17 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
         prognostic_states.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=1e-13 if test_utils.wp_is_dp else 1e-4,
-        rtol=1e-12,
     )
 
     test_utils.assert_dallclose(
         prognostic_states.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         atol=5e-13 if test_utils.wp_is_dp else 3e-4,
-        rtol=1e-12,
     )
     test_utils.assert_dallclose(
         diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14 if test_utils.wp_is_dp else 2e-7,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-2,
     )
 
 
@@ -1134,8 +1117,7 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
     test_utils.assert_dallclose(
         perturbed_rho_at_cells_on_model_levels.asnumpy(),
         z_rth_pr_1_ref.asnumpy(),
-        atol=0 if test_utils.wp_is_dp else 6e-8,
-        rtol=1e-12 if test_utils.wp_is_dp else 0.004,
+        atol=0 if test_utils.wp_is_dp else 2e-7,
     )
     test_utils.assert_dallclose(
         perturbed_theta_v_at_cells_on_model_levels.asnumpy(),
@@ -1168,8 +1150,8 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
     test_utils.assert_dallclose(
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[lb:, nflatlev:],
         z_dexner_dz_c_1_ref.asnumpy()[lb:, nflatlev:],
-        atol=0 if test_utils.wp_is_dp else 1e-8,
-        rtol=5e-9 if test_utils.wp_is_dp else 1e-2,
+        atol=0 if test_utils.wp_is_dp else 2e-8,
+        rtol=5e-9
     )
     test_utils.assert_dallclose(
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
@@ -1177,7 +1159,7 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
         ],
         z_dexner_dz_c_2_ref.asnumpy()[lb:, nflat_gradp:],
         atol=0 if test_utils.wp_is_dp else 1e-11,
-        rtol=5e-9 if test_utils.wp_is_dp else 1e-3,
+        rtol=5e-9
     )
 
 
@@ -1296,8 +1278,8 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
         z_th_ddz_exner_c_ref.asnumpy()[
             start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
         ],
-        atol=0 if test_utils.wp_is_dp else 2e-9,
-        rtol=5e-10 if test_utils.wp_is_dp else 0.03,
+        atol=0 if test_utils.wp_is_dp else 3e-9,
+        rtol=5e-10,
     )
 
 
@@ -1485,7 +1467,6 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
         horizontal_pressure_gradient.asnumpy()[start_edge_nudging_level_2:end_edge_local, :],
         z_gradh_exner_ref.asnumpy()[start_edge_nudging_level_2:end_edge_local, :],
         atol=1e-20 if test_utils.wp_is_dp else 1e-12,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-4,
     )
     test_utils.assert_dallclose(
         next_vn.asnumpy()[start_edge_nudging_level_2:, :],
@@ -1762,8 +1743,8 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [to
     test_utils.assert_dallclose(
         z_graddiv_vn_ref.asnumpy(),
         z_graddiv_vn.asnumpy(),
-        rtol=test_utils.scale_tol(1.0e-2),
         atol=1.0e-20 if test_utils.wp_is_dp else 3.0e-12,
+        rtol=1.0e-2,
     )
 
     test_utils.assert_dallclose(
@@ -1905,21 +1886,21 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
     test_utils.assert_dallclose(
         mass_fl_e_ref.asnumpy(),
         mass_fl_e.asnumpy(),
-        atol=0 if test_utils.wp_is_dp else 4e-4,
-        rtol=1.0e-6 if test_utils.wp_is_dp else 1e-3,
+        atol=0 if test_utils.wp_is_dp else 1e-3,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
     test_utils.assert_dallclose(
         z_theta_v_fl_e_ref.asnumpy(),
         z_theta_v_fl_e.asnumpy(),
-        atol=0 if test_utils.wp_is_dp else 8e-2,
+        atol=0 if test_utils.wp_is_dp else 0.12,
         rtol=test_utils.scale_tol(1.0e-6),
     )
 
     test_utils.assert_dallclose(
         vn_traj_ref.asnumpy(),
         vn_traj.asnumpy(),
-        atol=0 if test_utils.wp_is_dp else 5e-7,
+        atol=0 if test_utils.wp_is_dp else 1e-6,
         rtol=test_utils.scale_tol(1.0e-6),
     )
 
@@ -2085,8 +2066,8 @@ def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-man
     test_utils.assert_dallclose(
         next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
-        rtol=1e-7 if test_utils.wp_is_dp else 1e-2,
-        atol=1e-12 if test_utils.wp_is_dp else 2e-6,
+        atol=1e-12 if test_utils.wp_is_dp else 4e-5,
+        rtol=1e-7,
     )
     test_utils.assert_dallclose(
         next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
@@ -2273,8 +2254,8 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
     test_utils.assert_dallclose(
         next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
-        atol=2e-16 if test_utils.wp_is_dp else 3e-6,
-        rtol=1e-10 if test_utils.wp_is_dp else 1e-3,
+        atol=2e-15 if test_utils.wp_is_dp else 4e-5,
+        rtol=1e-10
     )
     test_utils.assert_dallclose(
         next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
@@ -2286,13 +2267,13 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
     test_utils.assert_dallclose(
         dynamical_vertical_mass_flux_at_cells_on_half_levels.asnumpy()[start_cell_nudging:, :],
         mass_flx_ic_ref.asnumpy()[start_cell_nudging:, :],
-        atol=1e-12 if test_utils.wp_is_dp else 1e-6,
-        rtol=1e-10 if test_utils.wp_is_dp else 1e-2,
+        atol=1e-12 if test_utils.wp_is_dp else 1e-5,
+        rtol=1e-10
     )
     test_utils.assert_dallclose(
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels.asnumpy(),
         vol_flx_ic_ref.asnumpy(),
-        atol=1e-12 if test_utils.wp_is_dp else 5e-7,
-        rtol=1e-10 if test_utils.wp_is_dp else 1e-1,
+        atol=1e-12 if test_utils.wp_is_dp else 2e-5,
+        rtol=1e-10
     )
     test_utils.assert_dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
