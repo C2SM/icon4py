@@ -88,7 +88,7 @@ def icon_scalar_kind(kind: IconKind) -> ts.ScalarKind:
     C kind ICON passes for an argument of Fortran kind `kind`.
 
     Mirrors `icon/src/shared/mo_kind.f90:60-67`: `wp` is always `dp`; `vp` is `sp` under
-    `__MIXED_PRECISION` and `dp` otherwise. ICON's `__SINGLE_PRECISION` is not supported.
+    `__MIXED_PRECISION` and `dp` otherwise. ICON's `__SINGLE_PRECISION` is not supported (yet).
     """
     if kind is IconKind.VP and config.ICON_PRECISION == "mixed":
         return ts.ScalarKind.FLOAT32
@@ -167,18 +167,18 @@ def field_annotation_descriptor_hook(annotation: Any) -> py2fgen.ParamDescriptor
     base, boundary = _split_boundary(annotation)
     maybe_gt4py_type = _get_gt4py_type(base)
     if maybe_gt4py_type is None:
-        if boundary is not None:
+        if boundary is not None: #TODO(pstark): Could also be an assert in the future. Performance might benefit. Keep for now.
             raise TypeError(f"ICON boundary marker on non-GT4Py type {annotation}.")
         return None
 
     gt4py_type, is_optional = maybe_gt4py_type
-    dims, dtype = _parse_type_spec(gt4py_type)
+    dims, dtype = _parse_type_spec(gt4py_type) #TODO(pstark): not sure this still makes sense if we overwrite dtype by what ICON brings
     if not dims:
         if boundary is not None:
             raise TypeError(
                 f"ICON boundary marker on scalar {annotation}; scalars cross by value as REAL(wp)."
             )
-        if dtype in _FLOAT_KINDS and dtype != ts.ScalarKind.FLOAT64:
+        if dtype is ts.ScalarKind.FLOAT32: #TODO(pstark): simplified this
             raise TypeError(
                 f"Float scalar {annotation} would cross as {dtype}, but ICON passes REAL(wp) "
                 "scalars, which are always double: annotate it `gtx.float64`."
@@ -192,7 +192,7 @@ def field_annotation_descriptor_hook(annotation: Any) -> py2fgen.ParamDescriptor
             raise TypeError(
                 f"Float field {annotation} needs its ICON kind: annotate it `Wp[...]` or `Vp[...]`."
             )
-        dtype = icon_scalar_kind(boundary.kind)
+        dtype = icon_scalar_kind(boundary.kind) #TODO(pstark): I don't like that this overwrites an existing variable name.
     elif boundary is not None:
         raise TypeError(f"ICON boundary marker on non-float field {annotation}.")
     return py2fgen.ArrayParamDescriptor(
@@ -229,6 +229,7 @@ def _as_field(
     granule never writes also come back rounded to `dtype`.
     """
 
+    #TODO(pstark): In general we should not have too extensive comment blocks if it's not necessary. Clean up in the end.
     # maxsize=2 covers double-buffered arguments (the nnow/nnew swap); anything larger lets
     # buffers pile up when ICON passes a freshly allocated array on every call.
     # The dtype checks below run only on a cache miss. That is sound only because each
