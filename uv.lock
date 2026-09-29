@@ -1181,7 +1181,7 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/edopao/dace?branch=fix-experimental-cuda-gpu-copy-fallback#3e45bcbaf77f32bdf7a40d2c4cdd7c5bc57ddac3"}
+source = {git = "https://github.com/spcl/dace?branch=new-gpu-codegen-dev#da7f2e3039f3df4e00368c208437657010c396ac"}
 version = "2.0.0a9"
 
 [[package]]
@@ -1660,7 +1660,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=dace_external_stream#57b0a919764b5d52d6691caf25ce44a7b1ac7596"}
+source = {git = "https://github.com/edopao/gt4py?branch=dace_external_stream#c4429d943d2ca53ce4362db70be1f522feaab8b8"}
 version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
@@ -2120,7 +2120,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_external_stream"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
