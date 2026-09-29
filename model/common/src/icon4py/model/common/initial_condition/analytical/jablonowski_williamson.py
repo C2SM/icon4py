@@ -11,7 +11,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import math
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
@@ -29,7 +29,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.interpolation import interpolation_attributes
-from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
+from icon4py.model.common.interpolation.stencils import interpolate_cell_field_to_edge
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.physics.thermodynamics import compute_pressure
 from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
@@ -72,16 +72,6 @@ class JablonowskiWilliamsonConfig:
     global_moisture_content: float = 25.006
     # rescale qv to global_moisture_content (APE only; Fortran opt_global_moist).
     normalize_global_moisture: bool = False
-
-    fortran_name_map: ClassVar[dict[str, str]] = {
-        "jw_up": "baroclinic_amplitude",
-        "jw_u0": "u0",
-        "jw_temp0": "temp0",
-        "zp_ape": "p_sfc",
-        "rh_at_1000hpa": "rh_at_1000hpa",
-        "qv_max": "qv_max",
-        "ztmc_ape": "global_moisture_content",
-    }
 
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
@@ -222,7 +212,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         )
     log.info("Newton iteration completed.")
 
-    cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
+    interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(backend)(
         in_field=eta_v,
         coeff=c_lin_e,
         out_field=eta_v_at_edge_dp,

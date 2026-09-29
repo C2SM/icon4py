@@ -9,8 +9,8 @@ import gt4py.next as gtx
 from gt4py.next import exp, log
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
-    _cell_2_edge_interpolation,
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_edge import (
+    _interpolate_cell_field_to_edge,
 )
 
 
@@ -27,7 +27,7 @@ def _compute_reference_atmosphere_edge_fields(  # noqa: PLR0917 [too-many-positi
     t0sl_bg: gtx.float64,
     del_t_bg: gtx.float64,
 ) -> tuple[fa.EdgeKField[gtx.float64], fa.EdgeKField[gtx.float64]]:
-    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
+    z_me = _interpolate_cell_field_to_edge(in_field=z_mc, coeff=c_lin_e)
     denom = t0sl_bg - del_t_bg
     exp_z_me = exp(z_me / h_scal_bg)
     logval = log((exp_z_me * denom + del_t_bg) / t0sl_bg)

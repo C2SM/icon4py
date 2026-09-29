@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common.topography.config import TOPO_CONFIG, create, from_fortran_dict
+from icon4py.model.common.topography.config import TOPO_CONFIG, create
 from icon4py.model.common.topography.smoothing import compute_nabla2_on_cell, smooth_topography
 
 
@@ -14,6 +14,5 @@ __all__ = [
     "TOPO_CONFIG",
     "compute_nabla2_on_cell",
     "create",
-    "from_fortran_dict",
     "smooth_topography",
 ]

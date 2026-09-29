@@ -222,7 +222,8 @@ class FieldSource(GridProvider, Protocol):
         return this_metadata.get("dtype", ta.wpfloat)(scalar)
 
     def output_dtype(self, field_name: str) -> state_utils.ScalarType:
-        return self.get_metadata(field_name).get("dtype", ta.wpfloat)
+        dtype = self.get_metadata(field_name).dtype
+        return ta.wpfloat if dtype is None else dtype
 
     def internal_dtype(self, field_name: str) -> state_utils.ScalarType:
         return allfloats_as_double(self.output_dtype(field_name))

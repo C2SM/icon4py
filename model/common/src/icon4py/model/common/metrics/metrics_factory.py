@@ -12,7 +12,6 @@ import dataclasses
 import functools
 import logging
 import math
-from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -34,7 +33,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
+from icon4py.model.common.interpolation.stencils import interpolate_cell_field_to_edge
 from icon4py.model.common.math import utils as math_utils, vertical_operations as vertical_ops
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
@@ -46,7 +45,7 @@ from icon4py.model.common.metrics import (
     reference_atmosphere as ra,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -121,23 +120,6 @@ class MetricsConfig:
             raise NotImplementedError(
                 f"Only rayleigh_type = KLEMP is implemented, got {self.rayleigh_type}."
             )
-
-    @classmethod
-    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> MetricsConfig:
-        nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
-        return cls(
-            exner_expol=nonhydrostatic_nml["exner_expol"],
-            vwind_offctr=nonhydrostatic_nml["vwind_offctr"],
-            thslp_zdiffu=nonhydrostatic_nml["thslp_zdiffu"],
-            thhgtd_zdiffu=nonhydrostatic_nml["thhgtd_zdiffu"],
-            rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
-            rayleigh_coeff=fortran_config.list_to_value(nonhydrostatic_nml["rayleigh_coeff"]),
-            divdamp_trans_start=nonhydrostatic_nml["divdamp_trans_start"],
-            divdamp_trans_end=nonhydrostatic_nml["divdamp_trans_end"],
-            divdamp_type=nonhydrostatic_nml["divdamp_type"],
-            igradp_method=nonhydrostatic_nml["igradp_method"],
-            **overrides,
-        )
 
 
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
@@ -312,7 +294,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(ddqz_z_full_and_inverse)
 
         ddqz_full_on_edges = factory.ProgramFieldProvider(
-            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+                self._backend
+            ),
             deps={"in_field": attrs.DDQZ_Z_FULL, "coeff": interpolation_attributes.C_LIN_E},
             domain={
                 dims.EdgeDim: (
@@ -892,7 +876,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_c)
 
         compute_wgtfacq_e = factory.ProgramFieldProvider(
-            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+                self._backend
+            ),
             deps={
                 "in_field": attrs.WGTFACQ_C,
                 "coeff": interpolation_attributes.C_LIN_E,
@@ -925,7 +911,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq1_c)
 
         compute_wgtfacq1_e = factory.ProgramFieldProvider(
-            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+                self._backend
+            ),
             deps={
                 "in_field": attrs.WGTFACQ1_C,
                 "coeff": interpolation_attributes.C_LIN_E,
