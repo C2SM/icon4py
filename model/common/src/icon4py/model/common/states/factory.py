@@ -789,4 +789,5 @@ def _func_name(callable_: Callable[..., Any]) -> str:
 
 
 def output_dtype(field_src: FieldSource, field_name: str) -> state_utils.ScalarType:
-    return field_src.get(field_name, RetrievalType.METADATA).get("dtype", ta.wpfloat)
+    dtype = field_src.get(field_name, RetrievalType.METADATA).dtype
+    return ta.wpfloat if dtype is None else dtype
