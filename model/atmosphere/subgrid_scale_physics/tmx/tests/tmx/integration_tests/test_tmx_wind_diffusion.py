@@ -57,7 +57,7 @@ def test_tmx_run_wind_diffusion_single_step(
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
     date: str,
-    tmx_dtime: float,
+    experiment: definitions.Experiment,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
     diagnostics_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
@@ -109,7 +109,9 @@ def test_tmx_run_wind_diffusion_single_step(
         diagnostic_state=diagnostic_state,
         tendency_state=tendency_state,
         new_state=new_state,
-        dtime=tmx_dtime,
+        # ICON runs tmx with the model time step (`init_tmx`), `dt_vdf` only sets how
+        # often it fires
+        dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
     # (computed, reference, absolute tolerance)

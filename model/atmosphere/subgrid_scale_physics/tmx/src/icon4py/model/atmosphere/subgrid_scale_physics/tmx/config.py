@@ -17,7 +17,6 @@ from __future__ import annotations
 import dataclasses
 import enum
 import typing
-from typing import Any
 
 from icon4py.model.common.config import config_io, options as common_conf_opt
 
@@ -49,9 +48,6 @@ class TmxConfig:
         SolverType,
         common_conf_opt.ConfigOption(
             description="Type of the vertical diffusion solver (explicit or implicit).",
-            icon_equivalent=common_conf_opt.IconOption(
-                "solver_type", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=23
-            ),
         ),
     ] = SolverType.IMPLICIT
 
@@ -59,9 +55,6 @@ class TmxConfig:
         EnergyType,
         common_conf_opt.ConfigOption(
             description="Type of energy diffused by the heat diffusion (dry static or internal).",
-            icon_equivalent=common_conf_opt.IconOption(
-                "energy_type", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=24
-            ),
         ),
     ] = EnergyType.INTERNAL
 
@@ -69,9 +62,6 @@ class TmxConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Scaling factor for the kinetic energy dissipation heating.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "dissipation_factor", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=25
-            ),
         ),
     ] = 1.0
 
@@ -80,9 +70,6 @@ class TmxConfig:
         common_conf_opt.ConfigOption(
             description="If True, use the Louis (1979) stability correction function "
             "instead of the classic (Lilly 1962) one.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "use_louis", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=26
-            ),
         ),
     ] = True
 
@@ -91,9 +78,6 @@ class TmxConfig:
         common_conf_opt.ConfigOption(
             description="If False, exclude cells with more than 50% land fraction "
             "from the Louis stability correction.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "use_louis_land", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=27
-            ),
         ),
     ] = True
 
@@ -102,9 +86,6 @@ class TmxConfig:
         common_conf_opt.ConfigOption(
             description="If False, exclude cells with more than 50% sea-ice fraction "
             "from the Louis stability correction.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "use_louis_ice", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=28
-            ),
         ),
     ] = True
 
@@ -112,9 +93,6 @@ class TmxConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Louis constant b of the Louis stability correction function.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "louis_constant_b", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=29
-            ),
         ),
     ] = 4.2
 
@@ -123,9 +101,6 @@ class TmxConfig:
         common_conf_opt.ConfigOption(
             description="If True, use a constant exchange coefficient instead of the "
             "Smagorinsky model.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "use_km_const", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=30
-            ),
         ),
     ] = False
 
@@ -133,9 +108,6 @@ class TmxConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Constant exchange coefficient used if 'use_km_const' is True [m^2/s].",
-            icon_equivalent=common_conf_opt.IconOption(
-                "km_const", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=31
-            ),
         ),
     ] = 1.0
 
@@ -143,9 +115,6 @@ class TmxConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="If True, scale the turbulent energy flux by 'scale_turb_energy_flux'.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "use_scale_turb_energy_flux", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=32
-            ),
         ),
     ] = False
 
@@ -154,9 +123,6 @@ class TmxConfig:
         common_conf_opt.ConfigOption(
             description="Scaling factor for the turbulent energy flux used if "
             "'use_scale_turb_energy_flux' is True.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "scale_turb_energy_flux", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=33
-            ),
         ),
     ] = 1.0
 
@@ -164,9 +130,6 @@ class TmxConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Smagorinsky constant Cs of the Smagorinsky-Lilly eddy viscosity model.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "smag_constant", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=34
-            ),
         ),
     ] = 0.23
 
@@ -174,9 +137,6 @@ class TmxConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Turbulent Prandtl number.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "turb_prandtl", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=35
-            ),
         ),
     ] = 0.33333333333  # exact literal from mo_turb_vdiff_config.f90 (not 1/3)
 
@@ -184,9 +144,6 @@ class TmxConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Minimum mass-weighted turbulent viscosity [kg/(m s)].",
-            icon_equivalent=common_conf_opt.IconOption(
-                "km_min", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=37
-            ),
         ),
     ] = 0.001
 
@@ -194,9 +151,6 @@ class TmxConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Maximum turbulence length scale [m].",
-            icon_equivalent=common_conf_opt.IconOption(
-                "max_turb_scale", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=38
-            ),
         ),
     ] = 300.0
 
@@ -212,33 +166,3 @@ class TmxConfig:
             raise ValueError(
                 f"Invalid argument 'km_min': should be non-negative, got {self.km_min}."
             )
-
-    @classmethod
-    def from_fortran_dict(cls, *, atm_dict: dict[str, Any], **overrides: Any) -> TmxConfig:
-        """
-        Build the configuration from the echoed ICON namelist.
-
-        ICON writes ``aes_vdf_config`` values in Fortran member order, without names.
-        We read the first domain using each option's ``unnamed_index``. The checks below
-        help detect changes to the expected Fortran layout.
-        """
-        # Layout of t_vdiff_config in mo_turb_vdiff_config.f90
-        # Keep these values and the options' unnamed_index positions in sync
-        num_members = 42
-        use_tmx_index = 22
-
-        flat = atm_dict["aes_vdf_nml"]["aes_vdf_config"]
-        if len(flat) % num_members != 0:
-            raise ValueError(
-                f"'aes_vdf_config' has {len(flat)} values, not a multiple of the "
-                f"{num_members} members of t_vdiff_config: the Fortran type changed "
-                "and the pinned 'unnamed_index' positions must be revised."
-            )
-        use_tmx = flat[use_tmx_index]
-        if use_tmx is not True:
-            raise ValueError(
-                f"expected 'use_tmx' (True) at position {use_tmx_index} of "
-                f"'aes_vdf_config', found {use_tmx!r}: either the run does not use tmx or "
-                "the t_vdiff_config member order changed."
-            )
-        return common_conf_opt.construct_config_from_icon(cls, atm_dict, **overrides)
