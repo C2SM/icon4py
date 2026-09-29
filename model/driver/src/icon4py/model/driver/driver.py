@@ -25,7 +25,6 @@ from icon4py.model.atmosphere.dycore.stencils import compute_airmass
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import (
     dimension as dims,
-    initial_condition,
     model_backends,
     model_options,
     prescribed_tendencies,
@@ -40,6 +39,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
@@ -835,8 +835,8 @@ def run_driver(
         if icon4py_driver.config.tracer_advection is not None
         else None
     )
-    initial_condition.apply(
-        config=icon4py_driver.config,
+    ic_apply(
+        config=driver_utils.make_ic_config_ctx(icon4py_driver.config),
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,

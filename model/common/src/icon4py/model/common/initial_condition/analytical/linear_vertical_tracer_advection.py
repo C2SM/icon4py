@@ -26,8 +26,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
+    from icon4py.model.common.initial_condition.config import ConfigContext
     from icon4py.model.common.metrics import metrics_factory
-    from icon4py.model.driver import config as driver_config
 
 
 @config_io.register_enum
@@ -188,7 +188,7 @@ def _fill_tracer_from_analytical_profile(
 
 def linear_vertical_advection(
     *,
-    config: driver_config.ExperimentConfig,
+    config: ConfigContext,
     metrics: metrics_factory.MetricsFieldsFactory,
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,

@@ -33,7 +33,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.driver import config as driver_config
+    from icon4py.model.common.initial_condition.config import ConfigContext
 
 
 log = logging.getLogger(__name__)
@@ -110,13 +110,9 @@ def _read_prognostic_state(
     prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")
 
 
-def no_tracer_exception(data_path: pathlib.Path) -> bool:
-    return "exclaim_ch_r04b09_dsl" in data_path.name or "exclaim_ape_R02B04" in data_path.name
-
-
 def read_initial_condition_from_file(
     *,
-    config: driver_config.ExperimentConfig,
+    config: ConfigContext,
     grid: icon_grid.IconGrid,
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
@@ -139,9 +135,7 @@ def read_initial_condition_from_file(
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
-    ntracer = config.tracer_config.nactive if config.tracer_config else 0
-    if no_tracer_exception(ic_config.data_path):
-        ntracer = 0
+    ntracer = config.ntracer
     if ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
         for i, tracer in enumerate(tracer_state_now.active_fields()):
@@ -150,7 +144,7 @@ def read_initial_condition_from_file(
 
 def read_restart_from_file(
     *,
-    config: driver_config.ExperimentConfig,
+    config: ConfigContext,
     grid: icon_grid.IconGrid,
     prognostic_state_now: prognostics.PrognosticState,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
@@ -169,9 +163,7 @@ def read_restart_from_file(
     """
     ic_config = config.initial_condition
     assert isinstance(ic_config, FromFileConfig)
-    ntracer = config.tracer_config.nactive if config.tracer_config else 0
-    if no_tracer_exception(ic_config.data_path):
-        ntracer = 0
+    ntracer = config.ntracer
     if ntracer > 0:
         raise NotImplementedError(
             "restarting with tracers is not supported: the solve-nonhydro savepoints do not "
@@ -179,7 +171,7 @@ def read_restart_from_file(
         )
 
     array_ns = data_alloc.import_array_ns(model_backends.get_allocator(backend))
-    date = _savepoint_formatted_date(config.driver.start_of_timestepping + config.driver.dtime)
+    date = _savepoint_formatted_date(config.start_of_timestepping + config.dtime)
 
     log.info("Restarting from the serialized state of the time step ending at %s", date)
     serializer = serialbox.Serializer(

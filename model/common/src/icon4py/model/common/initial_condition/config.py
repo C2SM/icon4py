@@ -8,10 +8,12 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
-from typing import TYPE_CHECKING
 
+from icon4py.model.common import time
 from icon4py.model.common.config import config_io
+from icon4py.model.common.grid import vertical
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
@@ -20,23 +22,9 @@ from icon4py.model.common.initial_condition.analytical import (
     linear_vertical_tracer_advection as lin_ver_adv_ic,
     weisman_klemp as wk_ic,
 )
-from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
-from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 
 
-if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.common.decomposition import definitions as decomposition_defs
-    from icon4py.model.common.grid import icon as icon_grid
-    from icon4py.model.common.states import (
-        nonhydro_states,
-        prognostic_state as prognostics,
-        static_fields,
-        tracer_states,
-    )
-    from icon4py.model.driver import config as driver_config
+__all__ = ["IC_CONFIG", "ConfigContext"]
 
 
 log = logging.getLogger(__name__)
@@ -65,117 +53,11 @@ config_io.register_config_union(
 )
 
 
-def apply(
-    *,
-    config: driver_config.ExperimentConfig,
-    grid: icon_grid.IconGrid,
-    static_fields: static_fields.StaticFieldFactories,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
-    solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
-    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
-    backend: gtx_typing.Backend | None,
-    exchange: decomposition_defs.ExchangeRuntime,
-    global_reductions: decomposition_defs.Reductions,
-) -> None:
-    """
-    Fill the prognostic and tracer states by dispatching on the type of ``config``.
-
-    The perturbed exner function of the dycore is initialized too, when its diagnostic
-    state is given: diagnosed from the initial state, or, when restarting, read from the
-    serialized data together with the advective tendencies of the previous time step.
-    """
-    match config.initial_condition:
-        case jw_ic.JablonowskiWilliamsonConfig():
-            jw_ic.jablonowski_williamson(
-                config=config,
-                grid=grid,
-                static_fields=static_fields,
-                prognostic_state_now=prognostic_state_now,
-                tracer_state_now=tracer_state_now,
-                backend=backend,
-                exchange=exchange,
-                global_reductions=global_reductions,
-            )
-        case gauss_ic.Gauss3DConfig():
-            gauss_ic.gauss3d(
-                config=config,
-                grid=grid,
-                static_fields=static_fields,
-                prognostic_state_now=prognostic_state_now,
-                backend=backend,
-                exchange=exchange,
-            )
-        case wk_ic.WeismanKlempConfig():
-            wk_ic.weisman_klemp(
-                config=config,
-                grid=grid,
-                static_fields=static_fields,
-                prognostic_state_now=prognostic_state_now,
-                tracer_state_now=tracer_state_now,
-                backend=backend,
-                exchange=exchange,
-            )
-        case lin_hor_adv_ic.LinearHorizontalAdvectionConfig():
-            if tracer_prep_adv_state is None:
-                raise ValueError(
-                    "'tracer_prep_adv_state' must not be None for 'linear_horizontal_advection' initial conditions."
-                )
-            lin_hor_adv_ic.linear_horizontal_advection(
-                config=config,
-                grid=grid,
-                static_fields=static_fields,
-                prognostic_state_now=prognostic_state_now,
-                tracer_state_now=tracer_state_now,
-                tracer_prep_adv_state=tracer_prep_adv_state,
-            )
-        case lin_ver_adv_ic.LinearVerticalAdvectionConfig():
-            if tracer_prep_adv_state is None:
-                raise ValueError(
-                    "'tracer_prep_adv_state' must not be None for 'linear_vertical_advection' initial conditions."
-                )
-            lin_ver_adv_ic.linear_vertical_advection(
-                config=config,
-                metrics=static_fields.metrics,
-                prognostic_state_now=prognostic_state_now,
-                tracer_state_now=tracer_state_now,
-                tracer_prep_adv_state=tracer_prep_adv_state,
-            )
-        case from_file_ic.FromFileConfig():
-            if config.driver.is_restart:
-                if solve_nonhydro_diagnostic_state is None:
-                    raise ValueError(
-                        "restarting needs the diagnostic state of the dycore to initialize."
-                    )
-                from_file_ic.read_restart_from_file(
-                    config=config,
-                    grid=grid,
-                    prognostic_state_now=prognostic_state_now,
-                    solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
-                    backend=backend,
-                    exchange=exchange,
-                )
-                return
-            from_file_ic.read_initial_condition_from_file(
-                config=config,
-                grid=grid,
-                prognostic_state_now=prognostic_state_now,
-                tracer_state_now=tracer_state_now,
-                backend=backend,
-                exchange=exchange,
-            )
-        case _:
-            raise TypeError(f"Unknown initial conditions config type: {type(config.config)!r}")
-
-    if solve_nonhydro_diagnostic_state is not None:
-        # exner_pr, diagnosed from the initial state (compute_exner_pert in mo_nh_stepping.f90)
-        gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
-            field_a=prognostic_state_now.exner,
-            field_b=static_fields.metrics.get(metrics_attributes.EXNER_REF_MC),
-            output_field=solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels,
-            horizontal_start=0,
-            horizontal_end=grid.num_cells,
-            vertical_start=0,
-            vertical_end=grid.num_levels,
-            offset_provider={},
-        )
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class ConfigContext:
+    initial_condition: IC_CONFIG
+    is_restart: bool
+    start_of_timestepping: time.AbsoluteTime
+    dtime: time.RelativeTime
+    vertical_grid: vertical.VerticalGridConfig
+    ntracer: int

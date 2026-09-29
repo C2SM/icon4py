@@ -27,8 +27,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
+    from icon4py.model.common.initial_condition.config import ConfigContext
     from icon4py.model.common.states import static_fields
-    from icon4py.model.driver import config as driver_config
 
 
 @config_io.register_enum
@@ -330,7 +330,7 @@ def _fill_tracer_from_analytical_profile(
 
 def linear_horizontal_advection(
     *,
-    config: driver_config.ExperimentConfig,
+    config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,

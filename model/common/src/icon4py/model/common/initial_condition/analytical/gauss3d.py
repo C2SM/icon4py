@@ -30,8 +30,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.common.initial_condition.config import ConfigContext
     from icon4py.model.common.states import static_fields
-    from icon4py.model.driver import config as driver_config
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class Gauss3DConfig:
 
 def gauss3d(
     *,
-    config: driver_config.ExperimentConfig,
+    config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,

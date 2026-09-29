@@ -31,8 +31,8 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
+    from icon4py.model.common.initial_condition.config import ConfigContext
     from icon4py.model.common.states import static_fields
-    from icon4py.model.driver import config as driver_config
 
 log = logging.getLogger(__name__)
 
@@ -136,9 +136,10 @@ class WeismanKlempConfig:
         ),
     ] = 1.0
 
+
 def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     *,
-    config: driver_config.ExperimentConfig,
+    config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
