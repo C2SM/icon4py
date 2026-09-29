@@ -5,9 +5,9 @@ tags: [config, fortran, icon]
 # [Configuration Classes]
 
 - **Status**: valid
-- **Authors**: Rico Häuselmann (@DropD)
+- **Authors**: Rico Häuselmann (@DropD), Jacopo Canton (@jcanton)
 - **Created**: 2026-06-17
-- **Updated**: 2026-06-23
+- **Updated**: 2026-09-17
 
 While making ICON4Py user-configurable, facing code duplication between modules, we decided to provide a standard way to declaratively encode common attributes of configuration options alongside utilities that can then be reused across modules.
 
@@ -48,6 +48,13 @@ class MyModuleConfig:
         ),
     ] = 4  # default value
 ```
+
+> **Note (2026-09-17):** The `icon_equivalent` / `IconOption` annotations have been
+> removed from the model packages. Configuration classes now only carry
+> `ConfigOption(description=...)`, and the Fortran-namelist-to-ICON4Py mapping lives in
+> `scripts/python/fortran_config_converter.py`. This keeps ICON4Py internals decoupled
+> from ICON namelist concepts while preserving the declarative `ConfigOption` pattern
+> for documentation.
 
 The pattern is meant to be extended in the future as the need arises. One example would be validation:
 

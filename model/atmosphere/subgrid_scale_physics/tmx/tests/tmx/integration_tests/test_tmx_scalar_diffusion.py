@@ -113,9 +113,10 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
     date: str,
-    tmx_config: TmxConfig,
-    tmx_dtime: float,
+    experiment: definitions.Experiment,
 ) -> None:
+    tmx_config = experiment.config.tmx
+    assert tmx_config is not None
     setup = _setup(
         data_provider=data_provider,
         grid_savepoint=grid_savepoint,
@@ -134,7 +135,9 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
         diagnostic_state=setup.diagnostic_state,
         tendency_state=setup.tendency_state,
         new_state=setup.new_state,
-        dtime=tmx_dtime,
+        # ICON runs tmx with the model time step (`init_tmx`), `dt_vdf` only sets how
+        # often it fires
+        dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
     fields = (
@@ -165,9 +168,10 @@ def test_tmx_run_temperature_diffusion_single_step(
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
     date: str,
-    tmx_config: TmxConfig,
-    tmx_dtime: float,
+    experiment: definitions.Experiment,
 ) -> None:
+    tmx_config = experiment.config.tmx
+    assert tmx_config is not None
     setup = _setup(
         data_provider=data_provider,
         grid_savepoint=grid_savepoint,
@@ -193,7 +197,7 @@ def test_tmx_run_temperature_diffusion_single_step(
         diagnostic_state=setup.diagnostic_state,
         tendency_state=setup.tendency_state,
         new_state=new_state,
-        dtime=tmx_dtime,
+        dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
     fields = (

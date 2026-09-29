@@ -19,10 +19,10 @@ class ProcessTimeControl:
     """icon4py analogue of the per-process time fields in AES `aes_phy_tc`.
 
     Mirrors `mo_aes_phy_main.f90` semantics, with one deviation: where AES
-    disables a process via `dt_xxx == 0`, we use an explicit `enable_process`
-    flag.
-      - `enable_process`: explicit on/off switch for the process.
-      - `interval`   (`dt_xxx`): firing interval; must be > 0 when enabled.
+    disables a process via `dt_xxx == 0`, icon4py leaves a disabled process out
+    of the driver's process list entirely, so it is never constructed and its
+    stencils are never compiled.
+      - `interval`   (`dt_xxx`): firing interval; must be > 0.
       - `start_date` (`sd_xxx`), `end_date` (`ed_xxx`): half-open
         `[start, end)` window during which the process exists at all.
     """
@@ -30,9 +30,6 @@ class ProcessTimeControl:
     interval: datetime.timedelta
     start_date: datetime.datetime
     end_date: datetime.datetime
-    enable_process: bool = True
-    # TODO (Yilu): enable_process should move out of here once each process has its own
-    # config section (the flag then comes from the config file)
 
     def is_in_window(self, simulation_current_datetime: datetime.datetime) -> bool:
         return self.start_date <= simulation_current_datetime < self.end_date
@@ -43,11 +40,7 @@ class ProcessTimeControl:
         Equivalent to AES `isCurrentEventActive(ev_xxx, datetime)`. Fires only
         when the elapsed time is an exact integer multiple of the interval.
         """
-        if (
-            not self.enable_process
-            or self.interval <= datetime.timedelta(0)
-            or simulation_current_datetime < self.start_date
-        ):
+        if self.interval <= datetime.timedelta(0) or simulation_current_datetime < self.start_date:
             return False
         elapsed = simulation_current_datetime - self.start_date
         return elapsed % self.interval == datetime.timedelta(0)
@@ -60,13 +53,8 @@ class ProcessTimeControl:
         ``interval`` is a positive integer multiple of ``dtime`` -- otherwise the
         process fires only at common multiples of both (or never), silently.
         """
-        if not self.enable_process:
-            return
         if self.interval <= datetime.timedelta(0):
-            raise ValueError(
-                f"time-control interval must be positive for an enabled process, "
-                f"got {self.interval}"
-            )
+            raise ValueError(f"time-control interval must be positive, got {self.interval}")
         if self.interval % dtime != datetime.timedelta(0):
             raise ValueError(
                 f"time-control interval {self.interval} is not an integer multiple of "

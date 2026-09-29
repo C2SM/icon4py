@@ -14,7 +14,7 @@ import logging
 import math
 import sys
 import typing
-from typing import Any, Final
+from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -156,7 +156,6 @@ class DiffusionConfig:
         DiffusionType,
         common_conf_opt.ConfigOption(
             description="Order of Nabla operator for diffusion.",
-            icon_equivalent=common_conf_opt.IconOption("hdiff_order", ("diffusion_nml",)),
         ),
     ] = DiffusionType.SMAGORINSKY_4TH_ORDER
 
@@ -164,7 +163,6 @@ class DiffusionConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="If True, apply diffusion to the vertical wind field.",
-            icon_equivalent=common_conf_opt.IconOption("lhdiff_w", ("diffusion_nml",)),
         ),
     ] = True
 
@@ -172,7 +170,6 @@ class DiffusionConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="If true, apply diffusion on the horizontal wind field.",
-            icon_equivalent=common_conf_opt.IconOption("lhdiff_vn", ("diffusion_nml",)),
         ),
     ] = True
 
@@ -180,7 +177,6 @@ class DiffusionConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="If True, apply horizontal diffusion to temperature field.",
-            icon_equivalent=common_conf_opt.IconOption("lhdiff_temp", ("diffusion_nml",)),
         ),
     ] = True
 
@@ -188,9 +184,6 @@ class DiffusionConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="If True, apply Smagorinsky diffusion to vertical wind field.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "lhdiff_smag_w", ("diffusion_nml",), list_to_value=True
-            ),
         ),
     ] = False
 
@@ -198,9 +191,6 @@ class DiffusionConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="If True, compute 3D Smagorinsky diffusion coefficient.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "lsmag_3d", ("diffusion_nml",), list_to_value=True
-            ),
         ),
     ] = False
 
@@ -208,7 +198,6 @@ class DiffusionConfig:
         SmagorinskyStencilType,
         common_conf_opt.ConfigOption(
             description="Reconstruction method used for Smagorinsky diffusion.",
-            icon_equivalent=common_conf_opt.IconOption("itype_vn_diffu", ("diffusion_nml",)),
         ),
     ] = SmagorinskyStencilType.DIAMOND_VERTICES
 
@@ -216,7 +205,6 @@ class DiffusionConfig:
         TemperatureDiscretizationType,
         common_conf_opt.ConfigOption(
             description="Options for discretizing the Smagorinsky temperature diffusion.",
-            icon_equivalent=common_conf_opt.IconOption("itype_t_diffu", ("diffusion_nml",)),
         ),
     ] = TemperatureDiscretizationType.HETEROGENEOUS
 
@@ -224,7 +212,6 @@ class DiffusionConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Ratio of e-folding time to (2*)time step.",
-            icon_equivalent=common_conf_opt.IconOption("hdiff_efdt_ratio", ("diffusion_nml",)),
         ),
     ] = 36.0
 
@@ -232,7 +219,6 @@ class DiffusionConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Ratio of e-folding time to time step for w diffusion (NH only).",
-            icon_equivalent=common_conf_opt.IconOption("hdiff_w_efdt_ratio", ("diffusion_nml",)),
         ),
     ] = 15.0
 
@@ -241,7 +227,6 @@ class DiffusionConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Smagorinsky factor for z <= smagorinski_scaling_height (constant base value).",
-            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_fac", ("diffusion_nml",)),
         ),
     ] = 0.015
 
@@ -252,7 +237,6 @@ class DiffusionConfig:
                 "Smagorinsky factor at z = smagorinski_scaling_height2: end of the linear segment and"
                 "start of the quadratic segment. The linear slope is (factor2-factor1)/(height2-height1)."
             ),
-            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_fac2", ("diffusion_nml",)),
         ),
     ] = 2e-6 * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0)))
 
@@ -263,7 +247,6 @@ class DiffusionConfig:
                 "Smagorinsky factor at z = smagorinski_scaling_height3: interior control point of the"
                 "quadratic segment (height2 <= height3 <= height4), used to fit the quadratic coefficients."
             ),
-            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_fac3", ("diffusion_nml",)),
         ),
     ] = 0.0
 
@@ -274,7 +257,6 @@ class DiffusionConfig:
                 "Smagorinsky factor for z >= smagorinski_scaling_height4 (constant asymptotic value)."
                 "Also the third control point that defines the quadratic segment together with factor2 and factor3."
             ),
-            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_fac4", ("diffusion_nml",)),
         ),
     ] = 1.0
 
@@ -285,7 +267,6 @@ class DiffusionConfig:
                 "Lower boundary of the linear segment: factor is constant at smagorinski_scaling_factor "
                 "below this height."
             ),
-            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_z", ("diffusion_nml",)),
         ),
     ] = 32500.0
 
@@ -293,7 +274,6 @@ class DiffusionConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Transition height between linear and quadratic segments.",
-            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_z2", ("diffusion_nml",)),
         ),
     ] = 1600.0 + 50000.0 + math.sqrt(1600.0 * (1600 + 50000.0))
 
@@ -301,7 +281,6 @@ class DiffusionConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Interior control point height within the quadratic segment (height2 <= height3 <= height4).",
-            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_z3", ("diffusion_nml",)),
         ),
     ] = 50000.0
 
@@ -312,7 +291,6 @@ class DiffusionConfig:
                 "Upper boundary of the quadratic segment: factor is constant at "
                 "smagorinski_scaling_factor4 above this height."
             ),
-            icon_equivalent=common_conf_opt.IconOption("hdiff_smag_z4", ("diffusion_nml",)),
         ),
     ] = 90000.0
 
@@ -320,7 +298,6 @@ class DiffusionConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="If True, apply truly horizontal temperature diffusion over steep slopes.",
-            icon_equivalent=common_conf_opt.IconOption("l_zdiffu_t", ("nonhydrostatic_nml",)),
         ),
     ] = True
 
@@ -328,7 +305,6 @@ class DiffusionConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Denominator for temperature boundary diffusion.",
-            icon_equivalent=common_conf_opt.IconOption("denom_diffu_t", ("gridref_nml",)),
         ),
     ] = 135.0
 
@@ -336,7 +312,6 @@ class DiffusionConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Denominator for velocity boundary diffusion.",
-            icon_equivalent=common_conf_opt.IconOption("denom_diffu_v", ("gridref_nml",)),
         ),
     ] = 200.0
 
@@ -344,7 +319,6 @@ class DiffusionConfig:
         TurbulenceShearForcingType,
         common_conf_opt.ConfigOption(
             description="Type of shear forcing used in turbulence.",
-            icon_equivalent=common_conf_opt.IconOption("itype_sher", ("turbdiff_nml",)),
         ),
     ] = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND
 
@@ -352,7 +326,6 @@ class DiffusionConfig:
         ForcingType,
         common_conf_opt.ConfigOption(
             description="Type of physics forcing.",
-            icon_equivalent=common_conf_opt.IconOption("iforcing", ("run_nml",)),
         ),
     ] = ForcingType.NO_FORCING
 
@@ -360,7 +333,6 @@ class DiffusionConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Scaling factor for horizontal shear production term.",
-            icon_equivalent=common_conf_opt.IconOption("a_hshr", ("turbdiff_nml",)),
         ),
     ] = 1.0
 
@@ -378,10 +350,6 @@ class DiffusionConfig:
 
     def __post_init__(self) -> None:
         self._validate()
-
-    @classmethod
-    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> DiffusionConfig:
-        return common_conf_opt.construct_config_from_icon(cls, atmo_dict, **overrides)
 
     def _validate(self) -> None:
         """Apply consistency checks and validation on configuration parameters."""
