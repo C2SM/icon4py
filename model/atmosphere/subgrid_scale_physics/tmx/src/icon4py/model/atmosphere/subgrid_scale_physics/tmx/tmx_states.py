@@ -91,9 +91,9 @@ class TmxSurfaceFluxState:
     """Surface fluxes provided by the surface scheme (inputs to the atmospheric diffusion)."""
 
     u_stress: fa.CellField[ta.wpfloat]
-    """Zonal surface wind stress (``tauu``) [N/m^2]."""
+    """Zonal surface wind stress (`tauu`) [N/m^2]."""
     v_stress: fa.CellField[ta.wpfloat]
-    """Meridional surface wind stress (``tauv``) [N/m^2]."""
+    """Meridional surface wind stress (`tauv`) [N/m^2]."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -201,11 +201,7 @@ class TmxDiagnosticState:
 
 @dataclasses.dataclass(frozen=True)
 class TmxNewState:
-    """
-    Prognostic fields updated by tmx: ``new = state + tend * dtime``.
-
-    The ``new_states`` of mo_vdf.f90.
-    """
+    """Fields updated by tmx: `new = state + tend * dtime`."""
 
     u: fa.CellKField[ta.wpfloat]
     """Updated zonal wind on full levels [m/s]."""
@@ -231,7 +227,7 @@ class TmxNewState:
 
 @dataclasses.dataclass(frozen=True)
 class TmxTendencyState:
-    """Tendencies computed by tmx (the ``tendencies`` of mo_vdf.f90)."""
+    """Tendencies computed by tmx."""
 
     tend_u: fa.CellKField[ta.wpfloat]
     """Zonal wind tendency on full levels [m/s^2]."""

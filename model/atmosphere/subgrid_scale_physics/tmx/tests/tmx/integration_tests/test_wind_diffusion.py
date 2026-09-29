@@ -9,7 +9,7 @@
 """Integration test of the tmx wind diffusion component.
 
 Constructs the component from the serialized ICON state (exp.exclaim_ape_aesPhys), with the
-diagnostics taken from the tmx-diagnostics-exit savepoint, and verifies one call of ``run``
+diagnostics taken from the tmx-diagnostics-exit savepoint, and verifies one call of `run`
 against the tmx-hor-wind-exit, tmx-vert-wind-exit and tmx-exit savepoints.
 """
 
