@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import astype
+from gt4py.next import astype, where
 from gt4py.next.experimental import as_offset
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -30,9 +30,18 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     theta_v_1 = theta_v(C2E2C[1])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(1)]))
     theta_v_2 = theta_v(C2E2C[2])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(2)]))
 
-    theta_v_0_m1 = theta_v(C2E2C[0])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(0)] + 1))
-    theta_v_1_m1 = theta_v(C2E2C[1])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(1)] + 1))
-    theta_v_2_m1 = theta_v(C2E2C[2])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(2)] + 1))
+    # `zd_vertoffset` is 0 where `zd_diffcoef` is 0, so there the `+ 1` target at the bottom level
+    # lies below the column; keep the read in range for backends that evaluate every point.
+    is_steep = zd_diffcoef != wpfloat("0.0")
+    theta_v_0_m1 = theta_v(C2E2C[0])(
+        as_offset(Koff, where(is_steep, zd_vertoffset[dims.C2E2CDim(0)] + 1, 0))
+    )
+    theta_v_1_m1 = theta_v(C2E2C[1])(
+        as_offset(Koff, where(is_steep, zd_vertoffset[dims.C2E2CDim(1)] + 1, 0))
+    )
+    theta_v_2_m1 = theta_v(C2E2C[2])(
+        as_offset(Koff, where(is_steep, zd_vertoffset[dims.C2E2CDim(2)] + 1, 0))
+    )
 
     sum_tmp = (
         theta_v * geofac_n2s_c

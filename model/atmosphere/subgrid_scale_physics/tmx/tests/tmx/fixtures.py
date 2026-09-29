@@ -10,7 +10,6 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import TmxConfig
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.utils import fortran_config, time_utils
 from icon4py.model.testing import datatest_utils as dt_utils, definitions
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -32,26 +31,15 @@ def tmx_config(
     process_props: decomposition.ProcessProperties,
     download_ser_data: None,  # downloads data as side-effect
 ) -> TmxConfig:
-    """TmxConfig read from the experiment's converted (echoed) namelists."""
-    atm_dict = dt_utils.load_fortran_dict(
-        experiment_description=experiment_description,
-        process_props=process_props,
-        fname=fortran_config.ATM_DICT_FNAME,
-    )
-    return TmxConfig.from_fortran_dict(atm_dict=atm_dict)
+    """TmxConfig of the experiment, as converted from its namelists into `config.yml`."""
+    config = dt_utils.create_experiment_configuration(experiment_description, process_props)
+    if config.tmx is None:
+        pytest.skip(f"{experiment_description.name} was not run with tmx.")
+    return config.tmx
 
 
 @pytest.fixture
-def tmx_dtime(
-    experiment_description: definitions.ExperimentDescription,
-    process_props: decomposition.ProcessProperties,
-    download_ser_data: None,  # downloads data as side-effect
-) -> float:
-    """The tmx time step [s]: `dt_vdf` of the experiment's `aes_phy_nml`."""
-    input_dict = dt_utils.load_fortran_dict(
-        experiment_description=experiment_description,
-        process_props=process_props,
-        fname=fortran_config.INPUT_DICT_FNAME,
-    )
-    dt_vdf = input_dict["aes_phy_nml"]["aes_phy_config"][0]["dt_vdf"]
-    return time_utils.relativetime_from_iso8601(dt_vdf).total_seconds()
+def tmx_dtime() -> float:
+    """The tmx time step [s]: `dt_vdf` (PT300S) of the experiment's `aes_phy_nml`."""
+    # TODO(havogt): read `dt_vdf` from the experiment config once the v12 ser_data carries it
+    return 300.0
