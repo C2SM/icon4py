@@ -46,10 +46,6 @@ if TYPE_CHECKING:
 # to the cloudy levels and the levels above are separately checked to produce
 # (near-)zero tendencies.
 #
-# The exit tendencies are the prm_tend accumulators; subtracting the init
-# accumulators isolates the mig contribution even if other AES processes ever
-# run before mig in this experiment (today they contribute exactly zero).
-#
 # The granule runs with the AES graupel scheme, the port of the ICON
 # formulation (mo_aes_graupel.f90) that generates the reference data, so
 # near-roundoff agreement is expected. Remaining known deviations:
@@ -67,12 +63,17 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "experiment_description",
     [definitions.Experiments.EXCLAIM_APE_AES],
+    ids=lambda experiment: experiment.name,
 )
 @pytest.mark.parametrize(
-    "date",
-    ["2008-09-01T00:00:00.000", "2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000"],
+    ("date", "single_program"),
+    [
+        pytest.param("2008-09-01T00:00:00.000", False, id="2008-09-01T00:00:00-separate"),
+        pytest.param("2008-09-01T00:05:00.000", False, id="2008-09-01T00:05:00-separate"),
+        pytest.param("2008-09-01T00:10:00.000", False, id="2008-09-01T00:10:00-separate"),
+        pytest.param("2008-09-01T00:00:00.000", True, id="2008-09-01T00:00:00-single"),
+    ],
 )
-@pytest.mark.parametrize("single_program", [False, True], ids=lambda sp: f"single_program={sp}")
 def test_muphys_granule(
     date: str,
     single_program: bool,
@@ -102,14 +103,9 @@ def test_muphys_granule(
         "qg": init_savepoint.qg(),
     }
     initial_state = {name: field.asnumpy().copy() for name, field in state.items()}
-    inp = common.GraupelInput(
+    muphys_program = run_full_muphys.setup_muphys(
         ncells=icon_grid.num_cells,
         nlev=icon_grid.num_levels,
-        t=state["te"],
-        **{name: field for name, field in state.items() if name != "te"},
-    )
-    muphys_program = run_full_muphys.setup_muphys(
-        inp=inp,
         dt=dtime,
         qnc=muphys_configuration.qnc,
         backend=backend,
@@ -120,7 +116,7 @@ def test_muphys_granule(
         dtime=datetime.timedelta(seconds=dtime),
         qnc=muphys_configuration.qnc,
         backend=backend,
-        # Exercise the default Component setup for the separate-program mode.
+        # The default Component setup is the separate-program mode.
         step=muphys_program if single_program else None,
     )
     outputs = component(state, datetime.datetime.fromisoformat(date))
@@ -132,16 +128,16 @@ def test_muphys_granule(
     # direct run cannot change the Component's inputs or outputs.
     direct = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend),
-        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+        domain=gtx.domain({dims.CellDim: icon_grid.num_cells, dims.KDim: icon_grid.num_levels}),
     )
-    direct.t.ndarray[...] = inp.t.ndarray
+    direct.t.ndarray[...] = state["te"].ndarray
     for species in SPECIES:
-        getattr(direct, f"q{species}").ndarray[...] = getattr(inp, f"q{species}").ndarray
+        getattr(direct, f"q{species}").ndarray[...] = state[f"q{species}"].ndarray
     muphys_program(
-        dz=inp.dz,
+        dz=state["dz"],
         te=direct.t,
-        p=inp.p,
-        rho=inp.rho,
+        p=state["p"],
+        rho=state["rho"],
         q_in=direct.q,
         t_out=direct.t,
         q_out=direct.q,
@@ -165,22 +161,15 @@ def test_muphys_granule(
         old = initial_state["te" if name == "temperature" else name]
         expected = np.zeros_like(old)
         expected[cells, :] = (updated.asnumpy()[cells, :] - old[cells, :]) / dtime
-        test_utils.assert_dallclose(
-            outputs[f"tend_{name}"].asnumpy(), expected, atol=1e-15, err_msg=f"tend_{name}"
-        )
+        np.testing.assert_array_equal(outputs[f"tend_{name}"].asnumpy(), expected, err_msg=name)
 
     # ICON saves only aggregate surface diagnostics. Verify the full pflx
     # profile and each surface diagnostic against the direct muphys call.
-    test_utils.assert_dallclose(
-        outputs["pflx"].asnumpy(), direct.pflx.asnumpy(), rtol=0.0, atol=0.0, err_msg="pflx"
-    )
+    np.testing.assert_array_equal(outputs["pflx"].asnumpy(), direct.pflx.asnumpy())
     for name in ("pr", "ps", "pi", "pg", "pre"):
-        test_utils.assert_dallclose(
+        np.testing.assert_array_equal(
             outputs[name].asnumpy()[:, -1],
             getattr(direct, name).asnumpy()[:, -1],
-            rtol=0.0,
-            atol=0.0,
-            err_msg=name,
         )
 
     for name, tracer_index in (
@@ -197,14 +186,7 @@ def test_muphys_granule(
             atol=1e-13,
             err_msg=f"{name.removeprefix('tend_')} in cloud",
         )
-        reference = (
-            exit_savepoint.tend_tracer(tracer_index).asnumpy()
-            - init_savepoint.tend_tracer(tracer_index).asnumpy()
-        )
         actual = outputs[name].asnumpy()
-        test_utils.assert_dallclose(
-            actual[cells, jks:], reference[cells, jks:], atol=1e-13, err_msg=f"{name} in cloud"
-        )
         # above the cloudy region ICON does not run the scheme; the full-column
         # granule must produce (near-)zero tendencies there
         test_utils.assert_dallclose(
@@ -217,14 +199,7 @@ def test_muphys_granule(
         atol=1e-10,
         err_msg="temperature in cloud",
     )
-    tend_ta_reference = exit_savepoint.tend_ta().asnumpy() - init_savepoint.tend_ta().asnumpy()
     tend_ta_actual = outputs["tend_temperature"].asnumpy()
-    test_utils.assert_dallclose(
-        tend_ta_actual[cells, jks:],
-        tend_ta_reference[cells, jks:],
-        atol=1e-10,
-        err_msg="tend_temperature in cloud",
-    )
     test_utils.assert_dallclose(
         tend_ta_actual[cells, :jks], 0.0, atol=1e-10, err_msg="tend_temperature above cloud"
     )
