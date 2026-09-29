@@ -21,6 +21,7 @@ import logging
 from collections.abc import Callable
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.bindings import (
@@ -47,7 +48,9 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import device_utils
 from icon4py.tools import py2fgen
+from icon4py.tools.py2fgen import runtime_config
 
 
 logger = logging.getLogger(__name__)
@@ -57,6 +60,7 @@ logger = logging.getLogger(__name__)
 class DiffusionGranule:
     diffusion: Diffusion
     dummy_field_factory: Callable
+    allocator: gtx_typing.Allocator
 
 
 granule: DiffusionGranule | None = None
@@ -257,6 +261,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             max_nudging_coefficient=nudge_max_coeff,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
+        allocator=allocator,
     )
     if wrapper_config.WAIT_FOR_COMPILATION:
         gtx.wait_for_compilation()
@@ -309,3 +314,6 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dtime=dtime,
         initial_run=linit,
     )
+    if runtime_config.USE_DEVICE:
+        # Fortran may read the results on the host (unified memory), wait for the device.
+        device_utils.sync(granule.allocator)

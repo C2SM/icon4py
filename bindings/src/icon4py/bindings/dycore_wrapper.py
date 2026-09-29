@@ -22,6 +22,7 @@ from collections.abc import Callable
 from typing import Annotated
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
@@ -37,8 +38,9 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.states import nonhydro_states
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils, field_utils
 from icon4py.tools import py2fgen
+from icon4py.tools.py2fgen import runtime_config
 
 
 logger = logging.getLogger(__name__)
@@ -48,6 +50,7 @@ logger = logging.getLogger(__name__)
 class SolveNonhydroGranule:
     solve_nh: solve_nonhydro.SolveNonhydro
     dummy_field_factory: Callable
+    allocator: gtx_typing.Allocator
 
 
 granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
@@ -286,6 +289,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
             max_nudging_coefficient=nudge_max_coeff,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
+        allocator=allocator,
     )
     if wrapper_config.WAIT_FOR_COMPILATION:
         gtx.wait_for_compilation()
@@ -438,6 +442,9 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
     )
+    if runtime_config.USE_DEVICE:
+        # Fortran may read the results on the host (unified memory), wait for the device.
+        device_utils.sync(granule.allocator)
 
     # TODO(havogt): create separate bindings for writing the timers
     if gtx_config.COLLECT_METRICS_LEVEL > 0:
