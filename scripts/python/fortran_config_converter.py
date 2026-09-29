@@ -394,8 +394,10 @@ _TMX_USE_TMX_INDEX: typing.Final = 22
 TMX = ConfigMapping(
     tmx_config.TmxConfig,
     [
-        IconOption("solver_type", _TMX_VDIFF_PATH, unnamed_index=23),
-        IconOption("energy_type", _TMX_VDIFF_PATH, unnamed_index=24),
+        # read as plain ints so that `TmxConfig.__post_init__` reports the unimplemented
+        # option, instead of the bare enum conversion failing first
+        IconOption("solver_type", _TMX_VDIFF_PATH, unnamed_index=23, converter=int),
+        IconOption("energy_type", _TMX_VDIFF_PATH, unnamed_index=24, converter=int),
         IconOption("dissipation_factor", _TMX_VDIFF_PATH, unnamed_index=25),
         IconOption("use_louis", _TMX_VDIFF_PATH, unnamed_index=26),
         IconOption("use_louis_land", _TMX_VDIFF_PATH, unnamed_index=27),

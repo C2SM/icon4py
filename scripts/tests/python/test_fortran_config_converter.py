@@ -376,3 +376,23 @@ def test_tmx_is_inactive_when_use_tmx_is_false() -> None:
     record = _echoed_vdf_record()
     record[22] = False
     assert not fcc.tmx_is_active({"aes_vdf_nml": {"aes_vdf_config": record}})
+
+
+def test_tmx_rejects_the_explicit_solver() -> None:
+    fortran_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(solver_type=1, energy_type=2, turb_prandtl=0.5)
+        },
+    }
+    with pytest.raises(ValueError, match="only the implicit solver"):
+        fcc.TMX.build(fortran_dict)
+
+
+def test_tmx_rejects_dry_static_energy() -> None:
+    fortran_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(solver_type=2, energy_type=1, turb_prandtl=0.5)
+        },
+    }
+    with pytest.raises(ValueError, match="only internal energy"):
+        fcc.TMX.build(fortran_dict)
