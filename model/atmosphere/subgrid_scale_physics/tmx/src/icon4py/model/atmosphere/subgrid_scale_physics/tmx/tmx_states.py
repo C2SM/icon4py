@@ -211,7 +211,7 @@ class TmxDiagnosticState:
 
 @dataclasses.dataclass(frozen=True)
 class TmxNewState:
-    """Fields updated by the tmx diffusion: `new = state + tend * dtime`."""
+    """Fields updated by tmx: `new = state + tend * dtime`."""
 
     temperature: fa.CellKField[ta.wpfloat]
     """Updated air temperature on full levels [K]."""

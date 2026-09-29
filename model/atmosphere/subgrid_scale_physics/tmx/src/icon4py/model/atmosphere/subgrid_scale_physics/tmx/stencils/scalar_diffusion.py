@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.dimension import C2E, E2C, C2EDim
 from icon4py.model.common.physics.thermodynamics.compute_energy import (
-    _compute_dry_static_energy,
     compute_internal_energy_per_area,
 )
 from icon4py.model.common.physics.thermodynamics.compute_temperature import (
@@ -192,19 +191,24 @@ def diffuse_tracer(
     )
 
 
+# TODO(havogt): the name omits the q tracers it depends on; revisit it, and its pair
+# `_compute_temperature_from_internal_energy`, in a naming round.
 @gtx.field_operator
 def _compute_internal_energy_from_temperature(
     temperature: fa.CellKField[wpfloat],
     qv: fa.CellKField[wpfloat],
-    q_liquid: fa.CellKField[wpfloat],
-    q_solid: fa.CellKField[wpfloat],
+    qc: fa.CellKField[wpfloat],
+    qi: fa.CellKField[wpfloat],
+    qr: fa.CellKField[wpfloat],
+    qs: fa.CellKField[wpfloat],
+    qg: fa.CellKField[wpfloat],
     height_above_ground: fa.CellKField[wpfloat],
     grav: wpfloat,
 ) -> fa.CellKField[wpfloat]:
     """Specific internal energy plus cvd / cpd times the geopotential above ground."""
     one = broadcast(wpfloat("1.0"), (dims.CellDim, dims.KDim))
     return (
-        compute_internal_energy_per_area(temperature, qv, q_liquid, q_solid, one, one)
+        compute_internal_energy_per_area(temperature, qv, qc + qr, qi + qs + qg, one, one)
         + grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd
     )
 
@@ -213,8 +217,11 @@ def _compute_internal_energy_from_temperature(
 def _compute_temperature_from_internal_energy(
     energy: fa.CellKField[wpfloat],
     qv: fa.CellKField[wpfloat],
-    q_liquid: fa.CellKField[wpfloat],
-    q_solid: fa.CellKField[wpfloat],
+    qc: fa.CellKField[wpfloat],
+    qi: fa.CellKField[wpfloat],
+    qr: fa.CellKField[wpfloat],
+    qs: fa.CellKField[wpfloat],
+    qg: fa.CellKField[wpfloat],
     height_above_ground: fa.CellKField[wpfloat],
     grav: wpfloat,
 ) -> fa.CellKField[wpfloat]:
@@ -223,20 +230,11 @@ def _compute_temperature_from_internal_energy(
     return compute_temperature_from_internal_energy_per_area(
         energy - grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd,
         qv,
-        q_liquid,
-        q_solid,
+        qc + qr,
+        qi + qs + qg,
         one,
         one,
     )
-
-
-@gtx.field_operator
-def _compute_temperature_from_dry_static_energy(
-    energy: fa.CellKField[wpfloat],
-    height_above_ground: fa.CellKField[wpfloat],
-    grav: wpfloat,
-) -> fa.CellKField[wpfloat]:
-    return (energy - grav * height_above_ground) / PhysicsConstants.cpd
 
 
 @gtx.field_operator
@@ -247,35 +245,6 @@ def _compute_surface_internal_energy_flux(
 ) -> fa.CellKField[wpfloat]:
     return sensible_heat_flux + temperature * evapotranspiration * (
         PhysicsConstants.cvv - PhysicsConstants.cvd
-    )
-
-
-@gtx.field_operator
-def _compute_surface_dry_static_energy_flux(
-    sensible_heat_flux: fa.CellField[wpfloat],
-) -> fa.CellField[wpfloat]:
-    return sensible_heat_flux * PhysicsConstants.cpd / PhysicsConstants.cvd
-
-
-@gtx.field_operator
-def _compute_energy_from_temperature(
-    temperature: fa.CellKField[wpfloat],
-    qv: fa.CellKField[wpfloat],
-    qc: fa.CellKField[wpfloat],
-    qi: fa.CellKField[wpfloat],
-    qr: fa.CellKField[wpfloat],
-    qs: fa.CellKField[wpfloat],
-    qg: fa.CellKField[wpfloat],
-    height_above_ground: fa.CellKField[wpfloat],
-    grav: wpfloat,
-    use_internal_energy: bool,
-) -> fa.CellKField[wpfloat]:
-    return (
-        _compute_internal_energy_from_temperature(
-            temperature, qv, qc + qr, qi + qs + qg, height_above_ground, grav
-        )
-        if use_internal_energy
-        else _compute_dry_static_energy(temperature, height_above_ground, grav)
     )
 
 
@@ -291,13 +260,12 @@ def compute_energy_from_temperature(
     height_above_ground: fa.CellKField[wpfloat],
     energy: fa.CellKField[wpfloat],
     grav: wpfloat,
-    use_internal_energy: bool,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_energy_from_temperature(
+    _compute_internal_energy_from_temperature(
         temperature,
         qv,
         qc,
@@ -307,7 +275,6 @@ def compute_energy_from_temperature(
         qg,
         height_above_ground,
         grav,
-        use_internal_energy,
         out=energy,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -342,29 +309,21 @@ def _diffuse_energy_and_update_temperature(
     dtime: wpfloat,
     minlvl: gtx.int32,
     maxlvl: gtx.int32,
-    use_internal_energy: bool,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """
     New temperature and its tendency after one diffusion step of the energy of
-    `_compute_energy_from_temperature`, converted back with the new qv, qc and qi.
+    `_compute_internal_energy_from_temperature`, converted back with the new qv, qc and qi.
     """
     a, b, c = _assemble_scalar_diffusion_matrix(
         diffusivity, inv_dz, air_mass, prefactor, minlvl, maxlvl
-    )
-    # only the bottom row is used, where 'temperature' is that of the lowest level
-    surface_flux = (
-        _compute_surface_internal_energy_flux(sensible_heat_flux, evapotranspiration, temperature)
-        if use_internal_energy
-        else broadcast(
-            _compute_surface_dry_static_energy_flux(sensible_heat_flux), (dims.CellDim, dims.KDim)
-        )
     )
     new_energy, _ = _diffuse_scalar(
         energy,
         a,
         b,
         c,
-        surface_flux,
+        # only the bottom row is used, where 'temperature' is that of the lowest level
+        _compute_surface_internal_energy_flux(sensible_heat_flux, evapotranspiration, temperature),
         air_mass,
         rho,
         km_ie,
@@ -375,14 +334,8 @@ def _diffuse_energy_and_update_temperature(
         dtime,
         maxlvl,
     )
-    q_liquid = new_qc + qr
-    q_solid = new_qi + qs + qg
-    new_temperature = (
-        _compute_temperature_from_internal_energy(
-            new_energy, new_qv, q_liquid, q_solid, height_above_ground, grav
-        )
-        if use_internal_energy
-        else _compute_temperature_from_dry_static_energy(new_energy, height_above_ground, grav)
+    new_temperature = _compute_temperature_from_internal_energy(
+        new_energy, new_qv, new_qc, new_qi, qr, qs, qg, height_above_ground, grav
     )
     return new_temperature, (new_temperature - temperature) * (wpfloat("1.0") / dtime)
 
@@ -413,7 +366,6 @@ def diffuse_energy_and_update_temperature(
     prefactor: wpfloat,
     grav: wpfloat,
     dtime: wpfloat,
-    use_internal_energy: bool,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -444,7 +396,6 @@ def diffuse_energy_and_update_temperature(
         dtime,
         vertical_start,
         vertical_end - 1,
-        use_internal_energy,
         out=(new_temperature, tend_temperature),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

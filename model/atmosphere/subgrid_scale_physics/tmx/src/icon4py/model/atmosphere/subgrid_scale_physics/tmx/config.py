@@ -30,9 +30,8 @@ class SolverType(int, enum.Enum):
 
 @config_io.register_enum
 class EnergyType(int, enum.Enum):
-    """Type of energy diffused by the temperature (heat) diffusion."""
+    """Type of energy diffused by the heat diffusion; ICON's dry static energy (1) is not ported."""
 
-    DRY_STATIC = 1  # dry static energy cp*T + g*z
     INTERNAL = 2  # internal energy cv*T
 
 
@@ -53,7 +52,7 @@ class TmxConfig:
     energy_type: typing.Annotated[
         EnergyType,
         common_conf_opt.ConfigOption(
-            description="Type of energy diffused by the heat diffusion (dry static or internal).",
+            description="Type of energy diffused by the heat diffusion (only internal energy is implemented).",
         ),
     ] = EnergyType.INTERNAL
 
@@ -161,7 +160,13 @@ class TmxConfig:
                 f"Invalid argument 'solver_type': only the implicit solver "
                 f"({SolverType.IMPLICIT.value}) is implemented, got {self.solver_type}."
             ) from None
-        self.energy_type = EnergyType(self.energy_type)
+        try:
+            self.energy_type = EnergyType(self.energy_type)
+        except ValueError:
+            raise ValueError(
+                f"Invalid argument 'energy_type': only internal energy "
+                f"({EnergyType.INTERNAL.value}) is implemented, got {self.energy_type}."
+            ) from None
 
         if self.turb_prandtl <= 0.0:
             raise ValueError(

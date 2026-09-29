@@ -20,7 +20,7 @@ import typing
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config, tmx_states
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import (
     scalar_diffusion as scalar_stencils,
 )
@@ -52,14 +52,12 @@ class ScalarDiffusion:
         backend: model_backends.BackendLike,
         exchange: decomposition.ExchangeRuntime,
         turb_prandtl: float,
-        energy_type: tmx_config.EnergyType,
         use_scale_turb_energy_flux: bool,
         scale_turb_energy_flux: float,
     ) -> None:
         self._exchange = exchange
         # `zfactor` in Compute_diffusion_temperature
         energy_flux_factor = scale_turb_energy_flux if use_scale_turb_energy_flux else 1.0
-        use_internal_energy = energy_type == tmx_config.EnergyType.INTERNAL
 
         cell_domain = h_grid.domain(dims.CellDim)
         cell_start_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
@@ -110,7 +108,6 @@ class ScalarDiffusion:
             constant_args={
                 "height_above_ground": metric_state.height_above_ground,
                 "grav": constants.GRAV,
-                "use_internal_energy": use_internal_energy,
             },
             horizontal_sizes=horizontal_sizes,
             vertical_sizes=vertical_sizes,
@@ -125,7 +122,6 @@ class ScalarDiffusion:
                 "height_above_ground": metric_state.height_above_ground,
                 "prefactor": energy_flux_factor,
                 "grav": constants.GRAV,
-                "use_internal_energy": use_internal_energy,
             },
             horizontal_sizes=horizontal_sizes,
             vertical_sizes=vertical_sizes,
@@ -203,8 +199,8 @@ class ScalarDiffusion:
         dtime: float,
     ) -> None:
         """
-        Diffuse the temperature as dry static or internal energy (`Compute_diffusion_temperature`
-        in mo_vdf.f90).
+        Diffuse the temperature as internal energy (`Compute_diffusion_temperature` in
+        mo_vdf.f90).
 
         The energy is computed with the input tracers and converted back with the new qv, qc and
         qi of `new_state`, so this runs after `run_hydrometeor_diffusion`. Needs
@@ -224,6 +220,8 @@ class ScalarDiffusion:
         )
 
         log.debug("communication of energy (cells): start")
+        # TODO(havogt): computing the energy inside the diffusion program, recomputed at the
+        # neighbour cells, would drop this exchange; try it once MPI tests check it.
         self._exchange.exchange(dims.CellDim, self.energy)
         log.debug("communication of energy (cells): end")
 

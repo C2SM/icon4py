@@ -18,6 +18,7 @@ import gt4py.next as gtx
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics import metric_fields
+from icon4py.model.testing import definitions
 
 
 if TYPE_CHECKING:
@@ -26,11 +27,10 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-# Serialized timesteps of the exclaim_ape_aesPhys archive (run start
-# 2008-09-01T00:00:00Z, dtime = 300 s). The archive also holds the
-# 00:00:00 step, but that is the call made during model initialization,
-# so the verification tests parametrize over the subsequent steps only.
-TMX_DATES: tuple[str, ...] = ("2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000")
+# Serialized timesteps of the exclaim_ape_aesPhys archive. The first one is the
+# call made during model initialization, so the verification tests parametrize
+# over the subsequent steps only.
+TMX_DATES: tuple[str, ...] = definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
 
 # Relative tolerance of all tmx integration datatests.
 RTOL: float = 3.0e-12

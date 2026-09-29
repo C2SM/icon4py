@@ -11,7 +11,6 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.scalar_diffusion import (
     compute_energy_from_temperature,
@@ -53,16 +52,13 @@ def energy_from_temperature_numpy(
     q_solid: np.ndarray,
     height_above_ground: np.ndarray,
     grav: float,
-    use_internal_energy: bool,
 ) -> np.ndarray:
-    if use_internal_energy:
-        return (
-            moist_heat_capacity_numpy(qv, q_liquid, q_solid) * temperature
-            - q_liquid * phy.lvc
-            - q_solid * phy.lsc
-            + grav * height_above_ground * phy.cvd / phy.cpd
-        )
-    return phy.cpd * temperature + grav * height_above_ground
+    return (
+        moist_heat_capacity_numpy(qv, q_liquid, q_solid) * temperature
+        - q_liquid * phy.lvc
+        - q_solid * phy.lsc
+        + grav * height_above_ground * phy.cvd / phy.cpd
+    )
 
 
 def temperature_from_energy_numpy(
@@ -73,14 +69,11 @@ def temperature_from_energy_numpy(
     q_solid: np.ndarray,
     height_above_ground: np.ndarray,
     grav: float,
-    use_internal_energy: bool,
 ) -> np.ndarray:
-    if use_internal_energy:
-        internal_energy = energy - grav * height_above_ground * phy.cvd / phy.cpd
-        return (internal_energy + q_liquid * phy.lvc + q_solid * phy.lsc) / (
-            moist_heat_capacity_numpy(qv, q_liquid, q_solid)
-        )
-    return (energy - grav * height_above_ground) / phy.cpd
+    internal_energy = energy - grav * height_above_ground * phy.cvd / phy.cpd
+    return (internal_energy + q_liquid * phy.lvc + q_solid * phy.lsc) / (
+        moist_heat_capacity_numpy(qv, q_liquid, q_solid)
+    )
 
 
 def diffuse_scalar_numpy(
@@ -248,7 +241,6 @@ class TestComputeEnergyFromTemperature(stencil_tests.StencilTest):
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             *_DOMAIN_ARGS,
             "grav",
-            "use_internal_energy",
         ),
     }
 
@@ -265,7 +257,6 @@ class TestComputeEnergyFromTemperature(stencil_tests.StencilTest):
         qg: np.ndarray,
         height_above_ground: np.ndarray,
         grav: float,
-        use_internal_energy: bool,
         horizontal_start: int,
         horizontal_end: int,
         vertical_start: int,
@@ -282,37 +273,23 @@ class TestComputeEnergyFromTemperature(stencil_tests.StencilTest):
             q_solid=q_solid,
             height_above_ground=height_above_ground,
             grav=grav,
-            use_internal_energy=use_internal_energy,
         )[cells, rows]
         return dict(energy=energy)
 
-    @stencil_tests.input_data_fixture(
-        params=[True, False], ids=["internal_energy", "dry_static_energy"]
-    )
-    def input_data(
-        data_alloc: stencil_tests.DataAllocationWrapper,
-        grid: base.Grid,
-        request: pytest.FixtureRequest,
-    ) -> dict:
-        return _compute_energy_input_data(data_alloc, grid, use_internal_energy=request.param)
-
-
-def _compute_energy_input_data(
-    data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid, use_internal_energy: bool
-) -> dict:
-    horizontal_start, horizontal_end = _cells(grid)
-    return dict(
-        temperature=data_alloc.random_field(dims.CellDim, dims.KDim, low=200.0, high=300.0),
-        **_tracers(data_alloc),
-        height_above_ground=data_alloc.random_field(dims.CellDim, dims.KDim, high=1.0e4),
-        energy=data_alloc.zero_field(dims.CellDim, dims.KDim),
-        grav=constants.GRAV,
-        use_internal_energy=use_internal_energy,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(grid.num_levels),
-    )
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        horizontal_start, horizontal_end = _cells(grid)
+        return dict(
+            temperature=data_alloc.random_field(dims.CellDim, dims.KDim, low=200.0, high=300.0),
+            **_tracers(data_alloc),
+            height_above_ground=data_alloc.random_field(dims.CellDim, dims.KDim, high=1.0e4),
+            energy=data_alloc.zero_field(dims.CellDim, dims.KDim),
+            grav=constants.GRAV,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(grid.num_levels),
+        )
 
 
 class TestDiffuseEnergyAndUpdateTemperature(stencil_tests.StencilTest):
@@ -325,7 +302,6 @@ class TestDiffuseEnergyAndUpdateTemperature(stencil_tests.StencilTest):
             "rturb_prandtl",
             "prefactor",
             "grav",
-            "use_internal_energy",
         ),
     }
 
@@ -350,7 +326,6 @@ class TestDiffuseEnergyAndUpdateTemperature(stencil_tests.StencilTest):
         prefactor: float,
         grav: float,
         dtime: float,
-        use_internal_energy: bool,
         horizontal_start: int,
         horizontal_end: int,
         vertical_start: int,
@@ -364,13 +339,10 @@ class TestDiffuseEnergyAndUpdateTemperature(stencil_tests.StencilTest):
             1.0 / air_mass[:, rows],
         )
         a, b, c = matrix_diagonals_on_rows(matrix, air_mass.shape, rows)
-        if use_internal_energy:
-            temperature_sfc = temperature[:, vertical_end - 1]
-            surface_flux = sensible_heat_flux + temperature_sfc * evapotranspiration * (
-                phy.cvv - phy.cvd
-            )
-        else:
-            surface_flux = sensible_heat_flux * phy.cpd / phy.cvd
+        temperature_sfc = temperature[:, vertical_end - 1]
+        surface_flux = sensible_heat_flux + temperature_sfc * evapotranspiration * (
+            phy.cvv - phy.cvd
+        )
         new_energy, _ = diffuse_scalar_numpy(
             stencil_tests.connectivities_asnumpy(grid),
             var=energy,
@@ -404,39 +376,25 @@ class TestDiffuseEnergyAndUpdateTemperature(stencil_tests.StencilTest):
             q_solid=q_solid,
             height_above_ground=height_above_ground,
             grav=grav,
-            use_internal_energy=use_internal_energy,
         )[cells, rows]
         tend_temperature[cells, rows] = (
             new_temperature[cells, rows] - temperature[cells, rows]
         ) / dtime
         return dict(new_temperature=new_temperature, tend_temperature=tend_temperature)
 
-    @stencil_tests.input_data_fixture(
-        params=[True, False], ids=["internal_energy", "dry_static_energy"]
-    )
-    def input_data(
-        data_alloc: stencil_tests.DataAllocationWrapper,
-        grid: base.Grid,
-        request: pytest.FixtureRequest,
-    ) -> dict:
-        return _diffuse_energy_input_data(data_alloc, grid, use_internal_energy=request.param)
-
-
-def _diffuse_energy_input_data(
-    data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid, use_internal_energy: bool
-) -> dict:
-    return dict(
-        **_diffusion_input_data(data_alloc, grid, "energy"),
-        diffusivity=data_alloc.random_field(dims.CellDim, dims.KHalfDim, low=0.0),
-        inv_dz=data_alloc.random_field(dims.CellDim, dims.KHalfDim, low=0.1),
-        **_tracers(data_alloc, prefix="new_"),
-        sensible_heat_flux=data_alloc.random_field(dims.CellDim),
-        evapotranspiration=data_alloc.random_field(dims.CellDim),
-        temperature=data_alloc.random_field(dims.CellDim, dims.KDim, low=200.0, high=300.0),
-        height_above_ground=data_alloc.random_field(dims.CellDim, dims.KDim, high=1.0e4),
-        new_temperature=data_alloc.zero_field(dims.CellDim, dims.KDim),
-        tend_temperature=data_alloc.zero_field(dims.CellDim, dims.KDim),
-        prefactor=wpfloat(1.5),
-        grav=constants.GRAV,
-        use_internal_energy=use_internal_energy,
-    )
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        return dict(
+            **_diffusion_input_data(data_alloc, grid, "energy"),
+            diffusivity=data_alloc.random_field(dims.CellDim, dims.KHalfDim, low=0.0),
+            inv_dz=data_alloc.random_field(dims.CellDim, dims.KHalfDim, low=0.1),
+            **_tracers(data_alloc, prefix="new_"),
+            sensible_heat_flux=data_alloc.random_field(dims.CellDim),
+            evapotranspiration=data_alloc.random_field(dims.CellDim),
+            temperature=data_alloc.random_field(dims.CellDim, dims.KDim, low=200.0, high=300.0),
+            height_above_ground=data_alloc.random_field(dims.CellDim, dims.KDim, high=1.0e4),
+            new_temperature=data_alloc.zero_field(dims.CellDim, dims.KDim),
+            tend_temperature=data_alloc.zero_field(dims.CellDim, dims.KDim),
+            prefactor=wpfloat(1.5),
+            grav=constants.GRAV,
+        )

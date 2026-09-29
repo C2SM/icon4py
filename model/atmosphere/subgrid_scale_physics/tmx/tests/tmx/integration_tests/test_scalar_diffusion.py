@@ -79,7 +79,6 @@ def _setup(
         backend=backend,
         exchange=decomposition.SingleNodeExchange(),
         turb_prandtl=config.turb_prandtl,
-        energy_type=config.energy_type,
         use_scale_turb_energy_flux=config.use_scale_turb_energy_flux,
         scale_turb_energy_flux=config.scale_turb_energy_flux,
     )
