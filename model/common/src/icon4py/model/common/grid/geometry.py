@@ -46,7 +46,7 @@ class GridGeometry(factory.FieldSource):
     Computes geometry fields from the grid geographical coordinates fo cells, edges, vertices.
     Computations are triggered upon first request.
 
-    Can be queried for geometry fields and metadata
+    Can be queried for geometry fields
 
     Examples:
         >>> geometry = GridGeometry(
@@ -62,14 +62,6 @@ class GridGeometry(factory.FieldSource):
         GridGeometry for geometry_type=SPHERE grid=f2e06839-694a-cca1-a3d5-028e0ff326e0 : R9B4
         >>> geometry.get("edge_length")
         NumPyArrayField(_domain=Domain(dims=(Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),), ranges=(UnitRange(0, 31558),)), _ndarray=array([3746.2669054 , 3746.2669066 , 3746.33418138, ..., 3736.61622936, 3792.41317057]))
-        >>> geometry.get_metadata("edge_length")
-        {'standard_name': 'edge_length',
-        'long_name': 'edge length',
-        'units': 'm',
-        'dims': (Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),),
-        'icon_var_name': 't_grid_edges%primal_edge_length',
-        'dtype': numpy.float64}
-
 
     """
 
@@ -869,7 +861,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
             intermediates = _IntermediateFields(
                 self._wrapped_provider,
                 {
-                    name: field_src.get_metadata(target)
+                    name: field_src.metadata[target]
                     for target, pair in zip(self.fields, self._pairs, strict=True)
                     for name in pair
                 },

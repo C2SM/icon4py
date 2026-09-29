@@ -103,14 +103,10 @@ class SimpleFieldSource(factory.FieldSource):
         return self._backend
 
 
-def _basic_metadata(name: str, *dims: gtx.Dimension) -> model.FieldMetaData:
-    return model.FieldMetaData(standard_name=name, units="", dims=dims)
-
-
 def _prep_for_dict(
     name: str, field: state_utils.GTXFieldType
 ) -> tuple[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]]:
-    return name, (field, _basic_metadata(name, *field.domain.dims))
+    return name, (field, model.FieldMetaData(standard_name=name, units="", dims=field.domain.dims))
 
 
 # TODO(): this reads lat lon from the grid_savepoint, which could be read from the grid file/geometry, to make it non datatests
@@ -391,7 +387,9 @@ def test_compute_scalar_value_from_numpy_provider(
     provider = factory.NumpyDataProvider(
         func=sample_func, deps={"ar": "height_coordinate"}, domain=(), fields=("minimal_height",)
     )
-    height_coordinate_source.with_metadata({"minimal_height": _basic_metadata("minimal_height")})
+    height_coordinate_source.with_metadata(
+        {"minimal_height": model.FieldMetaData(standard_name="minimal_height", units="")}
+    )
     height_coordinate_source.register_provider(provider)
     value = height_coordinate_source.get_scalar("minimal_height")
     assert np.isscalar(value)
@@ -414,11 +412,13 @@ def _double_precision_source() -> SimpleFieldSource:
     )
     source.with_metadata(
         {
-            "explicit_double": {
-                **_basic_metadata("explicit_double", dims.CellDim, dims.KDim),
-                "dtype": gtx.float64,
-            },
-            "scalar": {"standard_name": "scalar", "units": ""},
+            "explicit_double": model.FieldMetaData(
+                standard_name="explicit_double",
+                units="",
+                dtype=gtx.float64,
+                dims=(dims.CellDim, dims.KDim),
+            ),
+            "scalar": model.FieldMetaData(standard_name="scalar", units=""),
         }
     )
     return source

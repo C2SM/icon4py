@@ -13,7 +13,6 @@ fields and manage their dependencies
 `FieldSource`: allows to query for a field, by the following methods:
 - `.get(field_name)`:  return computed values as a GT4Py `Field` with dtype according to metadata
 - `.get_full_precision(field_name)`:  return computed values as a GT4Py `Field` with the dtype the computation returned
-- `.get_metadata(field_name)`:  return metadata such as units, CF standard_name or similar, dimensions...
 
 The factory can be used to "store" already computed fields or register functions and call arguments
 and only compute the fields lazily upon request. In order to do so the user registers the fields
@@ -54,7 +53,7 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py.next import common as gtx_common
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import model, utils as state_utils
@@ -180,10 +179,6 @@ class FieldSource(GridProvider, Protocol):
         if field_name not in self._providers:
             raise ValueError(f"Field '{field_name}' not provided by the source '{self.__class__}'")
 
-    def get_metadata(self, field_name: str) -> model.FieldMetaData:
-        self.check_field_in_provider(field_name)
-        return self.metadata[field_name]
-
     def get_full_precision(
         self, field_name: str
     ) -> state_utils.GTXFieldType | state_utils.ScalarType:
@@ -205,25 +200,23 @@ class FieldSource(GridProvider, Protocol):
         """Export a field from the factory in the dtype provided by the metadata."""
         field = self.get_full_precision(field_name)
         this_metadata = self.metadata[field_name]
-        if "dims" not in this_metadata or not this_metadata["dims"]:
+        if this_metadata.is_scalar:
             raise TypeError(
                 f"This function is intended to return a Field. Field name {field_name!r} looks like a Scalar ('dims' missing in metadata)."
             )
-        dtype_metadata = this_metadata.get("dtype", ta.wpfloat)
-        return data_alloc.astype_if_needed(field, dtype_metadata)
+        return data_alloc.astype_if_needed(field, this_metadata.dtype)
 
     def get_scalar(self, field_name: str) -> state_utils.ScalarType:
         scalar = self.get_full_precision(field_name)
         this_metadata = self.metadata[field_name]
-        if this_metadata.get("dims", False):
+        if not this_metadata.is_scalar:
             raise TypeError(
                 f"This function is intended to return a Scalar. Field name {field_name!r} looks like a Field (contains 'dims' in metadata)."
             )
-        return this_metadata.get("dtype", ta.wpfloat)(scalar)
+        return this_metadata.dtype(scalar)
 
     def output_dtype(self, field_name: str) -> state_utils.ScalarType:
-        dtype = self.get_metadata(field_name).dtype
-        return ta.wpfloat if dtype is None else dtype
+        return self.metadata[field_name].dtype
 
     def internal_dtype(self, field_name: str) -> state_utils.ScalarType:
         return allfloats_as_double(self.output_dtype(field_name))
