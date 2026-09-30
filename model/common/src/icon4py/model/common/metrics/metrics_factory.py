@@ -34,7 +34,10 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.interpolation.stencils import interpolate_cell_field_to_edge
+from icon4py.model.common.interpolation.stencils import (
+    interpolate_cell_field_to_edge,
+    interpolate_cell_field_to_vertex,
+)
 from icon4py.model.common.math import utils as math_utils, vertical_operations as vertical_ops
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
@@ -965,6 +968,43 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             do_exchange=False,
         )
         self.register_provider(inv_ddqz_z_full_e)
+
+        inv_ddqz_z_half_e = factory.ProgramFieldProvider(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_on_half_levels.with_backend(
+                self._backend
+            ),
+            deps={"in_field": attrs.INV_DDQZ_Z_HALF, "coeff": interpolation_attributes.C_LIN_E},
+            domain={
+                dims.EdgeDim: (edge_domain(h_grid.Zone.LOCAL), edge_domain(h_grid.Zone.END)),
+                dims.KHalfDim: (
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"out_field": attrs.INV_DDQZ_Z_HALF_E},
+            do_exchange=True,
+        )
+        self.register_provider(inv_ddqz_z_half_e)
+
+        inv_ddqz_z_half_v = factory.ProgramFieldProvider(
+            func=interpolate_cell_field_to_vertex.interpolate_cell_field_to_vertex.with_backend(
+                self._backend
+            ),
+            deps={
+                "cell_in": attrs.INV_DDQZ_Z_HALF,
+                "c_int": interpolation_attributes.CELL_AW_VERTS,
+            },
+            domain={
+                dims.VertexDim: (vertex_domain(h_grid.Zone.LOCAL), vertex_domain(h_grid.Zone.END)),
+                dims.KHalfDim: (
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"vert_out": attrs.INV_DDQZ_Z_HALF_V},
+            do_exchange=True,
+        )
+        self.register_provider(inv_ddqz_z_half_v)
 
         geopot_agl_ifc = factory.NumpyDataProvider(
             func=mf.compute_geopotential_above_ground_on_half_levels,
