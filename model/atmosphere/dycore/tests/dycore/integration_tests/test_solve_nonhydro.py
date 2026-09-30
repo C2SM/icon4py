@@ -1609,7 +1609,7 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
         divdamp_order=divdamp_order,
         mean_cell_area=mean_cell_area,
         second_order_divdamp_factor=second_order_divdamp_factor,
-        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
+        max_nudging_coefficient=wpfloat(experiment.config.interpolation.max_nudging_coefficient),
         wp_eps=constants.WP_EPS,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,
