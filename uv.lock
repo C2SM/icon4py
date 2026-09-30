@@ -1181,7 +1181,7 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/spcl/dace?branch=new-gpu-codegen-dev#da7f2e3039f3df4e00368c208437657010c396ac"}
+source = {git = "https://github.com/spcl/dace?branch=new-gpu-codegen-dev#58cdd2cf2829604435417770b3a1cab36a76e506"}
 version = "2.0.0a9"
 
 [[package]]
