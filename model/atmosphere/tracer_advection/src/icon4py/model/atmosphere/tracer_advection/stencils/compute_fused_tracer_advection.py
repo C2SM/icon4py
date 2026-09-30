@@ -69,6 +69,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.limit_vertical_slope_sem
 from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coefficients_svd import (
     _reconstruct_linear_coefficients_svd,
 )
+from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import VerticalAdvectionType
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
     _compute_tangential_wind,
@@ -107,7 +108,7 @@ def _compute_ppm4gpu_flux(
     z_slope_raw = _compute_ppm_slope(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, elev=elev)
     z_slope = (
         _limit_vertical_slope_semi_monotonically(p_cc=p_cc, z_slope=z_slope_raw, elev=elev)
-        if (itype_vlimit == 1)
+        if (itype_vlimit == VerticalAdvectionType.FIRST_ORDER_UPWIND)
         else z_slope_raw
     )
     p_face = concat_where(

@@ -11,7 +11,6 @@ from __future__ import annotations
 import dataclasses
 import logging
 from abc import ABC, abstractmethod
-from enum import Enum
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -26,6 +25,12 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_adv
     compute_tracer_advection_after_horizontal_limiter,
     compute_tracer_advection_before_horizontal_limiter,
 )
+from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import (
+    HorizontalAdvectionLimiter,
+    HorizontalAdvectionType,
+    VerticalAdvectionLimiter,
+    VerticalAdvectionType,
+)
 from icon4py.model.common import (
     constants,
     dimension as dims,
@@ -33,7 +38,6 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
-from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math.stencils import generic_math_operations
@@ -47,58 +51,6 @@ Advection module ported from ICON mo_advection_stepping.f90.
 """
 
 log = logging.getLogger(__name__)
-
-
-@config_io.register_enum
-class HorizontalAdvectionType(Enum):
-    """
-    Horizontal operator scheme for tracer advection (originally ihadv_tracer).
-    """
-
-    #: no horizontal tracer advection
-    NO_ADVECTION = 0
-    #: 1st order upwind
-    FIRST_ORDER_UPWIND = 1
-    #: 2nd order MIURA with linear reconstruction
-    SECOND_ORDER_LINEAR_MIURA = 2
-
-
-@config_io.register_enum
-class HorizontalAdvectionLimiter(Enum):
-    """
-    Limiter for horizontal tracer advection operator (originally itype_hlimit).
-    """
-
-    #: no horizontal limiter
-    NO_LIMITER = 0
-    #: positive definite horizontal limiter
-    POSITIVE_DEFINITE = 4
-
-
-@config_io.register_enum
-class VerticalAdvectionType(Enum):
-    """
-    Vertical operator scheme for tracer advection (originally ivadv_tracer).
-    """
-
-    #: no vertical tracer advection
-    NO_ADVECTION = 0
-    #: 1st order upwind
-    FIRST_ORDER_UPWIND = 1
-    #: 3rd order PPM
-    THIRD_ORDER_PPM = 3
-
-
-@config_io.register_enum
-class VerticalAdvectionLimiter(Enum):
-    """
-    Limiter for vertical tracer advection operator (originally itype_vlimit).
-    """
-
-    #: no vertical limiter
-    NO_LIMITER = 0
-    #: semi-monotonic vertical limiter
-    SEMI_MONOTONIC = 1
 
 
 @dataclasses.dataclass(frozen=True)
