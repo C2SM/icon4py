@@ -34,7 +34,7 @@ from icon4py.bindings import (
     grid_wrapper,
     icon4py_export,
 )
-from icon4py.bindings.comin import _marshal, _views, plugin
+from icon4py.bindings.comin import _dual, _marshal, _views, plugin
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.tools import py2fgen
 
@@ -44,10 +44,14 @@ DOUBLE, FLOAT, INT = 0, 1, 2
 ENTRY_POINTS = {
     "EP_SECONDARY_CONSTRUCTOR": 0,
     "EP_ATM_TIMELOOP_BEFORE": 8,
-    "EP_FINISH": 68,
-    "EP_DESTRUCTOR": 69,
-    "EP_ATM_DIFFUSION_ENTER": 70,
-    "EP_ATM_DIFFUSION_LEAVE": 71,
+    "EP_ATM_DYCORE_DIFFUSION_BEFORE": 20,
+    "EP_ATM_DYCORE_DIFFUSION_AFTER": 21,
+    "EP_ATM_DYCORE_SOLVE_NH_BEFORE": 22,
+    "EP_ATM_DYCORE_SOLVE_NH_AFTER": 23,
+    "EP_FINISH": 72,
+    "EP_DESTRUCTOR": 73,
+    "EP_ATM_DIFFUSION_ENTER": 74,
+    "EP_ATM_DIFFUSION_LEAVE": 75,
 }
 
 
@@ -299,10 +303,12 @@ class FakeIcon:
             for name in self.init_names():
                 if self.carriers[name].item() != self.pass_count:
                     raise IconFinish(f"icon4py ComIn plugin did not run {name}")
+        self.comin.fire("EP_ATM_DYCORE_DIFFUSION_BEFORE", domain_id)
         self.comin.fire("EP_ATM_DIFFUSION_ENTER", domain_id)
         if ctl.item() != self.call_count:
             raise IconFinish("icon4py ComIn plugin did not run diffusion_run")
         self.comin.fire("EP_ATM_DIFFUSION_LEAVE", domain_id)
+        self.comin.fire("EP_ATM_DYCORE_DIFFUSION_AFTER", domain_id)
 
 
 # ---- toy functions: every kind of parameter, cheap to call ------------------------------------
@@ -363,7 +369,11 @@ TOY_FUNCTIONS = {
 NC, NE, NLEV = 6, 9, 4
 
 
-def toy_icon(comin: FakeComIn, device_xp: Any = None) -> tuple[FakeIcon, dict[str, np.ndarray]]:
+def toy_icon(
+    comin: FakeComIn, device_xp: Any = None, icon_variables: bool = False
+) -> tuple[FakeIcon, dict[str, np.ndarray]]:
+    """The toy functions' variables; with 'icon_variables', also ICON's own 'w' and 'vn' on the
+    same memory as the arguments (as in SUBSTITUTE at the initial call site)."""
     icon = FakeIcon(comin, TOY_FUNCTIONS, device_xp)
     buffers = {
         "starts": fortran_buffer((NC,), np.int32, fill=np.arange(1, NC + 1)),
@@ -377,6 +387,10 @@ def toy_icon(comin: FakeComIn, device_xp: Any = None) -> tuple[FakeIcon, dict[st
     init = {k: buffers[k] for k in ("starts", "mask", "area", "coeff", "empty")}
     icon.expose("grid_init", init, dict(n=NC, flag=True, x=0.25))
     icon.expose("diffusion_run", {k: buffers[k] for k in ("w", "vn")}, dict(dtime=0.0, linit=False))
+    if icon_variables:
+        for name in ("w", "vn"):
+            device = icon.live[name] if device_xp is not None else None
+            comin.add(name, buffers[name], device, datatype=DOUBLE)
     return icon, buffers
 
 
@@ -414,8 +428,17 @@ def logs(caplog):
     return caplog
 
 
+def all_old(functions) -> dict[str, dict[str, _dual.Source]]:
+    """A source table that takes every argument from the old route (the toy functions)."""
+    return {
+        name: {p: _dual.Source("B", _dual.OLD) for p in entry.exported.param_descriptors}
+        for name, entry in functions.items()
+    }
+
+
 def make_plugin(comin: FakeComIn, functions=TOY_FUNCTIONS, **environ: str) -> plugin.Plugin:
-    instance = plugin.Plugin(comin, functions=functions, environ=environ)
+    sources = all_old(functions) if functions is TOY_FUNCTIONS else plugin.SOURCES
+    instance = plugin.Plugin(comin, functions=functions, environ=environ, sources=sources)
     instance.register()
     return instance
 
@@ -677,22 +700,31 @@ def test_register_logs_setup(logs):
     make_plugin(FakeComIn())
     assert logs.messages[0].startswith(f"source sha1 {plugin.source_sha1()}, icon4py.bindings")
     assert (
-        "entry points EP_FINISH=68, EP_DESTRUCTOR=69, EP_ATM_DIFFUSION_ENTER=70,"
-        " EP_ATM_DIFFUSION_LEAVE=71" in logs.messages
+        "entry points EP_FINISH=72, EP_DESTRUCTOR=73, EP_ATM_DIFFUSION_ENTER=74,"
+        " EP_ATM_DIFFUSION_LEAVE=75" in logs.messages
+    )
+    assert (
+        "counting the callbacks at EP_ATM_DYCORE_DIFFUSION_BEFORE=20,"
+        " EP_ATM_DYCORE_DIFFUSION_AFTER=21, EP_ATM_DYCORE_SOLVE_NH_BEFORE=22,"
+        " EP_ATM_DYCORE_SOLVE_NH_AFTER=23; time-level check report" in logs.messages
     )
     assert all(r.levelno == logging.INFO for r in logs.records)
 
 
 def test_register_warns_about_other_entry_point_numbers(logs):
-    make_plugin(FakeComIn(entry_points={**ENTRY_POINTS, "EP_ATM_DIFFUSION_ENTER": 72}))
+    make_plugin(FakeComIn(entry_points={**ENTRY_POINTS, "EP_ATM_DIFFUSION_ENTER": 70}))
     assert [r.levelno for r in logs.records if "entry point numbers differ" in r.message] == [
         logging.WARNING
     ]
 
 
-def test_register_needs_the_new_entry_points():
-    entry_points = {k: v for k, v in ENTRY_POINTS.items() if k != "EP_ATM_DIFFUSION_ENTER"}
-    with pytest.raises(RuntimeError, match="no entry point 'EP_ATM_DIFFUSION_ENTER'"):
+@pytest.mark.parametrize(
+    "missing",
+    ["EP_ATM_DIFFUSION_ENTER", "EP_ATM_DYCORE_DIFFUSION_BEFORE", "EP_ATM_DYCORE_SOLVE_NH_AFTER"],
+)
+def test_register_needs_the_new_entry_points(missing):
+    entry_points = {k: v for k, v in ENTRY_POINTS.items() if k != missing}
+    with pytest.raises(RuntimeError, match=f"no entry point '{missing}'"):
         make_plugin(FakeComIn(entry_points=entry_points))
 
 
@@ -704,7 +736,7 @@ def test_register_refuses_a_second_instance(monkeypatch, capsys):
     with pytest.raises(RuntimeError, match="loaded twice"):
         plugin.register()
     # 'register' prints the package's records on standard output, with the rank
-    assert "icon4py-comin: entry points EP_FINISH=68," in capsys.readouterr().out
+    assert "icon4py-comin: entry points EP_FINISH=72," in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("rank", [0, 1])
@@ -733,10 +765,18 @@ def test_idle_without_icon4py_variables(calls, wrappers, logs):
     assert not instance.active
     assert comin.contexts == {}
     comin.fire("EP_ATM_TIMELOOP_BEFORE")
+    comin.fire("EP_ATM_DYCORE_DIFFUSION_BEFORE", 1)
     comin.fire("EP_ATM_DIFFUSION_ENTER", 1)
+    for _ in range(2):
+        comin.fire("EP_ATM_DYCORE_SOLVE_NH_BEFORE", 1)
     comin.fire("EP_DESTRUCTOR")
     assert calls == [] and comin.accessed == []
     assert (diffusion_wrapper.granule, grid_wrapper.grid_state) == wrappers
+    assert (
+        "entry point callbacks: EP_ATM_DYCORE_DIFFUSION_BEFORE 1, EP_ATM_DYCORE_DIFFUSION_AFTER 0,"
+        " EP_ATM_DYCORE_SOLVE_NH_BEFORE 2, EP_ATM_DYCORE_SOLVE_NH_AFTER 0 (domains [1])"
+        in logs.messages
+    )
     assert wrapper_config.WAIT_FOR_COMPILATION is False
     assert "idle: ICON exposes no 'icon4py_diffusion_run_ctl'" in logs.text
     assert [r.levelname for r in logs.records if "but the plugin is idle" in r.message] == [
@@ -823,6 +863,117 @@ def test_life_cycle(calls, wrappers, logs, on_device):
     assert f"grid_init optional arguments: idx None (absent), {empty}" in messages
     assert "diffusion_run optional arguments: opt None (absent)" in messages
     assert not any(m.startswith("timing") for m in messages)  # off by default
+    # the toy ICON exposes no 'w' and 'vn' of its own: nothing to compare
+    assert (
+        "time-level check report: requested ICON's nothing (READ"
+        f"{' | DEVICE' if on_device else ''}) at EP_ATM_DYCORE_DIFFUSION_BEFORE and"
+        " EP_ATM_DIFFUSION_ENTER; not exposed: w vn" in messages
+    )
+    assert not any(m.startswith("time-level check call") for m in messages)
+    assert (
+        "entry point callbacks: EP_ATM_DYCORE_DIFFUSION_BEFORE 3, EP_ATM_DYCORE_DIFFUSION_AFTER 3,"
+        " EP_ATM_DYCORE_SOLVE_NH_BEFORE 0, EP_ATM_DYCORE_SOLVE_NH_AFTER 0 (domains [1])" in messages
+    )
+
+
+@pytest.mark.parametrize("on_device", [False, True], ids=["host", "device"])
+def test_timelevel_check_report(calls, wrappers, logs, on_device):
+    device_xp = cupy_or_skip() if on_device else None
+    comin = FakeComIn(has_device=on_device)
+    icon, _ = toy_icon(comin, device_xp, icon_variables=True)
+    make_plugin(comin)
+    icon.secondary_constructor()
+    flags = FLAG_READ | (FLAG_DEVICE if on_device else 0)
+    for entry_point in ("EP_ATM_DYCORE_DIFFUSION_BEFORE", "EP_ATM_DIFFUSION_ENTER"):
+        for name in ("w", "vn"):
+            assert comin.contexts[ENTRY_POINTS[entry_point], (name, 1)] == flags
+    icon.new_pass()
+    # initial call site: the arguments are ICON's arrays, which ComIn's 'w' and 'vn' show
+    icon.diffusion_call(dtime=10.0, linit=True)
+    # regular call site, ComIn's pointers not re-targeted: the argument is another time level,
+    # ComIn's 'w' is stale
+    icon.rebind("diffusion_run", "w", fortran_buffer((NC, NLEV + 1), np.float64, fill=100.0))
+    icon.diffusion_call(dtime=5.0, linit=False)
+    comin.fire("EP_DESTRUCTOR")
+    assert [c[0] for c in calls] == ["init", "run", "run"]  # report mode: the run goes on
+    messages = logs.messages
+    before, after = "EP_ATM_DYCORE_DIFFUSION_BEFORE", "EP_ATM_DYCORE_DIFFUSION_AFTER"
+    assert (
+        "time-level check report: requested ICON's w vn"
+        f" (READ{' | DEVICE' if on_device else ''}) at {before} and EP_ATM_DIFFUSION_ENTER"
+        in messages
+    )
+    assert (
+        "time-level check call 1 initial: 2 checked, 2 identical, 0 differ;"
+        f" {before} 1, {after} 0; ICON's pointers as at {before}: yes [report]" in messages
+    )
+    assert (
+        "time-level check call 2 regular: 2 checked, 1 identical, 1 differ: w;"
+        f" {before} 2, {after} 1; ICON's pointers as at {before}: yes [report]" in messages
+    )
+    assert (
+        "time-level check summary: initial 1 calls, 1 all identical;"
+        " regular 1 calls, 0 all identical [report]" in messages
+    )
+    assert (
+        f"entry point callbacks: {before} 2, {after} 2, EP_ATM_DYCORE_SOLVE_NH_BEFORE 0,"
+        " EP_ATM_DYCORE_SOLVE_NH_AFTER 0 (domains [1])" in messages
+    )
+
+
+def test_timelevel_check_strict_stops_before_the_granule(calls, wrappers):
+    comin = FakeComIn()
+    icon, _ = toy_icon(comin, icon_variables=True)
+    make_plugin(comin, **{plugin.TIMELEVEL_CHECK_ENV: "strict"})
+    icon.secondary_constructor()
+    icon.new_pass()
+    icon.diffusion_call(dtime=10.0, linit=True)
+    icon.rebind("diffusion_run", "vn", fortran_buffer((NE, NLEV), np.float64, fill=3.0))
+    with pytest.raises(
+        RuntimeError, match=r"time-level check, diffusion call 2: .* vn do not point"
+    ):
+        icon.diffusion_call(dtime=5.0, linit=False)
+    assert [c[0] for c in calls] == ["init", "run"]
+
+
+def test_timelevel_check_sees_a_moved_icon_pointer(calls, wrappers, logs):
+    comin = FakeComIn()
+    icon, _ = toy_icon(comin, icon_variables=True)
+    make_plugin(comin, **{plugin.TIMELEVEL_CHECK_ENV: "strict"})
+    icon.secondary_constructor()
+    icon.new_pass()
+    comin.fire("EP_ATM_DYCORE_DIFFUSION_BEFORE", 1)
+    # ICON re-targets its 'vn' after DIFFUSION_BEFORE (it must not), and binds the argument there
+    other = fortran_buffer((NE, NLEV), np.float64, fill=3.0)
+    comin.buffers["vn", 1] = other
+    icon.rebind("diffusion_run", "vn", other)
+    icon.set_scalar("diffusion_run", _marshal.CALL_COUNT_KEY, 1)
+    icon.set_scalar("diffusion_run", _marshal.scalar_key("linit"), True)
+    with pytest.raises(
+        RuntimeError, match=r"time-level check, diffusion call 1: .* vn do not point"
+    ):
+        comin.fire("EP_ATM_DIFFUSION_ENTER", 1)
+    assert [c[0] for c in calls] == ["init"]
+    assert any(
+        m.endswith("ICON's pointers as at EP_ATM_DYCORE_DIFFUSION_BEFORE: no: vn [strict]")
+        for m in logs.messages
+    )
+
+
+def test_timelevel_check_off_requests_nothing(calls, wrappers, logs):
+    comin = FakeComIn()
+    icon, _ = toy_icon(comin, icon_variables=True)
+    make_plugin(comin, **{plugin.TIMELEVEL_CHECK_ENV: "off"})
+    icon.secondary_constructor()
+    assert not any(descriptor[0] in ("w", "vn") for _, descriptor in comin.contexts)
+    icon.new_pass()
+    icon.diffusion_call(dtime=10.0, linit=True)
+    assert not any(m.startswith("time-level check") for m in logs.messages)
+
+
+def test_timelevel_check_mode_is_checked():
+    with pytest.raises(ValueError, match="ICON4PY_COMIN_TIMELEVEL_CHECK='on'"):
+        plugin.Plugin(FakeComIn(), environ={plugin.TIMELEVEL_CHECK_ENV: "on"})
 
 
 @pytest.mark.parametrize("domain_id", [-1, 2])

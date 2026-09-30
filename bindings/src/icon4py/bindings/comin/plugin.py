@@ -19,6 +19,23 @@ ICON's ComIn backend of the icon4py interface exposes the arguments of 'grid_ini
   which ICON checks after the entry point.
 It calls the undecorated functions ('__wrapped__') with the arguments py2fgen would build.
 
+It also registers callbacks at ComIn's dycore entry points at ICON's call sites
+(EP_ATM_DYCORE_DIFFUSION_BEFORE/_AFTER, EP_ATM_DYCORE_SOLVE_NH_BEFORE/_AFTER; ICON fires them
+whether or not icon4py runs), counts them and logs the counts when it is released; ComIn must
+provide them, else 'register' stops. When active, it requests ICON's own variables that are
+also arguments of 'diffusion_run' (TIMELEVEL_VARIABLES, READ, on the device) at
+EP_ATM_DYCORE_DIFFUSION_BEFORE and EP_ATM_DIFFUSION_ENTER, and at EP_ATM_DIFFUSION_ENTER
+compares their pointers with the argument variables (the time-level check: ComIn must show
+ICON's variables at the time level the diffusion works on).
+
+Every argument has a source ('SOURCES', the provider of '_dual.py'): OLD (the argument variable
+or carrier of ICON's ComIn backend), NEW (a native ComIn route; none yet) or OBSERVE (a native
+route that is computed and compared with the argument, never used). The dual check
+('_dual.py') compares the NEW and OBSERVE items with the argument before each call. Observed
+today: the owner masks, as 'decomp_domain == 0' of ComIn's descriptive data (ICON's definition
+for cells; edges and vertices on a PE boundary belong to the PE with the higher number, so
+their masks may differ).
+
 Environment:
 - ICON4PY_COMIN_CHECK=0 turns the in-job consistency checks off (default: on): after every call
   of a writing function, each Field argument must still alias ICON's array; the first call logs
@@ -32,6 +49,15 @@ Environment:
 - ICON4PY_COMIN_PROFILE=<n> profiles call <n> of 'diffusion_run' with cProfile and logs the most
   expensive functions (default: off).
 - ICON4PY_COMIN_TEST_SKIP_ACK=1 skips the acknowledgement of 'diffusion_run' (negative test).
+- ICON4PY_COMIN_DUAL=strict|report|off and ICON4PY_COMIN_DUAL_SELFTEST=all|<item>[,...]: the dual
+  check ('_dual.py'; default strict, no self-test).
+- ICON4PY_COMIN_TIMELEVEL_CHECK=report|strict|off: the time-level check (default report: log
+  each call and continue; strict: raise at the first call with a differing pointer; off: request
+  nothing). The plugin cannot tell SUBSTITUTE from VERIFY: in VERIFY the arguments are ICON's
+  copies, so every pointer differs there.
+- ICON4PY_COMIN_PROBE=1 (py2fgen probe): the primary constructor computes the native routes of
+  PROBE_ITEMS from the descriptive data and keeps them ('Plugin.probe_values'), for a recorder
+  that py2fgen runs (PY2FGEN_EXTRA_CALLABLES) to compare them with py2fgen's own arguments.
 
 Log records go to the logger of this package. When ICON loads the plugin ('register'), they are
 printed on standard output: on every rank for per-rank lines, else on rank 0 only.
@@ -60,7 +86,8 @@ import numpy as np
 
 import icon4py.bindings
 from icon4py.bindings import config as wrapper_config, diffusion_wrapper, grid_wrapper
-from icon4py.bindings.comin import _diagnostics, _marshal, _views
+from icon4py.bindings.comin import _diagnostics, _dual, _marshal, _views
+from icon4py.tools import py2fgen
 
 
 try:
@@ -74,6 +101,8 @@ CHECK_ENV: Final = "ICON4PY_COMIN_CHECK"
 TIMING_ENV: Final = "ICON4PY_COMIN_TIMING"
 PROFILE_ENV: Final = "ICON4PY_COMIN_PROFILE"
 SKIP_ACK_ENV: Final = "ICON4PY_COMIN_TEST_SKIP_ACK"
+PROBE_ENV: Final = "ICON4PY_COMIN_PROBE"
+TIMELEVEL_CHECK_ENV: Final = "ICON4PY_COMIN_TIMELEVEL_CHECK"
 
 LOG_FORMAT: Final = "icon4py-comin: %(level_prefix)s%(message)s [rank %(rank)d]"
 ALL_RANKS: Final[Mapping[str, Any]] = {"all_ranks": True}
@@ -84,14 +113,38 @@ DESTRUCTOR: Final = "EP_DESTRUCTOR"
 DOMAIN_ENTRY_POINTS: Final = frozenset({"EP_ATM_DIFFUSION_ENTER"})
 """Entry points ICON fires for a domain; there the plugin acts on domain 1 only."""
 EXPECTED_ENTRY_POINTS: Final[Mapping[str, int]] = {
-    "EP_FINISH": 68,
-    "EP_DESTRUCTOR": 69,
-    "EP_ATM_DIFFUSION_ENTER": 70,
-    "EP_ATM_DIFFUSION_LEAVE": 71,
+    "EP_FINISH": 72,
+    "EP_DESTRUCTOR": 73,
+    "EP_ATM_DIFFUSION_ENTER": 74,
+    "EP_ATM_DIFFUSION_LEAVE": 75,
 }
 """
 Entry points whose numbers 'register' logs, with their values in the ComIn build this plugin
 was written for (the diffusion entry points appended after EP_DESTRUCTOR).
+"""
+DIFFUSION_BEFORE: Final = "EP_ATM_DYCORE_DIFFUSION_BEFORE"
+DYCORE_ENTRY_POINTS: Final = (
+    DIFFUSION_BEFORE,
+    "EP_ATM_DYCORE_DIFFUSION_AFTER",
+    "EP_ATM_DYCORE_SOLVE_NH_BEFORE",
+    "EP_ATM_DYCORE_SOLVE_NH_AFTER",
+)
+"""ComIn's dycore entry points at ICON's call sites; the plugin counts their callbacks."""
+TIMELEVEL_CHECK_ENTRY_POINT: Final = "EP_ATM_DIFFUSION_ENTER"
+TIMELEVEL_VARIABLES: Final = (
+    "vn",
+    "w",
+    "theta_v",
+    "exner",
+    "rho",
+    "hdef_ic",
+    "div_ic",
+    "dwdx",
+    "dwdy",
+)
+"""
+ICON's variables that are also array arguments (same names) of the function at
+TIMELEVEL_CHECK_ENTRY_POINT.
 """
 VALUE_LOG_FIELDS: Final = ("vn", "w", "theta_v", "exner")
 """Fields whose sums the first call of a writing function logs (information only)."""
@@ -173,6 +226,146 @@ IDLE_MARKER: Final = (_marshal.carrier_name("diffusion_run"), _marshal.DOMAIN_ID
 """Without this variable ICON does not delegate to ComIn, and the plugin stays idle."""
 
 
+def _sources(
+    klass: str, names: str, location: str | None = None, axis: int = 0, provider: str = _dual.OLD
+) -> dict[str, _dual.Source]:
+    return {name: _dual.Source(klass, provider, location, axis) for name in names.split()}
+
+
+SOURCES: Final[Mapping[str, Mapping[str, _dual.Source]]] = {
+    # class per argument (A: an ICON variable, B: ComIn's descriptive data, C: derived from it,
+    # D: configuration, E: not in ComIn 1.0; '_dual.CLASSES'); 'location' marks the arrays whose
+    # entries beyond the local number of cells, edges or vertices are padding
+    "grid_init": {
+        **_sources(
+            "B", "cell_starts cell_ends vertex_starts vertex_ends edge_starts edge_ends vct_a"
+        ),
+        **_sources(
+            "B", "c2e c2e2c c2v c_glb_index cell_center_lat cell_center_lon cell_areas", "cell"
+        ),
+        **_sources(
+            "B",
+            "e2c e2v e2c2v e_glb_index tangent_orientation primal_normal_cell_x"
+            " primal_normal_cell_y edge_center_lat edge_center_lon",
+            "edge",
+        ),
+        **_sources("B", "v2e v2c v_glb_index", "vertex"),
+        **_sources("C", "inverse_primal_edge_lengths inv_dual_edge_length", "edge"),
+        **_sources(
+            "E",
+            "e2c2e inv_vert_vert_length edge_areas f_e primal_normal_vert_x primal_normal_vert_y"
+            " dual_normal_vert_x dual_normal_vert_y dual_normal_cell_x dual_normal_cell_y"
+            " primal_normal_x primal_normal_y",
+            "edge",
+        ),
+        # observed: decomp_domain == 0 (cells: ICON's definition; edges, vertices: to be seen)
+        **_sources("C", "c_owner_mask", "cell", provider=_dual.OBSERVE),
+        **_sources("E", "e_owner_mask", "edge", provider=_dual.OBSERVE),
+        **_sources("E", "v_owner_mask", "vertex", provider=_dual.OBSERVE),
+        **_sources(
+            "D",
+            "lowest_layer_thickness model_top_height stretch_factor flat_height"
+            " rayleigh_damping_height backend",
+        ),
+        **_sources(
+            "B",
+            "mean_cell_area comm_id num_vertices num_cells num_edges vertical_size limited_area",
+        ),
+    },
+    "diffusion_init": {
+        **_sources("A", "theta_ref_mc wgtfac_c", "cell"),
+        **_sources("A", "zd_cellidx zd_vertidx zd_intcoef zd_diffcoef"),
+        **_sources("B", "e_bln_c_s geofac_div geofac_grg_x geofac_grg_y geofac_n2s", "cell"),
+        **_sources("B", "nudgecoeff_e", "edge"),
+        **_sources("B", "rbf_vec_coeff_v", "vertex", axis=2),  # (dim, 2, nproma)
+        **_sources(
+            "D",
+            "ndyn_substeps diffusion_type hdiff_w hdiff_vn hdiff_smag_w zdiffu_t type_t_diffu"
+            " type_vn_diffu hdiff_efdt_ratio hdiff_w_efdt_ratio smagorinski_scaling_factor"
+            " smagorinski_scaling_factor2 smagorinski_scaling_factor3 smagorinski_scaling_factor4"
+            " smagorinski_scaling_height smagorinski_scaling_height2 smagorinski_scaling_height3"
+            " smagorinski_scaling_height4 hdiff_temp denom_diffu_v nudge_max_coeff itype_sher"
+            " iforcing a_hshr loutshs backend",
+        ),
+    },
+    "diffusion_run": {
+        **_sources("A", "w exner theta_v rho hdef_ic div_ic dwdx dwdy", "cell"),
+        **_sources("A", "vn", "edge"),
+        **_sources("B", "dtime"),
+        **_sources("E", "linit"),
+    },
+}
+"""Where each argument of FUNCTIONS comes from (the providers of the dual check, '_dual.py')."""
+
+LOCAL_COUNT: Final[Mapping[str, tuple[str, str]]] = {
+    "cell": ("cells", "ncells"),
+    "edge": ("edges", "nedges"),
+    "vertex": ("verts", "nverts"),
+}
+"""Descriptive data (domain) of each location and its number of local entries."""
+BLOCK_AXIS: Final = 1
+"""The block axis of ComIn's descriptive-data arrays (nproma, nblks[, n])."""
+
+
+def _owner_mask(kind: str) -> Callable[[Any], np.ndarray]:
+    def route(domain: Any) -> np.ndarray:
+        return _dual.first_block(getattr(domain, kind).decomp_domain, BLOCK_AXIS) == 0
+
+    return route
+
+
+def _first_block_copy(kind: str, field: str) -> Callable[[Any], np.ndarray]:
+    def route(domain: Any) -> np.ndarray:
+        return np.array(_dual.first_block(getattr(getattr(domain, kind), field), BLOCK_AXIS))
+
+    return route
+
+
+NATIVE_ROUTES: Final[Mapping[str, Callable[[Any], np.ndarray]]] = {
+    "c_owner_mask": _owner_mask("cells"),
+    "e_owner_mask": _owner_mask("edges"),
+    "v_owner_mask": _owner_mask("verts"),
+    "c2e": _first_block_copy("cells", "edge_idx"),
+    "cell_areas": _first_block_copy("cells", "area"),
+}
+"""
+The native route of an argument from ComIn's descriptive data of domain 1 (host arrays in
+py2fgen's shape and dtype). 'c2e' and 'cell_areas' serve the py2fgen probe only.
+"""
+PROBE_ITEMS: Final = ("c2e", "cell_areas", "c_owner_mask", "e_owner_mask", "v_owner_mask")
+"""The arguments of 'grid_init' whose native routes the py2fgen probe compares."""
+
+
+@dataclasses.dataclass(frozen=True)
+class ProbeValue:
+    """A native-route value kept for the py2fgen probe."""
+
+    value: np.ndarray
+    real: int | None
+    axis: int
+
+
+def check_sources(
+    functions: Mapping[str, FunctionEntry], sources: Mapping[str, Mapping[str, _dual.Source]]
+) -> list[str]:
+    """Every argument of every function has exactly one source, and every checked one a route."""
+    errors = []
+    for name, entry in functions.items():
+        table = sources.get(name, {})
+        params = set(entry.exported.param_descriptors)
+        errors += [f"{name}: no source for '{p}'." for p in sorted(params - set(table))]
+        errors += [f"{name}: '{p}' is not an argument." for p in sorted(set(table) - params)]
+        for param, source in table.items():
+            if source.provider == _dual.NEW:
+                errors.append(
+                    f"{name}: '{param}' is NEW, but this plugin passes only the old route to the"
+                    " granule (OLD) or observes a native one (OBSERVE)."
+                )
+            elif source.provider == _dual.OBSERVE and param not in NATIVE_ROUTES:
+                errors.append(f"{name}: '{param}' is OBSERVE, but has no native route.")
+    return errors
+
+
 def source_sha1() -> str:
     """SHA-1 over this package's Python sources (file names and contents, sorted by name)."""
     digest = hashlib.sha1(usedforsecurity=False)
@@ -208,9 +401,34 @@ class Plugin:
         comin: ModuleType,
         functions: Mapping[str, FunctionEntry] = FUNCTIONS,
         environ: Mapping[str, str] = os.environ,
+        sources: Mapping[str, Mapping[str, _dual.Source]] = SOURCES,
     ) -> None:
         self._comin = comin
         self._functions = functions
+        errors = check_sources(functions, sources)
+        if errors:
+            raise ValueError("icon4py ComIn plugin: bad source table:\n  " + "\n  ".join(errors))
+        self._sources = {name: sources[name] for name in functions}
+        checked = {
+            param
+            for table in self._sources.values()
+            for param, source in table.items()
+            if source.provider in _dual.CHECKED
+        }
+        self._dual = _dual.Checker(
+            _dual.parse_mode(environ),
+            _dual.parse_selftest(environ, checked),
+            functools.partial(log.info, extra=ALL_RANKS),
+        )
+        self._dual_logged: set[str] = set()
+        """Entry points whose first call logged every item (later calls: differences only)."""
+        self._dual_pending: tuple[str, _dual.Summary] | None = None
+        probe = environ.get(PROBE_ENV, "0").strip() or "0"
+        if probe not in ("0", "1"):
+            raise ValueError(f"{PROBE_ENV}={probe!r}: expected 0 or 1.")
+        self._probe = probe == "1"
+        self.probe_values: dict[str, ProbeValue] = {}
+        """The native routes of PROBE_ITEMS, for the py2fgen probe (ICON4PY_COMIN_PROBE=1)."""
         self._check = environ.get(CHECK_ENV, "1") != "0"
         self._timing = environ.get(TIMING_ENV, "0") == "1"
         profile = environ.get(PROFILE_ENV, "").strip()
@@ -218,6 +436,20 @@ class Plugin:
             raise ValueError(f"{PROFILE_ENV}={profile!r}: expected the number of a call.")
         self._profile_call = int(profile) if profile else None
         self._skip_ack = environ.get(SKIP_ACK_ENV, "0") == "1"
+        timelevel = environ.get(TIMELEVEL_CHECK_ENV, _dual.REPORT).strip() or _dual.REPORT
+        if timelevel not in _dual.MODES:
+            raise ValueError(
+                f"{TIMELEVEL_CHECK_ENV}={timelevel!r}: expected one of {', '.join(_dual.MODES)}."
+            )
+        self._timelevel = timelevel
+        self._timelevel_handles: dict[str, Any] = {}
+        """ICON's variables of the time-level check ('comin.var_get' handles), by name."""
+        self._timelevel_before: tuple[int, dict[str, tuple[int, int | None]]] | None = None
+        """The DIFFUSION_BEFORE count and the pointers of ICON's variables there."""
+        self._timelevel_results: list[tuple[int, bool, int, int]] = []
+        """Per time-level check: call, linit, number of variables checked, number identical."""
+        self._ep_counts: dict[str, int] = dict.fromkeys(DYCORE_ENTRY_POINTS, 0)
+        self._ep_domains: dict[str, set[int | None]] = {name: set() for name in DYCORE_ENTRY_POINTS}
         self.rank = int(comin.parallel_get_host_mpi_rank())
         self._device_xp: ModuleType | None = None
         self._device_flag = 0
@@ -235,7 +467,8 @@ class Plugin:
         if entry_point is None:
             raise RuntimeError(
                 f"ComIn has no entry point '{name}': ICON must be built with a ComIn that"
-                " provides the diffusion entry points EP_ATM_DIFFUSION_ENTER/_LEAVE."
+                " provides the diffusion entry points EP_ATM_DIFFUSION_ENTER/_LEAVE and"
+                " EP_ATM_DYCORE_DIFFUSION_BEFORE/_AFTER, EP_ATM_DYCORE_SOLVE_NH_BEFORE/_AFTER."
             )
         return entry_point
 
@@ -248,6 +481,7 @@ class Plugin:
             self._device_xp = cp
             self._device_flag = comin.COMIN_FLAG_DEVICE
         numbers = {name: operator.index(self._entry_point(name)) for name in EXPECTED_ENTRY_POINTS}
+        dycore = {name: operator.index(self._entry_point(name)) for name in DYCORE_ENTRY_POINTS}
         log.info(
             f"source sha1 {source_sha1()}, icon4py.bindings {icon4py.bindings.__version__}"
             f" at {pathlib.Path(icon4py.bindings.__file__).parent}, device {self._device_xp is not None}"
@@ -255,6 +489,11 @@ class Plugin:
         log.info("entry points " + ", ".join(f"{k}={v}" for k, v in numbers.items()))
         if numbers != EXPECTED_ENTRY_POINTS:
             log.warning(f"entry point numbers differ from {dict(EXPECTED_ENTRY_POINTS)}.")
+        log.info(
+            "counting the callbacks at "
+            + ", ".join(f"{k}={v}" for k, v in dycore.items())
+            + f"; time-level check {self._timelevel}"
+        )
         if self._skip_ack:
             log.warning(f"{SKIP_ACK_ENV}=1, 'diffusion_run' is not acknowledged (negative test).")
         if not self._check:
@@ -264,15 +503,133 @@ class Plugin:
             self._log_state("primary constructor")
         if self._profile_call is not None:
             log.info(f"{PROFILE_ENV}={self._profile_call}: that call is profiled.")
+        self._log_sources()
+        if self._probe:
+            self._keep_probe_values()
 
         callbacks: dict[str, Callable[[], None]] = {
             SECONDARY_CONSTRUCTOR: self.secondary_constructor
         }
         for entry in self._functions.values():
             callbacks[entry.entry_point] = functools.partial(self.on_entry_point, entry.entry_point)
+        for name in DYCORE_ENTRY_POINTS:
+            callbacks[name] = functools.partial(self.on_dycore_entry_point, name)
         callbacks[DESTRUCTOR] = self.destructor
         for name, callback in callbacks.items():
             self._entry_point(name)(callback)  # 'comin.entry_point' registers as a decorator
+
+    def _log_sources(self) -> None:
+        """Log the source table once: counts per class and provider, and what is checked where."""
+        rows = [
+            (entry, param, self._sources[name][param])
+            for name, entry in self._functions.items()
+            for param in entry.exported.param_descriptors
+        ]
+        n_arrays = sum(
+            isinstance(entry.exported.param_descriptors[param], py2fgen.ArrayParamDescriptor)
+            for entry, param, _ in rows
+        )
+        classes = ", ".join(f"{k} {sum(s.klass == k for *_, s in rows)}" for k in _dual.CLASSES)
+        providers = ", ".join(
+            f"{p} {sum(s.provider == p for *_, s in rows)}" for p in _dual.PROVIDERS
+        )
+        selftest = ",".join(sorted(self._dual.selftest)) or "none"
+        log.info(
+            f"dual source table: {len(rows)} arguments ({n_arrays} arrays,"
+            f" {len(rows) - n_arrays} scalars; {classes}); {providers};"
+            f" mode {self._dual.mode}; selftest {selftest}"
+        )
+        for entry_point in dict.fromkeys(e.entry_point for e in self._functions.values()):
+            checked = [
+                (param, source.provider)
+                for entry, param, source in rows
+                if entry.entry_point == entry_point and source.provider in _dual.CHECKED
+            ]
+            counts = ", ".join(f"{p} {sum(q == p for _, q in checked)}" for p in _dual.CHECKED)
+            names = ", ".join(param for param, _ in checked)
+            log.info(
+                f"dual plan {entry_point}: {len(checked)} items ({counts})"
+                + (f": {names}" if names else "")
+            )
+        if self._dual.selftest and self._dual.mode != _dual.OFF:
+            log.warning(
+                f"{_dual.SELFTEST_ENV}: the dual check must report {selftest} as differing"
+                " (self-test; the granule's input is unchanged)."
+            )
+
+    def _domain(self) -> Any:
+        return self._comin.descrdata_get_domain(_marshal.DOMAIN_ID)
+
+    @staticmethod
+    def _local_count(domain: Any, source: _dual.Source) -> int | None:
+        if source.location is None:
+            return None
+        kind, count = LOCAL_COUNT[source.location]
+        return int(getattr(getattr(domain, kind), count))
+
+    def _keep_probe_values(self) -> None:
+        """Probe mode: compute the native routes of PROBE_ITEMS now (primary constructor)."""
+        domain = self._domain()
+        for name in PROBE_ITEMS:
+            source = self._sources["grid_init"][name]
+            self.probe_values[name] = ProbeValue(
+                value=np.array(NATIVE_ROUTES[name](domain), copy=True),
+                real=self._local_count(domain, source),
+                axis=source.axis,
+            )
+        log.info(
+            f"{PROBE_ENV}=1: kept the native routes of {', '.join(self.probe_values)} for the"
+            " py2fgen probe.",
+            extra=ALL_RANKS,
+        )
+
+    def _dual_check(
+        self, name: str, entry: FunctionEntry, ack_value: int, kwargs: Mapping[str, Any]
+    ) -> None:
+        """Compare the NEW and OBSERVE arguments of one call with the old route ('kwargs')."""
+        if self._dual.mode == _dual.OFF:
+            return
+        checked = [
+            (param, source)
+            for param, source in self._sources[name].items()
+            if source.provider in _dual.CHECKED
+        ]
+        if not checked:
+            return
+        domain: Any = None
+        failure: Exception | None = None
+        try:
+            domain = self._domain()
+        except Exception as error:  # reported per item (a NEW item then stops ICON in strict mode)
+            failure = error
+
+        def native(param: str) -> np.ndarray:
+            if failure is not None:
+                raise failure
+            return NATIVE_ROUTES[param](domain)
+
+        items = [
+            _dual.Item(
+                name=param,
+                provider=source.provider,
+                new=functools.partial(native, param),
+                reference=_dual.host_array(kwargs[param]),
+                real=None if failure is not None else self._local_count(domain, source),
+                axis=source.axis,
+            )
+            for param, source in checked
+        ]
+        counter = "pass" if entry.ack_key == _marshal.PASS_KEY else "call"
+        where = f"{entry.entry_point} {counter} {ack_value}"
+        summary = self._dual.check(where, items, entry.entry_point not in self._dual_logged)
+        if self._dual_pending is None:
+            self._dual_pending = (where, summary)
+        else:
+            total = self._dual_pending[1]
+            for provider in _dual.CHECKED:
+                total.checked[provider] += summary.checked[provider]
+                total.differ[provider] += summary.differ[provider]
+            total.selftest += summary.selftest
 
     def secondary_constructor(self) -> None:
         """Request and check all argument variables, or stay idle."""
@@ -295,6 +652,8 @@ class Plugin:
                 exposed=exposed,
                 errors=errors,
             )
+        if self._timelevel != _dual.OFF:
+            self._request_timelevel_variables(exposed, errors)
         if errors:
             raise RuntimeError(
                 f"icon4py ComIn plugin: {len(errors)} problem(s) with ICON's icon4py variables:\n  "
@@ -303,6 +662,117 @@ class Plugin:
         self._active = True
         count = sum(len(bound.arrays) + 1 for bound in self._bound.values())
         log.info(f"active: requested {count} variables for {', '.join(self._functions)}.")
+
+    def _timelevel_arrays(self) -> dict[str, _marshal.BoundArray]:
+        """The argument variables of the function at TIMELEVEL_CHECK_ENTRY_POINT that ICON has."""
+        return {
+            array.param.name: array
+            for name, entry in self._functions.items()
+            if entry.entry_point == TIMELEVEL_CHECK_ENTRY_POINT and name in self._bound
+            for array in self._bound[name].arrays
+            if array.param.name in TIMELEVEL_VARIABLES
+        }
+
+    def _request_timelevel_variables(
+        self, exposed: set[tuple[str, int]], errors: list[str]
+    ) -> None:
+        """Request ICON's variables of the time-level check (READ, on the device: no copies)."""
+        comin = self._comin
+        context = [
+            self._entry_point(DIFFUSION_BEFORE),
+            self._entry_point(TIMELEVEL_CHECK_ENTRY_POINT),
+        ]
+        flags = comin.COMIN_FLAG_READ | self._device_flag
+        missing = []
+        for name in self._timelevel_arrays():
+            descriptor = (name, _marshal.DOMAIN_ID)
+            if descriptor not in exposed:
+                missing.append(name)
+                continue
+            try:
+                self._timelevel_handles[name] = comin.var_get(list(context), descriptor, flags)
+            except Exception as error:
+                errors.append(f"'{name}' (time-level check): 'var_get' failed: {error}")
+        log.info(
+            f"time-level check {self._timelevel}: requested ICON's"
+            f" {' '.join(self._timelevel_handles) or 'nothing'}"
+            f" (READ{' | DEVICE' if self._device_flag else ''}) at {DIFFUSION_BEFORE} and"
+            f" {TIMELEVEL_CHECK_ENTRY_POINT}"
+            + (f"; not exposed: {' '.join(missing)}" if missing else "")
+        )
+
+    def _pointers(self, variable: Any, on_device: bool) -> tuple[int, int | None]:
+        """Host and (on the GPU) device address of a ComIn variable."""
+        host = _views.data_ptr(np.asarray(variable))
+        if not on_device:
+            return host, None
+        return host, int(variable.__cuda_array_interface__["data"][0])
+
+    def _timelevel_pointers(self) -> dict[str, tuple[int, int | None]]:
+        on_device = self._device_xp is not None
+        return {name: self._pointers(v, on_device) for name, v in self._timelevel_handles.items()}
+
+    def on_dycore_entry_point(self, entry_point: str) -> None:
+        """Count the callback; at DIFFUSION_BEFORE also record where ICON's variables point."""
+        self._ep_counts[entry_point] += 1
+        domain_id = self._domain_id()
+        self._ep_domains[entry_point].add(domain_id)
+        if entry_point == DIFFUSION_BEFORE and self._active and domain_id == _marshal.DOMAIN_ID:
+            if self._timelevel_handles:
+                self._timelevel_before = (self._ep_counts[entry_point], self._timelevel_pointers())
+
+    def _timelevel_check(self, bound: _marshal.BoundFunction, call: int, linit: bool) -> None:
+        """
+        The time-level check: ICON's variables (ComIn's view of the current time level) and the
+        argument variables (exactly what py2fgen gets) point at the same memory, on the host and
+        the device.
+        """
+        now = self._timelevel_pointers()
+        arrays = self._timelevel_arrays()
+        on_device = self._device_xp is not None
+        differ = [
+            name
+            for name, pointers in now.items()
+            if arrays[name].present and self._pointers(arrays[name].variable, on_device) != pointers
+        ]
+        checked = [name for name in now if arrays[name].present]
+        before_count, before = (
+            self._timelevel_before if self._timelevel_before is not None else (0, {})
+        )
+        moved = [name for name in now if before.get(name) != now[name]]
+        site = "initial" if linit else "regular"
+        self._timelevel_results.append((call, linit, len(checked), len(checked) - len(differ)))
+        log.info(
+            f"time-level check call {call} {site}: {len(checked)} checked,"
+            f" {len(checked) - len(differ)} identical, {len(differ)} differ"
+            f"{': ' + ' '.join(differ) if differ else ''};"
+            f" {DIFFUSION_BEFORE} {before_count}, EP_ATM_DYCORE_DIFFUSION_AFTER"
+            f" {self._ep_counts['EP_ATM_DYCORE_DIFFUSION_AFTER']}; ICON's pointers as at"
+            f" {DIFFUSION_BEFORE}: {'no: ' + ' '.join(moved) if moved else 'yes'}"
+            f" [{self._timelevel}]",
+            extra=ALL_RANKS,
+        )
+        if self._timelevel == _dual.STRICT and (differ or moved):
+            raise RuntimeError(
+                f"icon4py ComIn plugin: time-level check, diffusion call {call}: ComIn's ICON"
+                f" variables {' '.join(differ or moved)} do not point at the arrays the diffusion"
+                " works on."
+            )
+
+    def _log_counts(self) -> None:
+        counts = ", ".join(f"{k} {v}" for k, v in self._ep_counts.items())
+        domains = sorted({d for s in self._ep_domains.values() for d in s}, key=str)
+        log.info(f"entry point callbacks: {counts} (domains {domains})", extra=ALL_RANKS)
+        if self._timelevel_results:
+            parts = []
+            for site, linit in (("initial", True), ("regular", False)):
+                rows = [r for r in self._timelevel_results if r[1] == linit]
+                same = sum(r[2] == r[3] for r in rows)
+                parts.append(f"{site} {len(rows)} calls, {same} all identical")
+            log.info(
+                f"time-level check summary: {'; '.join(parts)} [{self._timelevel}]",
+                extra=ALL_RANKS,
+            )
 
     def _domain_id(self) -> int | None:
         try:
@@ -341,9 +811,13 @@ class Plugin:
         )
         if log_state:
             self._log_state(f"{entry_point}, before")
+        self._dual_pending = None
         for name, entry in self._functions.items():
             if entry.entry_point == entry_point:
                 self._call(name, entry, start)
+        if self._dual_pending is not None:
+            self._dual.log_summary(*self._dual_pending)
+            self._dual_logged.add(entry_point)
         if log_state:
             self._log_state(f"{entry_point}, after")
 
@@ -354,6 +828,9 @@ class Plugin:
         ack_value = self._ack_value(bound, entry)
         clock("ack")
         kwargs = _marshal.arguments(self._comin, bound, self._device_xp)
+        self._dual_check(name, entry, ack_value, kwargs)
+        if entry.entry_point == TIMELEVEL_CHECK_ENTRY_POINT and self._timelevel_handles:
+            self._timelevel_check(bound, ack_value, bool(kwargs.get("linit", False)))
         clock("args")
         first_call = name not in self._first_call_done
         if first_call:
@@ -539,6 +1016,7 @@ class Plugin:
 
     def destructor(self) -> None:
         """Release the granule and CuPy's cached memory."""
+        self._log_counts()
         if self._timing:
             self._log_state(f"destructor{'' if self._active else ', idle'}")
         if not self._active:
@@ -547,6 +1025,7 @@ class Plugin:
         diffusion_wrapper.granule = None
         grid_wrapper.grid_state = None
         self._bound.clear()
+        self._timelevel_handles.clear()
         self._active = False
         if self._device_xp is not None:
             self._device_xp.get_default_memory_pool().free_all_blocks()
@@ -556,6 +1035,11 @@ class Plugin:
 
 _instance: Plugin | None = None
 """The registered plugin; a second one is refused, so that the diffusion cannot run twice."""
+
+
+def instance() -> Plugin | None:
+    """The plugin that ICON registered ('register'), if any (e.g. for the py2fgen probe)."""
+    return _instance
 
 
 def register() -> Plugin:
