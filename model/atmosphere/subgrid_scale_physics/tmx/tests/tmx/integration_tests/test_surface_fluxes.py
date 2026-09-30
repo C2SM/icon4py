@@ -51,7 +51,6 @@ def test_prescribed_surface_fluxes(
     date: str,
 ) -> None:
     testcase = read_input_namelist(experiment_description, process_props)["nh_testcase_nml"]
-    assert testcase["isrfc_type"] == 1
     assert testcase["ape_sst_case"] == "sst_const"
     allocator = model_backends.get_allocator(backend)
     reference = data_provider.from_savepoint_tmx_surface_fluxes(date=date)
@@ -67,6 +66,7 @@ def test_prescribed_surface_fluxes(
             allocator=allocator,
         ),
         # the defaults of `mo_nh_testcases_nml.f90` for the members the namelist leaves out
+        surface_type=testcase["isrfc_type"],
         shflx=testcase.get("shflx", 0.1),
         lhflx=testcase.get("lhflx", 0.0),
     )

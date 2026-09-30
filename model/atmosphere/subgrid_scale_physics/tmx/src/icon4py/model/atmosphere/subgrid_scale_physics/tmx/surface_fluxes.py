@@ -64,9 +64,15 @@ class PrescribedFluxProvider:
         backend: model_backends.BackendLike,
         pressure_ifc: fa.CellKHalfField[ta.wpfloat],
         surface_temperature: fa.CellField[ta.wpfloat],
+        surface_type: int,
         shflx: float,
         lhflx: float,
     ) -> None:
+        if surface_type != 1:
+            raise NotImplementedError(
+                "PrescribedFluxProvider implements fixed kinematic heat fluxes (isrfc_type = 1), "
+                f"got isrfc_type = {surface_type}."
+            )
         self._surface_temperature = surface_temperature
         # a view of the lowest half level, so that it follows the caller's updates
         self._surface_pressure = gtx_common._field(

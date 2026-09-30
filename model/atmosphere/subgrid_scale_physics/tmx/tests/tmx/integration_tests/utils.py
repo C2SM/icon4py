@@ -133,12 +133,19 @@ def verify_tmx_exit_fields(
     use_km_const: bool,
     cells: slice | np.ndarray,
 ) -> None:
-    """Compare the outputs of a tmx step on `cells` with the tmx-exit savepoint."""
+    """
+    Compare the outputs of a tmx step with the tmx-exit savepoint.
+
+    The tendencies ICON exchanges (temperature, u, v) are compared on all cells, including
+    the halo; every other output is compared on `cells`, because ICON leaves its halo unsynced.
+    """
     num_levels = diagnostic_state.km.ndarray.shape[1]
     # the surface level of km and kh is the surface exchange coefficient, written only with
     # `use_km_const`
     exchange_coefficient_levels = slice(None, None if use_km_const else num_levels - 1)
-    # (computed, reference, absolute tolerance)
+    # (computed, reference, absolute tolerance). The tolerances are the largest deviations
+    # measured on the v08 archive in #1359, with headroom; not yet measured on v11.
+    synced_fields = {"tend_ta", "tend_ua", "tend_va"}
     fields = {
         "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 2.0e-15),
         "tend_qv": (tendency_state.tend_qv, exit_savepoint.tend_qv(), 3.0e-18),
@@ -159,9 +166,10 @@ def verify_tmx_exit_fields(
         ),
     }
     for name, (computed, reference, atol) in fields.items():
+        compared = slice(None) if name in synced_fields else cells
         test_utils.assert_dallclose(
-            computed.asnumpy()[cells],
-            reference.asnumpy()[cells],
+            computed.asnumpy()[compared],
+            reference.asnumpy()[compared],
             rtol=RTOL,
             atol=atol,
             err_msg=name,
