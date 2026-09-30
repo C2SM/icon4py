@@ -32,7 +32,7 @@ def setup_graupel(
     vertical_start: int,
     vertical_end: int,
     enable_masking: bool = True,
-    enable_dace_hooks: bool = True,
+    enable_dace_hooks: bool = False,
 ):
     if enable_dace_hooks and model_backends.is_backend_descriptor(backend):
         # The graupel scan needs two dace auto-opt hooks. They can only be injected into
