@@ -59,11 +59,10 @@ def _update_temperature_and_compute_energy_diagnostics(
     fa.CellKField[wpfloat],
     fa.CellKField[wpfloat],
     fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
 ]:
     """
-    Add the dissipation heating to the temperature tendency, update the temperature and
-    compute the energy diagnostics of the updated state.
+    Update the temperature with the dissipation heating and compute the energy diagnostics of
+    the updated state.
 
     `tend_temperature` is the heat-diffusion tendency, `new_u` and `new_v` are the diffused
     winds. The heating is the kinetic energy dissipated by the wind diffusion, less the heat
@@ -74,8 +73,7 @@ def _update_temperature_and_compute_energy_diagnostics(
     integral.
 
     Returns:
-        the dissipated kinetic energy, the heating, the temperature tendency, the updated
-        temperature, the dry static energy of the updated temperature and the vertical
+        the dissipated kinetic energy, the heating, the updated temperature, the dry static energy of the updated temperature and the vertical
         integrals of the dry static energy, of the dissipated kinetic energy, of the internal
         energy and of its tendency
     """
@@ -87,8 +85,7 @@ def _update_temperature_and_compute_energy_diagnostics(
         * (u * u - new_u * new_u + v * v - new_v * new_v)
     )
     heating = concat_where(dims.KDim < nlev - 1, dissip_ke, dissip_ke - q_snocpymlt)
-    new_tend_temperature = tend_temperature + heating / cv_air
-    new_temperature = temperature + new_tend_temperature * dtime
+    new_temperature = temperature + (tend_temperature + heating / cv_air) * dtime
 
     cptgz = _compute_dry_static_energy(new_temperature, height_above_ground, grav)
     int_energy_vi = accumulate_from_top(
@@ -102,7 +99,6 @@ def _update_temperature_and_compute_energy_diagnostics(
     return (
         dissip_ke,
         heating,
-        new_tend_temperature,
         new_temperature,
         cptgz,
         accumulate_from_top(cptgz * rho * ddqz_z_full),
@@ -110,6 +106,15 @@ def _update_temperature_and_compute_energy_diagnostics(
         int_energy_vi,
         (int_energy_vi - old_int_energy_vi) / dtime,
     )
+
+
+@gtx.field_operator
+def _add_heating_to_temperature_tendency(
+    tend_temperature: fa.CellKField[wpfloat],
+    heating: fa.CellKField[wpfloat],
+    cv_air: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    return tend_temperature + heating / cv_air
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -192,7 +197,6 @@ def update_temperature_and_compute_end_of_step_diagnostics(
         out=(
             dissip_ke,
             heating,
-            tend_temperature,
             new_temperature,
             cptgz,
             cptgz_vi,
@@ -200,6 +204,17 @@ def update_temperature_and_compute_end_of_step_diagnostics(
             int_energy_vi,
             int_energy_vi_tend,
         ),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+    # TODO(havogt): write it in a way that tend_temperature is not inout.
+    _add_heating_to_temperature_tendency(
+        tend_temperature,
+        heating,
+        cv_air,
+        out=tend_temperature,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
