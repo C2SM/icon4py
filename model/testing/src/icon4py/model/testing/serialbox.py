@@ -2237,6 +2237,21 @@ class TmxExitSavepoint(IconSavepoint):
     def kh(self):
         return self._get_field("kh", dims.CellDim, dims.KDim)
 
+    def tend_qv(self):
+        return self._get_field("tend_qv", dims.CellDim, dims.KDim)
+
+    def tend_qc(self):
+        return self._get_field("tend_qc", dims.CellDim, dims.KDim)
+
+    def tend_qi(self):
+        return self._get_field("tend_qi", dims.CellDim, dims.KDim)
+
+    def tend_ua(self):
+        return self._get_field("tend_ua", dims.CellDim, dims.KDim)
+
+    def tend_va(self):
+        return self._get_field("tend_va", dims.CellDim, dims.KDim)
+
 
 class IconTimeStepExitSavepoint(IconSavepoint):
     """End-of-timestep prognostic state, written in perform_nh_timeloop right after

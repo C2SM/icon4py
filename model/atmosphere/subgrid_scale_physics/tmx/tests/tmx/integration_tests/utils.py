@@ -18,11 +18,12 @@ import gt4py.next as gtx
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics import metric_fields
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, test_utils
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+    import numpy as np
 
     from icon4py.model.testing import serialbox as sb
 
@@ -120,3 +121,57 @@ def construct_surface_flux_state(
         v_stress=surface_fluxes_savepoint.tauv(),
         q_snocpymlt=surface_fluxes_savepoint.q_snocpymlt(),
     )
+
+
+def verify_tmx_exit_fields(
+    *,
+    tendency_state: tmx_states.TmxTendencyState,
+    diagnostic_state: tmx_states.TmxDiagnosticState,
+    exit_savepoint: sb.TmxExitSavepoint,
+    use_km_const: bool,
+    cells: slice | np.ndarray,
+) -> None:
+    """Compare the outputs of a tmx step on `cells` with the tmx-exit savepoint."""
+    num_levels = diagnostic_state.km.ndarray.shape[1]
+    # the surface level of km and kh is the surface exchange coefficient, written only with
+    # `use_km_const`
+    exchange_coefficient_levels = slice(None, None if use_km_const else num_levels - 1)
+    # (computed, reference, absolute tolerance)
+    fields = {
+        "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 2.0e-15),
+        "tend_qv": (tendency_state.tend_qv, exit_savepoint.tend_qv(), 3.0e-18),
+        "tend_qc": (tendency_state.tend_qc, exit_savepoint.tend_qc(), 6.0e-19),
+        "tend_qi": (tendency_state.tend_qi, exit_savepoint.tend_qi(), 8.0e-22),
+        "tend_ua": (tendency_state.tend_u, exit_savepoint.tend_ua(), 2.0e-16),
+        "tend_va": (tendency_state.tend_v, exit_savepoint.tend_va(), 4.0e-17),
+        "tend_wa": (tendency_state.tend_w, exit_savepoint.tend_wa(), 2.0e-17),
+        "heating": (diagnostic_state.heating, exit_savepoint.heating(), 9.0e-13),
+        "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 9.0e-13),
+        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 4.0e-6),
+        "dissip_ke_vi": (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), 3.0e-12),
+        "int_energy_vi": (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), 3.0e-6),
+        "tend_int_energy_vi": (
+            diagnostic_state.int_energy_vi_tend,
+            exit_savepoint.tend_int_energy_vi(),
+            7.0e-9,
+        ),
+    }
+    for name, (computed, reference, atol) in fields.items():
+        test_utils.assert_dallclose(
+            computed.asnumpy()[cells],
+            reference.asnumpy()[cells],
+            rtol=RTOL,
+            atol=atol,
+            err_msg=name,
+        )
+    for name, computed, reference, atol in (
+        ("km", diagnostic_state.km, exit_savepoint.km(), 1.0e-10),
+        ("kh", diagnostic_state.kh, exit_savepoint.kh(), 3.0e-10),
+    ):
+        test_utils.assert_dallclose(
+            computed.asnumpy()[cells, exchange_coefficient_levels],
+            reference.asnumpy()[cells, exchange_coefficient_levels],
+            rtol=RTOL,
+            atol=atol,
+            err_msg=name,
+        )
