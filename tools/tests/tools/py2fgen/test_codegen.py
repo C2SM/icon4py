@@ -184,12 +184,15 @@ contains
 
    subroutine foo(one, &
                   two, &
+                  sync_queue, &
                   rc)
       use, intrinsic :: iso_c_binding
 
       integer(c_int), value, target :: one
 
       real(c_double), dimension(:, :), contiguous, intent(inout), target :: two
+
+      integer(c_int), intent(in), optional :: sync_queue
 
       logical(c_bool) :: on_gpu
 
@@ -217,16 +220,26 @@ contains
                        two_size_1=two_size_1, &
                        on_gpu=on_gpu)
       !$acc end host_data
+
+#ifdef _OPENACC
+      ! without a queue to synchronize with, wait for the device work to complete
+      if (.not. present(sync_queue)) then
+         !$acc wait
+      end if
+#endif
    end subroutine foo
 
    subroutine bar(one, &
                   two, &
+                  sync_queue, &
                   rc)
       use, intrinsic :: iso_c_binding
 
       real(c_float), dimension(:, :), contiguous, intent(inout), target :: one
 
       integer(c_int), value, target :: two
+
+      integer(c_int), intent(in), optional :: sync_queue
 
       logical(c_bool) :: on_gpu
 
@@ -254,6 +267,13 @@ contains
                        two=two, &
                        on_gpu=on_gpu)
       !$acc end host_data
+
+#ifdef _OPENACC
+      ! without a queue to synchronize with, wait for the device work to complete
+      if (.not. present(sync_queue)) then
+         !$acc wait
+      end if
+#endif
    end subroutine bar
 
 end module
@@ -495,21 +515,23 @@ def test_external_gpu_stream_codegen():
     interface = generate_f90_interface(plugin)
 
     # The caller-facing subroutine does not expose `external_gpu_stream` as an
-    # argument: instead it takes an `acc_queue` selector and derives the raw
-    # stream handle from the OpenACC runtime.
+    # argument: instead it derives the raw stream handle from the optional
+    # `sync_queue` argument via the OpenACC runtime.
     subroutine_start = interface.index("subroutine stream_fn(")
     subroutine_signature = interface[subroutine_start : interface.index(")", subroutine_start)]
     assert "external_gpu_stream" not in subroutine_signature
-    assert "acc_queue" in subroutine_signature
+    assert "sync_queue" in subroutine_signature
     assert "use openacc, only: acc_get_cuda_stream, acc_handle_kind" in interface
-    # `acc_queue` uses a portable ISO C kind so the declaration compiles even
+    # `sync_queue` uses a portable ISO C kind so the declaration compiles even
     # without OpenACC; only the (guarded) call site needs `acc_handle_kind`.
-    assert "integer(c_int), value, target :: acc_queue" in interface
+    assert "integer(c_int), intent(in), optional :: sync_queue" in interface
     assert "integer(c_long) :: external_gpu_stream" in interface
     assert (
-        "external_gpu_stream = acc_get_cuda_stream(int(acc_queue, kind=acc_handle_kind))"
+        "external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))"
         in interface
     )
     assert "external_gpu_stream = 0_c_long" in interface
+    # Without `sync_queue` the Python work runs on the default stream.
+    assert "if (present(sync_queue)) then" in interface
     # ... yet the derived stream is still forwarded to the low-level wrapper call.
     assert "external_gpu_stream=external_gpu_stream" in interface

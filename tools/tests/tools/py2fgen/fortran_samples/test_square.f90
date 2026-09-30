@@ -44,16 +44,16 @@ program call_square_wrapper_cffi_plugin
    print *
 
 #ifdef USE_SQUARE_FROM_FUNCTION
-   call square_from_function(input, result, rc)
+   call square_from_function(input, result, rc=rc)
 #elif USE_SQUARE_ERROR
-   call square_error(input, result, rc)
+   call square_error(input, result, rc=rc)
 #elif PROFILE_SQUARE_FROM_FUNCTION
-    call square_from_function(input, result, rc)
+    call square_from_function(input, result, rc=rc)
     do n = 1, 100
-    call square_from_function(input, result, rc)
+    call square_from_function(input, result, rc=rc)
     end do
 #else
-   call square(input, result, rc)
+   call square(input, result, rc=rc)
 #endif
    if (rc /= 1) then
        print *, "Python failed with exit code = ", rc

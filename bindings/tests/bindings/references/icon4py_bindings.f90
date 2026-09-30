@@ -1561,7 +1561,7 @@ contains
                              a_hshr, &
                              loutshs, &
                              backend, &
-                             acc_queue, &
+                             sync_queue, &
                              rc)
       use, intrinsic :: iso_c_binding
 
@@ -1647,7 +1647,7 @@ contains
 
       integer(c_int), value, target :: backend
 
-      integer(c_int), value, target :: acc_queue
+      integer(c_int), intent(in), optional :: sync_queue
 
       logical(c_bool) :: on_gpu
 
@@ -1739,7 +1739,11 @@ contains
 #ifdef _OPENACC
       on_gpu = .True.
 
-      external_gpu_stream = acc_get_cuda_stream(int(acc_queue, kind=acc_handle_kind))
+      if (present(sync_queue)) then
+         external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))
+      else
+         external_gpu_stream = 0_c_long
+      end if
 
 #else
       on_gpu = .False.
@@ -1877,6 +1881,13 @@ contains
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
+
+#ifdef _OPENACC
+      ! without a queue to synchronize with, wait for the device work to complete
+      if (.not. present(sync_queue)) then
+         !$acc wait
+      end if
+#endif
    end subroutine diffusion_init
 
    subroutine diffusion_run(w, &
@@ -1890,6 +1901,7 @@ contains
                             dwdy, &
                             dtime, &
                             linit, &
+                            sync_queue, &
                             rc)
       use, intrinsic :: iso_c_binding
 
@@ -1914,6 +1926,8 @@ contains
       real(c_double), value, target :: dtime
 
       logical(c_bool), value, target :: linit
+
+      integer(c_int), intent(in), optional :: sync_queue
 
       logical(c_bool) :: on_gpu
 
@@ -2068,6 +2082,13 @@ contains
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
+
+#ifdef _OPENACC
+      ! without a queue to synchronize with, wait for the device work to complete
+      if (.not. present(sync_queue)) then
+         !$acc wait
+      end if
+#endif
    end subroutine diffusion_run
 
    subroutine grid_init(cell_starts, &
@@ -2126,6 +2147,7 @@ contains
                         vertical_size, &
                         limited_area, &
                         backend, &
+                        sync_queue, &
                         rc)
       use, intrinsic :: iso_c_binding
 
@@ -2240,6 +2262,8 @@ contains
       logical(c_bool), value, target :: limited_area
 
       integer(c_int), value, target :: backend
+
+      integer(c_int), intent(in), optional :: sync_queue
 
       logical(c_bool) :: on_gpu
 
@@ -2657,6 +2681,13 @@ contains
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
+
+#ifdef _OPENACC
+      ! without a queue to synchronize with, wait for the device work to complete
+      if (.not. present(sync_queue)) then
+         !$acc wait
+      end if
+#endif
    end subroutine grid_init
 
    subroutine solve_nh_init(c_lin_e, &
@@ -2731,7 +2762,7 @@ contains
                             divdamp_z4, &
                             nflat_gradp, &
                             backend, &
-                            acc_queue, &
+                            sync_queue, &
                             rc)
       use, intrinsic :: iso_c_binding
 
@@ -2883,7 +2914,7 @@ contains
 
       integer(c_int), value, target :: backend
 
-      integer(c_int), value, target :: acc_queue
+      integer(c_int), intent(in), optional :: sync_queue
 
       logical(c_bool) :: on_gpu
 
@@ -3137,7 +3168,11 @@ contains
 #ifdef _OPENACC
       on_gpu = .True.
 
-      external_gpu_stream = acc_get_cuda_stream(int(acc_queue, kind=acc_handle_kind))
+      if (present(sync_queue)) then
+         external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))
+      else
+         external_gpu_stream = 0_c_long
+      end if
 
 #else
       on_gpu = .False.
@@ -3507,6 +3542,13 @@ contains
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
+
+#ifdef _OPENACC
+      ! without a queue to synchronize with, wait for the device work to complete
+      if (.not. present(sync_queue)) then
+         !$acc wait
+      end if
+#endif
    end subroutine solve_nh_init
 
    subroutine solve_nh_run(rho_now, &
@@ -3553,6 +3595,7 @@ contains
                            idyn_timestep, &
                            is_iau_active, &
                            iau_wgt_dyn, &
+                           sync_queue, &
                            rc)
       use, intrinsic :: iso_c_binding
 
@@ -3643,6 +3686,8 @@ contains
       logical(c_bool), value, target :: is_iau_active
 
       real(c_double), value, target :: iau_wgt_dyn
+
+      integer(c_int), intent(in), optional :: sync_queue
 
       logical(c_bool) :: on_gpu
 
@@ -4114,6 +4159,13 @@ contains
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
+
+#ifdef _OPENACC
+      ! without a queue to synchronize with, wait for the device work to complete
+      if (.not. present(sync_queue)) then
+         !$acc wait
+      end if
+#endif
    end subroutine solve_nh_run
 
 end module
