@@ -83,7 +83,7 @@ def test_cheader_generation_for_single_function():
     header = CHeaderGenerator.apply(plugin)
     assert (
         header
-        == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1, unsigned char device_enabled, unsigned char has_external_gpu_stream, long external_gpu_stream);"
+        == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1, unsigned char device_enabled, long external_gpu_stream);"
     )
 
 
@@ -93,7 +93,7 @@ def test_cheader_for_pointer_args():
     header = CHeaderGenerator.apply(plugin)
     assert (
         header
-        == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two, unsigned char device_enabled, unsigned char has_external_gpu_stream, long external_gpu_stream);"
+        == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two, unsigned char device_enabled, long external_gpu_stream);"
     )
 
 
@@ -143,7 +143,6 @@ module libtest_plugin
                            two_size_0, &
                            two_size_1, &
                            device_enabled, &
-                           has_external_gpu_stream, &
                            external_gpu_stream) bind(c, name="foo_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
@@ -158,8 +157,6 @@ module libtest_plugin
 
          logical(c_bool), value :: device_enabled
 
-         logical(c_bool), value :: has_external_gpu_stream
-
          integer(c_long), value :: external_gpu_stream
 
       end function foo_wrapper
@@ -169,7 +166,6 @@ module libtest_plugin
                            one_size_1, &
                            two, &
                            device_enabled, &
-                           has_external_gpu_stream, &
                            external_gpu_stream) bind(c, name="bar_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
@@ -183,8 +179,6 @@ module libtest_plugin
          integer(c_int), value, target :: two
 
          logical(c_bool), value :: device_enabled
-
-         logical(c_bool), value :: has_external_gpu_stream
 
          integer(c_long), value :: external_gpu_stream
 
@@ -211,8 +205,6 @@ contains
 
       logical(c_bool) :: device_enabled
 
-      logical(c_bool) :: has_external_gpu_stream
-
       integer(c_long) :: external_gpu_stream
 
       integer(c_int) :: two_size_0
@@ -227,15 +219,12 @@ contains
 #ifdef _OPENACC
       device_enabled = .True.
       if (present(sync_queue)) then
-         has_external_gpu_stream = .True.
          external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))
       else
-         has_external_gpu_stream = .False.
          external_gpu_stream = -1_c_long
       end if
 #else
       device_enabled = .False.
-      has_external_gpu_stream = .False.
       external_gpu_stream = -1_c_long
 #endif
 
@@ -247,16 +236,8 @@ contains
                        two_size_0=two_size_0, &
                        two_size_1=two_size_1, &
                        device_enabled=device_enabled, &
-                       has_external_gpu_stream=has_external_gpu_stream, &
                        external_gpu_stream=external_gpu_stream)
       !$acc end host_data
-
-#ifdef _OPENACC
-      ! without a queue to synchronize with, wait for the device work to complete
-      if (.not. present(sync_queue)) then
-         !$acc wait
-      end if
-#endif
    end subroutine foo
 
    subroutine bar(one, &
@@ -276,8 +257,6 @@ contains
 
       logical(c_bool) :: device_enabled
 
-      logical(c_bool) :: has_external_gpu_stream
-
       integer(c_long) :: external_gpu_stream
 
       integer(c_int) :: one_size_0
@@ -292,15 +271,12 @@ contains
 #ifdef _OPENACC
       device_enabled = .True.
       if (present(sync_queue)) then
-         has_external_gpu_stream = .True.
          external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))
       else
-         has_external_gpu_stream = .False.
          external_gpu_stream = -1_c_long
       end if
 #else
       device_enabled = .False.
-      has_external_gpu_stream = .False.
       external_gpu_stream = -1_c_long
 #endif
 
@@ -312,16 +288,8 @@ contains
                        one_size_1=one_size_1, &
                        two=two, &
                        device_enabled=device_enabled, &
-                       has_external_gpu_stream=has_external_gpu_stream, &
                        external_gpu_stream=external_gpu_stream)
       !$acc end host_data
-
-#ifdef _OPENACC
-      ! without a queue to synchronize with, wait for the device work to complete
-      if (.not. present(sync_queue)) then
-         !$acc wait
-      end if
-#endif
    end subroutine bar
 
 end module
@@ -356,9 +324,7 @@ from libtest import bar
 
 
 @ffi.def_extern(error=2)
-def foo_wrapper(
-    one, two, two_size_0, two_size_1, device_enabled, has_external_gpu_stream, external_gpu_stream
-):
+def foo_wrapper(one, two, two_size_0, two_size_1, device_enabled, external_gpu_stream):
     with runtime_config.HOOK_BINDINGS_FUNCTION["foo"]:
         try:
             if __debug__:
@@ -403,7 +369,7 @@ def foo_wrapper(
                 two=two,
             )
 
-            if use_device and not device_enabled:
+            if use_device and external_gpu_stream < 0:  # no external GPU stream
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -439,9 +405,7 @@ def foo_wrapper(
 
 
 @ffi.def_extern(error=2)
-def bar_wrapper(
-    one, one_size_0, one_size_1, two, device_enabled, has_external_gpu_stream, external_gpu_stream
-):
+def bar_wrapper(one, one_size_0, one_size_1, two, device_enabled, external_gpu_stream):
     with runtime_config.HOOK_BINDINGS_FUNCTION["bar"]:
         try:
             if __debug__:
@@ -486,7 +450,7 @@ def bar_wrapper(
                 two=two,
             )
 
-            if use_device and not device_enabled:
+            if use_device and external_gpu_stream < 0:  # no external GPU stream
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -526,8 +490,8 @@ def bar_wrapper(
 def test_c_header(dummy_plugin):
     interface = generate_c_header(dummy_plugin)
     expected = """
-    extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1, unsigned char device_enabled, unsigned char has_external_gpu_stream, long external_gpu_stream);
-    extern int bar_wrapper(float *one, int one_size_0, int one_size_1, int two, unsigned char device_enabled, unsigned char has_external_gpu_stream, long external_gpu_stream);
+    extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1, unsigned char device_enabled, long external_gpu_stream);
+    extern int bar_wrapper(float *one, int one_size_0, int one_size_1, int two, unsigned char device_enabled, long external_gpu_stream);
     """
     assert compare_ignore_whitespace(interface, expected)
 
@@ -568,10 +532,7 @@ def test_python_wrapper_passes_metadata():
     wrapper = generate_python_wrapper(plugin).translate({ord(c): None for c in string.whitespace})
 
     assert wrapper.count("_metadata=") == 1
-    assert (
-        "one=one,_metadata=_definitions.Metadata(use_device,bool(has_external_gpu_stream),external_gpu_stream),)"
-        in wrapper
-    )
+    assert "one=one,_metadata=_definitions.Metadata(use_device,external_gpu_stream),)" in wrapper
 
 
 def test_external_gpu_stream_codegen():
@@ -585,7 +546,7 @@ def test_external_gpu_stream_codegen():
 
     # The stream is passed through the ISO C interface after the function arguments.
     header = CHeaderGenerator.apply(plugin)
-    assert "unsigned char has_external_gpu_stream, long external_gpu_stream" in header
+    assert "unsigned char device_enabled, long external_gpu_stream" in header
 
     interface = generate_f90_interface(plugin)
 
@@ -605,14 +566,16 @@ def test_external_gpu_stream_codegen():
         "external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))"
         in interface
     )
-    # Without `sync_queue` no stream is provided, and the device work is awaited.
+    # Without `sync_queue` no stream is provided.
     assert "external_gpu_stream = -1_c_long" in interface
-    assert "if (.not. present(sync_queue)) then" in interface
+    assert "!$acc wait" not in interface
     assert "external_gpu_stream=external_gpu_stream" in interface
 
     # The Python wrapper stores the stream in the call metadata.
     wrapper = generate_python_wrapper(plugin).translate({ord(c): None for c in string.whitespace})
+    assert "_metadata=_definitions.Metadata(use_device,external_gpu_stream)" in wrapper
+    # ... and without a stream the device is synchronized before returning to Fortran.
     assert (
-        "_metadata=_definitions.Metadata(use_device,bool(has_external_gpu_stream),external_gpu_stream)"
+        "ifuse_deviceandexternal_gpu_stream<0:#noexternalGPUstream_runtime.device_synchronize()"
         in wrapper
     )

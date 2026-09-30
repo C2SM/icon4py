@@ -74,6 +74,13 @@ Mapping of parameter names to their descriptors.
 
 METADATA_PARAM_NAME = "_metadata"
 
+NO_EXTERNAL_GPU_STREAM = -1
+"""
+Value of `Metadata.external_gpu_stream` if the caller does not provide a GPU stream.
+
+A GPU stream handle is a pointer, hence never negative; `0` is the default stream.
+"""
+
 
 @dataclasses.dataclass(slots=True)
 class Metadata:
@@ -86,12 +93,14 @@ class Metadata:
     use_device: bool
     """If the arrays are on the device."""
 
-    has_external_gpu_stream: bool = False
-    """If the caller provides a GPU stream to order the device work on."""
+    external_gpu_stream: int = NO_EXTERNAL_GPU_STREAM
+    """The pointer value of the GPU stream (`cudaStream_t` or `hipStream_t`) to order
+    the device work on, or `NO_EXTERNAL_GPU_STREAM` if the caller does not provide one."""
 
-    external_gpu_stream: int = -1
-    """The pointer value of the external GPU stream (`cudaStream_t` or `hipStream_t`),
-    only valid if `has_external_gpu_stream` is set."""
+    @property
+    def use_external_gpu_stream(self) -> bool:
+        """If the caller provides a GPU stream to order the device work on."""
+        return self.external_gpu_stream >= 0  # `NO_EXTERNAL_GPU_STREAM` is negative
 
 
 # cffi.FFI.CData is not available at runtime, therefore we provide a runtime

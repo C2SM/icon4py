@@ -114,10 +114,10 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=_metadata.use_device
     )
-    if _metadata.has_external_gpu_stream:
+    if _metadata.use_external_gpu_stream:
         # Wrap the provided stream; `ExternalStream` does not take ownership of it.
         actual_backend["external_gpu_stream"] = xp.cuda.ExternalStream(
-            int(_metadata.external_gpu_stream)
+            _metadata.external_gpu_stream
         )
     logger.info(f"Using Backend {actual_backend} with use_device={_metadata.use_device}")
     allocator = model_backends.get_allocator(actual_backend)

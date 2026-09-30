@@ -75,6 +75,20 @@ def test_metadata_param():
     assert received == {"a": 1, "_metadata": metadata}
 
 
+@pytest.mark.parametrize(
+    "external_gpu_stream, expected",
+    [
+        (py2fgen.NO_EXTERNAL_GPU_STREAM, False),
+        (0, True),  # the default stream
+        (0x7F00_DEAD_BEEF, True),
+    ],
+)
+def test_metadata_use_external_gpu_stream(external_gpu_stream: int, expected: bool):
+    metadata = py2fgen.Metadata(use_device=True, external_gpu_stream=external_gpu_stream)
+
+    assert metadata.use_external_gpu_stream == expected
+
+
 def test_without_metadata_param():
     @py2fgen.export()
     def testee(a: Annotated[int, py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32)]) -> None:

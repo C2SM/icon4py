@@ -92,7 +92,6 @@ def diffusion_init_wrapper(
     loutshs,
     backend,
     device_enabled,
-    has_external_gpu_stream,
     external_gpu_stream,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["diffusion_init"]:
@@ -279,12 +278,10 @@ def diffusion_init_wrapper(
                 a_hshr=a_hshr,
                 loutshs=loutshs,
                 backend=backend,
-                _metadata=_definitions.Metadata(
-                    use_device, bool(has_external_gpu_stream), external_gpu_stream
-                ),
+                _metadata=_definitions.Metadata(use_device, external_gpu_stream),
             )
 
-            if use_device and not device_enabled:
+            if use_device and external_gpu_stream < 0:  # no external GPU stream
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -537,7 +534,6 @@ def diffusion_run_wrapper(
     dtime,
     linit,
     device_enabled,
-    has_external_gpu_stream,
     external_gpu_stream,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["diffusion_run"]:
@@ -673,7 +669,7 @@ def diffusion_run_wrapper(
                 linit=linit,
             )
 
-            if use_device and not device_enabled:
+            if use_device and external_gpu_stream < 0:  # no external GPU stream
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -917,7 +913,6 @@ def grid_init_wrapper(
     limited_area,
     backend,
     device_enabled,
-    has_external_gpu_stream,
     external_gpu_stream,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["grid_init"]:
@@ -1248,12 +1243,10 @@ def grid_init_wrapper(
                 vertical_size=vertical_size,
                 limited_area=limited_area,
                 backend=backend,
-                _metadata=_definitions.Metadata(
-                    use_device, bool(has_external_gpu_stream), external_gpu_stream
-                ),
+                _metadata=_definitions.Metadata(use_device, external_gpu_stream),
             )
 
-            if use_device and not device_enabled:
+            if use_device and external_gpu_stream < 0:  # no external GPU stream
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -2058,7 +2051,6 @@ def solve_nh_init_wrapper(
     nflat_gradp,
     backend,
     device_enabled,
-    has_external_gpu_stream,
     external_gpu_stream,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["solve_nh_init"]:
@@ -2568,12 +2560,10 @@ def solve_nh_init_wrapper(
                 divdamp_z4=divdamp_z4,
                 nflat_gradp=nflat_gradp,
                 backend=backend,
-                _metadata=_definitions.Metadata(
-                    use_device, bool(has_external_gpu_stream), external_gpu_stream
-                ),
+                _metadata=_definitions.Metadata(use_device, external_gpu_stream),
             )
 
-            if use_device and not device_enabled:
+            if use_device and external_gpu_stream < 0:  # no external GPU stream
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -3452,7 +3442,6 @@ def solve_nh_run_wrapper(
     is_iau_active,
     iau_wgt_dyn,
     device_enabled,
-    has_external_gpu_stream,
     external_gpu_stream,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["solve_nh_run"]:
@@ -3888,7 +3877,7 @@ def solve_nh_run_wrapper(
                 iau_wgt_dyn=iau_wgt_dyn,
             )
 
-            if use_device and not device_enabled:
+            if use_device and external_gpu_stream < 0:  # no external GPU stream
                 _runtime.device_synchronize()
 
             if __debug__:

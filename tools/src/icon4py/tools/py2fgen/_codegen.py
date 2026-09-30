@@ -26,15 +26,14 @@ CFFI_DECORATOR = "@ffi.def_extern(error=2)"
 # Every generated Fortran subroutine takes this optional OpenACC queue argument.
 # If present, the caller guarantees that the Python work is ordered on the stream of
 # this queue: the stream handle, derived via `acc_get_cuda_stream`, is passed to
-# Python as `Metadata.external_gpu_stream`. If absent, the subroutine waits on all
-# OpenACC queues before returning.
+# Python as `Metadata.external_gpu_stream`. If absent, `NO_EXTERNAL_GPU_STREAM` is
+# passed instead and the Python wrapper synchronizes the device before returning.
 SYNC_QUEUE_PARAM_NAME: Final[str] = "sync_queue"
 
 # Runtime information passed from Fortran to Python in every call, after the
 # function arguments, see `_definitions.Metadata`.
 METADATA_PARAMS: Final[dict[str, _definitions.ScalarKind]] = {
     "device_enabled": _definitions.BOOL,
-    "has_external_gpu_stream": _definitions.BOOL,
     "external_gpu_stream": _definitions.INT64,
 }
 
@@ -216,11 +215,11 @@ def {{ func.name }}_wrapper(
             {{ name }} = {{ name }}{{ "," }}
             {%- endfor -%}
             {%- if func.with_metadata -%}
-            _metadata = _definitions.Metadata(use_device, bool(has_external_gpu_stream), external_gpu_stream),
+            _metadata = _definitions.Metadata(use_device, external_gpu_stream),
             {%- endif -%}
             )
 
-            if use_device and not device_enabled:
+            if use_device and external_gpu_stream < 0:  # no external GPU stream
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -429,6 +428,7 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
             get_sizes_maker=get_sizes_maker,
             is_array=is_array,
             sync_queue_param_name=SYNC_QUEUE_PARAM_NAME,
+            no_external_gpu_stream=_definitions.NO_EXTERNAL_GPU_STREAM,
         )
 
     Func = as_jinja(
@@ -461,16 +461,13 @@ subroutine {{name}}({{param_names}})
    #ifdef _OPENACC
    device_enabled = .True.
    if (present({{ sync_queue_param_name }})) then
-      has_external_gpu_stream = .True.
       external_gpu_stream = acc_get_cuda_stream(int({{ sync_queue_param_name }}, kind=acc_handle_kind))
    else
-      has_external_gpu_stream = .False.
-      external_gpu_stream = -1_c_long
+      external_gpu_stream = {{ no_external_gpu_stream }}_c_long
    end if
    #else
    device_enabled = .False.
-   has_external_gpu_stream = .False.
-   external_gpu_stream = -1_c_long
+   external_gpu_stream = {{ no_external_gpu_stream }}_c_long
    #endif
 
    {% for name, param in _this_node.args.items() if is_array(param) and not param.is_optional %}
@@ -492,13 +489,6 @@ subroutine {{name}}({{param_names}})
    {%- for arr in optional_arrays %}
    !$acc end host_data
    {%- endfor %}
-
-   #ifdef _OPENACC
-   ! without a queue to synchronize with, wait for the device work to complete
-   if (.not. present({{ sync_queue_param_name }})) then
-      !$acc wait
-   end if
-   #endif
 end subroutine {{name}}
     """
     )
