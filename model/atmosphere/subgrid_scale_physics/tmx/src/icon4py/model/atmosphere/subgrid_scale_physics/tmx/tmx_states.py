@@ -90,6 +90,10 @@ class TmxInterpolationState:
 class TmxSurfaceFluxState:
     """Surface fluxes provided by the surface scheme (inputs to the atmospheric diffusion)."""
 
+    evapotranspiration: fa.CellField[ta.wpfloat]
+    """Surface evapotranspiration flux (`evspsbl`) [kg/(m^2 s)]."""
+    sensible_heat_flux: fa.CellField[ta.wpfloat]
+    """Surface sensible heat flux (`hfss`) [W/m^2]."""
     u_stress: fa.CellField[ta.wpfloat]
     """Zonal surface wind stress (`tauu`) [N/m^2]."""
     v_stress: fa.CellField[ta.wpfloat]
@@ -112,8 +116,22 @@ class TmxInputState:
     """Meridional wind (``va``) on full levels [m/s]."""
     w: fa.CellKHalfField[ta.wpfloat]
     """Vertical wind (``wa``) on half levels [m/s]."""
+    qv: fa.CellKField[ta.wpfloat]
+    """Specific humidity on full levels [kg/kg]."""
+    qc: fa.CellKField[ta.wpfloat]
+    """Cloud water mixing ratio on full levels [kg/kg]."""
+    qi: fa.CellKField[ta.wpfloat]
+    """Cloud ice mixing ratio on full levels [kg/kg]."""
+    qr: fa.CellKField[ta.wpfloat]
+    """Rain mixing ratio on full levels [kg/kg]."""
+    qs: fa.CellKField[ta.wpfloat]
+    """Snow mixing ratio on full levels [kg/kg]."""
+    qg: fa.CellKField[ta.wpfloat]
+    """Graupel mixing ratio on full levels [kg/kg]."""
     rho: fa.CellKField[ta.wpfloat]
     """Air density on full levels [kg/m^3]."""
+    air_mass: fa.CellKField[ta.wpfloat]
+    """Air mass per unit area (`mair`) on full levels [kg/m^2]."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -203,6 +221,14 @@ class TmxDiagnosticState:
 class TmxNewState:
     """Fields updated by tmx: `new = state + tend * dtime`."""
 
+    temperature: fa.CellKField[ta.wpfloat]
+    """Updated air temperature on full levels [K]."""
+    qv: fa.CellKField[ta.wpfloat]
+    """Updated specific humidity on full levels [kg/kg]."""
+    qc: fa.CellKField[ta.wpfloat]
+    """Updated cloud water mixing ratio on full levels [kg/kg]."""
+    qi: fa.CellKField[ta.wpfloat]
+    """Updated cloud ice mixing ratio on full levels [kg/kg]."""
     u: fa.CellKField[ta.wpfloat]
     """Updated zonal wind on full levels [m/s]."""
     v: fa.CellKField[ta.wpfloat]
@@ -219,6 +245,10 @@ class TmxNewState:
             data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
         )
         return cls(
+            temperature=zero_field(dims.CellDim, dims.KDim),
+            qv=zero_field(dims.CellDim, dims.KDim),
+            qc=zero_field(dims.CellDim, dims.KDim),
+            qi=zero_field(dims.CellDim, dims.KDim),
             u=zero_field(dims.CellDim, dims.KDim),
             v=zero_field(dims.CellDim, dims.KDim),
             w=zero_field(dims.CellDim, dims.KHalfDim),
@@ -229,6 +259,14 @@ class TmxNewState:
 class TmxTendencyState:
     """Tendencies computed by tmx."""
 
+    tend_temperature: fa.CellKField[ta.wpfloat]
+    """Air temperature tendency on full levels [K/s]."""
+    tend_qv: fa.CellKField[ta.wpfloat]
+    """Specific humidity tendency on full levels [kg/(kg s)]."""
+    tend_qc: fa.CellKField[ta.wpfloat]
+    """Cloud water mixing ratio tendency on full levels [kg/(kg s)]."""
+    tend_qi: fa.CellKField[ta.wpfloat]
+    """Cloud ice mixing ratio tendency on full levels [kg/(kg s)]."""
     tend_u: fa.CellKField[ta.wpfloat]
     """Zonal wind tendency on full levels [m/s^2]."""
     tend_v: fa.CellKField[ta.wpfloat]
@@ -245,6 +283,10 @@ class TmxTendencyState:
             data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
         )
         return cls(
+            tend_temperature=zero_field(dims.CellDim, dims.KDim),
+            tend_qv=zero_field(dims.CellDim, dims.KDim),
+            tend_qc=zero_field(dims.CellDim, dims.KDim),
+            tend_qi=zero_field(dims.CellDim, dims.KDim),
             tend_u=zero_field(dims.CellDim, dims.KDim),
             tend_v=zero_field(dims.CellDim, dims.KDim),
             tend_w=zero_field(dims.CellDim, dims.KHalfDim),

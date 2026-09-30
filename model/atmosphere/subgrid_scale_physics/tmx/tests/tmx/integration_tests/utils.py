@@ -98,6 +98,13 @@ def construct_input_state(entry_savepoint: sb.TmxEntrySavepoint) -> tmx_states.T
         u=entry_savepoint.ua(),
         v=entry_savepoint.va(),
         w=entry_savepoint.wa(),
+        qv=entry_savepoint.qv(),
+        qc=entry_savepoint.qc(),
+        qi=entry_savepoint.qi(),
+        qr=entry_savepoint.qr(),
+        qs=entry_savepoint.qs(),
+        qg=entry_savepoint.qg(),
+        air_mass=entry_savepoint.mair(),
         rho=entry_savepoint.rho(),
     )
 
@@ -106,6 +113,8 @@ def construct_surface_flux_state(
     surface_fluxes_savepoint: sb.TmxSurfaceFluxesSavepoint,
 ) -> tmx_states.TmxSurfaceFluxState:
     return tmx_states.TmxSurfaceFluxState(
+        evapotranspiration=surface_fluxes_savepoint.evspsbl(),
+        sensible_heat_flux=surface_fluxes_savepoint.hfss(),
         u_stress=surface_fluxes_savepoint.tauu(),
         v_stress=surface_fluxes_savepoint.tauv(),
     )

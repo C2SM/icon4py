@@ -2026,8 +2026,29 @@ class TmxEntrySavepoint(IconSavepoint):
     def wa(self):
         return self._get_field("wa", dims.CellDim, dims.KHalfDim)
 
+    def qv(self):
+        return self._get_field("qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        return self._get_field("qc", dims.CellDim, dims.KDim)
+
+    def qi(self):
+        return self._get_field("qi", dims.CellDim, dims.KDim)
+
+    def qr(self):
+        return self._get_field("qr", dims.CellDim, dims.KDim)
+
+    def qs(self):
+        return self._get_field("qs", dims.CellDim, dims.KDim)
+
+    def qg(self):
+        return self._get_field("qg", dims.CellDim, dims.KDim)
+
     def rho(self):
         return self._get_field("rho", dims.CellDim, dims.KDim)
+
+    def mair(self):
+        return self._get_field("mair", dims.CellDim, dims.KDim)
 
     def tempv(self):
         return self._get_field("tempv", dims.CellDim, dims.KDim)
@@ -2038,6 +2059,12 @@ class TmxEntrySavepoint(IconSavepoint):
 
 class TmxSurfaceFluxesSavepoint(IconSavepoint):
     """Savepoint after the surface model call in vdf Compute in mo_vdf.f90."""
+
+    def evspsbl(self):
+        return self._get_field("evspsbl", dims.CellDim)
+
+    def hfss(self):
+        return self._get_field("hfss", dims.CellDim)
 
     def tauu(self):
         return self._get_field("tauu", dims.CellDim)
@@ -2111,6 +2138,41 @@ class TmxDiagnosticsExitSavepoint(IconSavepoint):
 
     def km_ie(self):
         return self._get_field("km_ie", dims.EdgeDim, dims.KHalfDim)
+
+
+class TmxHydroExitSavepoint(IconSavepoint):
+    """Savepoint after Compute_diffusion_hydrometeors in mo_vdf.f90."""
+
+    def tend_qv(self):
+        return self._get_field("tend_qv", dims.CellDim, dims.KDim)
+
+    def tend_qc(self):
+        return self._get_field("tend_qc", dims.CellDim, dims.KDim)
+
+    def tend_qi(self):
+        return self._get_field("tend_qi", dims.CellDim, dims.KDim)
+
+    def qv_new(self):
+        return self._get_field("qv_new", dims.CellDim, dims.KDim)
+
+    def qc_new(self):
+        return self._get_field("qc_new", dims.CellDim, dims.KDim)
+
+    def qi_new(self):
+        return self._get_field("qi_new", dims.CellDim, dims.KDim)
+
+
+class TmxTemperatureExitSavepoint(IconSavepoint):
+    """Savepoint at exit of Compute_diffusion_temperature in mo_vdf.f90."""
+
+    def energy(self):
+        return self._get_field("energy", dims.CellDim, dims.KDim)
+
+    def tend_ta(self):
+        return self._get_field("tend_ta", dims.CellDim, dims.KDim)
+
+    def ta_new(self):
+        return self._get_field("ta_new", dims.CellDim, dims.KDim)
 
 
 class TmxHorWindExitSavepoint(IconSavepoint):
@@ -2588,6 +2650,20 @@ class IconSerialDataProvider:
             self.serializer.savepoint["tmx-diagnostics-exit"].id[1].date[date].as_savepoint()
         )
         return TmxDiagnosticsExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_hydro_exit(self, date: str) -> TmxHydroExitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-hydro-exit"].id[1].date[date].as_savepoint()
+        return TmxHydroExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_temperature_exit(self, date: str) -> TmxTemperatureExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["tmx-temperature-exit"].id[1].date[date].as_savepoint()
+        )
+        return TmxTemperatureExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
