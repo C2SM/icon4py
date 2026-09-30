@@ -187,7 +187,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
     multi_rank_tracer_prep_adv_state = prep_adv_states.initialize_tracer_prep_adv_state(
-        grid=single_rank_icon4py_driver.grid, allocator=allocator
+        grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
     initial_condition.create(
         config=multi_rank_icon4py_driver.config.initial_condition,
