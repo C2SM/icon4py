@@ -128,8 +128,9 @@ class TestComputeVnDiffusionTendency(stencil_tests.StencilTest):
         rows = slice(0, nlev)
         a, b, c = matrix_diagonals_on_rows(matrix, vn.shape, rows)
         tendency = implicit_diffusion_tendency_numpy(
-            var=vn, a=a, b=b, c=c, rhs=rhs, tend=horizontal_tendency, dtime=dtime, rows=rows
+            var=vn, a=a, b=b, c=c, rhs=rhs, dtime=dtime, rows=rows
         )
+        tendency[:, rows] += horizontal_tendency[:, rows]
         return dict(
             vn_tendency=on_rows(
                 tendency,
@@ -343,8 +344,9 @@ class TestComputeWDiffusionTendencyAndUpdateW(stencil_tests.StencilTest):
         matrix = diffusion_matrix_numpy(2.0 * km_c * inv_ddqz_z_full, inv_air_mass)
         a, b, c = matrix_diagonals_on_rows(matrix[:, interior, interior], w.shape, interior)
         tend_w = implicit_diffusion_tendency_numpy(
-            var=w, a=a, b=b, c=c, rhs=rhs, tend=horizontal_tendency, dtime=dtime, rows=interior
+            var=w, a=a, b=b, c=c, rhs=rhs, dtime=dtime, rows=interior
         )
+        tend_w[:, interior] += horizontal_tendency[:, interior]
 
         cells = slice(cell_start, cell_end)
         levels = slice(vertical_start, vertical_end)

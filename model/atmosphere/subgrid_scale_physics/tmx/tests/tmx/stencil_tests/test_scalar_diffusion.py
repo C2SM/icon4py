@@ -100,7 +100,7 @@ def diffuse_scalar_numpy(
     bottom = rows.stop - 1
     rhs[:, bottom] = -surface_flux * prefactor / air_mass[:, bottom]
     vertical_tend = implicit_diffusion_tendency_numpy(
-        var=var, a=a, b=b, c=c, rhs=rhs, tend=np.zeros_like(var), dtime=dtime, rows=rows
+        var=var, a=a, b=b, c=c, rhs=rhs, dtime=dtime, rows=rows
     )
 
     e2c = connectivities[dims.E2C]

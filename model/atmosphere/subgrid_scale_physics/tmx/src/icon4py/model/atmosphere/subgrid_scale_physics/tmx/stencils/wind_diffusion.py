@@ -142,7 +142,7 @@ def _solve_vn_vertical_diffusion(
     a, b, c = _assemble_vertical_diffusion_matrix_on_edges(
         km_ie, inv_ddqz_z_half_e, inv_air_mass, wpfloat("1.0"), minlvl, maxlvl
     )
-    return _solve_implicit_vertical_diffusion_on_edges(vn, a, b, c, rhs, wpfloat("0.0") * vn, dtime)
+    return _solve_implicit_vertical_diffusion_on_edges(vn, a, b, c, rhs, dtime)
 
 
 @gtx.field_operator
@@ -385,40 +385,35 @@ def _compute_w_horizontal_stress_tendency(
     dv = v(dims.KHalfDim - 0.5) - v(dims.KHalfDim + 0.5)
     dvndz_cell_1 = (
         du(E2C[1]) * primal_normal_cell_x[E2CDim(1)] + dv(E2C[1]) * primal_normal_cell_y[E2CDim(1)]
-    )
-    tau_zn_cell_1 = km_ic(E2C[1]) * (
-        dvndz_cell_1 * inv_ddqz_z_half(E2C[1])
-        + (w_vert(E2C2V[3]) - w_ie) * wpfloat("2.0") * inv_vert_vert_length
-    )
+    ) * inv_ddqz_z_half(E2C[1])
+    dwdn_cell_1 = (w_vert(E2C2V[3]) - w_ie) * wpfloat("2.0") * inv_vert_vert_length
+    tau_zn_cell_1 = km_ic(E2C[1]) * (dvndz_cell_1 + dwdn_cell_1)
     dvndz_cell_0 = (
         du(E2C[0]) * primal_normal_cell_x[E2CDim(0)] + dv(E2C[0]) * primal_normal_cell_y[E2CDim(0)]
-    )
-    tau_zn_cell_0 = km_ic(E2C[0]) * (
-        dvndz_cell_0 * inv_ddqz_z_half(E2C[0])
-        + (w_ie - w_vert(E2C2V[2])) * wpfloat("2.0") * inv_vert_vert_length
-    )
+    ) * inv_ddqz_z_half(E2C[0])
+    dwdn_cell_0 = (w_ie - w_vert(E2C2V[2])) * wpfloat("2.0") * inv_vert_vert_length
+    tau_zn_cell_0 = km_ic(E2C[0]) * (dvndz_cell_0 + dwdn_cell_0)
 
-    # the tangential wind between vertex and edge center is the mean of the two
-    vt_up = (
+    mean_vt_vertex_1 = wpfloat("0.5") * (
         u_vert(E2C2V[1]) * dual_normal_vert_x[E2C2VDim(1)]
         + v_vert(E2C2V[1]) * dual_normal_vert_y[E2C2VDim(1)]
         + vt_e
     )
-    dvt_up = wpfloat("0.5") * (vt_up(dims.KHalfDim - 0.5) - vt_up(dims.KHalfDim + 0.5))
-    tau_zt_vertex_1 = km_iv(E2C2V[1]) * (
-        dvt_up * inv_ddqz_z_half_v(E2C2V[1])
-        + tangent_orientation * (w_vert(E2C2V[1]) - w_ie) / edge_cell_length[E2CDim(1)]
-    )
-    vt_dn = (
+    dvtdz_vertex_1 = (
+        mean_vt_vertex_1(dims.KHalfDim - 0.5) - mean_vt_vertex_1(dims.KHalfDim + 0.5)
+    ) * inv_ddqz_z_half_v(E2C2V[1])
+    dwdt_vertex_1 = tangent_orientation * (w_vert(E2C2V[1]) - w_ie) / edge_cell_length[E2CDim(1)]
+    tau_zt_vertex_1 = km_iv(E2C2V[1]) * (dvtdz_vertex_1 + dwdt_vertex_1)
+    mean_vt_vertex_0 = wpfloat("0.5") * (
         u_vert(E2C2V[0]) * dual_normal_vert_x[E2C2VDim(0)]
         + v_vert(E2C2V[0]) * dual_normal_vert_y[E2C2VDim(0)]
         + vt_e
     )
-    dvt_dn = wpfloat("0.5") * (vt_dn(dims.KHalfDim - 0.5) - vt_dn(dims.KHalfDim + 0.5))
-    tau_zt_vertex_0 = km_iv(E2C2V[0]) * (
-        dvt_dn * inv_ddqz_z_half_v(E2C2V[0])
-        + tangent_orientation * (w_ie - w_vert(E2C2V[0])) / edge_cell_length[E2CDim(0)]
-    )
+    dvtdz_vertex_0 = (
+        mean_vt_vertex_0(dims.KHalfDim - 0.5) - mean_vt_vertex_0(dims.KHalfDim + 0.5)
+    ) * inv_ddqz_z_half_v(E2C2V[0])
+    dwdt_vertex_0 = tangent_orientation * (w_ie - w_vert(E2C2V[0])) / edge_cell_length[E2CDim(0)]
+    tau_zt_vertex_0 = km_iv(E2C2V[0]) * (dvtdz_vertex_0 + dwdt_vertex_0)
 
     return (tau_zn_cell_1 - tau_zn_cell_0) * inv_dual_edge_length + (
         tau_zt_vertex_1 - tau_zt_vertex_0
@@ -434,13 +429,13 @@ def _solve_w_vertical_diffusion(
     km_c: fa.CellKField[wpfloat],
     div_c: fa.CellKField[wpfloat],
     dtime: wpfloat,
-    minlvl: gtx.int32,
-    maxlvl: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ) -> fa.CellKHalfField[wpfloat]:
     """
-    w tendency of the implicit vertical diffusion over half levels minlvl..maxlvl.
+    w tendency of the implicit vertical diffusion over half levels vertical_start..vertical_end - 1.
 
-    w = 0 is imposed on the half levels minlvl - 1 and maxlvl + 1 bounding the system.
+    w = 0 is imposed on the half levels vertical_start - 1 and vertical_end bounding the system.
     """
     z_1by3 = wpfloat("1.0") / wpfloat("3.0")
     inv_air_mass = inv_rho_ic * inv_ddqz_z_half
@@ -453,10 +448,10 @@ def _solve_w_vertical_diffusion(
         )
     )
     a, b, c = _assemble_vertical_diffusion_matrix_on_cell_half_levels(
-        km_c, inv_ddqz_z_full, inv_air_mass, wpfloat("2.0"), minlvl, maxlvl
+        km_c, inv_ddqz_z_full, inv_air_mass, wpfloat("2.0"), vertical_start, vertical_end - 1
     )
     b = concat_where(
-        dims.KHalfDim > minlvl,
+        dims.KHalfDim > vertical_start,
         b,
         b
         + wpfloat("2.0")
@@ -465,7 +460,7 @@ def _solve_w_vertical_diffusion(
         * inv_air_mass,
     )
     b = concat_where(
-        dims.KHalfDim < maxlvl,
+        dims.KHalfDim < vertical_end - 1,
         b,
         b
         + wpfloat("2.0")
@@ -473,9 +468,7 @@ def _solve_w_vertical_diffusion(
         * inv_ddqz_z_full(dims.KHalfDim + 0.5)
         * inv_air_mass,
     )
-    return _solve_implicit_vertical_diffusion_on_cell_half_levels(
-        w, a, b, c, rhs, wpfloat("0.0") * w, dtime
-    )
+    return _solve_implicit_vertical_diffusion_on_cell_half_levels(w, a, b, c, rhs, dtime)
 
 
 @gtx.field_operator
@@ -489,8 +482,8 @@ def _compute_w_diffusion_tendency_and_update_w(
     inv_ddqz_z_full: fa.CellKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     dtime: wpfloat,
-    minlvl: gtx.int32,
-    maxlvl: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ) -> tuple[fa.CellKHalfField[wpfloat], fa.CellKHalfField[wpfloat]]:
     """The w tendency of the vertical and horizontal diffusion, and the updated w."""
     inv_rho_ic = wpfloat("1.0") / rho_ic
@@ -505,8 +498,8 @@ def _compute_w_diffusion_tendency_and_update_w(
         km_c=km_c,
         div_c=div_c,
         dtime=dtime,
-        minlvl=minlvl,
-        maxlvl=maxlvl,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
     )
     tend_w = horizontal_tendency + vertical_tendency
     return tend_w, w + tend_w * dtime
@@ -593,8 +586,8 @@ def compute_w_diffusion_tendency_and_update_w(
         inv_ddqz_z_full=inv_ddqz_z_full,
         e_bln_c_s=e_bln_c_s,
         dtime=dtime,
-        minlvl=vertical_start,
-        maxlvl=vertical_end - 1,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
         out=(tend_w, new_w),
         domain={
             dims.CellDim: (cell_start, cell_end),
