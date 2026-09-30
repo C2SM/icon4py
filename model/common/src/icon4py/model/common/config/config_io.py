@@ -73,6 +73,7 @@ class ConfigWithShared:
         CONV.register_unstructure_hook(cls, unstructure_with_shared)
 
 
+CONV.register_structure_hook(ta.wpfloat, lambda v, _: ta.wpfloat(v))
 CONV.register_unstructure_hook(ta.wpfloat, lambda v: CONV.unstructure(float(v)))
 yaml.add_representer(type(None), lambda d, _: d.represent_scalar("tag:yaml.org,2002:null", ""))
 
