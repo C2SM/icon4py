@@ -62,6 +62,7 @@ ALL_MODEL_MPI_SUBPACKAGES = [
     "tracer_advection",
     "diffusion",
     "dycore",
+    "tmx",
     "common",
     "driver",
 ]
