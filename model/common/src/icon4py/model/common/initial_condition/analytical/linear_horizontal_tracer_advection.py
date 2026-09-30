@@ -15,6 +15,7 @@ import typing
 from typing import TYPE_CHECKING
 
 from icon4py.model.common.config import config_io, options as common_conf_opt
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta
@@ -335,6 +336,7 @@ def linear_horizontal_advection(
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
     tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState,
+    global_reductions: decomposition_defs.Reductions,
 ) -> None:
     """
     Initial condition for the idealized horizontal advection test case.
@@ -376,8 +378,8 @@ def linear_horizontal_advection(
 
     center_x, center_y = _compute_tracer_center(
         initial_center=config.initial_center,
-        origin_x=vertex_x.min(),
-        origin_y=vertex_y.min(),
+        origin_x=global_reductions.min(vertex_x),
+        origin_y=global_reductions.min(vertex_y),
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
     )
@@ -400,6 +402,7 @@ def construct_reference_tracer(
     static_fields: static_fields.StaticFieldFactories,
     integration_time: float,
     num_levels: int,
+    global_reductions: decomposition_defs.Reductions,
 ) -> data_alloc.NDArray:
     geometry = static_fields.geometry
     vertex_x = geometry.get(geometry_meta.VERTEX_X).ndarray
@@ -426,8 +429,8 @@ def construct_reference_tracer(
     )
     end_center_x, end_center_y = _compute_tracer_center(
         initial_center=config.initial_center,
-        origin_x=vertex_x.min(),
-        origin_y=vertex_y.min(),
+        origin_x=global_reductions.min(vertex_x),
+        origin_y=global_reductions.min(vertex_y),
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
         displacement_x=u * integration_time,

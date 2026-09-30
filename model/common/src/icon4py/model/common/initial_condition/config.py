@@ -126,6 +126,7 @@ def create(
                 prognostic_state_now=prognostic_state_now,
                 tracer_state_now=tracer_state_now,
                 tracer_prep_adv_state=tracer_prep_adv_state,
+                global_reductions=global_reductions,
             )
         case lin_ver_adv_ic.LinearVerticalAdvectionConfig():
             lin_ver_adv_ic.linear_vertical_advection(
