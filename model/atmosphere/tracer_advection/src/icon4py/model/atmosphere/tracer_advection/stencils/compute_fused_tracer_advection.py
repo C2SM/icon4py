@@ -467,7 +467,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
     slev: gtx.int32,
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
-    do_vertical_first: gtx.int32,
+    do_vertical_first: bool,
     ivadv_tracer: gtx.int32,
     ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
@@ -479,11 +479,11 @@ def _compute_tracer_advection_after_horizontal_limiter(
 ) -> tuple[fa.EdgeKField[ta.wpfloat], fa.CellKHalfField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     tracer_now_for_h = (
         p_tracer_after_vertical
-        if (do_vertical_first == 1)
+        if do_vertical_first
         else p_tracer_now + broadcast(0.0, (dims.CellDim, dims.KDim))
     )
-    rhodz_for_h_now = rhodz_ast2 if (do_vertical_first == 1) else rhodz_now
-    rhodz_for_h_new = rhodz_new if (do_vertical_first == 1) else rhodz_ast2
+    rhodz_for_h_now = rhodz_ast2 if do_vertical_first else rhodz_now
+    rhodz_for_h_new = rhodz_new if do_vertical_first else rhodz_ast2
 
     p_mflx_tracer_h_new = concat_where(
         (dims.KDim >= 0) & (dims.KDim < elev + 1),
@@ -530,10 +530,10 @@ def _compute_tracer_advection_after_horizontal_limiter(
         if (ivadv_tracer == 3)
         else broadcast(0.0, (dims.CellDim, dims.KHalfDim))
     )
-    p_mflx_tracer_v_out = p_mflx_tracer_v if (do_vertical_first == 1) else p_mflx_tracer_v_computed
+    p_mflx_tracer_v_out = p_mflx_tracer_v if do_vertical_first else p_mflx_tracer_v_computed
     p_tracer_new = (
         p_tracer_after_horizontal
-        if (do_vertical_first == 1)
+        if do_vertical_first
         else _integrate_tracer_vertically(
             tracer_now=p_tracer_after_horizontal,
             rhodz_now=rhodz_ast2,
@@ -572,7 +572,7 @@ def compute_tracer_advection_after_horizontal_limiter(
     slev: gtx.int32,
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
-    do_vertical_first: gtx.int32,
+    do_vertical_first: bool,
     ivadv_tracer: gtx.int32,
     ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,

@@ -51,7 +51,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         rhodz_new: np.ndarray,
         deepatmo_divh: np.ndarray,
         geofac_div: np.ndarray,
-        do_vertical_first: int,
+        do_vertical_first: bool,
         ihadv_tracer: int,
         itype_hlimit: int,
         p_dtime: float,
@@ -59,7 +59,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
 
-        if do_vertical_first == 1:
+        if do_vertical_first:
             tracer_now_for_h = p_tracer_after_vertical
             rhodz_for_h_now = rhodz_ast2
             rhodz_for_h_new = rhodz_new
@@ -122,7 +122,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
 
         p_dtime = np.float64(5.0)
         dbl_eps = np.float64(1e-9)
-        do_vertical_first = gtx.int32(1)
+        do_vertical_first = True
         ivadv_tracer = gtx.int32(0)
         ihadv_tracer = gtx.int32(2)
         itype_hlimit = gtx.int32(4)

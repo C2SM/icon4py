@@ -245,9 +245,6 @@ class GodunovSplittingAdvection(Advection):
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
         self._r_m = data_alloc.zero_field(self._grid, dims.CellDim, dims.KDim, allocator=allocator)
-        self._p_tracer_after_vertical = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator
-        )
         self._p_mflx_tracer_h_unlimited = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
@@ -427,7 +424,7 @@ class GodunovSplittingAdvection(Advection):
         self._compute_before_horizontal_limiter(
             rhodz_ast2=self._rhodz_ast2,
             p_mflx_tracer_v=_p_mflx_tracer_v,
-            p_tracer_after_vertical=self._p_tracer_after_vertical,
+            p_tracer_after_vertical=p_tracer_new,
             p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
             r_m=self._r_m,
             rhodz_now=diagnostic_state.airmass_now,
@@ -449,12 +446,12 @@ class GodunovSplittingAdvection(Advection):
             r_m=self._r_m,
             p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
             p_tracer_now=p_tracer_now,
-            p_tracer_after_vertical=self._p_tracer_after_vertical,
+            p_tracer_after_vertical=p_tracer_new,
             rhodz_ast2=self._rhodz_ast2,
             rhodz_now=diagnostic_state.airmass_now,
             rhodz_new=diagnostic_state.airmass_new,
             p_mflx_contra_v=prep_adv.mass_flx_ic,
-            do_vertical_first=gtx.int32(1 if self._even_timestep else 0),
+            do_vertical_first=self._even_timestep,
             p_dtime=dtime,
         )
 
