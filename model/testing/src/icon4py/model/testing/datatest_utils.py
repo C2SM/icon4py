@@ -151,4 +151,4 @@ def create_experiment_configuration(
     processor_props: decomposition.ProcessProperties,
 ) -> driver_config.ExperimentConfig:
     experiment_path = get_path_for_experiment(experiment_description, processor_props)
-    return driver_config.read_experiment_config_from_fortran(experiment_path)
+    return driver_config.read_experiment_config_from_yaml(experiment_path / "config.yml")

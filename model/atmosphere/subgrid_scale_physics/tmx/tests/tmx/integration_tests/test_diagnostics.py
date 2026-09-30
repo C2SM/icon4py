@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import diagnostics, tmx_states
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import TmxConfig
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
@@ -56,8 +55,10 @@ def test_tmx_init_and_run_diagnostics_single_step(
     icon_grid: icon_grid_.IconGrid,
     backend: gtx_typing.Backend | None,
     date: str,
-    tmx_config: TmxConfig,
+    experiment: definitions.Experiment,
 ) -> None:
+    tmx_config = experiment.config.tmx
+    assert tmx_config is not None
     allocator = model_backends.get_allocator(backend)
     init_savepoint = data_provider.from_savepoint_tmx_init()
     entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)

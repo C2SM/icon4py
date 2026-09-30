@@ -62,10 +62,7 @@ if TYPE_CHECKING:
     "experiment_description",
     [definitions.Experiments.EXCLAIM_APE_AES],
 )
-@pytest.mark.parametrize(
-    "date",
-    ["2008-09-01T00:00:00.000", "2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000"],
-)
+@pytest.mark.parametrize("date", definitions.Experiments.EXCLAIM_APE_AES.dates)
 def test_muphys_granule(
     date: str,
     *,
