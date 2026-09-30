@@ -62,10 +62,12 @@ def _read_input_namelist(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE_AES])
 def test_tmx_config_cross_checks_input_namelist_and_defaults(
-    tmx_config: TmxConfig,
+    experiment: definitions.Experiment,
     experiment_description: definitions.ExperimentDescription,
     process_props: decomposition.ProcessProperties,
 ) -> None:
+    tmx_config = experiment.config.tmx
+    assert tmx_config is not None
     input_dict = _read_input_namelist(experiment_description, process_props)
     # first domain (the only one in the serialized experiments)
     input_members = dict(input_dict["aes_vdf_nml"]["aes_vdf_config"][0])

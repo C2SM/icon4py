@@ -177,6 +177,7 @@ class ExperimentDescription:
     long_name: str
     grid: GridDescription
     version: int
+    dates: tuple[str, ...] = ()
 
 
 @dataclasses.dataclass
@@ -218,6 +219,7 @@ class Experiments:
         long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
         grid=Grids.R02B04_GLOBAL,
         version=11,
+        dates=("2008-09-01T00:00:00.000", "2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000"),
     )
     MCH_CH_R04B09: Final = ExperimentDescription(
         name="exclaim_ch_r04b09_dsl",
