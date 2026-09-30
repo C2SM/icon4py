@@ -12,8 +12,8 @@ import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.wind_diffusion import (
     compute_vn_diffusion_tendency,
-    compute_w_diffusion_tendency_and_update,
-    interpolate_and_update_horizontal_wind,
+    compute_w_diffusion_tendency_and_update_w,
+    interpolate_vn_tendency_to_cells_and_update_uv,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
@@ -176,8 +176,8 @@ class TestComputeVnDiffusionTendency(stencil_tests.StencilTest):
         )
 
 
-class TestInterpolateAndUpdateHorizontalWind(stencil_tests.StencilTest):
-    PROGRAM = interpolate_and_update_horizontal_wind
+class TestInterpolateVnTendencyToCellsAndUpdateUv(stencil_tests.StencilTest):
+    PROGRAM = interpolate_vn_tendency_to_cells_and_update_uv
     OUTPUTS = ("tend_u", "tend_v", "new_u", "new_v")
 
     @stencil_tests.static_reference
@@ -233,8 +233,8 @@ class TestInterpolateAndUpdateHorizontalWind(stencil_tests.StencilTest):
         )
 
 
-class TestComputeWDiffusionTendencyAndUpdate(stencil_tests.StencilTest):
-    PROGRAM = compute_w_diffusion_tendency_and_update
+class TestComputeWDiffusionTendencyAndUpdateW(stencil_tests.StencilTest):
+    PROGRAM = compute_w_diffusion_tendency_and_update_w
     OUTPUTS = ("horizontal_stress_tendency", "tend_w", "new_w")
 
     @stencil_tests.static_reference
@@ -348,9 +348,8 @@ class TestComputeWDiffusionTendencyAndUpdate(stencil_tests.StencilTest):
 
         cells = slice(cell_start, cell_end)
         levels = slice(vertical_start, vertical_end)
-        # the diffused rows, zero on the two bounding half levels, and the input elsewhere
+        # the diffused rows, and the input elsewhere
         expected_new_w = new_w.copy()
-        expected_new_w[cells, vertical_start - 1 : vertical_end + 1] = 0.0
         expected_new_w[cells, levels] = (w + tend_w * dtime)[cells, levels]
         return dict(
             horizontal_stress_tendency=stress_tendency,

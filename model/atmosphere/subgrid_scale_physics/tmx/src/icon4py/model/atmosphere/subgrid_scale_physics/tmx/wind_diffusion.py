@@ -104,9 +104,9 @@ class WindDiffusion:
             },
             offset_provider=grid.connectivities,
         )
-        self._interpolate_and_update_horizontal_wind = setup_program(
+        self._interpolate_vn_tendency_to_cells_and_update_uv = setup_program(
             backend=backend,
-            program=wind_stencils.interpolate_and_update_horizontal_wind,
+            program=wind_stencils.interpolate_vn_tendency_to_cells_and_update_uv,
             constant_args={
                 "rbf_coeff_c1": interpolation_state.rbf_coeff_c1,
                 "rbf_coeff_c2": interpolation_state.rbf_coeff_c2,
@@ -123,9 +123,9 @@ class WindDiffusion:
             offset_provider=grid.connectivities,
         )
         # the edges include the first halo line: the cells of the update gather from them
-        self._compute_w_diffusion_tendency_and_update = setup_program(
+        self._compute_w_diffusion_tendency_and_update_w = setup_program(
             backend=backend,
-            program=wind_stencils.compute_w_diffusion_tendency_and_update,
+            program=wind_stencils.compute_w_diffusion_tendency_and_update_w,
             constant_args={
                 "inv_ddqz_z_full": metric_state.inv_ddqz_z_full,
                 "inv_ddqz_z_half": metric_state.inv_ddqz_z_half,
@@ -170,9 +170,8 @@ class WindDiffusion:
         Diffuse u, v and w: write their tendencies to tendency_state and the updated winds to
         new_state.
 
-        Needs the diagnostics of diagnostic_state for the current input_state. new_state.w is
-        zero on the top and bottom half levels. Otherwise only the rows the Fortran computes
-        are written; the others keep their values.
+        Needs the diagnostics of diagnostic_state for the current input_state. Only the rows the
+        Fortran computes are written; the others keep their values.
         """
         log.debug("tmx wind diffusion: start")
 
@@ -195,7 +194,7 @@ class WindDiffusion:
             dtime=dtime,
         )
         self._exchange.exchange(dims.EdgeDim, self._vn_tendency)
-        self._interpolate_and_update_horizontal_wind(
+        self._interpolate_vn_tendency_to_cells_and_update_uv(
             vn_tendency=self._vn_tendency,
             u=input_state.u,
             v=input_state.v,
@@ -213,7 +212,7 @@ class WindDiffusion:
             new_state.v,
         )
 
-        self._compute_w_diffusion_tendency_and_update(
+        self._compute_w_diffusion_tendency_and_update_w(
             w=input_state.w,
             u=input_state.u,
             v=input_state.v,
