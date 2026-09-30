@@ -56,3 +56,42 @@ def test_get_param_descriptor_from_annotation(testee, expected):
             testee, annotation_descriptor_hook=float_param_descriptor_hook
         )
         assert result == expected
+
+
+def test_metadata_param():
+    @py2fgen.export()
+    def testee(
+        a: Annotated[int, py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32)],
+        _metadata: py2fgen.Metadata,
+    ) -> None:
+        received.update(a=a, _metadata=_metadata)
+
+    received: dict[str, Any] = {}
+    metadata = py2fgen.Metadata(use_device=False)
+
+    assert testee.with_metadata
+    assert list(testee.param_descriptors) == ["a"]
+    testee(ffi=None, perf_counters=None, a=1, _metadata=metadata)
+    assert received == {"a": 1, "_metadata": metadata}
+
+
+@pytest.mark.parametrize(
+    "external_gpu_stream, expected",
+    [
+        (py2fgen.NO_EXTERNAL_GPU_STREAM, False),
+        (0, True),  # the default stream
+        (0x7F00_DEAD_BEEF, True),
+    ],
+)
+def test_metadata_use_external_gpu_stream(external_gpu_stream: int, expected: bool):
+    metadata = py2fgen.Metadata(use_device=True, external_gpu_stream=external_gpu_stream)
+
+    assert metadata.use_external_gpu_stream == expected
+
+
+def test_without_metadata_param():
+    @py2fgen.export()
+    def testee(a: Annotated[int, py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32)]) -> None:
+        pass
+
+    assert not testee.with_metadata

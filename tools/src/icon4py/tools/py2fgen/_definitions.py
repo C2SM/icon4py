@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import dataclasses
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any, TypeAlias
 
@@ -71,6 +72,36 @@ type ParamDescriptors = Mapping[str, ParamDescriptor]
 Mapping of parameter names to their descriptors.
 """
 
+METADATA_PARAM_NAME = "_metadata"
+
+NO_EXTERNAL_GPU_STREAM = -1
+"""
+Value of `Metadata.external_gpu_stream` if the caller does not provide a GPU stream.
+
+A GPU stream handle is a pointer, hence never negative; `0` is the default stream.
+"""
+
+
+@dataclasses.dataclass(slots=True)
+class Metadata:
+    """
+    Runtime information of a call from Fortran.
+
+    Passed to exported functions that have a parameter named `_metadata`.
+    """
+
+    use_device: bool
+    """If the arrays are on the device."""
+
+    external_gpu_stream: int = NO_EXTERNAL_GPU_STREAM
+    """The pointer value of the GPU stream (`cudaStream_t` or `hipStream_t`) to order
+    the device work on, or `NO_EXTERNAL_GPU_STREAM` if the caller does not provide one."""
+
+    @property
+    def use_external_gpu_stream(self) -> bool:
+        """If the caller provides a GPU stream to order the device work on."""
+        return self.external_gpu_stream >= 0  # `NO_EXTERNAL_GPU_STREAM` is negative
+
 
 # cffi.FFI.CData is not available at runtime, therefore we provide a runtime
 # alias with type `Any` (as the `TypeAlias` will be runtime evaluated)
@@ -82,7 +113,7 @@ if TYPE_CHECKING:
     Attributes:
         pointer: The CFFI pointer.
         shape: Shape of the buffer.
-        on_gpu: If the ptr is for device memory (needs to be `False` if the ArrayParamDescriptor.memory_space is `Host`).
+        use_device: If the ptr is for device memory (needs to be `False` if the ArrayParamDescriptor.memory_space is `Host`).
         is_optional: If True, the pointer can be NULL.
 
     Note: We use a plain tuple to minimize runtime overhead in the bindings.

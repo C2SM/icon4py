@@ -66,6 +66,45 @@ def test_custom_backend_device() -> None:
     assert repr(default_backend) == repr(backend)
 
 
+@pytest.mark.parametrize(
+    "backend, expected_stream_ptr",
+    [
+        (None, 0),
+        (model_backends.CPU, 0),
+        ({"device": model_backends.CPU, "external_gpu_stream": 42}, 42),
+        (
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.CPU,
+                "external_gpu_stream": 42,
+            },
+            42,
+        ),
+        (
+            {
+                "backend_factory": model_backends.make_custom_gtfn_backend,
+                "device": model_backends.CPU,
+                "external_gpu_stream": 42,
+            },
+            0,
+        ),
+        (
+            customize_backend(
+                None,
+                {
+                    "backend_factory": model_backends.make_custom_dace_backend,
+                    "device": model_backends.CPU,
+                    "external_gpu_stream": 42,
+                },
+            ),
+            42,
+        ),
+    ],
+)
+def test_get_gpu_stream_ptr(backend: model_backends.BackendLike, expected_stream_ptr: int) -> None:
+    assert model_backends.get_gpu_stream_ptr(backend) == expected_stream_ptr
+
+
 def test_custom_backend_with_external_workspace_config_and_no_explicit_device() -> None:
     backend = customize_backend(
         None,

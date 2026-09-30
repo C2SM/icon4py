@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import functools
 import logging
 import math
 import sys
@@ -459,7 +460,13 @@ class Diffusion:
         max_nudging_coefficient: float,
     ) -> None:
         self._allocator = model_backends.get_allocator(backend)
-        self._exchange = exchange
+        # The halo exchanges synchronize with the GPU stream used by the backend.
+        stream = decomposition.Stream(model_backends.get_gpu_stream_ptr(backend))
+        self._exchange = functools.partial(exchange.exchange, stream=stream)
+        self._exchange_start = functools.partial(exchange.start, stream=stream)
+        self._exchange_wait = functools.partial(
+            decomposition.create_halo_exchange_wait(exchange), stream=stream
+        )
         self.config = config
         self._params = params
         self._grid = grid
@@ -471,10 +478,6 @@ class Diffusion:
         ndyn_substeps_as_float = float(ndyn_substeps)
 
         assert self._cell_params.area is not None
-
-        self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
-            self._exchange,
-        )  # wait on a communication handle
         self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
             constants.CPD - constants.GAS_CONSTANT_DRY_AIR
         )
@@ -809,13 +812,7 @@ class Diffusion:
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of vn - start")
-        self._exchange(
-            self.u_vert,
-            self.v_vert,
-            dim=dims.VertexDim,
-            full_exchange=True,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        self._exchange(dims.VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
@@ -855,10 +852,9 @@ class Diffusion:
         # 5.  HALO EXCHANGE -- CALL sync_patch_array(SYNC_E, z_nabla2_e)
         # ICON: mo_nh_diffusion.f90:853. Fill halo edges before second RBF.
         log.debug("communication of z_nabla2_e - start")
-        self._exchange.exchange(
+        self._exchange(
             dims.EdgeDim,
             self.z_nabla2_e,
-            stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication of z_nabla2_e - end")
 
@@ -871,13 +867,7 @@ class Diffusion:
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of z_nable2_e - start")
-        self._exchange(
-            self.u_vert,
-            self.v_vert,
-            dim=dims.VertexDim,
-            full_exchange=True,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        self._exchange(dims.VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
@@ -892,12 +882,7 @@ class Diffusion:
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
         log.debug("communication of prognostic.vn : start")
-        handle_edge_comm = self._exchange(
-            prognostic_state.vn,
-            dim=dims.EdgeDim,
-            full_exchange=False,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        handle_edge_comm = self._exchange_start(dims.EdgeDim, prognostic_state.vn)
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
@@ -917,10 +902,8 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
 
-        self.halo_exchange_wait(
-            handle_edge_comm,
-            stream=decomposition.DEFAULT_STREAM,
-        )  # need to do this here, since we currently only use 1 communication object.
+        # need to do this here, since we currently only use 1 communication object.
+        self._exchange_wait(handle_edge_comm)
         log.debug("communication of prognostic.vn - end")
 
         if self.config.apply_to_temperature:
@@ -950,11 +933,10 @@ class Diffusion:
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
             if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
                 log.debug("communication of prognostic cell fields: theta and exner - start")
-                self._exchange.exchange(
+                self._exchange(
                     dims.CellDim,
                     prognostic_state.theta_v,
                     prognostic_state.exner,
-                    stream=decomposition.DEFAULT_STREAM,
                 )
                 log.debug("communication of prognostic cell fields: theta and exner - done")
 
@@ -963,9 +945,8 @@ class Diffusion:
         # is another halo exchange after the physics are applied.
         if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
             log.debug("communication of prognostic cell field: w - start")
-            self._exchange.exchange(
+            self._exchange(
                 dims.CellDim,
                 prognostic_state.w,
-                stream=decomposition.DEFAULT_STREAM,
             )
             log.debug("communication of prognostic cell field: w - done")
