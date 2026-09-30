@@ -46,17 +46,18 @@ _VERTICAL_CONVERGENCE_GRID: Final = test_defs.Grids.TORUS_1000X1000_250M
 def _compute_relative_errors(
     simulated_values: data_alloc.NDArray,
     reference: data_alloc.NDArray,
+    global_reductions: decomp_defs.Reductions,
 ) -> tuple[float, float]:
     # compute the errors relative to the reference
     # note: the following lines take the errors of all the levels, which is fine
     array_ns = data_alloc.array_namespace(simulated_values)
     error_l1 = (
-        array_ns.sum(array_ns.abs(simulated_values - reference))
-        / array_ns.sum(array_ns.abs(reference))
+        global_reductions.sum(array_ns.abs(simulated_values - reference))
+        / global_reductions.sum(array_ns.abs(reference))
     ).item()
     error_linf = (
-        array_ns.max(array_ns.abs(simulated_values - reference))
-        / array_ns.max(array_ns.abs(reference))
+        global_reductions.max(array_ns.abs(simulated_values - reference))
+        / global_reductions.max(array_ns.abs(reference))
     ).item()
     return error_l1, error_linf
 
@@ -193,7 +194,7 @@ def test_parallel_horizontal_tracer_advection_convergence(
         )
 
         current_error_l1, current_error_linf = _compute_relative_errors(
-            simulated_tracer, reference_tracer
+            simulated_tracer, reference_tracer, icon4py_driver.global_reductions
         )
         error_l1.append(current_error_l1)
         error_linf.append(current_error_linf)
@@ -203,10 +204,11 @@ def test_parallel_horizontal_tracer_advection_convergence(
             )
         )
 
-    _check_convergence(
-        l1_acceptable_range=l1_acceptable_range,
-        linf_acceptable_range=linf_acceptable_range,
-        error_l1=error_l1,
-        error_linf=error_linf,
-        grid_spacing=mean_edge_length,
-    )
+    if process_props.rank == 0:
+        _check_convergence(
+            l1_acceptable_range=l1_acceptable_range,
+            linf_acceptable_range=linf_acceptable_range,
+            error_l1=error_l1,
+            error_linf=error_linf,
+            grid_spacing=mean_edge_length,
+        )

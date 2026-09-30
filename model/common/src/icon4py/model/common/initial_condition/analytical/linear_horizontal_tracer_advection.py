@@ -15,7 +15,7 @@ import typing
 from typing import TYPE_CHECKING
 
 from icon4py.model.common.config import config_io, options as common_conf_opt
-from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta
@@ -336,7 +336,7 @@ def linear_horizontal_advection(
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
     tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState,
-    global_reductions: decomposition_defs.Reductions,
+    global_reductions: decomp_defs.Reductions,
 ) -> None:
     """
     Initial condition for the idealized horizontal advection test case.
@@ -402,7 +402,7 @@ def construct_reference_tracer(
     static_fields: static_fields.StaticFieldFactories,
     integration_time: float,
     num_levels: int,
-    global_reductions: decomposition_defs.Reductions,
+    global_reductions: decomp_defs.Reductions,
 ) -> data_alloc.NDArray:
     geometry = static_fields.geometry
     vertex_x = geometry.get(geometry_meta.VERTEX_X).ndarray
