@@ -78,8 +78,9 @@ module icon4py_bindings
                                       a_hshr, &
                                       loutshs, &
                                       backend, &
-                                      external_gpu_stream, &
-                                      on_gpu) bind(c, name="diffusion_init_wrapper") result(rc)
+                                      device_enabled, &
+                                      has_external_gpu_stream, &
+                                      external_gpu_stream) bind(c, name="diffusion_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -211,9 +212,11 @@ module icon4py_bindings
 
          integer(c_int), value, target :: backend
 
-         integer(c_long), value, target :: external_gpu_stream
+         logical(c_bool), value :: device_enabled
 
-         logical(c_bool), value :: on_gpu
+         logical(c_bool), value :: has_external_gpu_stream
+
+         integer(c_long), value :: external_gpu_stream
 
       end function diffusion_init_wrapper
 
@@ -246,7 +249,9 @@ module icon4py_bindings
                                      dwdy_size_1, &
                                      dtime, &
                                      linit, &
-                                     on_gpu) bind(c, name="diffusion_run_wrapper") result(rc)
+                                     device_enabled, &
+                                     has_external_gpu_stream, &
+                                     external_gpu_stream) bind(c, name="diffusion_run_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -308,7 +313,11 @@ module icon4py_bindings
 
          logical(c_bool), value, target :: linit
 
-         logical(c_bool), value :: on_gpu
+         logical(c_bool), value :: device_enabled
+
+         logical(c_bool), value :: has_external_gpu_stream
+
+         integer(c_long), value :: external_gpu_stream
 
       end function diffusion_run_wrapper
 
@@ -428,7 +437,9 @@ module icon4py_bindings
                                  vertical_size, &
                                  limited_area, &
                                  backend, &
-                                 on_gpu) bind(c, name="grid_init_wrapper") result(rc)
+                                 device_enabled, &
+                                 has_external_gpu_stream, &
+                                 external_gpu_stream) bind(c, name="grid_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -664,7 +675,11 @@ module icon4py_bindings
 
          integer(c_int), value, target :: backend
 
-         logical(c_bool), value :: on_gpu
+         logical(c_bool), value :: device_enabled
+
+         logical(c_bool), value :: has_external_gpu_stream
+
+         integer(c_long), value :: external_gpu_stream
 
       end function grid_init_wrapper
 
@@ -830,8 +845,9 @@ module icon4py_bindings
                                      divdamp_z4, &
                                      nflat_gradp, &
                                      backend, &
-                                     external_gpu_stream, &
-                                     on_gpu) bind(c, name="solve_nh_init_wrapper") result(rc)
+                                     device_enabled, &
+                                     has_external_gpu_stream, &
+                                     external_gpu_stream) bind(c, name="solve_nh_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -1159,9 +1175,11 @@ module icon4py_bindings
 
          integer(c_int), value, target :: backend
 
-         integer(c_long), value, target :: external_gpu_stream
+         logical(c_bool), value :: device_enabled
 
-         logical(c_bool), value :: on_gpu
+         logical(c_bool), value :: has_external_gpu_stream
+
+         integer(c_long), value :: external_gpu_stream
 
       end function solve_nh_init_wrapper
 
@@ -1280,7 +1298,9 @@ module icon4py_bindings
                                     idyn_timestep, &
                                     is_iau_active, &
                                     iau_wgt_dyn, &
-                                    on_gpu) bind(c, name="solve_nh_run_wrapper") result(rc)
+                                    device_enabled, &
+                                    has_external_gpu_stream, &
+                                    external_gpu_stream) bind(c, name="solve_nh_run_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
@@ -1514,7 +1534,11 @@ module icon4py_bindings
 
          real(c_double), value, target :: iau_wgt_dyn
 
-         logical(c_bool), value :: on_gpu
+         logical(c_bool), value :: device_enabled
+
+         logical(c_bool), value :: has_external_gpu_stream
+
+         integer(c_long), value :: external_gpu_stream
 
       end function solve_nh_run_wrapper
 
@@ -1564,7 +1588,6 @@ contains
                              sync_queue, &
                              rc)
       use, intrinsic :: iso_c_binding
-
 #ifdef _OPENACC
       use openacc, only: acc_get_cuda_stream, acc_handle_kind
 #endif
@@ -1649,7 +1672,9 @@ contains
 
       integer(c_int), intent(in), optional :: sync_queue
 
-      logical(c_bool) :: on_gpu
+      logical(c_bool) :: device_enabled
+
+      logical(c_bool) :: has_external_gpu_stream
 
       integer(c_long) :: external_gpu_stream
 
@@ -1737,19 +1762,18 @@ contains
       !$acc host_data use_device(zd_diffcoef) if(associated(zd_diffcoef))
 
 #ifdef _OPENACC
-      on_gpu = .True.
-
+      device_enabled = .True.
       if (present(sync_queue)) then
+         has_external_gpu_stream = .True.
          external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))
       else
-         external_gpu_stream = 0_c_long
+         has_external_gpu_stream = .False.
+         external_gpu_stream = -1_c_long
       end if
-
 #else
-      on_gpu = .False.
-
-      external_gpu_stream = 0_c_long
-
+      device_enabled = .False.
+      has_external_gpu_stream = .False.
+      external_gpu_stream = -1_c_long
 #endif
 
       theta_ref_mc_size_0 = SIZE(theta_ref_mc, 1)
@@ -1866,8 +1890,9 @@ contains
                                   a_hshr=a_hshr, &
                                   loutshs=loutshs, &
                                   backend=backend, &
-                                  external_gpu_stream=external_gpu_stream, &
-                                  on_gpu=on_gpu)
+                                  device_enabled=device_enabled, &
+                                  has_external_gpu_stream=has_external_gpu_stream, &
+                                  external_gpu_stream=external_gpu_stream)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
@@ -1904,6 +1929,9 @@ contains
                             sync_queue, &
                             rc)
       use, intrinsic :: iso_c_binding
+#ifdef _OPENACC
+      use openacc, only: acc_get_cuda_stream, acc_handle_kind
+#endif
 
       real(c_double), dimension(:, :), contiguous, intent(inout), target :: w
 
@@ -1929,7 +1957,11 @@ contains
 
       integer(c_int), intent(in), optional :: sync_queue
 
-      logical(c_bool) :: on_gpu
+      logical(c_bool) :: device_enabled
+
+      logical(c_bool) :: has_external_gpu_stream
+
+      integer(c_long) :: external_gpu_stream
 
       integer(c_int) :: w_size_0
 
@@ -1997,11 +2029,18 @@ contains
       !$acc host_data use_device(dwdy) if(associated(dwdy))
 
 #ifdef _OPENACC
-      on_gpu = .True.
-
+      device_enabled = .True.
+      if (present(sync_queue)) then
+         has_external_gpu_stream = .True.
+         external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))
+      else
+         has_external_gpu_stream = .False.
+         external_gpu_stream = -1_c_long
+      end if
 #else
-      on_gpu = .False.
-
+      device_enabled = .False.
+      has_external_gpu_stream = .False.
+      external_gpu_stream = -1_c_long
 #endif
 
       w_size_0 = SIZE(w, 1)
@@ -2072,7 +2111,9 @@ contains
                                  dwdy_size_1=dwdy_size_1, &
                                  dtime=dtime, &
                                  linit=linit, &
-                                 on_gpu=on_gpu)
+                                 device_enabled=device_enabled, &
+                                 has_external_gpu_stream=has_external_gpu_stream, &
+                                 external_gpu_stream=external_gpu_stream)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
@@ -2150,6 +2191,9 @@ contains
                         sync_queue, &
                         rc)
       use, intrinsic :: iso_c_binding
+#ifdef _OPENACC
+      use openacc, only: acc_get_cuda_stream, acc_handle_kind
+#endif
 
       integer(c_int), dimension(:), contiguous, intent(inout), target :: cell_starts
 
@@ -2265,7 +2309,11 @@ contains
 
       integer(c_int), intent(in), optional :: sync_queue
 
-      logical(c_bool) :: on_gpu
+      logical(c_bool) :: device_enabled
+
+      logical(c_bool) :: has_external_gpu_stream
+
+      integer(c_long) :: external_gpu_stream
 
       integer(c_int) :: cell_starts_size_0
 
@@ -2423,11 +2471,18 @@ contains
       !$acc host_data use_device(vct_a)
 
 #ifdef _OPENACC
-      on_gpu = .True.
-
+      device_enabled = .True.
+      if (present(sync_queue)) then
+         has_external_gpu_stream = .True.
+         external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))
+      else
+         has_external_gpu_stream = .False.
+         external_gpu_stream = -1_c_long
+      end if
 #else
-      on_gpu = .False.
-
+      device_enabled = .False.
+      has_external_gpu_stream = .False.
+      external_gpu_stream = -1_c_long
 #endif
 
       cell_starts_size_0 = SIZE(cell_starts, 1)
@@ -2649,7 +2704,9 @@ contains
                              vertical_size=vertical_size, &
                              limited_area=limited_area, &
                              backend=backend, &
-                             on_gpu=on_gpu)
+                             device_enabled=device_enabled, &
+                             has_external_gpu_stream=has_external_gpu_stream, &
+                             external_gpu_stream=external_gpu_stream)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
@@ -2765,7 +2822,6 @@ contains
                             sync_queue, &
                             rc)
       use, intrinsic :: iso_c_binding
-
 #ifdef _OPENACC
       use openacc, only: acc_get_cuda_stream, acc_handle_kind
 #endif
@@ -2916,7 +2972,9 @@ contains
 
       integer(c_int), intent(in), optional :: sync_queue
 
-      logical(c_bool) :: on_gpu
+      logical(c_bool) :: device_enabled
+
+      logical(c_bool) :: has_external_gpu_stream
 
       integer(c_long) :: external_gpu_stream
 
@@ -3166,19 +3224,18 @@ contains
       !$acc host_data use_device(pg_exdist) if(associated(pg_exdist))
 
 #ifdef _OPENACC
-      on_gpu = .True.
-
+      device_enabled = .True.
       if (present(sync_queue)) then
+         has_external_gpu_stream = .True.
          external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))
       else
-         external_gpu_stream = 0_c_long
+         has_external_gpu_stream = .False.
+         external_gpu_stream = -1_c_long
       end if
-
 #else
-      on_gpu = .False.
-
-      external_gpu_stream = 0_c_long
-
+      device_enabled = .False.
+      has_external_gpu_stream = .False.
+      external_gpu_stream = -1_c_long
 #endif
 
       c_lin_e_size_0 = SIZE(c_lin_e, 1)
@@ -3491,8 +3548,9 @@ contains
                                  divdamp_z4=divdamp_z4, &
                                  nflat_gradp=nflat_gradp, &
                                  backend=backend, &
-                                 external_gpu_stream=external_gpu_stream, &
-                                 on_gpu=on_gpu)
+                                 device_enabled=device_enabled, &
+                                 has_external_gpu_stream=has_external_gpu_stream, &
+                                 external_gpu_stream=external_gpu_stream)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
@@ -3598,6 +3656,9 @@ contains
                            sync_queue, &
                            rc)
       use, intrinsic :: iso_c_binding
+#ifdef _OPENACC
+      use openacc, only: acc_get_cuda_stream, acc_handle_kind
+#endif
 
       real(c_double), dimension(:, :), contiguous, intent(inout), target :: rho_now
 
@@ -3689,7 +3750,11 @@ contains
 
       integer(c_int), intent(in), optional :: sync_queue
 
-      logical(c_bool) :: on_gpu
+      logical(c_bool) :: device_enabled
+
+      logical(c_bool) :: has_external_gpu_stream
+
+      integer(c_long) :: external_gpu_stream
 
       integer(c_int) :: rho_now_size_0
 
@@ -3885,11 +3950,18 @@ contains
       !$acc host_data use_device(exner_incr) if(associated(exner_incr))
 
 #ifdef _OPENACC
-      on_gpu = .True.
-
+      device_enabled = .True.
+      if (present(sync_queue)) then
+         has_external_gpu_stream = .True.
+         external_gpu_stream = acc_get_cuda_stream(int(sync_queue, kind=acc_handle_kind))
+      else
+         has_external_gpu_stream = .False.
+         external_gpu_stream = -1_c_long
+      end if
 #else
-      on_gpu = .False.
-
+      device_enabled = .False.
+      has_external_gpu_stream = .False.
+      external_gpu_stream = -1_c_long
 #endif
 
       rho_now_size_0 = SIZE(rho_now, 1)
@@ -4123,7 +4195,9 @@ contains
                                 idyn_timestep=idyn_timestep, &
                                 is_iau_active=is_iau_active, &
                                 iau_wgt_dyn=iau_wgt_dyn, &
-                                on_gpu=on_gpu)
+                                device_enabled=device_enabled, &
+                                has_external_gpu_stream=has_external_gpu_stream, &
+                                external_gpu_stream=external_gpu_stream)
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data

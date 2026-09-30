@@ -216,7 +216,7 @@ def solve_nh_init(
         divdamp_z4=cfg.fourth_order_divdamp_z4,
         nflat_gradp=nflat_gradp,
         backend=wrapper_common.BackendIntEnum.GTFN,
-        external_gpu_stream=0,
+        _metadata=py2fgen.Metadata(use_device=False),
     )
 
 
@@ -622,7 +622,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
             divdamp_z4=cfg.fourth_order_divdamp_z4,
             nflat_gradp=nflat_gradp,
             backend=wrapper_common.BackendIntEnum.DEFAULT,
-            external_gpu_stream=0,
+            _metadata=py2fgen.Metadata(use_device=False),
         )
 
         # Check input arguments to SolveNonhydro.init

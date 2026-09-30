@@ -127,20 +127,21 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     divdamp_z4: gtx.float64,
     nflat_gradp: gtx.int32,
     backend: gtx.int32,
-    external_gpu_stream: gtx.int64,
+    _metadata: py2fgen.Metadata,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
     xp = c_lin_e.array_ns
-    on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
-        wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
+        wrapper_common.BackendIntEnum(backend), on_gpu=_metadata.use_device
     )
-    if on_gpu:
-        # Wrap the OpenACC stream; `ExternalStream` does not take ownership of it.
-        actual_backend["external_gpu_stream"] = xp.cuda.ExternalStream(int(external_gpu_stream))
-    logger.info(f"Using Backend {actual_backend} with on_gpu={on_gpu}")
+    if _metadata.has_external_gpu_stream:
+        # Wrap the provided stream; `ExternalStream` does not take ownership of it.
+        actual_backend["external_gpu_stream"] = xp.cuda.ExternalStream(
+            int(_metadata.external_gpu_stream)
+        )
+    logger.info(f"Using Backend {actual_backend} with use_device={_metadata.use_device}")
     allocator = model_backends.get_allocator(actual_backend)
 
     pg_exdist_domain = rho_ref_me.domain

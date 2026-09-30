@@ -6,7 +6,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from icon4py_bindings import ffi
-from icon4py.tools.py2fgen import _runtime, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion, _definitions
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -91,13 +91,16 @@ def diffusion_init_wrapper(
     a_hshr,
     loutshs,
     backend,
+    device_enabled,
+    has_external_gpu_stream,
     external_gpu_stream,
-    on_gpu,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["diffusion_init"]:
         try:
             if __debug__:
                 logger.info("Python execution of diffusion_init started.")
+
+            use_device = _runtime.use_device(device_enabled)
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -111,7 +114,7 @@ def diffusion_init_wrapper(
                     theta_ref_mc_size_0,
                     theta_ref_mc_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -121,7 +124,7 @@ def diffusion_init_wrapper(
                     wgtfac_c_size_0,
                     wgtfac_c_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -131,7 +134,7 @@ def diffusion_init_wrapper(
                     e_bln_c_s_size_0,
                     e_bln_c_s_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -141,7 +144,7 @@ def diffusion_init_wrapper(
                     geofac_div_size_0,
                     geofac_div_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -151,7 +154,7 @@ def diffusion_init_wrapper(
                     geofac_grg_x_size_0,
                     geofac_grg_x_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -161,7 +164,7 @@ def diffusion_init_wrapper(
                     geofac_grg_y_size_0,
                     geofac_grg_y_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -171,11 +174,11 @@ def diffusion_init_wrapper(
                     geofac_n2s_size_0,
                     geofac_n2s_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
-            nudgecoeff_e = (nudgecoeff_e, (nudgecoeff_e_size_0,), on_gpu, False)
+            nudgecoeff_e = (nudgecoeff_e, (nudgecoeff_e_size_0,), use_device, False)
 
             rbf_vec_coeff_v = (
                 rbf_vec_coeff_v,
@@ -184,7 +187,7 @@ def diffusion_init_wrapper(
                     rbf_vec_coeff_v_size_1,
                     rbf_vec_coeff_v_size_2,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -194,7 +197,7 @@ def diffusion_init_wrapper(
                     zd_cellidx_size_0,
                     zd_cellidx_size_1,
                 ),
-                on_gpu,
+                use_device,
                 True,
             )
 
@@ -204,7 +207,7 @@ def diffusion_init_wrapper(
                     zd_vertidx_size_0,
                     zd_vertidx_size_1,
                 ),
-                on_gpu,
+                use_device,
                 True,
             )
 
@@ -214,11 +217,11 @@ def diffusion_init_wrapper(
                     zd_intcoef_size_0,
                     zd_intcoef_size_1,
                 ),
-                on_gpu,
+                use_device,
                 True,
             )
 
-            zd_diffcoef = (zd_diffcoef, (zd_diffcoef_size_0,), on_gpu, True)
+            zd_diffcoef = (zd_diffcoef, (zd_diffcoef_size_0,), use_device, True)
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -276,8 +279,13 @@ def diffusion_init_wrapper(
                 a_hshr=a_hshr,
                 loutshs=loutshs,
                 backend=backend,
-                external_gpu_stream=external_gpu_stream,
+                _metadata=_definitions.Metadata(
+                    use_device, bool(has_external_gpu_stream), external_gpu_stream
+                ),
             )
+
+            if use_device and not device_enabled:
+                _runtime.device_synchronize()
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -528,12 +536,16 @@ def diffusion_run_wrapper(
     dwdy_size_1,
     dtime,
     linit,
-    on_gpu,
+    device_enabled,
+    has_external_gpu_stream,
+    external_gpu_stream,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["diffusion_run"]:
         try:
             if __debug__:
                 logger.info("Python execution of diffusion_run started.")
+
+            use_device = _runtime.use_device(device_enabled)
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -547,7 +559,7 @@ def diffusion_run_wrapper(
                     w_size_0,
                     w_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -557,7 +569,7 @@ def diffusion_run_wrapper(
                     vn_size_0,
                     vn_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -567,7 +579,7 @@ def diffusion_run_wrapper(
                     exner_size_0,
                     exner_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -577,7 +589,7 @@ def diffusion_run_wrapper(
                     theta_v_size_0,
                     theta_v_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -587,7 +599,7 @@ def diffusion_run_wrapper(
                     rho_size_0,
                     rho_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -597,7 +609,7 @@ def diffusion_run_wrapper(
                     hdef_ic_size_0,
                     hdef_ic_size_1,
                 ),
-                on_gpu,
+                use_device,
                 True,
             )
 
@@ -607,7 +619,7 @@ def diffusion_run_wrapper(
                     div_ic_size_0,
                     div_ic_size_1,
                 ),
-                on_gpu,
+                use_device,
                 True,
             )
 
@@ -617,7 +629,7 @@ def diffusion_run_wrapper(
                     dwdx_size_0,
                     dwdx_size_1,
                 ),
-                on_gpu,
+                use_device,
                 True,
             )
 
@@ -627,7 +639,7 @@ def diffusion_run_wrapper(
                     dwdy_size_0,
                     dwdy_size_1,
                 ),
-                on_gpu,
+                use_device,
                 True,
             )
 
@@ -660,6 +672,9 @@ def diffusion_run_wrapper(
                 dtime=dtime,
                 linit=linit,
             )
+
+            if use_device and not device_enabled:
+                _runtime.device_synchronize()
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -901,12 +916,16 @@ def grid_init_wrapper(
     vertical_size,
     limited_area,
     backend,
-    on_gpu,
+    device_enabled,
+    has_external_gpu_stream,
+    external_gpu_stream,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["grid_init"]:
         try:
             if __debug__:
                 logger.info("Python execution of grid_init started.")
+
+            use_device = _runtime.use_device(device_enabled)
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -932,7 +951,7 @@ def grid_init_wrapper(
                     c2e_size_0,
                     c2e_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -942,7 +961,7 @@ def grid_init_wrapper(
                     e2c_size_0,
                     e2c_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -952,7 +971,7 @@ def grid_init_wrapper(
                     c2e2c_size_0,
                     c2e2c_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -962,7 +981,7 @@ def grid_init_wrapper(
                     e2c2e_size_0,
                     e2c2e_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -972,7 +991,7 @@ def grid_init_wrapper(
                     e2v_size_0,
                     e2v_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -982,7 +1001,7 @@ def grid_init_wrapper(
                     v2e_size_0,
                     v2e_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -992,7 +1011,7 @@ def grid_init_wrapper(
                     v2c_size_0,
                     v2c_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -1002,7 +1021,7 @@ def grid_init_wrapper(
                     e2c2v_size_0,
                     e2c2v_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -1012,7 +1031,7 @@ def grid_init_wrapper(
                     c2v_size_0,
                     c2v_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -1031,40 +1050,40 @@ def grid_init_wrapper(
             tangent_orientation = (
                 tangent_orientation,
                 (tangent_orientation_size_0,),
-                on_gpu,
+                use_device,
                 False,
             )
 
             inverse_primal_edge_lengths = (
                 inverse_primal_edge_lengths,
                 (inverse_primal_edge_lengths_size_0,),
-                on_gpu,
+                use_device,
                 False,
             )
 
             inv_dual_edge_length = (
                 inv_dual_edge_length,
                 (inv_dual_edge_length_size_0,),
-                on_gpu,
+                use_device,
                 False,
             )
 
             inv_vert_vert_length = (
                 inv_vert_vert_length,
                 (inv_vert_vert_length_size_0,),
-                on_gpu,
+                use_device,
                 False,
             )
 
-            edge_areas = (edge_areas, (edge_areas_size_0,), on_gpu, False)
+            edge_areas = (edge_areas, (edge_areas_size_0,), use_device, False)
 
-            f_e = (f_e, (f_e_size_0,), on_gpu, False)
+            f_e = (f_e, (f_e_size_0,), use_device, False)
 
-            cell_center_lat = (cell_center_lat, (cell_center_lat_size_0,), on_gpu, False)
+            cell_center_lat = (cell_center_lat, (cell_center_lat_size_0,), use_device, False)
 
-            cell_center_lon = (cell_center_lon, (cell_center_lon_size_0,), on_gpu, False)
+            cell_center_lon = (cell_center_lon, (cell_center_lon_size_0,), use_device, False)
 
-            cell_areas = (cell_areas, (cell_areas_size_0,), on_gpu, False)
+            cell_areas = (cell_areas, (cell_areas_size_0,), use_device, False)
 
             primal_normal_vert_x = (
                 primal_normal_vert_x,
@@ -1072,7 +1091,7 @@ def grid_init_wrapper(
                     primal_normal_vert_x_size_0,
                     primal_normal_vert_x_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -1082,7 +1101,7 @@ def grid_init_wrapper(
                     primal_normal_vert_y_size_0,
                     primal_normal_vert_y_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -1092,7 +1111,7 @@ def grid_init_wrapper(
                     dual_normal_vert_x_size_0,
                     dual_normal_vert_x_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -1102,7 +1121,7 @@ def grid_init_wrapper(
                     dual_normal_vert_y_size_0,
                     dual_normal_vert_y_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -1112,7 +1131,7 @@ def grid_init_wrapper(
                     primal_normal_cell_x_size_0,
                     primal_normal_cell_x_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -1122,7 +1141,7 @@ def grid_init_wrapper(
                     primal_normal_cell_y_size_0,
                     primal_normal_cell_y_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -1132,7 +1151,7 @@ def grid_init_wrapper(
                     dual_normal_cell_x_size_0,
                     dual_normal_cell_x_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -1142,19 +1161,19 @@ def grid_init_wrapper(
                     dual_normal_cell_y_size_0,
                     dual_normal_cell_y_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
-            edge_center_lat = (edge_center_lat, (edge_center_lat_size_0,), on_gpu, False)
+            edge_center_lat = (edge_center_lat, (edge_center_lat_size_0,), use_device, False)
 
-            edge_center_lon = (edge_center_lon, (edge_center_lon_size_0,), on_gpu, False)
+            edge_center_lon = (edge_center_lon, (edge_center_lon_size_0,), use_device, False)
 
-            primal_normal_x = (primal_normal_x, (primal_normal_x_size_0,), on_gpu, False)
+            primal_normal_x = (primal_normal_x, (primal_normal_x_size_0,), use_device, False)
 
-            primal_normal_y = (primal_normal_y, (primal_normal_y_size_0,), on_gpu, False)
+            primal_normal_y = (primal_normal_y, (primal_normal_y_size_0,), use_device, False)
 
-            vct_a = (vct_a, (vct_a_size_0,), on_gpu, False)
+            vct_a = (vct_a, (vct_a_size_0,), use_device, False)
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -1229,7 +1248,13 @@ def grid_init_wrapper(
                 vertical_size=vertical_size,
                 limited_area=limited_area,
                 backend=backend,
+                _metadata=_definitions.Metadata(
+                    use_device, bool(has_external_gpu_stream), external_gpu_stream
+                ),
             )
+
+            if use_device and not device_enabled:
+                _runtime.device_synchronize()
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -2032,13 +2057,16 @@ def solve_nh_init_wrapper(
     divdamp_z4,
     nflat_gradp,
     backend,
+    device_enabled,
+    has_external_gpu_stream,
     external_gpu_stream,
-    on_gpu,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["solve_nh_init"]:
         try:
             if __debug__:
                 logger.info("Python execution of solve_nh_init started.")
+
+            use_device = _runtime.use_device(device_enabled)
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -2052,7 +2080,7 @@ def solve_nh_init_wrapper(
                     c_lin_e_size_0,
                     c_lin_e_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2062,7 +2090,7 @@ def solve_nh_init_wrapper(
                     c_intp_size_0,
                     c_intp_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2072,7 +2100,7 @@ def solve_nh_init_wrapper(
                     e_flx_avg_size_0,
                     e_flx_avg_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2082,7 +2110,7 @@ def solve_nh_init_wrapper(
                     geofac_grdiv_size_0,
                     geofac_grdiv_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2092,7 +2120,7 @@ def solve_nh_init_wrapper(
                     geofac_rot_size_0,
                     geofac_rot_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2102,7 +2130,7 @@ def solve_nh_init_wrapper(
                     pos_on_tplane_e_1_size_0,
                     pos_on_tplane_e_1_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2112,7 +2140,7 @@ def solve_nh_init_wrapper(
                     pos_on_tplane_e_2_size_0,
                     pos_on_tplane_e_2_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2122,7 +2150,7 @@ def solve_nh_init_wrapper(
                     rbf_vec_coeff_e_size_0,
                     rbf_vec_coeff_e_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2132,7 +2160,7 @@ def solve_nh_init_wrapper(
                     e_bln_c_s_size_0,
                     e_bln_c_s_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2143,7 +2171,7 @@ def solve_nh_init_wrapper(
                     rbf_vec_coeff_v_size_1,
                     rbf_vec_coeff_v_size_2,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2153,7 +2181,7 @@ def solve_nh_init_wrapper(
                     geofac_div_size_0,
                     geofac_div_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2163,7 +2191,7 @@ def solve_nh_init_wrapper(
                     geofac_n2s_size_0,
                     geofac_n2s_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2173,7 +2201,7 @@ def solve_nh_init_wrapper(
                     geofac_grg_x_size_0,
                     geofac_grg_x_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2183,15 +2211,15 @@ def solve_nh_init_wrapper(
                     geofac_grg_y_size_0,
                     geofac_grg_y_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
-            nudgecoeff_e = (nudgecoeff_e, (nudgecoeff_e_size_0,), on_gpu, False)
+            nudgecoeff_e = (nudgecoeff_e, (nudgecoeff_e_size_0,), use_device, False)
 
-            mask_prog_halo_c = (mask_prog_halo_c, (mask_prog_halo_c_size_0,), on_gpu, False)
+            mask_prog_halo_c = (mask_prog_halo_c, (mask_prog_halo_c_size_0,), use_device, False)
 
-            rayleigh_w = (rayleigh_w, (rayleigh_w_size_0,), on_gpu, False)
+            rayleigh_w = (rayleigh_w, (rayleigh_w_size_0,), use_device, False)
 
             exner_exfac = (
                 exner_exfac,
@@ -2199,7 +2227,7 @@ def solve_nh_init_wrapper(
                     exner_exfac_size_0,
                     exner_exfac_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2209,7 +2237,7 @@ def solve_nh_init_wrapper(
                     exner_ref_mc_size_0,
                     exner_ref_mc_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2219,7 +2247,7 @@ def solve_nh_init_wrapper(
                     wgtfac_c_size_0,
                     wgtfac_c_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2229,7 +2257,7 @@ def solve_nh_init_wrapper(
                     wgtfacq_c_size_0,
                     wgtfacq_c_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2239,7 +2267,7 @@ def solve_nh_init_wrapper(
                     inv_ddqz_z_full_size_0,
                     inv_ddqz_z_full_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2249,7 +2277,7 @@ def solve_nh_init_wrapper(
                     rho_ref_mc_size_0,
                     rho_ref_mc_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2259,11 +2287,11 @@ def solve_nh_init_wrapper(
                     theta_ref_mc_size_0,
                     theta_ref_mc_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
-            vwind_expl_wgt = (vwind_expl_wgt, (vwind_expl_wgt_size_0,), on_gpu, False)
+            vwind_expl_wgt = (vwind_expl_wgt, (vwind_expl_wgt_size_0,), use_device, False)
 
             d_exner_dz_ref_ic = (
                 d_exner_dz_ref_ic,
@@ -2271,7 +2299,7 @@ def solve_nh_init_wrapper(
                     d_exner_dz_ref_ic_size_0,
                     d_exner_dz_ref_ic_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2281,7 +2309,7 @@ def solve_nh_init_wrapper(
                     ddqz_z_half_size_0,
                     ddqz_z_half_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2291,7 +2319,7 @@ def solve_nh_init_wrapper(
                     theta_ref_ic_size_0,
                     theta_ref_ic_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2301,7 +2329,7 @@ def solve_nh_init_wrapper(
                     d2dexdz2_fac1_mc_size_0,
                     d2dexdz2_fac1_mc_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2311,7 +2339,7 @@ def solve_nh_init_wrapper(
                     d2dexdz2_fac2_mc_size_0,
                     d2dexdz2_fac2_mc_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2321,7 +2349,7 @@ def solve_nh_init_wrapper(
                     rho_ref_me_size_0,
                     rho_ref_me_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2331,7 +2359,7 @@ def solve_nh_init_wrapper(
                     theta_ref_me_size_0,
                     theta_ref_me_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2341,7 +2369,7 @@ def solve_nh_init_wrapper(
                     ddxn_z_full_size_0,
                     ddxn_z_full_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2352,7 +2380,7 @@ def solve_nh_init_wrapper(
                     zdiff_gradp_size_1,
                     zdiff_gradp_size_2,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2363,15 +2391,15 @@ def solve_nh_init_wrapper(
                     vertidx_gradp_size_1,
                     vertidx_gradp_size_2,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
-            pg_edgeidx = (pg_edgeidx, (pg_edgeidx_size_0,), on_gpu, True)
+            pg_edgeidx = (pg_edgeidx, (pg_edgeidx_size_0,), use_device, True)
 
-            pg_vertidx = (pg_vertidx, (pg_vertidx_size_0,), on_gpu, True)
+            pg_vertidx = (pg_vertidx, (pg_vertidx_size_0,), use_device, True)
 
-            pg_exdist = (pg_exdist, (pg_exdist_size_0,), on_gpu, True)
+            pg_exdist = (pg_exdist, (pg_exdist_size_0,), use_device, True)
 
             ddqz_z_full_e = (
                 ddqz_z_full_e,
@@ -2379,7 +2407,7 @@ def solve_nh_init_wrapper(
                     ddqz_z_full_e_size_0,
                     ddqz_z_full_e_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2389,7 +2417,7 @@ def solve_nh_init_wrapper(
                     ddxt_z_full_size_0,
                     ddxt_z_full_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2399,7 +2427,7 @@ def solve_nh_init_wrapper(
                     wgtfac_e_size_0,
                     wgtfac_e_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2409,15 +2437,15 @@ def solve_nh_init_wrapper(
                     wgtfacq_e_size_0,
                     wgtfacq_e_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
-            vwind_impl_wgt = (vwind_impl_wgt, (vwind_impl_wgt_size_0,), on_gpu, False)
+            vwind_impl_wgt = (vwind_impl_wgt, (vwind_impl_wgt_size_0,), use_device, False)
 
-            hmask_dd3d = (hmask_dd3d, (hmask_dd3d_size_0,), on_gpu, False)
+            hmask_dd3d = (hmask_dd3d, (hmask_dd3d_size_0,), use_device, False)
 
-            scalfac_dd3d = (scalfac_dd3d, (scalfac_dd3d_size_0,), on_gpu, False)
+            scalfac_dd3d = (scalfac_dd3d, (scalfac_dd3d_size_0,), use_device, False)
 
             coeff1_dwdz = (
                 coeff1_dwdz,
@@ -2425,7 +2453,7 @@ def solve_nh_init_wrapper(
                     coeff1_dwdz_size_0,
                     coeff1_dwdz_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2435,7 +2463,7 @@ def solve_nh_init_wrapper(
                     coeff2_dwdz_size_0,
                     coeff2_dwdz_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -2445,11 +2473,11 @@ def solve_nh_init_wrapper(
                     coeff_gradekin_size_0,
                     coeff_gradekin_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
-            c_owner_mask = (c_owner_mask, (c_owner_mask_size_0,), on_gpu, False)
+            c_owner_mask = (c_owner_mask, (c_owner_mask_size_0,), use_device, False)
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -2540,8 +2568,13 @@ def solve_nh_init_wrapper(
                 divdamp_z4=divdamp_z4,
                 nflat_gradp=nflat_gradp,
                 backend=backend,
-                external_gpu_stream=external_gpu_stream,
+                _metadata=_definitions.Metadata(
+                    use_device, bool(has_external_gpu_stream), external_gpu_stream
+                ),
             )
+
+            if use_device and not device_enabled:
+                _runtime.device_synchronize()
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -3418,12 +3451,16 @@ def solve_nh_run_wrapper(
     idyn_timestep,
     is_iau_active,
     iau_wgt_dyn,
-    on_gpu,
+    device_enabled,
+    has_external_gpu_stream,
+    external_gpu_stream,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["solve_nh_run"]:
         try:
             if __debug__:
                 logger.info("Python execution of solve_nh_run started.")
+
+            use_device = _runtime.use_device(device_enabled)
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -3437,7 +3474,7 @@ def solve_nh_run_wrapper(
                     rho_now_size_0,
                     rho_now_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3447,7 +3484,7 @@ def solve_nh_run_wrapper(
                     rho_new_size_0,
                     rho_new_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3457,7 +3494,7 @@ def solve_nh_run_wrapper(
                     exner_now_size_0,
                     exner_now_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3467,7 +3504,7 @@ def solve_nh_run_wrapper(
                     exner_new_size_0,
                     exner_new_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3477,7 +3514,7 @@ def solve_nh_run_wrapper(
                     w_now_size_0,
                     w_now_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3487,7 +3524,7 @@ def solve_nh_run_wrapper(
                     w_new_size_0,
                     w_new_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3497,7 +3534,7 @@ def solve_nh_run_wrapper(
                     theta_v_now_size_0,
                     theta_v_now_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3507,7 +3544,7 @@ def solve_nh_run_wrapper(
                     theta_v_new_size_0,
                     theta_v_new_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3517,7 +3554,7 @@ def solve_nh_run_wrapper(
                     vn_now_size_0,
                     vn_now_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3527,7 +3564,7 @@ def solve_nh_run_wrapper(
                     vn_new_size_0,
                     vn_new_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3537,7 +3574,7 @@ def solve_nh_run_wrapper(
                     w_concorr_c_size_0,
                     w_concorr_c_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3547,7 +3584,7 @@ def solve_nh_run_wrapper(
                     ddt_vn_apc_ntl1_size_0,
                     ddt_vn_apc_ntl1_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3557,7 +3594,7 @@ def solve_nh_run_wrapper(
                     ddt_vn_apc_ntl2_size_0,
                     ddt_vn_apc_ntl2_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3567,7 +3604,7 @@ def solve_nh_run_wrapper(
                     ddt_w_adv_ntl1_size_0,
                     ddt_w_adv_ntl1_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3577,7 +3614,7 @@ def solve_nh_run_wrapper(
                     ddt_w_adv_ntl2_size_0,
                     ddt_w_adv_ntl2_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3587,7 +3624,7 @@ def solve_nh_run_wrapper(
                     theta_v_ic_size_0,
                     theta_v_ic_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3597,7 +3634,7 @@ def solve_nh_run_wrapper(
                     rho_ic_size_0,
                     rho_ic_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3607,7 +3644,7 @@ def solve_nh_run_wrapper(
                     exner_pr_size_0,
                     exner_pr_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3617,7 +3654,7 @@ def solve_nh_run_wrapper(
                     exner_dyn_incr_size_0,
                     exner_dyn_incr_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3627,7 +3664,7 @@ def solve_nh_run_wrapper(
                     ddt_exner_phy_size_0,
                     ddt_exner_phy_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3637,7 +3674,7 @@ def solve_nh_run_wrapper(
                     grf_tend_rho_size_0,
                     grf_tend_rho_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3647,7 +3684,7 @@ def solve_nh_run_wrapper(
                     grf_tend_thv_size_0,
                     grf_tend_thv_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3657,7 +3694,7 @@ def solve_nh_run_wrapper(
                     grf_tend_w_size_0,
                     grf_tend_w_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3667,7 +3704,7 @@ def solve_nh_run_wrapper(
                     mass_fl_e_size_0,
                     mass_fl_e_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3677,7 +3714,7 @@ def solve_nh_run_wrapper(
                     ddt_vn_phy_size_0,
                     ddt_vn_phy_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3687,7 +3724,7 @@ def solve_nh_run_wrapper(
                     grf_tend_vn_size_0,
                     grf_tend_vn_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3697,7 +3734,7 @@ def solve_nh_run_wrapper(
                     vn_ie_size_0,
                     vn_ie_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3707,7 +3744,7 @@ def solve_nh_run_wrapper(
                     vt_size_0,
                     vt_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3717,7 +3754,7 @@ def solve_nh_run_wrapper(
                     vn_incr_size_0,
                     vn_incr_size_1,
                 ),
-                on_gpu,
+                use_device,
                 True,
             )
 
@@ -3727,7 +3764,7 @@ def solve_nh_run_wrapper(
                     rho_incr_size_0,
                     rho_incr_size_1,
                 ),
-                on_gpu,
+                use_device,
                 True,
             )
 
@@ -3737,7 +3774,7 @@ def solve_nh_run_wrapper(
                     exner_incr_size_0,
                     exner_incr_size_1,
                 ),
-                on_gpu,
+                use_device,
                 True,
             )
 
@@ -3747,7 +3784,7 @@ def solve_nh_run_wrapper(
                     mass_flx_me_size_0,
                     mass_flx_me_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3757,7 +3794,7 @@ def solve_nh_run_wrapper(
                     mass_flx_ic_size_0,
                     mass_flx_ic_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3767,7 +3804,7 @@ def solve_nh_run_wrapper(
                     vol_flx_ic_size_0,
                     vol_flx_ic_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3777,7 +3814,7 @@ def solve_nh_run_wrapper(
                     vn_traj_size_0,
                     vn_traj_size_1,
                 ),
-                on_gpu,
+                use_device,
                 False,
             )
 
@@ -3850,6 +3887,9 @@ def solve_nh_run_wrapper(
                 is_iau_active=is_iau_active,
                 iau_wgt_dyn=iau_wgt_dyn,
             )
+
+            if use_device and not device_enabled:
+                _runtime.device_synchronize()
 
             if __debug__:
                 if runtime_config.PROFILING:
