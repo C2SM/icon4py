@@ -148,9 +148,10 @@ class VerticalGrid:
     def __post_init__(self):
         for name in ("vct_a", "vct_b"):
             vct = getattr(self, name)
-            assert vct is None or vct.dtype.scalar_type == np.float64, (
-                f"{name} must be float64 (factories compute in double precision), got {vct.dtype}"
-            )
+            if vct is not None and vct.dtype.scalar_type != np.float64:
+                raise TypeError(
+                    f"{name} must be float64 (factories compute in double precision), got {vct.dtype}"
+                )
         vct_a_array = self.vct_a.asnumpy()
         object.__setattr__(
             self,
