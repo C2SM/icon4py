@@ -96,6 +96,26 @@ def with_boundaries_on_half_levels_on_cells(
 
 
 @gtx.field_operator
+def with_boundaries_on_half_levels_on_cells_wp(
+    top: fa.CellKHalfField[wpfloat],
+    interior: fa.CellKHalfField[wpfloat],
+    bottom: fa.CellKHalfField[wpfloat],
+    nlev: gtx.int32,
+) -> fa.CellKHalfField[wpfloat]:
+    """
+    Assemble a half-level field: ``top`` at k==0, ``bottom`` at k==nlev, ``interior`` in between.
+
+    Each branch is evaluated only on its own region, so vertical (``Koff``) shifts in the
+    arguments need to be in bounds only within that region.
+    """
+    # TODO(havogt): one-sided masks, because with `==` GT4Py infers the branches over the
+    # whole column and dace reads out of bounds, see https://github.com/GridTools/gt4py/issues/2205.
+    return concat_where(
+        dims.KHalfDim < 1, top, concat_where(dims.KHalfDim >= nlev, bottom, interior)
+    )
+
+
+@gtx.field_operator
 def with_boundaries_on_half_levels_on_edges(
     top: fa.EdgeKHalfField[wpfloat],
     interior: fa.EdgeKHalfField[wpfloat],
