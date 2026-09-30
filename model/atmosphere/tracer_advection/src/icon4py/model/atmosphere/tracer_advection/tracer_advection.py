@@ -434,7 +434,7 @@ class GodunovSplittingAdvection(Advection):
             p_mass_flx_e=prep_adv.mass_flx_me,
             p_vn=prep_adv.vn_traj,
             p_dtime=dtime,
-            even_timestep=self._even_timestep,
+            do_vertical_first=self._even_timestep,
         )
 
         self._exchange.exchange(dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM)
