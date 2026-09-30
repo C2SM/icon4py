@@ -26,37 +26,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import f90nml
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import TmxConfig
 from icon4py.model.common.config import options as common_conf_opt
-from icon4py.model.testing import datatest_utils as dt_utils, definitions
+from icon4py.model.testing import definitions
 
 from ..fixtures import *  # noqa: F403
+from .utils import read_input_namelist
 
 
 if TYPE_CHECKING:
     from icon4py.model.common.decomposition import definitions as decomposition
-
-
-#: the echoed namelist, the one the converter reads the pinned positions from
-_NAMELIST_ATM_FNAME = "NAMELIST_ICON_output_atm"
-
-
-def _read_input_namelist(
-    experiment_description: definitions.ExperimentDescription,
-    process_props: decomposition.ProcessProperties,
-) -> dict:
-    """Read the experiment-specific (input) namelist shipped with the archive."""
-    experiment_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
-    candidates = sorted(
-        c for c in experiment_path.glob("NAMELIST_*") if c.name != _NAMELIST_ATM_FNAME
-    )
-    assert len(candidates) == 1, (
-        f"expected one input namelist in {experiment_path}, got {candidates}"
-    )
-    return f90nml.read(candidates[0]).todict()
 
 
 @pytest.mark.datatest
@@ -68,7 +49,7 @@ def test_tmx_config_cross_checks_input_namelist_and_defaults(
 ) -> None:
     tmx_config = experiment.config.tmx
     assert tmx_config is not None
-    input_dict = _read_input_namelist(experiment_description, process_props)
+    input_dict = read_input_namelist(experiment_description, process_props)
     # first domain (the only one in the serialized experiments)
     input_members = dict(input_dict["aes_vdf_nml"]["aes_vdf_config"][0])
     assert input_members.pop("use_tmx") is True

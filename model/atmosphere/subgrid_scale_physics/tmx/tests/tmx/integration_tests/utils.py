@@ -13,18 +13,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import f90nml
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics import metric_fields
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import datatest_utils as dt_utils, definitions, test_utils
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
     import numpy as np
 
+    from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.testing import serialbox as sb
 
 
@@ -175,3 +177,22 @@ def verify_tmx_exit_fields(
             atol=atol,
             err_msg=name,
         )
+
+
+#: the echoed namelist; every other `NAMELIST_*` file of an archive is the input namelist
+_NAMELIST_ATM_FNAME = "NAMELIST_ICON_output_atm"
+
+
+def read_input_namelist(
+    experiment_description: definitions.ExperimentDescription,
+    process_props: decomposition.ProcessProperties,
+) -> dict:
+    """Read the experiment-specific (input) namelist shipped with the archive."""
+    experiment_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+    candidates = sorted(
+        c for c in experiment_path.glob("NAMELIST_*") if c.name != _NAMELIST_ATM_FNAME
+    )
+    assert len(candidates) == 1, (
+        f"expected one input namelist in {experiment_path}, got {candidates}"
+    )
+    return f90nml.read(candidates[0]).todict()

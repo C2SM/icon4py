@@ -2059,6 +2059,9 @@ class TmxEntrySavepoint(IconSavepoint):
     def cvair(self):
         return self._get_field("cvair", dims.CellDim, dims.KDim)
 
+    def pres_ifc(self):
+        return self._get_field("pres_ifc", dims.CellDim, dims.KHalfDim)
+
 
 class TmxSurfaceFluxesSavepoint(IconSavepoint):
     """Savepoint after the surface model call in vdf Compute in mo_vdf.f90."""
