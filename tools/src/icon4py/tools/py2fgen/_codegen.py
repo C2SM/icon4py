@@ -208,7 +208,8 @@ def {{ func.name }}_wrapper(
                 perf_counters = {}
             else:
                 perf_counters = None
-            {{ func.name }}(
+            with _runtime.gpu_stream(external_gpu_stream):
+                {{ func.name }}(
             ffi = ffi,
             perf_counters = perf_counters,
             {%- for name, arg in func.args.items() -%}

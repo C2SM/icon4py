@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import contextlib
 import time as _time
 
 from icon4py.tools.py2fgen import runtime_config
@@ -21,6 +22,14 @@ except ImportError:
 
     def device_synchronize() -> None:
         pass
+
+
+def gpu_stream(external_gpu_stream: int) -> contextlib.AbstractContextManager:
+    """Make the external GPU stream, if provided, the current CuPy stream in the context."""
+    if cp is None or external_gpu_stream < 0:  # no external GPU stream
+        return contextlib.nullcontext()
+    # `ExternalStream` does not take ownership of the stream.
+    return cp.cuda.ExternalStream(external_gpu_stream)
 
 
 def perf_counter() -> float:

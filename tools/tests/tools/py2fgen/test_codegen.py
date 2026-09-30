@@ -362,12 +362,13 @@ def foo_wrapper(one, two, two_size_0, two_size_1, device_enabled, external_gpu_s
                 perf_counters = {}
             else:
                 perf_counters = None
-            foo(
-                ffi=ffi,
-                perf_counters=perf_counters,
-                one=one,
-                two=two,
-            )
+            with _runtime.gpu_stream(external_gpu_stream):
+                foo(
+                    ffi=ffi,
+                    perf_counters=perf_counters,
+                    one=one,
+                    two=two,
+                )
 
             if use_device and external_gpu_stream < 0:  # no external GPU stream
                 _runtime.device_synchronize()
@@ -443,12 +444,13 @@ def bar_wrapper(one, one_size_0, one_size_1, two, device_enabled, external_gpu_s
                 perf_counters = {}
             else:
                 perf_counters = None
-            bar(
-                ffi=ffi,
-                perf_counters=perf_counters,
-                one=one,
-                two=two,
-            )
+            with _runtime.gpu_stream(external_gpu_stream):
+                bar(
+                    ffi=ffi,
+                    perf_counters=perf_counters,
+                    one=one,
+                    two=two,
+                )
 
             if use_device and external_gpu_stream < 0:  # no external GPU stream
                 _runtime.device_synchronize()
@@ -574,6 +576,8 @@ def test_external_gpu_stream_codegen():
     # The Python wrapper stores the stream in the call metadata.
     wrapper = generate_python_wrapper(plugin).translate({ord(c): None for c in string.whitespace})
     assert "_metadata=_definitions.Metadata(use_device,external_gpu_stream)" in wrapper
+    # The function runs with the stream as the current CuPy stream ...
+    assert "with_runtime.gpu_stream(external_gpu_stream):stream_fn(" in wrapper
     # ... and without a stream the device is synchronized before returning to Fortran.
     assert (
         "ifuse_deviceandexternal_gpu_stream<0:#noexternalGPUstream_runtime.device_synchronize()"
