@@ -205,7 +205,7 @@ def {{ func.name }}_wrapper(
             {%- endif -%}
             )
 
-            if use_device and not device_enabled:
+            if use_device:
                 _runtime.device_synchronize()
 
             if __debug__:

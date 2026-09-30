@@ -280,7 +280,7 @@ def diffusion_init_wrapper(
                 _metadata=_definitions.Metadata(use_device),
             )
 
-            if use_device and not device_enabled:
+            if use_device:
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -667,7 +667,7 @@ def diffusion_run_wrapper(
                 linit=linit,
             )
 
-            if use_device and not device_enabled:
+            if use_device:
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -1243,7 +1243,7 @@ def grid_init_wrapper(
                 _metadata=_definitions.Metadata(use_device),
             )
 
-            if use_device and not device_enabled:
+            if use_device:
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -2559,7 +2559,7 @@ def solve_nh_init_wrapper(
                 _metadata=_definitions.Metadata(use_device),
             )
 
-            if use_device and not device_enabled:
+            if use_device:
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -3872,7 +3872,7 @@ def solve_nh_run_wrapper(
                 iau_wgt_dyn=iau_wgt_dyn,
             )
 
-            if use_device and not device_enabled:
+            if use_device:
                 _runtime.device_synchronize()
 
             if __debug__:

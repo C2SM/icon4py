@@ -333,7 +333,7 @@ def foo_wrapper(one, two, two_size_0, two_size_1, device_enabled):
                 two=two,
             )
 
-            if use_device and not device_enabled:
+            if use_device:
                 _runtime.device_synchronize()
 
             if __debug__:
@@ -414,7 +414,7 @@ def bar_wrapper(one, one_size_0, one_size_1, two, device_enabled):
                 two=two,
             )
 
-            if use_device and not device_enabled:
+            if use_device:
                 _runtime.device_synchronize()
 
             if __debug__:
