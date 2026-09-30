@@ -98,6 +98,8 @@ class TmxSurfaceFluxState:
     """Zonal surface wind stress (`tauu`) [N/m^2]."""
     v_stress: fa.CellField[ta.wpfloat]
     """Meridional surface wind stress (`tauv`) [N/m^2]."""
+    q_snocpymlt: fa.CellField[ta.wpfloat]
+    """Heat used to melt snow on the canopy (`q_snocpymlt`), zero off land [W/m^2]."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -132,6 +134,8 @@ class TmxInputState:
     """Air density on full levels [kg/m^3]."""
     air_mass: fa.CellKField[ta.wpfloat]
     """Air mass per unit area (`mair`) on full levels [kg/m^2]."""
+    cv_air: fa.CellKField[ta.wpfloat]
+    """Isochoric heat capacity of the air per unit area (`cvair`) on full levels [J/(K m^2)]."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -147,6 +151,23 @@ class TmxDiagnosticState:
     """Horizontal wind divergence at cell centers on full levels [1/s]."""
     km_c: fa.CellKField[ta.wpfloat]
     """Turbulent viscosity at cell centers on full levels [kg/(m s)]."""
+    km: fa.CellKField[ta.wpfloat]
+    """Turbulent viscosity of the half level below, at cell centers on full levels [kg/(m s)]."""
+    kh: fa.CellKField[ta.wpfloat]
+    """Turbulent diffusivity of the half level below, at cell centers on full levels [kg/(m s)]."""
+    dissip_ke: fa.CellKField[ta.wpfloat]
+    """Kinetic energy dissipated by the wind diffusion, per layer [W/m^2]."""
+    heating: fa.CellKField[ta.wpfloat]
+    """Turbulent heating, per layer [W/m^2]."""
+    # cell, vertically integrated
+    cptgz_vi: fa.CellField[ta.wpfloat]
+    """Vertical integral of the dry static energy of the updated state [J/m^2]."""
+    dissip_ke_vi: fa.CellField[ta.wpfloat]
+    """Vertical integral of the dissipated kinetic energy [W/m^2]."""
+    int_energy_vi: fa.CellField[ta.wpfloat]
+    """Vertical integral of the internal energy of the updated state [J/m^2]."""
+    int_energy_vi_tend: fa.CellField[ta.wpfloat]
+    """Tendency of the vertically integrated internal energy [W/m^2]."""
     # cell, half levels
     rho_ic: fa.CellKHalfField[ta.wpfloat]
     """Air density at cell centers on half levels [kg/m^3]."""
@@ -198,6 +219,14 @@ class TmxDiagnosticState:
             cptgz=zero_field(dims.CellDim, dims.KDim),
             div_c=zero_field(dims.CellDim, dims.KDim),
             km_c=zero_field(dims.CellDim, dims.KDim),
+            km=zero_field(dims.CellDim, dims.KDim),
+            kh=zero_field(dims.CellDim, dims.KDim),
+            dissip_ke=zero_field(dims.CellDim, dims.KDim),
+            heating=zero_field(dims.CellDim, dims.KDim),
+            cptgz_vi=zero_field(dims.CellDim),
+            dissip_ke_vi=zero_field(dims.CellDim),
+            int_energy_vi=zero_field(dims.CellDim),
+            int_energy_vi_tend=zero_field(dims.CellDim),
             rho_ic=zero_field(dims.CellDim, dims.KHalfDim),
             bruvais=zero_field(dims.CellDim, dims.KHalfDim),
             mech_prod=zero_field(dims.CellDim, dims.KHalfDim),

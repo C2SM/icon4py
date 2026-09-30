@@ -2056,6 +2056,9 @@ class TmxEntrySavepoint(IconSavepoint):
     def pres(self):
         return self._get_field("pres", dims.CellDim, dims.KDim)
 
+    def cvair(self):
+        return self._get_field("cvair", dims.CellDim, dims.KDim)
+
 
 class TmxSurfaceFluxesSavepoint(IconSavepoint):
     """Savepoint after the surface model call in vdf Compute in mo_vdf.f90."""
@@ -2071,6 +2074,9 @@ class TmxSurfaceFluxesSavepoint(IconSavepoint):
 
     def tauv(self):
         return self._get_field("tauv", dims.CellDim)
+
+    def q_snocpymlt(self):
+        return self._get_field("q_snocpymlt", dims.CellDim)
 
 
 class TmxDiagnosticsExitSavepoint(IconSavepoint):
@@ -2203,6 +2209,33 @@ class TmxExitSavepoint(IconSavepoint):
 
     def tend_wa(self):
         return self._get_field("tend_wa", dims.CellDim, dims.KHalfDim)
+
+    def tend_ta(self):
+        return self._get_field("tend_ta", dims.CellDim, dims.KDim)
+
+    def heating(self):
+        return self._get_field("heating", dims.CellDim, dims.KDim)
+
+    def dissip_ke(self):
+        return self._get_field("dissip_ke", dims.CellDim, dims.KDim)
+
+    def cptgzvi(self):
+        return self._get_field("cptgzvi", dims.CellDim)
+
+    def dissip_ke_vi(self):
+        return self._get_field("dissip_ke_vi", dims.CellDim)
+
+    def int_energy_vi(self):
+        return self._get_field("int_energy_vi", dims.CellDim)
+
+    def tend_int_energy_vi(self):
+        return self._get_field("tend_int_energy_vi", dims.CellDim)
+
+    def km(self):
+        return self._get_field("km", dims.CellDim, dims.KDim)
+
+    def kh(self):
+        return self._get_field("kh", dims.CellDim, dims.KDim)
 
 
 class IconTimeStepExitSavepoint(IconSavepoint):
