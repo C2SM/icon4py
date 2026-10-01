@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "experiment_description, date",
     [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
