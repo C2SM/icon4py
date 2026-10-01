@@ -94,6 +94,7 @@ def diffusion_init_wrapper(
     device_enabled,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["diffusion_init"]:
+        use_device = False
         try:
             if __debug__:
                 logger.info("Python execution of diffusion_init started.")
@@ -496,6 +497,8 @@ def diffusion_init_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
+            if use_device:
+                _runtime.device_synchronize()
             return 2
 
     return 1
@@ -535,6 +538,7 @@ def diffusion_run_wrapper(
     device_enabled,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["diffusion_run"]:
+        use_device = False
         try:
             if __debug__:
                 logger.info("Python execution of diffusion_run started.")
@@ -787,6 +791,8 @@ def diffusion_run_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
+            if use_device:
+                _runtime.device_synchronize()
             return 2
 
     return 1
@@ -913,6 +919,7 @@ def grid_init_wrapper(
     device_enabled,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["grid_init"]:
+        use_device = False
         try:
             if __debug__:
                 logger.info("Python execution of grid_init started.")
@@ -1878,6 +1885,8 @@ def grid_init_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
+            if use_device:
+                _runtime.device_synchronize()
             return 2
 
     return 1
@@ -2050,6 +2059,7 @@ def solve_nh_init_wrapper(
     device_enabled,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["solve_nh_init"]:
+        use_device = False
         try:
             if __debug__:
                 logger.info("Python execution of solve_nh_init started.")
@@ -3315,6 +3325,8 @@ def solve_nh_init_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
+            if use_device:
+                _runtime.device_synchronize()
             return 2
 
     return 1
@@ -3440,6 +3452,7 @@ def solve_nh_run_wrapper(
     device_enabled,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["solve_nh_run"]:
+        use_device = False
         try:
             if __debug__:
                 logger.info("Python execution of solve_nh_run started.")
@@ -4402,6 +4415,8 @@ def solve_nh_run_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
+            if use_device:
+                _runtime.device_synchronize()
             return 2
 
     return 1

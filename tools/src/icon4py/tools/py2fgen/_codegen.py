@@ -166,6 +166,7 @@ def {{ func.name }}_wrapper(
 {{render_params(func)}}
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["{{ func.name }}"]:
+        use_device = False
         try:
             if __debug__:
                 logger.info("Python execution of {{ func.name }} started.")
@@ -234,6 +235,8 @@ def {{ func.name }}_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
+            if use_device:
+                _runtime.device_synchronize()
             return 2
 
     return 1

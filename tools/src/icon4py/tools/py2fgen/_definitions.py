@@ -84,7 +84,7 @@ class Metadata:
     """
 
     use_device: bool
-    """If the arrays are on the device."""
+    """If the arrays are accessed from the device (device memory, or host memory with unified memory)."""
 
 
 # cffi.FFI.CData is not available at runtime, therefore we provide a runtime
@@ -97,7 +97,7 @@ if TYPE_CHECKING:
     Attributes:
         pointer: The CFFI pointer.
         shape: Shape of the buffer.
-        use_device: If the ptr is for device memory (needs to be `False` if the ArrayParamDescriptor.memory_space is `Host`).
+        use_device: If the ptr is accessed from the device, i.e. viewed as a CuPy array (needs to be `False` if the ArrayParamDescriptor.memory_space is `Host`).
         is_optional: If True, the pointer can be NULL.
 
     Note: We use a plain tuple to minimize runtime overhead in the bindings.

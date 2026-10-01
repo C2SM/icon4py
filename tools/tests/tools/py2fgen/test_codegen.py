@@ -290,6 +290,7 @@ from libtest import bar
 @ffi.def_extern(error=2)
 def foo_wrapper(one, two, two_size_0, two_size_1, device_enabled):
     with runtime_config.HOOK_BINDINGS_FUNCTION["foo"]:
+        use_device = False
         try:
             if __debug__:
                 logger.info("Python execution of foo started.")
@@ -363,6 +364,8 @@ def foo_wrapper(one, two, two_size_0, two_size_1, device_enabled):
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
+            if use_device:
+                _runtime.device_synchronize()
             return 2
 
     return 1
@@ -371,6 +374,7 @@ def foo_wrapper(one, two, two_size_0, two_size_1, device_enabled):
 @ffi.def_extern(error=2)
 def bar_wrapper(one, one_size_0, one_size_1, two, device_enabled):
     with runtime_config.HOOK_BINDINGS_FUNCTION["bar"]:
+        use_device = False
         try:
             if __debug__:
                 logger.info("Python execution of bar started.")
@@ -444,6 +448,8 @@ def bar_wrapper(one, one_size_0, one_size_1, two, device_enabled):
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
+            if use_device:
+                _runtime.device_synchronize()
             return 2
 
     return 1
