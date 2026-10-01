@@ -394,8 +394,10 @@ _TMX_USE_TMX_INDEX: typing.Final = 22
 TMX = ConfigMapping(
     tmx_config.TmxConfig,
     [
-        IconOption("solver_type", _TMX_VDIFF_PATH, unnamed_index=23),
-        IconOption("energy_type", _TMX_VDIFF_PATH, unnamed_index=24),
+        # read as plain ints so that `TmxConfig.__post_init__` reports the unimplemented
+        # option, instead of the bare enum conversion failing first
+        IconOption("solver_type", _TMX_VDIFF_PATH, unnamed_index=23, converter=int),
+        IconOption("energy_type", _TMX_VDIFF_PATH, unnamed_index=24, converter=int),
         IconOption("dissipation_factor", _TMX_VDIFF_PATH, unnamed_index=25),
         IconOption("use_louis", _TMX_VDIFF_PATH, unnamed_index=26),
         IconOption("use_louis_land", _TMX_VDIFF_PATH, unnamed_index=27),
@@ -536,9 +538,6 @@ def make_initial_condition_config(
     *,
     atm_dict: dict[str, Any],
     input_dict: dict[str, Any],
-    start_of_simulation: time.AbsoluteTime,
-    start_of_timestepping: time.AbsoluteTime,
-    dtime: time.RelativeTime,
 ) -> (
     from_file_ic.FromFileConfig
     | jw_ic.JablonowskiWilliamsonConfig
@@ -548,13 +547,7 @@ def make_initial_condition_config(
     run_nml = atm_dict["run_nml"]
     if not run_nml["ltestcase"]:
         log.info("Reading initial condition from file")
-        return from_file_ic.FromFileConfig(
-            data_path=SER_DATA_PATH,
-            start_of_simulation=start_of_simulation,
-            start_of_timestepping=start_of_timestepping,
-            dtime=dtime,
-            ntracer=list_to_value(run_nml["ntracer"]),
-        )
+        return from_file_ic.FromFileConfig(data_path=SER_DATA_PATH)
 
     testcase_nml = input_dict.get("nh_testcase_nml", {})
     test_name = testcase_nml.get("nh_test_name")
@@ -694,12 +687,7 @@ def convert_experiment(
     initial_condition_cfg = make_initial_condition_config(
         atm_dict=atm_dict,
         input_dict=input_dict,
-        start_of_simulation=driver_cfg.start_of_simulation,
-        start_of_timestepping=driver_cfg.start_of_timestepping,
-        dtime=driver_cfg.dtime,
     )
-    if not do_tracer_advection and isinstance(initial_condition_cfg, from_file_ic.FromFileConfig):
-        initial_condition_cfg = dataclasses.replace(initial_condition_cfg, ntracer=0)
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
