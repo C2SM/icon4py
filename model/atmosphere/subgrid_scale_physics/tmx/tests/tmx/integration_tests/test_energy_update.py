@@ -106,7 +106,7 @@ def test_tmx_run_energy_update_single_step(
         tendency_state=tendency_state,
         new_state=new_state,
         # ICON runs tmx with the model time step (`init_tmx`), `dt_vdf` only sets how
-        # often it fires
+        # often tmx is called
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
