@@ -14,9 +14,10 @@ import typing
 
 import cattrs.gen
 import cattrs.preconf.pyyaml
+import numpy as np
 import yaml
 
-from icon4py.model.common import time, type_alias as ta
+from icon4py.model.common import time
 
 
 ET = typing.TypeVar("ET", bound=enum.Enum)
@@ -73,8 +74,11 @@ class ConfigWithShared:
         CONV.register_unstructure_hook(cls, unstructure_with_shared)
 
 
-CONV.register_structure_hook(ta.wpfloat, lambda v, _: ta.wpfloat(v))
-CONV.register_unstructure_hook(ta.wpfloat, lambda v: CONV.unstructure(float(v)))
+# Both independent of the precision setting: configs hold wp values and float64 values.
+# str() is the shortest repr that round-trips (0.85 instead of 0.8500000238418579 for float32).
+for float_type in (np.float32, np.float64):
+    CONV.register_structure_hook(float_type, lambda v, cl: cl(v))
+    CONV.register_unstructure_hook(float_type, lambda v: float(str(v)))
 yaml.add_representer(type(None), lambda d, _: d.represent_scalar("tag:yaml.org,2002:null", ""))
 
 

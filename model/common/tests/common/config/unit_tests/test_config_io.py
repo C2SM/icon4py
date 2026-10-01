@@ -12,6 +12,7 @@ import textwrap
 import typing
 
 import cattrs
+import numpy as np
 import pytest
 
 from icon4py.model.common import time
@@ -73,6 +74,12 @@ class UnionConfig:
 @dataclasses.dataclass
 class EndtimeConfig:
     endtime: time.EndOfSimulation
+
+
+@dataclasses.dataclass
+class NumpyFloatConfig:
+    single: np.float32
+    double: np.float64
 
 
 def test_read_yaml_str_empty_fails() -> None:
@@ -168,6 +175,12 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             id="endtime-nstep",
         ),
         pytest.param("foo\n...\n", ExampleEnum, ExampleEnum.FOO, id="enum"),
+        pytest.param(
+            "single: 0.85\ndouble: 0.85\n",
+            NumpyFloatConfig,
+            NumpyFloatConfig(np.float32(0.85), np.float64(0.85)),
+            id="numpy-floats",
+        ),
         pytest.param(
             textwrap.dedent(
                 """\
