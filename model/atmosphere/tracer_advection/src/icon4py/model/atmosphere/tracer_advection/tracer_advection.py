@@ -34,6 +34,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_trace
 from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field import (
     copy_cell_kdim_field,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coefficients_weno_svd import (
+    DEFAULT_WENO_SMOOTHNESS_EXPONENT,
+)
 from icon4py.model.atmosphere.tracer_advection.weno_least_squares import WenoLinearWeights
 from icon4py.model.common import (
     dimension as dims,
@@ -166,11 +169,23 @@ class AdvectionConfig:
     #: this fraction of (q + 1e-10)^2 take the WENO blend; the Fortran literal is single
     #: precision, and the value is rounded to single precision before use
     weno_hybrid_selection_threshold: ta.wpfloat = 5e-5
+    #: p of alpha_j = d_j / (beta_j + eps)^p in the linear WENO blend for the linear case
+    weno_linear_smoothness_exponent: ta.wpfloat = DEFAULT_WENO_SMOOTHNESS_EXPONENT
 
     def __post_init__(self) -> None:
         ta.dataclass_scalars_to_wp(
-            self, ["monotonic_limiter_boost_factor", "weno_hybrid_selection_threshold"]
+            self,
+            [
+                "monotonic_limiter_boost_factor",
+                "weno_hybrid_selection_threshold",
+                "weno_linear_smoothness_exponent",
+            ],
         )
+        if self.weno_linear_smoothness_exponent < 0.0:
+            raise ValueError(
+                "'weno_linear_smoothness_exponent' must be non-negative, but is "
+                f"{self.weno_linear_smoothness_exponent}."
+            )
         if not 1.0 <= self.monotonic_limiter_boost_factor < 2.0:
             raise ValueError(
                 "'monotonic_limiter_boost_factor' must be in [1, 2), but is "
@@ -683,6 +698,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 weno_linear_state=weno_linear_state,
                 horizontal_limiter=horizontal_limiter,
                 backend=backend,
+                smoothness_exponent=config.weno_linear_smoothness_exponent,
             )
             horizontal_advection = tracer_advection_horizontal.SemiLagrangian(
                 tracer_flux=tracer_flux,

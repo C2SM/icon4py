@@ -107,7 +107,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coeff
     reconstruct_linear_coefficients_svd,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coefficients_weno_svd import (
+    DEFAULT_WENO_SMOOTHNESS_EXPONENT,
     reconstruct_linear_coefficients_weno_svd,
+    reconstruct_linear_coefficients_weno_svd_exponent,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_quadratic_coefficients_svd import (
     reconstruct_quadratic_coefficients_svd,
@@ -786,11 +788,16 @@ class SecondOrderMiuraWeno(SemiLagrangianTracerFlux):
         weno_linear_state: tracer_advection_states.AdvectionWenoLinearState,
         backend: gtx.typing.Backend | None,
         horizontal_limiter: HorizontalFluxLimiter | None = None,
+        smoothness_exponent: ta.wpfloat = DEFAULT_WENO_SMOOTHNESS_EXPONENT,
     ):
         self._grid = grid
         self._weno_linear_state = weno_linear_state
         self._backend = backend
         self._horizontal_limiter = horizontal_limiter or NoLimiter()
+        self._smoothness_exponent = ta.wpfloat(smoothness_exponent)
+        self._tunable_smoothness_exponent = (
+            self._smoothness_exponent != DEFAULT_WENO_SMOOTHNESS_EXPONENT
+        )
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -821,7 +828,9 @@ class SecondOrderMiuraWeno(SemiLagrangianTracerFlux):
         # stencils
         self._reconstruct_linear_coefficients_weno_svd = model_options.setup_program(
             backend=self._backend,
-            program=reconstruct_linear_coefficients_weno_svd,
+            program=reconstruct_linear_coefficients_weno_svd_exponent
+            if self._tunable_smoothness_exponent
+            else reconstruct_linear_coefficients_weno_svd,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary_level_2,
                 "horizontal_end": self._end_cell_halo,
@@ -867,6 +876,11 @@ class SecondOrderMiuraWeno(SemiLagrangianTracerFlux):
         log.debug("running stencil reconstruct_linear_coefficients_weno_svd - start")
         self._reconstruct_linear_coefficients_weno_svd(
             p_cc=p_tracer_now,
+            **(
+                {"smoothness_exponent": self._smoothness_exponent}
+                if self._tunable_smoothness_exponent
+                else {}
+            ),
             lsq_pseudoinv_zonal_c1=self._weno_linear_state.lsq_pseudoinv_zonal_c1,
             lsq_pseudoinv_zonal_c2=self._weno_linear_state.lsq_pseudoinv_zonal_c2,
             lsq_pseudoinv_zonal_c3=self._weno_linear_state.lsq_pseudoinv_zonal_c3,

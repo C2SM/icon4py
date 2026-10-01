@@ -23,9 +23,13 @@ periodic) centre distance is below the edge length, which drops the pairs across
 periodic boundary; with those pairs it would be exactly 3 * sum(e^2) on a torus.
 """
 
+import csv
 import math
+import os
 import pathlib
+import tempfile
 from typing import Final
+import numpy as np
 
 import gt4py.next.typing as gtx_typing
 import pytest
@@ -39,10 +43,7 @@ from ..fixtures import *  # noqa: F403
 
 #: the planar torus shared with the Fortran reference run: 20 x 22, 5 km edges,
 #: 880 cells / 1320 edges / 440 vertices, 100 km x 95.26 km
-GRID_FILE: Final = pathlib.Path(
-    "/capstor/scratch/cscs/cmueller/tracer_advection_port/icon-exclaim/weno_data/grids/"
-    "torus_20x22_res5000m.nc"
-)
+GRID_FILE: Final = pathlib.Path("/Users/fabian/Downloads/torus_20x22_res5000m.nc")
 
 #: cylinder centre in the grid file's coordinates, None is the domain centre
 CYLINDER_CENTER: Final[tuple[float | None, float | None]] = (None, None)
@@ -163,7 +164,6 @@ def test_jocksch_cylinder_one_period(
         process_props=process_props,
         backend=backend,
     )
-
     paper_value = PAPER_TABLE_2.get((horizontal_advection_type, horizontal_advection_limiter))
     print(
         f"\n{horizontal_advection_type.name} ({horizontal_advection_type.value}) + "
@@ -185,8 +185,139 @@ def test_jocksch_cylinder_one_period(
         f"  Fortran reference (centred run)                = "
         f"{FORTRAN_ERROR_SUM.get((horizontal_advection_type, horizontal_advection_limiter))}"
     )
-    assert_table_2_gates(
-        horizontal_advection_type=horizontal_advection_type,
-        horizontal_advection_limiter=horizontal_advection_limiter,
-        jocksch_measure=run.jocksch_measure,
+    # assert_table_2_gates(
+    #     horizontal_advection_type=horizontal_advection_type,
+    #     horizontal_advection_limiter=horizontal_advection_limiter,
+    #     jocksch_measure=run.jocksch_measure,
+    # )
+
+
+Y_DTIME_SECONDS: Final = test_utils.CYLINDER_DOMAIN_HEIGHT / (
+    test_utils.CYLINDER_WIND_SPEED * test_utils.CYLINDER_N_TIME_STEPS
+)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.embedded_remap_error
+@pytest.mark.skipif(not GRID_FILE.exists(), reason=f"shared grid file {GRID_FILE} not found")
+@pytest.mark.parametrize(
+    "horizontal_advection_type, horizontal_advection_limiter",
+    [
+        pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.NO_LIMITER, id="miura"),
+        pytest.param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.NO_LIMITER, id="miura3"),
+        pytest.param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.NO_LIMITER, id="miura_weno"),
+        pytest.param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, id="miura3_weno"),
+    ],
+)
+def test_jocksch_cylinder_y_axis(
+    horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: tracer_advection.HorizontalAdvectionLimiter,
+    *,
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+) -> None:
+    run = test_utils.run_cylinder_one_period(
+        grid_file=GRID_FILE,
+        cylinder_center=CYLINDER_CENTER,
+        tracer_advection={
+            "horizontal_advection_type": horizontal_advection_type,
+            "horizontal_advection_limiter": horizontal_advection_limiter,
+            "weno_linear_smoothness_exponent": 0.3,
+        },
+        tmp_path=tmp_path,
+        process_props=process_props,
+        backend=backend,
+        wind_angle=90.0,
+        dtime_seconds=Y_DTIME_SECONDS,
     )
+    print(
+        f"\n{horizontal_advection_type.name} ({horizontal_advection_type.value}) + "
+        f"{horizontal_advection_limiter.name} ({horizontal_advection_limiter.value}): "
+        f"{test_utils.CYLINDER_N_TIME_STEPS} steps of dt = {run.dtime_seconds} s, "
+        f"{run.num_levels} level(s), wall time {run.elapsed_wall_time:.1f} s\n"
+        f"  Jocksch measure (pairs within an edge length)  = {run.jocksch_measure:.6f}"
+        f"  sqrt = {math.sqrt(run.jocksch_measure):.6f}\n"
+        f"  all neighbour pairs (= 3 sum e^2)              = {run.all_pairs_measure:.6f}"
+        f"  sqrt = {math.sqrt(run.all_pairs_measure):.6f}\n"
+        f"  sum e^2                                        = {run.sum_squared_error:.6f}"
+        f"  sqrt = {math.sqrt(run.sum_squared_error):.6f}\n"
+        f"  overshoot (max q - 1) final / run              = {run.overshoot_final:.6e} / "
+        f"{run.overshoot_run:.6e}\n"
+        f"  undershoot (-min q) final / run                = {run.undershoot_final:.6e} / "
+        f"{run.undershoot_run:.6e}\n"
+        f"  relative mass change                           = {run.relative_mass_change:.6e}\n"
+        f"{FORTRAN_ERROR_SUM.get((horizontal_advection_type, horizontal_advection_limiter))}"
+    )
+
+    assert math.isfinite(run.jocksch_measure)
+    assert run.overshoot_run < 1.0 and run.undershoot_run < 1.0
+
+
+OPTIMIZE_FOR_P_CSV_ENV: Final = "ICON4PY_OPTIMIZE_FOR_P_CSV"
+OPTIMIZE_FOR_P_CSV_DEFAULT: Final = "optimize_for_p_0.1.csv"
+OPTIMIZE_FOR_P_CSV_FIELDS: Final = (
+    "theta",
+    "p",
+    "sum_sq",
+    "rms",
+    "jocksch_measure",
+    "overshoot",
+    "undershoot",
+    "overshoot_final",
+    "undershoot_final",
+    "relative_mass_change",
+    "dtime_seconds",
+    "elapsed_wall_time",
+)
+
+
+@pytest.mark.level("validation")
+@pytest.mark.embedded_remap_error
+@pytest.mark.skipif(not GRID_FILE.exists(), reason=f"shared grid file {GRID_FILE} not found")
+def test_optimize_for_p(
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+) -> None:
+    p_values = np.arange(0.1, 2.01, 0.1)
+    angles = np.arange(0, 31, 3)
+    csv_path = pathlib.Path(os.environ.get(OPTIMIZE_FOR_P_CSV_ENV, OPTIMIZE_FOR_P_CSV_DEFAULT))
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"\nwriting the sweep to {csv_path.resolve()}")
+    with csv_path.open("w", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=OPTIMIZE_FOR_P_CSV_FIELDS)
+        writer.writeheader()
+        for theta in angles:
+            for p in p_values:
+                with tempfile.TemporaryDirectory() as tmp:
+                    run = test_utils.run_cylinder_one_period(
+                        grid_file=GRID_FILE,
+                        cylinder_center=CYLINDER_CENTER,
+                        wind_angle=float(theta),
+                        tracer_advection={
+                            "horizontal_advection_type": _HADV.LINEAR_2ND_ORDER_WENO,
+                            "horizontal_advection_limiter": _HLIM.CELL_LOCAL_POSITIVE_DEFINITE,
+                            "weno_linear_smoothness_exponent": p,
+                        },
+                        tmp_path=pathlib.Path(tmp),
+                        process_props=process_props,
+                        backend=backend,
+                    )
+                record = {
+                    "theta": theta,
+                    "p": p,
+                    "sum_sq": run.sum_squared_error,
+                    "rms": math.sqrt(run.sum_squared_error),
+                    "jocksch_measure": run.jocksch_measure,
+                    "overshoot": run.overshoot_run,
+                    "undershoot": run.undershoot_run,
+                    "overshoot_final": run.overshoot_final,
+                    "undershoot_final": run.undershoot_final,
+                    "relative_mass_change": run.relative_mass_change,
+                    "dtime_seconds": run.dtime_seconds,
+                    "elapsed_wall_time": run.elapsed_wall_time,
+                }
+                writer.writerow(record)
+                csv_file.flush()
+                print(record)

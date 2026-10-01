@@ -49,9 +49,12 @@ CYLINDER_GRID_SIZES: Final = {dims.CellDim: 880, dims.EdgeDim: 1320, dims.Vertex
 CYLINDER_RADIUS: Final = 25000.0
 CYLINDER_WIND_SPEED: Final = 1.0
 #: wind direction, counter-clockwise from the x axis [degrees]
-CYLINDER_WIND_ANGLE: Final = 0.0
+CYLINDER_WIND_ANGLE: Final = 90.0
 CYLINDER_CFL: Final = 0.2
 CYLINDER_N_TIME_STEPS: Final = 100
+#: extents of the shared torus: 20 edges of 5 km in x, 22 rows of equilateral triangles in y
+CYLINDER_DOMAIN_LENGTH: Final = 100000.0
+CYLINDER_DOMAIN_HEIGHT: Final = 95262.79441628825
 #: total tracer mass sum(qv * airmass * cell_area) is conserved to round-off
 MASS_CONSERVATION_RTOL: Final = 1e-12
 
@@ -119,6 +122,8 @@ def run_cylinder_one_period(
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
+    wind_angle: float = CYLINDER_WIND_ANGLE,
+    dtime_seconds: float | None = None,
 ) -> CylinderRun:
     """Carry the cylinder once around the torus with the driver and measure the final error.
 
@@ -127,7 +132,12 @@ def run_cylinder_one_period(
     CYLINDER_WIND_SPEED wind; with dt = CYLINDER_CFL * edge_length the CYLINDER_N_TIME_STEPS
     steps are exactly one period in x, so the exact final state is the initial field.
     ``tracer_advection`` are the overrides of the tracer-advection configuration (scheme,
-    limiter, weight set). Checks the plumbing every case shares: the grid sizes, a fully
+    limiter, weight set). ``wind_angle`` turns the wind counter-clockwise from the x axis
+    [degrees]; 90 carries the cylinder along y, where one period is CYLINDER_DOMAIN_HEIGHT
+    rather than CYLINDER_DOMAIN_LENGTH, so ``dtime_seconds``
+    must be set for the run to close on the initial state. Off a whole period the exact
+    solution is the displaced cylinder and the error measures still hold, but the Table 2
+    gates of the x runs do not. Checks the plumbing every case shares: the grid sizes, a fully
     periodic torus (no skip values), unit air mass, one frame per step with identical
     columns, frame 0 the sampled cylinder, mass conservation to MASS_CONSERVATION_RTOL and the
     all-pairs identity of neighbour_pair_error_sums.
@@ -139,7 +149,7 @@ def run_cylinder_one_period(
         center_y=cylinder_center[1],
         radius=CYLINDER_RADIUS,
         wind_speed=CYLINDER_WIND_SPEED,
-        wind_angle=CYLINDER_WIND_ANGLE,
+        wind_angle=wind_angle,
     )
     experiment_config = config_io.read_yaml_str(
         CYLINDER_EXPERIMENT_CONFIG.read_text(), driver_config.ExperimentConfig
@@ -165,7 +175,8 @@ def run_cylinder_one_period(
     edge_length = float(
         grid_manager.geometry_fields[gridfile.GeometryName.EDGE_LENGTH].asnumpy().mean()
     )
-    dtime_seconds = CYLINDER_CFL * edge_length / CYLINDER_WIND_SPEED
+    if dtime_seconds is None:
+        dtime_seconds = CYLINDER_CFL * edge_length / CYLINDER_WIND_SPEED
     experiment_config = experiment_config.with_overrides(
         driver={
             "output_path": tmp_path / "driver_output",
