@@ -136,8 +136,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=_metadata.use_device
     )
-    backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
-    logger.info(f"Using Backend {backend_name} with use_device={_metadata.use_device}")
+    logger.info(f"Using Backend {actual_backend} with use_device={_metadata.use_device}")
     allocator = model_backends.get_allocator(actual_backend)
 
     pg_exdist_domain = rho_ref_me.domain

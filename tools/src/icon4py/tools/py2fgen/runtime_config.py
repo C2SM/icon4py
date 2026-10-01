@@ -9,12 +9,21 @@
 import collections
 import contextlib
 import os
+import typing
 from types import TracebackType
 
 from gt4py import eve
 
 
-def _env_flag_to_bool[T](name: str, default: T) -> bool | T:
+@typing.overload
+def _env_flag_to_bool(name: str, default: bool) -> bool: ...
+
+
+@typing.overload
+def _env_flag_to_bool(name: str, default: None) -> bool | None: ...
+
+
+def _env_flag_to_bool(name: str, default: bool | None) -> bool | None:
     """Recognize true or false signaling string values."""
     flag_value = None
     if name in os.environ:
