@@ -24,7 +24,10 @@ Comparisons are exact: the raw bytes of every element (so NaN payloads and signe
 count), 'float.hex' and the IEEE bits for scalars, and the pointers, shape and presence for
 ICON variables that the plugin passes through. Array entries beyond the local number of
 cells, edges or vertices along the location axis are padding and reported separately: the
-verdict is on the real entries.
+verdict is on the real entries. An item may also require the same form of the value as the
+granule gets it ('form': Field or plain array, array module, dtype, shape, element strides),
+and an MPI communicator is compared by MPI_Comm_compare and its members ('Communicator'),
+not by the value of its handle.
 
 Environment:
 - ICON4PY_COMIN_DUAL=strict|report|off (default strict): 'strict' raises at the first differing
@@ -43,8 +46,10 @@ Log lines (a stable format, for automated checks of a run):
 """
 
 import dataclasses
+import functools
 import math
 import struct
+import types
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any, Final
 
@@ -130,9 +135,29 @@ class Pointer:
     present: bool
 
 
+SAME_COMMUNICATOR: Final = ("IDENT", "CONGRUENT")
+"""MPI_Comm_compare's results for which two communicators have the same processes in the
+same order (CONGRUENT: a different context, e.g. a split or a duplicate)."""
+
+
+@dataclasses.dataclass(frozen=True)
+class Communicator:
+    """
+    An MPI communicator argument (py2fgen passes its Fortran handle): the handle, its members
+    (their ranks in MPI_COMM_WORLD, in the communicator's rank order) and, for the new route,
+    MPI_Comm_compare's result against the reference. Two communicators are the same argument
+    iff that result is IDENT or CONGRUENT and they have the same members; the handles may
+    differ.
+    """
+
+    handle: int
+    members: tuple[int, ...]
+    relation: str | None = None
+
+
 def host_array(value: Any) -> Any:
     """A NumPy copy or view of an argument value: gtx.Field, CuPy or NumPy array (else as is)."""
-    if value is None or isinstance(value, (np.ndarray, Pointer, bool, int, float)):
+    if value is None or isinstance(value, (np.ndarray, Pointer, Communicator, bool, int, float)):
         return value
     ndarray = getattr(value, "ndarray", None)  # a gtx.Field
     if ndarray is not None:
@@ -174,6 +199,27 @@ def squeeze5(array: Any, rank: int, block_axis: int | None = None) -> Any:
     return array[(slice(None),) * rank + (0,) * len(extra)]
 
 
+def form(value: Any) -> str:
+    """
+    The form of an array argument as the granule gets it: a Field (with its dimensions) or a
+    plain array, the array module (numpy, cupy), the dtype, the shape and the strides in
+    elements (0 for an axis of extent 1, whose stride does not matter).
+    """
+    if value is None:
+        return "None"
+    prefix = ""
+    ndarray = getattr(value, "ndarray", None)  # a gtx.Field
+    if ndarray is not None:
+        dims = ", ".join(str(getattr(d, "value", d)) for d in value.domain.dims)
+        prefix, value = f"Field[{dims}] over ", ndarray
+    module = type(value).__module__.split(".")[0]
+    shape = tuple(int(n) for n in value.shape)
+    strides = tuple(
+        int(s) // value.itemsize if n > 1 else 0 for s, n in zip(value.strides, shape, strict=True)
+    )
+    return f"{prefix}{module} {value.dtype} {shape} strides {strides}"
+
+
 # ---- comparisons ------------------------------------------------------------------------------
 
 
@@ -208,7 +254,12 @@ def _magnitudes(new: np.ndarray, old: np.ndarray) -> str:
         ulps = [abs(x - y) for x, y in zip(_ordered(new), _ordered(old))]
         abs_max = np.nanmax(diff) if not np.all(np.isnan(diff)) else math.nan
         rel_max = np.nanmax(rel) if not np.all(np.isnan(rel)) else math.nan
-        return f", max abs {abs_max:.3g}, max rel {rel_max:.3g}, max ulp {max(ulps)}"
+        zeros = "".join(
+            f", {route} zero at {int(n)}"
+            for route, n in (("reference", np.sum(b == 0)), ("new route", np.sum(a == 0)))
+            if n
+        )
+        return f", max abs {abs_max:.3g}, max rel {rel_max:.3g}, max ulp {max(ulps)}{zeros}"
     if new.dtype.kind in "iu":
         diff = np.abs(new.astype(np.int64) - old.astype(np.int64))
         with np.errstate(all="ignore"):
@@ -287,7 +338,30 @@ def compare_pointers(new: Pointer, old: Pointer) -> Comparison:
     return Comparison(same, show(new) if same else f"{show(new)} vs {show(old)}")
 
 
+def _handle(handle: int) -> str:
+    return f"{handle & 0xFFFFFFFF:#010x}"
+
+
+def compare_communicators(new: Communicator, old: Communicator) -> Comparison:
+    """MPI_Comm_compare IDENT or CONGRUENT (the new route's verdict) and the same members."""
+    same_members = new.members == old.members
+    same = same_members and new.relation in SAME_COMMUNICATOR
+    text = (
+        f"MPI_Comm_compare {new.relation or 'unknown'}; handle {_handle(new.handle)} vs"
+        f" {_handle(old.handle)}; {len(new.members)} ranks"
+    )
+    if not same_members:
+        text += f"; members {new.members} vs {old.members}"
+    return Comparison(same, text)
+
+
 def compare(new: Any, old: Any, real: int | None = None, axis: int = 0) -> Comparison:
+    if isinstance(new, Communicator) or isinstance(old, Communicator):
+        if not (isinstance(new, Communicator) and isinstance(old, Communicator)):
+            return Comparison(
+                False, f"communicator vs value: {type(new).__name__}, {type(old).__name__}"
+            )
+        return compare_communicators(new, old)
     if isinstance(new, Pointer) or isinstance(old, Pointer):
         if not (isinstance(new, Pointer) and isinstance(old, Pointer)):
             return Comparison(
@@ -303,8 +377,12 @@ def perturb(value: Any) -> Any:
     """
     A comparison-only copy of 'value' with one element changed: the lowest bit of the first
     element (a real entry whenever there is one), i.e. 1 ulp, +-1 or a flipped bool; for
-    scalars the next float, +1 or 'not'; for a pointer the address + 8. Never a view.
+    scalars the next float, +1 or 'not'; for a pointer the address + 8; for a communicator its
+    first member + 1 (no MPI call). Never a view.
     """
+    if isinstance(value, Communicator):
+        first = value.members[0] + 1 if value.members else -1
+        return dataclasses.replace(value, members=(first, *value.members[1:]))
     if isinstance(value, Pointer):
         if value.device is not None:
             return dataclasses.replace(value, device=value.device + 8)
@@ -331,9 +409,14 @@ def _perturb_scalar(value: bool | int | float) -> bool | int | float:
 # ---- the check of one entry point ----------------------------------------------------------
 
 
+LAZY: Final = (functools.partial, types.FunctionType, types.MethodType)
+"""The types of a new route given as a function, which the check calls (a Field is callable,
+but a value)."""
+
+
 @dataclasses.dataclass(frozen=True)
 class Item:
-    """One comparison: 'new' may be a callable, so that a failing new route is reported."""
+    """One comparison: 'new' may be a function (LAZY), so that a failing new route is reported."""
 
     name: str
     provider: str
@@ -341,6 +424,9 @@ class Item:
     reference: Any
     real: int | None = None
     axis: int = 0
+    form: str | None = None
+    """If set: the reference's 'form', which the new value must have too (before a self-test
+    perturbation, which changes one value of a host copy)."""
 
 
 class DualCheckError(RuntimeError):
@@ -386,10 +472,14 @@ class Checker:
                 continue
             perturbed = item.name in self.selftest
             try:
-                new = item.new() if callable(item.new) else item.new
+                new = item.new() if isinstance(item.new, LAZY) else item.new
+                new_form = None if item.form is None else form(new)
                 if perturbed:
                     new = perturb(new)
-                result = compare(new, item.reference, item.real, item.axis)
+                if new_form is not None and new_form != item.form:
+                    result = Comparison(False, f"form {new_form} vs {item.form}")
+                else:
+                    result = compare(new, item.reference, item.real, item.axis)
             except Exception as error:  # a failing new route is a difference, not a crash
                 result = Comparison(False, f"new route failed: {error!r}")
             summary.checked[item.provider] += 1
