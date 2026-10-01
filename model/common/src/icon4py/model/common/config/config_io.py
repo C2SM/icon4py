@@ -75,10 +75,9 @@ class ConfigWithShared:
 
 
 # Both independent of the precision setting: configs hold wp values and float64 values.
-# str() is the shortest repr that round-trips (0.85 instead of 0.8500000238418579 for float32).
 for float_type in (np.float32, np.float64):
     CONV.register_structure_hook(float_type, lambda v, cl: cl(v))
-    CONV.register_unstructure_hook(float_type, lambda v: float(str(v)))
+    CONV.register_unstructure_hook(float_type, float)
 yaml.add_representer(type(None), lambda d, _: d.represent_scalar("tag:yaml.org,2002:null", ""))
 
 

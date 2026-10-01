@@ -176,7 +176,7 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
         ),
         pytest.param("foo\n...\n", ExampleEnum, ExampleEnum.FOO, id="enum"),
         pytest.param(
-            "single: 0.85\ndouble: 0.85\n",
+            "single: 0.8500000238418579\ndouble: 0.85\n",
             NumpyFloatConfig,
             NumpyFloatConfig(np.float32(0.85), np.float64(0.85)),
             id="numpy-floats",
