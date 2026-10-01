@@ -103,11 +103,12 @@ def _solve_vn_vertical_diffusion(
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     dtime: wpfloat,
-    minlvl: gtx.int32,
-    maxlvl: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ) -> fa.EdgeKField[wpfloat]:
     """
-    vn tendency of the implicit vertical diffusion over full levels minlvl..maxlvl.
+    vn tendency due to implicit vertical diffusion on full levels vertical_start..vertical_end - 1
+    (0..nlev - 1).
 
     The right-hand side holds the vertical flux of the dw/dn stress, with no flux through the
     top and the surface momentum stress (u_stress, v_stress) through the bottom.
@@ -129,18 +130,18 @@ def _solve_vn_vertical_diffusion(
         axis=E2CDim,
     )
     rhs = concat_where(
-        dims.KDim > minlvl,
+        dims.KDim > vertical_start,
         (dwdn_flux_above - dwdn_flux_below) * inv_air_mass,
         -dwdn_flux_below * inv_air_mass,
     )
     rhs = concat_where(
-        dims.KDim < maxlvl,
+        dims.KDim < vertical_end - 1,
         rhs,
         dwdn_flux_above * inv_air_mass - surface_stress * inv_air_mass,
     )
 
     a, b, c = _assemble_vertical_diffusion_matrix_on_edges(
-        km_ie, inv_ddqz_z_half_e, inv_air_mass, wpfloat("1.0"), minlvl, maxlvl
+        km_ie, inv_ddqz_z_half_e, inv_air_mass, wpfloat("1.0"), vertical_start, vertical_end - 1
     )
     return _solve_implicit_vertical_diffusion_on_edges(vn, a, b, c, rhs, dtime)
 
@@ -172,8 +173,8 @@ def _compute_vn_diffusion_tendency(
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     dtime: wpfloat,
-    minlvl: gtx.int32,
-    maxlvl: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ) -> fa.EdgeKField[wpfloat]:
     inv_rhoe = wpfloat("1.0") / _interpolate_cell_field_to_edge(rho, c_lin_e)
     horizontal_tendency = _compute_vn_horizontal_stress_tendency(
@@ -207,8 +208,8 @@ def _compute_vn_diffusion_tendency(
         c_lin_e=c_lin_e,
         inv_dual_edge_length=inv_dual_edge_length,
         dtime=dtime,
-        minlvl=minlvl,
-        maxlvl=maxlvl,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
     )
     return horizontal_tendency + vertical_tendency
 
@@ -272,8 +273,8 @@ def compute_vn_diffusion_tendency(
         inv_vert_vert_length=inv_vert_vert_length,
         inv_dual_edge_length=inv_dual_edge_length,
         dtime=dtime,
-        minlvl=vertical_start,
-        maxlvl=vertical_end - 1,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
         out=vn_tendency,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -433,7 +434,8 @@ def _solve_w_vertical_diffusion(
     vertical_end: gtx.int32,
 ) -> fa.CellKHalfField[wpfloat]:
     """
-    w tendency of the implicit vertical diffusion over half levels vertical_start..vertical_end - 1.
+    w tendency due to implicit vertical diffusion on half levels vertical_start..vertical_end - 1
+    (1..nlev - 1).
 
     w = 0 is imposed on the half levels vertical_start - 1 and vertical_end bounding the system.
     """
