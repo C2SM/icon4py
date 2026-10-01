@@ -63,8 +63,9 @@ def test_tmx_run_wind_diffusion_single_step(
     diagnostics_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
     hor_wind_savepoint = data_provider.from_savepoint_tmx_hor_wind_exit(date=date)
     vert_wind_savepoint = data_provider.from_savepoint_tmx_vert_wind_exit(date=date)
-    # the tend_wa of tmx-vert-wind-exit lacks the horizontal term (cause unknown), so tend_wa
-    # is taken from tmx-exit
+    # ICON serializes tmx-vert-wind-exit without waiting on the ASYNC(1) kernel that adds the
+    # horizontal term to tend_wa, so its host copy is partly stale; tend_wa is taken from
+    # tmx-exit, nothing writes it in between
     exit_savepoint = data_provider.from_savepoint_tmx_exit(date=date)
 
     component = wind_diffusion.WindDiffusion(
