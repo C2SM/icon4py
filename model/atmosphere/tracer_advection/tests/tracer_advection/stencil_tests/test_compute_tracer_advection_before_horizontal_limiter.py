@@ -370,8 +370,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         ihadv_tracer = gtx.int32(2)
         itype_hlimit = gtx.int32(4)
         iadv_slev_jt = gtx.int32(0)
-        slev = gtx.int32(0)
-        elev = gtx.int32(grid.num_levels - 1)
 
         return dict(
             rhodz_ast2=rhodz_ast2,
@@ -388,8 +386,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
             deepatmo_divzl=deepatmo_divzl,
             deepatmo_divzu=deepatmo_divzu,
             k=k,
-            slev=slev,
-            elev=elev,
             ivadv_tracer=ivadv_tracer,
             ihadv_tracer=ihadv_tracer,
             itype_hlimit=itype_hlimit,
