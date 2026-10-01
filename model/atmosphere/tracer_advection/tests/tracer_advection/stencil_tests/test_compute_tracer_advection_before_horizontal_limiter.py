@@ -194,8 +194,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         ihadv_tracer = gtx.int32(2)
         itype_hlimit = gtx.int32(4)
         iadv_slev_jt = gtx.int32(0)
-        slev = gtx.int32(0)
-        elev = gtx.int32(grid.num_levels - 1)
 
         return dict(
             rhodz_ast2=rhodz_ast2,
@@ -212,8 +210,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             deepatmo_divzl=deepatmo_divzl,
             deepatmo_divzu=deepatmo_divzu,
             k=k,
-            slev=slev,
-            elev=elev,
             ivadv_tracer=ivadv_tracer,
             ihadv_tracer=ihadv_tracer,
             itype_hlimit=itype_hlimit,
@@ -230,7 +226,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             geofac_div=geofac_div,
             dbl_eps=dbl_eps,
             p_dtime=p_dtime,
-            even_timestep=True,
+            do_vertical_first=True,
             start_cell_lateral_boundary_level_2=gtx.int32(0),
             end_cell_local=gtx.int32(grid.num_cells),
             end_cell_end=gtx.int32(grid.num_cells),
@@ -410,7 +406,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
             geofac_div=geofac_div,
             dbl_eps=dbl_eps,
             p_dtime=p_dtime,
-            even_timestep=False,
+            do_vertical_first=False,
             start_cell_lateral_boundary_level_2=gtx.int32(0),
             end_cell_local=gtx.int32(grid.num_cells),
             end_cell_end=gtx.int32(grid.num_cells),

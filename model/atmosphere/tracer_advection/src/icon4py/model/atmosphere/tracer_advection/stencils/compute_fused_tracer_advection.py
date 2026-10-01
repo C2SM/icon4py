@@ -245,8 +245,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     k: fa.KField[gtx.int32],
-    slev: gtx.int32,
-    elev: gtx.int32,
     ivadv_tracer: gtx.int32,
     ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
@@ -263,7 +261,7 @@ def _compute_tracer_advection_before_horizontal_limiter(
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     dbl_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
-    even_timestep: bool,
+    do_vertical_first: bool,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -278,12 +276,12 @@ def _compute_tracer_advection_before_horizontal_limiter(
     # on aarch64/Santis.
 
     rhodz_ast2 = _apply_density_increment(
-        rhodz_in=rhodz_now if even_timestep else rhodz_new,
+        rhodz_in=rhodz_now if do_vertical_first else rhodz_new,
         p_mflx_contra_v=p_mflx_contra_v,
         deepatmo_divzl=deepatmo_divzl,
         deepatmo_divzu=deepatmo_divzu,
         p_dtime=p_dtime,
-        even_timestep=even_timestep,
+        even_timestep=do_vertical_first,
     )
 
     p_tracer_after_vertical = (
@@ -299,13 +297,13 @@ def _compute_tracer_advection_before_horizontal_limiter(
             ivadv_tracer=ivadv_tracer,
             iadv_slev_jt=iadv_slev_jt,
         )
-        if even_timestep
+        if do_vertical_first
         else p_tracer_now + broadcast(0.0, (dims.CellDim, dims.KDim))
     )
 
     tracer_for_h = (
         p_tracer_after_vertical
-        if even_timestep
+        if do_vertical_first
         else p_tracer_now + broadcast(0.0, (dims.CellDim, dims.KDim))
     )
     p_mflx_tracer_h_unlimited = (
@@ -332,7 +330,7 @@ def _compute_tracer_advection_before_horizontal_limiter(
         _compute_positive_definite_horizontal_multiplicative_flux_factor(
             geofac_div=geofac_div,
             p_cc=tracer_for_h,
-            p_rhodz_now=rhodz_ast2 if even_timestep else rhodz_now,
+            p_rhodz_now=rhodz_ast2 if do_vertical_first else rhodz_now,
             p_mflx_tracer_h=p_mflx_tracer_h_unlimited,
             p_dtime=p_dtime,
             dbl_eps=dbl_eps,
@@ -365,8 +363,6 @@ def compute_tracer_advection_before_horizontal_limiter(
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     k: fa.KField[gtx.int32],
-    slev: gtx.int32,
-    elev: gtx.int32,
     ivadv_tracer: gtx.int32,
     ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
@@ -383,7 +379,7 @@ def compute_tracer_advection_before_horizontal_limiter(
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     dbl_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
-    even_timestep: bool,
+    do_vertical_first: bool,
     start_cell_lateral_boundary_level_2: gtx.int32,
     end_cell_local: gtx.int32,
     end_cell_end: gtx.int32,
@@ -402,8 +398,6 @@ def compute_tracer_advection_before_horizontal_limiter(
         deepatmo_divzl=deepatmo_divzl,
         deepatmo_divzu=deepatmo_divzu,
         k=k,
-        slev=slev,
-        elev=elev,
         ivadv_tracer=ivadv_tracer,
         ihadv_tracer=ihadv_tracer,
         itype_hlimit=itype_hlimit,
@@ -420,7 +414,7 @@ def compute_tracer_advection_before_horizontal_limiter(
         geofac_div=geofac_div,
         dbl_eps=dbl_eps,
         p_dtime=p_dtime,
-        even_timestep=even_timestep,
+        do_vertical_first=do_vertical_first,
         out=(
             rhodz_ast2,
             p_tracer_after_vertical,
