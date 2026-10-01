@@ -107,7 +107,7 @@ def test_tmx_run_wind_diffusion_single_step(
         tendency_state=tendency_state,
         new_state=new_state,
         # ICON runs tmx with the model time step (`init_tmx`), `dt_vdf` only sets how
-        # often tmx is called
+        # often tmx is computed
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
