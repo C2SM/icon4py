@@ -68,10 +68,15 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     ("date", "single_program"),
     [
-        pytest.param("2008-09-01T00:00:00.000", False, id="2008-09-01T00:00:00-separate"),
-        pytest.param("2008-09-01T00:05:00.000", False, id="2008-09-01T00:05:00-separate"),
-        pytest.param("2008-09-01T00:10:00.000", False, id="2008-09-01T00:10:00-separate"),
-        pytest.param("2008-09-01T00:00:00.000", True, id="2008-09-01T00:00:00-single"),
+        *(
+            pytest.param(d, False, id=f"{d[:19]}-separate")
+            for d in definitions.Experiments.EXCLAIM_APE_AES.dates
+        ),
+        pytest.param(
+            definitions.Experiments.EXCLAIM_APE_AES.dates[0],
+            True,
+            id=f"{definitions.Experiments.EXCLAIM_APE_AES.dates[0][:19]}-single",
+        ),
     ],
 )
 def test_muphys_granule(
