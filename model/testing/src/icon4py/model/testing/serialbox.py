@@ -2194,15 +2194,11 @@ class TmxHorWindExitSavepoint(IconSavepoint):
 class TmxVertWindExitSavepoint(IconSavepoint):
     """Savepoint at exit of Compute_diffusion_vert_wind in mo_vdf.f90."""
 
-    def wa_new(self):
-        return self._get_field("wa_new", dims.CellDim, dims.KHalfDim)
-
-
-class TmxExitSavepoint(IconSavepoint):
-    """Savepoint at exit of vdf Compute in mo_vdf.f90."""
-
     def tend_wa(self):
         return self._get_field("tend_wa", dims.CellDim, dims.KHalfDim)
+
+    def wa_new(self):
+        return self._get_field("wa_new", dims.CellDim, dims.KHalfDim)
 
 
 class IconTimeStepExitSavepoint(IconSavepoint):
@@ -2676,11 +2672,5 @@ class IconSerialDataProvider:
     def from_savepoint_tmx_vert_wind_exit(self, date: str) -> TmxVertWindExitSavepoint:
         savepoint = self.serializer.savepoint["tmx-vert-wind-exit"].id[1].date[date].as_savepoint()
         return TmxVertWindExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_tmx_exit(self, date: str) -> TmxExitSavepoint:
-        savepoint = self.serializer.savepoint["tmx-exit"].id[1].date[date].as_savepoint()
-        return TmxExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
