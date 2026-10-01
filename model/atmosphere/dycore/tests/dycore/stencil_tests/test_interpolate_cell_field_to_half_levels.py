@@ -21,7 +21,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def interpolate_cell_field_to_half_levels_vp_numpy(
-    wgtfac_c: np.ndarray, interpolant: np.ndarray
+    interpolant: np.ndarray, wgtfac_c: np.ndarray
 ) -> np.ndarray:
     nlev = interpolant.shape[1]
     interpolation_to_half_levels_vp = np.zeros((interpolant.shape[0], nlev + 1))
@@ -34,7 +34,7 @@ def interpolate_cell_field_to_half_levels_vp_numpy(
 
 
 def interpolate_cell_field_to_half_levels_wp_numpy(
-    wgtfac_c: np.ndarray, interpolant: np.ndarray
+    interpolant: np.ndarray, wgtfac_c: np.ndarray
 ) -> np.ndarray:
     nlev = interpolant.shape[1]
     interpolation_to_half_levels_wp = np.zeros((interpolant.shape[0], nlev + 1))
@@ -54,13 +54,13 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
     def reference(
         grid: base.Grid,
         *,
-        wgtfac_c: np.ndarray,
         interpolant: np.ndarray,
+        wgtfac_c: np.ndarray,
         **kwargs: Any,
     ) -> dict:
         return dict(
             out=interpolate_cell_field_to_half_levels_vp_numpy(
-                wgtfac_c=wgtfac_c, interpolant=interpolant
+                interpolant=interpolant, wgtfac_c=wgtfac_c
             )
         )
 
@@ -73,8 +73,8 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
         out = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
 
         return dict(
-            wgtfac_c=wgtfac_c,
             interpolant=interpolant,
+            wgtfac_c=wgtfac_c,
             out=out,
             domain={
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
@@ -91,13 +91,13 @@ class TestInterpolateToHalfLevelsWp(stencil_tests.StencilTest):
     def reference(
         grid: base.Grid,
         *,
-        wgtfac_c: np.ndarray,
         interpolant: np.ndarray,
+        wgtfac_c: np.ndarray,
         **kwargs: Any,
     ) -> dict:
         return dict(
             out=interpolate_cell_field_to_half_levels_wp_numpy(
-                wgtfac_c=wgtfac_c, interpolant=interpolant
+                interpolant=interpolant, wgtfac_c=wgtfac_c
             )
         )
 
@@ -110,8 +110,8 @@ class TestInterpolateToHalfLevelsWp(stencil_tests.StencilTest):
         out = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
 
         return dict(
-            wgtfac_c=wgtfac_c,
             interpolant=interpolant,
+            wgtfac_c=wgtfac_c,
             out=out,
             domain={
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),

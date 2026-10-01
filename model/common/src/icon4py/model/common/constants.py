@@ -110,6 +110,10 @@ LATENT_HEAT_FOR_SUBLIMATION_INVARIANT: Final[ta.wpfloat] = (
     LATENT_HEAT_FOR_SUBLIMATION - (CPV - SPECIFIC_HEAT_CAPACITY_ICE) * MELTING_TEMPERATURE
 )
 
+#: von Karman constant, ckap in ICON.
+VON_KARMAN_CONSTANT: Final[ta.wpfloat] = 0.4
+CKAP: Final[ta.wpfloat] = VON_KARMAN_CONSTANT
+
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
 TVMPC1: Final[ta.wpfloat] = RV_O_RD_MINUS_1
@@ -187,6 +191,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     p0ref = REFERENCE_PRESSURE
     lvc = LATENT_HEAT_FOR_VAPORISATION_INVARIANT
     lsc = LATENT_HEAT_FOR_SUBLIMATION_INVARIANT
+    von_karman = VON_KARMAN_CONSTANT
     eps = DBL_EPS
 
 

@@ -14,8 +14,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _interpolate_vt_to_interface_edges(
-    wgtfac_e: fa.EdgeKHalfField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[vpfloat],
 ) -> fa.EdgeKHalfField[vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_03."""
     wgtfac_e_wp, vt_wp = astype((wgtfac_e, vt), wpfloat)
@@ -29,8 +29,8 @@ def _interpolate_vt_to_interface_edges(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_vt_to_interface_edges(
-    wgtfac_e: fa.EdgeKHalfField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[vpfloat],
     z_vt_ie: fa.EdgeKHalfField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -38,8 +38,8 @@ def interpolate_vt_to_interface_edges(
     vertical_end: gtx.int32,
 ) -> None:
     _interpolate_vt_to_interface_edges(
-        wgtfac_e=wgtfac_e,
         vt=vt,
+        wgtfac_e=wgtfac_e,
         out=z_vt_ie,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

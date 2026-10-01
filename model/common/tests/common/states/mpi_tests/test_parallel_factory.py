@@ -9,14 +9,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import numpy as np
 import pytest
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.states import factory
+from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
 
@@ -76,7 +75,7 @@ def test_program_provider_exchange(
         data_={},
         backend=backend,
         grid=grid,
-    ).with_metadata({"out": {"dtype": np.int32, "standard_name": "out", "units": ""}})
+    ).with_metadata({"out": model.FieldMetaData(standard_name="out", units="", dtype=gtx.int32)})
     source._exchange = exchange
     edge_domain = h_grid.domain(dims.EdgeDim)
     provider = factory.ProgramFieldProvider(

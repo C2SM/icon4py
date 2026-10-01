@@ -25,7 +25,7 @@ from .utils import download_test_data
 
 
 _T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
-_MINI = utils.MuphysExperiment(name="mini", type=utils.ExperimentType.FULL_MUPHYS)
+_MINI = utils.MuphysExperiment(name="mini")
 
 
 class _FullDomainGrid:

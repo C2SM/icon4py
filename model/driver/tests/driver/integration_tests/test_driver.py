@@ -141,7 +141,7 @@ def test_driver(
     after the dynamics, which the driver does not (see the comment in the body).
     Per-field tolerances live in ``_TOLERANCES``.
 
-    muphys (EXCLAIM_APE_AES): runs ``MuphysScheme.AES_GRAUPEL`` -- the port of the exact
+    muphys (EXCLAIM_APE_AES): runs the aes-graupel scheme -- the port of the exact
     ICON formulation that generated the reference. Graupel is the only *physics*
     parameterization active, so vn/w/rho/exner/theta_v compare tightly; the tracer
     comparison carries residuals from gaps not yet ported:
@@ -173,7 +173,7 @@ def test_driver(
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_experiment_config_from_fortran(config_file_path)
+    config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "ci_driver_output",

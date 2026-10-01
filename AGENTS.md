@@ -25,10 +25,10 @@ model/
   driver/               # icon4py.model.driver
   testing/              # icon4py.model.testing ← pytest plugin, fixtures, serialbox helpers
 tools/                  # icon4py.tools ← Fortran integration (py2fgen CLI), independent of model
-bindings/               # icon4py.bindings ← Fortran wrappers for diffusion/dycore/muphys, depends on tools.py2fgen
+bindings/               # icon4py.bindings ← Fortran wrappers for diffusion/dycore, depends on tools.py2fgen
 ```
 
-Tach enforces the dependency graph in `tach.toml`. All model atmosphere packages and driver depend only on `common`. Driver depends on diffusion + dycore + common + testing. Tools is independent. Bindings depends on diffusion + dycore + muphys + common + tools.py2fgen.
+Tach enforces the dependency graph in `tach.toml`. All model atmosphere packages and driver depend only on `common`. Driver depends on diffusion + dycore + common + testing. Tools is independent. Bindings depends on diffusion + dycore + common + tools.py2fgen.
 
 **Always run `uv sync` from the repo root.** Running it from a subpackage only installs that package's deps.
 

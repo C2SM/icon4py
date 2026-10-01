@@ -1181,8 +1181,7 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-sdist = {url = "https://files.pythonhosted.org/packages/76/34/a6e66f329ea94167c1c0da89dfaf053b1d90836ccab7161176dd12f10f9e/dace-2.0.0a9.tar.gz", hash = "sha256:ee9cd2a40c16fb09d559556433bb4f51b71fa88760fbc04306d54552775b5c4a", size = 6572070, upload-time = "2026-09-17T09:31:23.155Z"}
-source = {registry = "https://pypi.org/simple"}
+source = {git = "https://github.com/spcl/dace.git?branch=nested-sdfg#8954b7eb036d6c8dee8bb1c2e961dc2d1a3d729c"}
 version = "2.0.0a9"
 
 [[package]]
@@ -1661,8 +1660,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/GridTools/gt4py?branch=main#510b09960da573696cfa24a380f9020781626e84"}
-version = "1.2.2.post25+510b0996"
+source = {git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg#2502a1841c336ce5767f20984041b822f0f258d1"}
+version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
 cuda12 = [
@@ -1796,6 +1795,7 @@ dev = [
   {name = "bump-my-version"},
   {name = "coverage"},
   {name = "esbonio"},
+  {name = "f90nml"},
   {name = "icon4py-testing"},
   {name = "mypy", extra = ["faster-cache"]},
   {name = "myst-parser"},
@@ -1859,6 +1859,7 @@ scripts = [
 ]
 test = [
   {name = "coverage"},
+  {name = "f90nml"},
   {name = "icon4py-testing"},
   {name = "nox"},
   {name = "pytest"},
@@ -1917,6 +1918,7 @@ dev = [
   {name = "bump-my-version", specifier = ">=0.16.0"},
   {name = "coverage", extras = ["toml"], specifier = ">=7.5.0"},
   {name = "esbonio", specifier = ">=0.16.0"},
+  {name = "f90nml", specifier = ">=1.5"},
   {name = "icon4py-testing", editable = "model/testing"},
   {name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0"},
   {name = "myst-parser", specifier = ">=4.0.0"},
@@ -1980,6 +1982,7 @@ scripts = [
 ]
 test = [
   {name = "coverage", extras = ["toml"], specifier = ">=7.5.0"},
+  {name = "f90nml", specifier = ">=1.5"},
   {name = "icon4py-testing", editable = "model/testing"},
   {name = "nox", specifier = ">=2025.5.1"},
   {name = "pytest", specifier = ">=8.0.1"},
@@ -2047,7 +2050,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2064,7 +2067,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2081,7 +2084,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2099,7 +2102,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
@@ -2107,6 +2110,7 @@ requires-dist = [
 
 [[package]]
 dependencies = [
+  {name = "gt4py"},
   {name = "icon4py-common"},
   {name = "packaging"}
 ]
@@ -2116,6 +2120,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2132,7 +2137,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2149,7 +2154,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2161,7 +2166,6 @@ dependencies = [
   {name = "gt4py"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
-  {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-common", extra = ["distributed"]},
   {name = "icon4py-tools"},
   {name = "numpy"},
@@ -2178,12 +2182,11 @@ requires-dist = [
   {name = "click", specifier = ">=8.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=main"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
-  {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
   {name = "icon4py-common", extras = ["distributed"], editable = "model/common"},
   {name = "icon4py-tools", editable = "tools"},
   {name = "numpy", specifier = ">=1.23.3"},
@@ -2230,10 +2233,10 @@ requires-dist = [
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=main"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=main"},
-  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
+  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0"},
   {name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common"},
   {name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5"},
@@ -2305,6 +2308,7 @@ dependencies = [
   {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-atmosphere-physics-driver"},
+  {name = "icon4py-atmosphere-tmx"},
   {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common", extra = ["io"]},
   {name = "packaging"},
@@ -2317,12 +2321,13 @@ version = "0.4.1"
 [package.metadata]
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
   {name = "icon4py-atmosphere-physics-driver", editable = "model/atmosphere/subgrid_scale_physics/physics_driver"},
+  {name = "icon4py-atmosphere-tmx", editable = "model/atmosphere/subgrid_scale_physics/tmx"},
   {name = "icon4py-atmosphere-tracer-advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"},
@@ -2348,7 +2353,7 @@ version = "0.4.1"
 [package.metadata]
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "icon4py-driver", editable = "model/driver"},
   {name = "numpy", specifier = ">=1.23.3"},
@@ -2381,7 +2386,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.1.7"},
   {name = "configargparse", specifier = ">=1.7.1"},
   {name = "fprettify", specifier = ">=0.3.7"},
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_noview_nested_sdfg"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},

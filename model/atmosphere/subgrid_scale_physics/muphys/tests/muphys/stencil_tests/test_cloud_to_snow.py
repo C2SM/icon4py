@@ -31,7 +31,14 @@ class TestCloudToSnow(stencil_tests.StencilTest):
         lam: np.ndarray,
         **kwargs,
     ) -> dict:
-        return dict(riming_snow_rate=np.full(t.shape, 9.5431874564438999e-10))
+        # mirrors ICON mo_aes_graupel.f90 cloud_to_snow (riming tuning factor 3.0)
+        c_rim = 2.61 * 0.9 * 25.0 * 3.0
+        rate = np.where(
+            (np.minimum(qc, qs) > 1.0e-15) & (t > 236.15),
+            c_rim * ns * qc * lam ** (-3.5),
+            0.0,
+        )
+        return dict(riming_snow_rate=rate)
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
