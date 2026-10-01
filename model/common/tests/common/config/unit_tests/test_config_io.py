@@ -178,7 +178,8 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
         pytest.param(
             "single: 0.8500000238418579\ndouble: 0.85\n",
             NumpyFloatConfig,
-            NumpyFloatConfig(np.float32(0.85), np.float64(0.85)),
+            # the gt4py mypy plugin turns the np.float32 annotation into float
+            NumpyFloatConfig(np.float32(0.85), np.float64(0.85)),  # type: ignore[arg-type]
             id="numpy-floats",
         ),
         pytest.param(
