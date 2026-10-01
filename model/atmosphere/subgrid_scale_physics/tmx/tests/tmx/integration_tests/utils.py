@@ -18,8 +18,7 @@ import gt4py.next as gtx
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics import metric_fields
-from icon4py.model.testing import definitions
-from icon4py.model.testing import test_utils
+from icon4py.model.testing import definitions, test_utils
 
 
 if TYPE_CHECKING:
