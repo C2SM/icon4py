@@ -291,7 +291,8 @@ class GodunovSplittingAdvection(Advection):
         _before_limiter_vertical_args = {
             key: val
             for key, val in shared_vertical_args.items()
-            if key not in ("p_cellhgt_mc_now", "k_half", "slevp1_ti", "itype_vlimit")
+            if key
+            not in ("p_cellhgt_mc_now", "k_half", "slev", "slevp1_ti", "elev", "itype_vlimit")
         }
         self._compute_before_horizontal_limiter = setup_program(
             backend=self._backend,
