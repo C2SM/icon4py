@@ -23,14 +23,14 @@ from icon4py.model.common.interpolation.stencils.compute_tangential_wind import 
     _compute_tangential_wind_on_half_levels,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_edge import (
-    _interpolate_cell_field_to_edge_on_half_levels,
+    _interpolate_cell_field_to_edge_on_half_levels_wp,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_with_boundaries,
     _interpolate_cell_field_to_half_levels_wp,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_vertex import (
-    _interpolate_cell_field_to_vertex,
+    _interpolate_cell_field_to_vertex_wp,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels import (
     _interpolate_edge_field_to_half_levels_with_boundaries,
@@ -48,8 +48,8 @@ from icon4py.model.common.math.tensor_operations import (
     twice_symmetric_part_on_edges,
 )
 from icon4py.model.common.math.vertical_operations import (
-    average_level_plus1_on_cells,
-    with_boundaries_on_half_levels_on_cells,
+    average_level_plus1_on_cells_wp,
+    with_boundaries_on_half_levels_on_cells_wp,
 )
 from icon4py.model.common.physics.compute_brunt_vaisala_frequency import (
     _compute_brunt_vaisala_frequency,
@@ -310,7 +310,7 @@ def _interpolate_wind_to_vertices(
     Note that ``w`` lives on half levels and ``vn`` on full levels, so the
     three outputs do not share a vertical domain.
     """
-    w_vert = _interpolate_cell_field_to_vertex(w, cells_aw_verts)
+    w_vert = _interpolate_cell_field_to_vertex_wp(w, cells_aw_verts)
     u_vert, v_vert = _mo_intp_rbf_rbf_vec_interpol_vertex(
         p_e_in=vn, ptr_coeff_1=rbf_coeff_v1, ptr_coeff_2=rbf_coeff_v2
     )
@@ -508,7 +508,7 @@ def _compute_edge_shear_diagnostics(
         vertical velocity, normal and tangential velocity at half-level edges,
         and shear and divergence of the stress at full-level edges
     """
-    w_ie = _interpolate_cell_field_to_edge_on_half_levels(w, c_lin_e)
+    w_ie = _interpolate_cell_field_to_edge_on_half_levels_wp(w, c_lin_e)
     vn_ie = _interpolate_edge_field_to_half_levels_with_boundaries(
         interpolant=vn,
         wgtfac_e=wgtfac_e,
@@ -700,7 +700,7 @@ def _compute_eddy_viscosity(
             )
 
         km = rho_ic * mixing_length_sq * stability_term
-    km_ic = with_boundaries_on_half_levels_on_cells(
+    km_ic = with_boundaries_on_half_levels_on_cells_wp(
         top=km(dims.KHalfDim + 1), interior=km, bottom=km(dims.KHalfDim - 1), nlev=nlev
     )
     kh_ic = km_ic * rturb_prandtl
@@ -974,9 +974,9 @@ def _interpolate_km(
     domain only.
     """
     return (
-        maximum(km_min, average_level_plus1_on_cells(km_ic)),
-        maximum(km_min, _interpolate_cell_field_to_vertex(km_ic, cells_aw_verts)),
-        maximum(km_min, _interpolate_cell_field_to_edge_on_half_levels(km_ic, c_lin_e)),
+        maximum(km_min, average_level_plus1_on_cells_wp(km_ic)),
+        maximum(km_min, _interpolate_cell_field_to_vertex_wp(km_ic, cells_aw_verts)),
+        maximum(km_min, _interpolate_cell_field_to_edge_on_half_levels_wp(km_ic, c_lin_e)),
     )
 
 

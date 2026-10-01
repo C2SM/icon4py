@@ -40,6 +40,24 @@ def average_level_plus1_on_cells(
 
 
 @gtx.field_operator
+def average_level_plus1_on_cells_wp(
+    half_level_field: fa.CellKHalfField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    """
+    Calculate the mean value of adjacent interface levels.
+
+    Computes the average of two adjacent interface levels upwards over a cell field for storage
+    in the corresponding full levels.
+    Args:
+        half_level_field: fa.CellKHalfField[wpfloat]
+
+    Returns: fa.CellKField[wpfloat] full level field
+
+    """
+    return wpfloat("0.5") * (half_level_field(dims.KDim - 0.5) + half_level_field(dims.KDim + 0.5))
+
+
+@gtx.field_operator
 def average_level_plus1_on_edges(
     half_level_field: fa.EdgeKHalfField[gtx.float64],
 ) -> fa.EdgeKField[gtx.float64]:
@@ -122,8 +140,8 @@ def with_boundaries_on_half_levels_on_edges(
     bottom: fa.EdgeKHalfField[wpfloat],
     nlev: gtx.int32,
 ) -> fa.EdgeKHalfField[wpfloat]:
-    """Edge counterpart of :func:`with_boundaries_on_half_levels_on_cells`."""
-    # TODO(havogt): one-sided masks, see `with_boundaries_on_half_levels_on_cells`.
+    """Edge counterpart of :func:`with_boundaries_on_half_levels_on_cells_wp`."""
+    # TODO(havogt): one-sided masks, see `with_boundaries_on_half_levels_on_cells_wp`.
     return concat_where(
         dims.KHalfDim < 1, top, concat_where(dims.KHalfDim >= nlev, bottom, interior)
     )

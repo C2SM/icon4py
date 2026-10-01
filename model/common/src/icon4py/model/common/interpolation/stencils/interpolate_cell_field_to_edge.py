@@ -10,6 +10,7 @@ from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -33,6 +34,14 @@ def _interpolate_cell_field_to_edge_on_half_levels(
     in_field: fa.CellKHalfField[gtx.float64],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
 ) -> fa.EdgeKHalfField[gtx.float64]:
+    return neighbor_sum(in_field(E2C) * coeff, axis=dims.E2CDim)
+
+
+@gtx.field_operator
+def _interpolate_cell_field_to_edge_on_half_levels_wp(
+    in_field: fa.CellKHalfField[wpfloat],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+) -> fa.EdgeKHalfField[wpfloat]:
     return neighbor_sum(in_field(E2C) * coeff, axis=dims.E2CDim)
 
 
