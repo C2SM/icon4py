@@ -60,6 +60,7 @@ if TYPE_CHECKING:
 #     1.0 and not set in the experiment, hence a no-op here).
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "experiment_description",
@@ -97,11 +98,12 @@ def test_muphys_granule(
     jks = init_savepoint.jks_cloudy() - 1
     # Measured max deviations against ICON (gtfn_cpu): tracers 1.9e-16, temperature
     # 2.8e-13. The tolerances leave ~500x / ~350x headroom for other backends.
-    tracer_atol = 1e-13
-    temperature_atol = 1e-10
+    tracer_atol = 1e-13 if test_utils.wp_is_dp else 8e-7
+    temperature_atol = 1e-10 if test_utils.wp_is_dp else 0.004
+
     # tendencies are (state difference)/dt, so their tolerances scale with 1/dt
     tracer_tend_atol = tracer_atol / dtime
-    temperature_tend_atol = temperature_atol / dtime
+    temperature_tend_atol = temperature_atol / dtime if test_utils.wp_is_dp else 1e-7
 
     muphys_configuration = muphys_config.MuphysConfig()
     state = {
@@ -232,7 +234,10 @@ def test_muphys_granule(
     energy_flux = outputs["pre"].asnumpy()[:, -1]
 
     test_utils.assert_dallclose(
-        rain, exit_savepoint.rsfl().asnumpy(), atol=1e-10, err_msg="rsfl (rain)"
+        rain,
+        exit_savepoint.rsfl().asnumpy(),
+        atol=1e-10 if test_utils.wp_is_dp else 9e-8,
+        err_msg="rsfl (rain)",
     )
     test_utils.assert_dallclose(
         ice + snow + graupel,
@@ -243,10 +248,13 @@ def test_muphys_granule(
     test_utils.assert_dallclose(
         rain + ice + snow + graupel,
         exit_savepoint.pr().asnumpy(),
-        atol=1e-10,
+        atol=1e-10 if test_utils.wp_is_dp else 9e-8,
         err_msg="pr (total precipitation)",
     )
     # ufcs is a large-magnitude flux whose error scales with it: check relative error only
     test_utils.assert_dallclose(
-        energy_flux, exit_savepoint.ufcs().asnumpy(), rtol=1e-12, err_msg="ufcs (energy flux)"
+        energy_flux,
+        exit_savepoint.ufcs().asnumpy(),
+        rtol=1e-12 if test_utils.wp_is_dp else 5e-4,
+        err_msg="ufcs (energy flux)",
     )

@@ -33,10 +33,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 class VerticalCflConstants(ta.wpfloat, enum.Enum):
     #: w is clipped and extra diffusion is applied above this vertical CFL number
-    W_LIMIT = 0.65
+    W_LIMIT = ta.wpfloat(0.65)
     #: w is clipped to this vertical CFL number
-    W_MAX = 0.85
-    EXTRA_DIFFUSION_SCALING = 0.05 / (W_MAX - W_LIMIT)
+    W_MAX = ta.wpfloat(0.85)
+    EXTRA_DIFFUSION_SCALING = ta.wpfloat(0.05) / (W_MAX - W_LIMIT)
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)

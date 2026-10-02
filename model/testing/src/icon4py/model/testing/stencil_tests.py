@@ -71,12 +71,12 @@ _REQUIRED_MEMBERS: Final = (
     ("input_data", _INPUT_DATA_FIXTURE_MARKER, "input_data_fixture"),
 )
 
-# TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 1e-6 to
+# TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 3e-6 to
 # cover floating point discrepancies observed in CI tests. Failing CI can be found in
 # https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/5125340235196978/2255149825504673/-/pipelines/2184694383
 # from PR#861. Reason is probably derivatives of random data. Investigate and lower the
 # tolerance back to 1e-7 if possible.
-_RELATIVE_TOLERANCE: Final = 3e-6
+_RELATIVE_TOLERANCE: Final = test_utils.scale_tol(3e-6)
 
 
 def _validate_signature(

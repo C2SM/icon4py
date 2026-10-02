@@ -19,7 +19,30 @@ import numpy.typing as npt
 import pytest
 
 from icon4py.model.common import model_options
+from icon4py.model.common.constants import DP_EPS, VP_EPS
+from icon4py.model.common.type_alias import anyfloat, precision, vpfloat
 from icon4py.model.testing import config
+
+
+wp_is_dp = precision == "double"
+
+if wp_is_dp:
+
+    def scale_tol(x: anyfloat) -> anyfloat:
+        """identity for double-precision"""
+        return x
+else:
+    _scale_const = np.log2(VP_EPS) / np.log2(DP_EPS)
+
+    def scale_tol(x: anyfloat) -> anyfloat:
+        """scale relative factors according to the reduced range
+
+        Maps 1->1, \\epsilon_d->\\epsilon_s"""
+        return np.exp(_scale_const * np.log(x))
+
+
+# standard tolerance for dallclose
+STD_RTOL = scale_tol(5e3) * VP_EPS  # for double ≈ 1.11e-12
 
 
 def _max_diffs(actual: np.ndarray, desired: np.ndarray) -> tuple[float, float]:
@@ -68,8 +91,8 @@ def dallclose(
     a: npt.ArrayLike,
     b: npt.ArrayLike,
     *,
-    rtol: float = 1.0e-12,
-    atol: float = 0.0,
+    rtol: vpfloat = STD_RTOL,  # for double ≈ 1.11e-12
+    atol: vpfloat = 0.0,
     equal_nan: bool = False,
 ) -> bool:
     """
@@ -82,8 +105,8 @@ def assert_dallclose(
     actual: npt.ArrayLike,
     desired: npt.ArrayLike,
     *,
-    rtol: float = 1.0e-12,
-    atol: float = 0.0,
+    rtol: vpfloat = STD_RTOL,  # for double ≈ 1.11e-12
+    atol: vpfloat = 0.0,
     equal_nan: bool = False,
     err_msg: str = "",
     verbose: bool = True,

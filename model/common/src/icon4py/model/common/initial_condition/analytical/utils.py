@@ -8,7 +8,7 @@
 
 import math
 
-from icon4py.model.common import constants as phy_const, dimension as dims
+from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -224,7 +224,7 @@ def init_w(
         num_cells=grid.num_cells,
     )
 
-    w = array_ns.zeros((grid.num_cells, nlev + 1))
+    w = array_ns.zeros((grid.num_cells, nlev + 1), dtype=ta.wpfloat)
     w[lb_c:ub_c, nlev] = z_wsfc_c[lb_c:ub_c]
     w[lb_c:ub_c, 1:] = z_wsfc_c[lb_c:ub_c, array_ns.newaxis] * vct_b[array_ns.newaxis, 1:]
 
@@ -343,8 +343,8 @@ def init_bubble(
             # ICON's plane_torus_distance does not actually wrap the warm bubble (its
             # periodic threshold is never met), so the distance is non-periodic here.
             horizontal_distance = distance_array_ns.horizontal_distance_to_point(
-                x=geometry.get(geometry_meta.CELL_CENTER_X).ndarray,
-                y=geometry.get(geometry_meta.CELL_CENTER_Y).ndarray,
+                x=geometry.get_full_precision(geometry_meta.CELL_CENTER_X).ndarray,
+                y=geometry.get_full_precision(geometry_meta.CELL_CENTER_Y).ndarray,
                 point_x=center_x,
                 point_y=center_y,
                 wrap=False,
@@ -353,8 +353,8 @@ def init_bubble(
             horizontal_distance = phy_const.EARTH_RADIUS * distance_array_ns.central_angle(
                 lon_center=math.radians(center_x),
                 lat_center=math.radians(center_y),
-                lon=geometry.get(geometry_meta.CELL_LON).ndarray,
-                lat=geometry.get(geometry_meta.CELL_LAT).ndarray,
+                lon=geometry.get_full_precision(geometry_meta.CELL_LON).ndarray,
+                lat=geometry.get_full_precision(geometry_meta.CELL_LAT).ndarray,
             )
         case _:
             raise NotImplementedError(
