@@ -9,8 +9,9 @@
 """Integration test of the tmx energy update component.
 
 Constructs the component from the serialized ICON state (exp.exclaim_ape_aesPhys), with the
-diffused state taken from the tmx-hydro-exit, tmx-temperature-exit and tmx-hor-wind-exit
-savepoints, and verifies one call of `run` against the tmx-exit savepoint.
+diagnostics taken from the tmx-diagnostics-exit savepoint and the diffused state from the
+tmx-hydro-exit, tmx-temperature-exit and tmx-hor-wind-exit savepoints, and verifies one call
+of `run` against the tmx-exit savepoint.
 """
 
 from __future__ import annotations
