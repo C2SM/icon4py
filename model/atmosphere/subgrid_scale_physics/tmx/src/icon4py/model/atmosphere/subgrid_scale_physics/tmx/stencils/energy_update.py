@@ -165,7 +165,7 @@ def update_temperature_and_compute_end_of_step_diagnostics(
 ) -> None:
     """
     Update the temperature with the dissipation heating and compute the end-of-step
-    diagnostics.
+    diagnostics on the full column.
 
     `tend_temperature` is updated in place. `km` and `kh` are written above the lowest level
     only; the lowest level is the surface exchange coefficient.
