@@ -10,11 +10,13 @@
 Tests of the arguments from ComIn's descriptive data ('_descrdata.py'): every route against the
 argument ICON's py2fgen interface passes ('mo_icon4py_interfaces.f90', the first block of the
 patch's arrays), on descriptive data laid out as ComIn's Python adapter hands it out (read-only
-Fortran-order memoryviews with the block axis), plus the copies, the checks and the
-communicator comparison.
+Fortran-order memoryviews with the block axis), plus the copies, the checks, the communicator
+comparison, and the arguments end to end through the plugin (against the fake ComIn of
+'test_comin_plugin.py').
 """
 
 import functools
+import re
 import subprocess
 import sys
 import types
@@ -24,11 +26,19 @@ import numpy as np
 import pytest
 from gt4py import next as gtx
 
-from icon4py.bindings import diffusion_wrapper, grid_wrapper
-from icon4py.bindings.comin import _descrdata, _dual, _marshal
+from icon4py.bindings import diffusion_wrapper, grid_wrapper, icon4py_export
+from icon4py.bindings.comin import _arguments, _descrdata, _dual, _views, plugin
+from icon4py.model.common import dimension as dims
 from icon4py.tools import py2fgen
 
-from .test_comin_marshal import cupy_or_skip
+from .test_comin_plugin import (  # fixtures: icon_run_dir, logs, restore_package_logger, wrappers
+    FakeComIn,
+    cupy_or_skip,
+    icon_run_dir,
+    logs,
+    restore_package_logger,
+    wrappers,
+)
 
 
 NPROMA, NC, NE, NV, NLEV = 8, 5, 7, 4, 3
@@ -297,8 +307,8 @@ def test_descriptive_data_is_checked():
     assert data.checked
 
 
-def signature(name: str) -> dict[str, _marshal.ArrayParam]:
-    return {a.name: a for a in _marshal.signature(name, REAL[name]).arrays}
+def signature(name: str) -> dict[str, _arguments.ArrayParam]:
+    return {a.name: a for a in _arguments.signature(name, REAL[name]).arrays}
 
 
 def check_argument(data, xp, name, param):
@@ -393,12 +403,6 @@ def test_owner_masks():
         assert mask[0] and not mask[COUNTS[kind] :].any()
 
 
-def test_domain_value_for_the_probe():
-    icon = Icon()
-    value = _descrdata.domain_value("grid_init", "c2e")(icon.domain)
-    assert np.array_equal(value, icon.a("cells", "edge_idx")[:, 0, :])
-
-
 # ---- the communicator --------------------------------------------------------------------------
 
 
@@ -486,3 +490,149 @@ def test_communicators_differ(monkeypatch, new, relation, identical):
     a, b = _descrdata.communicators(7, 8)
     assert a.relation == relation and a.members == new and b.members == (0, 1)
     assert _dual.compare(a, b).identical == identical
+
+
+# ---- the arguments from the descriptive data, end to end through the plugin -------------------
+
+CALLS: list[dict] = []
+
+
+@icon4py_export.export
+def toy_grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
+    c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
+    c_owner_mask: grid_wrapper.NumpyBoolArray1D,
+    e_owner_mask: grid_wrapper.NumpyBoolArray1D,
+    v_owner_mask: grid_wrapper.NumpyBoolArray1D,
+    cell_areas: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    comm_id: gtx.int32,
+    num_cells: gtx.int32,
+) -> None:
+    CALLS.append(
+        dict(
+            c_owner_mask=c_owner_mask.copy(),
+            e_owner_mask=e_owner_mask.copy(),
+            v_owner_mask=v_owner_mask.copy(),
+            c2e=c2e,
+            cell_areas=cell_areas,
+            comm_id=comm_id,
+            num_cells=num_cells,
+        )
+    )
+
+
+@icon4py_export.export
+def toy_diffusion_run(dtime: gtx.float64) -> None:
+    pass
+
+
+TOY_FUNCTIONS = {
+    "grid_init": plugin.FunctionEntry(toy_grid_init, "EP_ATM_TIMELOOP_BEFORE", inout=False),
+    "diffusion_run": plugin.FunctionEntry(
+        toy_diffusion_run, "EP_ATM_DYCORE_DIFFUSION_BEFORE", inout=True
+    ),
+}
+TOY_SOURCES = {
+    "grid_init": {p: plugin.SOURCES["grid_init"][p] for p in toy_grid_init.param_descriptors},
+    "diffusion_run": {"dtime": _dual.Source("B")},
+}
+
+# ICON's decomposition on one PE: decomp_domain is the halo level (0 = owned), -1 on the
+# padding; ICON's owner masks, which py2fgen gets, are decomp_domain == 0
+DECOMP = {
+    "cells": np.array([0, 0, 0, 1, 2, -1, -1, -1], dtype=np.int32),
+    "edges": np.array([0, 0, 0, 0, 0, 2, 2, -1], dtype=np.int32),
+    "verts": np.array([0, 0, 2, 2, -1, -1, -1, -1], dtype=np.int32),
+}
+
+
+class DomainComIn(FakeComIn):
+    """FakeComIn with the descriptive data of domain 1 (host arrays, nblks == 1) and an MPI
+    host communicator (a duplicate of MPI_COMM_WORLD, so CONGRUENT to it)."""
+
+    def __init__(self, nblks: int = 1, **kwargs):
+        super().__init__(**kwargs)
+        edge_idx = np.asfortranarray(
+            np.arange(1, NPROMA * 3 + 1, dtype=np.int32).reshape(NPROMA, 1, 3)
+        )
+        area = np.asfortranarray(np.linspace(1.0, 2.0, NPROMA).reshape(NPROMA, 1))
+        ns = types.SimpleNamespace
+        self.domain = ns(
+            id=1,
+            nlev=3,
+            cells=ns(
+                decomp_domain=memoryview(DECOMP["cells"].reshape(NPROMA, 1)),
+                ncells=NC,
+                nblks=nblks,
+                edge_idx=memoryview(edge_idx),
+                area=memoryview(area),
+            ),
+            edges=ns(
+                decomp_domain=memoryview(DECOMP["edges"].reshape(NPROMA, 1)), nedges=NE, nblks=1
+            ),
+            verts=ns(
+                decomp_domain=memoryview(DECOMP["verts"].reshape(NPROMA, 1)), nverts=NV, nblks=1
+            ),
+        )
+        self.host_comm: int | None = None
+
+    def descrdata_get_global(self):
+        return types.SimpleNamespace(
+            has_device=self.has_device, lrestartrun=self.lrestartrun, n_dom=1, l_limited_area=True
+        )
+
+    def parallel_get_host_mpi_comm(self) -> int:
+        if self.host_comm is None:
+            self.host_comm = mpi_or_skip().COMM_WORLD.Dup().py2f()
+        return self.host_comm
+
+
+def toy_plugin(comin: FakeComIn) -> plugin.Plugin:
+    instance = plugin.Plugin(comin, functions=TOY_FUNCTIONS, environ={}, sources=TOY_SOURCES)
+    instance.register()
+    comin.fire("EP_SECONDARY_CONSTRUCTOR")
+    return instance
+
+
+@pytest.fixture
+def toy_calls():
+    CALLS.clear()
+    yield CALLS
+    CALLS.clear()
+
+
+def test_descriptive_data_end_to_end(toy_calls, wrappers, logs):
+    comin = DomainComIn()
+    assert toy_plugin(comin).active
+    comin.fire("EP_ATM_TIMELOOP_BEFORE")
+    assert any(m.startswith("descriptive data: n_dom 1, domain 1, nblks 1") for m in logs.messages)
+    assert any(
+        re.fullmatch(
+            r"grid_init: 7 arguments from ComIn's descriptive data \(host copies \d+\.\d\d MiB,"
+            r" a fresh copy per pass\)",
+            m,
+        )
+        for m in logs.messages
+    )
+    # the granule gets the plugin's copies, never ICON's descriptive data
+    (call,) = toy_calls
+    edge_idx = np.asarray(comin.domain.cells.edge_idx)
+    c2e = call["c2e"]
+    assert np.array_equal(c2e.ndarray, edge_idx[:, 0, :])
+    assert c2e.ndarray.flags.f_contiguous and not np.shares_memory(c2e.ndarray, edge_idx)
+    assert np.array_equal(call["cell_areas"].ndarray, np.asarray(comin.domain.cells.area)[:, 0])
+    for x, kind in (("c", "cells"), ("e", "edges"), ("v", "verts")):
+        assert list(call[f"{x}_owner_mask"]) == [d == 0 for d in DECOMP[kind]]
+    assert call["comm_id"] == comin.host_comm and call["num_cells"] == NC
+    # pass 2: a fresh copy
+    comin.fire("EP_ATM_TIMELOOP_BEFORE")
+    assert not np.shares_memory(toy_calls[1]["c2e"].ndarray, c2e.ndarray)
+    assert _views.data_ptr(toy_calls[1]["c2e"].ndarray) != _views.data_ptr(c2e.ndarray)
+    assert "grid_init done (pass 2)." in logs.messages
+
+
+def test_descriptive_data_needs_one_block(toy_calls, wrappers, logs):
+    comin = DomainComIn(nblks=2)
+    toy_plugin(comin)
+    with pytest.raises(RuntimeError, match=r"cells.nblks is 2, expected 1"):
+        comin.fire("EP_ATM_TIMELOOP_BEFORE")
+    assert toy_calls == []

@@ -20,24 +20,35 @@ communicator reads, then broadcasts) and takes from it
   namelist entry that icon4py's own configuration reads for it (the 'IconOption's of
   'DiffusionConfig', the keys of 'VerticalGridConfig.from_fortran_dict'), with ICON's effective
   value where it differs from the namelist: ICON uses 5 times 'nudge_max_coeff' (its reader
-  scales it), and 'loutshs' is no namelist entry (ICON's default is true, reset to false
-  without dynamics);
+  scales it); 'loutshs' is an entry of 'turbdiff_nml' in EXCLAIM's ICON, and where ICON does
+  not write it, the plugin takes ICON's default (true; false without dynamics);
 - ICON's condition for the extra diffusion call before the first dynamics step ('InitialCall'),
   against which the plugin checks the initial-call flag it derives from the entry points.
 
 The reader ('parse') understands the list-directed namelist output of ICON's compilers:
-'&GROUP' ... '/', 'KEY = value,' with arrays continued on the following lines, repeat counts
-'r*value', logicals 'T'/'F' (also '.TRUE.'/'.FALSE.'), integers, reals in E, F or D format
-(read with 'float', so a value written with 17 significant digits reads back bit for bit;
-nvfortran writes 16 in F format, which is exact for values from short namelist literals),
-and quoted strings. A group may occur more than once (e.g. 'output_nml'). Names are
-lower-cased, as f90nml does.
+'&GROUP' ... '/' (or '&END'), 'KEY = value,' with arrays continued on the following lines,
+repeat counts 'r*value', logicals 'T'/'F' (also '.TRUE.'/'.FALSE.'), integers, reals in E, F
+or D format (also with a three-digit exponent and no letter, '0.1-100'), and quoted strings. A
+group may occur more than once (e.g. 'output_nml'). Names are lower-cased, as f90nml does.
+The reader is lenient, so that the plugin does not depend on groups it does not read: a value
+it cannot read (e.g. a complex number) is kept as 'Unreadable', and a group it cannot read
+(e.g. an unclosed one) is skipped up to the next group and kept as a problem; both raise only
+when the plugin asks for that value or group ('Namelists.problems' lists them).
+
+Precision: reals are read with 'float', so a value written with 17 significant digits reads
+back bit for bit. nvfortran writes 16 in F format (its form for magnitudes from 0.1), which is
+exact for a value that is the nearest double to a decimal of at most 15 significant digits
+(every namelist literal and every default written as one), but may be one unit in the last
+place off for another value. The reader marks the reals written with 16 significant digits
+whose value is no shorter decimal ('Namelists.maybe_inexact'); a value ICON computed that lies
+within half a unit of the 16th digit of a shorter decimal cannot be told from the text.
 
 Known limitation: ICON perturbs 'a_hshr' in ensemble runs after writing the file (and again
 during the run with time-dependent perturbations); the namelist value is the unperturbed one.
 """
 
 import dataclasses
+import math
 import os
 import pathlib
 import re
@@ -47,7 +58,14 @@ from typing import Any, Final
 from icon4py.model.common.utils import fortran_config
 
 
-Value = bool | int | float | str | None
+@dataclasses.dataclass(frozen=True)
+class Unreadable:
+    """A value the reader cannot read (kept, so that only a use of it fails)."""
+
+    text: str
+
+
+Value = bool | int | float | str | Unreadable | None
 """A namelist value; 'None' is a null value ('r*' without a value)."""
 
 NAMELIST_FILE: Final = fortran_config.NAMELIST_ATM_FNAME
@@ -76,6 +94,9 @@ _TOKEN: Final = re.compile(
     re.VERBOSE,
 )
 _INT: Final = re.compile(r"[+-]?\d+")
+_EXPONENT_WITHOUT_LETTER: Final = re.compile(r"([+-]?(?:\d+\.\d*|\.\d+|\d+))([+-]\d{3})")
+"""A real with a three-digit exponent, which Fortran's E format writes without the letter."""
+_DIGITS: Final = re.compile(r"[+-]?(\d*)\.?(\d*)")
 _TRUE: Final = frozenset({"t", ".t.", ".true.", "true"})
 _FALSE: Final = frozenset({"f", ".f.", ".false.", "false"})
 
@@ -84,7 +105,12 @@ class NamelistError(ValueError):
     pass
 
 
+class _GroupInGroup(NamelistError):
+    """A group starts inside another one: the reader resumes at the new group."""
+
+
 def _bare_value(token: str) -> Value:
+    """The value of an unquoted token; 'Unreadable' if it is none of the kinds above."""
     lower = token.lower()
     if lower in _TRUE:
         return True
@@ -92,10 +118,55 @@ def _bare_value(token: str) -> Value:
         return False
     if _INT.fullmatch(token):
         return int(token)
+    match = _EXPONENT_WITHOUT_LETTER.fullmatch(lower)
+    if match:
+        lower = f"{match.group(1)}e{match.group(2)}"
     try:
         return float(lower.replace("d", "e"))
     except ValueError:
-        raise NamelistError(f"cannot read the value {token!r}") from None
+        return Unreadable(token)
+
+
+def _mantissa_digits(text: str) -> str:
+    """The digits of a real's mantissa, without leading zeros ('0.0650' -> '650')."""
+    mantissa = re.split(r"[eEdD]|(?<=[\d.])[+-]", text.strip(), maxsplit=1)[0]
+    match = _DIGITS.match(mantissa)
+    return ((match.group(1) + match.group(2)) if match else "").lstrip("0")
+
+
+def significant_digits(text: str) -> int:
+    """The number of significant digits written in a real's text (trailing zeros count)."""
+    return len(_mantissa_digits(text))
+
+
+def maybe_inexact(text: str, value: float) -> bool:
+    """
+    Whether a real read from 'text' may differ from the value that was written: fewer than 17
+    significant digits, and the value is no decimal of at most 15 significant digits (whose
+    nearest double the 16 digits give back exactly).
+    """
+    if significant_digits(text) >= 17 or not math.isfinite(value) or value == 0.0:
+        return False
+    return len(_mantissa_digits(repr(value)).rstrip("0")) >= 16
+
+
+_GROUP_START: Final = re.compile(r"(?m)^[ \t]*&")
+"""A '&' that starts a line: where the reader resumes after a group it cannot read."""
+OUTSIDE: Final = ""
+"""The key of 'Parsed.problems' for text outside any group."""
+
+
+@dataclasses.dataclass(frozen=True)
+class Parsed:
+    """What 'parse' read: the groups, the groups it could not read, the maybe-inexact reals."""
+
+    groups: dict[str, list[dict[str, tuple[Value, ...]]]]
+    problems: dict[str, str]
+    """Per group name (OUTSIDE: text between groups): why it could not be read (the first
+    problem). Such a group is skipped up to the next one; its instances are not in 'groups'."""
+    inexact: dict[str, list[frozenset[str]]]
+    """Per group name and instance (as in 'groups'): the entries with a real written with 16
+    significant digits whose value is no shorter decimal ('maybe_inexact')."""
 
 
 class _Parser:
@@ -105,25 +176,48 @@ class _Parser:
         self.text = text
         self.pos = 0
         self.groups: dict[str, list[dict[str, tuple[Value, ...]]]] = {}
+        self.problems: dict[str, str] = {}
+        self.inexact: dict[str, list[frozenset[str]]] = {}
         self.group: list[tuple[str, list[Value]]] | None = None
         """The entries of the open group, in file order (an entry may be written twice)."""
         self.group_name = ""
+        self.group_inexact: set[str] = set()
         self.repeat: int | None = None
 
-    def fail(self, message: str) -> NamelistError:
+    def fail(self, message: str, kind: type[NamelistError] = NamelistError) -> NamelistError:
         line = self.text.count("\n", 0, self.pos) + 1
-        return NamelistError(f"{NAMELIST_FILE}, line {line}: {message}")
+        return kind(f"{NAMELIST_FILE}, line {line}: {message}")
 
-    def run(self) -> dict[str, list[dict[str, tuple[Value, ...]]]]:
+    def run(self) -> Parsed:
         while self.pos < len(self.text):
-            match = _TOKEN.match(self.text, self.pos)
-            if match is None:
-                raise self.fail(f"cannot read {self.text[self.pos : self.pos + 20]!r}")
-            getattr(self, f"on_{match.lastgroup}")(match)
-            self.pos = match.end()
+            try:
+                match = _TOKEN.match(self.text, self.pos)
+                if match is None:
+                    raise self.fail(f"cannot read {self.text[self.pos : self.pos + 20]!r}")
+                getattr(self, f"on_{match.lastgroup}")(match)
+                self.pos = match.end()
+            except NamelistError as error:
+                self.skip_group(str(error), here=isinstance(error, _GroupInGroup))
         if self.group is not None:
-            raise self.fail(f"'&{self.group_name}' is not closed with '/'")
-        return self.groups
+            self.skip_group(str(self.fail(f"'&{self.group_name}' is not closed with '/'")))
+        return Parsed(self.groups, self.problems, self.inexact)
+
+    def skip_group(self, problem: str, here: bool = False) -> None:
+        """
+        Keep the first problem of the open group (or outside), and resume at the next '&' that
+        starts a line: after the current position, or at it if a group starts 'here'.
+        """
+        name = self.group_name if self.group is not None else OUTSIDE
+        self.problems.setdefault(name, problem)
+        start = self.pos if here else self.pos + 1
+        line_start = self.text.rfind("\n", 0, self.pos) + 1
+        resume = len(self.text)
+        for match in _GROUP_START.finditer(self.text, line_start):
+            if match.end() - 1 >= start:
+                resume = match.end() - 1
+                break
+        self.pos = resume
+        self.group, self.group_name, self.group_inexact, self.repeat = None, "", set(), None
 
     def add(self, value: Value) -> None:
         if not self.group:
@@ -140,9 +234,13 @@ class _Parser:
             self.flush_repeat()
 
     def on_group(self, match: re.Match[str]) -> None:
+        if self.group is not None and match.group("group").lower() == "end":
+            self.on_end(match)  # '&END' closes a group, as '/' does
+            return
         if self.group is not None:
-            raise self.fail(f"'&{match.group('group')}' inside '&{self.group_name}'")
+            raise self.fail(f"'&{match.group('group')}' inside '&{self.group_name}'", _GroupInGroup)
         self.group, self.group_name = [], match.group("group").lower()
+        self.group_inexact = set()
 
     def on_end(self, match: re.Match[str]) -> None:
         if self.group is None:
@@ -156,7 +254,8 @@ class _Parser:
                 raise self.fail(f"entry {name!r} twice in '&{self.group_name}', with other values")
             closed[name] = tuple(values)
         self.groups.setdefault(self.group_name, []).append(closed)
-        self.group = None
+        self.inexact.setdefault(self.group_name, []).append(frozenset(self.group_inexact))
+        self.group, self.group_name = None, ""
 
     def on_key(self, match: re.Match[str]) -> None:
         if self.group is None:
@@ -174,17 +273,18 @@ class _Parser:
         self.add(match.group("dquote").replace('""', '"'))
 
     def on_bare(self, match: re.Match[str]) -> None:
-        try:
-            value = _bare_value(match.group("bare"))
-        except NamelistError as error:
-            raise self.fail(str(error)) from None
+        token = match.group("bare")
+        value = _bare_value(token)
         self.add(value)
+        if type(value) is float and maybe_inexact(token, value) and self.group:
+            self.group_inexact.add(self.group[-1][0])
 
 
-def parse(text: str) -> dict[str, list[dict[str, tuple[Value, ...]]]]:
+def parse(text: str) -> Parsed:
     """
-    All namelist groups of 'text': group name -> its instances (in file order), each a mapping
-    of the entry names to their values (a tuple, one element for a scalar).
+    All namelist groups of 'text' ('Parsed.groups': group name -> its instances, in file
+    order, each a mapping of the entry names to their values, a tuple, one element for a
+    scalar), and what it could not read.
     """
     return _Parser(text).run()
 
@@ -194,22 +294,60 @@ class Namelists:
     """ICON's namelist output, parsed."""
 
     groups: Mapping[str, Sequence[Mapping[str, tuple[Value, ...]]]]
+    unread: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    """The groups the reader could not read, and why ('Parsed.problems')."""
+    inexact: Mapping[str, Sequence[frozenset[str]]] = dataclasses.field(default_factory=dict)
+    """The entries with a real that may differ from ICON's value ('Parsed.inexact')."""
 
     @classmethod
     def from_text(cls, text: str) -> "Namelists":
-        return cls(parse(text))
+        parsed = parse(text)
+        return cls(parsed.groups, parsed.problems, parsed.inexact)
 
     def group(self, name: str) -> Mapping[str, tuple[Value, ...]] | None:
-        """The only instance of a group, or 'None' if ICON did not write it."""
+        """The only instance of a group, or 'None' if ICON did not write it; raises if the
+        reader could not read it."""
+        if name.lower() in self.unread:
+            raise NamelistError(
+                f"'&{name}' could not be read ({self.unread[name.lower()]}), and the plugin"
+                " needs it."
+            )
         instances = self.groups.get(name.lower(), ())
         if len(instances) > 1:
             raise NamelistError(f"{NAMELIST_FILE}: '&{name}' occurs {len(instances)} times.")
         return instances[0] if instances else None
 
     def get(self, group: str, key: str) -> tuple[Value, ...] | None:
-        """The values of one entry, or 'None' if the group or the entry is missing."""
+        """The values of one entry, or 'None' if the group or the entry is missing; raises if
+        the reader could not read the group or a value of the entry."""
         entries = self.group(group)
-        return None if entries is None else entries.get(key.lower())
+        values = None if entries is None else entries.get(key.lower())
+        unreadable = [v.text for v in values or () if isinstance(v, Unreadable)]
+        if unreadable:
+            raise NamelistError(
+                f"{group}: {key} = {', '.join(unreadable)}: cannot read the value, and the"
+                " plugin needs it."
+            )
+        return values
+
+    def maybe_inexact(self, group: str, key: str) -> bool:
+        """Whether a real of the entry (of the only instance of the group) may differ from
+        ICON's value in the last bit ('maybe_inexact')."""
+        instances = self.inexact.get(group.lower(), ())
+        return len(instances) == 1 and key.lower() in instances[0]
+
+    def problems(self) -> list[str]:
+        """What the reader could not read: whole groups, and single values (with their entry)."""
+        found = [
+            f"&{name or '(outside a group)'}: {problem}" for name, problem in self.unread.items()
+        ]
+        for name, instances in self.groups.items():
+            for entries in instances:
+                for key, values in entries.items():
+                    texts = [v.text for v in values if isinstance(v, Unreadable)]
+                    if texts:
+                        found.append(f"&{name}: {key} = {', '.join(texts)}")
+        return found
 
     def fortran_dict(self) -> dict[str, Any]:
         """The layout of f90nml's 'Namelist.todict()': scalars as values, arrays as lists, a
@@ -291,13 +429,11 @@ class IconMode:
         """This plugin computes the diffusion: ICON delegates it to ComIn."""
         return self.icon4py_interface == INTERFACE_COMIN and self.mode in (SUBSTITUTE, VERIFY)
 
-    @property
-    def exposes_arguments(self) -> bool:
-        """ICON's ComIn backend exposes the arguments (it checks 'icon4py_mode' alone)."""
-        return self.icon4py_interface == INTERFACE_COMIN and self.icon4py_mode not in (None, OFF)
-
-    def describe(self, entry_point: str) -> str:
-        """The startup line: what ICON does and what this plugin does at 'entry_point'."""
+    def describe(self, entry_point: str, copied_at: str | None = None) -> str:
+        """
+        The startup line: what ICON does and what this plugin does at 'entry_point'; in VERIFY,
+        where it copies ICON's input ('copied_at'), before ICON computes.
+        """
         head = f"ICON mode {self.name} ({self.switches})"
         if None in (self.icon4py_interface, self.luse_icon4py_diffusion, self.icon4py_mode):
             return (
@@ -318,8 +454,9 @@ class IconMode:
             )
         return (
             f"{head}: ICON computes the horizontal diffusion and continues with its own result;"
-            f" this plugin computes it too, at {entry_point} on ICON's copies of the input,"
-            " and ICON compares the two"
+            f" this plugin computes it too, at {entry_point} on its own copies of ICON's input"
+            f" from {copied_at}, and compares its results with ICON's there; ICON compares"
+            " nothing"
         )
 
 
@@ -359,7 +496,6 @@ class Setting:
     """ICON's effective value from the namelist value (default: the value itself)."""
     fallback: tuple[str, str] | None = None
     """Another entry (group, name) that gives ICON's value when this one is not written."""
-    note: str = ""
 
 
 def _nudge(value: Value) -> Value:
@@ -400,19 +536,13 @@ ARGUMENTS: Final[Mapping[str, Mapping[str, Setting]]] = {
         "smagorinski_scaling_height4": Setting("diffusion_nml", "hdiff_smag_z4"),
         "hdiff_temp": Setting("diffusion_nml", "lhdiff_temp"),
         "denom_diffu_v": Setting("gridref_nml", "denom_diffu_v"),
-        "nudge_max_coeff": Setting(
-            "interpol_nml", "nudge_max_coeff", derive=_nudge, note="5 x the namelist value"
-        ),
+        "nudge_max_coeff": Setting("interpol_nml", "nudge_max_coeff", derive=_nudge),
         "itype_sher": Setting("turbdiff_nml", "itype_sher"),
         "iforcing": Setting("run_nml", "iforcing"),
         "a_hshr": Setting("turbdiff_nml", "a_hshr"),
-        # not a namelist entry: ICON's default is true, reset to false iff not 'ldynamics'
-        "loutshs": Setting(
-            "turbdiff_nml",
-            "loutshs",
-            fallback=("run_nml", "ldynamics"),
-            note="ICON's default, false iff not ldynamics",
-        ),
+        # an entry of turbdiff_nml in EXCLAIM's ICON; where ICON does not write it, ICON's
+        # default: true, reset to false iff not 'ldynamics' (single-column runs without dynamics)
+        "loutshs": Setting("turbdiff_nml", "loutshs", fallback=("run_nml", "ldynamics")),
         "backend": Setting("run_nml", "icon4py_backend"),
     },
 }
@@ -441,6 +571,27 @@ def argument(namelists: Namelists, setting: Setting, kind: type) -> Value:
     if type(value) is not kind:
         raise NamelistError(f"{where} = {value!r}, expected a {kind.__name__}.")
     return value
+
+
+def source(namelists: Namelists, setting: Setting) -> tuple[str, str]:
+    """The entry (group, name) that gives ICON's value of 'setting' ('argument' reads it)."""
+    if setting.fallback is not None and namelists.get(setting.group, setting.name) is None:
+        return setting.fallback
+    return (setting.group, setting.name)
+
+
+def inexact_arguments(namelists: Namelists, function: str, names: Sequence[str]) -> list[str]:
+    """The real configuration arguments 'names' of 'function' whose value in the namelist
+    output may differ from ICON's in the last bit ('Namelists.maybe_inexact'), as
+    'argument (group: entry)'."""
+    table = ARGUMENTS.get(function, {})
+    found = []
+    for name in names:
+        if name in table:
+            group, entry = source(namelists, table[name])
+            if namelists.maybe_inexact(group, entry):
+                found.append(f"{name} ({group}: {entry})")
+    return found
 
 
 def arguments(

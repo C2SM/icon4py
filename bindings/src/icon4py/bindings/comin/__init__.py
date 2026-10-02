@@ -9,9 +9,13 @@
 """
 ComIn plugin that runs icon4py granules for ICON (EXCLAIM).
 
-ICON's ComIn backend of the icon4py interface exposes every argument of the py2fgen-exported
-functions as ComIn data; the plugin ('plugin.py', loaded through 'plugin_main.py') calls the
-undecorated functions with zero-copy views ('_marshal.py', '_views.py'); '_diagnostics.py'
-serves its timing mode. The ComIn module 'comin' exists only inside ICON; nothing in this
-package imports it at module level.
+With 'icon4py_interface=1' ICON delegates its horizontal diffusion to this plugin ('plugin.py',
+loaded through 'plugin_main.py'), which builds the arguments of py2fgen's exported functions
+from ComIn's native data (ICON's namelist output, '_config.py'; ComIn's descriptive data,
+'_descrdata.py'; ICON's variables) and calls the undecorated functions with zero-copy views
+('_arguments.py', '_views.py'). In VERIFY it compares its results with ICON's in ICON's table
+format ('_verify.py'); '_diagnostics.py' serves its timing mode; '_probe.py' compares the
+arguments the plugin would hand the granules with py2fgen's in a run that computes through
+py2fgen (the py2fgen probe), with the comparisons of '_dual.py'. The ComIn module 'comin'
+exists only inside ICON; nothing in this package imports it at module level.
 """

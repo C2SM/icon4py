@@ -7,18 +7,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-Dual-channel check: compare an argument from its new route with a reference, bit by bit.
+Bitwise comparisons of an argument that the plugin builds with a reference.
 
-While the plugin moves the arguments of the py2fgen-exported functions from ICON's argument
-variables (the "old route") to ComIn's native data (descriptive data, ICON variables, the
-namelist output), every moved item is also taken from a reference and compared, and the log
-names each item that differs. The references are pluggable: the old ComIn route (the argument
-variables and carriers), or py2fgen's own arguments (a recorder on py2fgen's call path).
-
-Each argument has a provider ('Source.provider'):
-- OLD: the granule gets the old route; nothing is compared.
-- NEW: the granule gets the new route; the reference only feeds the check.
-- OBSERVE: the new route is computed and compared; reported, never gated, never used.
+The plugin builds the arguments of the py2fgen-exported functions from ComIn's native data
+(ComIn's descriptive data, ICON's variables, ICON's namelist output, the order of the entry
+points). The py2fgen probe ('_probe.py') compares each of them with py2fgen's own argument in
+the same run, with the comparisons of this module, and names each item that differs. Each
+argument has a source ('Source'): its class (where its value comes from) and, for arrays, the
+location whose padding its entries beyond the local count are.
 
 Comparisons are exact: the raw bytes of every element (so NaN payloads and signed zeros
 count), 'float.hex' and the IEEE bits for scalars, and the pointers, shape and presence for
@@ -27,51 +23,21 @@ cells, edges or vertices along the location axis are padding and reported separa
 verdict is on the real entries. An item may also require the same form of the value as the
 granule gets it ('form': Field or plain array, array module, dtype, shape, element strides),
 and an MPI communicator is compared by MPI_Comm_compare and its members ('Communicator'),
-not by the value of its handle.
-
-Environment:
-- ICON4PY_COMIN_DUAL=strict|report|off (default strict): 'strict' raises at the first differing
-  NEW item (ComIn turns that into ICON's finish), 'report' logs every item and continues,
-  'off' compares nothing.
-- ICON4PY_COMIN_DUAL_SELFTEST=all|<item>[,<item>...] (default unset): perturb one real element
-  of a comparison-only copy of the new-route value of the named NEW/OBSERVE items (all of
-  them for 'all'), so that the check must report exactly those items as differing. The
-  granule's input and ICON's memory are never touched: the positive control in real runs.
-
-Log lines (a stable format, for automated checks of a run):
-  dual plan <EP>: <n> items (NEW <n>, OBSERVE <n>)[: <names>]
-  dual <EP> <pass|call> <k> <provider> <item> vs <reference>[ [selftest]]: identical|differ (<details>)
-  dual <EP> <pass|call> <k>: <n> checked (NEW <n>, OBSERVE <n>), <n> identical, <n> differ
-      (NEW <n>, OBSERVE <n>); selftest <n>
+not by the value of its handle. 'perturb' gives a comparison-only copy with one element
+changed, for positive controls.
 """
 
 import dataclasses
-import functools
 import math
 import struct
-import types
-from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any, Final
 
 import numpy as np
 
 
-MODE_ENV: Final = "ICON4PY_COMIN_DUAL"
-SELFTEST_ENV: Final = "ICON4PY_COMIN_DUAL_SELFTEST"
-STRICT, REPORT, OFF = "strict", "report", "off"
-MODES: Final = (STRICT, REPORT, OFF)
-
-OLD, NEW, OBSERVE = "OLD", "NEW", "OBSERVE"
-PROVIDERS: Final = (OLD, NEW, OBSERVE)
-CHECKED: Final = (NEW, OBSERVE)
 CLASSES: Final = ("A", "B", "C", "D", "E")
 """Argument classes (ICON variable, descriptive data, derived, configuration, not in ComIn 1.0)."""
 LOCATIONS: Final = ("cell", "edge", "vertex")
-
-REF_OLD: Final = "old"
-"""Reference: the old ComIn route (ICON's argument variables and carriers)."""
-REF_PY2FGEN: Final = "py2fgen"
-"""Reference: py2fgen's own argument (the py2fgen probe)."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -81,8 +47,6 @@ class Source:
     klass: str
     """Argument class: A (ICON variable), B (descriptive data), C (derived), D (configuration),
     E (not in ComIn 1.0)."""
-    provider: str
-    """OLD, NEW or OBSERVE."""
     location: str | None = None
     """For arrays: 'cell', 'edge' or 'vertex' if the entries along 'axis' beyond the local count
     of that location are padding; 'None' if every entry is real."""
@@ -91,35 +55,8 @@ class Source:
     def __post_init__(self) -> None:
         if self.klass not in CLASSES:
             raise ValueError(f"Unknown argument class {self.klass!r}.")
-        if self.provider not in PROVIDERS:
-            raise ValueError(f"Unknown provider {self.provider!r}.")
         if self.location is not None and self.location not in LOCATIONS:
             raise ValueError(f"Unknown location {self.location!r}.")
-
-
-def parse_mode(environ: Mapping[str, str]) -> str:
-    mode = environ.get(MODE_ENV, STRICT).strip().lower() or STRICT
-    if mode not in MODES:
-        raise ValueError(f"{MODE_ENV}={mode!r}: expected one of {', '.join(MODES)}.")
-    return mode
-
-
-def parse_selftest(environ: Mapping[str, str], checked: Iterable[str]) -> frozenset[str]:
-    """The items to perturb; 'checked' are the NEW and OBSERVE items. Unknown names raise."""
-    raw = environ.get(SELFTEST_ENV, "").strip()
-    checked = frozenset(checked)
-    if not raw:
-        return frozenset()
-    if raw == "all":
-        return checked
-    names = frozenset(n.strip() for n in raw.split(",") if n.strip())
-    unknown = sorted(names - checked)
-    if unknown:
-        raise ValueError(
-            f"{SELFTEST_ENV}={raw!r}: {', '.join(unknown)} is not a NEW or OBSERVE item"
-            f" (those are: {', '.join(sorted(checked)) or 'none'})."
-        )
-    return names
 
 
 # ---- values -----------------------------------------------------------------------------------
@@ -181,22 +118,6 @@ def first_block(array: Any, block_axis: int) -> np.ndarray:
     index: list[Any] = [slice(None)] * array.ndim
     index[block_axis] = 0
     return array[tuple(index)]
-
-
-def squeeze5(array: Any, rank: int, block_axis: int | None = None) -> Any:
-    """
-    The py2fgen-shaped view of a 5-D ComIn field: drop the block axis (if any, see
-    'first_block'), then the trailing padding axes, which must have extent 1.
-
-    ComIn exposes ICON's 3-D fields as (nproma, nlev, nblks, 1, 1) and 2-D fields as
-    (nproma, nblks, 1, 1, 1); py2fgen gets (nproma, nlev) and (nproma,).
-    """
-    if block_axis is not None:
-        array = first_block(array, block_axis)
-    extra = array.shape[rank:]
-    if any(e != 1 for e in extra):
-        raise ValueError(f"Cannot squeeze shape {array.shape} to rank {rank}.")
-    return array[(slice(None),) * rank + (0,) * len(extra)]
 
 
 def form(value: Any) -> str:
@@ -378,7 +299,8 @@ def perturb(value: Any) -> Any:
     A comparison-only copy of 'value' with one element changed: the lowest bit of the first
     element (a real entry whenever there is one), i.e. 1 ulp, +-1 or a flipped bool; for
     scalars the next float, +1 or 'not'; for a pointer the address + 8; for a communicator its
-    first member + 1 (no MPI call). Never a view.
+    first member + 1 (no MPI call); for 'None' (an absent array) a one-element array, i.e. a
+    present one. Never a view.
     """
     if isinstance(value, Communicator):
         first = value.members[0] + 1 if value.members else -1
@@ -390,7 +312,7 @@ def perturb(value: Any) -> Any:
     if isinstance(value, (bool, int, float)):
         return _perturb_scalar(value)
     if value is None:
-        return None
+        return np.zeros(1, dtype=np.uint8)
     copy = np.array(host_array(value), copy=True, order="C")
     if copy.size:
         flat = copy.reshape(-1).view(np.uint8)
@@ -404,109 +326,3 @@ def _perturb_scalar(value: bool | int | float) -> bool | int | float:
     if isinstance(value, int):
         return value + 1
     return 0.0 if math.isnan(value) else math.nextafter(value, math.inf)
-
-
-# ---- the check of one entry point ----------------------------------------------------------
-
-
-LAZY: Final = (functools.partial, types.FunctionType, types.MethodType)
-"""The types of a new route given as a function, which the check calls (a Field is callable,
-but a value)."""
-
-
-@dataclasses.dataclass(frozen=True)
-class Item:
-    """One comparison: 'new' may be a function (LAZY), so that a failing new route is reported."""
-
-    name: str
-    provider: str
-    new: Any
-    reference: Any
-    real: int | None = None
-    axis: int = 0
-    form: str | None = None
-    """If set: the reference's 'form', which the new value must have too (before a self-test
-    perturbation, which changes one value of a host copy)."""
-
-
-class DualCheckError(RuntimeError):
-    pass
-
-
-@dataclasses.dataclass
-class Summary:
-    checked: dict[str, int] = dataclasses.field(default_factory=lambda: {NEW: 0, OBSERVE: 0})
-    differ: dict[str, int] = dataclasses.field(default_factory=lambda: {NEW: 0, OBSERVE: 0})
-    selftest: int = 0
-
-    @property
-    def total(self) -> int:
-        return sum(self.checked.values())
-
-
-class Checker:
-    """
-    Runs the comparisons of one entry point call and logs them ('log(message)' prints one
-    line on the current rank). A new Checker per entry point call; 'first' logs every item,
-    later calls only the differing ones.
-    """
-
-    def __init__(
-        self,
-        mode: str,
-        selftest: frozenset[str],
-        log: Callable[[str], None],
-        reference: str = REF_OLD,
-    ) -> None:
-        self.mode = mode
-        self.selftest = selftest
-        self._log = log
-        self.reference = reference
-
-    def check(self, where: str, items: Sequence[Item], first: bool) -> Summary:
-        summary = Summary()
-        if self.mode == OFF:
-            return summary
-        for item in items:
-            if item.provider not in CHECKED:
-                continue
-            perturbed = item.name in self.selftest
-            try:
-                new = item.new() if isinstance(item.new, LAZY) else item.new
-                new_form = None if item.form is None else form(new)
-                if perturbed:
-                    new = perturb(new)
-                if new_form is not None and new_form != item.form:
-                    result = Comparison(False, f"form {new_form} vs {item.form}")
-                else:
-                    result = compare(new, item.reference, item.real, item.axis)
-            except Exception as error:  # a failing new route is a difference, not a crash
-                result = Comparison(False, f"new route failed: {error!r}")
-            summary.checked[item.provider] += 1
-            summary.selftest += perturbed
-            if not result.identical:
-                summary.differ[item.provider] += 1
-            if first or not result.identical:
-                self._log(
-                    f"dual {where} {item.provider} {item.name} vs {self.reference}"
-                    f"{' [selftest]' if perturbed else ''}:"
-                    f" {'identical' if result.identical else 'differ'} ({result.details})"
-                )
-            if self.mode == STRICT and item.provider == NEW and not result.identical:
-                raise DualCheckError(
-                    f"icon4py ComIn plugin: the new route of '{item.name}' differs from the"
-                    f" {self.reference} route at {where} ({result.details});"
-                    f" {MODE_ENV}={REPORT} logs every difference and continues."
-                )
-        return summary
-
-    def log_summary(self, where: str, summary: Summary) -> None:
-        if self.mode == OFF:
-            return
-        identical = summary.total - sum(summary.differ.values())
-        self._log(
-            f"dual {where}: {summary.total} checked (NEW {summary.checked[NEW]},"
-            f" OBSERVE {summary.checked[OBSERVE]}), {identical} identical,"
-            f" {sum(summary.differ.values())} differ (NEW {summary.differ[NEW]},"
-            f" OBSERVE {summary.differ[OBSERVE]}); selftest {summary.selftest}"
-        )

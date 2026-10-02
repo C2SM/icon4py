@@ -23,8 +23,9 @@ values in another layout, and the plugin maps one to the other ('ROUTES'):
   ICON's decomposition of an atmosphere domain, halo level 0 holds exactly the cells, edges and
   vertices that the PE owns, and 'decomp_domain' is the halo level.
 - 'comm_id' is ComIn's host communicator, ICON's work PEs ('comin.parallel_get_host_mpi_comm');
-  py2fgen gets ICON's work communicator. The dual check compares the two with MPI_Comm_compare
-  ('communicators'): IDENT or CONGRUENT, i.e. the same processes in the same order.
+  py2fgen gets ICON's work communicator. The py2fgen probe compares the two with
+  MPI_Comm_compare ('communicators'): IDENT or CONGRUENT, i.e. the same processes in the same
+  order.
 - The geometry: the edge normals at vertices and cells ('primal_normal_vert', 'dual_normal_vert',
   'primal_normal_cell', 'dual_normal_cell') are ComIn's copies '[nproma, nblks, n]' of ICON's
   vector components; py2fgen gets ICON's reordered copies '[nproma, n, nblks]'
@@ -56,10 +57,10 @@ from typing import Any, Final
 
 import numpy as np
 
-from icon4py.bindings.comin import _dual, _marshal, _views
+from icon4py.bindings.comin import _arguments, _dual, _views
 
 
-DOMAIN_ID: Final = _marshal.DOMAIN_ID
+DOMAIN_ID: Final = _arguments.DOMAIN_ID
 BLOCK_AXIS: Final = 1
 """The block axis of ComIn's grid arrays '[nproma, nblks(, n)]'."""
 KINDS: Final = ("cells", "edges", "verts")
@@ -144,9 +145,13 @@ def _owner_mask(kind: str) -> Route:
     """ICON's owner mask of cells, edges or vertices: 'decomp_domain == 0'."""
     # ICON decomposes every atmosphere domain with halo order 1, which puts exactly the cells,
     # edges and vertices that the PE owns on halo level 0 (mo_setup_subdivision.f90:383-394,
-    # 2324-2407; ICON requires at least one ghost row, mo_parallel_config.f90:273), and
-    # 'decomp_domain' is the halo level (mo_setup_subdivision.f90:1538-1546). So ICON's
-    # owner_mask equals 'decomp_domain == 0' for cells, edges and vertices.
+    # 2324-2407; an MPI build requires at least one ghost row, mo_parallel_config.f90:273 in
+    # the branch without NOMPI; a build without MPI has one PE, which owns everything), and
+    # 'decomp_domain' is the halo level: the loops over the halo levels of the cells, edges and
+    # vertices (mo_setup_subdivision.f90:1440-1447, 1540-1547, 1610-1617). ICON's owner_mask
+    # is 'owner_local == p_pe_work' ('set_owner_mask', mo_model_domimp_patches.f90:824-838),
+    # with 'owner_local' from the same halo-level lists (mo_setup_subdivision.f90:3500-3560).
+    # So ICON's owner_mask equals 'decomp_domain == 0' for cells, edges and vertices.
 
     def value(data: Data) -> np.ndarray:
         return _dual.first_block(_field(data, kind, "decomp_domain"), BLOCK_AXIS) == 0
@@ -236,12 +241,6 @@ def has_route(function: str, param: str) -> bool:
     return param in ROUTES.get(function, {})
 
 
-def domain_value(function: str, param: str) -> Callable[[Any], Any]:
-    """The host value of an argument taken from domain 1 alone (for the py2fgen probe)."""
-    route = ROUTES[function][param]
-    return lambda domain: route.value(Data(None, None, domain))
-
-
 class DescriptiveData:
     """
     The plugin's copies of the arguments from ComIn's descriptive data of domain 1: the host
@@ -289,7 +288,7 @@ class DescriptiveData:
         return sum(v.nbytes for v in self._host.values() if isinstance(v, np.ndarray))
 
     def argument(
-        self, function: str, param: str, array: _marshal.ArrayParam | None, device_xp: Any
+        self, function: str, param: str, array: _arguments.ArrayParam | None, device_xp: Any
     ) -> Any:
         """
         The argument as the granule gets it: a scalar as is; an array as a fresh copy of the
@@ -333,7 +332,7 @@ _RELATIONS: Final = ("IDENT", "CONGRUENT", "SIMILAR", "UNEQUAL")
 
 def communicators(new: int, reference: int) -> tuple[_dual.Communicator, _dual.Communicator]:
     """
-    The communicators of two Fortran handles for the dual check: their members (ranks in
+    The communicators of two Fortran handles for the py2fgen probe: their members (ranks in
     MPI_COMM_WORLD) and, for 'new', MPI_Comm_compare's result against 'reference'.
     """
     from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]: only inside ICON

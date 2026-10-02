@@ -18,6 +18,7 @@ output of a ComIn diffusion SUBSTITUTE run of 'mch_icon-ch1_small' (nvfortran).
 
 import dataclasses
 import logging
+import re
 import sys
 import types
 import typing
@@ -27,13 +28,16 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.bindings import diffusion_wrapper, grid_wrapper, icon4py_export
-from icon4py.bindings.comin import _config, _dual, _marshal, plugin
+from icon4py.bindings.comin import _config, plugin
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.config import options
 from icon4py.model.common.grid import vertical
 
-from .test_comin_marshal import (  # fixtures: icon_run_dir, logs, restore_package_logger, wrappers
+from .test_comin_plugin import (  # fixtures: icon_run_dir, logs, restore_package_logger, wrappers
+    AFTER,
+    BEFORE,
+    INIT,
     NAMELIST_EXCERPT,
     FakeComIn,
     FakeIcon,
@@ -102,7 +106,7 @@ def test_reals_read_back_bitwise(value):
     """ICON writes reals with 17 significant digits in E format; D exponents are read too."""
     mantissa, exponent = f"{value:.16E}".split("E")
     for text in (f"{mantissa}E{int(exponent):+04d}", f"{mantissa}D{int(exponent):+04d}"):
-        (read,) = _config.parse(f" &A_NML\n X = {text}\n /\n")["a_nml"][0]["x"]
+        (read,) = _config.parse(f" &A_NML\n X = {text}\n /\n").groups["a_nml"][0]["x"]
         assert read.hex() == value.hex(), text
 
 
@@ -122,7 +126,7 @@ def test_values_of_every_kind():
         " A = F\n"
         " /\n"
     )
-    groups = _config.parse(text)
+    groups = _config.parse(text).groups
     first, second = groups["kinds_nml"]
     assert first == {
         "a": (True,),
@@ -149,26 +153,82 @@ def test_values_of_every_kind():
 def test_an_entry_written_twice():
     # ICON lists 'nrestart_streams' twice in 'io_nml', and nvfortran writes it twice
     text = " &IO_NML\n N = 1,\n X = 2,\n N = 1\n /\n"
-    assert _config.parse(text) == {"io_nml": [{"n": (1,), "x": (2,)}]}
-    with pytest.raises(_config.NamelistError, match=r"line 5: entry 'n' twice .* other values"):
-        _config.parse(" &IO_NML\n N = 1,\n X = 2,\n N = 2\n /\n")
+    assert _config.parse(text).groups == {"io_nml": [{"n": (1,), "x": (2,)}]}
+    parsed = _config.parse(" &IO_NML\n N = 1,\n X = 2,\n N = 2\n /\n &B_NML\n Y = 1\n /\n")
+    assert parsed.groups == {"b_nml": [{"y": (1,)}]}  # the next group is read
+    assert re.search(r"line 5: entry 'n' twice .* other values", parsed.problems["io_nml"])
+
+
+B_NML: typing.Final = " &B_NML\n Y = 2\n /\n"
+"""A readable group after the one with a problem: the reader resumes there."""
 
 
 @pytest.mark.parametrize(
-    "text, message",
+    "text, group, message",
     [
-        (" &A_NML\n X = 1,\n", "line 3: '&a_nml' is not closed"),
-        (" X = 1\n", "line 1: entry 'X' outside a namelist group"),
-        (" /\n", "line 1: '/' outside a namelist group"),
-        (" &A_NML\n &B_NML\n /\n", "line 2: '&B_NML' inside '&a_nml'"),
-        (" &A_NML\n 5,\n /\n", "line 2: value 5 outside a namelist entry"),
-        (" &A_NML\n X = (1.0, 2.0)\n /\n", "line 2: cannot read the value '\\(1.0'"),
-        (" &A_NML\n X = 1.2.3\n /\n", "line 2: cannot read the value '1.2.3'"),
+        (" &A_NML\n X = 1,\n", "a_nml", "line 3: '&a_nml' is not closed"),
+        (" X = 1\n" + B_NML, _config.OUTSIDE, "line 1: entry 'X' outside a namelist group"),
+        (" /\n" + B_NML, _config.OUTSIDE, "line 1: '/' outside a namelist group"),
+        (" &A_NML\n &B_NML\n Y = 2\n /\n", "a_nml", "line 2: '&B_NML' inside '&a_nml'"),
+        (" &A_NML\n 5,\n /\n" + B_NML, "a_nml", "line 2: value 5 outside a namelist entry"),
+        (" &1\n" + B_NML, _config.OUTSIDE, "line 1: cannot read '&1"),
     ],
 )
-def test_parse_errors(text, message):
-    with pytest.raises(_config.NamelistError, match=message):
-        _config.parse(text)
+def test_parse_problems_skip_the_group(text, group, message):
+    """A group the reader cannot read is skipped, up to the next group, and kept as a problem."""
+    parsed = _config.parse(text)
+    assert list(parsed.problems) == [group]
+    assert parsed.problems[group].startswith(f"{_config.NAMELIST_FILE}, {message}")
+    assert parsed.groups == ({"b_nml": [{"y": (2,)}]} if "B_NML" in text else {})
+
+
+def test_unreadable_values_raise_only_when_used():
+    text = (
+        " &A_NML\n X = (1.0, 2.0), Y = 1.2.3, Z = 3\n /\n"
+        " &C_NML\n X = 1,\n &END\n"  # some compilers close a group with '&END'
+        " &D_NML\n TINY = 0.1000000000000000-100, HUGE = -0.25+101\n /\n"  # E format, 3 digits
+        " &E_NML\n /\n &E_NML\n K = 1,\n"  # an unclosed second instance
+    )
+    nml = _config.Namelists.from_text(text)
+    assert nml.get("a_nml", "z") == (3,)
+    for key, shown in (("x", "\\(1.0, 2.0\\)"), ("y", "1.2.3")):
+        with pytest.raises(_config.NamelistError, match=rf"a_nml: {key} = {shown}: cannot read"):
+            nml.get("a_nml", key)
+    assert nml.get("c_nml", "x") == (1,)
+    assert nml.get("d_nml", "tiny") == (1e-101,) and nml.get("d_nml", "huge") == (-2.5e100,)
+    with pytest.raises(_config.NamelistError, match=r"'&e_nml' could not be read \(.*line 14"):
+        nml.get("e_nml", "k")
+    assert nml.problems() == [
+        f"&e_nml: {_config.NAMELIST_FILE}, line 14: '&e_nml' is not closed with '/'",
+        "&a_nml: x = (1.0, 2.0)",
+        "&a_nml: y = 1.2.3",
+    ]
+
+
+@pytest.mark.parametrize(
+    "text, inexact",
+    [
+        ("150.0000000000000", False),  # nvfortran's F format: 16 significant digits
+        ("0.6500000000000000", False),  # the nearest double to 0.65: exact
+        ("2.5000000000000001E-002", False),  # E format: 17 digits, always exact
+        ("7.1372509002685547E-002", False),
+        ("60686.25390625000", False),  # a short dyadic value
+        ("1.234567890123457", True),  # 16 digits, and no shorter decimal: may be 1 ulp off
+        ("0.3000000000000000", False),  # e.g. 0.1 + 0.2 = 0.30000000000000004 (undetectable)
+        ("0.000000000000000", False),
+        ("12", False),
+    ],
+)
+def test_reals_that_may_be_inexact(text, inexact):
+    nml = _config.Namelists.from_text(f" &A_NML\n X = {text}\n /\n")
+    assert nml.maybe_inexact("a_nml", "x") is inexact
+
+
+def test_the_gap_of_the_precision_check():
+    """A value 1 ulp off a short decimal reads back as that decimal: not detectable."""
+    text = f"{0.1 + 0.2:.16f}"  # nvfortran's F format of 0.30000000000000004
+    assert float(text) != 0.1 + 0.2 and not _config.maybe_inexact(text, float(text))
+    assert _config.significant_digits("-0.30000000000000004") == 17
 
 
 def test_fortran_dict_feeds_icon4py_readers():
@@ -289,7 +349,9 @@ def test_arguments_are_named_after_icon4pys_config():
             continue  # EXCLAIM's switch, no diffusion option
         icon_option = icon_options[fields[argument]]
         if argument == "loutshs":
-            assert icon_option is None  # not a namelist entry
+            # an entry of turbdiff_nml in EXCLAIM's ICON only: icon4py's DiffusionConfig has no
+            # IconOption for it
+            assert icon_option is None
             continue
         assert isinstance(icon_option, options.IconOption)
         assert (setting.group, setting.name) == (*icon_option.path, icon_option.name), argument
@@ -364,28 +426,33 @@ def test_argument_problems_are_collected():
 
 
 @pytest.mark.parametrize(
-    "interface, luse, mode, name, computes, exposes, says",
+    "interface, luse, mode, name, computes, says",
     [
-        (1, True, 1, "SUBSTITUTE", True, True, "this plugin computes the horizontal diffusion"),
-        (1, True, 2, "VERIFY", True, True, "this plugin computes it too, at EP_X"),
-        (1, True, 0, "OFF", False, False, "ICON computes the horizontal diffusion; this plugin"),
-        (0, True, 1, "SUBSTITUTE", False, False, "through py2fgen, not ComIn; this plugin stays"),
-        (0, True, 0, "OFF", False, False, "ICON computes the horizontal diffusion; this plugin"),
-        # ICON stops at its namelist check with these, but the dispatcher's rule is clear
-        (1, False, 1, "OFF", False, True, "ICON computes the horizontal diffusion; this plugin"),
-        (None, None, None, "OFF", False, False, "ICON has no icon4py switches"),
+        (1, True, 1, "SUBSTITUTE", True, "this plugin computes the horizontal diffusion"),
+        (
+            1,
+            True,
+            2,
+            "VERIFY",
+            True,
+            "ICON computes the horizontal diffusion and continues with its own result; this"
+            " plugin computes it too, at EP_X on its own copies of ICON's input from EP_Y, and"
+            " compares its results with ICON's there; ICON compares nothing",
+        ),
+        (1, True, 0, "OFF", False, "ICON computes the horizontal diffusion; this plugin"),
+        (0, True, 1, "SUBSTITUTE", False, "through py2fgen, not ComIn; this plugin stays"),
+        (0, True, 0, "OFF", False, "ICON computes the horizontal diffusion; this plugin"),
+        # ICON stops at its namelist check with this, but the dispatcher's rule is clear
+        (1, False, 1, "OFF", False, "ICON computes the horizontal diffusion; this plugin"),
+        (None, None, None, "OFF", False, "ICON has no icon4py switches"),
     ],
 )
 def test_icon_mode(  # noqa: PLR0917 [too-many-positional-arguments]
-    interface, luse, mode, name, computes, exposes, says
+    interface, luse, mode, name, computes, says
 ):
     icon_mode = _config.IconMode(interface, luse, mode)
-    assert (icon_mode.name, icon_mode.computes, icon_mode.exposes_arguments) == (
-        name,
-        computes,
-        exposes,
-    )
-    line = icon_mode.describe("EP_X")
+    assert (icon_mode.name, icon_mode.computes) == (name, computes)
+    line = icon_mode.describe("EP_X", "EP_Y")
     assert line.startswith(f"ICON mode {name} (icon4py_interface=") and says in line
     assert line.endswith("ICON skips its own" if name == "SUBSTITUTE" and computes else "")
 
@@ -453,9 +520,7 @@ CALLS: list[tuple[str, dict]] = []
 
 
 @icon4py_export.export
-def cfg_grid_init(
-    area: fa.CellField[gtx.float64], rayleigh_damping_height: gtx.float64, backend: gtx.int32
-) -> None:
+def cfg_grid_init(rayleigh_damping_height: gtx.float64, backend: gtx.int32) -> None:
     CALLS.append(
         ("grid_init", dict(rayleigh_damping_height=rayleigh_damping_height, backend=backend))
     )
@@ -490,30 +555,19 @@ def cfg_diffusion_run(w: fa.CellKField[gtx.float64], dtime: gtx.float64, linit: 
 
 
 CFG_FUNCTIONS = {
-    "grid_init": plugin.FunctionEntry(
-        cfg_grid_init, "EP_ATM_TIMELOOP_BEFORE", False, _marshal.PASS_KEY
-    ),
-    "diffusion_init": plugin.FunctionEntry(
-        cfg_diffusion_init, "EP_ATM_TIMELOOP_BEFORE", False, _marshal.PASS_KEY
-    ),
-    "diffusion_run": plugin.FunctionEntry(
-        cfg_diffusion_run, "EP_ATM_DIFFUSION_ENTER", True, _marshal.CALL_COUNT_KEY
-    ),
+    "grid_init": plugin.FunctionEntry(cfg_grid_init, INIT, inout=False),
+    "diffusion_init": plugin.FunctionEntry(cfg_diffusion_init, INIT, inout=False),
+    "diffusion_run": plugin.FunctionEntry(cfg_diffusion_run, BEFORE, inout=True),
 }
 CFG_SOURCES = {
-    name: {
-        param: plugin.SOURCES[name].get(param, _dual.Source("B", _dual.OLD, "cell"))
-        if name != "diffusion_run"
-        else _dual.Source("B", _dual.OLD)  # called at ENTER on the arguments (the old route)
-        for param in entry.exported.param_descriptors
-    }
+    name: {param: plugin.SOURCES[name][param] for param in entry.exported.param_descriptors}
     for name, entry in CFG_FUNCTIONS.items()
 }
 CONFIGURATION = {
-    name: {p: EXPECTED[name][p] for p, s in CFG_SOURCES[name].items() if s.provider == _dual.NEW}
+    name: {p: EXPECTED[name][p] for p in CFG_SOURCES[name]}
     for name in ("grid_init", "diffusion_init")
 }
-"""The toy functions' NEW arguments and ICON's values of them in the run of the excerpt."""
+"""The toy functions' configuration arguments and ICON's values of them in the run of the excerpt."""
 NC, NLEV = 4, 3
 
 
@@ -524,20 +578,10 @@ def cfg_calls():
     CALLS.clear()
 
 
-def cfg_icon(comin: FakeComIn, **carrier: typing.Any) -> FakeIcon:
-    """ICON's side of the toy functions; the carriers hold ICON's values, or 'carrier'."""
-    icon = FakeIcon(comin, CFG_FUNCTIONS)
-    scalars = {
-        name: {k: carrier.get(k, v) for k, v in values.items()}
-        for name, values in CONFIGURATION.items()
-    }
-    icon.expose("grid_init", {"area": fortran_buffer((NC,), np.float64, 1.0)}, scalars["grid_init"])
-    icon.expose("diffusion_init", {}, scalars["diffusion_init"])
-    icon.expose(
-        "diffusion_run",
-        {"w": fortran_buffer((NC, NLEV), np.float64, 1.0)},
-        dict(dtime=0.0, linit=False),
-    )
+def cfg_icon(comin: FakeComIn) -> FakeIcon:
+    """ICON's side of the toy functions: its variable 'w'."""
+    icon = FakeIcon(comin)
+    icon.add("w", fortran_buffer((NC, NLEV), np.float64, 1.0))
     return icon
 
 
@@ -547,11 +591,7 @@ def cfg_plugin(comin: FakeComIn, **environ: str) -> plugin.Plugin:
     return instance
 
 
-def dual_lines(logs) -> list[str]:
-    return [m for m in logs.messages if m.startswith("dual EP_")]
-
-
-def test_configuration_is_new_and_checked(cfg_calls, wrappers, logs):
+def test_configuration_reaches_the_granule(cfg_calls, wrappers, logs):
     comin = FakeComIn()
     icon = cfg_icon(comin)
     cfg_plugin(comin)
@@ -559,64 +599,16 @@ def test_configuration_is_new_and_checked(cfg_calls, wrappers, logs):
         "diffusion_init configuration from NAMELIST_ICON_output_atm: ndyn_substeps 5,"
         " hdiff_vn True, nudge_max_coeff 0.375, loutshs True, backend 0" in logs.messages
     )
+    assert (
+        "grid_init configuration from NAMELIST_ICON_output_atm: rayleigh_damping_height 12250.0,"
+        " backend 0" in logs.messages
+    )
     icon.secondary_constructor()
     icon.new_pass()
     icon.diffusion_call(dtime=10.0, linit=True)
     assert [c[0] for c in cfg_calls] == ["grid_init", "diffusion_init", "diffusion_run"]
     for (_, got), expected in zip(cfg_calls[:2], CONFIGURATION.values(), strict=True):
         assert {k: _bits(v) for k, v in got.items()} == {k: _bits(v) for k, v in expected.items()}
-    lines = dual_lines(logs)
-    assert (
-        "dual EP_ATM_TIMELOOP_BEFORE pass 1 NEW nudge_max_coeff vs old: identical"
-        f" (float 0.375 (0x1.8000000000000p-2, bits {'0' * 12}d83f))" in lines
-    )
-    assert "dual EP_ATM_TIMELOOP_BEFORE pass 1 NEW loutshs vs old: identical (bool True)" in lines
-    assert lines[-1] == (
-        "dual EP_ATM_TIMELOOP_BEFORE pass 1: 7 checked (NEW 7, OBSERVE 0), 7 identical,"
-        " 0 differ (NEW 0, OBSERVE 0); selftest 0"
-    )
-
-
-def test_configuration_difference_stops_in_strict_mode(cfg_calls, wrappers):
-    comin = FakeComIn()
-    icon = cfg_icon(comin, nudge_max_coeff=0.075)  # e.g. the namelist value, not ICON's
-    cfg_plugin(comin)
-    icon.secondary_constructor()
-    with pytest.raises(_dual.DualCheckError, match="new route of 'nudge_max_coeff' differs"):
-        icon.new_pass()
-    assert [c[0] for c in cfg_calls] == ["grid_init"]  # diffusion_init did not run
-
-
-def test_configuration_difference_in_report_mode(cfg_calls, wrappers, logs):
-    comin = FakeComIn()
-    icon = cfg_icon(comin, backend=1, loutshs=False)
-    cfg_plugin(comin, **{_dual.MODE_ENV: "report"})
-    icon.secondary_constructor()
-    icon.new_pass()
-    # the granule gets the NEW route, ICON's namelist values
-    assert cfg_calls[0][1]["backend"] == 0 and cfg_calls[1][1]["loutshs"] is True
-    differ = [m for m in dual_lines(logs) if ": differ" in m]
-    assert [m.split(" vs ")[0].rsplit(" ", 1)[1] for m in differ] == [
-        "backend",
-        "loutshs",
-        "backend",
-    ]
-    assert "(bool True vs bool False)" in differ[1]
-
-
-def test_configuration_selftest(cfg_calls, wrappers, logs):
-    comin = FakeComIn()
-    icon = cfg_icon(comin)
-    cfg_plugin(comin, **{_dual.MODE_ENV: "report", _dual.SELFTEST_ENV: "all"})
-    icon.secondary_constructor()
-    icon.new_pass()
-    lines = dual_lines(logs)
-    assert sum("[selftest]: differ" in m for m in lines) == 7
-    assert lines[-1].endswith("0 identical, 7 differ (NEW 7, OBSERVE 0); selftest 7")
-    assert [c[1] for c in cfg_calls] == [
-        CONFIGURATION["grid_init"],
-        CONFIGURATION["diffusion_init"],
-    ]
 
 
 def test_configuration_problems_stop_the_registration(icon_run_dir):
@@ -629,6 +621,52 @@ def test_configuration_problems_stop_the_registration(icon_run_dir):
     cfg_plugin(FakeComIn())  # idle: the configuration is not read
 
 
+def test_unread_groups_are_logged_and_ignored(cfg_calls, wrappers, logs, icon_run_dir):
+    """A group or value the plugin does not need may be unreadable; one it needs may not."""
+    path = icon_run_dir / _config.NAMELIST_FILE
+    text = path.read_text()
+    extra = " &OTHER_NML\n X = (1.0, 2.0)\n /\n &BROKEN_NML\n 5,\n /\n"
+    path.write_text(extra + text.replace(" LHDIFF_W =", " UNUSED = abc, LHDIFF_W ="))
+    cfg_plugin(FakeComIn())
+    (line,) = [m for m in logs.messages if "could not read" in m]
+    assert line == (
+        "NAMELIST_ICON_output_atm: the plugin does not need what it could not read, ignored:"
+        " &broken_nml: NAMELIST_ICON_output_atm, line 5: value 5 outside a namelist entry;"
+        " &other_nml: x = (1.0, 2.0); &diffusion_nml: unused = abc"
+    )
+    # a value the plugin needs
+    path.write_text(text.replace(" NDYN_SUBSTEPS =", " NDYN_SUBSTEPS = abc, X ="))
+    with pytest.raises(RuntimeError, match=r"1 problem\(s\)") as error:
+        cfg_plugin(FakeComIn())
+    assert "'ndyn_substeps': nonhydrostatic_nml: ndyn_substeps = abc: cannot read the value" in str(
+        error.value
+    )
+    # a group the plugin needs
+    path.write_text(text.replace(" &NONHYDROSTATIC_NML", " &NONHYDROSTATIC_NML\n 7,"))
+    with pytest.raises(RuntimeError, match=r"2 problem\(s\)") as error:
+        cfg_plugin(FakeComIn())  # rayleigh_damping_height and ndyn_substeps come from it
+    assert "'&nonhydrostatic_nml' could not be read" in str(error.value)
+
+
+def test_configuration_precision_is_logged(cfg_calls, wrappers, logs, icon_run_dir):
+    cfg_plugin(FakeComIn())
+    (line,) = [m for m in logs.messages if m.startswith("configuration: ")]
+    assert line.startswith("configuration: 2 real values, each written with 17 significant")
+    path = icon_run_dir / _config.NAMELIST_FILE
+    path.write_text(
+        path.read_text().replace(
+            "NUDGE_MAX_COEFF =   7.4999999999999997E-002", "NUDGE_MAX_COEFF = 0.7499999999999997"
+        )
+    )
+    cfg_plugin(FakeComIn())
+    (warning,) = [r for r in logs.records if r.levelno == logging.WARNING]
+    assert warning.message == (
+        "configuration: 1 of 2 real values have 16 significant digits in"
+        " NAMELIST_ICON_output_atm and no shorter decimal, so they may differ from ICON's values"
+        " in the last bit: diffusion_init.nudge_max_coeff (interpol_nml: nudge_max_coeff)"
+    )
+
+
 def test_missing_namelist_output_stops_the_registration(icon_run_dir):
     (icon_run_dir / _config.NAMELIST_FILE).unlink()
     with pytest.raises(RuntimeError, match="cannot read ICON's namelist output"):
@@ -636,128 +674,32 @@ def test_missing_namelist_output_stops_the_registration(icon_run_dir):
 
 
 @pytest.mark.parametrize(
-    "mode, interface, environ, timelevel, source",
-    [
-        (1, 1, {}, "strict", "the default in SUBSTITUTE"),
-        (2, 1, {}, "report", "the default in VERIFY"),
-        (1, 1, {"ICON4PY_COMIN_TIMELEVEL_CHECK": "report"}, "report", "set by"),
-        (2, 1, {"ICON4PY_COMIN_TIMELEVEL_CHECK": "strict"}, "strict", "set by"),
-        (0, 1, {}, "off", "the plugin is idle"),
-        (1, 0, {"ICON4PY_COMIN_TIMELEVEL_CHECK": "strict"}, "off", "the plugin is idle"),
-    ],
+    "mode, interface, where, copied",
+    [(1, 1, BEFORE, None), (2, 1, AFTER, BEFORE), (0, 1, "-", None), (1, 0, "-", None)],
 )
-def test_startup_line_and_time_level_check(  # noqa: PLR0917 [too-many-positional-arguments]
-    logs, icon_run_dir, mode, interface, environ, timelevel, source
-):
+def test_startup_line(logs, icon_run_dir, mode, interface, where, copied):  # noqa: PLR0917
     set_mode(icon_run_dir, mode, interface)
-    instance = cfg_plugin(FakeComIn(), **environ)
-    assert logs.messages[1] == instance.mode.describe("EP_ATM_DIFFUSION_ENTER")
+    instance = cfg_plugin(FakeComIn())
+    assert logs.messages[1] == instance.mode.describe(where, copied)
     assert logs.messages[1].startswith(
         f"ICON mode {_config.MODE_NAMES[mode]} (icon4py_interface={interface},"
-    )
-    assert logs.messages[2].startswith(f"time-level check {timelevel}: {source}")
-    assert f"; time-level check {timelevel}" in logs.text
-
-
-def test_mode_off_but_icon_exposes_its_variables(cfg_calls, wrappers, logs, icon_run_dir):
-    set_mode(icon_run_dir, 0)
-    comin = FakeComIn()
-    icon = cfg_icon(comin)
-    cfg_plugin(comin)
-    with pytest.raises(_dual.DualCheckError, match="exposed yes, expected no"):
-        icon.secondary_constructor()
-    comin = FakeComIn()
-    icon = cfg_icon(comin)
-    instance = cfg_plugin(comin, **{_dual.MODE_ENV: "report"})
-    icon.secondary_constructor()
-    assert not instance.active and comin.contexts == {}
-    assert [r.levelname for r in logs.records if "exposed yes, expected no" in r.message] == [
-        "WARNING"
-    ]
-
-
-def test_mode_computes_but_icon_exposes_nothing(logs):
-    with pytest.raises(_dual.DualCheckError, match="exposed no, expected yes"):
-        cfg_plugin(FakeComIn()).secondary_constructor()
-    instance = cfg_plugin(FakeComIn(), **{_dual.MODE_ENV: "report"})
-    with pytest.raises(RuntimeError, match=r"ICON mode SUBSTITUTE delegates .* exposes no"):
-        instance.secondary_constructor()
-
-
-def _run(comin: FakeComIn, calls: int, **environ: str) -> FakeIcon:
-    """Register the plugin, then one pass with 'calls' diffusion calls."""
-    icon = cfg_icon(comin)
-    cfg_plugin(comin, **environ)
-    icon.secondary_constructor()
-    icon.new_pass()
-    for n in range(calls):
-        icon.diffusion_call(dtime=1.0, linit=n == 0)
-    return icon
-
-
-@pytest.mark.parametrize("mode", [1, 2])
-def test_enter_at_every_diffusion_call(cfg_calls, wrappers, logs, icon_run_dir, mode):
-    set_mode(icon_run_dir, mode)
-    comin = FakeComIn()
-    _run(comin, 3)
-    comin.fire("EP_DESTRUCTOR")
-    assert logs.messages[-1] == (
-        f"mode check: EP_ATM_DIFFUSION_ENTER callbacks for domain 1: 3, expected 3 (ICON mode"
-        f" {_config.MODE_NAMES[mode]}; EP_ATM_DYCORE_DIFFUSION_BEFORE 3, lhdiff_vn T): identical"
-    )
-
-
-def test_enter_missing_at_a_diffusion_call(cfg_calls, wrappers, logs):
-    comin = FakeComIn()
-    _run(comin, 2)
-    comin.fire("EP_ATM_DYCORE_DIFFUSION_BEFORE", 1)  # a call without ENTER
-    comin.fire("EP_ATM_DYCORE_DIFFUSION_BEFORE", 2)  # another domain: not counted
-    with pytest.raises(_dual.DualCheckError, match="domain 1: 2, expected 3"):
-        comin.fire("EP_DESTRUCTOR")
-    assert diffusion_wrapper.granule is None  # released before the check
-
-
-def test_no_diffusion_call_without_lhdiff_vn(cfg_calls, wrappers, logs, icon_run_dir):
-    set_namelist(icon_run_dir, LHDIFF_VN="F")
-    comin = FakeComIn()
-    icon = cfg_icon(comin, hdiff_vn=False)
-    cfg_plugin(comin)
-    icon.secondary_constructor()
-    icon.new_pass()
-    comin.fire("EP_ATM_DYCORE_DIFFUSION_BEFORE", 1)  # the regular site, outside IF (lhdiff_vn)
-    comin.fire("EP_DESTRUCTOR")
-    assert logs.messages[-1].endswith(
-        "callbacks for domain 1: 0, expected 0 (ICON mode SUBSTITUTE;"
-        " EP_ATM_DYCORE_DIFFUSION_BEFORE 1, lhdiff_vn F): identical"
     )
 
 
 def test_idle_plugin_runs_nothing(cfg_calls, wrappers, logs, icon_run_dir):
-    set_mode(icon_run_dir, 1, interface=0)  # py2fgen computes; ICON exposes nothing to ComIn
+    set_mode(icon_run_dir, 1, interface=0)  # py2fgen computes
     comin = FakeComIn()
     instance = cfg_plugin(comin)
     comin.fire("EP_SECONDARY_CONSTRUCTOR")
     comin.fire("EP_ATM_TIMELOOP_BEFORE")
+    comin.fire("EP_ATM_INTEGRATE_START", 1)
     comin.fire("EP_ATM_DYCORE_DIFFUSION_BEFORE", 1)
+    comin.fire("EP_ATM_DYCORE_DIFFUSION_AFTER", 1)
     comin.fire("EP_DESTRUCTOR")
     assert not instance.active and cfg_calls == [] and comin.contexts == {}
     assert (diffusion_wrapper.granule, grid_wrapper.grid_state) == wrappers
     assert "idle: ICON mode SUBSTITUTE (icon4py_interface=0," in logs.text
-    assert logs.messages[-1].endswith(
-        "domain 1: 0, expected 0 (ICON mode SUBSTITUTE; EP_ATM_DYCORE_DIFFUSION_BEFORE 1,"
-        " lhdiff_vn T): identical"
-    )
     assert not any(r.levelno >= logging.WARNING for r in logs.records)
-
-
-def test_mode_check_off(cfg_calls, wrappers, logs):
-    comin = FakeComIn()
-    icon = _run(comin, 1, **{_dual.MODE_ENV: "off"})
-    icon.diffusion_call(dtime=1.0, linit=False, delegate=False)  # a call without ENTER
-    comin.fire("EP_DESTRUCTOR")
-    assert not any(m.startswith(("mode check", "dual EP_")) for m in logs.messages)
-    # the granule still gets the NEW arguments
-    assert [c[1] for c in cfg_calls[:2]] == list(CONFIGURATION.values())
 
 
 # ---- ICON's condition for the initial diffusion call ------------------------------------------
