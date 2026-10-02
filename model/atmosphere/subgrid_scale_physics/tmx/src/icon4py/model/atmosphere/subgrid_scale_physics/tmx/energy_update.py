@@ -89,7 +89,6 @@ class EnergyUpdate:
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(num_levels),
-                "nlev": gtx.int32(num_levels),
             },
             offset_provider={},
         )

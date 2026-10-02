@@ -84,8 +84,6 @@ def _update_temperature_and_compute_end_of_step_diagnostics(
         * (wpfloat("1.0") / dtime)
         * (u * u - new_u * new_u + v * v - new_v * new_v)
     )
-    # `nlev`, not `vertical_end`: the surface term belongs to the lowest model level whatever
-    # the domain, and dace fails when a domain bound is also a `concat_where` operand
     heating = concat_where(dims.KDim < nlev - 1, dissip_ke, dissip_ke - q_snocpymlt)
     new_temperature = temperature + (tend_temperature + heating / cv_air) * dtime
 
@@ -160,7 +158,6 @@ def update_temperature_and_compute_end_of_step_diagnostics(
     dissipation_factor: wpfloat,
     grav: wpfloat,
     dtime: wpfloat,
-    nlev: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -198,7 +195,11 @@ def update_temperature_and_compute_end_of_step_diagnostics(
         dissipation_factor=dissipation_factor,
         grav=grav,
         dtime=dtime,
-        nlev=nlev,
+        # TODO(OngChia, havogt, jcanton): decide whether the lowest model level should come from
+        # the domain bound or be a separate program argument. The dycore does the same, in
+        # `vertically_implicit_solver_at_predictor_step` (twice, as `nlev` and `n_lev`) and in
+        # `vertically_implicit_solver_at_corrector_step`.
+        nlev=vertical_end,
         out=(
             dissip_ke,
             heating,

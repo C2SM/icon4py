@@ -182,7 +182,6 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
             dissipation_factor=wpfloat(0.8),
             grav=constants.GRAV,
             dtime=wpfloat(300.0),
-            nlev=gtx.int32(grid.num_levels),
             horizontal_start=gtx.int32(horizontal_start),
             horizontal_end=gtx.int32(horizontal_end),
             vertical_start=gtx.int32(0),
