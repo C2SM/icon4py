@@ -207,6 +207,8 @@ class DriverConfig:
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ExperimentConfig(config_io.ConfigWithShared):
+    """ICON4Py experiment configuration."""
+
     geometry: GeometryConfig
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
