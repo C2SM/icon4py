@@ -35,7 +35,6 @@ _log = logging.getLogger(__file__)
 
 
 @pytest.mark.datatest
-@pytest.mark.embedded_remap_error
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(

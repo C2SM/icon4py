@@ -138,7 +138,6 @@ def _reassemble_global_order(dataset: xr.Dataset, reference: xr.Dataset) -> xr.D
 
 
 @pytest.mark.datatest
-@pytest.mark.embedded_remap_error
 @pytest.mark.mpi
 @pytest.mark.level("integration")
 @pytest.mark.parametrize("process_props", [True], indirect=True)

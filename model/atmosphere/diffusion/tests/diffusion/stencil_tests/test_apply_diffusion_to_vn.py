@@ -24,7 +24,6 @@ from .test_apply_nabla2_to_vn_in_lateral_boundary import (
 from .test_calculate_nabla4 import calculate_nabla4_numpy
 
 
-@pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestApplyDiffusionToVn(stencil_tests.StencilTest):
     PROGRAM = apply_diffusion_to_vn

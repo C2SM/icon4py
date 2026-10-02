@@ -8,7 +8,7 @@
 
 
 import gt4py.next as gtx
-from gt4py.next import broadcast, where
+from gt4py.next import where
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
@@ -50,6 +50,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary imp
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
+from icon4py.model.common.math.value_of_size import value_of_size_on_edges_on_model_levels_wp
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -203,8 +204,8 @@ def _compute_rho_theta_pgrad_and_update_vn(
             geofac_grg_y=geofac_grg_y,
         ),
         (
-            broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-            broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+            value_of_size_on_edges_on_model_levels_wp(wpfloat("0.0"), current_vn),
+            value_of_size_on_edges_on_model_levels_wp(wpfloat("0.0"), current_vn),
         ),
     )
 

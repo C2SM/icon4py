@@ -114,7 +114,6 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
     return rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
 class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
     PROGRAM = compute_rho_theta_pgrad_and_update_vn

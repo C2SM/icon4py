@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_topography_smoothing_with_serialized_data(
     icon_grid: base_grid.Grid,

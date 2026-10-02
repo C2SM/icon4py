@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_compute_wgtfac_c(
     icon_grid: base_grid.Grid,
