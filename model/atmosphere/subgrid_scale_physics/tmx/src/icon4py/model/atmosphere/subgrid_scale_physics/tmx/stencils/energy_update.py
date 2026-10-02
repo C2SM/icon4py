@@ -81,7 +81,7 @@ def _update_temperature_and_compute_end_of_step_diagnostics(
         wpfloat("0.5")
         * air_mass
         * dissipation_factor
-        / dtime
+        * (wpfloat("1.0") / dtime)
         * (u * u - new_u * new_u + v * v - new_v * new_v)
     )
     # `nlev`, not `vertical_end`: the surface term belongs to the lowest model level whatever
