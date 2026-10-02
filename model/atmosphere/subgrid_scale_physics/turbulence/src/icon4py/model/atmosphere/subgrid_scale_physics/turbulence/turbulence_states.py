@@ -100,6 +100,9 @@ NUM_WATER_TILES: Final[int] = 3
 NUM_TILES: Final[int] = NUM_LAND_TILES + NUM_WATER_TILES
 
 #: Index of the open-sea tile within a per-tile tuple ('isub_water' in ICON, 1-based there).
+#: This and the next two exist only in the nine-tile shape. In the single-tile shape there is
+#: no water tile -- a water point is tile 0 (mo_nwp_turbtrans_interface.f90:425-430, :653-654)
+#: -- so they index past its end; nothing in 'src/' uses them yet (2026-10-02).
 OPEN_SEA_TILE: Final[int] = NUM_LAND_TILES
 
 #: Index of the lake tile ('isub_lake').
@@ -408,7 +411,9 @@ class TurbulenceTendencyState:
     #: only.
     ddt_qc: fa.CellKField[ta.wpfloat]
     #: 'tketens' -- diffusion tendency of q = sqrt(2 * TKE), on half levels [m/s2]. The one
-    #: tendency argument of turbdiff that is not optional.
+    #: tendency argument of turbdiff that is not optional, and the one that is also READ: the
+    #: next call takes it as section 3)'s 'tvt', so the caller carries it across calls rather
+    #: than zeroing it (see `Turbulence.run_turbdiff`).
     ddt_tke: fa.CellKField[ta.wpfloat]
     #: 'ptr(:)%at' -- tendencies of the diffused passive tracers, on full levels, aligned
     #: entry by entry with `TurbulenceInputState.tracers`. Must be empty for the same reason,
@@ -421,13 +426,32 @@ class TurbulenceTendencyState:
 
 @dataclasses.dataclass(frozen=True)
 class TurbulenceTileState:
-    """Per-tile surface state of turbtran.
+    """Per-tile surface fields of turbtran.
 
     turbtran has no tile dimension of its own: ICON calls it once per tile on gathered index
-    lists (mo_nwp_turbtrans_interface.f90:319, :677) and aggregates the results afterwards.
-    These are the quantities that are genuinely per-tile *state* -- iterated on from one call
-    of turbtran to the next -- rather than per-tile outputs, which the interface aggregates and
-    which therefore appear grid-mean in `TurbulenceDiagnosticState`.
+    lists (the tile loop at mo_nwp_turbtrans_interface.f90:743, the call at ':917') and
+    aggregates the results afterwards (':1104-1137'). Per-tile outputs that the interface only
+    aggregates are not here; they appear grid-mean in `TurbulenceDiagnosticState`.
+
+    NOT EVERY FIELD HERE IS STATE. Until 2026-10-02 this docstring said all of them are
+    "iterated on from one call of turbtran to the next". Re-read against the interface's gather
+    (':811-830') and scatter (':1035-1044'), that holds for six of the ten, one of them only in
+    part:
+
+    * carried across calls, read before the call and written back after it "for next call of
+      'turbtran'": 'tvs_s_t', 'tkvm_s_t', 'tkvh_s_t', 'rcld_s_t' (marked "to be activated" at
+      ':822') and 'tkr_t' (needed only if 'imode_trancnf >= 4'). 'gz0_t' is carried on the
+      three water tiles only: on land tiles the interface rebuilds it from the land-cover class
+      before every call (':336', under 'itype_z0 >= 2') and does not write turbtran's value
+      back (':1037-1039').
+    * rebuilt or re-read every call, and 'INTENT(IN)' in turbtran (passed at ':944', ':947-948'):
+      'sai_t' (external data plus the snow blend, ':325-355', ':812'), 't_g_t' and 'qv_s_t'
+      (the land model's, ':820-821').
+    * not a turbtran argument at all: 'frac_t', the area weight of the aggregation
+      (':1123', ':1157', ':1168').
+
+    The distinction matters for a tiled granule (plan Phase 3, not started): only the first
+    group has to survive between calls.
 
     Every field is a tuple of one cell field per tile, in ICON's tile order: `NUM_LAND_TILES`
     land sub-tiles running identical physics, then open sea, lake and sea-ice. See `TileField`
@@ -435,7 +459,7 @@ class TurbulenceTileState:
     """
 
     #: 'gz0_t' -- roughness length times gravity, per tile [m2/s2]. turbtran updates it and it
-    #: is read back on the next call ('prm_diag%gz0_t').
+    #: is read back on the next call ('prm_diag%gz0_t') -- on the water tiles only; see above.
     gz0_t: TileField
     #: 'sai_t' -- surface area index, per tile [1]. For land tiles the interface blends in the
     #: snow-cover contribution before the call ('ext_data%atm%sai_t').

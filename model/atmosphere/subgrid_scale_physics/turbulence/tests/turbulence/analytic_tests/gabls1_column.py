@@ -17,6 +17,17 @@ the granule forward for 3240 steps and asks whether the boundary layer it produc
 eleven large-eddy simulations produced. It is the only thing here that tests the scheme as a
 trajectory.
 
+STATUS (2026-10-02): THERE IS NO TEST, AND THE COLUMN DOES NOT REPRODUCE BEARE. This module is
+the driver alone. The agent writing it was killed on 2026-09-03 before 'test_gabls1.py' existed,
+so every assertion the comments below once attributed to that file was planned and never
+written; each of them now says so. A 15-variant sweep of this driver (job 845490, 'gtfn_cpu')
+gives 'h = 324 m' against Beare's 158-211 m, with 'u*' and 'H' outside the published spread as
+well. The LLDC floors, not 'tur_len', set the depth, and the surface TKE is inert -- see THE ONE
+FREE CHOICE below, and `Gabls1Column._zero_the_tendencies` for a suspected driver defect that
+would explain the inertness. Measurements, the open attribution and the next steps are in
+'docs/superpowers/notes/2026-10-01-gabls1-status.md' in the workspace. Do not turn this into a
+passing test by loosening a tolerance: the failure is the result.
+
 WHAT IT DOES NOT TEST, stated first so that a green run is not over-read:
 
 * NOT 'turbtran', and not ICON's surface coupling. The surface layer below is Beare's own
@@ -44,7 +55,13 @@ local-equilibrium TKE budget rather than from a flux law. Its neutral limit is e
 Mellor-Yamada surface value 'q = d_mom**(1/3) * u_star', and under stable stratification
 'turbtran' returns LESS than that -- so this choice biases the boundary layer DEEPER, in the
 same direction as the mixing-length excess of D-L1. `SURFACE_TKE_FACTOR` is that constant and
-`Gabls1Config.surface_tke_factor` is the knob a sensitivity run turns.
+`Gabls1Config.surface_tke_factor` is the knob a sensitivity run turns. Turned, it does nothing:
+at 1.5 and 2.0 the sweep reproduces the base run in every printed digit, and a 20-step probe on
+'gtfn_cpu' moved the surface TKE row from 1.347 to 0.792 and left 'u', 'T' and every other TKE
+row bit-identical (2026-09-03, recovered 2026-10-01 from the session transcripts). ICON's TKE
+diffusion has a fixed-value lower boundary at the surface level ('lsflucond = .FALSE.',
+'k_sf = ke1', 'turb_diffusion.f90:2419-2433'), so that row should reach the interior within a
+step; why it does not here is the question `Gabls1Column._zero_the_tendencies` answers.
 
 THE COLUMN STATE LIVES ON THE HOST. The surface layer has to be solved in host arithmetic
 anyway -- it is a fixed-point iteration over eighteen columns of eighteen values -- and the
@@ -113,8 +130,10 @@ SURFACE_TKE_FACTOR: float = 16.6 ** (1.0 / 3.0)
 #: 'l_hori' [m]: the mean characteristic length of ICON's grid, which the SCM torus for this
 #: case ('Torus_Triangles_4x4_2500m.nc') sets to 2500 m. It enters the scheme only through
 #: 'l_scal = min(0.5*l_hori, tur_len)' and the shear floor
-#: 'fc_min = (vel_min/max(l_hori, tur_len))**2 = 1.6e-11', so it is chosen but not influential;
-#: 'test_gabls1.py' asserts that rather than asserting it here.
+#: 'fc_min = (vel_min/max(l_hori, tur_len))**2 = 1.6e-11', so it is chosen but not influential.
+#: Measured, not asserted -- 'test_gabls1.py', which was to assert it, was never written (STATUS
+#: in the module docstring): 'l_hori = 10000' reproduces the base run in every printed digit
+#: (sweep job 845490).
 HORIZONTAL_LENGTH_SCALE: float = 2500.0
 
 #: 'tkvm = tkvh' at 't = 0' [m2/s]. THE GRANULE HAS NO COLD START, so the caller has to
@@ -125,8 +144,9 @@ HORIZONTAL_LENGTH_SCALE: float = 2500.0
 #: runs the section 1c) this granule does not carry ("NO 'lini' ANYWHERE", 'turbulence.py').
 #: One metre squared per second is the order of magnitude of the LLDC floors themselves and is
 #: therefore not a large perturbation; the boundary layer equilibrates "within only 0.5 x 10^4 s
-#: (1.5 h)" (Beare p. 254), five and a half hours before the window Table IV reports, and
-#: 'test_gabls1.py' records the sensitivity rather than asserting it away.
+#: (1.5 h)" (Beare p. 254), five and a half hours before the window Table IV reports. The
+#: sensitivity was measured, not recorded in a test ('test_gabls1.py' was never written): 0.1
+#: instead of 1.0 reproduces the base run in every printed digit (sweep job 845490).
 INITIAL_DIFFUSION_COEFFICIENT: float = 1.0
 
 #: How far a fixed-point iterate may move before the surface layer is called converged.
@@ -160,11 +180,14 @@ class TkeCarry(enum.Enum):
     #: across from 'nvor' makes exactly this mistake. IT DOES NOT BITE IN THIS DRIVER, and that
     #: is a result rather than an oversight: the Monin-Obukhov surface layer prescribes
     #: 'tke[nlev]' afresh at every step, so the row the mutation drops is overwritten before it
-    #: is read. 'test_gabls1.py' asserts that, so the negative result is recorded rather than
-    #: forgotten.
+    #: is read. Measured, not asserted: the sweep's 'tkeinterior' run reproduces the base run in
+    #: every printed digit (job 845490). 'test_gabls1.py', which was to assert it, was never
+    #: written, so this comment is where the negative result is recorded.
     INTERIOR_ONLY = "interior_only"
     #: Nothing is carried: every step starts from the initial TKE profile. The same
-    #: transcription mistake one field wider, and the one that does bite.
+    #: transcription mistake one field wider, and the one that does bite -- THE WRONG WAY: it
+    #: gives 'h = 503.9 m' against the base run's 324.0 (sweep job 845490), deeper, where the
+    #: design of 2026-08-31 predicted a collapse below Beare's envelope.
     NONE = "none"
 
 
@@ -196,13 +219,16 @@ class Gabls1Config:
     #: 'tur_len' [m], the ASYMPTOTIC TURBULENT DISTANCE. The asymptotic MIXING length is
     #: 'akt*tur_len', so 100 m here is 40 m of mixing length, which is exactly the 'lambda_0' of
     #: Beare Eq. (5) -- the identical functional form, 'z+z0' included. ICON's default of 500 m
-    #: is 200 m, five times Beare's, and 'test_gabls1.py' runs both.
+    #: is 200 m, five times Beare's. 'test_gabls1.py' was to run both and was never written; the
+    #: sweep ran them, and 'h' is 324.0, 324.3 and 324.3 m at 100, 300 and 500 (job 845490). So
+    #: 'tur_len' does NOT set the depth here, and the 100/500 pair discriminates nothing.
     tur_len: float = 100.0
     #: 'tkhmin', 'tkmmin' [m2/s], the lower limits of the diffusion coefficients. ICON's default
     #: 0.75 is a floor no LES has, in exactly the regime -- strongly stable, small K -- where
-    #: the closure would otherwise decouple levels. It is the SECOND over-mixing mechanism
-    #: beside the mixing length and must be reported next to it, or the whole depth excess gets
-    #: attributed to 'tur_len'.
+    #: the closure would otherwise decouple levels. This comment called it the SECOND
+    #: over-mixing mechanism beside the mixing length; measured, it is the dominant one: 'h' is
+    #: 324 m with it, 59-90 m without it (at each of 'tur_len' 100, 300, 500) and 133 m at 0.01
+    #: (sweep job 845490), and no tested setting lands in Beare's 158-211 m.
     tkhmin: float = 0.75
     tkmmin: float = 0.75
     #: 'l_hori' [m]; see `HORIZONTAL_LENGTH_SCALE`.
@@ -213,7 +239,10 @@ class Gabls1Config:
     #: 'tkvh[nlev] = scalar_diffusivity_ratio * kappa * u_star * z0'. One by the consistency
     #: identity, because Beare's MO layer has a neutral turbulent Prandtl number of one;
     #: 'turbtran' uses 'S_h/S_m = 1/Pr_n = 1.26' instead, and the sensitivity to that 26 % is
-    #: measured rather than argued.
+    #: measured rather than argued. Measured, it is nil: 1.26 reproduces the base run in every
+    #: printed digit (sweep job 845490), and in the 20-step probe it moved the surface 'tkvh'
+    #: from 0.02112 to 0.02661 and left 'tke' and 'T' bit-identical -- the same inertness as
+    #: `surface_tke_factor` (module docstring).
     scalar_diffusivity_ratio: float = 1.0
     #: Which rows of the TKE the driver carries across a step; see `TkeCarry`.
     tke_carry: TkeCarry = TkeCarry.WHOLE_COLUMN
@@ -300,9 +329,10 @@ def solve_the_surface_layer(
     the last iterate, following '_iterate_to_the_fixed_point' of
     'test_neutral_surface_layer.py'.
 
-    The same substitution makes the fixed point the root of a quadratic, which
-    'test_gabls1.py::test_the_surface_layer_solves_its_own_defining_equation' uses as an
-    independent check: two derivations of one number, neither reading the other's code.
+    The same substitution makes the fixed point the root of a quadratic, which was to be the
+    independent check -- two derivations of one number, neither reading the other's code -- in
+    'test_gabls1.py::test_the_surface_layer_solves_its_own_defining_equation'. That test was
+    never written; nothing checks this function today beyond the convergence guard below.
 
     Args:
         wind_speed: '|V|' at the lowest main level, already floored at 'vel_min' [m/s].
@@ -736,7 +766,8 @@ class Gabls1Column:
         GABLS1 SCM namelist sets the opposite of all three. That is not a contradiction: every
         input those three terms read -- 'dwdx', 'dwdy', 'hdiv', 'hdef2', 'ut_sso', 'vt_sso' --
         is identically zero here, so the mandatory configuration and ICON's produce the same
-        numbers. 'test_gabls1.py' asserts it rather than leaving it as an argument.
+        numbers. That is still an argument: 'test_gabls1.py', which was to assert it, was never
+        written.
         """
         self.config_used = turbulence.TurbulenceConfig(
             itype_sher=options.ShearProductionType.VERTICAL_AND_VERTICAL_VELOCITY,
@@ -849,8 +880,10 @@ class Gabls1Column:
 
         The Coriolis and geostrophic terms are the DRIVER'S. The granule diffuses; it does not
         know about 'f'. 'f*dt = 1.39e-3' per step, so a forward-explicit rotation is accurate
-        and stable over 3240 steps, and 'test_gabls1.py' verifies it by conserving '|V - V_g|'
-        in a control run with the granule's tendencies discarded.
+        over 3240 steps: it amplifies a pure rotation by 'sqrt(1 + (f*dt)**2)' per step, about
+        0.3 % over the run. That is argued, not verified: the control run that was to show it,
+        conserving '|V - V_g|' with the granule's tendencies discarded, was planned for
+        'test_gabls1.py', which was never written.
         """
         layer = self.evaluate_the_surface_layer()
         self._apply(layer)
@@ -892,7 +925,21 @@ class Gabls1Column:
         return layer
 
     def _zero_the_tendencies(self) -> None:
-        """All six accumulate; 'ddt_tke' is read on entry as the advection tendency."""
+        """All six accumulate; 'ddt_tke' is read on entry as the transport tendency 'tvt'.
+
+        SUSPECTED DRIVER DEFECT, found 2026-10-02 by reading the source; neither measured nor
+        fixed. Zeroing 'ddt_tke' here throws away the TKE-diffusion tendency the previous call
+        wrote in section 10). ICON never resets it between calls: with TKE advection on,
+        'mo_nwp_turbdiff_interface.f90:288' adds the advection tendency ONTO it, and the next
+        'turbdiff' reads it in section 3) as 'tvt', the "turbulent transport of turbulent
+        velocity scale" ('turb_diffusion.f90:1829', 'turb_utilities.f90:1143', used at ':1499').
+        So in ICON the TKE diffusion acts one step late, and here it never acts: section 9)'s
+        result reaches nothing, and the surface TKE row, whose only way into the interior is
+        that diffusion, cannot matter -- which is the inertness the sweep measured (module
+        docstring). The likely fix, carrying 'ddt_tke' and zeroing only the other five, will
+        move every number in that sweep, so it needs the sweep rerun; see
+        'docs/superpowers/notes/2026-10-01-gabls1-status.md'.
+        """
         zero_main = np.zeros((self._num_cells, self._nlev))
         zero_half = np.zeros((self._num_cells, self._nlev + 1))
         for field, zero in (

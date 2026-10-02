@@ -265,6 +265,17 @@ class FrozenSwitch:
 FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
     FrozenSwitch("imode_turb", 1, "prognostic TKE equation"),  # :299
     FrozenSwitch("imode_tran", 0, "diagnostic TKE equation in the transfer scheme"),  # :298
+    # THE 'meaning' BELOW MISLEADS, and because it is also the text of the NotImplementedError
+    # it is corrected here, in a comment-only pass (2026-10-02), rather than in the string.
+    # 'imode_stbcalc' packs two switches into one integer. Its MAGNITUDE selects the correction
+    # of the stability functions ('imode_stbcorr = ABS(imode_stbcalc)', turb_utilities.f90:1282):
+    # at 1, the standard solution at the given TKE is used wherever 'fh2 >= 0', and the
+    # corrected one, with 'gama = MIN(gam0, frc*tim2/tls)' in terms of the previous forcing,
+    # wherever 'fh2 < 0' (':1587', ':1653-1663'; 'alt_gama' at ':1283' also needs
+    # '.NOT. ltkeinp'). So "always ... for unstable stratification" means at every strictly
+    # non-stable point, not that every point is treated as unstable. Its SIGN switches the
+    # preconditioning of the standard solution ('lstbsecu = imode_stbcalc < 0', ':1558'), so
+    # '-1' is a distinct, unported formulation that `FrozenSwitch.check` refuses like any other.
     FrozenSwitch(
         "imode_stbcalc",
         1,
@@ -272,6 +283,16 @@ FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
         "using a restricted 'gama' in terms of the previous forcing",
     ),  # :318
     FrozenSwitch("imode_tkediff", 2, "implicit TKE diffusion in terms of TKE = q^2 / 2"),  # :383
+    # THE 'meaning' BELOW OMITS TWO OF THE SIX CLAUSES of the declaration
+    # (mo_turbdiff_config.f90:361-365), "calcul. Tet_l-gradients directly" and "with transmit.
+    # skin-layer depth to turbul."; the string is left as it is for the reason given above
+    # 'imode_stbcalc'. Neither clause is a branch of its own: 3 is "as 2, but ..." and 4 "as 3,
+    # but ...", and no comparison anywhere in 'icon/src' singles out 2 -- the forms are '< 3',
+    # '>= 3', '== 3', '< 4', '>= 4' and one '== 2 .OR. == 3' (turb_transfer.f90:1589). What 2
+    # selects in the code is therefore: no hyperbolic interpolation of the profile function
+    # under stable stratification (turb_transfer.f90:1245), profile factors from the previous
+    # diffusion coefficients with the upper interpolation node (':1082-1098'), and no 'tkr'
+    # carried from one call to the next (INOUT only from 4 on, ':522-524').
     FrozenSwitch(
         "imode_trancnf",
         2,
@@ -1983,8 +2004,8 @@ class Turbulence:
                                            copied from the half-level storage, over the column
                                            window and not the full width
             tendency_state.ddt_tke         rows 1..nlev by section 10); row 0 keeps the
-                                           advection tendency it arrived with, which section 3)
-                                           read as 'tvt'
+                                           value it arrived with, which section 3) read as
+                                           'tvt' (see 'tendency_state' below)
             tendency_state.tket_hshr       rows 1..nlev-1 by section 2a)
 
         'diagnostic_state.tfm', 'tfh' and 'tfv' are NOT written. The Fortran would overwrite
@@ -1999,8 +2020,14 @@ class Turbulence:
             input_state: The atmospheric column and the external forcings. Read-only.
             surface_state: The grid-mean surface state. Read-only.
             diagnostic_state: The turbulence diagnostics; read and written.
-            tendency_state: Where the tendencies go. 'ddt_tke' is read on entry as the
-                advection tendency, exactly as the Fortran's 'INTENT(INOUT) tketens' is.
+            tendency_state: Where the tendencies go. 'ddt_tke' is read on entry as section
+                3)'s 'tvt', exactly as the Fortran's 'INTENT(INOUT) tketens' is. That is the
+                "turbulent transport" of q (turb_utilities.f90:1143): in ICON, the TKE-diffusion
+                tendency this granule wrote on the PREVIOUS call, plus whatever advection
+                tendency the interface added onto it (mo_nwp_turbdiff_interface.f90:288), so the
+                diffusion acts one step late. A caller must carry 'ddt_tke' from one call to the
+                next; zeroing it, as this docstring once invited by calling it "the advection
+                tendency", silently switches TKE diffusion off.
             dt_tke: The time step of the TKE equation [s], ICON's 'dt_tke'.
         """
         # 'num_cells' is the horizontal length the raw-array copies below are clamped to; see
@@ -2839,9 +2866,10 @@ class Turbulence:
                 'tracers' must be empty; see `run_vertdiff`.
             surface_state: The grid-mean surface state. Read-only.
             diagnostic_state: The turbulence diagnostics; read and written by both stages.
-            tendency_state: Where the tendencies go. 'ddt_tke' is read on entry as the
-                advection tendency and overwritten; the other five are accumulated onto. Its
-                'ddt_tracers' must be empty; see `run_vertdiff`.
+            tendency_state: Where the tendencies go. 'ddt_tke' is read on entry as section
+                3)'s 'tvt' -- the previous call's TKE-diffusion tendency, which the caller must
+                carry; see `run_turbdiff` -- and overwritten; the other five are accumulated
+                onto. Its 'ddt_tracers' must be empty; see `run_vertdiff`.
             dt_var: The time step of the vertical diffusion [s].
             dt_tke: The time step of the TKE equation [s]. ICON passes 'tcall_turb_jg' for
                 this and for 'dt_var' alike, but the Fortran keeps them apart and so does this.
