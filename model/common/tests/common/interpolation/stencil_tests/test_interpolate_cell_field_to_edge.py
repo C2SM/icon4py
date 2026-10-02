@@ -14,14 +14,14 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_edge import (
-    interpolate_cell_field_to_edge,
+    interpolate_cell_field_to_edge_f64,
 )
 from icon4py.model.testing import stencil_tests
 
 
 @pytest.mark.skip_value_error
 class TestInterpolateCellFieldToEdge(stencil_tests.StencilTest):
-    PROGRAM = interpolate_cell_field_to_edge
+    PROGRAM = interpolate_cell_field_to_edge_f64
     OUTPUTS = ("out_field",)
 
     @stencil_tests.static_reference
