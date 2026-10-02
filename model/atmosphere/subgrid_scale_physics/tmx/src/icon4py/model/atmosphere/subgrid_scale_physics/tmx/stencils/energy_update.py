@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _update_temperature_and_compute_energy_diagnostics(
+def _update_temperature_and_compute_end_of_step_diagnostics(
     u: fa.CellKField[wpfloat],
     v: fa.CellKField[wpfloat],
     new_u: fa.CellKField[wpfloat],
@@ -170,7 +170,7 @@ def update_temperature_and_compute_end_of_step_diagnostics(
     `tend_temperature` is updated in place. `km` and `kh` are written above the lowest level
     only; the lowest level is the surface exchange coefficient.
     """
-    _update_temperature_and_compute_energy_diagnostics(
+    _update_temperature_and_compute_end_of_step_diagnostics(
         u=u,
         v=v,
         new_u=new_u,
