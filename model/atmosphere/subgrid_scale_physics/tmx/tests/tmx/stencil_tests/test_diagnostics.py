@@ -332,7 +332,7 @@ def interpolate_cell_field_to_edge_numpy(
     in_field: np.ndarray,
     coeff: np.ndarray,
 ) -> np.ndarray:
-    """Reference of ``_interpolate_cell_field_to_edge_on_half_levels_wp``."""
+    """Reference of ``_interpolate_cell_field_to_edge_on_half_levels``."""
     e2c = connectivities[dims.E2C]  # (n_edges, 2)
     return np.sum(in_field[e2c] * np.expand_dims(coeff, axis=-1), axis=1)
 

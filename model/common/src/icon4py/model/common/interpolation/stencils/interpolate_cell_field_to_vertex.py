@@ -14,7 +14,7 @@ from icon4py.model.common.dimension import V2C
 
 
 @gtx.field_operator
-def _interpolate_cell_field_to_vertex(
+def _interpolate_cell_field_to_vertex_f64(
     cell_in: fa.CellKHalfField[gtx.float64],
     c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
 ) -> fa.VertexKHalfField[gtx.float64]:
@@ -23,7 +23,7 @@ def _interpolate_cell_field_to_vertex(
 
 
 @gtx.field_operator
-def _interpolate_cell_field_to_vertex_wp(
+def _interpolate_cell_field_to_vertex(
     cell_in: fa.CellKHalfField[types.wpfloat],
     c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], types.wpfloat],
 ) -> fa.VertexKHalfField[types.wpfloat]:

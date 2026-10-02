@@ -30,7 +30,7 @@ def _interpolate_cell_field_to_edge(
 
 
 @gtx.field_operator
-def _interpolate_cell_field_to_edge_on_half_levels(
+def _interpolate_cell_field_to_edge_on_half_levels_f64(
     in_field: fa.CellKHalfField[gtx.float64],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
 ) -> fa.EdgeKHalfField[gtx.float64]:
@@ -38,7 +38,7 @@ def _interpolate_cell_field_to_edge_on_half_levels(
 
 
 @gtx.field_operator
-def _interpolate_cell_field_to_edge_on_half_levels_wp(
+def _interpolate_cell_field_to_edge_on_half_levels(
     in_field: fa.CellKHalfField[wpfloat],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
 ) -> fa.EdgeKHalfField[wpfloat]:
