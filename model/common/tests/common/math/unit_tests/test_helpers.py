@@ -13,12 +13,14 @@ import numpy as np
 import pytest
 
 import icon4py.model.testing.test_utils
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.math import (
     vector_operations as vector_ops,
     vertical_operations as vertical_ops,
 )
+from icon4py.model.common.math.vertical_operations import _accumulate_from_top
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation
 from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
@@ -110,4 +112,26 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(grid.num_levels),
+        )
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def _accumulate_from_top_on_cells(summand: fa.CellKField[wpfloat]) -> fa.CellKField[wpfloat]:
+    return _accumulate_from_top(summand)
+
+
+class TestAccumulateFromTop(stencil_tests.StencilTest):
+    PROGRAM = _accumulate_from_top_on_cells
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, *, summand: np.ndarray, **kwargs: Any) -> dict:
+        return dict(out=np.cumsum(summand, axis=1))
+
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        return dict(
+            summand=data_alloc.random_field(dims.CellDim, dims.KDim),
+            out=data_alloc.zero_field(dims.CellDim, dims.KDim),
+            domain={dims.CellDim: (0, grid.num_cells), dims.KDim: (0, grid.num_levels)},
         )
