@@ -97,7 +97,7 @@ def _diffuse_scalar(
     rhs = concat_where(
         dims.KDim < maxlvl, zero, -surface_flux * prefactor * (wpfloat("1.0") / air_mass)
     )
-    vertical_tend = _solve_implicit_vertical_diffusion_on_cells(var, a, b, c, rhs, zero, dtime)
+    vertical_tend = _solve_implicit_vertical_diffusion_on_cells(var, a, b, c, rhs, dtime)
     flux = (
         wpfloat("0.5")
         * prefactor

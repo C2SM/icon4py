@@ -217,7 +217,7 @@ class Experiments:
         name="exclaim_ape_aesPhys",
         long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
         grid=Grids.R02B04_GLOBAL,
-        version=12,
+        version=13,
         dates=("2008-09-01T00:00:00.000", "2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000"),
     )
     MCH_CH_R04B09: Final = ExperimentDescription(
