@@ -121,8 +121,10 @@ class EnergyUpdate:
         temperature to `new_state` and the end-of-step diagnostics to `diagnostic_state`.
 
         Runs after the scalar and the wind diffusion: needs their tendencies and new states,
-        and `km_ic` and `kh_ic` of `diagnostic_state`. The lowest level of `km` and `kh` is the
-        surface exchange coefficient, written only with `use_km_const`.
+        and `km_ic` and `kh_ic` of `diagnostic_state`. Above the lowest model level, `km` and
+        `kh` are copied from the half level below. At the lowest level, `use_km_const=True` sets
+        `km = km_const` and `kh = km_const / turb_prandtl`; otherwise the caller must fill that
+        level with the surface exchange coefficient.
         """
         log.debug("tmx energy update: start")
 
