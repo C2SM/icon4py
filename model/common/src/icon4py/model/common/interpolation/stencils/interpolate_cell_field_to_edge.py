@@ -14,10 +14,26 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _interpolate_cell_field_to_edge(
+def _interpolate_cell_field_to_edge_f64(
     in_field: fa.CellKField[gtx.float64],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
 ) -> fa.EdgeKField[gtx.float64]:
+    """
+    Interpolate a Cell Field to Edges.
+
+    There is a special handling of lateral boundary edges in `subroutine cells2edges_scalar`
+    in mo_icon_interpolation.f90 where the value is set to the one valid in_field value without
+    multiplication by coeff. This essentially means: the skip value neighbor in the neighbor_sum
+    is skipped and coeff needs to be 1 for this Edge index.
+    """
+    return neighbor_sum(in_field(E2C) * coeff, axis=dims.E2CDim)
+
+
+@gtx.field_operator
+def _interpolate_cell_field_to_edge(
+    in_field: fa.CellKField[wpfloat],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+) -> fa.EdgeKField[wpfloat]:
     """
     Interpolate a Cell Field to Edges.
 
@@ -46,7 +62,7 @@ def _interpolate_cell_field_to_edge_on_half_levels(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_cell_field_to_edge(
+def interpolate_cell_field_to_edge_f64(
     in_field: fa.CellKField[gtx.float64],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     out_field: fa.EdgeKField[gtx.float64],
@@ -55,7 +71,7 @@ def interpolate_cell_field_to_edge(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _interpolate_cell_field_to_edge(
+    _interpolate_cell_field_to_edge_f64(
         in_field=in_field,
         coeff=coeff,
         out=out_field,

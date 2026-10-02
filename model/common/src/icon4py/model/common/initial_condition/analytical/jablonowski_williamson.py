@@ -280,7 +280,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         )
     log.info("Newton iteration completed.")
 
-    interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(backend)(
+    interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(backend)(
         in_field=eta_v,
         coeff=c_lin_e,
         out_field=eta_v_at_edge_dp,

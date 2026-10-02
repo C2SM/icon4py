@@ -56,6 +56,8 @@ def construct_metric_state(
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
         inv_ddqz_z_half=init_savepoint.inv_ddqz_z_half(),
         inv_ddqz_z_full_e=init_savepoint.inv_ddqz_z_full_e(),
+        inv_ddqz_z_half_e=init_savepoint.inv_ddqz_z_half_e(),
+        inv_ddqz_z_half_v=init_savepoint.inv_ddqz_z_half_v(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
         wgtfacq_c=metrics_savepoint.wgtfacq_c(),
@@ -113,4 +115,6 @@ def construct_surface_flux_state(
     return tmx_states.TmxSurfaceFluxState(
         evapotranspiration=surface_fluxes_savepoint.evspsbl(),
         sensible_heat_flux=surface_fluxes_savepoint.hfss(),
+        u_stress=surface_fluxes_savepoint.tauu(),
+        v_stress=surface_fluxes_savepoint.tauv(),
     )

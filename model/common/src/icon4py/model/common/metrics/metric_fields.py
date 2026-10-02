@@ -32,7 +32,7 @@ from icon4py.model.common import constants, dimension as dims, field_type_aliase
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_edge import (
-    _interpolate_cell_field_to_edge,
+    _interpolate_cell_field_to_edge_f64,
     _interpolate_cell_field_to_edge_on_half_levels_f64,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_vertex import (
@@ -666,7 +666,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(  # noqa: PL
 
     e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
     k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
-    z_me = _interpolate_cell_field_to_edge(in_field=z_mc, coeff=c_lin_e)
+    z_me = _interpolate_cell_field_to_edge_f64(in_field=z_mc, coeff=c_lin_e)
     downward_distance = _compute_downward_extrapolation_distance(topography)
     extrapolation_distance = concat_where(
         (horizontal_start_distance <= dims.EdgeDim) & (dims.EdgeDim < horizontal_end_distance),
