@@ -73,9 +73,9 @@ def _update_temperature_and_compute_end_of_step_diagnostics(
     integral.
 
     Returns:
-        the dissipated kinetic energy, the heating, the updated temperature, the dry static energy of the updated temperature and the vertical
-        integrals of the dry static energy, of the dissipated kinetic energy, of the internal
-        energy and of its tendency
+        the dissipated kinetic energy, the heating, the updated temperature, the dry static
+        energy of the updated temperature and the vertical integrals of the dry static energy,
+        of the dissipated kinetic energy, of the internal energy and of its tendency
     """
     dissip_ke = (
         wpfloat("0.5")
