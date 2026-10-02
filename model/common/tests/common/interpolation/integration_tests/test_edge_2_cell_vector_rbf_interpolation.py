@@ -84,7 +84,7 @@ def test_edge_2_cell_vector_rbf_interpolation(
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "C2E2C2E": icon_grid.get_connectivity("C2E2C2E"),
+            dims.C2E2C2E: icon_grid.get_connectivity(dims.C2E2C2E),
         },
     )
 

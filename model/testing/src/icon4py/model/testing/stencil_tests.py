@@ -260,7 +260,7 @@ class DataAllocationWrapper:
     grid: base.Grid
     allocator: gtx_typing.Allocator | None
 
-    def connectivity_field(self, offset: str | gtx.FieldOffset) -> gtx.Field:
+    def connectivity_field(self, offset: type[gtx.NeighborConnectivity]) -> gtx.Field:
         """
         A connectivity table as a regular field, for stencils consuming it as data.
 
@@ -363,13 +363,13 @@ class DataAllocationWrapper:
         )
 
 
-class _NumPyGridConnectivitiesView(Mapping[str | gtx.FieldOffset, np.ndarray]):
+class _NumPyGridConnectivitiesView(Mapping[type[gtx.NeighborConnectivity], np.ndarray]):
     """Read-only `Mapping` exposing a grid's neighbor tables as NumPy arrays."""
 
     def __init__(self, grid: base.Grid) -> None:
         self._grid = grid
 
-    def __getitem__(self, key: str | gtx.FieldOffset) -> np.ndarray:
+    def __getitem__(self, key: type[gtx.NeighborConnectivity]) -> np.ndarray:
         # `KeyError` rather than what the grid raises: `Mapping` builds `get` and `in` on
         # top of this, and both have to see a missing key as missing rather than as an error.
         try:
@@ -380,7 +380,7 @@ class _NumPyGridConnectivitiesView(Mapping[str | gtx.FieldOffset, np.ndarray]):
             raise KeyError(f"Connectivity '{key}' is not a neighbor table.")
         return connectivity.asnumpy()
 
-    def __iter__(self) -> Iterator[str | gtx.FieldOffset]:
+    def __iter__(self) -> Iterator[type[gtx.NeighborConnectivity]]:
         return (
             key
             for key, connectivity in self._grid.connectivities.items()
@@ -391,16 +391,11 @@ class _NumPyGridConnectivitiesView(Mapping[str | gtx.FieldOffset, np.ndarray]):
         return sum(1 for _ in self)
 
 
-def connectivities_asnumpy(grid: base.Grid) -> Mapping[gtx.FieldOffset, np.ndarray]:
-    """
-    A read-only view of `grid`'s neighbor tables as NumPy arrays.
-
-    Entries can be looked up by `FieldOffset`, as the return annotation advertises, or by
-    name. The cast is needed because the underlying mapping is keyed by name and `Mapping`
-    is invariant in its key type, so the honest `Mapping[str | FieldOffset, ...]` would not
-    be accepted where reference helpers ask for `Mapping[FieldOffset, ...]`.
-    """
-    return cast(Mapping[gtx.FieldOffset, np.ndarray], _NumPyGridConnectivitiesView(grid))
+def connectivities_asnumpy(
+    grid: base.Grid,
+) -> Mapping[type[gtx.NeighborConnectivity], np.ndarray]:
+    """A read-only view of `grid`'s neighbor tables as NumPy arrays."""
+    return _NumPyGridConnectivitiesView(grid)
 
 
 @dataclasses.dataclass(frozen=True)

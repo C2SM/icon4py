@@ -24,7 +24,7 @@ from icon4py.model.testing import stencil_tests
 
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     levelmask: np.ndarray,
     c_lin_e: np.ndarray,
     z_w_con_c_full: np.ndarray,

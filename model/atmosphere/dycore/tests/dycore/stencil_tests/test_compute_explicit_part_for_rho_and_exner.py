@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 def compute_explicit_part_for_rho_and_exner_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     rho_nnow: np.ndarray,
     inv_ddqz_z_full: np.ndarray,
     z_flxdiv_mass: np.ndarray,

@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 def add_analysis_increments_from_data_assimilation_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     z_rho_expl: np.ndarray,
     rho_incr: np.ndarray,
     z_exner_expl: np.ndarray,

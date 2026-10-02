@@ -185,10 +185,10 @@ def test_grid_size(icon_grid: base_grid.Grid) -> None:
     "grid_description",
     (test_defs.Grids.MCH_CH_R04B09_DSL, test_defs.Grids.R02B04_GLOBAL),
 )
-@pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.value)
+@pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.__name__)
 def test_when_keep_skip_value_then_neighbor_table_matches_config(
     grid_description: test_defs.GridDescription,
-    offset: gtx.FieldOffset,
+    offset: type[gtx.NeighborConnectivity],
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
@@ -220,15 +220,16 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
     if dim == dims.LsqUnkDim:
         pytest.skip("LsqUnkDim is not an offset dimension.")
     grid = utils.run_grid_manager(grid_description, keep_skip_values=False, backend=backend).grid
-    connectivity = grid.get_connectivity(dim.value)
+    assert dim.owner is not None
+    connectivity = grid.get_connectivity(dim.owner)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
         assert np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item(), (
-            f"Connectivity {dim.value} for {grid_description.name} should have skip values."
+            f"Connectivity {dim.owner.__name__} for {grid_description.name} should have skip values."
         )
         assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
     else:
         assert not np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item(), (
-            f"Connectivity {dim.value} for {grid_description.name} contains skip values, but none are expected."
+            f"Connectivity {dim.owner.__name__} for {grid_description.name} contains skip values, but none are expected."
         )
         assert connectivity.skip_value is None
 

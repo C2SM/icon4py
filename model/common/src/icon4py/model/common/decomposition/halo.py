@@ -61,7 +61,7 @@ class IconLikeHaloConstructor(HaloConstructor):
     def __init__(
         self,
         process_props: defs.ProcessProperties,
-        connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
+        connectivities: dict[type[gtx.NeighborConnectivity], data_alloc.NDArray],
         allocator: gtx_typing.Allocator | None = None,
     ):
         """
@@ -73,12 +73,8 @@ class IconLikeHaloConstructor(HaloConstructor):
         """
         self._xp = data_alloc.import_array_ns(allocator)
         self._process_props = process_props
-        self._connectivities = {self._value(k): v for k, v in connectivities.items()}
+        self._connectivities = connectivities
         self._assert_all_neighbor_tables()
-
-    @staticmethod
-    def _value(k: gtx.FieldOffset | str) -> str:
-        return str(k.value) if isinstance(k, gtx.FieldOffset) else k
 
     def _validate_mapping(self, cell_to_rank_mapping: data_alloc.NDArray) -> None:
         # validate the distribution mapping:
@@ -108,13 +104,13 @@ class IconLikeHaloConstructor(HaloConstructor):
             dims.V2E,
         ]
         for d in relevant_dimension:
-            assert d.value in self._connectivities, (
+            assert d in self._connectivities, (
                 f"Table for {d} is missing from the neighbor table array."
             )
 
-    def _connectivity(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:
+    def _connectivity(self, offset: type[gtx.NeighborConnectivity]) -> data_alloc.NDArray:
         try:
-            return self._connectivities[self._value(offset)]
+            return self._connectivities[offset]
         except KeyError as err:
             raise exceptions.MissingConnectivityError(
                 f"Connectivity for offset {offset} is not available"
@@ -133,7 +129,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         return self._xp.setdiff1d(cell_neighbors, cells, assume_unique=True)
 
     def _find_neighbors(
-        self, source_indices: data_alloc.NDArray, offset: gtx.FieldOffset | str
+        self, source_indices: data_alloc.NDArray, offset: type[gtx.NeighborConnectivity]
     ) -> data_alloc.NDArray:
         """Get a flattened list of all (unique) neighbors to a given global index list"""
         assert source_indices.ndim == 1
@@ -469,7 +465,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 def get_halo_constructor(
     process_props: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
-    connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
+    connectivities: dict[type[gtx.NeighborConnectivity], data_alloc.NDArray],
     allocator: gtx_typing.Allocator | None,
 ) -> HaloConstructor:
     """

@@ -211,7 +211,7 @@ def test_compute_exner_w_explicit_weight_parameter(
         exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter_full,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        offset_provider={dims.C2E: icon_grid.get_connectivity(dims.C2E)},
     )
 
     assert testing_helpers.dallclose(
@@ -238,7 +238,7 @@ def test_compute_exner_exfac(
         metrics_savepoint.ddxn_z_full(),
         grid_savepoint.dual_edge_length(),
         out=(max_slp, max_hgtd),
-        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        offset_provider={dims.C2E: icon_grid.get_connectivity(dims.C2E)},
         domain={
             dims.CellDim: (horizontal_start, icon_grid.num_cells),
             dims.KDim: (0, icon_grid.num_levels),
@@ -297,7 +297,7 @@ def test_compute_exner_w_implicit_weight_parameter(  # noqa: PLR0917 [too-many-p
         horizontal_end=horizontal_end,
         vertical_start=vertical_start,
         vertical_end=vertical_end,
-        offset_provider={"E2C": icon_grid.get_connectivity("E2C")},
+        offset_provider={dims.E2C: icon_grid.get_connectivity(dims.E2C)},
     )
 
     horizontal_start_edge = icon_grid.start_index(
@@ -316,8 +316,8 @@ def test_compute_exner_w_implicit_weight_parameter(  # noqa: PLR0917 [too-many-p
         vertical_start=vertical_start,
         vertical_end=vertical_end,
         offset_provider={
-            "E2V": icon_grid.get_connectivity("E2V"),
-            "V2C": icon_grid.get_connectivity("V2C"),
+            dims.E2V: icon_grid.get_connectivity(dims.E2V),
+            dims.V2C: icon_grid.get_connectivity(dims.V2C),
         },
     )
 
@@ -361,7 +361,7 @@ def test_compute_wgtfac_e(
         horizontal_end=icon_grid.num_edges,
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
-        offset_provider={"E2C": icon_grid.get_connectivity("E2C")},
+        offset_provider={dims.E2C: icon_grid.get_connectivity(dims.E2C)},
     )
     assert testing_helpers.dallclose(wgtfac_e.asnumpy(), wgtfac_e_ref.asnumpy())
 
@@ -393,7 +393,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
 
     flat_idx_max = mf.compute_flat_max_idx(
-        e2c=icon_grid.get_connectivity("E2C").ndarray,
+        e2c=icon_grid.get_connectivity(dims.E2C).ndarray,
         z_mc=z_mc.ndarray,
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
@@ -418,7 +418,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
-            "E2C": icon_grid.get_connectivity("E2C"),
+            dims.E2C: icon_grid.get_connectivity(dims.E2C),
         },
     )
 

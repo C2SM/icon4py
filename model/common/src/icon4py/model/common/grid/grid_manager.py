@@ -476,13 +476,13 @@ class GridManager:
 
     def _get_local_connectivities(
         self,
-        neighbor_tables_global: dict[gtx.FieldOffset, data_alloc.NDArray],
-    ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
+        neighbor_tables_global: dict[type[gtx.NeighborConnectivity], data_alloc.NDArray],
+    ) -> dict[type[gtx.NeighborConnectivity], data_alloc.NDArray]:
         if self.decomposition_info.is_distributed():
             return {
                 k: halo.global_to_local(
-                    self._decomposition_info.global_index(k.source),
-                    v[self._decomposition_info.global_index(k.target[0])],
+                    self._decomposition_info.global_index(k.codomain),
+                    v[self._decomposition_info.global_index(k.domain)],
                 )
                 for k, v in neighbor_tables_global.items()
             }
@@ -543,8 +543,8 @@ class GridManager:
 
 
 def _get_derived_connectivities(
-    neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
-) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
+    neighbor_tables: dict[type[gtx.NeighborConnectivity], data_alloc.NDArray],
+) -> dict[type[gtx.NeighborConnectivity], data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(next(iter(neighbor_tables.values())))
     e2v_table = neighbor_tables[dims.E2V]
     c2v_table = neighbor_tables[dims.C2V]

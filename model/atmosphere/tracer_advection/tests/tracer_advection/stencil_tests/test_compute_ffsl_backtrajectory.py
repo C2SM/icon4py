@@ -150,7 +150,7 @@ class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
         p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        cell_idx = data_alloc.connectivity_field("E2C")
+        cell_idx = data_alloc.connectivity_field(dims.E2C)
         cell_blk = data_alloc.constant_field(1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
 
         edge_verts_1_x = data_alloc.random_field(dims.EdgeDim)

@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 # TODO(): copied from `test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy`. delete that test?
 def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     p_ccpr1: np.ndarray,
     p_ccpr2: np.ndarray,
     geofac_grg_x: np.ndarray,
@@ -97,7 +97,7 @@ def compute_btraj_numpy(
 
 def sten_16_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     p_vn: np.ndarray,
     rho_ref_me: np.ndarray,
     theta_ref_me: np.ndarray,
@@ -148,7 +148,7 @@ def sten_16_numpy(
 
 def compute_horizontal_advection_of_rho_and_theta_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     p_vn: np.ndarray,
     p_vt: np.ndarray,
     pos_on_tplane_e_1: np.ndarray,

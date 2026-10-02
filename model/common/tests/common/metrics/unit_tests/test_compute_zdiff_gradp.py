@@ -63,7 +63,7 @@ def test_compute_zdiff_gradp(
     start_nudging = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
 
     flat_idx_np = compute_flat_max_idx(
-        e2c=icon_grid.get_connectivity("E2C").ndarray,
+        e2c=icon_grid.get_connectivity(dims.E2C).ndarray,
         z_mc=z_mc.ndarray,
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
@@ -72,7 +72,7 @@ def test_compute_zdiff_gradp(
     )
 
     zdiff_gradp_full_field, vertoffset_gradp_full_field = compute_zdiff_gradp(
-        e2c=icon_grid.get_connectivity("E2C").ndarray,
+        e2c=icon_grid.get_connectivity(dims.E2C).ndarray,
         z_mc=z_mc.ndarray,
         c_lin_e=c_lin_e.ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,

@@ -24,7 +24,7 @@ from icon4py.model.testing import stencil_tests
 
 def update_dynamical_exner_time_increment_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     exner: np.ndarray,
     ddt_exner_phy: np.ndarray,
     exner_dyn_incr: np.ndarray,

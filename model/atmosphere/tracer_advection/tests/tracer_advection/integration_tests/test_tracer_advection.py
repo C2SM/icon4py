@@ -129,7 +129,7 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
         cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy(),
         cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
         cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
-        c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
+        c2e2c=icon_grid.connectivities[dims.C2E2C].asnumpy(),
         cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
         domain_length=geometry.grid.grid_params.domain_length,
         domain_height=geometry.grid.grid_params.domain_height,

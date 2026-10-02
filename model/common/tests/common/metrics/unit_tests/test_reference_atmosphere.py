@@ -166,7 +166,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
         horizontal_end=(gtx.int32(icon_grid.num_edges)),
         vertical_start=(gtx.int32(0)),
         vertical_end=(gtx.int32(icon_grid.num_levels)),
-        offset_provider={"E2C": icon_grid.get_connectivity("E2C")},
+        offset_provider={dims.E2C: icon_grid.get_connectivity(dims.E2C)},
     )
     assert stencil_tests.dallclose(rho_ref_me.asnumpy(), rho_ref_me_ref.asnumpy(), rtol=1e-10)
     assert stencil_tests.dallclose(theta_ref_me.asnumpy(), theta_ref_me_ref.asnumpy())

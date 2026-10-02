@@ -33,7 +33,7 @@ from .test_velocity_advection_terms import (
 
 def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     vn: np.ndarray,
     tangential_wind: np.ndarray,
     vn_on_half_levels: np.ndarray,

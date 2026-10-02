@@ -106,7 +106,7 @@ def test_compute_geofac_div(
         edge_orientation=edge_orientation,
         area=area,
         out=geofac_div,
-        offset_provider={"C2E": mesh.get_connectivity("C2E")},
+        offset_provider={dims.C2E: mesh.get_connectivity(dims.C2E)},
     )
     assert test_helpers.dallclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
 
@@ -138,7 +138,7 @@ def test_compute_geofac_rot(
         owner_mask,
         out=geofac_rot,
         domain={dims.VertexDim: (horizontal_start, horizontal_end)},
-        offset_provider={"V2E": mesh.get_connectivity("V2E")},
+        offset_provider={dims.V2E: mesh.get_connectivity(dims.V2E)},
     )
 
     assert test_helpers.dallclose(geofac_rot.asnumpy(), geofac_rot_ref.asnumpy())

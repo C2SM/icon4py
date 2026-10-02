@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     w_nnow: np.ndarray,
     ddt_w_adv_ntl1: np.ndarray,
     ddt_w_adv_ntl2: np.ndarray,

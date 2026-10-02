@@ -387,6 +387,10 @@ class TestOutput:
 # -- connectivities_asnumpy ------------------------------------------------------------
 
 
+class _Unbound(gtx.NeighborConnectivity[dims.CellDim, dims.EdgeDim]):
+    class Local(gtx.LocalDimensionIndex): ...
+
+
 class StubGrid:
     """Minimal stand-in exposing only what the connectivities view uses."""
 
@@ -394,16 +398,15 @@ class StubGrid:
         self.connectivities = connectivities
 
     def get_connectivity(self, offset):
-        return self.connectivities[offset if isinstance(offset, str) else offset.value]
+        return self.connectivities[offset]
 
 
 class TestConnectivitiesAsNumpy:
-    def test_lookup_by_name_and_by_field_offset_agree(self, grid):
+    def test_lookup_matches_the_grid(self, grid):
         view = stencil_tests.connectivities_asnumpy(grid)
 
         assert isinstance(view[dims.E2C], np.ndarray)
-        np.testing.assert_array_equal(view[dims.E2C], view["E2C"])
-        np.testing.assert_array_equal(view[dims.E2C], grid.get_connectivity("E2C").asnumpy())
+        np.testing.assert_array_equal(view[dims.E2C], grid.get_connectivity(dims.E2C).asnumpy())
 
     def test_iteration_and_length_cover_the_neighbor_tables(self, grid):
         view = stencil_tests.connectivities_asnumpy(grid)
@@ -417,23 +420,23 @@ class TestConnectivitiesAsNumpy:
         assert len(view) == len(expected)
 
     def test_non_neighbor_table_entries_are_skipped(self, grid):
-        stub = StubGrid({**dict(grid.connectivities), "Koff": dims.KDim})
+        stub = StubGrid({**dict(grid.connectivities), _Unbound: dims.KDim})
         view = stencil_tests.connectivities_asnumpy(stub)
 
-        assert "Koff" not in set(view)
+        assert _Unbound not in set(view)
         assert len(view) == len(set(view))
         with pytest.raises(KeyError, match="is not a neighbor table"):
-            view["Koff"]
+            view[_Unbound]
 
     def test_honours_the_mapping_contract_for_a_missing_key(self, grid):
         """`get` and `in` are built on `__getitem__`, so it has to raise `KeyError`."""
         view = stencil_tests.connectivities_asnumpy(grid)
 
-        assert view.get("NoSuchOffset", "default") == "default"
-        assert "NoSuchOffset" not in view
-        assert "E2C" in view
+        assert view.get(_Unbound, "default") == "default"
+        assert _Unbound not in view
+        assert dims.E2C in view
         with pytest.raises(KeyError):
-            view["NoSuchOffset"]
+            view[_Unbound]
 
 
 # -- DataAllocationWrapper -------------------------------------------------------------
@@ -501,11 +504,11 @@ class TestDataAllocationWrapper:
         A raw `NeighborTable` cannot be passed as a program argument, so stencils that
         consume a connectivity as data need it re-allocated as an ordinary field.
         """
-        field = wrapper.connectivity_field("E2C")
+        field = wrapper.connectivity_field(dims.E2C)
 
         assert isinstance(field, gtx.Field)
         assert not gtx_common.is_neighbor_table(field)
-        np.testing.assert_array_equal(field.asnumpy(), grid.get_connectivity("E2C").asnumpy())
+        np.testing.assert_array_equal(field.asnumpy(), grid.get_connectivity(dims.E2C).asnumpy())
 
     def test_signatures_stay_in_sync_with_data_allocation(self):
         """The wrapper duplicates the wrapped signatures, so guard against drift."""

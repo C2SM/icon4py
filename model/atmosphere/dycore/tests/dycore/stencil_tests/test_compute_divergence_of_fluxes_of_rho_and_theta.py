@@ -22,7 +22,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     geofac_div: np.ndarray,
     mass_flux_at_edges_on_model_levels: np.ndarray,
     theta_v_flux_at_edges_on_model_levels: np.ndarray,

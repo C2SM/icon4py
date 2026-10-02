@@ -24,7 +24,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def spatially_average_flux_or_velocity_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     e_flx_avg: np.ndarray,
     flux_or_velocity: np.ndarray,
 ) -> np.ndarray:

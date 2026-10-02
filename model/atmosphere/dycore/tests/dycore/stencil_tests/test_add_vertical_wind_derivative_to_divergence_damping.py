@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 def add_vertical_wind_derivative_to_divergence_damping_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     hmask_dd3d: np.ndarray,
     scalfac_dd3d: np.ndarray,
     inv_dual_edge_length: np.ndarray,

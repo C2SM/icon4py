@@ -34,7 +34,9 @@ def enhanced_smagorinski_factor_numpy(
 
 
 def nabla2_on_cell_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
+    psi_c: np.ndarray,
+    geofac_n2s: np.ndarray,
 ) -> np.ndarray:
     c2e2cO = connectivities[dims.C2E2CO]
     nabla2_psi_c = np.sum(np.where((c2e2cO != -1), psi_c[c2e2cO] * geofac_n2s, 0), axis=1)
@@ -42,7 +44,9 @@ def nabla2_on_cell_numpy(
 
 
 def nabla2_on_cell_k_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
+    psi_c: np.ndarray,
+    geofac_n2s: np.ndarray,
 ) -> np.ndarray:
     c2e2cO = connectivities[dims.C2E2CO]
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
@@ -53,7 +57,7 @@ def nabla2_on_cell_k_numpy(
 
 
 def compute_tangential_wind_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     vn: np.ndarray,
     rbf_vec_coeff_e: np.ndarray,
 ) -> np.ndarray:
@@ -64,7 +68,7 @@ def compute_tangential_wind_numpy(
 
 
 def interpolate_to_cell_center_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     interpolant: np.ndarray,
     e_bln_c_s: np.ndarray,
     **kwargs: Any,
@@ -76,7 +80,7 @@ def interpolate_to_cell_center_numpy(
 
 
 def interpolate_cell_field_to_vertex_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     cell_field: np.ndarray,
     c_intp: np.ndarray,
 ) -> np.ndarray:
@@ -86,7 +90,7 @@ def interpolate_cell_field_to_vertex_numpy(
 
 
 def compute_curl_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     edge_field: np.ndarray,
     geofac_rot: np.ndarray,
 ) -> np.ndarray:

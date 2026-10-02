@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def compute_contravariant_correction_of_w_for_lower_boundary_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     e_bln_c_s: np.ndarray,
     z_w_concorr_me: np.ndarray,
     wgtfacq_c: np.ndarray,

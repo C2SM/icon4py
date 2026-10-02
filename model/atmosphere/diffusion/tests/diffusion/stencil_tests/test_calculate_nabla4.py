@@ -19,7 +19,7 @@ from icon4py.model.testing import stencil_tests
 
 def calculate_nabla4_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     u_vert: np.ndarray,
     v_vert: np.ndarray,
     primal_normal_vert_v1: np.ndarray,

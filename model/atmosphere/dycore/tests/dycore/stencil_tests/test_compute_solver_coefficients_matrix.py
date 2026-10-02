@@ -23,7 +23,7 @@ from icon4py.model.testing import stencil_tests
 
 def compute_solver_coefficients_matrix_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     exner_nnow: np.ndarray,
     rho_nnow: np.ndarray,
     theta_v_nnow: np.ndarray,

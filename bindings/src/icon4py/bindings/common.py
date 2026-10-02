@@ -164,10 +164,10 @@ def cached_dummy_field_factory(
 
 
 def shrink_to_dimension(
-    sizes: dict[gtx.Dimension, int], tables: dict[gtx.FieldOffset, NDArray]
-) -> dict[gtx.FieldOffset, NDArray]:
+    sizes: dict[gtx.Dimension, int], tables: dict[type[gtx.NeighborConnectivity], NDArray]
+) -> dict[type[gtx.NeighborConnectivity], NDArray]:
     """Shrink the neighbor tables from nproma size to the actual size of the grid."""
-    return {k: v[: sizes[k.target[0]]] for k, v in tables.items()}
+    return {k: v[: sizes[k.domain]] for k, v in tables.items()}
 
 
 def add_origin(xp: ModuleType, table: NDArray) -> NDArray:

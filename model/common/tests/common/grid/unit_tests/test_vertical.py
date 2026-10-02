@@ -43,6 +43,15 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
+class _JDim(gtx.DimensionIndex, kind=gtx.DimensionKind.VERTICAL): ...
+
+
+class _HorizontalDim(gtx.DimensionIndex): ...
+
+
+class _LocalDim(gtx.LocalDimensionIndex): ...
+
+
 @pytest.mark.parametrize(
     "max_h,damping_height,delta,flat_height",
     [(60000, 34000, 612, 50000), (12000, 10000, 100, 11000), (109050, 45000, 123, 80000)],
@@ -117,7 +126,7 @@ def test_grid_size_raises_for_non_vertical_dim(
 @pytest.mark.datatest
 def test_grid_size_raises_for_unknown_vertical_dim(grid_savepoint: sb.IconGridSavepoint) -> None:
     vertical_grid = configure_vertical_grid(grid_savepoint)
-    j_dim = gtx.Dimension("J", kind=gtx.DimensionKind.VERTICAL)
+    j_dim = _JDim
     with pytest.raises(ValueError):
         vertical_grid.size(j_dim)
 
@@ -178,9 +187,8 @@ def vertical_zones() -> Iterator[v_grid.Zone]:
 
 
 @pytest.mark.parametrize("zone", vertical_zones())
-@pytest.mark.parametrize("kind", (gtx.DimensionKind.LOCAL, gtx.DimensionKind.HORIZONTAL))
-def test_domain_raises_for_non_vertical_dim(zone: v_grid.Zone, kind: gtx.DimensionKind) -> None:
-    dim = gtx.Dimension("I", kind=kind)
+@pytest.mark.parametrize("dim", (_LocalDim, _HorizontalDim), ids=lambda d: d.kind.value)
+def test_domain_raises_for_non_vertical_dim(zone: v_grid.Zone, dim: gtx.Dimension) -> None:
     with pytest.raises(AssertionError):
         v_grid.Domain(dim, zone)
 
@@ -384,7 +392,7 @@ def test_compute_vertical_coordinate(  # noqa: PLR0917 [too-many-positional-argu
         topography=topography.ndarray,
         cell_areas=cell_geometry.area.ndarray,
         geofac_n2s=geofac_n2s.ndarray,
-        c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
+        c2e2co=icon_grid.get_connectivity(dims.C2E2CO).ndarray,
         nflatlev=vertical_geometry.nflatlev,
         model_top_height=vertical_config.model_top_height,
         SLEVE_decay_scale_1=vertical_config.SLEVE_decay_scale_1,

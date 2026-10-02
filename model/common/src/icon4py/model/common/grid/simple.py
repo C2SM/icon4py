@@ -462,9 +462,7 @@ def simple_grid(
     }
 
     connectivities = {
-        offset.value: base.construct_connectivity(
-            offset, table, skip_value=None, allocator=allocator
-        )
+        offset: base.construct_connectivity(offset, table, skip_value=None, allocator=allocator)
         for offset, table in neighbor_tables.items()
     }
 

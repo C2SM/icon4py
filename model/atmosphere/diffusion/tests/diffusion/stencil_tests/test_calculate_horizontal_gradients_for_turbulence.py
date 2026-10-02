@@ -21,7 +21,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def calculate_horizontal_gradients_for_turbulence_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     w: np.ndarray,
     geofac_grg_x: np.ndarray,
     geofac_grg_y: np.ndarray,

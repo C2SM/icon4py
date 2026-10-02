@@ -20,7 +20,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def calculate_nabla2_of_theta_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     z_nabla2_e: np.ndarray,
     geofac_div: np.ndarray,
 ) -> np.ndarray:

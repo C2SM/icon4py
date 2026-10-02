@@ -13,7 +13,7 @@ from typing import Any
 import dace
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import backend as gtx_backend
+from gt4py.next import backend as gtx_backend, common as gtx_common
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.common import backend_configuration as backend_cfg, model_backends
@@ -154,7 +154,7 @@ def setup_program(
     variants: dict[str, list[gtx_typing.Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
     vertical_sizes: dict[str, gtx.int32] | None = None,
-    offset_provider: gtx_typing.OffsetProvider | None = None,
+    offset_provider: gtx_common.OffsetProviderLike | None = None,
     backend_config: backend_cfg.BackendConfig | None = None,
 ) -> Callable[..., None]:
     """

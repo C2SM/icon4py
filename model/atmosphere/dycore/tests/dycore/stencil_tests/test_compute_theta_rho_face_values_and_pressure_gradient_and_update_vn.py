@@ -24,7 +24,7 @@ from icon4py.model.testing import stencil_tests
 
 def compute_theta_rho_face_value_by_miura_scheme_numpy(
     *,
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     vn: np.ndarray,
     tangential_wind: np.ndarray,
     pos_on_tplane_e_x: np.ndarray,

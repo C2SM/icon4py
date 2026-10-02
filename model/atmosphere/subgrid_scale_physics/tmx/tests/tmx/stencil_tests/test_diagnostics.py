@@ -328,7 +328,7 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
 
 
 def interpolate_cell_field_to_edge_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     in_field: np.ndarray,
     coeff: np.ndarray,
 ) -> np.ndarray:
@@ -338,7 +338,7 @@ def interpolate_cell_field_to_edge_numpy(
 
 
 def compute_shear_and_div_of_stress_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     *,
     u_vert: np.ndarray,
     v_vert: np.ndarray,
@@ -412,7 +412,7 @@ def compute_shear_and_div_of_stress_numpy(
 
 
 def interpolate_edge_field_to_cell_half_levels_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[type[gtx.NeighborConnectivity], np.ndarray],
     interpolant: np.ndarray,
     e_bln_c_s: np.ndarray,
     wgtfac_c: np.ndarray,

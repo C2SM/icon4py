@@ -335,7 +335,7 @@ def test_halo_exchange_for_sparse_field(  # noqa: PLR0917 [too-many-positional-a
         edge_orientation,
         area,
         out=result,
-        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        offset_provider={dims.C2E: icon_grid.get_connectivity(dims.C2E)},
     )
     _log.info(
         f"{process_props.rank}/{process_props.comm_size}: size of computed field {result.asnumpy().shape}"
