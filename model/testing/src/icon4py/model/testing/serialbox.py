@@ -2200,15 +2200,15 @@ class TmxHorWindExitSavepoint(IconSavepoint):
 class TmxVertWindExitSavepoint(IconSavepoint):
     """Savepoint at exit of Compute_diffusion_vert_wind in mo_vdf.f90."""
 
+    def tend_wa(self):
+        return self._get_field("tend_wa", dims.CellDim, dims.KHalfDim)
+
     def wa_new(self):
         return self._get_field("wa_new", dims.CellDim, dims.KHalfDim)
 
 
 class TmxExitSavepoint(IconSavepoint):
     """Savepoint at exit of vdf Compute in mo_vdf.f90."""
-
-    def tend_wa(self):
-        return self._get_field("tend_wa", dims.CellDim, dims.KHalfDim)
 
     def tend_ta(self):
         return self._get_field("tend_ta", dims.CellDim, dims.KDim)

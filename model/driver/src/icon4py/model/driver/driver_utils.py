@@ -48,6 +48,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
+from icon4py.model.common.initial_condition import config as ic_config
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory, static_fields, tracer_states
@@ -752,3 +753,14 @@ def get_backend_from_name(
     log.info(f"Backend name used for the model: {backend_name}")
     log.info(f"BackendLike derived from the backend name: {backend}")
     return backend
+
+
+def make_ic_config_ctx(config: driver_config.ExperimentConfig) -> ic_config.ConfigContext:
+    return ic_config.ConfigContext(
+        initial_condition=config.initial_condition,
+        vertical_grid=config.vertical_grid,
+        is_restart=config.driver.is_restart,
+        start_of_timestepping=config.driver.start_of_timestepping,
+        dtime=config.driver.dtime,
+        ntracer=config.tracer_config.nactive if config.tracer_config is not None else 0,
+    )
