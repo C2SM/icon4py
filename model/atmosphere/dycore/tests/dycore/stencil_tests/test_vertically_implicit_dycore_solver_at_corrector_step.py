@@ -23,6 +23,10 @@ from .test_add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation_numpy,
 )
 from .test_apply_rayleigh_damping_mechanism import apply_rayleigh_damping_mechanism_numpy
+from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy
+from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
+    compute_contravariant_correction_of_w_for_lower_boundary_numpy,
+)
 from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta_numpy,
 )
@@ -61,6 +65,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         "dynamical_vertical_mass_flux_at_cells_on_half_levels",
         "dynamical_vertical_volumetric_flux_at_cells_on_half_levels",
         "exner_dynamical_increment",
+        "contravariant_correction_at_cells_on_half_levels",
     )
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
@@ -76,6 +81,10 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             "prepare_fluxes_for_advection",
             "is_iau_active",
             "rayleigh_type",
+            "recompute_contravariant_correction",
+            "flat_level_index_plus1",
+            "start_cell_index_lateral_lvl3",
+            "end_cell_index_halo_lvl1",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "end_index_of_damping_layer",
@@ -87,6 +96,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             "prepare_fluxes_for_advection",
             "is_iau_active",
             "rayleigh_type",
+            "recompute_contravariant_correction",
+            "flat_level_index_plus1",
         ),
     }
 
@@ -109,6 +120,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         nonhydro_buoy_at_cells_on_half_levels: np.ndarray,
         rho_at_cells_on_half_levels: np.ndarray,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
+        contravariant_correction_at_edges_on_model_levels: np.ndarray,
         exner_w_explicit_weight_parameter: np.ndarray,
         current_exner: np.ndarray,
         current_rho: np.ndarray,
@@ -124,6 +136,9 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         ddqz_z_half: np.ndarray,
         rayleigh_damping_factor: np.ndarray,
         reference_exner_at_cells_on_model_levels: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        wgtfac_c: np.ndarray,
+        wgtfacq_c: np.ndarray,
         advection_explicit_weight_parameter: float,
         advection_implicit_weight_parameter: float,
         prepare_fluxes_for_advection: bool,
@@ -135,8 +150,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         rayleigh_type: int,
         at_first_substep: bool,
         at_last_substep: bool,
+        recompute_contravariant_correction: bool,
         end_index_of_damping_layer: int,
         kstart_moist: int,
+        flat_level_index_plus1: int,
+        start_cell_index_lateral_lvl3: int,
+        end_cell_index_halo_lvl1: int,
         **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
@@ -157,6 +176,31 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         )
         rho_explicit_term = rng.random(next_rho.shape)
         exner_explicit_term = rng.random(next_exner.shape)
+
+        if recompute_contravariant_correction:
+            contravariant_correction_at_cells_on_half_levels = (
+                contravariant_correction_at_cells_on_half_levels.copy()
+            )
+            contravariant_correction_at_cells_on_half_levels[:, :-1] = np.where(
+                (start_cell_index_lateral_lvl3 <= horz_idx)
+                & (horz_idx < end_cell_index_halo_lvl1)
+                & (vert_idx >= flat_level_index_plus1),
+                compute_contravariant_correction_of_w_numpy(
+                    connectivities=connectivities,
+                    e_bln_c_s=e_bln_c_s,
+                    z_w_concorr_me=contravariant_correction_at_edges_on_model_levels,
+                    wgtfac_c=wgtfac_c,
+                )[:, :-1],
+                contravariant_correction_at_cells_on_half_levels[:, :-1],
+            )
+            contravariant_correction_at_cells_on_half_levels[
+                start_cell_index_lateral_lvl3:end_cell_index_halo_lvl1, -1
+            ] = compute_contravariant_correction_of_w_for_lower_boundary_numpy(
+                connectivities=connectivities,
+                e_bln_c_s=e_bln_c_s,
+                z_w_concorr_me=contravariant_correction_at_edges_on_model_levels,
+                wgtfacq_c=wgtfacq_c,
+            )[start_cell_index_lateral_lvl3:end_cell_index_halo_lvl1, -1]
 
         divergence_of_mass = np.zeros_like(current_rho)
         divergence_of_theta_v = np.zeros_like(current_theta_v)
@@ -395,6 +439,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
             dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             exner_dynamical_increment=exner_dynamical_increment,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         )
 
     @stencil_tests.input_data_fixture(
@@ -404,19 +449,28 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
                 "at_last_substep": als,
                 "prepare_fluxes_for_advection": la,
                 "is_iau_active": ia,
+                "recompute_contravariant_correction": rcc,
             }
-            for afs, als, la, ia in [
-                (True, True, True, True),  # For testing the whole functionality of the stencil
-                (True, False, True, False),  # For benchmarking against MCH experiments
-                (False, True, True, False),  # For benchmarking against MCH experiments
-                (False, False, True, False),  # For benchmarking against MCH experiments
+            for afs, als, la, ia, rcc in [
+                (
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                ),  # For testing the whole functionality of the stencil
+                (True, False, True, False, False),  # For benchmarking against MCH experiments
+                (False, True, True, False, False),  # For benchmarking against MCH experiments
+                (False, False, True, False, False),  # For benchmarking against MCH experiments
+                (False, False, True, False, True),
             ]
         ],
         ids=lambda p: (
             f"at_first_substep[{p['at_first_substep']}]__"
             f"at_last_substep[{p['at_last_substep']}]__"
             f"prepare_fluxes_for_advection[{p['prepare_fluxes_for_advection']}]__"
-            f"is_iau_active[{p['is_iau_active']}]"
+            f"is_iau_active[{p['is_iau_active']}]__"
+            f"recompute_contravariant_correction[{p['recompute_contravariant_correction']}]"
         ),
     )
     def input_data(
@@ -441,6 +495,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
             dims.CellDim, dims.KHalfDim
         )
+        contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
+            dims.EdgeDim, dims.KDim
+        )
+        e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        wgtfacq_c = data_alloc.random_field(dims.CellDim, dims.KDim)
         exner_w_explicit_weight_parameter = data_alloc.random_field(dims.CellDim)
         current_exner = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
         current_rho = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
@@ -479,6 +539,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         rayleigh_type = 2
         end_index_of_damping_layer = 12  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
         at_last_substep = request.param["at_last_substep"]
+        recompute_contravariant_correction = request.param["recompute_contravariant_correction"]
+        flat_level_index_plus1 = 6  # nflatlev + 1 of the MCH ch1 experiment
         kstart_moist = 0  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
         dtime = 0.001
         veladv_offctr = 0.25
@@ -490,6 +552,10 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         cell_domain = h_grid.domain(dims.CellDim)
         start_cell_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        start_cell_index_lateral_lvl3 = grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+        )
+        end_cell_index_halo_lvl1 = grid.end_index(cell_domain(h_grid.Zone.HALO))
 
         return dict(
             next_w=next_w,
@@ -507,6 +573,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
             exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             current_exner=current_exner,
             current_rho=current_rho,
@@ -522,6 +589,9 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             ddqz_z_half=ddqz_z_half,
             rayleigh_damping_factor=rayleigh_damping_factor,
             reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
+            e_bln_c_s=e_bln_c_s,
+            wgtfac_c=wgtfac_c,
+            wgtfacq_c=wgtfacq_c,
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
             prepare_fluxes_for_advection=prepare_fluxes_for_advection,
@@ -533,10 +603,14 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             rayleigh_type=rayleigh_type,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
+            recompute_contravariant_correction=recompute_contravariant_correction,
             end_index_of_damping_layer=end_index_of_damping_layer,
             kstart_moist=kstart_moist,
+            flat_level_index_plus1=flat_level_index_plus1,
             start_cell_index_nudging=start_cell_nudging,
             end_cell_index_local=end_cell_local,
+            start_cell_index_lateral_lvl3=start_cell_index_lateral_lvl3,
+            end_cell_index_halo_lvl1=end_cell_index_halo_lvl1,
             vertical_start_index_model_top=gtx.int32(0),
             vertical_end_index_model_surface=gtx.int32(grid.num_levels + 1),
         )

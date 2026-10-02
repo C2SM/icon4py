@@ -326,8 +326,8 @@ class NonHydrostaticConfig:
         if self.igradp_method != dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             raise NotImplementedError("igradp_method can only be 3")
 
-        if self.itime_scheme != dycore_states.TimeSteppingScheme.MOST_EFFICIENT:
-            raise NotImplementedError("itime_scheme can only be 4")
+        if self.itime_scheme not in tuple(dycore_states.TimeSteppingScheme):
+            raise NotImplementedError("itime_scheme can only be 4, 5 or 6")
 
         if self.iadv_rhotheta != dycore_states.RhoThetaAdvectionType.MIURA:
             raise NotImplementedError("iadv_rhotheta can only be 2 (Miura scheme)")
@@ -585,12 +585,19 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
+        recompute_contravariant_correction = (
+            self._config.itime_scheme >= dycore_states.TimeSteppingScheme.STABLE
+        )
         self._compute_averaged_vn_and_fluxes = setup_program(
             backend=backend,
             program=compute_averaged_vn_and_fluxes,
             constant_args={
                 "e_flx_avg": self._interpolation_state.e_flx_avg,
+                "rbf_vec_coeff_e": self._interpolation_state.rbf_vec_coeff_e,
                 "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
+                "ddxn_z_full": self._metric_state_nonhydro.ddxn_z_full,
+                "ddxt_z_full": self._metric_state_nonhydro.ddxt_z_full,
+                "recompute_contravariant_correction": recompute_contravariant_correction,
             },
             variants={
                 "at_first_substep": [False, True],
@@ -601,6 +608,7 @@ class SolveNonhydro:
                 "horizontal_end": self._end_edge_halo_level_2,
             },
             vertical_sizes={
+                "nflatlev": self._vertical_params.nflatlev,
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
@@ -652,9 +660,13 @@ class SolveNonhydro:
                 "exner_w_implicit_weight_parameter": self._metric_state_nonhydro.exner_w_implicit_weight_parameter,
                 "ddqz_z_half": self._metric_state_nonhydro.ddqz_z_half,
                 "reference_exner_at_cells_on_model_levels": self._metric_state_nonhydro.reference_exner_at_cells_on_model_levels,
+                "e_bln_c_s": self._interpolation_state.e_bln_c_s,
+                "wgtfac_c": self._metric_state_nonhydro.wgtfac_c,
+                "wgtfacq_c": self._metric_state_nonhydro.wgtfacq_c,
                 "advection_explicit_weight_parameter": self._params.advection_explicit_weight_parameter,
                 "advection_implicit_weight_parameter": self._params.advection_implicit_weight_parameter,
                 "rayleigh_type": self._config.rayleigh_type,
+                "recompute_contravariant_correction": recompute_contravariant_correction,
             },
             variants={
                 "at_first_substep": [False, True],
@@ -665,10 +677,13 @@ class SolveNonhydro:
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,
                 "end_cell_index_local": self._end_cell_local,
+                "start_cell_index_lateral_lvl3": self._start_cell_lateral_boundary_level_3,
+                "end_cell_index_halo_lvl1": self._end_cell_halo,
             },
             vertical_sizes={
                 "end_index_of_damping_layer": self._vertical_params.end_index_of_damping_layer,
                 "kstart_moist": self._vertical_params.kstart_moist,
+                "flat_level_index_plus1": gtx.int32(self._vertical_params.nflatlev + 1),
                 "vertical_start_index_model_top": gtx.int32(0),
                 "vertical_end_index_model_surface": gtx.int32(self._grid.num_levels + 1),
             },
@@ -867,7 +882,9 @@ class SolveNonhydro:
                 **shared_constant_args,
             },
             variants={
-                "skip_compute_predictor_vertical_advection": [True, False],
+                "skip_compute_predictor_vertical_advection": [False]
+                if self._config.itime_scheme >= dycore_states.TimeSteppingScheme.EXPENSIVE
+                else [True, False],
                 # Only True: deriving `apply_extra_diffusion_on_vn` from `max_vertical_cfl` would need a
                 # device synchronization, so the call site fixes it to True (see the TODO there).
                 "apply_extra_diffusion_on_vn": [True],
@@ -1187,10 +1204,12 @@ class SolveNonhydro:
             f"running predictor step: dtime = {dtime}, initial_timestep = {at_initial_timestep} at_first_substep = {at_first_substep}"
         )
 
-        if at_first_substep:
-            # Recompute only vn tendency
+        if (
+            self._config.itime_scheme >= dycore_states.TimeSteppingScheme.EXPENSIVE
+            or at_first_substep
+        ):
             skip_compute_predictor_vertical_advection: bool = (
-                self._config.itime_scheme == dycore_states.TimeSteppingScheme.MOST_EFFICIENT
+                self._config.itime_scheme < dycore_states.TimeSteppingScheme.EXPENSIVE
                 and not (at_initial_timestep and at_first_substep)
             )
 
@@ -1484,6 +1503,8 @@ class SolveNonhydro:
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             substep_and_spatially_averaged_vn=prep_adv.vn_traj,
             substep_averaged_mass_flux=prep_adv.mass_flx_me,
+            tangential_wind=diagnostic_state_nh.tangential_wind,
+            contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
             vn=prognostic_states.next.vn,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
@@ -1508,6 +1529,7 @@ class SolveNonhydro:
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
             current_exner=prognostic_states.current.exner,
             current_rho=prognostic_states.current.rho,
             current_theta_v=prognostic_states.current.theta_v,

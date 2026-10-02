@@ -73,6 +73,29 @@ def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on
 
 
 @gtx.field_operator
+def _maybe_interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
+    wgtfac_c: fa.CellKHalfField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
+    recompute_contravariant_correction: bool,
+    nlev: gtx.int32,
+) -> fa.CellKHalfField[vpfloat]:
+    return (
+        _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
+            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
+            e_bln_c_s=e_bln_c_s,
+            wgtfac_c=wgtfac_c,
+            wgtfacq_c=wgtfacq_c,
+            nlev=nlev,
+        )
+        if recompute_contravariant_correction
+        else contravariant_correction_at_cells_on_half_levels
+    )
+
+
+@gtx.field_operator
 def _set_surface_boundary_condition_for_computation_of_w(
     contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
 ) -> fa.CellKHalfField[ta.wpfloat]:
@@ -772,6 +795,7 @@ def vertically_implicit_solver_at_corrector_step(
     nonhydro_buoy_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
@@ -787,6 +811,9 @@ def vertically_implicit_solver_at_corrector_step(
     ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     rayleigh_damping_factor: fa.KHalfField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
+    wgtfac_c: fa.CellKHalfField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
     prepare_fluxes_for_advection: bool,
@@ -798,13 +825,31 @@ def vertically_implicit_solver_at_corrector_step(
     rayleigh_type: gtx.int32,
     at_first_substep: bool,
     at_last_substep: bool,
+    recompute_contravariant_correction: bool,
     end_index_of_damping_layer: gtx.int32,
     kstart_moist: gtx.int32,
+    flat_level_index_plus1: gtx.int32,
     start_cell_index_nudging: gtx.int32,
     end_cell_index_local: gtx.int32,
+    start_cell_index_lateral_lvl3: gtx.int32,
+    end_cell_index_halo_lvl1: gtx.int32,
     vertical_start_index_model_top: gtx.int32,
     vertical_end_index_model_surface: gtx.int32,
 ) -> None:
+    _maybe_interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
+        contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+        contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
+        e_bln_c_s=e_bln_c_s,
+        wgtfac_c=wgtfac_c,
+        wgtfacq_c=wgtfacq_c,
+        recompute_contravariant_correction=recompute_contravariant_correction,
+        nlev=vertical_end_index_model_surface - 1,
+        out=contravariant_correction_at_cells_on_half_levels,
+        domain={
+            dims.CellDim: (start_cell_index_lateral_lvl3, end_cell_index_halo_lvl1),
+            dims.KHalfDim: (flat_level_index_plus1, vertical_end_index_model_surface),
+        },
+    )
     _set_surface_boundary_condition_for_computation_of_w(
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         out=next_w,
