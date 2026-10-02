@@ -96,9 +96,6 @@ class TracerConfig:
     def __contains__(self, name: str) -> bool:
         return name in _TRACER_FIELDS and getattr(self, name)
 
-    def __bool__(self) -> bool:
-        return self.nactive > 0
-
     def __str__(self) -> str:
         names = ", ".join(self.active_names)
         return names if names else "none"

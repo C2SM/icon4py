@@ -362,6 +362,6 @@ def extrapolate_quadratically_to_surface_on_edges(
 
 
 @gtx.scan_operator(axis=dims.KDim, forward=True, init=wpfloat("0.0"))
-def accumulate_from_top(partial_sum: wpfloat, summand: wpfloat) -> wpfloat:
+def _accumulate_from_top(partial_sum: wpfloat, summand: wpfloat) -> wpfloat:
     """Running sum over the full levels from the top; the last level holds the column sum."""
     return partial_sum + summand

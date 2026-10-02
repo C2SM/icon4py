@@ -152,9 +152,12 @@ class TmxDiagnosticState:
     km_c: fa.CellKField[ta.wpfloat]
     """Turbulent viscosity at cell centers on full levels [kg/(m s)]."""
     km: fa.CellKField[ta.wpfloat]
-    """Turbulent viscosity of the half level below, at cell centers on full levels [kg/(m s)]."""
+    """Turbulent viscosity of the half level below, at cell centers on full levels [kg/(m s)].
+    Lowest level: the surface exchange coefficient (`km_sfc` [1] or `km_const` [m^2/s])."""
     kh: fa.CellKField[ta.wpfloat]
-    """Turbulent diffusivity of the half level below, at cell centers on full levels [kg/(m s)]."""
+    """Turbulent diffusivity of the half level below, at cell centers on full levels [kg/(m s)].
+    Lowest level: the surface exchange coefficient (`kh_sfc` [1] or `km_const / turb_prandtl`
+    [m^2/s])."""
     dissip_ke: fa.CellKField[ta.wpfloat]
     """Kinetic energy dissipated by the wind diffusion, per layer [W/m^2]."""
     heating: fa.CellKField[ta.wpfloat]

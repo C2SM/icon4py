@@ -13,8 +13,8 @@ from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.math.vertical_operations import (
+    _accumulate_from_top,
     _copy_half_level_below_to_model_levels_on_cells,
-    accumulate_from_top,
 )
 from icon4py.model.common.physics.thermodynamics.compute_energy import (
     _compute_dry_static_energy,
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _update_temperature_and_compute_energy_diagnostics(
+def _update_temperature_and_compute_end_of_step_diagnostics(
     u: fa.CellKField[wpfloat],
     v: fa.CellKField[wpfloat],
     new_u: fa.CellKField[wpfloat],
@@ -81,30 +81,35 @@ def _update_temperature_and_compute_energy_diagnostics(
         wpfloat("0.5")
         * air_mass
         * dissipation_factor
-        / dtime
+        * (wpfloat("1.0") / dtime)
         * (u * u - new_u * new_u + v * v - new_v * new_v)
     )
+    # `nlev`, not `vertical_end`: the surface term belongs to the lowest model level whatever
+    # the domain, and dace fails when a domain bound is also a `concat_where` operand
     heating = concat_where(dims.KDim < nlev - 1, dissip_ke, dissip_ke - q_snocpymlt)
     new_temperature = temperature + (tend_temperature + heating / cv_air) * dtime
 
     cptgz = _compute_dry_static_energy(new_temperature, height_above_ground, grav)
-    int_energy_vi = accumulate_from_top(
+    cptgz_vi = _accumulate_from_top(cptgz * rho * ddqz_z_full)
+    dissip_ke_vi = _accumulate_from_top(dissip_ke)
+    int_energy_vi = _accumulate_from_top(
         compute_internal_energy_per_area(
             new_temperature, new_qv, new_qc + qr, new_qi + qs + qg, rho, ddqz_z_full
         )
     )
-    old_int_energy_vi = accumulate_from_top(
+    old_int_energy_vi = _accumulate_from_top(
         compute_internal_energy_per_area(temperature, qv, qc + qr, qi + qs + qg, rho, ddqz_z_full)
     )
+    int_energy_vi_tend = (int_energy_vi - old_int_energy_vi) / dtime
     return (
         dissip_ke,
         heating,
         new_temperature,
         cptgz,
-        accumulate_from_top(cptgz * rho * ddqz_z_full),
-        accumulate_from_top(dissip_ke),
+        cptgz_vi,
+        dissip_ke_vi,
         int_energy_vi,
-        (int_energy_vi - old_int_energy_vi) / dtime,
+        int_energy_vi_tend,
     )
 
 
@@ -168,7 +173,7 @@ def update_temperature_and_compute_end_of_step_diagnostics(
     `tend_temperature` is updated in place. `km` and `kh` are written above the lowest level
     only; the lowest level is the surface exchange coefficient.
     """
-    _update_temperature_and_compute_energy_diagnostics(
+    _update_temperature_and_compute_end_of_step_diagnostics(
         u=u,
         v=v,
         new_u=new_u,

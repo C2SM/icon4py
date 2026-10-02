@@ -65,7 +65,8 @@ class EnergyUpdate:
         zero_field = functools.partial(
             data_alloc.zero_field, grid, allocator=model_backends.get_allocator(backend)
         )
-        # running sums from the top; their last level is copied to the 2D diagnostics
+        # running sums from the top; `run` copies their last level to the 2D diagnostics on the
+        # array side, since gt4py cannot write one K level into a field without K
         self._cptgz_vi: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
         self._dissip_ke_vi: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
         self._int_energy_vi: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)

@@ -63,10 +63,6 @@ def test_tmx_run_wind_diffusion_single_step(
     diagnostics_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
     hor_wind_savepoint = data_provider.from_savepoint_tmx_hor_wind_exit(date=date)
     vert_wind_savepoint = data_provider.from_savepoint_tmx_vert_wind_exit(date=date)
-    # ICON serializes tmx-vert-wind-exit without waiting on the ASYNC(1) kernel that adds the
-    # horizontal term to tend_wa, so its host copy is partly stale; tend_wa is taken from
-    # tmx-exit, nothing writes it in between
-    exit_savepoint = data_provider.from_savepoint_tmx_exit(date=date)
 
     component = wind_diffusion.WindDiffusion(
         grid=icon_grid,
@@ -111,7 +107,7 @@ def test_tmx_run_wind_diffusion_single_step(
         tendency_state=tendency_state,
         new_state=new_state,
         # ICON runs tmx with the model time step (`init_tmx`), `dt_vdf` only sets how
-        # often tmx is called
+        # often tmx is computed
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
@@ -121,7 +117,7 @@ def test_tmx_run_wind_diffusion_single_step(
         "tend_va": (tendency_state.tend_v, hor_wind_savepoint.tend_va(), 4.0e-17),
         "ua_new": (new_state.u, hor_wind_savepoint.ua_new(), 2.0e-14),
         "va_new": (new_state.v, hor_wind_savepoint.va_new(), 1.0e-14),
-        "tend_wa": (tendency_state.tend_w, exit_savepoint.tend_wa(), 9.0e-19),
+        "tend_wa": (tendency_state.tend_w, vert_wind_savepoint.tend_wa(), 9.0e-19),
         "wa_new": (new_state.w, vert_wind_savepoint.wa_new(), 3.0e-16),
     }
     for name, (computed, reference, atol) in fields.items():
