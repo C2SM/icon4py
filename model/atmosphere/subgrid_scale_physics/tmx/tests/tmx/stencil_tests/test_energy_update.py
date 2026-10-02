@@ -20,28 +20,8 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_scalar_diffusion import moist_heat_capacity_numpy
+from .test_scalar_diffusion import internal_energy_per_area_numpy
 from .test_wind_diffusion import on_rows
-
-
-def internal_energy_per_area_numpy(
-    *,
-    temperature: np.ndarray,
-    qv: np.ndarray,
-    q_liquid: np.ndarray,
-    q_solid: np.ndarray,
-    rho: np.ndarray,
-    dz: np.ndarray,
-) -> np.ndarray:
-    return (
-        rho
-        * dz
-        * (
-            moist_heat_capacity_numpy(qv, q_liquid, q_solid) * temperature
-            - q_liquid * phy.lvc
-            - q_solid * phy.lsc
-        )
-    )
 
 
 class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilTest):
