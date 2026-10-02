@@ -217,9 +217,9 @@ def update_temperature_and_compute_end_of_step_diagnostics(
     )
     # TODO(havogt): write it in a way that tend_temperature is not inout.
     _add_heating_to_temperature_tendency(
-        tend_temperature,
-        heating,
-        cv_air,
+        tend_temperature=tend_temperature,
+        heating=heating,
+        cv_air=cv_air,
         out=tend_temperature,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -227,7 +227,7 @@ def update_temperature_and_compute_end_of_step_diagnostics(
         },
     )
     _copy_half_level_below_to_model_levels_on_cells(
-        km_ic,
+        half_level_field=km_ic,
         out=km,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -235,7 +235,7 @@ def update_temperature_and_compute_end_of_step_diagnostics(
         },
     )
     _copy_half_level_below_to_model_levels_on_cells(
-        kh_ic,
+        half_level_field=kh_ic,
         out=kh,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
