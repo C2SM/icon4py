@@ -20,3 +20,24 @@ def _interpolate_cell_field_to_vertex(
 ) -> fa.VertexKHalfField[types.wpfloat]:
     vert_out = neighbor_sum(c_int * cell_in(V2C), axis=dims.V2CDim)
     return vert_out
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def interpolate_cell_field_to_vertex_on_half_levels(
+    cell_in: fa.CellKHalfField[types.wpfloat],
+    c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], types.wpfloat],
+    vert_out: fa.VertexKHalfField[types.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _interpolate_cell_field_to_vertex(
+        cell_in=cell_in,
+        c_int=c_int,
+        out=vert_out,
+        domain={
+            dims.VertexDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
+        },
+    )
