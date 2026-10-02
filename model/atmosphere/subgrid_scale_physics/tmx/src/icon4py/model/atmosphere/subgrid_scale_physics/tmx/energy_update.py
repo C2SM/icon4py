@@ -70,7 +70,7 @@ class EnergyUpdate:
         self._cptgz_vi: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
         self._dissip_ke_vi: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
         self._int_energy_vi: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
-        self._int_energy_vi_tend: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
+        self._tend_int_energy_vi: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
 
         horizontal_sizes = {
             "horizontal_start": self._cell_start,
@@ -155,7 +155,7 @@ class EnergyUpdate:
             cptgz_vi=self._cptgz_vi,
             dissip_ke_vi=self._dissip_ke_vi,
             int_energy_vi=self._int_energy_vi,
-            int_energy_vi_tend=self._int_energy_vi_tend,
+            tend_int_energy_vi=self._tend_int_energy_vi,
             km=diagnostic_state.km,
             kh=diagnostic_state.kh,
             dtime=dtime,
@@ -172,7 +172,7 @@ class EnergyUpdate:
             (self._cptgz_vi, diagnostic_state.cptgz_vi),
             (self._dissip_ke_vi, diagnostic_state.dissip_ke_vi),
             (self._int_energy_vi, diagnostic_state.int_energy_vi),
-            (self._int_energy_vi_tend, diagnostic_state.int_energy_vi_tend),
+            (self._tend_int_energy_vi, diagnostic_state.tend_int_energy_vi),
         ):
             column_sum.ndarray[cells] = running_sum.ndarray[cells, self._surface_level]
         temperature_exchange.finish()

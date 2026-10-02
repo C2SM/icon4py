@@ -98,7 +98,7 @@ def _update_temperature_and_compute_end_of_step_diagnostics(
     old_int_energy_vi = _accumulate_from_top(
         compute_internal_energy_per_area(temperature, qv, qc + qr, qi + qs + qg, rho, ddqz_z_full)
     )
-    int_energy_vi_tend = (int_energy_vi - old_int_energy_vi) / dtime
+    tend_int_energy_vi = (int_energy_vi - old_int_energy_vi) / dtime
     return (
         dissip_ke,
         heating,
@@ -107,7 +107,7 @@ def _update_temperature_and_compute_end_of_step_diagnostics(
         cptgz_vi,
         dissip_ke_vi,
         int_energy_vi,
-        int_energy_vi_tend,
+        tend_int_energy_vi,
     )
 
 
@@ -152,7 +152,7 @@ def update_temperature_and_compute_end_of_step_diagnostics(
     cptgz_vi: fa.CellKField[wpfloat],
     dissip_ke_vi: fa.CellKField[wpfloat],
     int_energy_vi: fa.CellKField[wpfloat],
-    int_energy_vi_tend: fa.CellKField[wpfloat],
+    tend_int_energy_vi: fa.CellKField[wpfloat],
     km: fa.CellKField[wpfloat],
     kh: fa.CellKField[wpfloat],
     dissipation_factor: wpfloat,
@@ -208,7 +208,7 @@ def update_temperature_and_compute_end_of_step_diagnostics(
             cptgz_vi,
             dissip_ke_vi,
             int_energy_vi,
-            int_energy_vi_tend,
+            tend_int_energy_vi,
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

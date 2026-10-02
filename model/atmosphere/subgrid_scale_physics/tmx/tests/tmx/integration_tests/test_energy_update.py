@@ -125,7 +125,7 @@ def test_tmx_run_energy_update_single_step(
         "dissip_ke_vi": (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), 2.0e-12),
         "int_energy_vi": (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), 3.0e-6),
         "tend_int_energy_vi": (
-            diagnostic_state.int_energy_vi_tend,
+            diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
             7.0e-9,
         ),

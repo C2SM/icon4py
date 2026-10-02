@@ -35,7 +35,7 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
         "cptgz_vi",
         "dissip_ke_vi",
         "int_energy_vi",
-        "int_energy_vi_tend",
+        "tend_int_energy_vi",
         "km",
         "kh",
     )
@@ -118,7 +118,7 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
             cptgz_vi=on_rows(np.cumsum(cptgz * rho * ddqz_z_full, axis=1), cells, levels),
             dissip_ke_vi=on_rows(np.cumsum(dissip_ke, axis=1), cells, levels),
             int_energy_vi=on_rows(int_energy_vi, cells, levels),
-            int_energy_vi_tend=on_rows(
+            tend_int_energy_vi=on_rows(
                 (int_energy_vi - np.cumsum(old_int_energy, axis=1)) / dtime, cells, levels
             ),
             km=on_rows(km_ic[:, 1:], cells, above_surface),
@@ -176,7 +176,7 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
             cptgz_vi=output(),
             dissip_ke_vi=output(),
             int_energy_vi=output(),
-            int_energy_vi_tend=output(),
+            tend_int_energy_vi=output(),
             km=output(),
             kh=output(),
             dissipation_factor=wpfloat(0.8),

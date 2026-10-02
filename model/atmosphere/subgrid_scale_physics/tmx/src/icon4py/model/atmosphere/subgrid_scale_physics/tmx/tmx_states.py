@@ -169,7 +169,7 @@ class TmxDiagnosticState:
     """Vertical integral of the dissipated kinetic energy [W/m^2]."""
     int_energy_vi: fa.CellField[ta.wpfloat]
     """Vertical integral of the internal energy of the updated state [J/m^2]."""
-    int_energy_vi_tend: fa.CellField[ta.wpfloat]
+    tend_int_energy_vi: fa.CellField[ta.wpfloat]
     """Tendency of the vertically integrated internal energy [W/m^2]."""
     # cell, half levels
     rho_ic: fa.CellKHalfField[ta.wpfloat]
@@ -229,7 +229,7 @@ class TmxDiagnosticState:
             cptgz_vi=zero_field(dims.CellDim),
             dissip_ke_vi=zero_field(dims.CellDim),
             int_energy_vi=zero_field(dims.CellDim),
-            int_energy_vi_tend=zero_field(dims.CellDim),
+            tend_int_energy_vi=zero_field(dims.CellDim),
             rho_ic=zero_field(dims.CellDim, dims.KHalfDim),
             bruvais=zero_field(dims.CellDim, dims.KHalfDim),
             mech_prod=zero_field(dims.CellDim, dims.KHalfDim),
