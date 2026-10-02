@@ -42,7 +42,11 @@ def _extrapolation_coefficients(
     k_start: int,
     allocator: gtx_typing.Allocator | None,
 ) -> gtx.Field:
-    """Three coefficient rows, aligned to the levels they multiply."""
+    """
+    Random stand-ins for the quadratic extrapolation coefficients `wgtfacq*` (to the surface,
+    `k_start = nlev - 3`, or to the model top, `k_start = 0`): three rows, aligned to the
+    levels they multiply.
+    """
     size = grid.size[horizontal_dim]
     return gtx.as_field(
         gtx.domain({horizontal_dim: (0, size), dims.KDim: (k_start, k_start + 3)}),

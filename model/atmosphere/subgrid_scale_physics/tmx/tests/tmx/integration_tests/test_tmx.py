@@ -27,11 +27,11 @@ from icon4py.model.testing import definitions
 from ..fixtures import *  # noqa: F403
 from .utils import (
     TMX_DATES,
+    assert_tmx_exit_fields,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
     construct_surface_flux_state,
-    verify_tmx_exit_fields,
 )
 
 
@@ -90,7 +90,7 @@ def test_tmx_run_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
-    verify_tmx_exit_fields(
+    assert_tmx_exit_fields(
         tendency_state=tendency_state,
         diagnostic_state=diagnostic_state,
         exit_savepoint=data_provider.from_savepoint_tmx_exit(date=date),

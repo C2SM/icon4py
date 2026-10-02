@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import surface_fluxes, tmx_states
@@ -90,4 +91,4 @@ def test_prescribed_surface_fluxes(
             computed.asnumpy(), desired.asnumpy(), rtol=1.0e-14, err_msg=name
         )
     # the one field that is not zero in this configuration
-    assert (abs(out.sensible_heat_flux.asnumpy()) > 0.0).all()
+    assert np.all(np.abs(out.sensible_heat_flux.asnumpy()) > 0.0)

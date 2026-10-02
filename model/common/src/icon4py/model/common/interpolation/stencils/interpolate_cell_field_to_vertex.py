@@ -23,7 +23,7 @@ def _interpolate_cell_field_to_vertex(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_cell_field_to_vertex(
+def interpolate_cell_field_to_vertex_on_half_levels(
     cell_in: fa.CellKHalfField[types.wpfloat],
     c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], types.wpfloat],
     vert_out: fa.VertexKHalfField[types.wpfloat],

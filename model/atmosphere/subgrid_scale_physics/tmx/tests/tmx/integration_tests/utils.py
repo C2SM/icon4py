@@ -125,7 +125,7 @@ def construct_surface_flux_state(
     )
 
 
-def verify_tmx_exit_fields(
+def assert_tmx_exit_fields(
     *,
     tendency_state: tmx_states.TmxTendencyState,
     diagnostic_state: tmx_states.TmxDiagnosticState,
@@ -134,7 +134,7 @@ def verify_tmx_exit_fields(
     cells: slice | np.ndarray,
 ) -> None:
     """
-    Compare the outputs of a tmx step with the tmx-exit savepoint.
+    Assert that the outputs of a tmx step match the tmx-exit savepoint.
 
     The tendencies ICON exchanges (temperature, u, v) are compared on all cells, including
     the halo; every other output is compared on `cells`, because ICON leaves its halo unsynced.
@@ -197,9 +197,7 @@ def read_input_namelist(
 ) -> dict:
     """Read the experiment-specific (input) namelist shipped with the archive."""
     experiment_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
-    candidates = sorted(
-        c for c in experiment_path.glob("NAMELIST_*") if c.name != _NAMELIST_ATM_FNAME
-    )
+    candidates = [c for c in experiment_path.glob("NAMELIST_*") if c.name != _NAMELIST_ATM_FNAME]
     assert len(candidates) == 1, (
         f"expected one input namelist in {experiment_path}, got {candidates}"
     )

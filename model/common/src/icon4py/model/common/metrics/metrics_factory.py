@@ -987,7 +987,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(inv_ddqz_z_half_e)
 
         inv_ddqz_z_half_v = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_vertex.interpolate_cell_field_to_vertex.with_backend(
+            func=interpolate_cell_field_to_vertex.interpolate_cell_field_to_vertex_on_half_levels.with_backend(
                 self._backend
             ),
             deps={
