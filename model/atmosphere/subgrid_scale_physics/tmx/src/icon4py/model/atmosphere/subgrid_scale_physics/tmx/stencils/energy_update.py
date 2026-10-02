@@ -13,8 +13,8 @@ from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.math.vertical_operations import (
+    _accumulate_from_top,
     _copy_half_level_below_to_model_levels_on_cells,
-    accumulate_from_top,
 )
 from icon4py.model.common.physics.thermodynamics.compute_energy import (
     _compute_dry_static_energy,
@@ -88,12 +88,12 @@ def _update_temperature_and_compute_energy_diagnostics(
     new_temperature = temperature + (tend_temperature + heating / cv_air) * dtime
 
     cptgz = _compute_dry_static_energy(new_temperature, height_above_ground, grav)
-    int_energy_vi = accumulate_from_top(
+    int_energy_vi = _accumulate_from_top(
         compute_internal_energy_per_area(
             new_temperature, new_qv, new_qc + qr, new_qi + qs + qg, rho, ddqz_z_full
         )
     )
-    old_int_energy_vi = accumulate_from_top(
+    old_int_energy_vi = _accumulate_from_top(
         compute_internal_energy_per_area(temperature, qv, qc + qr, qi + qs + qg, rho, ddqz_z_full)
     )
     return (
@@ -101,8 +101,8 @@ def _update_temperature_and_compute_energy_diagnostics(
         heating,
         new_temperature,
         cptgz,
-        accumulate_from_top(cptgz * rho * ddqz_z_full),
-        accumulate_from_top(dissip_ke),
+        _accumulate_from_top(cptgz * rho * ddqz_z_full),
+        _accumulate_from_top(dissip_ke),
         int_energy_vi,
         (int_energy_vi - old_int_energy_vi) / dtime,
     )
