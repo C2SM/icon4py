@@ -2328,6 +2328,7 @@ dependencies = [
     { name = "icon4py-atmosphere-tracer-advection" },
     { name = "icon4py-common", extra = ["io"] },
     { name = "packaging" },
+    { name = "rich" },
     { name = "typer" },
 ]
 
@@ -2344,6 +2345,7 @@ requires-dist = [
     { name = "icon4py-atmosphere-tracer-advection", editable = "model/atmosphere/tracer_advection" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "rich", specifier = ">=15.0.0" },
     { name = "typer", specifier = ">=0.20.0" },
 ]
 
