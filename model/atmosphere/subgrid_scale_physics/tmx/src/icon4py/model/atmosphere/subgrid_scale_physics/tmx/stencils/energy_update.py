@@ -84,6 +84,8 @@ def _update_temperature_and_compute_energy_diagnostics(
         / dtime
         * (u * u - new_u * new_u + v * v - new_v * new_v)
     )
+    # `nlev`, not `vertical_end`: the surface term belongs to the lowest model level whatever
+    # the domain, and dace fails when a domain bound is also a `concat_where` operand
     heating = concat_where(dims.KDim < nlev - 1, dissip_ke, dissip_ke - q_snocpymlt)
     new_temperature = temperature + (tend_temperature + heating / cv_air) * dtime
 
