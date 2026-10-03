@@ -1181,8 +1181,9 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/spcl/dace.git?branch=main#312c47b8f235f64a28241bcda61189ecca2fd166"}
-version = "2.0.0a9"
+sdist = {url = "https://files.pythonhosted.org/packages/f3/29/83c0d23a228c5f5cd5f6bdae1a124fcc2dd45fba239bc2b05925b99a3451/dace-2.0.0a10.tar.gz", hash = "sha256:8cfe968729be96ac66c5fd8c0f7c85c705182d30e9a49e3418cd4aafda238c30", size = 6616842, upload-time = "2026-10-03T13:32:04.812Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "2.0.0a10"
 
 [[package]]
 dependencies = [
@@ -1658,7 +1659,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=bump_dace_version#a4b1a14f0dbac919f14dbbf8cab82bcda20efeb2"}
+source = {git = "https://github.com/edopao/gt4py?branch=bump_dace_version#15ec0a42b8a89f49a77b1130bd310697e5621128"}
 version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
