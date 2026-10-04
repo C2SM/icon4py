@@ -283,7 +283,7 @@ variables:
     OMPI_MCA_mpi_cuda_support: "0"
     SLURM_NTASKS: "1"
     SLURM_GPUS_PER_TASK: "1"
-    SLURM_TIMELIMIT: "00:10:00"
+    SLURM_TIMELIMIT: "00:20:00"
   script:
     - cd /icon4py
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
