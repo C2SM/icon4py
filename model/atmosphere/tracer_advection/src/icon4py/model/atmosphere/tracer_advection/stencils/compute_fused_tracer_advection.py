@@ -169,6 +169,7 @@ def compute_ppm4gpu_flux(
     itype_vlimit: gtx.int32,
     start_cell: gtx.int32,
     end_cell: gtx.int32,
+    vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
     _compute_ppm4gpu_flux(
@@ -186,7 +187,7 @@ def compute_ppm4gpu_flux(
         out=p_upflux,
         domain={
             dims.CellDim: (start_cell, end_cell),
-            dims.KHalfDim: (0, vertical_end + 1),
+            dims.KHalfDim: (vertical_start, vertical_end + 1),
         },
     )
 

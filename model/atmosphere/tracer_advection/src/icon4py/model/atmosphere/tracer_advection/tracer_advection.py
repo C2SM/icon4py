@@ -318,7 +318,10 @@ class GodunovSplittingAdvection(Advection):
                 "start_cell": self._start_cell_lateral_boundary_level_2,
                 "end_cell": self._end_cell_end,
             },
-            vertical_sizes={"vertical_end": gtx.int32(self._grid.num_levels)},
+            vertical_sizes={
+                "vertical_start": gtx.int32(1),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
             offset_provider=self._grid.connectivities,
         )
         log.debug("tracer_advection class init - end")
