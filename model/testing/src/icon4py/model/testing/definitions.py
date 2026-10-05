@@ -22,7 +22,6 @@ SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
 GRID_DATA_DIR: Final = "grids"
 EXPERIMENT_DATA_DIR: Final = "experiments"
-MUPHYS_DATA_DIR: Final = "muphys"
 TESTDATA_ROOT_URL: Final = "https://rgw.cscs.ch/c2sm:testdata"
 
 
