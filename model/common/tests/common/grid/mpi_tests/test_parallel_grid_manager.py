@@ -534,8 +534,12 @@ def _compare_metrics_fields_single_multi_rank(
         process_props=process_props,
     )
 
-    field_ref = single_rank_metrics.get(attrs_name)
-    field = multi_rank_metrics.get(attrs_name)
+    if metrics_attributes.attrs[attrs_name].is_scalar:
+        field_ref = single_rank_metrics.get_scalar(attrs_name)
+        field = multi_rank_metrics.get_scalar(attrs_name)
+    else:
+        field_ref = single_rank_metrics.get(attrs_name)
+        field = multi_rank_metrics.get(attrs_name)
 
     if isinstance(field_ref, state_utils.ScalarType):
         assert isinstance(field, state_utils.ScalarType)
