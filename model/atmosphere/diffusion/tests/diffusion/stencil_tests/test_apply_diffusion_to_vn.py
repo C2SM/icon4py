@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import ap
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import stencil_tests, test_utils
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -31,6 +31,7 @@ from .test_calculate_nabla4 import calculate_nabla4_numpy
 class TestApplyDiffusionToVn(stencil_tests.StencilTest):
     PROGRAM = apply_diffusion_to_vn
     OUTPUTS = ("vn",)
+    ABSOLUTE_TOLERANCE = 0.0 if test_utils.wp_is_dp else 3e-7
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (

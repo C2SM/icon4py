@@ -534,13 +534,13 @@ def _compare_metrics_fields_single_multi_rank(
         process_props=process_props,
     )
 
-    field_ref = single_rank_metrics.get(attrs_name)
-    field = multi_rank_metrics.get(attrs_name)
-
-    if isinstance(field_ref, state_utils.ScalarType):
-        assert isinstance(field, state_utils.ScalarType)
+    if metrics_attributes.attrs[attrs_name].is_scalar:
+        field_ref = single_rank_metrics.get_scalar(attrs_name)
+        field = multi_rank_metrics.get_scalar(attrs_name)
         assert pytest.approx(field) == field_ref
     else:
+        field_ref = single_rank_metrics.get(attrs_name)
+        field = multi_rank_metrics.get(attrs_name)
         if test_utils.is_dace(backend) and (
             model_backends.is_cpu_backend(backend)
             or (
@@ -734,7 +734,7 @@ def test_metrics_mask_prog_halo_c(
 
     attrs_name = metrics_attributes.MASK_PROG_HALO_C
     field = multi_rank_metrics.get(attrs_name).ndarray
-    c_refin_ctrl = multi_rank_metrics.get("c_refin_ctrl").ndarray
+    c_refin_ctrl = multi_rank_gm.grid.refinement_control[dims.CellDim].ndarray
     assert not (
         field[
             multi_rank_gm.decomposition_info.local_index(

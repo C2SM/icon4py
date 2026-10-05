@@ -76,7 +76,8 @@ _REQUIRED_MEMBERS: Final = (
 # https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/5125340235196978/2255149825504673/-/pipelines/2184694383
 # from PR#861. Reason is probably derivatives of random data. Investigate and lower the
 # tolerance back to 1e-7 if possible.
-_RELATIVE_TOLERANCE: Final = test_utils.scale_tol(3e-6)
+DEFAULT_RELATIVE_TOLERANCE: Final = test_utils.scale_tol(3e-6)
+DEFAULT_ABSOLUTE_TOLERANCE: Final = 0.0
 
 
 def _validate_signature(
@@ -560,6 +561,8 @@ class StencilTest:
     PROGRAM: ClassVar[gtx_typing.Program | gtx_typing.FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
+    ABSOLUTE_TOLERANCE: ClassVar[float] = DEFAULT_ABSOLUTE_TOLERANCE
+    RELATIVE_TOLERANCE: ClassVar[float] = DEFAULT_RELATIVE_TOLERANCE
 
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
     input_data: ClassVar[Callable[..., dict[str, Any]]]
@@ -619,7 +622,8 @@ class StencilTest:
                     reference[out.refslice],
                     equal_nan=True,
                     err_msg=f"Verification failed for '{label}'",
-                    rtol=_RELATIVE_TOLERANCE,
+                    rtol=self.RELATIVE_TOLERANCE,
+                    atol=self.ABSOLUTE_TOLERANCE,
                 )
 
     @staticmethod
