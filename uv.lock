@@ -2097,7 +2097,6 @@ requires-dist = [
 dependencies = [
   {name = "gt4py"},
   {name = "icon4py-common", extra = ["io"]},
-  {name = "numpy"},
   {name = "packaging"}
 ]
 name = "icon4py-atmosphere-muphys"
@@ -2108,7 +2107,6 @@ version = "0.4.1"
 requires-dist = [
   {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
-  {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
 ]
 

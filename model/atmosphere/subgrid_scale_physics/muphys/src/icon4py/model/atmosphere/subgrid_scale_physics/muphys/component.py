@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import types
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, cast
 
@@ -111,9 +110,9 @@ class MuphysComponent:
         allocator = model_backends.get_allocator(backend)
 
         if step is None:
-            sizes = types.SimpleNamespace(ncells=self._ncells, nlev=self._nlev)
             step = setup_muphys(
-                inp=sizes,  # type: ignore[arg-type]  # only .ncells/.nlev are read
+                ncells=self._ncells,
+                nlev=self._nlev,
                 dt=self._dt_seconds,
                 qnc=qnc,
                 backend=backend,

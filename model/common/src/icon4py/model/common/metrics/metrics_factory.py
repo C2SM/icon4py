@@ -294,7 +294,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(ddqz_z_full_and_inverse)
 
         ddqz_full_on_edges = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(
                 self._backend
             ),
             deps={"in_field": attrs.DDQZ_Z_FULL, "coeff": interpolation_attributes.C_LIN_E},
@@ -876,7 +876,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_c)
 
         compute_wgtfacq_e = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(
                 self._backend
             ),
             deps={
@@ -911,7 +911,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq1_c)
 
         compute_wgtfacq1_e = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(
                 self._backend
             ),
             deps={
