@@ -129,6 +129,8 @@ mpirun -np 4 .cscs-ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pyt
 uv run --group test --frozen pytest -n0 <paths>
 ```
 
+Parallelize local test runs with pytest-xdist (`-n auto`); use `-n0` (sequential) only to reduce memory pressure or when output interleaving hinders debugging. Exception: MPI tests always run sequentially (`-n0` under `mpirun`).
+
 ### Custom pytest options
 
 Registered by `icon4py.model.testing.pytest_hooks` (auto-loaded via `addopts`):
