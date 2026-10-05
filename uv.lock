@@ -1808,11 +1808,13 @@ dev = [
   {name = "pooch"},
   {name = "pre-commit"},
   {name = "pytest"},
+  {name = "pytest-asyncio"},
   {name = "pytest-benchmark"},
   {name = "pytest-cache"},
   {name = "pytest-cov"},
   {name = "pytest-factoryboy"},
   {name = "pytest-mpi"},
+  {name = "pytest-textual-snapshot"},
   {name = "pytest-unused-fixtures"},
   {name = "pytest-xdist", extra = ["psutil"]},
   {name = "ruff"},
@@ -1867,11 +1869,13 @@ test = [
   {name = "icon4py-testing"},
   {name = "nox"},
   {name = "pytest"},
+  {name = "pytest-asyncio"},
   {name = "pytest-benchmark"},
   {name = "pytest-cache"},
   {name = "pytest-cov"},
   {name = "pytest-factoryboy"},
   {name = "pytest-mpi"},
+  {name = "pytest-textual-snapshot"},
   {name = "pytest-unused-fixtures"},
   {name = "pytest-xdist", extra = ["psutil"]}
 ]
@@ -1931,11 +1935,13 @@ dev = [
   {name = "pooch", specifier = ">=1.7.0"},
   {name = "pre-commit", specifier = ">=4.0.1"},
   {name = "pytest", specifier = ">=8.0.1"},
+  {name = "pytest-asyncio", specifier = ">=1.4.0"},
   {name = "pytest-benchmark", specifier = ">=5.0.0"},
   {name = "pytest-cache", specifier = ">=1.0"},
   {name = "pytest-cov", specifier = ">=5.0.0"},
   {name = "pytest-factoryboy", specifier = ">=2.6.1"},
   {name = "pytest-mpi", specifier = ">=0.6"},
+  {name = "pytest-textual-snapshot", specifier = ">=1.0.0"},
   {name = "pytest-unused-fixtures", specifier = ">=0.2.0"},
   {name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.5.0"},
   {name = "ruff", specifier = ">=0.8.0"},
@@ -1990,11 +1996,13 @@ test = [
   {name = "icon4py-testing", editable = "model/testing"},
   {name = "nox", specifier = ">=2025.5.1"},
   {name = "pytest", specifier = ">=8.0.1"},
+  {name = "pytest-asyncio", specifier = ">=1.4.0"},
   {name = "pytest-benchmark", specifier = ">=5.0.0"},
   {name = "pytest-cache", specifier = ">=1.0"},
   {name = "pytest-cov", specifier = ">=5.0.0"},
   {name = "pytest-factoryboy", specifier = ">=2.6.1"},
   {name = "pytest-mpi", specifier = ">=0.6"},
+  {name = "pytest-textual-snapshot", specifier = ">=1.0.0"},
   {name = "pytest-unused-fixtures", specifier = ">=0.2.0"},
   {name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.5.0"}
 ]
@@ -2122,7 +2130,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2217,7 +2225,8 @@ dependencies = [
   {name = "numpy"},
   {name = "packaging"},
   {name = "pyyaml"},
-  {name = "serialbox4py"}
+  {name = "serialbox4py"},
+  {name = "textual"}
 ]
 name = "icon4py-common"
 source = {editable = "model/common"}
@@ -2250,6 +2259,7 @@ requires-dist = [
   {name = "pyyaml", specifier = ">=6.0.3"},
   {name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0"},
   {name = "serialbox4py", specifier = ">=2.6.2"},
+  {name = "textual", specifier = ">=8.2.8"},
   {name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0"},
   {name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.10.0,<2026.4"},
   {name = "zarr", marker = "extra == 'io'", specifier = ">=3.0"}
@@ -2314,6 +2324,7 @@ dependencies = [
   {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common", extra = ["io"]},
   {name = "packaging"},
+  {name = "rich"},
   {name = "typer"}
 ]
 name = "icon4py-driver"
@@ -2333,6 +2344,7 @@ requires-dist = [
   {name = "icon4py-atmosphere-tracer-advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"},
+  {name = "rich", specifier = ">=15.0.0"},
   {name = "typer", specifier = ">=0.20.0"}
 ]
 
@@ -2862,6 +2874,11 @@ source = {registry = "https://pypi.org/simple"}
 version = "3.0.0"
 wheels = [
   {url = "https://files.pythonhosted.org/packages/42/d7/1ec15b46af6af88f19b8e5ffea08fa375d433c998b8a7639e76935c14f1f/markdown_it_py-3.0.0-py3-none-any.whl", hash = "sha256:355216845c60bd96232cd8d8c40e8f9765cc86f46880e43a8fd22dc1a1a8cab1", size = 87528, upload-time = "2023-06-03T06:41:11.019Z"}
+]
+
+[package.optional-dependencies]
+linkify = [
+  {name = "linkify-it-py"}
 ]
 
 [[package]]
@@ -4314,6 +4331,19 @@ wheels = [
 
 [[package]]
 dependencies = [
+  {name = "pytest"},
+  {name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"}
+]
+name = "pytest-asyncio"
+sdist = {url = "https://files.pythonhosted.org/packages/43/7c/d36d04db312ecf4298932ef77e6e4a9e8ad017906e24e34f0b0c361a2473/pytest_asyncio-1.4.0.tar.gz", hash = "sha256:c6c0d2259945122819f171a32ecea2c349ead889ee28176caaf492143424be42", size = 58514, upload-time = "2026-05-26T09:56:04.083Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "1.4.0"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/03/e2/08a497ef684b88559c9cc5f4ad53a37e7b99e727094a86d6ea32536d5d3c/pytest_asyncio-1.4.0-py3-none-any.whl", hash = "sha256:933ca923a23075a87fb7070c0ec272a6848489824d887c85c812670932835aa1", size = 16930, upload-time = "2026-05-26T09:56:02.576Z"}
+]
+
+[[package]]
+dependencies = [
   {name = "py-cpuinfo"},
   {name = "pytest"}
 ]
@@ -4375,6 +4405,22 @@ source = {registry = "https://pypi.org/simple"}
 version = "0.6"
 wheels = [
   {url = "https://files.pythonhosted.org/packages/a6/2b/0ed49de84e96ebf771c86a16d88b48c08d291627cfcdce30973f8538c99e/pytest_mpi-0.6-py2.py3-none-any.whl", hash = "sha256:1b7e193fb3be31d08c8e4dd7435e8e13e14b17ead6a6fc6aa07a6d3c7145590b", size = 5907, upload-time = "2022-01-08T02:19:24.8Z"}
+]
+
+[[package]]
+dependencies = [
+  {name = "jinja2"},
+  {name = "pytest"},
+  {name = "rich"},
+  {name = "syrupy"},
+  {name = "textual"}
+]
+name = "pytest-textual-snapshot"
+sdist = {url = "https://files.pythonhosted.org/packages/8b/75/2ef17ae52fa5bc848ff2d1d7bc317a702cbd6d7ad733ca991b9f899dbbae/pytest_textual_snapshot-1.0.0.tar.gz", hash = "sha256:065217055ed833b8a16f2320a0613f39a0154e8d9fee63535f29f32c6414b9d7", size = 11071, upload-time = "2024-07-22T15:17:44.629Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "1.0.0"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/70/2e/4bf16ed78b382b3d7c1e545475ec8cf04346870be662815540faf8f16e8c/pytest_textual_snapshot-1.0.0-py3-none-any.whl", hash = "sha256:dd3a421491a6b1987ee7b4336d7f65299524924d2b0a297e69733b73b01570e1", size = 11171, upload-time = "2024-07-22T15:17:43.167Z"}
 ]
 
 [[package]]
@@ -5161,6 +5207,18 @@ wheels = [
 ]
 
 [[package]]
+dependencies = [
+  {name = "pytest"}
+]
+name = "syrupy"
+sdist = {url = "https://files.pythonhosted.org/packages/74/2c/8ffc1414d1951895d0d5b7dc83c0b079ebc48c3bf27ffbb0064646367500/syrupy-6.1.1.tar.gz", hash = "sha256:7e584a8df4ede6dd3c1c44a77f9edc46186b6767a73dea6f0083044946839a59", size = 109705, upload-time = "2026-09-13T20:25:21.599Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "6.1.1"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/2c/b5/bf2a8a335a6a813869dd482cedbcde252f582b5afbfe50eb78ec09962800/syrupy-6.1.1-py3-none-any.whl", hash = "sha256:6ac9ac6a42d70ae44156f5f157a9563b9bb8cc96dcf9364327f330463bff889a", size = 63436, upload-time = "2026-09-13T20:25:20.294Z"}
+]
+
+[[package]]
 name = "tabulate"
 sdist = {url = "https://files.pythonhosted.org/packages/46/58/8c37dea7bbf769b20d58e7ace7e5edfe65b849442b00ffcdd56be88697c6/tabulate-0.10.0.tar.gz", hash = "sha256:e2cfde8f79420f6deeffdeda9aaec3b6bc5abce947655d17ac662b126e48a60d", size = 91754, upload-time = "2026-03-04T18:55:34.402Z"}
 source = {registry = "https://pypi.org/simple"}
@@ -5218,6 +5276,23 @@ source = {registry = "https://pypi.org/simple"}
 version = "0.3.3"
 wheels = [
   {url = "https://files.pythonhosted.org/packages/0d/60/388c55709eccb28c4245bd809fada603905e09507b722f0a7e0065beb8f7/texsoup-0.3.3-py3-none-any.whl", hash = "sha256:0ad8643f7b51a4903de87c3763a090343fc73eaf87cd70202e2bfe6b22e0ac97", size = 33271, upload-time = "2026-04-05T11:43:51.655Z"}
+]
+
+[[package]]
+dependencies = [
+  {name = "markdown-it-py", extra = ["linkify"]},
+  {name = "mdit-py-plugins"},
+  {name = "platformdirs"},
+  {name = "pygments"},
+  {name = "rich"},
+  {name = "typing-extensions"}
+]
+name = "textual"
+sdist = {url = "https://files.pythonhosted.org/packages/00/21/39a76b01bd5eea82a04baaca7580e105d8c59450df03998345bb2cfb307b/textual-8.2.8.tar.gz", hash = "sha256:3f106a9fbc73e39dd266c9712432087de78a6d644084c7c241d6a25c3169115b", size = 1860502, upload-time = "2026-06-30T06:51:24.495Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "8.2.8"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl", hash = "sha256:267375fd402dc8d981457212efa71f0e3365fd17bba144ba9bb3ed7563cb374a", size = 731418, upload-time = "2026-06-30T06:51:26.364Z"}
 ]
 
 [[package]]
