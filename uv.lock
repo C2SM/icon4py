@@ -1659,8 +1659,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=bump_dace_version#15ec0a42b8a89f49a77b1130bd310697e5621128"}
-version = "1.2.2+unknown.version.details"
+source = {git = "https://github.com/GridTools/gt4py?branch=bump_dace_version#fcdd4568f7f78f89cd522b95b94c2ecf8b601552"}
+version = "1.2.2.post40+fcdd4568"
 
 [package.optional-dependencies]
 cuda12 = [
@@ -2057,7 +2057,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2074,7 +2074,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2091,7 +2091,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2108,7 +2108,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2125,7 +2125,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2142,7 +2142,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2159,7 +2159,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2187,9 +2187,9 @@ requires-dist = [
   {name = "click", specifier = ">=8.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-common", extras = ["distributed"], editable = "model/common"},
@@ -2238,10 +2238,10 @@ requires-dist = [
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
-  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0"},
   {name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common"},
   {name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5"},
@@ -2326,7 +2326,7 @@ version = "0.4.1"
 [package.metadata]
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
@@ -2358,7 +2358,7 @@ version = "0.4.1"
 [package.metadata]
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "icon4py-driver", editable = "model/driver"},
   {name = "numpy", specifier = ">=1.23.3"},
@@ -2389,7 +2389,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.1.7"},
   {name = "configargparse", specifier = ">=1.7.1"},
   {name = "fprettify", specifier = ">=0.3.7"},
-  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=bump_dace_version"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
