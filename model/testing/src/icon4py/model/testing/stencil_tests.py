@@ -49,7 +49,13 @@ from gt4py.next import common as gtx_common, typing as gtx_typing
 from gt4py.next.ffront.decorator import FieldOperator
 from gt4py.next.instrumentation import hooks as gtx_hooks, metrics as gtx_metrics
 
-from icon4py.model.common import exceptions, model_backends, model_options, type_alias as ta
+from icon4py.model.common import (
+    constants,
+    exceptions,
+    model_backends,
+    model_options,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation, device_utils
 from icon4py.model.testing import test_utils
@@ -77,6 +83,9 @@ _REQUIRED_MEMBERS: Final = (
 # from PR#861. Reason is probably derivatives of random data. Investigate and lower the
 # tolerance back to 1e-7 if possible.
 _RELATIVE_TOLERANCE: Final = test_utils.scale_tol(3e-6)
+# Random O(1) inputs cancel to values near zero, where single precision rounding of the
+# summands exceeds any relative tolerance. Double precision keeps the pure rtol check.
+_ABSOLUTE_TOLERANCE: Final = 0.0 if test_utils.wp_is_dp else 10 * constants.VP_EPS
 
 
 def _validate_signature(
@@ -620,6 +629,7 @@ class StencilTest:
                     equal_nan=True,
                     err_msg=f"Verification failed for '{label}'",
                     rtol=_RELATIVE_TOLERANCE,
+                    atol=_ABSOLUTE_TOLERANCE,
                 )
 
     @staticmethod

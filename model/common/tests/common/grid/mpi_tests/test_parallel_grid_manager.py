@@ -537,14 +537,10 @@ def _compare_metrics_fields_single_multi_rank(
     if metrics_attributes.attrs[attrs_name].is_scalar:
         field_ref = single_rank_metrics.get_scalar(attrs_name)
         field = multi_rank_metrics.get_scalar(attrs_name)
+        assert pytest.approx(field) == field_ref
     else:
         field_ref = single_rank_metrics.get(attrs_name)
         field = multi_rank_metrics.get(attrs_name)
-
-    if isinstance(field_ref, state_utils.ScalarType):
-        assert isinstance(field, state_utils.ScalarType)
-        assert pytest.approx(field) == field_ref
-    else:
         if test_utils.is_dace(backend) and (
             model_backends.is_cpu_backend(backend)
             or (
