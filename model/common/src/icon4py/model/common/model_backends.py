@@ -128,6 +128,7 @@ def make_custom_dace_backend(
     on_gpu = device == GPU
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
+        apply_common_transform=True,
         auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
         external_workspace=external_workspace,
