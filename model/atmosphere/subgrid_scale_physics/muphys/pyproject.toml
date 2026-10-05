@@ -27,7 +27,6 @@ dependencies = [
   # workspace members
   "icon4py-common[io]~=0.4.1",
   # external dependencies
-  "numpy>=1.23.3",
   "gt4py==1.2.2",
   "packaging>=20.0"
 ]
