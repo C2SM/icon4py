@@ -62,7 +62,6 @@ def implicit_diffusion_tendency_numpy(
     b: np.ndarray,
     c: np.ndarray,
     rhs: np.ndarray,
-    tend: np.ndarray,
     dtime: float,
     rows: slice,
 ) -> np.ndarray:
@@ -70,7 +69,7 @@ def implicit_diffusion_tendency_numpy(
     matrix += np.eye(matrix.shape[1]) / dtime
     new_var = np.linalg.solve(matrix, (var[:, rows] / dtime + rhs[:, rows])[..., np.newaxis])
     out = np.zeros_like(var)
-    out[:, rows] = tend[:, rows] + (new_var[..., 0] - var[:, rows]) / dtime
+    out[:, rows] = (new_var[..., 0] - var[:, rows]) / dtime
     return out
 
 
@@ -216,7 +215,6 @@ def solve_input_data(
         b=data_alloc.random_field(horizontal_dim, vertical_dim, low=2.0, high=3.0),
         c=data_alloc.random_field(horizontal_dim, vertical_dim, low=-1.0, high=0.0),
         rhs=data_alloc.random_field(horizontal_dim, vertical_dim),
-        tend=data_alloc.random_field(horizontal_dim, vertical_dim),
         dtime=wpfloat(0.5),
         out=data_alloc.zero_field(horizontal_dim, vertical_dim),
         domain={

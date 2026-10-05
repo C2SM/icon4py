@@ -135,7 +135,7 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
         tendency_state=setup.tendency_state,
         new_state=setup.new_state,
         # ICON runs tmx with the model time step (`init_tmx`), `dt_vdf` only sets how
-        # often it fires
+        # often tmx is computed
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
