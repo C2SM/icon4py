@@ -11,6 +11,7 @@ from __future__ import annotations
 import dataclasses
 import enum
 import functools
+import pathlib
 import types
 import typing
 from collections.abc import Callable, Iterator
@@ -36,6 +37,7 @@ type HINT = (
     | None
 )
 type RESOLVED = type | types.UnionType | types.GenericAlias | enum.EnumType | None
+CACHE_PATH = pathlib.Path(__file__).parent / "cdc.yaml"
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
@@ -231,31 +233,72 @@ def node_from_other_type(type_hint: HINT, ctx: TraversalContext) -> Record:
     )
 
 
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class StaticConfigDocNode:
+    display_name: str
+    type_name: str
+    description: str
+    default: str
+    optional: bool
+    examples: tuple[str, ...]
+    children: tuple[StaticConfigDocNode, ...]
+    config_name_path: tuple[str, ...]
+    module_path: str
+    is_union: bool
+
+
 @functools.singledispatch
-def add_node_to_ttree(
-    node: Record | ConfigClassContainer | UnionContainer, ttree: textual.widgets.tree.TreeNode
-) -> None: ...
+def make_static(
+    node: Record | ConfigClassContainer | UnionContainer
+) -> StaticConfigDocNode:
+    raise NotImplementedError
 
 
-@add_node_to_ttree.register
-def add_record_to_ttree(node: Record, ttree: textual.widgets.tree.TreeNode) -> None:
-    ttree.add_leaf(node.qualified_name[-1], data=node)
-
-
-@add_node_to_ttree.register
-def add_conf_container(node: ConfigClassContainer, ttree: textual.widgets.tree.TreeNode) -> None:
-    container = ttree.add(node.record.qualified_name[-1], data=node)
-    for child in node.children:
-        add_node_to_ttree(child, container)
-
-
-@add_node_to_ttree.register
-def add_union_container(node: UnionContainer, ttree: textual.widgets.tree.TreeNode) -> None:
-    union = ttree.add(
-        f"{node.record.qualified_name[-1]}: one of the following", data=node, expand=True
+@make_static.register
+def make_record_static(node: Record) -> StaticConfigDocNode:
+    example_name = (
+        node.qualified_name[-1]
+        if not node.qualified_name[-1].startswith("type: ")
+        else node.qualified_name[-2]
     )
-    for alt in node.alternatives:
-        add_node_to_ttree(alt, union)
+    examples = tuple(
+        config_io.write_yaml_str(
+            {example_name: config_io.CONV.unstructure(example, unstructure_as=unstructure_type)}
+        )
+        for example, unstructure_type in examples_for(node.allowed_type)
+    )
+    return StaticConfigDocNode(
+        display_name=node.qualified_name[-1],
+        type_name=str(node.allowed_type),
+        description=node.option_meta.description,
+        default=str(node.default),
+        optional=node.optional,
+        examples=examples,
+        children=(),
+        config_name_path=node.qualified_name,
+        module_path=node.allowed_type.__module__,
+        is_union=False
+    )
+
+
+@make_static.register
+def make_conf_container_static(node: ConfigClassContainer) -> StaticConfigDocNode:
+    return dataclasses.replace(
+        make_static(node.record),
+        children=tuple(
+            make_static(child) for child in node.children
+        )
+    )
+
+
+@make_static.register
+def make_union_container_static(node: UnionContainer) -> StaticConfigDocNode:
+    return dataclasses.replace(
+        make_static(node.record),
+        display_name=f"{node.record.qualified_name[-1]}: one of the following",
+        is_union=True,
+        children=tuple(make_static(alt) for alt in node.alternatives)
+    )
 
 
 def record_from_node(node: Record | ConfigClassContainer | UnionContainer) -> Record:
@@ -264,6 +307,17 @@ def record_from_node(node: Record | ConfigClassContainer | UnionContainer) -> Re
             return node
         case _:
             return node.record
+
+
+def add_static_node_to_ttree(node: StaticConfigDocNode, ttree: textual.widgets.tree.TreeNode) -> None:
+    if not node.children:
+        ttree.add_leaf(node.display_name, data=node)
+    else:
+        new = ttree.add(node.display_name, data=node)
+        for child in node.children:
+            add_static_node_to_ttree(child, new)
+        if node.is_union:
+            new.expand()
 
 
 @functools.singledispatch
@@ -366,7 +420,7 @@ class ConfigDocWidget(textual.widget.Widget):
     def compose(self: typing.Self) -> textual.app.ComposeResult:
         with textual.containers.Horizontal():
             with textual.containers.VerticalScroll(id="left"):
-                yield textual.widgets.Tree[Record | ConfigClassContainer | UnionContainer](
+                yield textual.widgets.Tree[StaticConfigDocNode](
                     "Icon4Py Config File", id="tree"
                 )
             with textual.containers.VerticalScroll(id="right"):
@@ -376,28 +430,45 @@ class ConfigDocWidget(textual.widget.Widget):
         self.root_class = self.root_class or NoRoot
         self.query_one("#left").styles.width = "1fr"
         self.query_one("#right").styles.width = "2fr"
-        tree: textual.widgets.Tree[Record | ConfigClassContainer | UnionContainer] = self.query_one(
+        tree: textual.widgets.Tree[StaticConfigDocNode] = self.query_one(
             "#tree", expect_type=textual.widgets.Tree
         )
         tree.root.expand()
         tree.auto_expand = False
-        tree.root.data = Record(
-            qualified_name=("Config File",),
-            option_meta=config_options.ConfigOption(description=str(self.root_class.__doc__)),
-            allowed_type=self.root_class,
-        )
-        tree.root.label = tree.root.data.qualified_name[-1]
+        tree.loading = True
+        if CACHE_PATH.exists():
+            self.load_data_from_cache(tree)
+        else:
+            self.load_data_from_scratch(tree)
+        tree.focus()
+        info = self.query_one("#description", expect_type=textual.widgets.Markdown)
+        info.loading = True
+
+    @textual.work
+    async def load_data_from_scratch(self: typing.Self, tree: textual.widgets.Tree) -> None:
         doctree = node_from_dataclass(
             self.root_class,
             ctx=TraversalContext(
                 name_path=(), current_field=None, current_typehint=self.root_class
             ),
         )
-        for child in doctree.children:
-            add_node_to_ttree(child, tree.root)
+        doctree = dataclasses.replace(doctree, record=dataclasses.replace(doctree.record, qualified_name=("Config File",)))
+        static_tree = make_static(doctree)
+        self.build_tree_from_static(tree, static_tree)
+        CACHE_PATH.write_text(config_io.write_yaml_str(static_tree))
 
+    @textual.work
+    async def load_data_from_cache(self: typing.Self, tree: textual.widgets.Tree) -> None:
+        static_tree = config_io.read_yaml_str(CACHE_PATH.read_text(), StaticConfigDocNode)
+        self.build_tree_from_static(tree, static_tree)
+
+    def build_tree_from_static(self: typing.Self, tree: textual.widgets.Tree, static: StaticConfigDocNode) -> None:
+        tree.root.data = static
+        tree.root.label = "Config File"
+        for child in static.children:
+            add_static_node_to_ttree(child, tree.root)
+        tree.loading = False
         tree.select_node(tree.root)
-        tree.focus()
 
     def on_tree_node_selected(
         self: typing.Self, message: textual.widgets.Tree.NodeSelected
@@ -405,32 +476,19 @@ class ConfigDocWidget(textual.widget.Widget):
         node = message.node
         node.expand()
         info = self.query_one("#description", expect_type=textual.widgets.Markdown)
-        record = record_from_node(
-            typing.cast(Record | ConfigClassContainer | UnionContainer, node.data)
-        )
-        example_name = (
-            record.qualified_name[-1]
-            if not record.qualified_name[-1].startswith("type: ")
-            else record.qualified_name[-2]
-        )
-        examples = "\n--\n\n".join(
-            config_io.write_yaml_str(
-                {example_name: config_io.CONV.unstructure(example, unstructure_as=unstructure_type)}
-            )
-            for example, unstructure_type in examples_for(record.allowed_type)
-        )
-        desc = record.option_meta.description
+        data = typing.cast(StaticConfigDocNode, node.data)
+        examples = "\n--\n\n".join(data.examples)
         markdown = "\n".join(
             (
                 "## Description",
                 "",
-                f"{desc}",
+                f"{data.description}",
                 "",
                 "## Info",
                 "",
-                f"- type: {record.allowed_type}",
-                f"- default: {record.default}",
-                f"- can{' ' if record.optional else ' not '}be omitted",
+                f"- type: {data.type_name}",
+                f"- default: {data.default}",
+                f"- can{' ' if data.optional else ' not '}be omitted",
                 "",
                 "## Examples",
                 "",
@@ -440,6 +498,7 @@ class ConfigDocWidget(textual.widget.Widget):
             )
         )
         info.update(markdown)
+        info.loading = False
 
 
 class ConfigDocApp(textual.app.App):
