@@ -135,6 +135,7 @@ def _compute_ppm4gpu_flux(
         z_a1=z_a1,
         k_half=k,
         slev=slev,
+        elev=elev,
         p_dtime=p_dtime,
     )
     p_upflux = _compute_ppm4gpu_integer_flux(
@@ -187,7 +188,7 @@ def compute_ppm4gpu_flux(
         out=p_upflux,
         domain={
             dims.CellDim: (start_cell, end_cell),
-            dims.KHalfDim: (vertical_start, vertical_end + 1),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
 
