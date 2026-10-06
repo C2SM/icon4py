@@ -83,7 +83,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         k: np.ndarray,
         iadv_slev_jt: int,
         p_dtime: float,
-        dbl_eps: float,
+        wp_eps: float,
         **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
@@ -148,7 +148,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
                 rhodz_ast2,
                 p_mflx_tracer_h_unlimited,
                 p_dtime,
-                dbl_eps,
+                wp_eps,
             )
         else:
             r_m = np.ones((grid.num_cells, grid.num_levels), dtype=rhodz_now.dtype)
@@ -189,7 +189,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         r_m = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
         p_dtime = np.float64(5.0)
-        dbl_eps = np.float64(1e-9)
+        wp_eps = np.float64(1e-9)
         ivadv_tracer = gtx.int32(0)
         ihadv_tracer = gtx.int32(2)
         itype_hlimit = gtx.int32(4)
@@ -224,7 +224,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             lsq_pseudoinv_1=lsq_pseudoinv_1,
             lsq_pseudoinv_2=lsq_pseudoinv_2,
             geofac_div=geofac_div,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             p_dtime=p_dtime,
             do_vertical_first=True,
             start_cell_lateral_boundary_level_2=gtx.int32(0),
@@ -272,7 +272,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         ihadv_tracer: int,
         itype_hlimit: int,
         p_dtime: float,
-        dbl_eps: float,
+        wp_eps: float,
         **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
@@ -324,7 +324,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
                 rhodz_now,
                 p_mflx_tracer_h_unlimited,
                 p_dtime,
-                dbl_eps,
+                wp_eps,
             )
         else:
             r_m = np.ones((grid.num_cells, grid.num_levels), dtype=rhodz_now.dtype)
@@ -365,7 +365,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         r_m = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
         p_dtime = np.float64(5.0)
-        dbl_eps = np.float64(1e-9)
+        wp_eps = np.float64(1e-9)
         ivadv_tracer = gtx.int32(0)
         ihadv_tracer = gtx.int32(2)
         itype_hlimit = gtx.int32(4)
@@ -400,7 +400,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
             lsq_pseudoinv_1=lsq_pseudoinv_1,
             lsq_pseudoinv_2=lsq_pseudoinv_2,
             geofac_div=geofac_div,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             p_dtime=p_dtime,
             do_vertical_first=False,
             start_cell_lateral_boundary_level_2=gtx.int32(0),

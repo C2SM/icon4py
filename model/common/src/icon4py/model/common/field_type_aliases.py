@@ -11,10 +11,9 @@ import gt4py.next as gtx
 from gt4py.next import Dims, Field
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-T = TypeVar("T", wpfloat, vpfloat, float, bool, gtx.int32, gtx.int64)
+T = TypeVar("T", gtx.float32, gtx.float64, bool, gtx.int32, gtx.int64)
 
 CellField: TypeAlias = Field[Dims[dims.CellDim], T]  # noqa: UP040
 EdgeField: TypeAlias = Field[Dims[dims.EdgeDim], T]  # noqa: UP040

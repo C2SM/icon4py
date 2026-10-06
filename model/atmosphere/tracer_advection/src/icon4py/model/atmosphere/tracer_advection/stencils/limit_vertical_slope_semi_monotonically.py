@@ -11,6 +11,7 @@ from gt4py.next import abs, minimum, where  # noqa: A004
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -20,8 +21,8 @@ def _limit_vertical_slope_semi_monotonically_inner(
 ) -> fa.CellKField[ta.wpfloat]:
     """Limit the vertical slope for interior levels."""
     p_cc_min = minimum(minimum(p_cc(dims.KDim - 1), p_cc), p_cc(dims.KDim + 1))
-    slope_l = minimum(abs(z_slope), 2.0 * (p_cc - p_cc_min))
-    return where(z_slope >= 0.0, slope_l, -slope_l)
+    slope_l = minimum(abs(z_slope), wpfloat(2.0) * (p_cc - p_cc_min))
+    return where(z_slope >= wpfloat(0.0), slope_l, -slope_l)
 
 
 @gtx.field_operator
@@ -31,8 +32,8 @@ def _limit_vertical_slope_semi_monotonically_last(
 ) -> fa.CellKField[ta.wpfloat]:
     """Limit the vertical slope for the last level."""
     p_cc_min = minimum(p_cc(dims.KDim - 1), p_cc)
-    slope_l = minimum(abs(z_slope), 2.0 * (p_cc - p_cc_min))
-    return where(z_slope >= 0.0, slope_l, -slope_l)
+    slope_l = minimum(abs(z_slope), wpfloat(2.0) * (p_cc - p_cc_min))
+    return where(z_slope >= wpfloat(0.0), slope_l, -slope_l)
 
 
 @gtx.field_operator

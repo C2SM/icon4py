@@ -74,6 +74,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
     _compute_tangential_wind,
 )
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -86,11 +87,11 @@ def _compute_ppm4gpu_flux(
     slev: gtx.int32,
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
     itype_vlimit: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
-    z_cfl = broadcast(0.0, (dims.CellDim, dims.KHalfDim))
+    z_cfl = broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim))
     z_cfl = concat_where(
         (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
         _compute_ppm4gpu_courant_number(
@@ -100,7 +101,7 @@ def _compute_ppm4gpu_flux(
             k_half=k,
             slevp1_ti=slevp1_ti,
             nlev=elev,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             p_dtime=p_dtime,
         ),
         z_cfl,
@@ -150,7 +151,7 @@ def _compute_ppm4gpu_flux(
     return concat_where(
         (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
         p_upflux,
-        broadcast(0.0, (dims.CellDim, dims.KHalfDim)),
+        broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim)),
     )
 
 
@@ -165,7 +166,7 @@ def compute_ppm4gpu_flux(
     slev: gtx.int32,
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
     itype_vlimit: gtx.int32,
     start_cell: gtx.int32,
@@ -182,7 +183,7 @@ def compute_ppm4gpu_flux(
         slev=slev,
         slevp1_ti=slevp1_ti,
         elev=elev,
-        dbl_eps=dbl_eps,
+        wp_eps=wp_eps,
         p_dtime=p_dtime,
         itype_vlimit=itype_vlimit,
         out=p_upflux,
@@ -219,7 +220,7 @@ def _compute_2nd_order_miura_horizontal_flux(
         dual_normal_cell_1=dual_normal_cell_1,
         primal_normal_cell_2=primal_normal_cell_2,
         dual_normal_cell_2=dual_normal_cell_2,
-        p_dthalf=0.5 * p_dtime,
+        p_dthalf=wpfloat(0.5) * p_dtime,
     )
     p_coeff_1, p_coeff_2, p_coeff_3 = _reconstruct_linear_coefficients_svd(
         p_cc=p_cc, lsq_pseudoinv_1=lsq_pseudoinv_1, lsq_pseudoinv_2=lsq_pseudoinv_2
@@ -261,7 +262,7 @@ def _compute_tracer_advection_before_horizontal_limiter(
     lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
     lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
     do_vertical_first: bool,
 ) -> tuple[
@@ -300,13 +301,13 @@ def _compute_tracer_advection_before_horizontal_limiter(
             iadv_slev_jt=iadv_slev_jt,
         )
         if do_vertical_first
-        else p_tracer_now + broadcast(0.0, (dims.CellDim, dims.KDim))
+        else p_tracer_now + broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
     )
 
     tracer_for_h = (
         p_tracer_after_vertical
         if do_vertical_first
-        else p_tracer_now + broadcast(0.0, (dims.CellDim, dims.KDim))
+        else p_tracer_now + broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
     )
     p_mflx_tracer_h_unlimited = (
         _compute_2nd_order_miura_horizontal_flux(
@@ -325,7 +326,7 @@ def _compute_tracer_advection_before_horizontal_limiter(
             p_dtime=p_dtime,
         )
         if (ihadv_tracer == 2)
-        else broadcast(0.0, (dims.EdgeDim, dims.KDim))
+        else broadcast(wpfloat(0.0), (dims.EdgeDim, dims.KDim))
     )
 
     r_m = (
@@ -335,10 +336,10 @@ def _compute_tracer_advection_before_horizontal_limiter(
             p_rhodz_now=rhodz_ast2 if do_vertical_first else rhodz_now,
             p_mflx_tracer_h=p_mflx_tracer_h_unlimited,
             p_dtime=p_dtime,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
         )
         if (itype_hlimit == 4)
-        else broadcast(1.0, (dims.CellDim, dims.KDim))
+        else broadcast(wpfloat(1.0), (dims.CellDim, dims.KDim))
     )
 
     return (
@@ -379,7 +380,7 @@ def compute_tracer_advection_before_horizontal_limiter(
     lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
     lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
     do_vertical_first: bool,
     start_cell_lateral_boundary_level_2: gtx.int32,
@@ -414,7 +415,7 @@ def compute_tracer_advection_before_horizontal_limiter(
         lsq_pseudoinv_1=lsq_pseudoinv_1,
         lsq_pseudoinv_2=lsq_pseudoinv_2,
         geofac_div=geofac_div,
-        dbl_eps=dbl_eps,
+        wp_eps=wp_eps,
         p_dtime=p_dtime,
         do_vertical_first=do_vertical_first,
         out=(
@@ -471,13 +472,13 @@ def _compute_tracer_advection_after_horizontal_limiter(
     itype_vlimit: gtx.int32,
     iadv_slev_jt: gtx.int32,
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
 ) -> tuple[fa.EdgeKField[ta.wpfloat], fa.CellKHalfField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     tracer_now_for_h = (
         p_tracer_after_vertical
         if do_vertical_first
-        else p_tracer_now + broadcast(0.0, (dims.CellDim, dims.KDim))
+        else p_tracer_now + broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
     )
     rhodz_for_h_now = rhodz_ast2 if do_vertical_first else rhodz_now
     rhodz_for_h_new = rhodz_new if do_vertical_first else rhodz_ast2
@@ -491,7 +492,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
             if (itype_hlimit == 4)
             else p_mflx_tracer_h_unlimited
         ),
-        broadcast(0.0, (dims.EdgeDim, dims.KDim)),
+        broadcast(wpfloat(0.0), (dims.EdgeDim, dims.KDim)),
     )
     p_tracer_after_horizontal = concat_where(
         (dims.KDim >= 0) & (dims.KDim < elev + 1),
@@ -508,7 +509,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
             if (ihadv_tracer != 0)
             else tracer_now_for_h
         ),
-        broadcast(0.0, (dims.CellDim, dims.KDim)),
+        broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim)),
     )
     p_mflx_tracer_v_computed = (
         _compute_ppm4gpu_flux(
@@ -520,12 +521,12 @@ def _compute_tracer_advection_after_horizontal_limiter(
             slev=slev,
             slevp1_ti=slevp1_ti,
             elev=elev,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             p_dtime=p_dtime,
             itype_vlimit=itype_vlimit,
         )
         if (ivadv_tracer == 3)
-        else broadcast(0.0, (dims.CellDim, dims.KHalfDim))
+        else broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim))
     )
     p_mflx_tracer_v_out = p_mflx_tracer_v if do_vertical_first else p_mflx_tracer_v_computed
     p_tracer_new = (
@@ -576,7 +577,7 @@ def compute_tracer_advection_after_horizontal_limiter(
     itype_vlimit: gtx.int32,
     iadv_slev_jt: gtx.int32,
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
     start_cell_nudging: gtx.int32,
     end_cell_local: gtx.int32,
@@ -610,7 +611,7 @@ def compute_tracer_advection_after_horizontal_limiter(
         itype_vlimit=itype_vlimit,
         iadv_slev_jt=iadv_slev_jt,
         geofac_div=geofac_div,
-        dbl_eps=dbl_eps,
+        wp_eps=wp_eps,
         p_dtime=p_dtime,
         out=(p_mflx_tracer_h, p_mflx_tracer_v, p_tracer_new),
         domain=(

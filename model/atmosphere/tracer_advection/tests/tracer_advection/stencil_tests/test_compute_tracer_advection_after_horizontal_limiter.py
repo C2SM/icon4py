@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_advection import (
     compute_tracer_advection_after_horizontal_limiter,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
@@ -120,8 +120,8 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         # it is already declared above as the input field.
         p_tracer_new = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
-        p_dtime = np.float64(5.0)
-        dbl_eps = np.float64(1e-9)
+        p_dtime = ta.wpfloat(5.0)
+        wp_eps = ta.wpfloat(1e-9)
         do_vertical_first = True
         ivadv_tracer = gtx.int32(0)
         ihadv_tracer = gtx.int32(2)
@@ -160,7 +160,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             itype_vlimit=itype_vlimit,
             iadv_slev_jt=iadv_slev_jt,
             geofac_div=geofac_div,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             p_dtime=p_dtime,
             start_cell_nudging=gtx.int32(0),
             end_cell_local=gtx.int32(grid.num_cells),

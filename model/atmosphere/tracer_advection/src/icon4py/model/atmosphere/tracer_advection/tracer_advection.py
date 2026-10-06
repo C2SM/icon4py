@@ -242,7 +242,7 @@ class GodunovSplittingAdvection(Advection):
             "lsq_pseudoinv_1": least_squares_state.lsq_pseudoinv_1,
             "lsq_pseudoinv_2": least_squares_state.lsq_pseudoinv_2,
             "geofac_div": interpolation_state.geofac_div,
-            "dbl_eps": constants.DBL_EPS,
+            "wp_eps": constants.WP_EPS,
             "ihadv_tracer": gtx.int32(horizontal_advection_type.value),
             "itype_hlimit": gtx.int32(horizontal_advection_limiter.value),
         }
@@ -257,7 +257,7 @@ class GodunovSplittingAdvection(Advection):
             "elev": gtx.int32(self._grid.num_levels - 1),
             "ivadv_tracer": gtx.int32(vertical_advection_type.value),
             "iadv_slev_jt": gtx.int32(0),
-            "dbl_eps": constants.DBL_EPS,
+            "wp_eps": constants.WP_EPS,
             "itype_vlimit": gtx.int32(vertical_advection_limiter.value),
         }
         horizontal_domains: dict[str, gtx.int32] = {
@@ -311,7 +311,7 @@ class GodunovSplittingAdvection(Advection):
                 "slev": gtx.int32(0),
                 "slevp1_ti": gtx.int32(1),
                 "elev": gtx.int32(self._grid.num_levels - 1),
-                "dbl_eps": constants.DBL_EPS,
+                "wp_eps": constants.WP_EPS,
                 "itype_vlimit": gtx.int32(vertical_advection_limiter.value),
             },
             horizontal_sizes={

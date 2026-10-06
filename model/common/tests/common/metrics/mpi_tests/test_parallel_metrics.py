@@ -249,6 +249,6 @@ def test_distributed_metrics_nflat_gradp(  # noqa: PLR0917 [too-many-positional-
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
-    value = factory.get(attrs.NFLAT_GRADP)
+    value = factory.get_scalar(attrs.NFLAT_GRADP)
     value_ref = grid_savepoint.nflat_gradp()
     assert value == value_ref

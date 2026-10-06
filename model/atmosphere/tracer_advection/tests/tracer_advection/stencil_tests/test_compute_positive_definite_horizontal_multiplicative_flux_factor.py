@@ -15,7 +15,7 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
@@ -26,8 +26,8 @@ def compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(  # no
     p_cc: np.ndarray,
     p_rhodz_now: np.ndarray,
     p_mflx_tracer_h: np.ndarray,
-    p_dtime: float,
-    dbl_eps: float,
+    p_dtime: ta.wpfloat,
+    wp_eps: ta.wpfloat,
 ) -> np.ndarray:
     c2e = connectivities[dims.C2E]
     geofac_div = np.expand_dims(geofac_div, axis=-1)
@@ -35,7 +35,7 @@ def compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(  # no
     p_m_1 = np.maximum(0.0, p_mflx_tracer_h[c2e[:, 1]] * geofac_div[:, 1] * p_dtime)
     p_m_2 = np.maximum(0.0, p_mflx_tracer_h[c2e[:, 2]] * geofac_div[:, 2] * p_dtime)
     p_m = p_m_0 + p_m_1 + p_m_2
-    return np.minimum(1.0, p_cc * p_rhodz_now / (p_m + dbl_eps))
+    return np.minimum(1.0, p_cc * p_rhodz_now / (p_m + wp_eps))
 
 
 class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_tests.StencilTest):
@@ -51,12 +51,12 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         p_rhodz_now: np.ndarray,
         p_mflx_tracer_h: np.ndarray,
         p_dtime,
-        dbl_eps,
+        wp_eps,
         **kwargs,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         r_m = compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(
-            connectivities, geofac_div, p_cc, p_rhodz_now, p_mflx_tracer_h, p_dtime, dbl_eps
+            connectivities, geofac_div, p_cc, p_rhodz_now, p_mflx_tracer_h, p_dtime, wp_eps
         )
         return dict(r_m=r_m)
 
@@ -67,15 +67,15 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         p_rhodz_now = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_mflx_tracer_h = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         r_m = data_alloc.zero_field(dims.CellDim, dims.KDim)
-        p_dtime = np.float64(5)
-        dbl_eps = np.float64(1e-9)
+        p_dtime = ta.wpfloat(5)
+        wp_eps = ta.wpfloat(1e-9)
         return dict(
             geofac_div=geofac_div,
             p_cc=p_cc,
             p_rhodz_now=p_rhodz_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
             p_dtime=p_dtime,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             r_m=r_m,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),

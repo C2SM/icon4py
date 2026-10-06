@@ -48,8 +48,8 @@ from icon4py.model.common.math.tensor_operations import (
     twice_symmetric_part_on_edges,
 )
 from icon4py.model.common.math.vertical_operations import (
-    average_level_plus1_on_cells,
-    with_boundaries_on_half_levels_on_cells,
+    average_level_plus1_on_cells_wp,
+    with_boundaries_on_half_levels_on_cells_wp,
 )
 from icon4py.model.common.physics.compute_brunt_vaisala_frequency import (
     _compute_brunt_vaisala_frequency,
@@ -700,7 +700,7 @@ def _compute_eddy_viscosity(
             )
 
         km = rho_ic * mixing_length_sq * stability_term
-    km_ic = with_boundaries_on_half_levels_on_cells(
+    km_ic = with_boundaries_on_half_levels_on_cells_wp(
         top=km(dims.KHalfDim + 1), interior=km, bottom=km(dims.KHalfDim - 1), nlev=nlev
     )
     kh_ic = km_ic * rturb_prandtl
@@ -974,7 +974,7 @@ def _interpolate_km(
     domain only.
     """
     return (
-        maximum(km_min, average_level_plus1_on_cells(km_ic)),
+        maximum(km_min, average_level_plus1_on_cells_wp(km_ic)),
         maximum(km_min, _interpolate_cell_field_to_vertex(km_ic, cells_aw_verts)),
         maximum(km_min, _interpolate_cell_field_to_edge_on_half_levels(km_ic, c_lin_e)),
     )
