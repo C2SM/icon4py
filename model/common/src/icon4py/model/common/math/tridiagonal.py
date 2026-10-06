@@ -68,12 +68,12 @@ def _solve_tridiagonal_matrix_back_substitution_on_half_levels_wp(
     axis=dims.KHalfDim,
     forward=True,
     init=(  # type: ignore[call-overload] # GT4Py misses type hint for tuples here
-        vpfloat("0.0"),
-        0.0,
+        vpfloat(0.0),
+        wpfloat(0.0),
     ),
 )
 def _solve_tridiagonal_matrix_forward_sweep_on_half_levels_mixed_precision(
-    state_kminus1: tuple[vpfloat, float],
+    state_kminus1: tuple[vpfloat, wpfloat],
     a: vpfloat,
     b: vpfloat,
     c: vpfloat,

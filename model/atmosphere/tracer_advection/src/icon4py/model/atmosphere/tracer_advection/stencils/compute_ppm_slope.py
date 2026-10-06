@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -23,8 +24,8 @@ def _compute_ppm_slope_a(
         p_cellhgt_mc_now
         / (p_cellhgt_mc_now(dims.KDim - 1) + p_cellhgt_mc_now + p_cellhgt_mc_now(dims.KDim + 1))
     ) * (
-        (2.0 * p_cellhgt_mc_now(dims.KDim - 1) + p_cellhgt_mc_now) * zfac
-        + (p_cellhgt_mc_now + 2.0 * p_cellhgt_mc_now(dims.KDim + 1)) * zfac_m1
+        (wpfloat(2.0) * p_cellhgt_mc_now(dims.KDim - 1) + p_cellhgt_mc_now) * zfac
+        + (p_cellhgt_mc_now + wpfloat(2.0) * p_cellhgt_mc_now(dims.KDim + 1)) * zfac_m1
     )
 
     return z_slope
@@ -38,7 +39,7 @@ def _compute_ppm_slope_b(
     zfac_m1 = (p_cc - p_cc(dims.KDim - 1)) / (p_cellhgt_mc_now + p_cellhgt_mc_now(dims.KDim - 1))
     z_slope = (
         (p_cellhgt_mc_now / (p_cellhgt_mc_now(dims.KDim - 1) + p_cellhgt_mc_now + p_cellhgt_mc_now))
-        * (p_cellhgt_mc_now + 2.0 * p_cellhgt_mc_now)
+        * (p_cellhgt_mc_now + wpfloat(2.0) * p_cellhgt_mc_now)
         * zfac_m1
     )
 

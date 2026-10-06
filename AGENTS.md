@@ -72,6 +72,7 @@ If a `shell.nix` exists in the repo root, you can use it to provide these depend
 - `GT4PY_BUILD_CACHE_DIR`: GT4Py stencil compilation cache location
 - `GT4PY_BUILD_JOBS`: limit parallel stencil compilation jobs (unset by default)
 - `PYTEST_ADDOPTS`: default pytest options (xdist workers, verbosity)
+- `ICON4PY_FLOAT_PRECISION`: choose precision setting from `double` (default), `single`, `mixed` (broken)
 
 ### Clean rebuild
 
@@ -119,6 +120,9 @@ uv run --group test --frozen pytest --datatest-skip model/<component>/
 # Only datatests (requires test data):
 uv run --group test --frozen pytest --datatest-only model/<component>/
 
+# Single-precision mode (only runs tests with the pytest marker `single_precision_ready`):
+ICON4PY_FLOAT_PRECISION=single uv run --group test --frozen pytest model/<component>/
+
 # MPI tests (requires mpi4py, distributed extra; always use -n0 for sequential):
 mpirun -np 4 .cscs-ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pytest -v -s --with-mpi -n0 -k mpi_tests model/<component>/
 #   --with-mpi: enables MPI test mode (from pytest-mpi plugin)
@@ -139,7 +143,6 @@ Registered by `icon4py.model.testing.pytest_hooks` (auto-loaded via `addopts`):
 | `--datatest-skip`                           | Skip all datatests                                                                |
 | `--backend <name>`                          | GT4Py backend (default: embedded; others: gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu) |
 | `--grid <name>`                             | Grid to use                                                                       |
-| `--enable-mixed-precision`                  | Switch from double to mixed-precision                                             |
 | `--level {any,unit,integration,validation}` | Filter by `@pytest.mark.level` marker. `any` (default) excludes validation tests. |
 | `--skip-stenciltest-verification`           | Skip verification of StencilTest against reference outputs                        |
 
@@ -182,11 +185,19 @@ Nox mirrors the CI pipeline. Useful for running comprehensive test suites:
 uv run --group test --frozen nox -l
 
 # Run all tests for a specific component and subset:
-uv run --group test --frozen nox -s 'test_common(datatest=True)'
-uv run --group test --frozen nox -s 'test_common(datatest=False)'
+uv run --group test --frozen nox -s "test_model-3.13(datatest, common)"
+
+# Select one subset across all subpackages by tag:
+uv run --group test --frozen nox -t basic
+uv run --group test --frozen nox -t datatest
+
+# Run tests in single-precision mode:
+ICON4PY_FLOAT_PRECISION=single uv run --group test --frozen nox -s "test_model-3.13(basic, dycore)"
 ```
 
-Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks).
+Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks). `test_model_mpi` has no `stencils` subset because stencil tests are serial by definition.
+
+Subpackage IDs are the last path component of the package directory: `tracer_advection`, `diffusion`, `dycore`, `microphysics`, `muphys`, `physics_driver`, `common`, `driver`, `testing`.
 
 ## Triggering CSCS CI
 
@@ -200,4 +211,4 @@ See `.github/workflows/mandatory_and_optional_test_reminder.yml` for the authori
   - `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSIONS=model`
 - The `cscs/merge` pipeline runs automatically on the merge queue; do not trigger it manually. It runs as a dummy pipeline on PR pushes and runs no tests.
 - Some pipelines, especially those running on the normal slrum partition, can in the worst case take hours to schedule (when cluster is busy) and run (see SLURM_TIMELIMIT in the CSCS CI configs). Keep this in mind when waiting for jobs to finish. Test jobs may also need to populate GT4Py caches which can take long.
-- CSCS CI configs are in the ci/ subdirectory. The CI runs using GitLab runners and the configuration is the same as for regular GitLab pipelines.
+- CSCS CI configs are in the `.cscs-ci/` subdirectory. The CI runs using GitLab runners and the configuration is the same as for regular GitLab pipelines.

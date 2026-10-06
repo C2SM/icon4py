@@ -167,19 +167,18 @@ def verify_advection_fields(
     log_dbg(p_tracer_new_ref.asnumpy()[p_tracer_new_range, :], "p_tracer_new_ref")
 
     # verify tracer_advection output fields
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
-        rtol=1e-10,
-        atol=1e-11,
+        atol=1e-11 if test_utils.wp_is_dp else 2e-5,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
         diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
-        rtol=1e-10,
+        atol=2e-14,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         p_tracer_new.asnumpy()[p_tracer_new_range, :],
         p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
-        atol=1e-16,
+        atol=1e-16 if test_utils.wp_is_dp else 1e-8,
     )
