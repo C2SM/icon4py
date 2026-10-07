@@ -114,6 +114,7 @@ def __bencher_baseline_CI(session: nox.Session) -> None:
     """
     session.run(
         *f"bencher run \
+        --average median \
         --threshold-measure latency \
         --threshold-test percentage \
         --threshold-max-sample-size 64 \
@@ -149,6 +150,7 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
     bencher_testbed = f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}"
     session.run(
         *f"bencher run \
+        --average median \
         --start-point main \
         --start-point-clone-thresholds \
         --start-point-reset \
