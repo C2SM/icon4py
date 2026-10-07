@@ -27,12 +27,13 @@ import gt4py.next as gtx
 import xarray as xr
 
 from icon4py.model.common import dimension as dims, time, type_alias as ta
+from icon4py.model.common.components import states
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
 from icon4py.model.common.physics.thermodynamics import compute_pressure, compute_temperature
-from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
+from icon4py.model.common.states import data as state_data
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -61,7 +62,7 @@ PROGNOSTIC_VARIABLES: Final[list[str]] = [
 
 
 def prognostic_state_to_dataarrays(
-    prognostic_state: prognostics.PrognosticState,
+    prognostic_state: states.PrognosticState,
     variables: list[str] | None = None,
 ) -> dict[str, xr.DataArray]:
     """Assemble a CF/UGRID-annotated model-state dict from a ``PrognosticState``."""
@@ -79,7 +80,7 @@ def prognostic_state_to_dataarrays(
         assert metadata.icon_var_name is not None, (
             f"prognostic output '{name}' must declare icon_var_name to be read from the state"
         )
-        field = getattr(prognostic_state, metadata.icon_var_name)
+        field = getattr(prognostic_state, metadata.icon_var_name).data
         state[name] = io_utils.to_data_array(
             field,
             metadata,
@@ -160,7 +161,7 @@ class DiagnosticsComputer:
 
     def compute(
         self,
-        prognostic_state: prognostics.PrognosticState,
+        prognostic_state: states.PrognosticState,
         *,
         ddqz_z_full: gtx.Field,
         rbf_vec_coeff_c1: gtx.Field,
@@ -184,8 +185,8 @@ class DiagnosticsComputer:
             qr=self._qr,
             qs=self._qs,
             qg=self._qg,
-            theta_v=prognostic_state.theta_v,
-            exner=prognostic_state.exner,
+            theta_v=prognostic_state.theta_v.data,
+            exner=prognostic_state.exner.data,
             virtual_temperature=self._virtual_temperature,
             temperature=self._temperature,
             horizontal_start=0,
@@ -196,7 +197,7 @@ class DiagnosticsComputer:
         )
 
         rbf.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-            p_e_in=prognostic_state.vn,
+            p_e_in=prognostic_state.vn.data,
             ptr_coeff_1=rbf_vec_coeff_c1,
             ptr_coeff_2=rbf_vec_coeff_c2,
             p_u_out=self._u,
@@ -209,7 +210,7 @@ class DiagnosticsComputer:
         )
 
         compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(backend)(
-            exner=prognostic_state.exner,
+            exner=prognostic_state.exner.data,
             virtual_temperature=self._virtual_temperature,
             ddqz_z_full=ddqz_z_full,
             pressure=self._pressure,

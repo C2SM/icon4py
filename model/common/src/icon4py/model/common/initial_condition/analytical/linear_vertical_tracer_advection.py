@@ -18,7 +18,6 @@ from icon4py.model.common.components import states
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -187,8 +186,8 @@ def linear_vertical_advection(
     *,
     config: ConfigContext,
     metrics: metrics_factory.MetricsFieldsFactory,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
+    prognostic_state_now: states.PrognosticState,
+    tracer_state_now: states.TracerState,
     tracer_prep_adv_state: states.PrepAdvection,
 ) -> None:
     """
@@ -205,7 +204,7 @@ def linear_vertical_advection(
     z_mc = metrics.get(metrics_meta.Z_MC).ndarray
     z_ifc = metrics.get(metrics_meta.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
 
-    prognostic_state_now.rho.ndarray[:, :] = 1.0
+    prognostic_state_now.rho.data.ndarray[:, :] = 1.0
 
     _fill_prep_adv_from_prescribed_wind_field(
         velocity_field=ic_config.velocity_field,
@@ -215,7 +214,7 @@ def linear_vertical_advection(
 
     _fill_tracer_from_analytical_profile(
         config=ic_config,
-        tracer_buffer=tracer_state_now.qv.ndarray,
+        tracer_buffer=tracer_state_now.qv.data.ndarray,
         z_mc=z_mc,
         z_ifc=z_ifc,
         center_z=ic_config.initial_center * config.vertical_grid.model_top_height,

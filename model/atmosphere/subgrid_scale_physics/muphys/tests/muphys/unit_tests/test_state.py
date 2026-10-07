@@ -29,9 +29,12 @@ class _StubFieldSource:
 def test_as_component_input_maps_the_facade_without_copies():
     dz = object()
     state = muphys_state.State(metrics=_StubFieldSource({metrics_attributes.DDQZ_Z_FULL: dz}))
-    tracers = types.SimpleNamespace(qv="QV", qc="QC", qi="QI", qr="QR", qs="QS", qg="QG")
+    leaf = lambda data: types.SimpleNamespace(data=data)  # noqa: E731
+    tracers = types.SimpleNamespace(
+        qv=leaf("QV"), qc=leaf("QC"), qi=leaf("QI"), qr=leaf("QR"), qs=leaf("QS"), qg=leaf("QG")
+    )
     entry = types.SimpleNamespace(
-        diagnostics=types.SimpleNamespace(temperature="TA", pressure="P"),
+        diagnostics=types.SimpleNamespace(temperature=leaf("TA"), pressure=leaf("P")),
         rho="RHO",
         tracers=tracers,
     )

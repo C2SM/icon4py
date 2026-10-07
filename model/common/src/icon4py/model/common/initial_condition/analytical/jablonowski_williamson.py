@@ -22,6 +22,7 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
+from icon4py.model.common.components import states
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
@@ -34,7 +35,6 @@ from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import interpolate_cell_field_to_edge
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.physics.thermodynamics import compute_pressure
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -146,8 +146,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
+    prognostic_state_now: states.PrognosticState,
+    tracer_state_now: states.TracerState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
@@ -304,23 +304,23 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         primal_normal_x=primal_normal_x,
         eta_v_at_edge=eta_v_at_edge_dp.ndarray,
     )
-    prognostic_state_now.vn.ndarray[:, :] = vn_dp.astype(ta.wpfloat)
+    prognostic_state_now.vn.data.ndarray[:, :] = vn_dp.astype(ta.wpfloat)
     log.info("U2vn computation completed.")
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
 
-    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+    prognostic_state_now.w.data.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,
         edge_cell_distance=edge_cell_distance,
         primal_edge_length=primal_edge_length,
         cell_area=cell_area,
-        vn=prognostic_state_now.vn.ndarray,
+        vn=prognostic_state_now.vn.data.ndarray,
         vct_b=vct_b.ndarray,
         nlev=num_levels,
     )
-    exchange.exchange(dims.CellDim, prognostic_state_now.w)
+    exchange.exchange(dims.CellDim, prognostic_state_now.w.data)
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
         rho=rho_dp,
@@ -336,14 +336,14 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    prognostic_state_now.exner.ndarray[:] = exner_dp.astype(ta.wpfloat)
-    prognostic_state_now.rho.ndarray[:] = rho_dp.astype(ta.wpfloat)
-    prognostic_state_now.theta_v.ndarray[:] = theta_v_dp.astype(ta.wpfloat)
+    prognostic_state_now.exner.data.ndarray[:] = exner_dp.astype(ta.wpfloat)
+    prognostic_state_now.rho.data.ndarray[:] = rho_dp.astype(ta.wpfloat)
+    prognostic_state_now.theta_v.data.ndarray[:] = theta_v_dp.astype(ta.wpfloat)
 
     # Moist initialization only runs when transport is active. The only tracer we
     # need to set is qv; the hydrometeors (qc, qi, ...) keep their zero-initialized
     # value, so we don't touch them.
-    active_tracers = {name for name, _ in tracer_state_now.active_fields()}
+    active_tracers = {declaration.name for declaration, _ in tracer_state_now.leaves()}
     if active_tracers:
         if tracer_state_now.qv is None:
             raise ValueError(
@@ -363,7 +363,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             grid=grid,
             backend=backend,
             allocator=allocator,
-            exner=prognostic_state_now.exner,
+            exner=prognostic_state_now.exner.data,
             virtual_temperature=virtual_temperature,
             ddqz_z_full=ddqz_z_full_field,
         )
@@ -373,7 +373,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             pressure=pressure_ndarray,
             cell_area=cell_area,
             ddqz_z_full=ddqz_z_full_field.ndarray,
-            qv=tracer_state_now.qv.ndarray,
+            qv=tracer_state_now.qv.data.ndarray,
             global_reductions=global_reductions,
             n_iter=ic_config.moisture_init_iterations,
             rh_at_1000hpa=ic_config.rh_at_1000hpa,
