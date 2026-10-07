@@ -19,7 +19,7 @@ from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.stencils import compute_airmass
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
@@ -288,7 +288,7 @@ class Icon4pyDriver:
     def _integrate_one_time_step(
         self,
         *,
-        diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
+        diffusion_diagnostic_state: states.DiffusionDiagnostics | None,
         dycore_forcing: states.DycoreForcing | None,
         dycore_diagnostics: states.DycoreDiagnostics | None,
         tracer_advection_diagnostic_state: tracer_advection_states.AdvectionDiagnosticState | None,
@@ -343,9 +343,11 @@ class Icon4pyDriver:
                 )
                 with timer_diffusion:
                     self.granules.diffusion.run(
-                        diffusion_diagnostic_state,
-                        prognostic_states.next,
-                        self.model_time_variables.dtime_in_seconds,
+                        *self._diffusion_views(
+                            prognostic_states.next,
+                            diffusion_diagnostic_state,
+                            self.model_time_variables.dtime_in_seconds,
+                        )
                     )
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
@@ -611,9 +613,36 @@ class Icon4pyDriver:
             ta.wpfloat(0.0), self._allocator
         )
 
+    def _diffusion_views(
+        self,
+        prognostic_state: prognostics.PrognosticState,
+        diffusion_diagnostics: states.DiffusionDiagnostics,
+        dtime: ta.wpfloat,
+        initial_run: bool = False,
+    ) -> tuple[diffusion.Diffusion.Input, diffusion.Diffusion.Output]:
+        """The diffusion's views: the prognostics are diffused in place, so both sides share them."""
+        vn = fw.Field(qty.VnOnEdgeK, prognostic_state.vn)
+        w = fw.Field(qty.WOnCellKHalf, prognostic_state.w)
+        exner = fw.Field(qty.ExnerOnCellK, prognostic_state.exner)
+        theta_v = fw.Field(qty.ThetaVOnCellK, prognostic_state.theta_v)
+        inputs = diffusion.Diffusion.Input(
+            vn=vn, w=w, exner=exner, theta_v=theta_v, dtime=dtime, initial_run=initial_run
+        )
+        out = diffusion.Diffusion.Output(
+            vn=vn,
+            w=w,
+            exner=exner,
+            theta_v=theta_v,
+            hdef_ic=diffusion_diagnostics.hdef_ic,
+            div_ic=diffusion_diagnostics.div_ic,
+            dwdx=diffusion_diagnostics.dwdx,
+            dwdy=diffusion_diagnostics.dwdy,
+        )
+        return inputs, out
+
     def _diffuse_before_time_loop(
         self,
-        diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
+        diffusion_diagnostic_state: states.DiffusionDiagnostics | None,
         prognostic_state: prognostics.PrognosticState,
     ) -> None:
         """
@@ -633,10 +662,12 @@ class Icon4pyDriver:
         assert self.granules.diffusion is not None
         log.info("running diffusion to filter the initial state, before the time loop")
         self.granules.diffusion.run(
-            diffusion_diagnostic_state,
-            prognostic_state,
-            self.model_time_variables.dtime_in_seconds,
-            initial_run=True,
+            *self._diffusion_views(
+                prognostic_state,
+                diffusion_diagnostic_state,
+                self.model_time_variables.dtime_in_seconds,
+                initial_run=True,
+            )
         )
 
     def _second_order_divdamp_factor(self) -> ta.wpfloat:

@@ -8,25 +8,62 @@
 
 import numpy as np
 
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.common.components import framework as fw, quantities as qty, states
 from icon4py.model.testing import serialbox as sb, test_utils
+
+
+def construct_diagnostics(savepoint: sb.IconDiffusionInitSavepoint) -> states.DiffusionDiagnostics:
+    return states.DiffusionDiagnostics(
+        hdef_ic=fw.Field(qty.HorizontalWindDeformationOnCellKHalf, savepoint.hdef_ic()),
+        div_ic=fw.Field(qty.DivergenceOnCellKHalf, savepoint.div_ic()),
+        dwdx=fw.Field(qty.ZonalGradientOfWOnCellKHalf, savepoint.dwdx()),
+        dwdy=fw.Field(qty.MeridionalGradientOfWOnCellKHalf, savepoint.dwdy()),
+    )
+
+
+def diffusion_views(
+    prognostic_state: states.PrognosticState,
+    diagnostic_state: states.DiffusionDiagnostics,
+    dtime: float,
+    initial_run: bool = False,
+) -> tuple[diffusion.Diffusion.Input, diffusion.Diffusion.Output]:
+    """The diffusion's views over the prognostics (diffused in place) and its diagnostics."""
+    inputs = diffusion.Diffusion.Input(
+        vn=prognostic_state.vn,
+        w=prognostic_state.w,
+        exner=prognostic_state.exner,
+        theta_v=prognostic_state.theta_v,
+        dtime=dtime,
+        initial_run=initial_run,
+    )
+    out = diffusion.Diffusion.Output(
+        vn=prognostic_state.vn,
+        w=prognostic_state.w,
+        exner=prognostic_state.exner,
+        theta_v=prognostic_state.theta_v,
+        hdef_ic=diagnostic_state.hdef_ic,
+        div_ic=diagnostic_state.div_ic,
+        dwdx=diagnostic_state.dwdx,
+        dwdy=diagnostic_state.dwdy,
+    )
+    return inputs, out
 
 
 def verify_diffusion_fields(
     config: diffusion.DiffusionConfig,
-    diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-    prognostic_state: prognostics.PrognosticState,
+    diagnostic_state: states.DiffusionDiagnostics,
+    prognostic_state: states.PrognosticState,
     diffusion_savepoint: sb.IconDiffusionExitSavepoint,
 ):
     ref_w = diffusion_savepoint.w().asnumpy()
-    val_w = prognostic_state.w.asnumpy()
+    val_w = prognostic_state.w.data.asnumpy()
     ref_exner = diffusion_savepoint.exner().asnumpy()
     ref_theta_v = diffusion_savepoint.theta_v().asnumpy()
-    val_theta_v = prognostic_state.theta_v.asnumpy()
-    val_exner = prognostic_state.exner.asnumpy()
+    val_theta_v = prognostic_state.theta_v.data.asnumpy()
+    val_exner = prognostic_state.exner.data.asnumpy()
     ref_vn = diffusion_savepoint.vn().asnumpy()
-    val_vn = prognostic_state.vn.asnumpy()
+    val_vn = prognostic_state.vn.data.asnumpy()
 
     validate_diagnostics = (
         config.shear_type
@@ -34,13 +71,13 @@ def verify_diffusion_fields(
     )
     if validate_diagnostics:
         ref_div_ic = diffusion_savepoint.div_ic().asnumpy()
-        val_div_ic = diagnostic_state.div_ic.asnumpy()
+        val_div_ic = diagnostic_state.div_ic.data.asnumpy()
         ref_hdef_ic = diffusion_savepoint.hdef_ic().asnumpy()
-        val_hdef_ic = diagnostic_state.hdef_ic.asnumpy()
+        val_hdef_ic = diagnostic_state.hdef_ic.data.asnumpy()
         ref_dwdx = diffusion_savepoint.dwdx().asnumpy()
-        val_dwdx = diagnostic_state.dwdx.asnumpy()
+        val_dwdx = diagnostic_state.dwdx.data.asnumpy()
         ref_dwdy = diffusion_savepoint.dwdy().asnumpy()
-        val_dwdy = diagnostic_state.dwdy.asnumpy()
+        val_dwdy = diagnostic_state.dwdy.data.asnumpy()
 
         test_utils.assert_dallclose(
             val_div_ic, ref_div_ic, atol=1e-16 if test_utils.wp_is_dp else 4e-9

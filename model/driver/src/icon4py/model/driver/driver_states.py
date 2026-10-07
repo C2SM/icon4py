@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, NamedTuple
 import devtools
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import dimension as dims, time, type_alias as ta
 from icon4py.model.common.components import framework as fw, quantities as qty, states
@@ -64,7 +63,7 @@ class DriverStates(NamedTuple):
     prep_advection_prognostic: states.PrepAdvection | None
     dycore_forcing: states.DycoreForcing | None
     dycore_diagnostics: states.DycoreDiagnostics | None
-    diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
+    diffusion_diagnostic: states.DiffusionDiagnostics | None
     tracer_advection_diagnostic: tracer_advection_states.AdvectionDiagnosticState | None
     prep_tracer_advection_prognostic: prep_adv_states.TracerPrepAdvState | None
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
@@ -340,9 +339,7 @@ def assemble_driver_states(
     tracer_advection_enabled = experiment_config.tracer_advection is not None
 
     diffusion_diagnostic_state = (
-        diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
-        if diffusion_enabled
-        else None
+        fw.allocate(states.DiffusionDiagnostics, grid, allocator) if diffusion_enabled else None
     )
     prep_adv = link_tracer_prep_adv_to_dycore(
         grid=grid,
