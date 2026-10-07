@@ -13,6 +13,7 @@ import logging
 import os
 import pathlib
 import sys
+from collections.abc import Callable
 from typing import Any, Literal
 
 import gt4py.next as gtx
@@ -20,10 +21,7 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
-    component as muphys_component,
-    state as muphys_state,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as muphys_component
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
@@ -77,6 +75,39 @@ class Granules:
     solve_nonhydro: solve_nh.SolveNonhydro | None = None
     tracer_advection: tracer_advection.Advection | None = None
     physics: physics_driver.PhysicsDriver | None = None
+
+
+def _muphys_step(
+    config: driver_config.ExperimentConfig,
+    grid: icon_grid.IconGrid,
+    static_field_factories: static_fields.StaticFieldFactories,
+    backend: gtx_typing.Backend | None,
+) -> physics_driver.Step:
+    if config.muphys is None:
+        raise ValueError("The 'muphys' process is not configured.")
+    component = muphys_component.MuphysComponent(
+        grid=grid,
+        dtime=config.driver.dtime,
+        qnc=config.muphys.qnc,
+        dz=static_field_factories.metrics.get(metrics_attributes.DDQZ_Z_FULL),
+        backend=backend,
+    )
+    return physics_driver.bind(component.run, muphys_component.collect_input)
+
+
+type _StepBuilder = Callable[
+    [
+        driver_config.ExperimentConfig,
+        icon_grid.IconGrid,
+        static_fields.StaticFieldFactories,
+        gtx_typing.Backend | None,
+    ],
+    physics_driver.Step,
+]
+
+# the physics processes, by the name of their section in the experiment configuration; the
+# driver runs those whose section is set
+PROCESSES: dict[str, _StepBuilder] = {"muphys": _muphys_step}
 
 
 def validate_granule_state_consistency(
@@ -465,24 +496,22 @@ def initialize_granules(
         )
 
     physics_granule: physics_driver.PhysicsDriver | None = None
-    if config.muphys is not None:
-        muphys_process = physics_driver.PhysicsProcess(
-            name="muphys",
-            component=muphys_component.MuphysComponent(
-                grid=grid,
-                dtime=config.driver.dtime,
-                qnc=config.muphys.qnc,
-                backend=backend,
-            ),
-            state=muphys_state.State(metrics=metrics_field_source),
+    physics_processes = [
+        physics_driver.PhysicsProcess(
+            name=name,
+            step=build(config, grid, static_field_factories, backend),
             time_control=physics_driver.ProcessTimeControl(
                 interval=config.driver.dtime,
                 start_date=config.driver.start_of_simulation,
                 end_date=model_time_variables.simulation_end_datetime,
             ),
         )
+        for name, build in PROCESSES.items()
+        if getattr(config, name) is not None
+    ]
+    if physics_processes:
         physics_granule = physics_driver.PhysicsDriver.from_sources(
-            [muphys_process],
+            physics_processes,
             grid=grid,
             geometry=geometry_field_source,
             interpolation=interpolation_field_source,

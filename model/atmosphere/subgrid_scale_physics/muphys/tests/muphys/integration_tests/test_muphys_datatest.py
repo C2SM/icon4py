@@ -17,11 +17,11 @@ from gt4py import next as gtx
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     component as muphys_component,
     config as muphys_config,
-    data as muphys_data,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES, Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_full_muphys
 from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
+from icon4py.model.common.components import framework as fw, quantities as qty
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.testing import definitions, test_utils
@@ -106,18 +106,18 @@ def test_muphys_granule(
     temperature_tend_atol = temperature_atol / dtime if test_utils.wp_is_dp else 1e-7
 
     muphys_configuration = muphys_config.MuphysConfig()
-    state = {
-        "dz": init_savepoint.dz(),
-        "te": init_savepoint.temperature(),
-        "p": init_savepoint.pressure(),
-        "rho": init_savepoint.rho(),
-        "qv": init_savepoint.qv(),
-        "qc": init_savepoint.qc(),
-        "qr": init_savepoint.qr(),
-        "qs": init_savepoint.qs(),
-        "qi": init_savepoint.qi(),
-        "qg": init_savepoint.qg(),
-    }
+    inputs = muphys_component.MuphysComponent.Input(
+        te=fw.Field(qty.TemperatureOnCellK, init_savepoint.temperature()),
+        p=fw.Field(qty.PressureOnCellK, init_savepoint.pressure()),
+        rho=fw.Field(qty.RhoOnCellK, init_savepoint.rho()),
+        qv=fw.Field(qty.QvOnCellK, init_savepoint.qv()),
+        qc=fw.Field(qty.QcOnCellK, init_savepoint.qc()),
+        qi=fw.Field(qty.QiOnCellK, init_savepoint.qi()),
+        qr=fw.Field(qty.QrOnCellK, init_savepoint.qr()),
+        qs=fw.Field(qty.QsOnCellK, init_savepoint.qs()),
+        qg=fw.Field(qty.QgOnCellK, init_savepoint.qg()),
+    )
+    state = {"dz": init_savepoint.dz(), **{d.name: f.data for d, f in inputs.leaves()}}
     initial_state = {name: field.asnumpy().copy() for name, field in state.items()}
     muphys_program = run_full_muphys.setup_muphys(
         ncells=icon_grid.num_cells,
@@ -131,12 +131,12 @@ def test_muphys_granule(
         grid=icon_grid,
         dtime=datetime.timedelta(seconds=dtime),
         qnc=muphys_configuration.qnc,
+        dz=state["dz"],
         backend=backend,
         # The default Component setup is the separate-program mode.
         step=muphys_program if single_program else None,
     )
-    outputs = component(state, datetime.datetime.fromisoformat(date))
-    assert outputs.keys() == component.outputs_properties.keys()
+    outputs = {d.name: f.data for d, f in component.run(inputs).leaves()}
     for name, field in state.items():
         np.testing.assert_array_equal(field.asnumpy(), initial_state[name], err_msg=name)
 
@@ -152,8 +152,9 @@ def test_muphys_granule(
         }
     )
     direct_precip = {
-        port: gtx.zeros(state["te"].domain, dtype=ta.wpfloat, allocator=allocator)
-        for port in muphys_data.PRECIP_PORTS
+        declaration.name: gtx.zeros(state["te"].domain, dtype=ta.wpfloat, allocator=allocator)
+        for declaration in muphys_component.MuphysComponent.Output.declarations()
+        if not issubclass(declaration.quantity, fw.Tendency)
     }
     muphys_program(
         dz=state["dz"],
