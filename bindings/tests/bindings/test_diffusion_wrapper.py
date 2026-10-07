@@ -21,6 +21,7 @@ from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 
 from . import utils
+from .in_guard import in_arguments_unchanged
 from .test_grid_init import grid_init
 
 
@@ -263,6 +264,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+    in_arguments_unchanged,
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
     interpolation_savepoint,

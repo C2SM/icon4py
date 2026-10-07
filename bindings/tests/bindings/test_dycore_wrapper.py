@@ -26,6 +26,7 @@ from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 
 from . import utils
+from .in_guard import in_arguments_unchanged
 from .test_grid_init import grid_init
 
 
@@ -785,6 +786,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
 def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
+    in_arguments_unchanged,
     istep_init,
     istep_exit,
     substep_init,
@@ -970,6 +972,7 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
 def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
+    in_arguments_unchanged,
     step_date_init,
     step_date_exit,
     istep_exit,
