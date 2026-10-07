@@ -111,6 +111,15 @@ repos:
         types_or: [python, pyi]
         pass_filenames: false
 
+      # pyright runs through npx (node is on the CI runners); the pinned version is the
+      # one the components framework was written against
+      - id: pyright
+        name: pyright static type checker
+        entry: npx --yes pyright@1.1.414 -p pyproject.toml
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+
       - <<: *uv-managed-hook
         id: validate
         name: validate pyproject.toml
