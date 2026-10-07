@@ -18,8 +18,8 @@ import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.components import framework as fw, quantities as qty, states
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
-from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
@@ -1087,13 +1087,13 @@ class IconDiffusionInitSavepoint(IconSavepoint):
     def rho(self):
         return self._get_field("rho", dims.CellDim, dims.KDim)
 
-    def construct_prognostics(self) -> prognostic_state.PrognosticState:
-        return prognostic_state.PrognosticState(
-            w=self.w(),
-            vn=self.vn(),
-            exner=self.exner(),
-            theta_v=self.theta_v(),
-            rho=self.rho(),
+    def construct_prognostics(self) -> states.PrognosticState:
+        return states.PrognosticState(
+            w=fw.Field(qty.WOnCellKHalf, self.w()),
+            vn=fw.Field(qty.VnOnEdgeK, self.vn()),
+            exner=fw.Field(qty.ExnerOnCellK, self.exner()),
+            theta_v=fw.Field(qty.ThetaVOnCellK, self.theta_v()),
+            rho=fw.Field(qty.RhoOnCellK, self.rho()),
         )
 
 

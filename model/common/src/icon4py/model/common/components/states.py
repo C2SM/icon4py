@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Diagnostics",
+    "DiffusionDiagnostics",
     "DycoreDiagnostics",
     "DycoreForcing",
     "PrepAdvection",
@@ -142,6 +143,15 @@ class DycoreDiagnostics(fw.State):
                 fw.zeros(qty.VerticalWindAdvectiveTendencyOnCellKHalf, grid, allocator),
             ),
         )
+
+
+class DiffusionDiagnostics(fw.State):
+    """The diagnostics of the diffusion (turbulence fields of ICON's t_nh_diag), owned by the composer."""
+
+    hdef_ic: fw.Field[qty.HorizontalWindDeformationOnCellKHalf]
+    div_ic: fw.Field[qty.DivergenceOnCellKHalf]
+    dwdx: fw.Field[qty.ZonalGradientOfWOnCellKHalf]
+    dwdy: fw.Field[qty.MeridionalGradientOfWOnCellKHalf]
 
 
 class Diagnostics(fw.State):

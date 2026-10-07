@@ -15,6 +15,7 @@ import pytest
 from icon4py.bindings import common as wrapper_common, diffusion_wrapper
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.components import framework as fw, quantities as qty
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.testing import definitions as test_defs, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
@@ -123,13 +124,27 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
         zd_vertoffset=metrics_savepoint.zd_vertoffset(),
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
-    expected_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=savepoint_diffusion_init.hdef_ic(),
-        div_ic=savepoint_diffusion_init.div_ic(),
-        dwdx=savepoint_diffusion_init.dwdx(),
-        dwdy=savepoint_diffusion_init.dwdy(),
-    )
     expected_prognostic_state = savepoint_diffusion_init.construct_prognostics()
+    expected_inputs = diffusion.Diffusion.Input(
+        vn=expected_prognostic_state.vn,
+        w=expected_prognostic_state.w,
+        exner=expected_prognostic_state.exner,
+        theta_v=expected_prognostic_state.theta_v,
+        dtime=expected_dtime,
+        initial_run=False,
+    )
+    expected_out = diffusion.Diffusion.Output(
+        vn=expected_prognostic_state.vn,
+        w=expected_prognostic_state.w,
+        exner=expected_prognostic_state.exner,
+        theta_v=expected_prognostic_state.theta_v,
+        hdef_ic=fw.Field(
+            qty.HorizontalWindDeformationOnCellKHalf, savepoint_diffusion_init.hdef_ic()
+        ),
+        div_ic=fw.Field(qty.DivergenceOnCellKHalf, savepoint_diffusion_init.div_ic()),
+        dwdx=fw.Field(qty.ZonalGradientOfWOnCellKHalf, savepoint_diffusion_init.dwdx()),
+        dwdy=fw.Field(qty.MeridionalGradientOfWOnCellKHalf, savepoint_diffusion_init.dwdy()),
+    )
     expected_config = experiment.config.diffusion
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
@@ -245,9 +260,10 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
 
         # Check input arguments to Diffusion.run
         _, captured_kwargs = mock_run.call_args
-        assert utils.compare_objects(captured_kwargs["diagnostic_state"], expected_diagnostic_state)
-        assert utils.compare_objects(captured_kwargs["prognostic_state"], expected_prognostic_state)
-        assert captured_kwargs["dtime"] == expected_dtime
+        result, error_message = utils.compare_objects(captured_kwargs["inputs"], expected_inputs)
+        assert result, f"Input comparison failed: {error_message}"
+        result, error_message = utils.compare_objects(captured_kwargs["out"], expected_out)
+        assert result, f"Output comparison failed: {error_message}"
 
 
 @pytest.mark.datatest
