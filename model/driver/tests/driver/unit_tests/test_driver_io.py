@@ -24,14 +24,11 @@ import pytest
 import xarray as xr
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.components import framework as fw, states
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base, simple, vertical as v_grid
 from icon4py.model.common.io import io as common_io
-from icon4py.model.common.states import (
-    data as state_data,
-    model as state_model,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import data as state_data, model as state_model
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_io
 from icon4py.model.testing.fixtures import backend
@@ -44,32 +41,12 @@ def grid() -> base.Grid:
 
 def _make_prognostic_state(
     grid: base.Grid, allocator: gtx.typing.Backend | None = None
-) -> prognostics.PrognosticState:
-    # Constructed directly (instead of `initialize_prognostic_state`) so it works with
-    # the generic `simple_grid`.
-    def _cell_k() -> gtx.Field:
-        return data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        )
-
-    def _cell_khalf() -> gtx.Field:
-        return data_alloc.zero_field(
-            grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat, allocator=allocator
-        )
-
-    return prognostics.PrognosticState(
-        rho=_cell_k(),
-        w=_cell_khalf(),
-        vn=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        ),
-        exner=_cell_k(),
-        theta_v=_cell_k(),
-    )
+) -> states.PrognosticState:
+    return fw.allocate(states.PrognosticState, grid, allocator)
 
 
 @pytest.fixture
-def prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
+def prognostic_state(grid: base.Grid) -> states.PrognosticState:
     return _make_prognostic_state(grid)
 
 
@@ -115,7 +92,7 @@ def _horizontal_size(grid: base.Grid, dim: gtx.Dimension) -> int:
 
 
 def test_assembles_all_default_variables(
-    prognostic_state: prognostics.PrognosticState, grid: base.Grid
+    prognostic_state: states.PrognosticState, grid: base.Grid
 ) -> None:
     state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
 
@@ -135,7 +112,7 @@ def test_assembles_all_default_variables(
 
 
 def test_dataarrays_carry_cf_and_ugrid_metadata(
-    prognostic_state: prognostics.PrognosticState,
+    prognostic_state: states.PrognosticState,
 ) -> None:
     state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
 
@@ -153,7 +130,7 @@ def test_dataarrays_carry_cf_and_ugrid_metadata(
 
 
 def test_does_not_mutate_shared_cf_attributes(
-    prognostic_state: prognostics.PrognosticState,
+    prognostic_state: states.PrognosticState,
 ) -> None:
     """`to_data_array` adds UGRID keys to the attrs it is handed; the shared
     module-level CF attribute table must be left untouched."""
@@ -170,13 +147,13 @@ def test_does_not_mutate_shared_cf_attributes(
         assert "coordinates" not in rendered
 
 
-def test_variables_subset(prognostic_state: prognostics.PrognosticState) -> None:
+def test_variables_subset(prognostic_state: states.PrognosticState) -> None:
     subset = ["air_density", "normal_velocity"]
     state = driver_io.prognostic_state_to_dataarrays(prognostic_state, variables=subset)
     assert set(state.keys()) == set(subset)
 
 
-def test_unknown_variable_raises(prognostic_state: prognostics.PrognosticState) -> None:
+def test_unknown_variable_raises(prognostic_state: states.PrognosticState) -> None:
     with pytest.raises(ValueError, match="Unknown prognostic output variable"):
         driver_io.prognostic_state_to_dataarrays(prognostic_state, variables=["not_a_field"])
 

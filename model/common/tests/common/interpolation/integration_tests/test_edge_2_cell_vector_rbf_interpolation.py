@@ -23,7 +23,6 @@ from icon4py.model.common.physics.thermodynamics import (
     compute_temperature,
     compute_tendencies,
 )
-from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_states as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils
 from icon4py.model.testing.fixtures.datatest import (

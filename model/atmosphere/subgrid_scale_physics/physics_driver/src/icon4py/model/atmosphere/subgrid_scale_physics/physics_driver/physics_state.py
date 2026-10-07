@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Final
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, model_options
+from icon4py.model.common.components import framework as fw, states
 from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
@@ -37,7 +38,7 @@ from icon4py.model.common.physics.thermodynamics import (
     compute_temperature,
     compute_tendencies,
 )
-from icon4py.model.common.states import diagnostic_state, model
+from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -47,11 +48,18 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import factory, prognostic_state as prognostics, tracer_states
+    from icon4py.model.common.states import factory
 
 
 # The six moisture species physics requires from the TracerState.
 MOISTURE_SPECIES: Final = ("qv", "qc", "qi", "qr", "qs", "qg")
+
+
+def _present[Q: fw.Quantity](field: fw.Field[Q] | None) -> gtx.Field:
+    """The gt4py field of a tracer leaf the entry check found present."""
+    if field is None:
+        raise ValueError("physics requires all moisture species active in the TracerState")
+    return field.data
 
 
 class EntryState:
@@ -112,7 +120,7 @@ class EntryState:
             offset_provider=grid.connectivities,
         )
 
-        self.diagnostics = diagnostic_state.initialize_diagnostic_state(grid, backend)
+        self.diagnostics = fw.allocate(states.Diagnostics, grid, backend)
         # Scratch for the pressure scan: a scan's range is deduced from its single
         # output domain, so the half-level result lands on model levels first and
         # compute_surface_and_hydrostatic_pressure copies it up (see that program).
@@ -126,12 +134,12 @@ class EntryState:
         self.rho: gtx.Field | None = None
         self.vn: gtx.Field | None = None
         self.w: gtx.Field | None = None
-        self.tracers: tracer_states.TracerState | None = None
+        self.tracers: states.TracerState | None = None
 
     def compute_diagnostics(
         self,
-        prognostic: prognostics.PrognosticState,
-        tracers: tracer_states.TracerState,
+        prognostic: states.PrognosticState,
+        tracers: states.TracerState,
     ) -> None:
         """Bind the model-state pointers and diagnose the physics fields (dyn2phy).
 
@@ -150,42 +158,42 @@ class EntryState:
             )
 
         # Pointers into the model state — same memory, physics names (no copies)
-        self.exner = prognostic.exner
-        self.theta_v = prognostic.theta_v
-        self.rho = prognostic.rho
-        self.vn = prognostic.vn
-        self.w = prognostic.w
+        self.exner = prognostic.exner.data
+        self.theta_v = prognostic.theta_v.data
+        self.rho = prognostic.rho.data
+        self.vn = prognostic.vn.data
+        self.w = prognostic.w.data
         self.tracers = tracers
 
         # 1. Virtual temperature and temperature
         self._diagnose_temperature(
-            qv=tracers.qv,
-            qc=tracers.qc,
-            qi=tracers.qi,
-            qr=tracers.qr,
-            qs=tracers.qs,
-            qg=tracers.qg,
-            theta_v=prognostic.theta_v,
-            exner=prognostic.exner,
-            virtual_temperature=self.diagnostics.virtual_temperature,
-            temperature=self.diagnostics.temperature,
+            qv=_present(tracers.qv),
+            qc=_present(tracers.qc),
+            qi=_present(tracers.qi),
+            qr=_present(tracers.qr),
+            qs=_present(tracers.qs),
+            qg=_present(tracers.qg),
+            theta_v=prognostic.theta_v.data,
+            exner=prognostic.exner.data,
+            virtual_temperature=self.diagnostics.virtual_temperature.data,
+            temperature=self.diagnostics.temperature.data,
         )
 
         # 2. Surface pressure at the bottom interface, then the full pressure column
         self._compute_surface_and_hydrostatic_pressure(
-            exner=prognostic.exner,
-            virtual_temperature=self.diagnostics.virtual_temperature,
+            exner=prognostic.exner.data,
+            virtual_temperature=self.diagnostics.virtual_temperature.data,
             ddqz_z_full=self._ddqz_z_full,
-            pressure=self.diagnostics.pressure,
+            pressure=self.diagnostics.pressure.data,
             pressure_ifc_on_model_levels=self._pressure_ifc_on_model_levels,
-            pressure_ifc=self.diagnostics.pressure_ifc,
+            pressure_ifc=self.diagnostics.pressure_ifc.data,
         )
 
         # 3. Cell-centre (u, v) from edge-normal vn via RBF
         self._rbf_interpolation(
-            p_e_in=prognostic.vn,
-            p_u_out=self.diagnostics.u,
-            p_v_out=self.diagnostics.v,
+            p_e_in=prognostic.vn.data,
+            p_u_out=self.diagnostics.u.data,
+            p_v_out=self.diagnostics.v.data,
         )
 
 
@@ -237,9 +245,8 @@ class Tendencies:
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        # w has KDim+1 half-levels — same stencil, but domain extends to nlev+1
         self._apply_tendency_w = model_options.setup_program(
-            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_khalf,
             backend=backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes={
@@ -331,7 +338,7 @@ class Tendencies:
         for name in MOISTURE_SPECIES:
             key = f"tend_{name}"
             if key in acc:
-                tracer = getattr(tracers, name)
+                tracer = getattr(tracers, name).data
                 self._apply_tendency(
                     field_a=tracer,
                     coeff=dt_seconds,
@@ -343,26 +350,26 @@ class Tendencies:
         #    plus the summed tendency, with the final (post step 1) moisture.
         if "tend_temperature" in acc:
             self._apply_tendency(
-                field_a=entry_state.diagnostics.temperature,
+                field_a=entry_state.diagnostics.temperature.data,
                 coeff=dt_seconds,
                 field_b=acc["tend_temperature"],
                 output_field=self._new_te,
             )
             self._compute_virtual_temperature_tendency(
                 dtime=dt_seconds,
-                qv=tracers.qv,
-                qc=tracers.qc,
-                qi=tracers.qi,
-                qr=tracers.qr,
-                qs=tracers.qs,
-                qg=tracers.qg,
+                qv=_present(tracers.qv),
+                qc=_present(tracers.qc),
+                qi=_present(tracers.qi),
+                qr=_present(tracers.qr),
+                qs=_present(tracers.qs),
+                qg=_present(tracers.qg),
                 temperature=self._new_te,
-                virtual_temperature=entry_state.diagnostics.virtual_temperature,
+                virtual_temperature=entry_state.diagnostics.virtual_temperature.data,
                 virtual_temperature_tendency=self._tv_tendency,
             )
             self._update_exner_and_theta_v(
                 rho=entry_state.rho,
-                virtual_temperature=entry_state.diagnostics.virtual_temperature,
+                virtual_temperature=entry_state.diagnostics.virtual_temperature.data,
                 virtual_temperature_tendency=self._tv_tendency,
                 dtime=dt_seconds,
                 exner=entry_state.exner,

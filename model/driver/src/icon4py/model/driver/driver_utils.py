@@ -34,6 +34,7 @@ from icon4py.model.common import (
     time,
     type_alias as ta,
 )
+from icon4py.model.common.components import states
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition_defs,
@@ -51,7 +52,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.initial_condition import config as ic_config
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import static_fields, tracer_states
+from icon4py.model.common.states import static_fields
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver_constants, driver_states
 
@@ -599,10 +600,10 @@ def display_driver_setup_in_log_file(
     config: driver_config.DriverConfig,
     model_time_variables: driver_states.ModelTimeVariables,
     vertical_params: v_grid.VerticalGrid,
-    tracer_config: tracer_states.TracerConfig | None = None,
+    tracer_config: states.TracerConfig | None = None,
 ) -> None:
     if tracer_config is None:
-        tracer_config = tracer_states.TracerConfig.none()
+        tracer_config = states.TracerConfig.none()
     log.info("===== ICON4Py Driver Configuration =====")
     log.info(f"Experiment name        : {config.experiment_name}")
     log.info(f"Time step              : {config.dtime.total_seconds()} s")

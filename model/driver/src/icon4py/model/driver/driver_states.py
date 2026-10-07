@@ -24,13 +24,7 @@ from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-    static_fields,
-    tracer_states,
-)
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.states import static_fields
 from icon4py.model.driver import config as driver_config
 
 
@@ -62,9 +56,9 @@ class DriverStates(NamedTuple):
     dycore_diagnostics: states.DycoreDiagnostics | None
     diffusion_diagnostic: states.DiffusionDiagnostics | None
     tracer_advection_diagnostic: states.AdvectionDiagnostics | None
-    prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
-    tracers: common_utils.TimeStepPair[tracer_states.TracerState]
-    diagnostic: diagnostics.DiagnosticState
+    prognostics: common_utils.TimeStepPair[states.PrognosticState]
+    tracers: common_utils.TimeStepPair[states.TracerState]
+    diagnostic: states.Diagnostics
 
 
 class ModelTimeVariables:
@@ -260,24 +254,19 @@ def assemble_driver_states(
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     static_fields: static_fields.StaticFieldFactories,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
-    diagnostic_state: diagnostics.DiagnosticState,
+    prognostic_state_now: states.PrognosticState,
+    tracer_state_now: states.TracerState,
+    diagnostic_state: states.Diagnostics,
     experiment_config: driver_config.ExperimentConfig,
     dycore_forcing: states.DycoreForcing | None,
     dycore_diagnostics: states.DycoreDiagnostics | None,
     prep_adv: states.PrepAdvection | None,
 ) -> DriverStates:
-    prognostic_state_next = prognostics.PrognosticState(
-        vn=data_alloc.reallocate(prognostic_state_now.vn, allocator=allocator),
-        w=data_alloc.reallocate(prognostic_state_now.w, allocator=allocator),
-        exner=data_alloc.reallocate(prognostic_state_now.exner, allocator=allocator),
-        rho=data_alloc.reallocate(prognostic_state_now.rho, allocator=allocator),
-        theta_v=data_alloc.reallocate(prognostic_state_now.theta_v, allocator=allocator),
+    prognostic_states = common_utils.TimeStepPair(
+        prognostic_state_now, fw.copy(prognostic_state_now, allocator)
     )
-    prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
     tracer_states = common_utils.TimeStepPair(
-        tracer_state_now, tracer_state_now.copy(allocator=allocator)
+        tracer_state_now, fw.copy(tracer_state_now, allocator)
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -290,18 +279,18 @@ def assemble_driver_states(
     rbf_vec_coeff_c2 = static_fields.interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2)
 
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-        p_e_in=prognostic_states.current.vn,
+        p_e_in=prognostic_states.current.vn.data,
         ptr_coeff_1=rbf_vec_coeff_c1,
         ptr_coeff_2=rbf_vec_coeff_c2,
-        p_u_out=diagnostic_state.u,
-        p_v_out=diagnostic_state.v,
+        p_u_out=diagnostic_state.u.data,
+        p_v_out=diagnostic_state.v.data,
         horizontal_start=end_cell_lateral_boundary_level_2,
         horizontal_end=end_cell_end,
         vertical_start=0,
         vertical_end=grid.num_levels,
         offset_provider=grid.connectivities,
     )
-    exchange.exchange(dims.CellDim, diagnostic_state.u, diagnostic_state.v)
+    exchange.exchange(dims.CellDim, diagnostic_state.u.data, diagnostic_state.v.data)
 
     diffusion_enabled = experiment_config.diffusion is not None
     tracer_advection_enabled = experiment_config.tracer_advection is not None

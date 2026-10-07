@@ -12,9 +12,10 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.components import framework as fw, states
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.initial_condition import apply as ic_apply
-from icon4py.model.common.states import data, prognostic_state as prognostics, tracer_states
+from icon4py.model.common.states import data
 from icon4py.model.driver import driver, driver_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -112,14 +113,13 @@ def test_initial_conditions(
         backend=backend,
     )
 
-    prognostic_state_now = prognostics.initialize_prognostic_state(
-        grid=icon4py_driver.grid,
-        allocator=allocator,
-    )
-    tracer_state_now = tracer_states.initialize_tracer_state(
-        grid=icon4py_driver.grid,
-        allocator=allocator,
-        tracer_config=icon4py_driver.config.tracer_config,
+    prognostic_state_now = fw.allocate(states.PrognosticState, icon4py_driver.grid, allocator)
+    tracer_config = icon4py_driver.config.tracer_config
+    tracer_state_now = fw.allocate(
+        states.TracerState,
+        icon4py_driver.grid,
+        allocator,
+        only=tracer_config.active_names if tracer_config is not None else (),
     )
     ic_apply(
         config=driver_utils.make_ic_config_ctx(icon4py_driver.config),
@@ -136,11 +136,11 @@ def test_initial_conditions(
     prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
     computed = {
-        "rho": prognostic_state_now.rho,
-        "exner": prognostic_state_now.exner,
-        "theta_v": prognostic_state_now.theta_v,
-        "vn": prognostic_state_now.vn,
-        "w": prognostic_state_now.w,
+        "rho": prognostic_state_now.rho.data,
+        "exner": prognostic_state_now.exner.data,
+        "theta_v": prognostic_state_now.theta_v.data,
+        "vn": prognostic_state_now.vn.data,
+        "w": prognostic_state_now.w.data,
     }
     references = {
         "rho": prognostics_savepoint.rho_now(),
@@ -152,7 +152,7 @@ def test_initial_conditions(
 
     # Moist experiments (e.g. APE) initialize the water-vapour tracer
     if tracer_state_now.qv is not None:
-        computed["qv"] = tracer_state_now.qv
+        computed["qv"] = tracer_state_now.qv.data
         references["qv"] = prognostics_savepoint.tracer_now(data.QV)
 
     tolerances = _TOLERANCES[experiment_description]

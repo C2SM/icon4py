@@ -25,8 +25,9 @@ from icon4py.model.common.components.components import Component
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.common.components import states
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import factory, prognostic_state, tracer_states
+    from icon4py.model.common.states import factory
 
 
 class PhysicsComponent(Component[Any, Any], Protocol):
@@ -148,8 +149,8 @@ class PhysicsDriver:
 
     def run(
         self,
-        prognostic: prognostic_state.PrognosticState,
-        tracers: tracer_states.TracerState,
+        prognostic: states.PrognosticState,
+        tracers: states.TracerState,
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
     ) -> None:

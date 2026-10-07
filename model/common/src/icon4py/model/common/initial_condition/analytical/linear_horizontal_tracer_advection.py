@@ -19,7 +19,6 @@ from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -330,8 +329,8 @@ def linear_horizontal_advection(
     config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
+    prognostic_state_now: states.PrognosticState,
+    tracer_state_now: states.TracerState,
     tracer_prep_adv_state: states.PrepAdvection,
 ) -> None:
     """
@@ -353,7 +352,7 @@ def linear_horizontal_advection(
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
 
     # density is set to the inverse of the vertical grid spacing, so that the mass flux equals the velocity
-    prognostic_state_now.rho.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray
+    prognostic_state_now.rho.data.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray
 
     weights, nodes = _prepare_torus_quadratic_quadrature(
         vertex_x=vertex_x,
@@ -383,7 +382,7 @@ def linear_horizontal_advection(
     )
     _fill_tracer_from_analytical_profile(
         config=ic_config,
-        tracer_buffer=tracer_state_now.qv.ndarray,
+        tracer_buffer=tracer_state_now.qv.data.ndarray,
         weights=weights,
         nodes=nodes,
         tracer_center_x=center_x,

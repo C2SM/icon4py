@@ -16,11 +16,6 @@ from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.components import framework as fw, states
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.initial_condition import apply as ic_apply
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-    tracer_states,
-)
 from icon4py.model.driver import config as driver_config, driver, driver_states, driver_utils
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -113,14 +108,17 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=backend,
     )
 
-    single_rank_prognostic = prognostics.initialize_prognostic_state(
-        grid=single_rank_icon4py_driver.grid,
-        allocator=allocator,
+    single_rank_prognostic = fw.allocate(
+        states.PrognosticState, single_rank_icon4py_driver.grid, allocator
     )
-    single_rank_tracer = tracer_states.initialize_tracer_state(
-        grid=single_rank_icon4py_driver.grid,
-        allocator=allocator,
-        tracer_config=single_rank_icon4py_driver.config.tracer_config,
+    single_rank_tracer_config = single_rank_icon4py_driver.config.tracer_config
+    single_rank_tracer = fw.allocate(
+        states.TracerState,
+        single_rank_icon4py_driver.grid,
+        allocator,
+        only=single_rank_tracer_config.active_names
+        if single_rank_tracer_config is not None
+        else (),
     )
     single_rank_dycore_forcing = fw.allocate(
         states.DycoreForcing, single_rank_icon4py_driver.grid, allocator
@@ -143,8 +141,8 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         dycore_diagnostics=single_rank_dycore_diagnostics,
         tracer_prep_adv_state=single_rank_prep_adv,
     )
-    single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
-        grid=single_rank_icon4py_driver.grid, allocator=allocator
+    single_rank_diagnostic = fw.allocate(
+        states.Diagnostics, single_rank_icon4py_driver.grid, allocator
     )
     single_rank_ds: driver_states.DriverStates = driver_states.assemble_driver_states(
         grid=single_rank_icon4py_driver.grid,
@@ -177,14 +175,15 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=backend,
     )
 
-    multi_rank_prognostic = prognostics.initialize_prognostic_state(
-        grid=multi_rank_icon4py_driver.grid,
-        allocator=allocator,
+    multi_rank_prognostic = fw.allocate(
+        states.PrognosticState, multi_rank_icon4py_driver.grid, allocator
     )
-    multi_rank_tracer = tracer_states.initialize_tracer_state(
-        grid=multi_rank_icon4py_driver.grid,
-        allocator=allocator,
-        tracer_config=multi_rank_icon4py_driver.config.tracer_config,
+    multi_rank_tracer_config = multi_rank_icon4py_driver.config.tracer_config
+    multi_rank_tracer = fw.allocate(
+        states.TracerState,
+        multi_rank_icon4py_driver.grid,
+        allocator,
+        only=multi_rank_tracer_config.active_names if multi_rank_tracer_config is not None else (),
     )
     multi_rank_dycore_forcing = fw.allocate(
         states.DycoreForcing, multi_rank_icon4py_driver.grid, allocator
@@ -207,8 +206,8 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         dycore_diagnostics=multi_rank_dycore_diagnostics,
         tracer_prep_adv_state=multi_rank_prep_adv,
     )
-    multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
-        grid=multi_rank_icon4py_driver.grid, allocator=allocator
+    multi_rank_diagnostic = fw.allocate(
+        states.Diagnostics, multi_rank_icon4py_driver.grid, allocator
     )
     multi_rank_ds: driver_states.DriverStates = driver_states.assemble_driver_states(
         grid=multi_rank_icon4py_driver.grid,
@@ -243,10 +242,10 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     for field_name, serial_source, local_source in fields_to_check:
         print(f"verifying field {field_name}")
         global_reference_field = process_props.comm.bcast(
-            getattr(serial_source, field_name).asnumpy(),
+            getattr(serial_source, field_name).data.asnumpy(),
             root=0,
         )
-        local_field = getattr(local_source, field_name)
+        local_field = getattr(local_source, field_name).data
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_icon4py_driver.decomposition_info,
             process_props=process_props,
