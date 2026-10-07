@@ -167,9 +167,9 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/state.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/data.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/unit_tests',
   # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
@@ -241,7 +241,7 @@ module = [
 disallow_untyped_defs = false
 module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 
-[[tool.mypy.overrides]]  # the components framework and its tests are checked as `mypy --strict` would
+[[tool.mypy.overrides]]  # the components and their tests are checked as `mypy --strict` would
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_subclassing_any = true
@@ -252,7 +252,11 @@ module = [
   "icon4py.model.common.components.framework",
   "icon4py.model.common.components.quantities",
   "icon4py.model.common.components.states",
-  "*.components.unit_tests.*"
+  "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.*",
+  "icon4py.model.atmosphere.subgrid_scale_physics.muphys.component",
+  "*.components.unit_tests.*",
+  "*.physics_driver.unit_tests.*",
+  "*.muphys.unit_tests.*"
 ]
 no_implicit_reexport = true
 strict_equality = true
@@ -279,7 +283,11 @@ include = [
   "model/common/src/icon4py/model/common/components/framework.py",
   "model/common/src/icon4py/model/common/components/quantities.py",
   "model/common/src/icon4py/model/common/components/states.py",
-  "model/common/tests/common/components"
+  "model/common/tests/common/components",
+  "model/atmosphere/subgrid_scale_physics/physics_driver/src/icon4py/model/atmosphere/subgrid_scale_physics/physics_driver",
+  "model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests",
+  "model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py",
+  "model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/unit_tests"
 ]
 # gt4py's allocators and fields are partially typed; these would report every use of them
 reportUnknownArgumentType = false
