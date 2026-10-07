@@ -181,6 +181,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/io/unit_tests/test_io.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/components',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/config',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
@@ -240,6 +241,24 @@ module = [
 disallow_untyped_defs = false
 module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 
+[[tool.mypy.overrides]]  # the components framework and its tests are checked as `mypy --strict` would
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+extra_checks = true
+module = [
+  "icon4py.model.common.components.framework",
+  "icon4py.model.common.components.quantities",
+  "icon4py.model.common.components.states",
+  "*.components.unit_tests.*"
+]
+no_implicit_reexport = true
+strict_equality = true
+warn_return_any = true
+warn_unused_ignores = true
+
 [[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
 disable_error_code = ["index", "misc"]
 module = ["icon4py.model.common.initial_condition.*"]
@@ -254,6 +273,23 @@ module = [
   "icon4py.model.atmosphere.dycore.dycore_states",
   "icon4py.model.atmosphere.dycore.stencils.*"
 ]
+
+[tool.pyright]
+include = [
+  "model/common/src/icon4py/model/common/components/framework.py",
+  "model/common/src/icon4py/model/common/components/quantities.py",
+  "model/common/src/icon4py/model/common/components/states.py",
+  "model/common/tests/common/components"
+]
+# gt4py's allocators and fields are partially typed; these would report every use of them
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownVariableType = false
+reportUnnecessaryTypeIgnoreComment = "error"
+typeCheckingMode = "strict"
+venv = ".venv"
+venvPath = "."
 
 # -- pytest --
 [tool.pytest]
