@@ -22,7 +22,6 @@ from icon4py.model.common.initial_condition.analytical import (
 from icon4py.model.common.initial_condition.config import ConfigContext
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 
 
 if TYPE_CHECKING:
@@ -45,7 +44,7 @@ def apply(
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
     dycore_diagnostics: states.DycoreDiagnostics | None,
-    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
+    tracer_prep_adv_state: states.PrepAdvection | None,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
