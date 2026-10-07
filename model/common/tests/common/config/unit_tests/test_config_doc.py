@@ -136,5 +136,5 @@ def test_snapshots(snap_compare: Callable, config_class: type, key_presses: tupl
     The state is reached by starting the browser from the given class and
     executing the given key presses.
     """
-    app = config_doc.ConfigDocApp(config_class)
+    app = config_doc.ConfigDocApp(config_class, force_from_scratch=True)
     assert snap_compare(app, press=key_presses)

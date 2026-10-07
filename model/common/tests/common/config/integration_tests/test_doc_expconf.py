@@ -22,7 +22,7 @@ from icon4py.model.driver.config import ExperimentConfig
 @pytest.mark.level("integration")
 def test_initial(snap_compare: Callable):
     """Test the initial view."""
-    app = config_doc.ConfigDocApp(ExperimentConfig)
+    app = config_doc.ConfigDocApp(ExperimentConfig, force_from_scratch=True)
     assert snap_compare(app, terminal_size=(160, 40))
 
 
@@ -30,7 +30,7 @@ def test_initial(snap_compare: Callable):
 @pytest.mark.asyncio
 async def test_select_everything():
     """Test that there are no crashes when selecting all of the config options."""
-    app = config_doc.ConfigDocApp(ExperimentConfig)
+    app = config_doc.ConfigDocApp(ExperimentConfig, force_from_scratch=True)
     async with app.run_test() as pilot:
         tree = app.query_one("#tree", expect_type=textual.widgets.Tree)
         assert tree.cursor_line == 0

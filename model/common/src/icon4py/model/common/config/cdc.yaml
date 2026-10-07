@@ -116,7 +116,7 @@ children:
     module_path: icon4py.model.common.grid.geometry_config
     is_union: false
   - display_name: metrics
-    type_name: <class 'icon4py.model.common.metrics.config.MetricsConfig'>
+    type_name: <class 'icon4py.model.common.metrics.metrics_factory.MetricsConfig'>
     description: ??
     default: No default value.
     optional: false
@@ -281,10 +281,10 @@ children:
         is_union: false
     config_name_path:
       - metrics
-    module_path: icon4py.model.common.metrics.config
+    module_path: icon4py.model.common.metrics.metrics_factory
     is_union: false
   - display_name: interpolation
-    type_name: <class 'icon4py.model.common.interpolation.config.InterpolationConfig'>
+    type_name: <class 'icon4py.model.common.interpolation.interpolation_factory.InterpolationConfig'>
     description: ??
     default: No default value.
     optional: false
@@ -480,7 +480,7 @@ children:
         is_union: false
     config_name_path:
       - interpolation
-    module_path: icon4py.model.common.interpolation.config
+    module_path: icon4py.model.common.interpolation.interpolation_factory
     is_union: false
   - display_name: vertical_grid
     type_name: <class 'icon4py.model.common.grid.vertical.VerticalGridConfig'>
@@ -2447,7 +2447,8 @@ children:
     module_path: icon4py.model.driver.config
     is_union: false
   - display_name: 'nonhydrostatic: one of the following'
-    type_name: icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig | None
+    type_name: icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig
+      | None
     description: ??
     default: None
     optional: true
@@ -2465,7 +2466,7 @@ children:
         '
     children:
       - display_name: 'type: NonHydrostaticConfig'
-        type_name: <class 'icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig'>
+        type_name: <class 'icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig'>
         description: ??
         default: None
         optional: true
@@ -2851,7 +2852,7 @@ children:
         config_name_path:
           - nonhydrostatic
           - 'type: NonHydrostaticConfig'
-        module_path: icon4py.model.atmosphere.dycore.config
+        module_path: icon4py.model.atmosphere.dycore.solve_nonhydro
         is_union: false
       - display_name: 'type: NoneType'
         type_name: <class 'NoneType'>
@@ -2873,7 +2874,7 @@ children:
     module_path: types
     is_union: true
   - display_name: 'diffusion: one of the following'
-    type_name: icon4py.model.atmosphere.diffusion.config.DiffusionConfig | None
+    type_name: icon4py.model.atmosphere.diffusion.diffusion.DiffusionConfig | None
     description: ??
     default: None
     optional: true
@@ -2895,7 +2896,7 @@ children:
         '
     children:
       - display_name: 'type: DiffusionConfig'
-        type_name: <class 'icon4py.model.atmosphere.diffusion.config.DiffusionConfig'>
+        type_name: <class 'icon4py.model.atmosphere.diffusion.diffusion.DiffusionConfig'>
         description: ??
         default: None
         optional: true
@@ -2939,7 +2940,7 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - diffusion_type
-            module_path: icon4py.model.atmosphere.diffusion.config
+            module_path: icon4py.model.atmosphere.diffusion.diffusion
             is_union: false
           - display_name: apply_to_vertical_wind
             type_name: <class 'bool'>
@@ -3038,7 +3039,7 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - type_vn_diffu
-            module_path: icon4py.model.atmosphere.diffusion.config
+            module_path: icon4py.model.atmosphere.diffusion.diffusion
             is_union: false
           - display_name: type_t_diffu
             type_name: <enum 'TemperatureDiscretizationType'>
@@ -3057,7 +3058,7 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - type_t_diffu
-            module_path: icon4py.model.atmosphere.diffusion.config
+            module_path: icon4py.model.atmosphere.diffusion.diffusion
             is_union: false
           - display_name: hdiff_efdt_ratio
             type_name: <class 'float'>
@@ -3302,7 +3303,7 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - shear_type
-            module_path: icon4py.model.atmosphere.diffusion.config
+            module_path: icon4py.model.atmosphere.diffusion.diffusion
             is_union: false
           - display_name: iforcing
             type_name: <enum 'ForcingType'>
@@ -3324,7 +3325,7 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - iforcing
-            module_path: icon4py.model.atmosphere.diffusion.config
+            module_path: icon4py.model.atmosphere.diffusion.diffusion
             is_union: false
           - display_name: a_hshr
             type_name: <class 'float'>
@@ -3363,7 +3364,7 @@ children:
         config_name_path:
           - diffusion
           - 'type: DiffusionConfig'
-        module_path: icon4py.model.atmosphere.diffusion.config
+        module_path: icon4py.model.atmosphere.diffusion.diffusion
         is_union: false
       - display_name: 'type: NoneType'
         type_name: <class 'NoneType'>
@@ -3526,8 +3527,8 @@ children:
     module_path: types
     is_union: true
   - display_name: 'tracer_advection: one of the following'
-    type_name: icon4py.model.atmosphere.tracer_advection.config.AdvectionConfig |
-      None
+    type_name: icon4py.model.atmosphere.tracer_advection.tracer_advection.AdvectionConfig
+      | None
     description: ??
     default: None
     optional: true
@@ -3540,7 +3541,7 @@ children:
         '
     children:
       - display_name: 'type: AdvectionConfig'
-        type_name: <class 'icon4py.model.atmosphere.tracer_advection.config.AdvectionConfig'>
+        type_name: <class 'icon4py.model.atmosphere.tracer_advection.tracer_advection.AdvectionConfig'>
         description: ??
         default: None
         optional: true
@@ -3570,7 +3571,7 @@ children:
               - tracer_advection
               - 'type: AdvectionConfig'
               - horizontal_advection_type
-            module_path: icon4py.model.atmosphere.tracer_advection.config
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
             is_union: false
           - display_name: horizontal_advection_limiter
             type_name: <enum 'HorizontalAdvectionLimiter'>
@@ -3590,7 +3591,7 @@ children:
               - tracer_advection
               - 'type: AdvectionConfig'
               - horizontal_advection_limiter
-            module_path: icon4py.model.atmosphere.tracer_advection.config
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
             is_union: false
           - display_name: vertical_advection_type
             type_name: <enum 'VerticalAdvectionType'>
@@ -3613,7 +3614,7 @@ children:
               - tracer_advection
               - 'type: AdvectionConfig'
               - vertical_advection_type
-            module_path: icon4py.model.atmosphere.tracer_advection.config
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
             is_union: false
           - display_name: vertical_advection_limiter
             type_name: <enum 'VerticalAdvectionLimiter'>
@@ -3633,12 +3634,12 @@ children:
               - tracer_advection
               - 'type: AdvectionConfig'
               - vertical_advection_limiter
-            module_path: icon4py.model.atmosphere.tracer_advection.config
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
             is_union: false
         config_name_path:
           - tracer_advection
           - 'type: AdvectionConfig'
-        module_path: icon4py.model.atmosphere.tracer_advection.config
+        module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
         is_union: false
       - display_name: 'type: NoneType'
         type_name: <class 'NoneType'>
@@ -3660,7 +3661,7 @@ children:
     module_path: types
     is_union: true
   - display_name: 'graupel: one of the following'
-    type_name: icon4py.model.atmosphere.subgrid_scale_physics.microphysics.config.SingleMomentSixClassIconGraupelConfig
+    type_name: icon4py.model.atmosphere.subgrid_scale_physics.microphysics.single_moment_six_class_gscp_graupel.SingleMomentSixClassIconGraupelConfig
       | None
     description: ??
     default: None
@@ -3676,7 +3677,7 @@ children:
         '
     children:
       - display_name: 'type: SingleMomentSixClassIconGraupelConfig'
-        type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.microphysics.config.SingleMomentSixClassIconGraupelConfig'>
+        type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.microphysics.single_moment_six_class_gscp_graupel.SingleMomentSixClassIconGraupelConfig'>
         description: ??
         default: None
         optional: true
@@ -3874,7 +3875,7 @@ children:
         config_name_path:
           - graupel
           - 'type: SingleMomentSixClassIconGraupelConfig'
-        module_path: icon4py.model.atmosphere.subgrid_scale_physics.microphysics.config
+        module_path: icon4py.model.atmosphere.subgrid_scale_physics.microphysics.single_moment_six_class_gscp_graupel
         is_union: false
       - display_name: 'type: NoneType'
         type_name: <class 'NoneType'>
