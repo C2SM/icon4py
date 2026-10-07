@@ -14,11 +14,8 @@ repos:
     hooks:
       - id: pretty-format-toml
         args: [--autofix, --indent, "2"]
-        # Pin toml-sort: the hook declares only toml-sort>=0.22.0, so hook
-        # environments resolve the latest toml-sort at build time. toml-sort
-        # 0.25.0 changed inline-table formatting (spaces inside braces), which
-        # reformats uv.lock and all pyproject.toml and made formatting
-        # nondeterministic across hook environment caches.
+        # language-formatters-pre-commit-hooks does not pin or upper-bound toml-sort, and
+        # newer versions can change formatting.
         # https://github.com/macisamuele/language-formatters-pre-commit-hooks/issues/351
         additional_dependencies: ['toml-sort==0.25.0']
         exclude: tach.toml
