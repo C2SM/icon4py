@@ -149,19 +149,19 @@ class GridGeometry(factory.FieldSource):
                 attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
                     gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX
                 ],
-                "edge_owner_mask": gtx.as_field(
+                attrs.EDGE_OWNER_MASK: gtx.as_field(
                     (dims.EdgeDim,),
                     decomposition_info.owner_mask(dims.EdgeDim),
                     dtype=bool,
                     allocator=self._backend,
                 ),
-                "vertex_owner_mask": gtx.as_field(
+                attrs.VERTEX_OWNER_MASK: gtx.as_field(
                     (dims.VertexDim,),
                     decomposition_info.owner_mask(dims.VertexDim),
                     allocator=self._backend,
                     dtype=bool,
                 ),
-                "cell_owner_mask": gtx.as_field(
+                attrs.CELL_OWNER_MASK: gtx.as_field(
                     (dims.CellDim,),
                     decomposition_info.owner_mask(dims.CellDim),
                     allocator=self._backend,
@@ -350,7 +350,7 @@ class GridGeometry(factory.FieldSource):
         edge_areas = factory.ProgramFieldProvider(
             func=stencils.compute_edge_area,
             deps={
-                "owner_mask": "edge_owner_mask",
+                "owner_mask": attrs.EDGE_OWNER_MASK,
                 "primal_edge_length": attrs.EDGE_LENGTH,
                 "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
             },
