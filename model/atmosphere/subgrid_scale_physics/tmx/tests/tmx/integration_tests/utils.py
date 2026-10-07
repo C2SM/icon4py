@@ -18,7 +18,7 @@ import gt4py.next as gtx
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics import metric_fields
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, test_utils
 
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 TMX_DATES: tuple[str, ...] = definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
 
 # Relative tolerance of all tmx integration datatests.
-RTOL: float = 3.0e-12
+RTOL: float = test_utils.scale_tol(3.0e-12)
 
 
 def construct_metric_state(
