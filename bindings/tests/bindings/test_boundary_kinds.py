@@ -41,9 +41,8 @@ SomeDim = gtx.Dimension("SomeDim")
 # Metric fields: `icon/src/atm_dyn_iconam/mo_nonhydro_types.f90:348` (t_nh_metrics vp block).
 # Diagnostic fields: same file, lines 142 and 265 (t_nh_diag vp block, `max_vcfl_dyn`).
 # Call-site locals: `icon/src/atm_dyn_iconam/mo_icon4py_interfaces.f90:657-660` and
-# `:1605-1608`. Checked against icon HEAD 554c4ef194. This is the substitute-mode call sites
-# only: the verify-mode `solve_nh_run` call (same file, :1058) passes `REAL(wp)` `*_before`
-# buffers for 13 of these, so it does not match a mixed interface until ICON declares them `vp`.
+# `:1605-1608`. Checked against icon HEAD 554c4ef194. The verify-mode call sites match since
+# icon d63e39c917, which declares their `*_before` buffers with the shadowed field's kind.
 ICON_VP_ARGUMENTS: typing.Final = {
     "diffusion_init": {"theta_ref_mc", "wgtfac_c"},
     "diffusion_run": {"hdef_ic", "div_ic", "dwdx", "dwdy"},
