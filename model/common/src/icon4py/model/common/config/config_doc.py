@@ -416,6 +416,7 @@ class ConfigDocWidget(textual.widget.Widget):
     """Broswe config options."""
 
     root_class: textual.reactive.var[type | None] = textual.reactive.var(None, init=True)
+    force_from_scratch: textual.reactive.var[bool] = textual.reactive.var(False, init=True)
 
     def compose(self: typing.Self) -> textual.app.ComposeResult:
         with textual.containers.Horizontal():
@@ -436,7 +437,7 @@ class ConfigDocWidget(textual.widget.Widget):
         tree.root.expand()
         tree.auto_expand = False
         tree.loading = True
-        if CACHE_PATH.exists():
+        if CACHE_PATH.exists() and not self.force_from_scratch:
             self.load_data_from_cache(tree)
         else:
             self.load_data_from_scratch(tree)
@@ -503,12 +504,15 @@ class ConfigDocWidget(textual.widget.Widget):
 
 class ConfigDocApp(textual.app.App):
     root_class: textual.reactive.var[type | None] = textual.reactive.var(None, init=True)
+    force_from_scratch: bool
 
-    def __init__(self, root_class: type | None = None, **kwargs: typing.Any):
+    def __init__(self, root_class: type | None = None, force_from_scratch: bool = False, **kwargs: typing.Any):
         super().__init__(**kwargs)
         self.root_class = root_class
+        self.force_from_scratch = force_from_scratch
 
     def compose(self) -> textual.app.ComposeResult:
         config_widget = ConfigDocWidget()
         config_widget.root_class = self.root_class
+        config_widget.force_from_scratch = self.force_from_scratch
         yield config_widget
