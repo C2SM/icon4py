@@ -58,7 +58,7 @@ diffusion and the physics driver continue in place, the dycore needs distinct no
 Static fields (metrics, interpolation coefficients) stay constructor arguments.
 
 The components today: `SolveNonhydro` (dycore), `Diffusion`, `Advection` (tracer advection),
-`PhysicsDriver` with `MuphysComponent` as its process, and the driver's
+`PhysicsDriver` with `MuphysComponent` and `TmxComponent` as its processes, and the driver's
 `IOMonitor` (`driver_io.py`).
 
 ## Composing
@@ -95,8 +95,9 @@ The framework, the physics components and the driver with its `IOMonitor` are ch
 strictly by both mypy and pyright (1.1.414, run through `npx` by pre-commit;
 `reportUnnecessaryTypeIgnoreComment` on). The strict mypy override and the pyright `include`
 in `pyproject.toml` cover `icon4py.model.common.components.*`, `physics_driver.*`,
-`muphys.component` and `icon4py.model.driver.*`, and of the tests the components, physics
-driver and muphys unit tests and the driver's `test_driver_io` and `test_driver_io_output`. `SolveNonhydro`, `Diffusion` and `Advection`
+`muphys.component`, `tmx.component` and `icon4py.model.driver.*`, and of the tests the
+components, physics driver and muphys unit tests, tmx's `test_component` and the driver's
+`test_driver_io` and `test_driver_io_output`. `SolveNonhydro`, `Diffusion` and `Advection`
 are not strict: mypy checks them with the project's default flags and pyright not at all; the
 driver's calls to them are strict. The Fortran bindings, which build `SolveNonhydro` and
 `Diffusion` views too, are not type-checked (mypy `ignore_errors`, no pyright), so a swapped

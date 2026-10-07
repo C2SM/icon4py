@@ -170,6 +170,9 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/unit_tests',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/src/icon4py/model/atmosphere/subgrid_scale_physics/tmx/component.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/unit_tests/test_component.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/integration_tests/test_component.py',
   # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
@@ -219,6 +222,8 @@ plugins = ["gt4py.next.type_system.mypy_plugin"]
 # non_interactive = true
 show_column_numbers = true
 show_error_codes = true
+# the savepoint readers are untyped; the strictly checked datatests call them
+untyped_calls_exclude = ['icon4py.model.testing.serialbox']
 warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
@@ -252,10 +257,13 @@ module = [
   "icon4py.model.common.components.*",
   "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.*",
   "icon4py.model.atmosphere.subgrid_scale_physics.muphys.component",
+  "icon4py.model.atmosphere.subgrid_scale_physics.tmx.component",
   "icon4py.model.driver.*",
   "*.components.unit_tests.*",
   "*.physics_driver.unit_tests.*",
   "*.muphys.unit_tests.*",
+  "*.tmx.unit_tests.test_component",
+  "*.tmx.integration_tests.test_component",
   "driver.unit_tests.test_driver_io",
   "driver.integration_tests.test_driver_io_output"
 ]
@@ -287,6 +295,9 @@ include = [
   "model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests",
   "model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py",
   "model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/unit_tests",
+  "model/atmosphere/subgrid_scale_physics/tmx/src/icon4py/model/atmosphere/subgrid_scale_physics/tmx/component.py",
+  "model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/unit_tests/test_component.py",
+  "model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/integration_tests/test_component.py",
   "model/driver/src/icon4py/model/driver",
   "model/driver/tests/driver/unit_tests/test_driver_io.py",
   "model/driver/tests/driver/integration_tests/test_driver_io_output.py"

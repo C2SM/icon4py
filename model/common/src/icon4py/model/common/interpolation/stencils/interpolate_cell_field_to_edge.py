@@ -83,16 +83,16 @@ def interpolate_cell_field_to_edge_f64(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_cell_field_to_edge_on_half_levels(
-    in_field: fa.CellKHalfField[wpfloat],
-    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    out_field: fa.EdgeKHalfField[wpfloat],
+def interpolate_cell_field_to_edge_on_half_levels_f64(
+    in_field: fa.CellKHalfField[gtx.float64],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+    out_field: fa.EdgeKHalfField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _interpolate_cell_field_to_edge_on_half_levels(
+    _interpolate_cell_field_to_edge_on_half_levels_f64(
         in_field=in_field,
         coeff=coeff,
         out=out_field,
