@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 TMX_DATES: tuple[str, ...] = definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
 
 # Relative tolerance of all tmx integration datatests.
-RTOL: float = 3.0e-12
+RTOL: float = test_utils.scale_tol(3.0e-12)
 
 
 def construct_metric_state(
@@ -160,7 +160,7 @@ def assert_tmx_exit_fields(
         "dissip_ke_vi": (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), 3.0e-12),
         "int_energy_vi": (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), 3.0e-6),
         "tend_int_energy_vi": (
-            diagnostic_state.int_energy_vi_tend,
+            diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
             7.0e-9,
         ),

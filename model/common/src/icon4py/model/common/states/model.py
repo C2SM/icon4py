@@ -61,7 +61,16 @@ class FieldMetaData:
     icon_var_list_index: int | None = None
     # TODO(halungge): dims should probably be required?
     dims: Sequence[gtx.Dimension] | None = None
-    dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64 | None = None
+    dtype: (
+        type[ta.wpfloat]
+        | type[ta.vpfloat]
+        | type[gtx.int32]
+        | type[gtx.int64]
+        | type[gtx.float32]
+        | type[gtx.float64]
+        | type[bool]
+        | None
+    ) = ta.wpfloat
     #: set when a consumer must handle this output specially; see ``FieldKind``
     kind: FieldKind | None = None
 
@@ -77,6 +86,10 @@ class FieldMetaData:
             for field in dataclasses.fields(self)
             if (value := getattr(self, field.name)) is not None
         }
+
+    @property
+    def is_scalar(self) -> bool:
+        return self.dims in (None, ())
 
 
 @runtime_checkable

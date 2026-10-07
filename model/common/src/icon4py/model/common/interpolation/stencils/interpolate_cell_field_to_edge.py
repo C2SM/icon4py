@@ -8,15 +8,16 @@
 import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _interpolate_cell_field_to_edge(
-    in_field: fa.CellKField[ta.wpfloat],
-    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-) -> fa.EdgeKField[ta.wpfloat]:
+def _interpolate_cell_field_to_edge_f64(
+    in_field: fa.CellKField[gtx.float64],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+) -> fa.EdgeKField[gtx.float64]:
     """
     Interpolate a Cell Field to Edges.
 
@@ -29,24 +30,48 @@ def _interpolate_cell_field_to_edge(
 
 
 @gtx.field_operator
+def _interpolate_cell_field_to_edge(
+    in_field: fa.CellKField[wpfloat],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+) -> fa.EdgeKField[wpfloat]:
+    """
+    Interpolate a Cell Field to Edges.
+
+    There is a special handling of lateral boundary edges in `subroutine cells2edges_scalar`
+    in mo_icon_interpolation.f90 where the value is set to the one valid in_field value without
+    multiplication by coeff. This essentially means: the skip value neighbor in the neighbor_sum
+    is skipped and coeff needs to be 1 for this Edge index.
+    """
+    return neighbor_sum(in_field(E2C) * coeff, axis=dims.E2CDim)
+
+
+@gtx.field_operator
+def _interpolate_cell_field_to_edge_on_half_levels_f64(
+    in_field: fa.CellKHalfField[gtx.float64],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+) -> fa.EdgeKHalfField[gtx.float64]:
+    return neighbor_sum(in_field(E2C) * coeff, axis=dims.E2CDim)
+
+
+@gtx.field_operator
 def _interpolate_cell_field_to_edge_on_half_levels(
-    in_field: fa.CellKHalfField[ta.wpfloat],
-    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-) -> fa.EdgeKHalfField[ta.wpfloat]:
+    in_field: fa.CellKHalfField[wpfloat],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+) -> fa.EdgeKHalfField[wpfloat]:
     return neighbor_sum(in_field(E2C) * coeff, axis=dims.E2CDim)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_cell_field_to_edge(
-    in_field: fa.CellKField[ta.wpfloat],
-    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    out_field: fa.EdgeKField[ta.wpfloat],
+def interpolate_cell_field_to_edge_f64(
+    in_field: fa.CellKField[gtx.float64],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+    out_field: fa.EdgeKField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _interpolate_cell_field_to_edge(
+    _interpolate_cell_field_to_edge_f64(
         in_field=in_field,
         coeff=coeff,
         out=out_field,
@@ -59,9 +84,9 @@ def interpolate_cell_field_to_edge(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_cell_field_to_edge_on_half_levels(
-    in_field: fa.CellKHalfField[ta.wpfloat],
-    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    out_field: fa.EdgeKHalfField[ta.wpfloat],
+    in_field: fa.CellKHalfField[wpfloat],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    out_field: fa.EdgeKHalfField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

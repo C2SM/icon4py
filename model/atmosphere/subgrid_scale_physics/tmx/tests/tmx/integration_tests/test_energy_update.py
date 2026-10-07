@@ -9,8 +9,9 @@
 """Integration test of the tmx energy update component.
 
 Constructs the component from the serialized ICON state (exp.exclaim_ape_aesPhys), with the
-diffused state taken from the tmx-hydro-exit, tmx-temperature-exit and tmx-hor-wind-exit
-savepoints, and verifies one call of `run` against the tmx-exit savepoint.
+diagnostics taken from the tmx-diagnostics-exit savepoint and the diffused state from the
+tmx-hydro-exit, tmx-temperature-exit and tmx-hor-wind-exit savepoints, and verifies one call
+of `run` against the tmx-exit savepoint.
 """
 
 from __future__ import annotations
@@ -117,14 +118,14 @@ def test_tmx_run_energy_update_single_step(
     )
     # (computed, reference, absolute tolerance)
     fields = {
-        "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 2.0e-15),
-        "heating": (diagnostic_state.heating, exit_savepoint.heating(), 9.0e-13),
-        "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 9.0e-13),
-        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 4.0e-6),
-        "dissip_ke_vi": (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), 3.0e-12),
+        "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 1.0e-18),
+        "heating": (diagnostic_state.heating, exit_savepoint.heating(), 3.0e-13),
+        "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 3.0e-13),
+        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 3.0e-6),
+        "dissip_ke_vi": (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), 2.0e-12),
         "int_energy_vi": (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), 3.0e-6),
         "tend_int_energy_vi": (
-            diagnostic_state.int_energy_vi_tend,
+            diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
             7.0e-9,
         ),
@@ -134,8 +135,8 @@ def test_tmx_run_energy_update_single_step(
             computed.asnumpy(), reference.asnumpy(), rtol=RTOL, atol=atol, err_msg=name
         )
     for name, computed, reference, atol in (
-        ("km", diagnostic_state.km, exit_savepoint.km(), 1.0e-10),
-        ("kh", diagnostic_state.kh, exit_savepoint.kh(), 3.0e-10),
+        ("km", diagnostic_state.km, exit_savepoint.km(), 0.0),
+        ("kh", diagnostic_state.kh, exit_savepoint.kh(), 0.0),
     ):
         test_utils.assert_dallclose(
             computed.asnumpy()[:, exchange_coefficient_levels],

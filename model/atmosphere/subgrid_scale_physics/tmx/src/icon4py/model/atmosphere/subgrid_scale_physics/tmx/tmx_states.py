@@ -152,12 +152,17 @@ class TmxDiagnosticState:
     km_c: fa.CellKField[ta.wpfloat]
     """Turbulent viscosity at cell centers on full levels [kg/(m s)]."""
     km: fa.CellKField[ta.wpfloat]
-    """Turbulent viscosity of the half level below, at cell centers on full levels [kg/(m s)].
-    Lowest level: the surface exchange coefficient (`km_sfc` [1] or `km_const` [m^2/s])."""
+    """
+    Above the lowest level: turbulent viscosity from the half level below [kg/(m s)].
+    At the lowest level: the surface exchange coefficient `km_sfc` [dimensionless], or
+    `km_const` [m^2/s] when `use_km_const=True`.
+    """
     kh: fa.CellKField[ta.wpfloat]
-    """Turbulent diffusivity of the half level below, at cell centers on full levels [kg/(m s)].
-    Lowest level: the surface exchange coefficient (`kh_sfc` [1] or `km_const / turb_prandtl`
-    [m^2/s])."""
+    """
+    Above the lowest level: turbulent diffusivity from the half level below [kg/(m s)].
+    At the lowest level: the surface exchange coefficient `kh_sfc` [dimensionless], or
+    `km_const / turb_prandtl` [m^2/s] when `use_km_const=True`.
+    """
     dissip_ke: fa.CellKField[ta.wpfloat]
     """Kinetic energy dissipated by the wind diffusion, per layer [W/m^2]."""
     heating: fa.CellKField[ta.wpfloat]
@@ -169,7 +174,7 @@ class TmxDiagnosticState:
     """Vertical integral of the dissipated kinetic energy [W/m^2]."""
     int_energy_vi: fa.CellField[ta.wpfloat]
     """Vertical integral of the internal energy of the updated state [J/m^2]."""
-    int_energy_vi_tend: fa.CellField[ta.wpfloat]
+    tend_int_energy_vi: fa.CellField[ta.wpfloat]
     """Tendency of the vertically integrated internal energy [W/m^2]."""
     # cell, half levels
     rho_ic: fa.CellKHalfField[ta.wpfloat]
@@ -229,7 +234,7 @@ class TmxDiagnosticState:
             cptgz_vi=zero_field(dims.CellDim),
             dissip_ke_vi=zero_field(dims.CellDim),
             int_energy_vi=zero_field(dims.CellDim),
-            int_energy_vi_tend=zero_field(dims.CellDim),
+            tend_int_energy_vi=zero_field(dims.CellDim),
             rho_ic=zero_field(dims.CellDim, dims.KHalfDim),
             bruvais=zero_field(dims.CellDim, dims.KHalfDim),
             mech_prod=zero_field(dims.CellDim, dims.KHalfDim),

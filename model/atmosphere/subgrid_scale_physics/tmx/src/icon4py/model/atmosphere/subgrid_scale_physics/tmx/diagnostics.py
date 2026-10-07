@@ -22,7 +22,7 @@ import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import diagnostics as diag_stencils
-from icon4py.model.common import constants, dimension as dims, model_backends
+from icon4py.model.common import constants, dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
 from icon4py.model.common.interpolation.stencils.interpolate_cell_vector_to_edge_normal import (
@@ -34,7 +34,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 if typing.TYPE_CHECKING:
     import icon4py.model.common.grid.states as grid_states
-    from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+    from icon4py.model.common import field_type_aliases as fa
 
 
 log = logging.getLogger(__name__)
@@ -74,18 +74,18 @@ class Diagnostics:
 
         assert self._cell_params.area is not None
 
-        self._smag_constant = smag_constant
-        self._max_turb_scale = max_turb_scale
-        self._km_min = km_min
-        self._km_const = km_const
+        self._smag_constant = ta.wpfloat(smag_constant)
+        self._max_turb_scale = ta.wpfloat(max_turb_scale)
+        self._km_min = ta.wpfloat(km_min)
+        self._km_const = ta.wpfloat(km_const)
         self._use_km_const = use_km_const
-        self._louis_constant_b = louis_constant_b
+        self._louis_constant_b = ta.wpfloat(louis_constant_b)
         self._use_louis = use_louis
         self._use_louis_land = use_louis_land
         self._use_louis_ice = use_louis_ice
         # reciprocal turbulent Prandtl number (``rturb_prandtl`` in
         # mo_turb_vdiff_config.f90)
-        self._rturb_prandtl = 1.0 / turb_prandtl
+        self._rturb_prandtl = ta.wpfloat(1.0 / turb_prandtl)
 
         if use_louis and not (use_louis_land and use_louis_ice):
             log.warning(

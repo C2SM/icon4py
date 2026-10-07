@@ -20,28 +20,8 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_scalar_diffusion import moist_heat_capacity_numpy
+from .test_scalar_diffusion import internal_energy_per_area_numpy
 from .test_wind_diffusion import on_rows
-
-
-def internal_energy_per_area_numpy(
-    *,
-    temperature: np.ndarray,
-    qv: np.ndarray,
-    q_liquid: np.ndarray,
-    q_solid: np.ndarray,
-    rho: np.ndarray,
-    dz: np.ndarray,
-) -> np.ndarray:
-    return (
-        rho
-        * dz
-        * (
-            moist_heat_capacity_numpy(qv, q_liquid, q_solid) * temperature
-            - q_liquid * phy.lvc
-            - q_solid * phy.lsc
-        )
-    )
 
 
 class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilTest):
@@ -55,7 +35,7 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
         "cptgz_vi",
         "dissip_ke_vi",
         "int_energy_vi",
-        "int_energy_vi_tend",
+        "tend_int_energy_vi",
         "km",
         "kh",
     )
@@ -138,7 +118,7 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
             cptgz_vi=on_rows(np.cumsum(cptgz * rho * ddqz_z_full, axis=1), cells, levels),
             dissip_ke_vi=on_rows(np.cumsum(dissip_ke, axis=1), cells, levels),
             int_energy_vi=on_rows(int_energy_vi, cells, levels),
-            int_energy_vi_tend=on_rows(
+            tend_int_energy_vi=on_rows(
                 (int_energy_vi - np.cumsum(old_int_energy, axis=1)) / dtime, cells, levels
             ),
             km=on_rows(km_ic[:, 1:], cells, above_surface),
@@ -196,13 +176,12 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
             cptgz_vi=output(),
             dissip_ke_vi=output(),
             int_energy_vi=output(),
-            int_energy_vi_tend=output(),
+            tend_int_energy_vi=output(),
             km=output(),
             kh=output(),
             dissipation_factor=wpfloat(0.8),
             grav=constants.GRAV,
             dtime=wpfloat(300.0),
-            nlev=gtx.int32(grid.num_levels),
             horizontal_start=gtx.int32(horizontal_start),
             horizontal_end=gtx.int32(horizontal_end),
             vertical_start=gtx.int32(0),

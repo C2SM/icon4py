@@ -42,6 +42,9 @@ EDGE_VERTEX_DISTANCE: Final[str] = "edge_midpoint_to_vertex_distance"
 TANGENT_ORIENTATION: Final[str] = "edge_orientation"
 CELL_NORMAL_ORIENTATION: Final[str] = "orientation_of_normal_to_cell_edges"
 VERTEX_EDGE_ORIENTATION: Final[str] = "orientation_of_edges_around_vertex"
+CELL_OWNER_MASK: Final[str] = "cell_owner_mask"
+EDGE_OWNER_MASK: Final[str] = "edge_owner_mask"
+VERTEX_OWNER_MASK: Final[str] = "vertex_owner_mask"
 
 
 CORIOLIS_PARAMETER: Final[str] = "coriolis_parameter"
@@ -392,6 +395,30 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.VertexDim, dims.V2EDim),
         icon_var_name="t_grid_vertex%edge_orientation",
         dtype=ta.wpfloat,
+    ),
+    CELL_OWNER_MASK: model.FieldMetaData(
+        standard_name=CELL_OWNER_MASK,
+        long_name="mask of cells owned by this process",
+        units="",
+        dims=(dims.CellDim,),
+        icon_var_name="t_grid_cells%decomp_info%owner_mask",
+        dtype=bool,
+    ),
+    EDGE_OWNER_MASK: model.FieldMetaData(
+        standard_name=EDGE_OWNER_MASK,
+        long_name="mask of edges owned by this process",
+        units="",
+        dims=(dims.EdgeDim,),
+        icon_var_name="t_grid_edges%decomp_info%owner_mask",
+        dtype=bool,
+    ),
+    VERTEX_OWNER_MASK: model.FieldMetaData(
+        standard_name=VERTEX_OWNER_MASK,
+        long_name="mask of vertices owned by this process",
+        units="",
+        dims=(dims.VertexDim,),
+        icon_var_name="t_grid_vertices%decomp_info%owner_mask",
+        dtype=bool,
     ),
     EDGE_DUAL_U: model.FieldMetaData(
         standard_name=EDGE_DUAL_U,
