@@ -102,9 +102,9 @@ def validate_granule_state_consistency(
     if granules.diffusion is not None and states.diffusion_diagnostic is None:
         raise ValueError("diffusion granule is present but diffusion_diagnostic state is None.")
     if granules.solve_nonhydro is not None:
-        if states.solve_nonhydro_diagnostic is None:
+        if states.dycore_forcing is None or states.dycore_diagnostics is None:
             raise ValueError(
-                "solve_nonhydro granule is present but solve_nonhydro_diagnostic state is None."
+                "solve_nonhydro granule is present but dycore_forcing or dycore_diagnostics is None."
             )
         if states.prep_advection_prognostic is None:
             raise ValueError(
