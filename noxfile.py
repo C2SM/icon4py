@@ -338,7 +338,6 @@ def __bencher_driver_feature_branch_CI(session: nox.Session) -> None:
 
 # Model test sessions
 # TODO(egparedes): Add backend parameter
-# TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, **_VENV_BACKEND_KWARG)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_TESTS_SUBSETS)
@@ -346,7 +345,7 @@ def test_model(
     session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath
 ) -> None:
     """Run tests for selected icon4py model subpackages."""
-    _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
+    _install_session_venv(session, extras=["all"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
     success_codes = (
@@ -355,6 +354,8 @@ def test_model(
     with session.chdir(f"model/{subpackage}"):
         session.run(
             *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
+            "-k",
+            "not benchmark_only",
             *pytest_args,
             "tests",
             *session.posargs,
