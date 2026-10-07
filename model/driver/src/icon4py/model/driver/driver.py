@@ -13,7 +13,6 @@ import logging
 import pathlib
 import types
 from collections.abc import Callable
-from typing import Any
 
 import gt4py.next as gtx
 from gt4py.next import config as gtx_config
@@ -33,7 +32,7 @@ from icon4py.model.common import (
     topography,
     type_alias as ta,
 )
-from icon4py.model.common.components import framework as fw, quantities as qty, states
+from icon4py.model.common.components import framework as fw, states
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
@@ -45,12 +44,7 @@ from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-    static_fields,
-    tracer_states,
-)
+from icon4py.model.common.states import static_fields
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.driver import (
     config as driver_config,
@@ -158,7 +152,7 @@ class Icon4pyDriver:
 
     def _store_output(
         self,
-        prognostic_state: prognostics.PrognosticState,
+        prognostic_state: states.PrognosticState,
         simulation_current_datetime: time.AbsoluteTime,
     ) -> None:
         """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
@@ -290,8 +284,8 @@ class Icon4pyDriver:
         dycore_forcing: states.DycoreForcing | None,
         dycore_diagnostics: states.DycoreDiagnostics | None,
         tracer_advection_diagnostic_state: states.AdvectionDiagnostics | None,
-        prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
-        tracers: common_utils.TimeStepPair[tracer_states.TracerState],
+        prognostic_states: common_utils.TimeStepPair[states.PrognosticState],
+        tracers: common_utils.TimeStepPair[states.TracerState],
         prep_adv: states.PrepAdvection | None,
     ) -> None:
         # Airmass (rho * dz) is tracer advection's density<->mixing-ratio conversion
@@ -299,7 +293,7 @@ class Icon4pyDriver:
         # the dynamics leaves behind, as ICON does around its substep loop.
         if tracer_advection_diagnostic_state is not None:
             self._compute_airmass(
-                rho_in=prognostic_states.current.rho,
+                rho_in=prognostic_states.current.rho.data,
                 airmass_out=tracer_advection_diagnostic_state.airmass_now.data,
             )
 
@@ -323,7 +317,7 @@ class Icon4pyDriver:
                 else prognostic_states.current.rho
             )
             self._compute_airmass(
-                rho_in=rho_after_dynamics,
+                rho_in=rho_after_dynamics.data,
                 airmass_out=tracer_advection_diagnostic_state.airmass_new.data,
             )
 
@@ -408,7 +402,7 @@ class Icon4pyDriver:
 
     def _dycore_inputs(
         self,
-        prognostics_now: prognostics.PrognosticState,
+        prognostics_now: states.PrognosticState,
         forcing: states.DycoreForcing,
         *,
         second_order_divdamp_factor: ta.wpfloat,
@@ -417,11 +411,11 @@ class Icon4pyDriver:
     ) -> solve_nh.SolveNonhydro.Input:
         """The dycore's input view: the prognostics at `current`, the forcing and the step's scalars."""
         return solve_nh.SolveNonhydro.Input(
-            rho=fw.Field(qty.RhoOnCellK, prognostics_now.rho),
-            w=fw.Field(qty.WOnCellKHalf, prognostics_now.w),
-            vn=fw.Field(qty.VnOnEdgeK, prognostics_now.vn),
-            exner=fw.Field(qty.ExnerOnCellK, prognostics_now.exner),
-            theta_v=fw.Field(qty.ThetaVOnCellK, prognostics_now.theta_v),
+            rho=prognostics_now.rho,
+            w=prognostics_now.w,
+            vn=prognostics_now.vn,
+            exner=prognostics_now.exner,
+            theta_v=prognostics_now.theta_v,
             exner_tendency_due_to_slow_physics=forcing.exner_tendency_due_to_slow_physics,
             normal_wind_tendency_due_to_slow_physics_process=forcing.normal_wind_tendency_due_to_slow_physics_process,
             grf_tend_rho=forcing.grf_tend_rho,
@@ -442,17 +436,17 @@ class Icon4pyDriver:
 
     def _dycore_output(
         self,
-        prognostics_next: prognostics.PrognosticState,
+        prognostics_next: states.PrognosticState,
         prep_adv: states.PrepAdvection,
         dycore_diagnostics: states.DycoreDiagnostics,
     ) -> solve_nh.SolveNonhydro.Output:
         """The dycore's output view: the prognostics at `next`, the fluxes and the carried diagnostics."""
         return solve_nh.SolveNonhydro.Output(
-            rho=fw.Field(qty.RhoOnCellK, prognostics_next.rho),
-            w=fw.Field(qty.WOnCellKHalf, prognostics_next.w),
-            vn=fw.Field(qty.VnOnEdgeK, prognostics_next.vn),
-            exner=fw.Field(qty.ExnerOnCellK, prognostics_next.exner),
-            theta_v=fw.Field(qty.ThetaVOnCellK, prognostics_next.theta_v),
+            rho=prognostics_next.rho,
+            w=prognostics_next.w,
+            vn=prognostics_next.vn,
+            exner=prognostics_next.exner,
+            theta_v=prognostics_next.theta_v,
             vn_traj=prep_adv.vn_traj,
             mass_flx_me=prep_adv.mass_flx_me,
             dynamical_vertical_mass_flux_at_cells_on_half_levels=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
@@ -469,7 +463,7 @@ class Icon4pyDriver:
         self,
         dycore_forcing: states.DycoreForcing,
         dycore_diagnostics: states.DycoreDiagnostics,
-        prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
+        prognostic_states: common_utils.TimeStepPair[states.PrognosticState],
         prep_adv: states.PrepAdvection,
     ) -> None:
         # updated once per time step, and not cached: it decreases with the elapsed time
@@ -599,24 +593,21 @@ class Icon4pyDriver:
             ta.wpfloat(0.0), self._allocator
         )
 
-    @staticmethod
-    def _tracer_leaves(tracer_state: tracer_states.TracerState) -> dict[str, Any]:
-        """The active tracers of the not yet converted tracer state, as typed fields."""
-        quantities = {d.name: d.quantity for d in states.TracerState.declarations()}
-        return {
-            tracer.name: fw.Field(quantities[tracer.name], tracer.field)
-            for tracer in tracer_state.active_fields()
-        }
-
     def _advection_views(
         self,
-        tracers: common_utils.TimeStepPair[tracer_states.TracerState],
+        tracers: common_utils.TimeStepPair[states.TracerState],
         diagnostics: states.AdvectionDiagnostics,
         prep_adv: states.PrepAdvection,
     ) -> tuple[tracer_advection.Advection.Input, tracer_advection.Advection.Output]:
         """The advection's views: the tracers at `current` in, at `next` out, with the fluxes."""
+        now, next_ = tracers.current, tracers.next
         inputs = tracer_advection.Advection.Input(
-            **self._tracer_leaves(tracers.current),
+            qv=now.qv,
+            qc=now.qc,
+            qi=now.qi,
+            qr=now.qr,
+            qs=now.qs,
+            qg=now.qg,
             airmass_now=diagnostics.airmass_now,
             airmass_new=diagnostics.airmass_new,
             grf_tend_tracer=diagnostics.grf_tend_tracer,
@@ -626,7 +617,12 @@ class Icon4pyDriver:
             dtime=self.model_time_variables.dtime_in_seconds,
         )
         out = tracer_advection.Advection.Output(
-            **self._tracer_leaves(tracers.next),
+            qv=next_.qv,
+            qc=next_.qc,
+            qi=next_.qi,
+            qr=next_.qr,
+            qs=next_.qs,
+            qg=next_.qg,
             hfl_tracer=diagnostics.hfl_tracer,
             vfl_tracer=diagnostics.vfl_tracer,
         )
@@ -634,16 +630,18 @@ class Icon4pyDriver:
 
     def _diffusion_views(
         self,
-        prognostic_state: prognostics.PrognosticState,
+        prognostic_state: states.PrognosticState,
         diffusion_diagnostics: states.DiffusionDiagnostics,
         dtime: ta.wpfloat,
         initial_run: bool = False,
     ) -> tuple[diffusion.Diffusion.Input, diffusion.Diffusion.Output]:
         """The diffusion's views: the prognostics are diffused in place, so both sides share them."""
-        vn = fw.Field(qty.VnOnEdgeK, prognostic_state.vn)
-        w = fw.Field(qty.WOnCellKHalf, prognostic_state.w)
-        exner = fw.Field(qty.ExnerOnCellK, prognostic_state.exner)
-        theta_v = fw.Field(qty.ThetaVOnCellK, prognostic_state.theta_v)
+        vn, w, exner, theta_v = (
+            prognostic_state.vn,
+            prognostic_state.w,
+            prognostic_state.exner,
+            prognostic_state.theta_v,
+        )
         inputs = diffusion.Diffusion.Input(
             vn=vn, w=w, exner=exner, theta_v=theta_v, dtime=dtime, initial_run=initial_run
         )
@@ -662,7 +660,7 @@ class Icon4pyDriver:
     def _diffuse_before_time_loop(
         self,
         diffusion_diagnostic_state: states.DiffusionDiagnostics | None,
-        prognostic_state: prognostics.PrognosticState,
+        prognostic_state: states.PrognosticState,
     ) -> None:
         """
         Extra diffusion call before the first time step.
@@ -730,7 +728,7 @@ class Icon4pyDriver:
         )
 
     def _compute_statistics(
-        self, current_dyn_substep: int, prognostic_states: prognostics.PrognosticState
+        self, current_dyn_substep: int, prognostic_states: states.PrognosticState
     ) -> None:
         """
         Compute relevant statistics of prognostic variables at the beginning of every time step. The statistics include:
@@ -739,12 +737,12 @@ class Icon4pyDriver:
         if self.config.driver.enable_statistics_logging:
             # TODO (Chia Rui): Do global max when multinode is ready
             rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
-                prognostic_states.rho,
+                prognostic_states.rho.data,
             )
             vn_arg_max, max_vn = driver_utils.find_maximum_from_field(
-                prognostic_states.vn,
+                prognostic_states.vn.data,
             )
-            w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w)
+            w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w.data)
 
             def _determine_sign(input_number: float) -> str:
                 return " " if input_number >= 0.0 else "-"
@@ -762,11 +760,9 @@ class Icon4pyDriver:
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self.model_time_variables.ndyn_substeps_var:3d}"
             )
 
-    def _compute_total_mass_and_energy(
-        self, prognostic_states: prognostics.PrognosticState
-    ) -> None:
+    def _compute_total_mass_and_energy(self, prognostic_states: states.PrognosticState) -> None:
         if self.config.driver.enable_statistics_logging:
-            rho_ndarray = prognostic_states.rho.ndarray
+            rho_ndarray = prognostic_states.rho.data.ndarray
             cell_area_ndarray = self.static_field_factories.geometry.get(
                 geom_attr.CELL_AREA
             ).ndarray
@@ -780,15 +776,13 @@ class Icon4pyDriver:
             # TODO (Chia Rui): compute total energy
             log.info(f"GLOBAL TOTAL MASS: {global_total_mass:.15e} kg")
 
-    def _compute_mean_at_final_time_step(
-        self, prognostic_states: prognostics.PrognosticState
-    ) -> None:
+    def _compute_mean_at_final_time_step(self, prognostic_states: states.PrognosticState) -> None:
         if self.config.driver.enable_statistics_logging:
-            rho_ndarray = prognostic_states.rho.ndarray
-            vn_ndarray = prognostic_states.vn.ndarray
-            w_ndarray = prognostic_states.w.ndarray
-            theta_v_ndarray = prognostic_states.theta_v.ndarray
-            exner_ndarray = prognostic_states.exner.ndarray
+            rho_ndarray = prognostic_states.rho.data.ndarray
+            vn_ndarray = prognostic_states.vn.data.ndarray
+            w_ndarray = prognostic_states.w.data.ndarray
+            theta_v_ndarray = prognostic_states.theta_v.data.ndarray
+            exner_ndarray = prognostic_states.exner.data.ndarray
             log.info("")
             log.info("Global mean of    rho         vn           w          theta_v     exner:")
             log.info(
@@ -920,14 +914,13 @@ def run_driver(
         backend=backend,
     )
     allocator = model_backends.get_allocator(backend)
-    prognostic_state_now = prognostics.initialize_prognostic_state(
-        grid=icon4py_driver.grid,
-        allocator=allocator,
-    )
-    tracer_state_now = tracer_states.initialize_tracer_state(
-        grid=icon4py_driver.grid,
-        allocator=allocator,
-        tracer_config=icon4py_driver.config.tracer_config,
+    prognostic_state_now = fw.allocate(states.PrognosticState, icon4py_driver.grid, allocator)
+    tracer_config = icon4py_driver.config.tracer_config
+    tracer_state_now = fw.allocate(
+        states.TracerState,
+        icon4py_driver.grid,
+        allocator,
+        only=tracer_config.active_names if tracer_config is not None else (),
     )
     dycore_enabled = icon4py_driver.config.nonhydrostatic is not None
     dycore_forcing = (
@@ -957,9 +950,7 @@ def run_driver(
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
     )
-    diagnostic_state = diagnostics.initialize_diagnostic_state(
-        grid=icon4py_driver.grid, allocator=allocator
-    )
+    diagnostic_state = fw.allocate(states.Diagnostics, icon4py_driver.grid, allocator)
     ds = driver_states.assemble_driver_states(
         grid=icon4py_driver.grid,
         allocator=allocator,

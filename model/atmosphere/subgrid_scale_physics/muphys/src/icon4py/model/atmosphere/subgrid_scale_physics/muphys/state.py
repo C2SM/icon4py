@@ -33,8 +33,8 @@ class State(ComponentState):
         """The 10 muphys input fields, mapped from the facade (no copies)."""
         return {
             "dz": self.dz,
-            "te": state.diagnostics.temperature,
-            "p": state.diagnostics.pressure,
+            "te": state.diagnostics.temperature.data,
+            "p": state.diagnostics.pressure.data,
             "rho": state.rho,
-            **{f"q{s}": getattr(state.tracers, f"q{s}") for s in SPECIES},
+            **{f"q{s}": getattr(state.tracers, f"q{s}").data for s in SPECIES},
         }

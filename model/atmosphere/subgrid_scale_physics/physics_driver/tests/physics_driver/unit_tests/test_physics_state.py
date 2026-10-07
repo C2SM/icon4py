@@ -14,15 +14,11 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.components import framework as fw, quantities as qty, states
 from icon4py.model.common.grid import geometry_attributes, simple
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import (
-    diagnostic_state,
-    model,
-    prognostic_state as prognostics,
-    tracer_states,
-)
+from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -61,22 +57,18 @@ def _uniform_prognostic(
     rho: float = 1.2,
     exner: float = 0.95,
     theta_v: float = 300.0,
-) -> prognostics.PrognosticState:
+) -> states.PrognosticState:
     """PrognosticState filled with uniform constant values on the simple grid."""
-    return prognostics.PrognosticState(
-        rho=data_alloc.constant_field(grid, rho, dims.CellDim, dims.KDim),
-        w=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
-        vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
-        exner=data_alloc.constant_field(grid, exner, dims.CellDim, dims.KDim),
-        theta_v=data_alloc.constant_field(grid, theta_v, dims.CellDim, dims.KDim),
+    values = {"rho": rho, "exner": exner, "theta_v": theta_v}
+    return fw.allocate(
+        states.PrognosticState, grid, None, fill=lambda name, _: values.get(name, 0.0)
     )
 
 
-def _tracer_state(grid, *, qv: float = 0.0) -> tracer_states.TracerState:
+def _tracer_state(grid, *, qv: float = 0.0) -> states.TracerState:
     """TracerState with all six species active."""
-    ck = lambda value: data_alloc.constant_field(grid, value, dims.CellDim, dims.KDim)  # noqa: E731
-    return tracer_states.TracerState(
-        qv=ck(qv), qc=ck(0.0), qi=ck(0.0), qr=ck(0.0), qs=ck(0.0), qg=ck(0.0)
+    return fw.allocate(
+        states.TracerState, grid, None, fill=lambda name, _: qv if name == "qv" else 0.0
     )
 
 
@@ -122,29 +114,30 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     ws = _entry_state(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
-    exner_before = prognostic.exner.asnumpy().copy()
-    vn_before = prognostic.vn.asnumpy().copy()
+    exner_before = prognostic.exner.data.asnumpy().copy()
+    vn_before = prognostic.vn.data.asnumpy().copy()
 
     ws.compute_diagnostics(prognostic, tracers)
 
     # wiring smoke test: physically plausible diagnostics
-    assert 200.0 < ws.diagnostics.temperature.asnumpy().mean() < 320.0
-    assert (ws.diagnostics.pressure.asnumpy() > 0).all()
+    assert 200.0 < ws.diagnostics.temperature.data.asnumpy().mean() < 320.0
+    assert (ws.diagnostics.pressure.data.asnumpy() > 0).all()
     # pressure grows downward: surface interface > top full level
     assert (
-        ws.diagnostics.pressure_ifc.asnumpy()[:, -1] > ws.diagnostics.pressure.asnumpy()[:, 0]
+        ws.diagnostics.pressure_ifc.data.asnumpy()[:, -1]
+        > ws.diagnostics.pressure.data.asnumpy()[:, 0]
     ).all()
 
     # the invariant: inputs untouched
-    np.testing.assert_array_equal(prognostic.exner.asnumpy(), exner_before)
-    np.testing.assert_array_equal(prognostic.vn.asnumpy(), vn_before)
-    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3, rtol=0)
+    np.testing.assert_array_equal(prognostic.exner.data.asnumpy(), exner_before)
+    np.testing.assert_array_equal(prognostic.vn.data.asnumpy(), vn_before)
+    np.testing.assert_allclose(tracers.qv.data.asnumpy(), 1e-3, rtol=0)
 
     # the facade binds pointers, not copies: same objects, physics names
-    assert ws.exner is prognostic.exner
-    assert ws.rho is prognostic.rho
-    assert ws.w is prognostic.w
-    assert ws.vn is prognostic.vn
+    assert ws.exner is prognostic.exner.data
+    assert ws.rho is prognostic.rho.data
+    assert ws.w is prognostic.w.data
+    assert ws.vn is prognostic.vn.data
     assert ws.tracers is tracers
 
 
@@ -229,13 +222,10 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
     ws.compute_diagnostics(prognostic, tracers)
-    exner_before = prognostic.exner.asnumpy().copy()
-    theta_v_before = prognostic.theta_v.asnumpy().copy()
+    exner_before = prognostic.exner.data.asnumpy().copy()
+    theta_v_before = prognostic.theta_v.data.asnumpy().copy()
 
-    # ddt_w spans KDim+1 half-levels; constant_field does not support 'extend',
-    # so we use zero_field (which does) and fill the backing array.
-    tend_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-    tend_w.ndarray[...] = 1e-4
+    tend_w = data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KHalfDim)
     dt = 300.0
     acc = _accumulated(
         grid,
@@ -246,13 +236,13 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
 
     acc.apply(ws, dt_seconds=dt)
 
-    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)
-    np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
+    np.testing.assert_allclose(tracers.qv.data.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)
+    np.testing.assert_allclose(prognostic.w.data.asnumpy(), 1e-4 * dt, rtol=1e-12)
     # EOS wiring smoke test: the exact-EOS update must have rewritten exner and
     # theta_v (their new values are EOS-consistent with rho and the updated Tv;
     # no direction assertion — the uniform test state is not EOS-consistent).
-    assert not np.array_equal(prognostic.exner.asnumpy(), exner_before)
-    assert not np.array_equal(prognostic.theta_v.asnumpy(), theta_v_before)
+    assert not np.array_equal(prognostic.exner.data.asnumpy(), exner_before)
+    assert not np.array_equal(prognostic.theta_v.data.asnumpy(), theta_v_before)
 
 
 def test_apply_projects_accumulated_wind_tendency_to_vn():
@@ -272,7 +262,7 @@ def test_apply_projects_accumulated_wind_tendency_to_vn():
 
     acc.apply(ws, dt_seconds=dt)
 
-    np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
+    np.testing.assert_allclose(prognostic.vn.data.asnumpy(), 1e-4 * dt, rtol=1e-12)
 
 
 def test_apply_rejects_a_lone_horizontal_wind_tendency():
@@ -292,7 +282,7 @@ def test_apply_rejects_a_lone_horizontal_wind_tendency():
 def test_entry_state_groups_diagnostics_in_common_container():
     grid = simple.simple_grid()
     ws = _entry_state(grid)
-    assert isinstance(ws.diagnostics, diagnostic_state.DiagnosticState)
+    assert isinstance(ws.diagnostics, states.Diagnostics)
     # the flat shorthand is gone -- pointers and diagnostics are structurally distinct
     assert not hasattr(ws, "ta")
     assert not hasattr(ws, "pressure")

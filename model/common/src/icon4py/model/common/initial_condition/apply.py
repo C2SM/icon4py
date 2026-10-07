@@ -29,11 +29,7 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid
-    from icon4py.model.common.states import (
-        prognostic_state as prognostics,
-        static_fields,
-        tracer_states,
-    )
+    from icon4py.model.common.states import static_fields
 
 
 def apply(
@@ -41,8 +37,8 @@ def apply(
     config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
+    prognostic_state_now: states.PrognosticState,
+    tracer_state_now: states.TracerState,
     dycore_diagnostics: states.DycoreDiagnostics | None,
     tracer_prep_adv_state: states.PrepAdvection | None,
     backend: gtx_typing.Backend | None,
@@ -143,7 +139,7 @@ def apply(
     if dycore_diagnostics is not None:
         # exner_pr, diagnosed from the initial state (compute_exner_pert in mo_nh_stepping.f90)
         gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
-            field_a=prognostic_state_now.exner,
+            field_a=prognostic_state_now.exner.data,
             field_b=static_fields.metrics.get(metrics_attributes.EXNER_REF_MC),
             output_field=dycore_diagnostics.perturbed_exner_at_cells_on_model_levels.data,
             horizontal_start=0,

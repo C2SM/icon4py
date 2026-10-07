@@ -14,6 +14,7 @@ import typing
 from typing import TYPE_CHECKING
 
 from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
+from icon4py.model.common.components import states
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
@@ -23,7 +24,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -64,7 +64,7 @@ def gauss3d(
     config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
-    prognostic_state_now: prognostics.PrognosticState,
+    prognostic_state_now: states.PrognosticState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
@@ -103,9 +103,9 @@ def gauss3d(
     t0 = ic_config.t0
     brunt_vais = ic_config.brunt_vais
 
-    exner_ndarray = prognostic_state_now.exner.ndarray
-    rho_ndarray = prognostic_state_now.rho.ndarray
-    theta_v_ndarray = prognostic_state_now.theta_v.ndarray
+    exner_ndarray = prognostic_state_now.exner.data.ndarray
+    rho_ndarray = prognostic_state_now.rho.data.ndarray
+    theta_v_ndarray = prognostic_state_now.theta_v.data.ndarray
 
     mask_array_edge_start_plus1_to_edge_end = array_ns.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0 : zone_idx["end_edge_lateral_boundary_level_2"]] = (
@@ -117,7 +117,7 @@ def gauss3d(
         axis=1,
     )
     u_field = array_ns.where(mask, u0, 0.0)
-    prognostic_state_now.vn.ndarray[:, :] = u_field * primal_normal_x[:, array_ns.newaxis]
+    prognostic_state_now.vn.data.ndarray[:, :] = u_field * primal_normal_x[:, array_ns.newaxis]
 
     for k_index in range(num_levels - 1, -1, -1):
         z_help = (brunt_vais / phy_const.GRAV) ** 2 * geopot[:, k_index]
@@ -147,15 +147,15 @@ def gauss3d(
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
 
-    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+    prognostic_state_now.w.data.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,
         edge_cell_distance=edge_cell_distance,
         primal_edge_length=primal_edge_length,
         cell_area=cell_area,
-        vn=prognostic_state_now.vn.ndarray,
+        vn=prognostic_state_now.vn.data.ndarray,
         vct_b=vct_b.ndarray,
         nlev=num_levels,
     )
-    exchange.exchange(dims.CellDim, prognostic_state_now.w)
+    exchange.exchange(dims.CellDim, prognostic_state_now.w.data)

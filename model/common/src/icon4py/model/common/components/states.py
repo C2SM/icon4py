@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
-from typing import TYPE_CHECKING, Any, Final
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Final
 
 from icon4py.model.common.components import framework as fw, quantities as qty
-from icon4py.model.common.states.tracer_states import TracerConfig
-from icon4py.model.common.utils import PredictorCorrectorPair, data_allocation as data_alloc
+from icon4py.model.common.utils import PredictorCorrectorPair
 
 
 if TYPE_CHECKING:
@@ -64,21 +64,73 @@ class TracerState(fw.State):
     qs: fw.Field[qty.QsOnCellK] | None = None
     qg: fw.Field[qty.QgOnCellK] | None = None
 
-    def copy(self, allocator: gtx_typing.Allocator | None = None) -> TracerState:
-        """A new state with a copy of each active tracer, for the other time level."""
-        copies: dict[str, Any] = {
-            declaration.name: fw.Field(
-                declaration.quantity, data_alloc.reallocate(field.data, allocator=allocator)
-            )
-            for declaration, field in self.leaves()
-        }
-        return TracerState(**copies)
-
 
 #: the tracer names, in ICON's order (QV=0, QC=1, QI=2, QR=3, QS=4, QG=5)
 TRACERS: Final[tuple[str, ...]] = tuple(
     declaration.name for declaration in TracerState.declarations()
 )
+
+
+@dataclasses.dataclass(frozen=True)
+class TracerConfig:
+    """
+    Which tracers are active in the model configuration.
+
+    Each boolean field indicates whether the corresponding tracer is active.
+    Used instead of a raw ``ntracer: int`` to provide type-safe tracer selection.
+    """
+
+    qv: bool = False
+    qc: bool = False
+    qi: bool = False
+    qr: bool = False
+    qs: bool = False
+    qg: bool = False
+
+    @classmethod
+    def all(cls) -> TracerConfig:
+        return cls(qv=True, qc=True, qi=True, qr=True, qs=True, qg=True)
+
+    @classmethod
+    def none(cls) -> TracerConfig:
+        return cls()
+
+    @classmethod
+    def from_ntracer(cls, ntracer: int) -> TracerConfig:
+        """
+        Build a ``TracerConfig`` from a Fortran ``ntracer`` count.
+
+        Fortran ICON uses a fixed tracer ordering: QV=0, QC=1, QI=2, QR=3, QS=4, QG=5.
+        The first *ntracer* entries in this order are considered active.
+
+        Raises:
+            ValueError: if ntracer is outside the valid range.
+        """
+        n = len(TRACERS)
+        if not 0 <= ntracer <= n:
+            raise ValueError(f"ntracer must be between 0 and {n}, got {ntracer}")
+        return cls(**{name: i < ntracer for i, name in enumerate(TRACERS)})
+
+    @property
+    def nactive(self) -> int:
+        return sum(dataclasses.asdict(self).values())
+
+    @property
+    def active_names(self) -> tuple[str, ...]:
+        return tuple(name for name in TRACERS if getattr(self, name))
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.active_names)
+
+    def __len__(self) -> int:
+        return self.nactive
+
+    def __contains__(self, name: str) -> bool:
+        return name in TRACERS and getattr(self, name)
+
+    def __str__(self) -> str:
+        names = ", ".join(self.active_names)
+        return names if names else "none"
 
 
 class PrepAdvection(fw.State):

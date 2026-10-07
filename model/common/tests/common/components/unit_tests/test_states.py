@@ -41,7 +41,7 @@ def test_tracer_state_copy_allocates_new_buffers_for_the_active_tracers(
 ) -> None:
     tracers = fw.allocate(states.TracerState, grid, allocator=None, only=("qv",))
     np.asarray(tracers.qv.data.ndarray)[...] = 2.0  # type: ignore[union-attr]
-    copy = tracers.copy(allocator=None)
+    copy = fw.copy(tracers, None)
     assert copy.qc is None
     assert copy.qv is not None and copy.qv is not tracers.qv
     assert np.all(np.asarray(copy.qv.data.ndarray) == 2.0)

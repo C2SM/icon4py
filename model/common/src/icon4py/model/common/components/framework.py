@@ -48,6 +48,7 @@ __all__ = [
     "Tendency",
     "TimeStepPair",
     "allocate",
+    "copy",
     "zeros",
 ]
 
@@ -220,6 +221,18 @@ def allocate[S: State](
             buffer[...] = fill(declaration.name, buffer.shape)
         values[declaration.name] = field
     return cls(**values)
+
+
+def copy[S: State](state: S, allocator: gtx_typing.Allocator | None) -> S:
+    """A new state with a copy of each present leaf on the allocator; the plain leaves are shared."""
+    copies: dict[str, Any] = {
+        declaration.name: Field(
+            declaration.quantity, data_allocation.reallocate(field.data, allocator=allocator)
+        )
+        for declaration, field in state.leaves()
+    }
+    copied: S = dataclasses.replace(typing.cast(Any, state), **copies)
+    return copied
 
 
 class Component:
