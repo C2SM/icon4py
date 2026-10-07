@@ -91,6 +91,13 @@ class TestNoDoc:
     nodoc: NoDocString
 
 
+@dataclasses.dataclass
+class TestOptional:
+    """Config class with a nested optional config class and no metadata."""
+
+    nested: TestEnumOption | None = None
+
+
 @pytest.mark.parametrize(
     ("typehint", "check"),
     (
@@ -126,6 +133,7 @@ def test_examples_for(
         (TestEndTime, ("down", "enter", "down", "enter", "tab", "pagedown")),
         (TestWithShared, ("down", "enter", "tab", "pagedown")),
         (TestNoDoc, ("down", "enter")),
+        (TestOptional, ("down", "enter", "down", "enter")),
     ),
     ids=lambda val: val if not isinstance(val, tuple) else "".join(k[0] for k in val),
 )
@@ -136,5 +144,5 @@ def test_snapshots(snap_compare: Callable, config_class: type, key_presses: tupl
     The state is reached by starting the browser from the given class and
     executing the given key presses.
     """
-    app = config_doc.ConfigDocApp(config_class, force_from_scratch=True)
-    assert snap_compare(app, press=key_presses)
+    app = config_doc.ConfigDocApp(config_class)
+    assert snap_compare(app, press=key_presses, terminal_size=(160, 40))

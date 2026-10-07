@@ -2680,7 +2680,7 @@ children:
             module_path: builtins
             is_union: false
           - display_name: rhotheta_offctr
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Off-centering of density and potential temperature at interface
               level.Specifying a negative value here reduces the amount of vertical
               wind off-centering needed for stability of sound waves.
@@ -2695,10 +2695,10 @@ children:
               - nonhydrostatic
               - 'type: NonHydrostaticConfig'
               - rhotheta_offctr
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: veladv_offctr
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Off-centering of velocity advection in corrector step.
             default: '0.25'
             optional: true
@@ -2711,10 +2711,10 @@ children:
               - nonhydrostatic
               - 'type: NonHydrostaticConfig'
               - veladv_offctr
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: fourth_order_divdamp_factor
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Scaling factor for divergence damping at height 'fourth_order_divdamp_z'
               and below.
             default: '0.0025'
@@ -2728,10 +2728,10 @@ children:
               - nonhydrostatic
               - 'type: NonHydrostaticConfig'
               - fourth_order_divdamp_factor
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: fourth_order_divdamp_factor2
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Scaling factor for divergence damping at height 'fourth_order_divdamp_z2'.
             default: '0.004'
             optional: true
@@ -2744,10 +2744,10 @@ children:
               - nonhydrostatic
               - 'type: NonHydrostaticConfig'
               - fourth_order_divdamp_factor2
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: fourth_order_divdamp_factor3
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Scaling factor for divergence damping at height 'fourth_order_divdamp_z3'.
             default: '0.004'
             optional: true
@@ -2760,10 +2760,10 @@ children:
               - nonhydrostatic
               - 'type: NonHydrostaticConfig'
               - fourth_order_divdamp_factor3
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: fourth_order_divdamp_factor4
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Scaling factor for divergence damping at height 'fourth_order_divdamp_z4
               and higher'.
             default: '0.004'
@@ -2777,10 +2777,10 @@ children:
               - nonhydrostatic
               - 'type: NonHydrostaticConfig'
               - fourth_order_divdamp_factor4
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: fourth_order_divdamp_z
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Height up to which divdamp_fac is used, and where the linear
               profile up to height 'fourth_order_divdamp_z2' starts
             default: '32500.0'
@@ -2794,10 +2794,10 @@ children:
               - nonhydrostatic
               - 'type: NonHydrostaticConfig'
               - fourth_order_divdamp_z
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: fourth_order_divdamp_z2
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Height with scaling factor 'fourth_order_divdamp_factor2'
               where the linear profile starting at 'fourth_order_divdamp_z' ends,
               and where the quadratic profile up to 'fourth_order_divdamp_z4' starts.
@@ -2812,10 +2812,10 @@ children:
               - nonhydrostatic
               - 'type: NonHydrostaticConfig'
               - fourth_order_divdamp_z2
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: fourth_order_divdamp_z3
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Height with scaling factor 'fourth_order_divdamp_factor3'.
               Needed to determine the quadratic function  between 'fourth_order_divdamp_z2'
               and 'fourth_order_divdamp_z4'.
@@ -2830,10 +2830,10 @@ children:
               - nonhydrostatic
               - 'type: NonHydrostaticConfig'
               - fourth_order_divdamp_z3
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: fourth_order_divdamp_z4
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Height from which scaling factor 'fourth_order_divdamp_factor4'
               is used.
             default: '80000.0'
@@ -2847,7 +2847,7 @@ children:
               - nonhydrostatic
               - 'type: NonHydrostaticConfig'
               - fourth_order_divdamp_z4
-            module_path: builtins
+            module_path: numpy
             is_union: false
         config_name_path:
           - nonhydrostatic
@@ -3061,7 +3061,7 @@ children:
             module_path: icon4py.model.atmosphere.diffusion.diffusion
             is_union: false
           - display_name: hdiff_efdt_ratio
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Ratio of e-folding time to (2*)time step.
             default: '36.0'
             optional: true
@@ -3074,10 +3074,10 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - hdiff_efdt_ratio
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: hdiff_w_efdt_ratio
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Ratio of e-folding time to time step for w diffusion (NH
               only).
             default: '15.0'
@@ -3091,10 +3091,10 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - hdiff_w_efdt_ratio
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: smagorinski_scaling_factor
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Smagorinsky factor for z <= smagorinski_scaling_height (constant
               base value).
             default: '0.015'
@@ -3108,10 +3108,10 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - smagorinski_scaling_factor
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: smagorinski_scaling_factor2
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: 'Smagorinsky factor at z = smagorinski_scaling_height2: end
               of the linear segment andstart of the quadratic segment. The linear
               slope is (factor2-factor1)/(height2-height1).'
@@ -3126,10 +3126,10 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - smagorinski_scaling_factor2
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: smagorinski_scaling_factor3
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: 'Smagorinsky factor at z = smagorinski_scaling_height3: interior
               control point of thequadratic segment (height2 <= height3 <= height4),
               used to fit the quadratic coefficients.'
@@ -3144,10 +3144,10 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - smagorinski_scaling_factor3
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: smagorinski_scaling_factor4
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Smagorinsky factor for z >= smagorinski_scaling_height4 (constant
               asymptotic value).Also the third control point that defines the quadratic
               segment together with factor2 and factor3.
@@ -3162,10 +3162,10 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - smagorinski_scaling_factor4
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: smagorinski_scaling_height
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: 'Lower boundary of the linear segment: factor is constant
               at smagorinski_scaling_factor below this height.'
             default: '32500.0'
@@ -3179,10 +3179,10 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - smagorinski_scaling_height
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: smagorinski_scaling_height2
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Transition height between linear and quadratic segments.
             default: '60686.25335328044'
             optional: true
@@ -3195,10 +3195,10 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - smagorinski_scaling_height2
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: smagorinski_scaling_height3
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Interior control point height within the quadratic segment
               (height2 <= height3 <= height4).
             default: '50000.0'
@@ -3212,10 +3212,10 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - smagorinski_scaling_height3
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: smagorinski_scaling_height4
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: 'Upper boundary of the quadratic segment: factor is constant
               at smagorinski_scaling_factor4 above this height.'
             default: '90000.0'
@@ -3229,7 +3229,7 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - smagorinski_scaling_height4
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: apply_zdiffusion_t
             type_name: <class 'bool'>
@@ -3249,7 +3249,7 @@ children:
             module_path: builtins
             is_union: false
           - display_name: temperature_boundary_diffusion_denominator
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Denominator for temperature boundary diffusion.
             default: '135.0'
             optional: true
@@ -3262,10 +3262,10 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - temperature_boundary_diffusion_denominator
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: velocity_boundary_diffusion_denominator
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Denominator for velocity boundary diffusion.
             default: '200.0'
             optional: true
@@ -3278,7 +3278,7 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - velocity_boundary_diffusion_denominator
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: shear_type
             type_name: <enum 'TurbulenceShearForcingType'>
@@ -3328,7 +3328,7 @@ children:
             module_path: icon4py.model.atmosphere.diffusion.diffusion
             is_union: false
           - display_name: a_hshr
-            type_name: <class 'float'>
+            type_name: <class 'numpy.float64'>
             description: Scaling factor for horizontal shear production term.
             default: '1.0'
             optional: true
@@ -3341,7 +3341,7 @@ children:
               - diffusion
               - 'type: DiffusionConfig'
               - a_hshr
-            module_path: builtins
+            module_path: numpy
             is_union: false
           - display_name: loutshs
             type_name: <class 'bool'>

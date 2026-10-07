@@ -11,10 +11,13 @@ from __future__ import annotations
 import dataclasses
 import enum
 import functools
+import importlib
+import itertools
 import pathlib
 import types
 import typing
 from collections.abc import Callable, Iterator
+from importlib.resources.abc import Traversable
 
 import textual.app
 import textual.containers
@@ -37,7 +40,6 @@ type HINT = (
     | None
 )
 type RESOLVED = type | types.UnionType | types.GenericAlias | enum.EnumType | None
-CACHE_PATH = pathlib.Path(__file__).parent / "cdc.yaml"
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
@@ -248,9 +250,7 @@ class StaticConfigDocNode:
 
 
 @functools.singledispatch
-def make_static(
-    node: Record | ConfigClassContainer | UnionContainer
-) -> StaticConfigDocNode:
+def make_static(node: Record | ConfigClassContainer | UnionContainer) -> StaticConfigDocNode:
     raise NotImplementedError
 
 
@@ -277,17 +277,14 @@ def make_record_static(node: Record) -> StaticConfigDocNode:
         children=(),
         config_name_path=node.qualified_name,
         module_path=node.allowed_type.__module__,
-        is_union=False
+        is_union=False,
     )
 
 
 @make_static.register
 def make_conf_container_static(node: ConfigClassContainer) -> StaticConfigDocNode:
     return dataclasses.replace(
-        make_static(node.record),
-        children=tuple(
-            make_static(child) for child in node.children
-        )
+        make_static(node.record), children=tuple(make_static(child) for child in node.children)
     )
 
 
@@ -297,7 +294,7 @@ def make_union_container_static(node: UnionContainer) -> StaticConfigDocNode:
         make_static(node.record),
         display_name=f"{node.record.qualified_name[-1]}: one of the following",
         is_union=True,
-        children=tuple(make_static(alt) for alt in node.alternatives)
+        children=tuple(make_static(alt) for alt in node.alternatives),
     )
 
 
@@ -309,7 +306,9 @@ def record_from_node(node: Record | ConfigClassContainer | UnionContainer) -> Re
             return node.record
 
 
-def add_static_node_to_ttree(node: StaticConfigDocNode, ttree: textual.widgets.tree.TreeNode) -> None:
+def add_static_node_to_ttree(
+    node: StaticConfigDocNode, ttree: textual.widgets.tree.TreeNode
+) -> None:
     if not node.children:
         ttree.add_leaf(node.display_name, data=node)
     else:
@@ -415,15 +414,15 @@ class NoRoot:
 class ConfigDocWidget(textual.widget.Widget):
     """Broswe config options."""
 
-    root_class: textual.reactive.var[type | None] = textual.reactive.var(None, init=True)
-    force_from_scratch: textual.reactive.var[bool] = textual.reactive.var(False, init=True)
+    root_class: textual.reactive.var[type | str | None] = textual.reactive.var(None, init=True)
+    try_cache: textual.reactive.var[bool] = textual.reactive.var(False, init=True)
+    regen_cache: textual.reactive.var[bool] = textual.reactive.var(False, init=True)
+    cache_path: textual.reactive.var[Traversable | None] = textual.reactive.var(None, init=True)
 
     def compose(self: typing.Self) -> textual.app.ComposeResult:
         with textual.containers.Horizontal():
             with textual.containers.VerticalScroll(id="left"):
-                yield textual.widgets.Tree[StaticConfigDocNode](
-                    "Icon4Py Config File", id="tree"
-                )
+                yield textual.widgets.Tree[StaticConfigDocNode]("Icon4Py Config File", id="tree")
             with textual.containers.VerticalScroll(id="right"):
                 yield textual.widgets.Markdown(id="description")
 
@@ -437,39 +436,108 @@ class ConfigDocWidget(textual.widget.Widget):
         tree.root.expand()
         tree.auto_expand = False
         tree.loading = True
-        if CACHE_PATH.exists() and not self.force_from_scratch:
+        if self.cache_path is not None and self.cache_path.is_file() and self.try_cache:
             self.load_data_from_cache(tree)
+            self.load_data_from_scratch(tree, is_reload=True)
         else:
             self.load_data_from_scratch(tree)
-        tree.focus()
         info = self.query_one("#description", expect_type=textual.widgets.Markdown)
         info.loading = True
+        tree.focus()
 
-    @textual.work
-    async def load_data_from_scratch(self: typing.Self, tree: textual.widgets.Tree) -> None:
-        doctree = node_from_dataclass(
-            self.root_class,
-            ctx=TraversalContext(
-                name_path=(), current_field=None, current_typehint=self.root_class
-            ),
-        )
-        doctree = dataclasses.replace(doctree, record=dataclasses.replace(doctree.record, qualified_name=("Config File",)))
-        static_tree = make_static(doctree)
-        self.build_tree_from_static(tree, static_tree)
-        CACHE_PATH.write_text(config_io.write_yaml_str(static_tree))
+    @textual.work(thread=True)
+    async def load_data_from_scratch(
+        self: typing.Self, tree: textual.widgets.Tree, is_reload: bool = False
+    ) -> None:
+        self.notify("Loading new data in the background...")
+        if self.root_class is NoRoot and tree.root.data is not None:
+            self.root_class = getattr(
+                importlib.import_module(tree.root.data.module_path),
+                tree.root.data.type_name.strip(">'").split(".")[-1],
+            )
+            self.notify(str(self.root_class))
+        elif isinstance(self.root_class, str):
+            module, class_name = self.root_class.rsplit(".", 1)
+            self.root_class = getattr(importlib.import_module(module), class_name)
+        if isinstance(self.root_class, type):
+            doctree = node_from_dataclass(
+                self.root_class,
+                ctx=TraversalContext(
+                    name_path=(), current_field=None, current_typehint=self.root_class
+                ),
+            )
+            doctree = dataclasses.replace(
+                doctree, record=dataclasses.replace(doctree.record, qualified_name=("Config File",))
+            )
+            static_tree = make_static(doctree)
+            self.notify("Done loading new data")
+            if is_reload:
+                self.replace_from_static(tree.root, static_tree)
+            else:
+                self.build_tree_from_static(tree, static_tree)
+
+            if (
+                self.cache_path is not None
+                and self.try_cache
+                and self.regen_cache
+                and isinstance(self.cache_path, pathlib.Path)
+            ):
+                self.notify("Updating cache")
+                self.cache_path.write_text(config_io.write_yaml_str(static_tree))
+            elif self.cache_path is not None and not isinstance(self.cache_path, pathlib.Path):
+                self.notify("Updating cache failed")
+        else:
+            self.notify("Loading new data failed")
+        tree.focus()
 
     @textual.work
     async def load_data_from_cache(self: typing.Self, tree: textual.widgets.Tree) -> None:
-        static_tree = config_io.read_yaml_str(CACHE_PATH.read_text(), StaticConfigDocNode)
-        self.build_tree_from_static(tree, static_tree)
+        if self.cache_path is not None:
+            self.notify("Loading data from cache...")
+            static_tree = config_io.read_yaml_str(self.cache_path.read_text(), StaticConfigDocNode)
+            self.notify("Done loading data from cache...")
+            self.build_tree_from_static(tree, static_tree)
+            tree.focus()
+        else:
+            self.notify("Cache path not set!")
 
-    def build_tree_from_static(self: typing.Self, tree: textual.widgets.Tree, static: StaticConfigDocNode) -> None:
+    def build_tree_from_static(
+        self: typing.Self, tree: textual.widgets.Tree, static: StaticConfigDocNode
+    ) -> None:
+        tree.clear()
         tree.root.data = static
         tree.root.label = "Config File"
         for child in static.children:
             add_static_node_to_ttree(child, tree.root)
         tree.loading = False
         tree.select_node(tree.root)
+
+    def replace_from_static(
+        self: typing.Self, node: textual.widgets.tree.TreeNode, static: StaticConfigDocNode
+    ) -> None:
+        node.data = static
+        if not node.is_root:
+            node.label = static.display_name
+        if node.allow_expand and not static.children:
+            node.remove_children()
+            node.allow_expand = False
+        if not node.allow_expand and static.children:
+            node.allow_expand = True
+        for old_child, new_child in itertools.zip_longest(
+            node.children, static.children, fillvalue=None
+        ):
+            if old_child is not None and new_child is not None:
+                self.replace_from_static(old_child, new_child)
+            elif old_child is None and new_child is not None:
+                if not new_child.children:
+                    node.add_leaf(new_child.display_name, data=new_child)
+                else:
+                    new_branch = node.add(new_child.display_name, data=new_child)
+                    self.replace_from_static(new_branch, new_child)
+            elif old_child is not None and new_child is None:
+                old_child.remove()
+        if static.is_union:
+            node.expand()
 
     def on_tree_node_selected(
         self: typing.Self, message: textual.widgets.Tree.NodeSelected
@@ -503,16 +571,31 @@ class ConfigDocWidget(textual.widget.Widget):
 
 
 class ConfigDocApp(textual.app.App):
-    root_class: textual.reactive.var[type | None] = textual.reactive.var(None, init=True)
-    force_from_scratch: bool
+    root_class: type | str | None
+    try_cache: bool
+    regen_cache: bool
+    cache_path: Traversable | None
 
-    def __init__(self, root_class: type | None = None, force_from_scratch: bool = False, **kwargs: typing.Any):
+    def __init__(
+        self,
+        root_class: type | str | None = None,
+        try_cache: bool = False,
+        regen_cache: bool = False,
+        cache_path: Traversable | None = None,
+        **kwargs: typing.Any,
+    ):
         super().__init__(**kwargs)
         self.root_class = root_class
-        self.force_from_scratch = force_from_scratch
+        self.try_cache = try_cache
+        self.regen_cache = regen_cache
+        self.cache_path = cache_path
 
     def compose(self) -> textual.app.ComposeResult:
         config_widget = ConfigDocWidget()
         config_widget.root_class = self.root_class
-        config_widget.force_from_scratch = self.force_from_scratch
+        config_widget.try_cache = self.try_cache
+        config_widget.regen_cache = self.regen_cache
+        config_widget.cache_path = self.cache_path
+        yield textual.widgets.Header()
         yield config_widget
+        yield textual.widgets.Footer()

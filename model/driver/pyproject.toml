@@ -91,6 +91,7 @@ known-third-party = ['gt4py']
 # -- setuptools --
 [tool.setuptools.package-data]
 '*' = ['*.in', '*.md', '*.rst', '*.txt', 'LICENSE', 'py.typed']
+"icon4py.model.driver" = ["config_doc_cache.yaml"]
 
 [tool.setuptools.packages]
 find = { namespaces = true, where = ['src'] }
