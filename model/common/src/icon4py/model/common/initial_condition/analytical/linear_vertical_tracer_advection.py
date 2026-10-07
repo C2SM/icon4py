@@ -14,14 +14,11 @@ import math
 import typing
 from typing import TYPE_CHECKING
 
+from icon4py.model.common.components import states
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta
-from icon4py.model.common.states import (
-    prognostic_state as prognostics,
-    tracer_prep_adv_states as prep_adv_states,
-    tracer_states,
-)
+from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -123,7 +120,7 @@ def _compute_idealized_vertical_velocity_field(
 def _fill_prep_adv_from_prescribed_wind_field(
     *,
     velocity_field: VerticalVelocityField,
-    prep_adv_state: prep_adv_states.TracerPrepAdvState,
+    prep_adv_state: states.PrepAdvection,
     model_top_height: float,
 ) -> None:
     # impose 1D velocity field at time n+1/2 as required by the numerical scheme
@@ -132,9 +129,9 @@ def _fill_prep_adv_from_prescribed_wind_field(
         model_top_height=model_top_height,
     )
 
-    vn_traj = prep_adv_state.vn_traj.ndarray
-    mass_flx_me = prep_adv_state.mass_flx_me.ndarray
-    mass_flx_ic = prep_adv_state.mass_flx_ic.ndarray
+    vn_traj = prep_adv_state.vn_traj.data.ndarray
+    mass_flx_me = prep_adv_state.mass_flx_me.data.ndarray
+    mass_flx_ic = prep_adv_state.dynamical_vertical_mass_flux_at_cells_on_half_levels.data.ndarray
 
     vn_traj[:, :] = 0.0
     mass_flx_me[:, :] = 0.0
@@ -192,7 +189,7 @@ def linear_vertical_advection(
     metrics: metrics_factory.MetricsFieldsFactory,
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
-    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState,
+    tracer_prep_adv_state: states.PrepAdvection,
 ) -> None:
     """
     Initial condition for the idealized vertical advection test case.
