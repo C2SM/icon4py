@@ -25,7 +25,6 @@ from icon4py.model.common import (
     utils as common_utils,
 )
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
-from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, serialbox, test_utils
@@ -125,39 +124,18 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     vn_only = init_savepoint.vn_only()
     dtime = init_savepoint.dtime()
 
-    diagnostic_state = nonhydro_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
-        tangential_wind=init_savepoint.vt(),
-        vn_on_half_levels=init_savepoint.vn_ie(),
-        contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        theta_v_at_cells_on_half_levels=None,
-        perturbed_exner_at_cells_on_model_levels=None,
-        rho_at_cells_on_half_levels=None,
-        exner_tendency_due_to_slow_physics=None,
-        grf_tend_rho=None,
-        grf_tend_thv=None,
-        grf_tend_w=None,
-        mass_flux_at_edges_on_model_levels=None,
-        normal_wind_tendency_due_to_slow_physics_process=None,
-        grf_tend_vn=None,
-        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
-        ),
-        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
-        ),
-        rho_iau_increment=None,
-        normal_wind_iau_increment=None,
-        exner_iau_increment=None,
-        exner_dynamical_increment=None,
+    vt = init_savepoint.vt()
+    vn_ie = init_savepoint.vn_ie()
+    w_concorr_c = init_savepoint.w_concorr_c()
+    ddt_vn_apc = common_utils.PredictorCorrectorPair(
+        init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
     )
-    prognostic_state = prognostics.PrognosticState(
-        w=init_savepoint.w(),
-        vn=init_savepoint.vn(),
-        theta_v=None,
-        rho=None,
-        exner=None,
+    ddt_w_adv = common_utils.PredictorCorrectorPair(
+        init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
     )
+    max_vertical_cfl = data_alloc.scalar_like_array(0.0, backend)
+    vn = init_savepoint.vn()
+    w = init_savepoint.w()
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
@@ -188,17 +166,17 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     tangential_wind_on_half_levels = init_savepoint.z_vt_ie()
 
     velocity_advection_predictor.compute_velocity_advection_in_predictor_step.with_backend(backend)(
-        tangential_wind=diagnostic_state.tangential_wind,
+        tangential_wind=vt,
         tangential_wind_on_half_levels=tangential_wind_on_half_levels,
-        vn_on_half_levels=diagnostic_state.vn_on_half_levels,
+        vn_on_half_levels=vn_ie,
         horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
         contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
-        contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
-        vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.predictor,
+        contravariant_correction_at_cells_on_half_levels=w_concorr_c,
+        vertical_wind_advective_tendency=ddt_w_adv.predictor,
         vertical_cfl=vertical_cfl,
-        normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
-        vn=prognostic_state.vn,
-        w=prognostic_state.w,
+        normal_wind_advective_tendency=ddt_vn_apc.predictor,
+        vn=vn,
+        w=w,
         rbf_vec_coeff_e=interpolation_state.rbf_vec_coeff_e,
         wgtfac_e=metric_state_nonhydro.wgtfac_e,
         wgtfacq_e=metric_state_nonhydro.wgtfacq_e,
@@ -247,8 +225,8 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
             "V2E": icon_grid.get_connectivity("V2E"),
         },
     )
-    solve_nonhydro._update_max_vertical_cfl(
-        diagnostic_state, vertical_cfl, start_cell_lateral_boundary_level_4, end_cell_halo
+    max_vertical_cfl = solve_nonhydro._update_max_vertical_cfl(
+        max_vertical_cfl, vertical_cfl, start_cell_lateral_boundary_level_4, end_cell_halo
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(0).asnumpy()
@@ -258,17 +236,13 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c().asnumpy()
     icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
-    assert test_utils.dallclose(
-        diagnostic_state.tangential_wind.asnumpy(), icon_result_vt, atol=1.0e-14
-    )
+    assert test_utils.dallclose(vt.asnumpy(), icon_result_vt, atol=1.0e-14)
 
-    assert test_utils.dallclose(
-        diagnostic_state.vn_on_half_levels.asnumpy(), icon_result_vn_ie, atol=1.0e-14
-    )
+    assert test_utils.dallclose(vn_ie.asnumpy(), icon_result_vn_ie, atol=1.0e-14)
 
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert test_utils.dallclose(
-        diagnostic_state.contravariant_correction_at_cells_on_half_levels.asnumpy()[
+        w_concorr_c.asnumpy()[
             start_cell_nudging:, vertical_params.nflatlev + 1 : icon_grid.num_levels
         ],
         icon_result_w_concorr_c[
@@ -278,16 +252,14 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
     assert test_utils.dallclose(
-        diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy()[
-            start_cell_nudging:, :
-        ],
+        ddt_w_adv.predictor.asnumpy()[start_cell_nudging:, :],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
         rtol=1.0e-10,
     )
 
     assert test_utils.dallclose(
-        diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),
+        ddt_vn_apc.predictor.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=1.0e-15,
     )
@@ -317,7 +289,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         atol=1.0e-15,
     )
 
-    assert diagnostic_state.max_vertical_cfl == icon_result_max_vcfl_dyn
+    assert max_vertical_cfl == icon_result_max_vcfl_dyn
 
     _compare_cfl(
         vertical_cfl=vertical_cfl.asnumpy(),
@@ -369,39 +341,18 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 
     assert not vn_only
 
-    diagnostic_state = nonhydro_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
-        tangential_wind=init_savepoint.vt(),
-        vn_on_half_levels=init_savepoint.vn_ie(),
-        contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        theta_v_at_cells_on_half_levels=None,
-        perturbed_exner_at_cells_on_model_levels=None,
-        rho_at_cells_on_half_levels=None,
-        exner_tendency_due_to_slow_physics=None,
-        grf_tend_rho=None,
-        grf_tend_thv=None,
-        grf_tend_w=None,
-        mass_flux_at_edges_on_model_levels=None,
-        normal_wind_tendency_due_to_slow_physics_process=None,
-        grf_tend_vn=None,
-        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
-        ),
-        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
-        ),
-        rho_iau_increment=None,
-        normal_wind_iau_increment=None,
-        exner_iau_increment=None,  # sp.exner_incr(),
-        exner_dynamical_increment=None,
+    vt = init_savepoint.vt()
+    vn_ie = init_savepoint.vn_ie()
+    w_concorr_c = init_savepoint.w_concorr_c()
+    ddt_vn_apc = common_utils.PredictorCorrectorPair(
+        init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
     )
-    prognostic_state = prognostics.PrognosticState(
-        w=init_savepoint.w(),
-        vn=init_savepoint.vn(),
-        theta_v=None,
-        rho=None,
-        exner=None,
+    ddt_w_adv = common_utils.PredictorCorrectorPair(
+        init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
     )
+    max_vertical_cfl = data_alloc.scalar_like_array(0.0, backend)
+    vn = init_savepoint.vn()
+    w = init_savepoint.w()
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
 
@@ -426,16 +377,16 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
     velocity_advection_corrector.compute_velocity_advection_in_corrector_step.with_backend(backend)(
-        vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.corrector,
+        vertical_wind_advective_tendency=ddt_w_adv.corrector,
         vertical_cfl=vertical_cfl,
-        normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
-        vn=prognostic_state.vn,
-        w=prognostic_state.w,
-        tangential_wind=diagnostic_state.tangential_wind,
+        normal_wind_advective_tendency=ddt_vn_apc.corrector,
+        vn=vn,
+        w=w,
+        tangential_wind=vt,
         tangential_wind_on_half_levels=init_savepoint.z_vt_ie(),
-        vn_on_half_levels=diagnostic_state.vn_on_half_levels,
+        vn_on_half_levels=vn_ie,
         horizontal_kinetic_energy_at_edges_on_model_levels=init_savepoint.z_kin_hor_e(),
-        contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
+        contravariant_correction_at_cells_on_half_levels=w_concorr_c,
         coeff1_dwdz=metric_state_nonhydro.coeff1_dwdz,
         coeff2_dwdz=metric_state_nonhydro.coeff2_dwdz,
         c_intp=interpolation_state.c_intp,
@@ -473,8 +424,8 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
             "V2E": icon_grid.get_connectivity("V2E"),
         },
     )
-    solve_nonhydro._update_max_vertical_cfl(
-        diagnostic_state, vertical_cfl, start_cell_lateral_boundary_level_4, end_cell_halo
+    max_vertical_cfl = solve_nonhydro._update_max_vertical_cfl(
+        max_vertical_cfl, vertical_cfl, start_cell_lateral_boundary_level_4, end_cell_halo
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(1).asnumpy()
@@ -483,19 +434,17 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert test_utils.dallclose(
-        diagnostic_state.vertical_wind_advective_tendency.corrector.asnumpy()[
-            start_cell_nudging:, :
-        ],
+        ddt_w_adv.corrector.asnumpy()[start_cell_nudging:, :],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
     )
     assert test_utils.dallclose(
-        diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),
+        ddt_vn_apc.corrector.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
     )
 
-    assert diagnostic_state.max_vertical_cfl == icon_result_max_vcfl_dyn
+    assert max_vertical_cfl == icon_result_max_vcfl_dyn
 
     _compare_cfl(
         vertical_cfl=vertical_cfl.asnumpy(),

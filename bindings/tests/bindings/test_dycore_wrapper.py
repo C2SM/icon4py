@@ -16,10 +16,10 @@ import pytest
 
 from icon4py.bindings import common as wrapper_common, dycore_wrapper
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.components import framework as fw, quantities as qty
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
-from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
@@ -481,63 +481,75 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
-    expected_diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=data_alloc.scalar_like_array(max_vertical_cfl, backend),
-        tangential_wind=sp.vt(),
-        vn_on_half_levels=sp.vn_ie(),
-        contravariant_correction_at_cells_on_half_levels=sp.w_concorr_c(),
-        theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
-        perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
-        rho_at_cells_on_half_levels=sp.rho_ic(),
-        exner_tendency_due_to_slow_physics=sp.ddt_exner_phy(),
-        grf_tend_rho=sp.grf_tend_rho(),
-        grf_tend_thv=sp.grf_tend_thv(),
-        grf_tend_w=sp.grf_tend_w(),
-        mass_flux_at_edges_on_model_levels=sp.mass_fl_e(),
-        normal_wind_tendency_due_to_slow_physics_process=sp.ddt_vn_phy(),
-        grf_tend_vn=sp.grf_tend_vn(),
-        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            sp.ddt_vn_apc_pc(0), sp.ddt_vn_apc_pc(1)
+    expected_diagnostics = solve_nh.SolveNonhydro.Diagnostics(
+        tangential_wind=fw.Field(qty.TangentialWindOnEdgeK, sp.vt()),
+        vn_on_half_levels=fw.Field(qty.VnOnEdgeKHalf, sp.vn_ie()),
+        contravariant_correction_at_cells_on_half_levels=fw.Field(
+            qty.ContravariantCorrectionOnCellKHalf, sp.w_concorr_c()
         ),
-        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)
+        theta_v_at_cells_on_half_levels=fw.Field(qty.ThetaVOnCellKHalf, sp.theta_v_ic()),
+        rho_at_cells_on_half_levels=fw.Field(qty.RhoOnCellKHalf, sp.rho_ic()),
+        mass_flux_at_edges_on_model_levels=fw.Field(qty.MassFluxOnEdgeK, sp.mass_fl_e()),
+    )
+    expected_inputs = solve_nh.SolveNonhydro.Input(
+        rho=fw.Field(qty.RhoOnCellK, sp.rho_now()),
+        w=fw.Field(qty.WOnCellKHalf, sp.w_now()),
+        vn=fw.Field(qty.VnOnEdgeK, sp.vn_now()),
+        exner=fw.Field(qty.ExnerOnCellK, sp.exner_now()),
+        theta_v=fw.Field(qty.ThetaVOnCellK, sp.theta_v_now()),
+        exner_tendency_due_to_slow_physics=fw.Field(
+            qty.ExnerTendencyDueToSlowPhysicsOnCellK, sp.ddt_exner_phy()
         ),
-        rho_iau_increment=rho_incr_field,
-        normal_wind_iau_increment=vn_incr_field,
-        exner_iau_increment=exner_incr_field,
-        exner_dynamical_increment=sp.exner_dyn_incr(),
+        normal_wind_tendency_due_to_slow_physics_process=fw.Field(
+            qty.NormalWindTendencyDueToSlowPhysicsOnEdgeK, sp.ddt_vn_phy()
+        ),
+        grf_tend_rho=fw.Field(qty.GrfTendencyOfRhoOnCellK, sp.grf_tend_rho()),
+        grf_tend_thv=fw.Field(qty.GrfTendencyOfThetaVOnCellK, sp.grf_tend_thv()),
+        grf_tend_w=fw.Field(qty.GrfTendencyOfWOnCellKHalf, sp.grf_tend_w()),
+        grf_tend_vn=fw.Field(qty.GrfTendencyOfVnOnEdgeK, sp.grf_tend_vn()),
+        rho_iau_increment=fw.Field(qty.RhoIauIncrementOnCellK, rho_incr_field),
+        normal_wind_iau_increment=fw.Field(qty.NormalWindIauIncrementOnEdgeK, vn_incr_field),
+        exner_iau_increment=fw.Field(qty.ExnerIauIncrementOnCellK, exner_incr_field),
+        second_order_divdamp_factor=sp.divdamp_fac_o2(),
+        dtime=sp.dtime(),
+        ndyn_substeps_var=ndyn_substeps,
+        at_initial_timestep=at_initial_timestep,
+        prepare_fluxes_for_advection=sp.get_metadata("prep_adv").get("prep_adv"),
+        at_first_substep=substep_init == 1,
+        at_last_substep=substep_init == ndyn_substeps,
+        is_iau_active=False,
+        iau_wgt_dyn=0.0,
     )
-    prognostic_state_nnow = prognostics.PrognosticState(
-        w=sp.w_now(),
-        vn=sp.vn_now(),
-        theta_v=sp.theta_v_now(),
-        rho=sp.rho_now(),
-        exner=sp.exner_now(),
+    expected_out = solve_nh.SolveNonhydro.Output(
+        rho=fw.Field(qty.RhoOnCellK, sp.rho_new()),
+        w=fw.Field(qty.WOnCellKHalf, sp.w_new()),
+        vn=fw.Field(qty.VnOnEdgeK, sp.vn_new()),
+        exner=fw.Field(qty.ExnerOnCellK, sp.exner_new()),
+        theta_v=fw.Field(qty.ThetaVOnCellK, sp.theta_v_new()),
+        vn_traj=fw.Field(qty.VnOnEdgeK, sp.vn_traj()),
+        mass_flx_me=fw.Field(qty.MassFluxOnEdgeK, sp.mass_flx_me()),
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=fw.Field(
+            qty.MassFluxOnCellKHalf, sp.mass_flx_ic()
+        ),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.Field(
+            qty.VolumetricFluxOnCellKHalf,
+            data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),  # TODO(): sp.vol_flx_ic(),
+        ),
+        perturbed_exner_at_cells_on_model_levels=fw.Field(qty.PerturbedExnerOnCellK, sp.exner_pr()),
+        exner_dynamical_increment=fw.Field(qty.ExnerDynamicalIncrementOnCellK, sp.exner_dyn_incr()),
+        normal_wind_advective_tendency_predictor=fw.Field(
+            qty.NormalWindAdvectiveTendencyOnEdgeK, sp.ddt_vn_apc_pc(0)
+        ),
+        normal_wind_advective_tendency_corrector=fw.Field(
+            qty.NormalWindAdvectiveTendencyOnEdgeK, sp.ddt_vn_apc_pc(1)
+        ),
+        vertical_wind_advective_tendency_predictor=fw.Field(
+            qty.VerticalWindAdvectiveTendencyOnCellKHalf, sp.ddt_w_adv_pc(0)
+        ),
+        vertical_wind_advective_tendency_corrector=fw.Field(
+            qty.VerticalWindAdvectiveTendencyOnCellKHalf, sp.ddt_w_adv_pc(1)
+        ),
     )
-    prognostic_state_nnew = prognostics.PrognosticState(
-        w=sp.w_new(),
-        vn=sp.vn_new(),
-        theta_v=sp.theta_v_new(),
-        rho=sp.rho_new(),
-        exner=sp.exner_new(),
-    )
-    expected_prognostic_states = common_utils.TimeStepPair(
-        prognostic_state_nnow, prognostic_state_nnew
-    )
-
-    expected_prep_adv = dycore_states.PrepAdvection(
-        vn_traj=sp.vn_traj(),
-        mass_flx_me=sp.mass_flx_me(),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim
-        ),  # TODO(): sp.vol_flx_ic(),
-    )
-    expected_second_order_divdamp_factor = sp.divdamp_fac_o2()
-    expected_dtime = sp.dtime()
-    expected_prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
-    expected_at_first_substep = substep_init == 1
-    expected_at_last_substep = substep_init == ndyn_substeps
 
     ffi = cffi.FFI()
 
@@ -674,7 +686,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
 
     # --- Mock and Test SolveNonhydro.run ---
     with mock.patch(
-        "icon4py.model.atmosphere.dycore.solve_nonhydro.SolveNonhydro.time_step"
+        "icon4py.model.atmosphere.dycore.solve_nonhydro.SolveNonhydro.run"
     ) as mock_init:
         dycore_wrapper.solve_nh_run(
             ffi=ffi,
@@ -725,46 +737,16 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
             iau_wgt_dyn=0.0,
         )
 
-        # Check input arguments to SolveNonhydro.time_step
+        # Check input arguments to SolveNonhydro.run
         _, captured_kwargs = mock_init.call_args
-
+        result, error_message = utils.compare_objects(captured_kwargs["inputs"], expected_inputs)
+        assert result, f"Input comparison failed: {error_message}"
+        result, error_message = utils.compare_objects(captured_kwargs["out"], expected_out)
+        assert result, f"Output comparison failed: {error_message}"
         result, error_message = utils.compare_objects(
-            captured_kwargs["diagnostic_state_nh"], expected_diagnostic_state_nh
+            dycore_wrapper.granule.solve_nh.diagnostics, expected_diagnostics
         )
-        assert result, f"Diagnostic State comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
-            captured_kwargs["prognostic_states"], expected_prognostic_states
-        )
-        assert result, f"Prognostic State comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
-            captured_kwargs["prep_adv"], expected_prep_adv
-        )
-        assert result, f"Prep Advection comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
-            captured_kwargs["second_order_divdamp_factor"], expected_second_order_divdamp_factor
-        )
-        assert result, f"Divdamp Factor comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(captured_kwargs["dtime"], expected_dtime)
-        assert result, f"dtime comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
-            captured_kwargs["prepare_fluxes_for_advection"], expected_prepare_fluxes_for_advection
-        )
-        assert result, f"Prep Advection flag comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
-            captured_kwargs["at_first_substep"], expected_at_first_substep
-        )
-        assert result, f"First Substep comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
-            captured_kwargs["at_last_substep"], expected_at_last_substep
-        )
-        assert result, f"Last Substep comparison failed: {error_message}"
+        assert result, f"Diagnostics comparison failed: {error_message}"
 
 
 @pytest.mark.datatest

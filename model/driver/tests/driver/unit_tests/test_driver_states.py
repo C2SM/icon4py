@@ -45,10 +45,10 @@ def test_dycore_prep_adv_shares_the_advection_prep_adv_buffers(
         solve_nonhydro_enabled=True,
     )
     assert dycore_prep_adv is not None
-    assert dycore_prep_adv.vn_traj is tracer_prep_adv_state.vn_traj
-    assert dycore_prep_adv.mass_flx_me is tracer_prep_adv_state.mass_flx_me
+    assert dycore_prep_adv.vn_traj.data is tracer_prep_adv_state.vn_traj
+    assert dycore_prep_adv.mass_flx_me.data is tracer_prep_adv_state.mass_flx_me
     assert (
-        dycore_prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels
+        dycore_prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels.data
         is tracer_prep_adv_state.mass_flx_ic
     )
 

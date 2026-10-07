@@ -34,7 +34,7 @@ import gt4py.next as gtx
 import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common import model_backends, time
-from icon4py.model.common.states import nonhydro_states
+from icon4py.model.common.components import states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -73,7 +73,7 @@ class PrescribedTendencies:
     def update(
         self,
         *,
-        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
+        forcing: states.DycoreForcing,
         at_datetime: time.AbsoluteTime,
     ) -> None:
         """
@@ -106,19 +106,16 @@ class PrescribedTendencies:
         num_edges = self._grid.num_edges
 
         # lateral boundary tendencies
-        self._fill(diagnostic_state_nh.grf_tend_rho, "grf_tend_rho", savepoint, num_cells)
-        self._fill(diagnostic_state_nh.grf_tend_thv, "grf_tend_thv", savepoint, num_cells)
-        self._fill(diagnostic_state_nh.grf_tend_w, "grf_tend_w", savepoint, num_cells)
-        self._fill(diagnostic_state_nh.grf_tend_vn, "grf_tend_vn", savepoint, num_edges)
+        self._fill(forcing.grf_tend_rho.data, "grf_tend_rho", savepoint, num_cells)
+        self._fill(forcing.grf_tend_thv.data, "grf_tend_thv", savepoint, num_cells)
+        self._fill(forcing.grf_tend_w.data, "grf_tend_w", savepoint, num_cells)
+        self._fill(forcing.grf_tend_vn.data, "grf_tend_vn", savepoint, num_edges)
         # slow physics tendencies
         self._fill(
-            diagnostic_state_nh.exner_tendency_due_to_slow_physics,
-            "ddt_exner_phy",
-            savepoint,
-            num_cells,
+            forcing.exner_tendency_due_to_slow_physics.data, "ddt_exner_phy", savepoint, num_cells
         )
         self._fill(
-            diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
+            forcing.normal_wind_tendency_due_to_slow_physics_process.data,
             "ddt_vn_phy",
             savepoint,
             num_edges,

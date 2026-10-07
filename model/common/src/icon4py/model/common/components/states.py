@@ -16,15 +16,19 @@ from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common.components import framework as fw, quantities as qty
 from icon4py.model.common.states.tracer_states import TracerConfig
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import PredictorCorrectorPair, data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.common.grid import base as base_grid
+
 
 __all__ = [
     "Diagnostics",
+    "DycoreDiagnostics",
+    "DycoreForcing",
     "PrepAdvection",
     "PrognosticState",
     "StepInfo",
@@ -77,6 +81,67 @@ class PrepAdvection(fw.State):
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fw.Field[
         qty.VolumetricFluxOnCellKHalf
     ]
+
+
+class DycoreForcing(fw.State):
+    """
+    The tendencies and increments the dycore reads but does not produce.
+
+    The lateral boundary tendencies (grf_tend_*), the slow physics tendencies (ddt_*_phy) and
+    the increments of the incremental analysis update (*_incr), filled by the prescribed
+    tendencies, the physics or the initial condition.
+    """
+
+    exner_tendency_due_to_slow_physics: fw.Field[qty.ExnerTendencyDueToSlowPhysicsOnCellK]
+    normal_wind_tendency_due_to_slow_physics_process: fw.Field[
+        qty.NormalWindTendencyDueToSlowPhysicsOnEdgeK
+    ]
+    grf_tend_rho: fw.Field[qty.GrfTendencyOfRhoOnCellK]
+    grf_tend_thv: fw.Field[qty.GrfTendencyOfThetaVOnCellK]
+    grf_tend_w: fw.Field[qty.GrfTendencyOfWOnCellKHalf]
+    grf_tend_vn: fw.Field[qty.GrfTendencyOfVnOnEdgeK]
+    rho_iau_increment: fw.Field[qty.RhoIauIncrementOnCellK]
+    normal_wind_iau_increment: fw.Field[qty.NormalWindIauIncrementOnEdgeK]
+    exner_iau_increment: fw.Field[qty.ExnerIauIncrementOnCellK]
+
+
+class DycoreDiagnostics(fw.State):
+    """
+    The diagnostics the dycore carries from one substep to the next, owned by the composer.
+
+    The advective tendencies are predictor/corrector pairs the composer swaps between the
+    substeps (`_update_time_levels_for_velocity_tendencies` in the driver); the initial
+    condition fills the perturbed exner function and, on a restart, the pairs. Built by
+    `allocate`, not by `framework.allocate`, because of the pairs.
+    """
+
+    perturbed_exner_at_cells_on_model_levels: fw.Field[qty.PerturbedExnerOnCellK]
+    exner_dynamical_increment: fw.Field[qty.ExnerDynamicalIncrementOnCellK]
+    normal_wind_advective_tendency: PredictorCorrectorPair[
+        fw.Field[qty.NormalWindAdvectiveTendencyOnEdgeK]
+    ]
+    vertical_wind_advective_tendency: PredictorCorrectorPair[
+        fw.Field[qty.VerticalWindAdvectiveTendencyOnCellKHalf]
+    ]
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None
+    ) -> DycoreDiagnostics:
+        return cls(
+            perturbed_exner_at_cells_on_model_levels=fw.zeros(
+                qty.PerturbedExnerOnCellK, grid, allocator
+            ),
+            exner_dynamical_increment=fw.zeros(qty.ExnerDynamicalIncrementOnCellK, grid, allocator),
+            normal_wind_advective_tendency=PredictorCorrectorPair(
+                fw.zeros(qty.NormalWindAdvectiveTendencyOnEdgeK, grid, allocator),
+                fw.zeros(qty.NormalWindAdvectiveTendencyOnEdgeK, grid, allocator),
+            ),
+            vertical_wind_advective_tendency=PredictorCorrectorPair(
+                fw.zeros(qty.VerticalWindAdvectiveTendencyOnCellKHalf, grid, allocator),
+                fw.zeros(qty.VerticalWindAdvectiveTendencyOnCellKHalf, grid, allocator),
+            ),
+        )
 
 
 class Diagnostics(fw.State):

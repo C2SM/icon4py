@@ -127,7 +127,7 @@ def test_initial_conditions(
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
         tracer_state_now=tracer_state_now,
-        solve_nonhydro_diagnostic_state=None,
+        dycore_diagnostics=None,
         tracer_prep_adv_state=None,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
