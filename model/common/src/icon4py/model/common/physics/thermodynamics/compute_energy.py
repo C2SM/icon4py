@@ -129,7 +129,7 @@ def _compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positi
         PhysicsConstants.cvd * (wpfloat(1.0) - (qv + qliq + qice))
         + PhysicsConstants.cvv * qv
         + PhysicsConstants.cpl * qliq
-        + PhysicsConstants.ci_aes * qice
+        + PhysicsConstants.ci_physical_constants * qice
     )
     return cv * air_mass
 
