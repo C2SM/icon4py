@@ -66,7 +66,7 @@ def _make_config(
 ) -> driver_config.ExperimentConfig:
     dt_utils.download_experiment(experiment, process_props)
     experiment_path = dt_utils.get_path_for_experiment(experiment, process_props)
-    config = driver_config.read_experiment_config_from_fortran(experiment_path)
+    config = driver_config.read_experiment_config_from_yaml(experiment_path / "config.yml")
     return config.with_overrides(
         driver={
             "dtime": time.RelativeTime(seconds=50),
