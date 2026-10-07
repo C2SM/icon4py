@@ -26,7 +26,6 @@ from collections.abc import Callable, Collection, Iterator
 from typing import Any, ClassVar, Literal, dataclass_transform
 
 import gt4py.next as gtx
-import numpy as np
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.utils import PredictorCorrectorPair, TimeStepPair, data_allocation
@@ -217,7 +216,8 @@ def allocate[S: State](
             continue
         field = zeros(declaration.quantity, grid, allocator)
         if fill is not None:
-            np.asarray(field.data.ndarray)[...] = fill(declaration.name, field.data.ndarray.shape)
+            buffer: Any = field.data.ndarray  # NDArrayObject declares no __setitem__
+            buffer[...] = fill(declaration.name, buffer.shape)
         values[declaration.name] = field
     return cls(**values)
 

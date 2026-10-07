@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 from gt4py.next import typing as gtx_typing
 
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
+from icon4py.model.atmosphere.dycore import solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import (
@@ -22,7 +22,6 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox, test_utils
 
 from .. import utils
