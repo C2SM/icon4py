@@ -22,6 +22,7 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.stencils import compute_airmass
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
     dimension as dims,
@@ -349,12 +350,7 @@ class Icon4pyDriver:
             )
 
         if self.granules.physics is not None:
-            self.granules.physics.run(
-                prognostic=prognostic_states.next,
-                tracers=tracers.next,
-                dtime=self.config.driver.dtime,
-                simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
-            )
+            self.granules.physics.run(*self._physics_views(prognostic_states.next, tracers.next))
 
         prognostic_states.swap()
         # tracers are advanced once per time step, so they swap here and not with every
@@ -625,6 +621,39 @@ class Icon4pyDriver:
             qg=next_.qg,
             hfl_tracer=diagnostics.hfl_tracer,
             vfl_tracer=diagnostics.vfl_tracer,
+        )
+        return inputs, out
+
+    def _physics_views(
+        self, prognostic_state: states.PrognosticState, tracer_state: states.TracerState
+    ) -> tuple[physics_driver.PhysicsDriver.Input, physics_driver.PhysicsDriver.Output]:
+        """The physics' views: the tendencies are applied in place, so both sides share the states."""
+        inputs = physics_driver.PhysicsDriver.Input(
+            vn=prognostic_state.vn,
+            w=prognostic_state.w,
+            exner=prognostic_state.exner,
+            theta_v=prognostic_state.theta_v,
+            rho=prognostic_state.rho,
+            qv=tracer_state.qv,
+            qc=tracer_state.qc,
+            qi=tracer_state.qi,
+            qr=tracer_state.qr,
+            qs=tracer_state.qs,
+            qg=tracer_state.qg,
+            dtime=self.config.driver.dtime,
+            simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
+        )
+        out = physics_driver.PhysicsDriver.Output(
+            vn=prognostic_state.vn,
+            w=prognostic_state.w,
+            exner=prognostic_state.exner,
+            theta_v=prognostic_state.theta_v,
+            qv=tracer_state.qv,
+            qc=tracer_state.qc,
+            qi=tracer_state.qi,
+            qr=tracer_state.qr,
+            qs=tracer_state.qs,
+            qg=tracer_state.qg,
         )
         return inputs, out
 
