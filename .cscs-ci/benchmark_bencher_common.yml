@@ -13,6 +13,7 @@
 .benchmark_driver_base_variables:
   variables:
     SLURM_TIMELIMIT: '02:00:00'
+    FLOAT_PRECISION: "double"
     OMP_PROC_BIND: close
     OMP_PLACES: cores
     OMP_NUM_THREADS: 72
