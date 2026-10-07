@@ -256,6 +256,8 @@ def test_convert_experiment_testcase(tmp_path: pathlib.Path) -> None:
     )
     assert config.graupel is None
     assert config.muphys is None
+    assert config.tmx is None
+    assert config.tmx_surface is None
 
 
 def test_convert_experiment_from_file_paths_resolve_against_the_config_file(
@@ -396,3 +398,66 @@ def test_tmx_rejects_dry_static_energy() -> None:
     }
     with pytest.raises(ValueError, match="only internal energy"):
         fcc.TMX.build(fortran_dict)
+
+
+# exp.exclaim_ape_aesPhys's nh_testcase_nml, as far as the tmx surface reads it
+_APE_TESTCASE_NML = {
+    "nh_test_name": "APE_aes",
+    "ape_sst_case": "sst_const",
+    "ape_sst_val": 30.0,
+    "isrfc_type": 1,
+}
+
+
+def _tmx_surface_config(
+    testcase_nml: dict, *, ltestcase: bool = True
+) -> tmx_config.TmxSurfaceConfig:
+    return fcc.make_tmx_surface_config(
+        atm_dict={"run_nml": {"ltestcase": ltestcase}},
+        input_dict={"nh_testcase_nml": testcase_nml},
+    )
+
+
+def test_tmx_surface_config() -> None:
+    config = _tmx_surface_config(_APE_TESTCASE_NML | {"shflx": 0.05, "lhflx": 1.0e-5})
+    assert config.surface_flux_type is tmx_config.SurfaceFluxType.FIXED_HEAT_FLUXES
+    assert config.kinematic_sensible_heat_flux == 0.05
+    assert config.kinematic_latent_heat_flux == 1.0e-5
+    # mo_ape_params.f90, ape_sst_const: tmelt + ape_sst_val
+    assert config.sea_surface_temperature == constants.MELTING_TEMPERATURE + 30.0
+
+
+def test_tmx_surface_config_round_trips_through_yaml() -> None:
+    config = _tmx_surface_config(_APE_TESTCASE_NML)
+    read_back = config_io.read_yaml_str(
+        config_io.write_yaml_str(config), tmx_config.TmxSurfaceConfig
+    )
+    assert read_back == config
+
+
+def test_tmx_surface_config_keeps_the_testcase_defaults() -> None:
+    config = _tmx_surface_config(_APE_TESTCASE_NML)
+    assert config.kinematic_sensible_heat_flux == 0.1
+    assert config.kinematic_latent_heat_flux == 0.0
+
+
+def test_tmx_surface_config_rejects_the_surface_models() -> None:
+    # isrfc_type defaults to 0 in ICON: the surface fluxes come from its surface models
+    testcase_nml = {k: v for k, v in _APE_TESTCASE_NML.items() if k != "isrfc_type"}
+    with pytest.raises(ValueError, match="surface_flux_type"):
+        _tmx_surface_config(testcase_nml)
+
+
+@pytest.mark.parametrize("sst_case", ["sst1", None])
+def test_tmx_surface_config_rejects_a_latitude_dependent_sst(sst_case: str | None) -> None:
+    # ape_sst_case defaults to 'sst1' in ICON
+    testcase_nml = {k: v for k, v in _APE_TESTCASE_NML.items() if k != "ape_sst_case"}
+    if sst_case is not None:
+        testcase_nml["ape_sst_case"] = sst_case
+    with pytest.raises(NotImplementedError, match="sst_const"):
+        _tmx_surface_config(testcase_nml)
+
+
+def test_tmx_surface_config_rejects_a_real_data_surface() -> None:
+    with pytest.raises(NotImplementedError, match="test case"):
+        _tmx_surface_config(_APE_TESTCASE_NML, ltestcase=False)

@@ -970,7 +970,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(inv_ddqz_z_full_e)
 
         inv_ddqz_z_half_e = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_on_half_levels.with_backend(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_on_half_levels_f64.with_backend(
                 self._backend
             ),
             deps={"in_field": attrs.INV_DDQZ_Z_HALF, "coeff": interpolation_attributes.C_LIN_E},
@@ -987,7 +987,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(inv_ddqz_z_half_e)
 
         inv_ddqz_z_half_v = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_vertex.interpolate_cell_field_to_vertex_on_half_levels.with_backend(
+            func=interpolate_cell_field_to_vertex.interpolate_cell_field_to_vertex_on_half_levels_f64.with_backend(
                 self._backend
             ),
             deps={

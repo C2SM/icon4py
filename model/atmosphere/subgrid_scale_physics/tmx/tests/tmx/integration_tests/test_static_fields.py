@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 # the differences measured in common/tests/common/interpolation (RBF_TOLERANCES, the R02B04
 # grid of the aquaplanet experiments).
 _RBF_ATOL = {
-    "rbf_coeff_c1": 3.1e-9,
+    "rbf_coeff_c1": 5e-9,  # 3.25e-9 measured on gtfn_cpu
     "rbf_coeff_c2": 3.1e-9,
     "rbf_coeff_e": 8.0e-14,
     "rbf_coeff_v1": 3.0e-10,

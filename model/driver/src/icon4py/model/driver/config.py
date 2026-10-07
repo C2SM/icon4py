@@ -222,9 +222,9 @@ class ExperimentConfig(config_io.ConfigWithShared):
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     muphys: muphys_config.MuphysConfig | None = None
-    #: Read from the AES vertical-diffusion namelist; the driver does not run the
-    #: granule yet (icon4py#1360), so it is carried but unused.
     tmx: tmx_config.TmxConfig | None = None
+    # the surface boundary of tmx; required when tmx is set
+    tmx_surface: tmx_config.TmxSurfaceConfig | None = None
 
     def __post_init__(self) -> None:
         if self.driver.diffuse_before_time_loop and not (

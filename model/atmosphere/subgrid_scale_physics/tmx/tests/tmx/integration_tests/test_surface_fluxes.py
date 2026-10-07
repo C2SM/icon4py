@@ -56,10 +56,10 @@ def test_prescribed_surface_fluxes(
     allocator = model_backends.get_allocator(backend)
     reference = data_provider.from_savepoint_tmx_surface_fluxes(date=date)
 
+    assert testcase["isrfc_type"] == 1
     provider = surface_fluxes.PrescribedFluxProvider(
         grid=icon_grid,
         backend=backend,
-        pressure_ifc=data_provider.from_savepoint_tmx_entry(date=date).pres_ifc(),
         surface_temperature=data_alloc.constant_field(
             icon_grid,
             constants.MELTING_TEMPERATURE + testcase["ape_sst_val"],
@@ -67,7 +67,6 @@ def test_prescribed_surface_fluxes(
             allocator=allocator,
         ),
         # the defaults of `mo_nh_testcases_nml.f90` for the members the namelist leaves out
-        surface_type=testcase["isrfc_type"],
         shflx=testcase.get("shflx", 0.1),
         lhflx=testcase.get("lhflx", 0.0),
     )
@@ -78,7 +77,9 @@ def test_prescribed_surface_fluxes(
         v_stress=data_alloc.constant_field(icon_grid, 1.0, dims.CellDim, allocator=allocator),
         q_snocpymlt=data_alloc.constant_field(icon_grid, 1.0, dims.CellDim, allocator=allocator),
     )
-    provider.compute(out=out)
+    provider.compute(
+        pressure_ifc=data_provider.from_savepoint_tmx_entry(date=date).pres_ifc(), out=out
+    )
 
     for name, computed, desired in (
         ("hfss", out.sensible_heat_flux, reference.hfss()),

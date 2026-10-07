@@ -23,6 +23,11 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as muphys_component
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
+    component as tmx_component,
+    static_fields as tmx_static_fields,
+    surface_fluxes as tmx_surface_fluxes,
+)
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
     constants,
@@ -77,37 +82,78 @@ class Granules:
     physics: physics_driver.PhysicsDriver | None = None
 
 
-def _muphys_step(
-    config: driver_config.ExperimentConfig,
-    grid: icon_grid.IconGrid,
-    static_field_factories: static_fields.StaticFieldFactories,
-    backend: gtx_typing.Backend | None,
-) -> physics_driver.Step:
+@dataclasses.dataclass(frozen=True)
+class _ProcessSources:
+    """What the physics processes are built from."""
+
+    config: driver_config.ExperimentConfig
+    grid: icon_grid.IconGrid
+    static_field_factories: static_fields.StaticFieldFactories
+    edge_geometry: grid_states.EdgeParams
+    cell_geometry: grid_states.CellParams
+    exchange: decomposition_defs.ExchangeRuntime
+    backend: gtx_typing.Backend | None
+
+
+def _muphys_step(sources: _ProcessSources) -> physics_driver.Step:
+    config = sources.config
     if config.muphys is None:
         raise ValueError("The 'muphys' process is not configured.")
     component = muphys_component.MuphysComponent(
-        grid=grid,
+        grid=sources.grid,
         dtime=config.driver.dtime,
         qnc=config.muphys.qnc,
-        dz=static_field_factories.metrics.get(metrics_attributes.DDQZ_Z_FULL),
-        backend=backend,
+        dz=sources.static_field_factories.metrics.get(metrics_attributes.DDQZ_Z_FULL),
+        backend=sources.backend,
     )
     return physics_driver.bind(component.run, muphys_component.collect_input)
 
 
-type _StepBuilder = Callable[
-    [
-        driver_config.ExperimentConfig,
-        icon_grid.IconGrid,
-        static_fields.StaticFieldFactories,
-        gtx_typing.Backend | None,
-    ],
-    physics_driver.Step,
-]
+def _tmx_step(sources: _ProcessSources) -> physics_driver.Step:
+    config = sources.config
+    if config.tmx is None:
+        raise ValueError("The 'tmx' process is not configured.")
+    if config.tmx_surface is None:
+        raise ValueError(
+            "The 'tmx' process needs its surface boundary: 'tmx_surface' is not configured."
+        )
+    grid = sources.grid
+    surface = config.tmx_surface
+    surface_fluxes = tmx_surface_fluxes.PrescribedFluxProvider(
+        grid=grid,
+        backend=sources.backend,
+        surface_temperature=data_alloc.constant_field(
+            grid,
+            surface.sea_surface_temperature,
+            dims.CellDim,
+            allocator=model_backends.get_allocator(sources.backend),
+        ),
+        shflx=surface.kinematic_sensible_heat_flux,
+        lhflx=surface.kinematic_latent_heat_flux,
+    )
+    factories = sources.static_field_factories
+    component = tmx_component.TmxComponent(
+        grid=grid,
+        config=config.tmx,
+        dtime=config.driver.dtime,
+        metric_state=tmx_static_fields.build_metric_state(factories.metrics),
+        interpolation_state=tmx_static_fields.build_interpolation_state(factories.interpolation),
+        edge_params=sources.edge_geometry,
+        cell_params=sources.cell_geometry,
+        surface_fluxes=surface_fluxes,
+        backend=sources.backend,
+        exchange=sources.exchange,
+    )
+    return physics_driver.bind(component.run, tmx_component.collect_input)
 
-# the physics processes, by the name of their section in the experiment configuration; the
-# driver runs those whose section is set
-PROCESSES: dict[str, _StepBuilder] = {"muphys": _muphys_step}
+
+# the physics processes, by the name of their section in the experiment configuration, in
+# ICON's order (aes_phy_main: mig, then vdf/tmx); the driver runs those whose section is set.
+# Under the driver's parallel coupling the order only fixes the summation order.
+PROCESSES: dict[str, Callable[[_ProcessSources], physics_driver.Step]] = {
+    "muphys": _muphys_step,
+    "tmx": _tmx_step,
+}
 
 
 def validate_granule_state_consistency(
@@ -496,10 +542,19 @@ def initialize_granules(
         )
 
     physics_granule: physics_driver.PhysicsDriver | None = None
+    process_sources = _ProcessSources(
+        config=config,
+        grid=grid,
+        static_field_factories=static_field_factories,
+        edge_geometry=edge_geometry,
+        cell_geometry=cell_geometry,
+        exchange=exchange,
+        backend=backend,
+    )
     physics_processes = [
         physics_driver.PhysicsProcess(
             name=name,
-            step=build(config, grid, static_field_factories, backend),
+            step=build(process_sources),
             time_control=physics_driver.ProcessTimeControl(
                 interval=config.driver.dtime,
                 start_date=config.driver.start_of_simulation,
