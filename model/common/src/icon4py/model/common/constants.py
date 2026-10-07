@@ -57,8 +57,13 @@ CPL = SPECIFIC_HEAT_CAPACITY_LIQUID_WATER
 #: density of liquid water. Originally expressed as rhow in ICON. [kg/m3]
 WATER_DENSITY: Final[ta.wpfloat] = ta.wpfloat(1.000e3)
 
-#: specific heat capacity of ice. Originally expressed as ci in ICON. [J/K/kg]
+#: specific heat capacity of ice [J/K/kg] of the graupel microphysics (ci in the
+#: muphys constants); the AES physics uses SPECIFIC_HEAT_CAPACITY_ICE_AES.
 SPECIFIC_HEAT_CAPACITY_ICE: Final[ta.wpfloat] = ta.wpfloat(2108.0)
+
+#: specific heat capacity of ice [J/K/kg] of the AES physics, ci in
+#: mo_physical_constants.f90 (get_cvair, mo_aes_phy_diag.f90).
+SPECIFIC_HEAT_CAPACITY_ICE_AES: Final[ta.wpfloat] = ta.wpfloat(2106.0)
 
 #: Melting temperature of ice/snow [K]. Originally expressed as tmelt in ICON.
 MELTING_TEMPERATURE: Final[ta.wpfloat] = ta.wpfloat(273.15)
@@ -182,6 +187,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     cvv = SPECIFIC_HEAT_CAPACITY_VOLUME_WATER_VAPOR
     cpl = SPECIFIC_HEAT_CAPACITY_LIQUID_WATER
     cpi = SPECIFIC_HEAT_CAPACITY_ICE
+    ci_aes = SPECIFIC_HEAT_CAPACITY_ICE_AES
     water_density = WATER_DENSITY
     tmelt = MELTING_TEMPERATURE
     water_triple_point_temperature = WATER_TRIPLE_POINT_TEMPERATURE
