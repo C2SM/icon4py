@@ -476,8 +476,6 @@ class Diffusion(fw.Component):
         dwdx: fw.Field[qty.ZonalGradientOfWOnCellKHalf]
         dwdy: fw.Field[qty.MeridionalGradientOfWOnCellKHalf]
 
-    """Class that configures diffusion and does one diffusion step."""
-
     def __init__(
         self,
         *,

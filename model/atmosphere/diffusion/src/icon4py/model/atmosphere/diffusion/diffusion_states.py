@@ -9,15 +9,10 @@ from __future__ import annotations
 
 import dataclasses
 import functools
-from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-
-
-if TYPE_CHECKING:
-    pass
 
 
 @dataclasses.dataclass(frozen=True)

@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import functools
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
@@ -18,7 +17,6 @@ import pytest
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends

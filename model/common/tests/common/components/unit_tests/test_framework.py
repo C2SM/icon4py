@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -125,6 +126,26 @@ def test_allocate_follows_the_declared_dims(grid: base_grid.Grid) -> None:
     fields = fw.allocate(Fields, grid, allocator=None, fill=lambda name, shape: float(len(name)))
     assert fields.pressure.data.ndarray.shape == (grid.num_cells, grid.num_levels)
     assert fields.salt.data.ndarray.shape == (grid.num_cells,)
+    assert np.all(np.asarray(fields.salt.data.ndarray) == 4.0)
+
+
+def test_allocate_fill_is_written_on_the_leaf_without_a_host_conversion(
+    grid: base_grid.Grid, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A device buffer refuses `np.asarray`; the fill value is assigned on the buffer itself."""
+
+    class Fields(fw.State):
+        salt: fw.Field[Salt]
+
+    def refuse(*args: Any, **kwargs: Any) -> Any:
+        raise TypeError("Implicit conversion to a NumPy array is not allowed")
+
+    def fill(name: str, shape: tuple[int, ...]) -> float:
+        monkeypatch.setattr(np, "asarray", refuse)
+        return 4.0
+
+    fields = fw.allocate(Fields, grid, allocator=None, fill=fill)
+    monkeypatch.undo()
     assert np.all(np.asarray(fields.salt.data.ndarray) == 4.0)
 
 
