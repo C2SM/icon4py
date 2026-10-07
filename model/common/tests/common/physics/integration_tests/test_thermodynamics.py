@@ -19,6 +19,7 @@ from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import simple, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.physics.thermodynamics import (
+    compute_energy,
     compute_pressure,
     compute_temperature,
     compute_tendencies,
@@ -276,3 +277,42 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         satad_exit.pressure_ifc().asnumpy(),
         atol=1.0e-13,
     )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment_description, date",
+    [
+        (test_defs.Experiments.EXCLAIM_APE_AES, date)
+        for date in test_defs.Experiments.EXCLAIM_APE_AES.dates
+    ],
+)
+def test_compute_moist_air_heat_capacity_per_area(
+    data_provider: sb.IconSerialDataProvider,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+    date: str,
+) -> None:
+    """Against `cvair` of the tmx-entry savepoint, computed by get_cvair in ICON."""
+    entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
+    heat_capacity = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
+    )
+
+    compute_energy.compute_moist_air_heat_capacity_per_area.with_backend(backend)(
+        qv=entry_savepoint.qv(),
+        qc=entry_savepoint.qc(),
+        qi=entry_savepoint.qi(),
+        qr=entry_savepoint.qr(),
+        qs=entry_savepoint.qs(),
+        qg=entry_savepoint.qg(),
+        air_mass=entry_savepoint.mair(),
+        heat_capacity=heat_capacity,
+        horizontal_start=0,
+        horizontal_end=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.END)),
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
+        offset_provider={},
+    )
+
+    test_utils.assert_dallclose(heat_capacity.asnumpy(), entry_savepoint.cvair().asnumpy())
