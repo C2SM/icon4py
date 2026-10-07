@@ -15,7 +15,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon, simple, vertical as v_grid
 from icon4py.model.common.math import (
@@ -38,7 +38,7 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
     import gt4py.next.typing as gtx_typing
 
@@ -103,31 +103,28 @@ class SimpleFieldSource(factory.FieldSource):
         return self._backend
 
 
+def _prep_for_dict(
+    name: str, field: state_utils.GTXFieldType
+) -> tuple[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]]:
+    return name, (field, model.FieldMetaData(standard_name=name, units="", dims=field.domain.dims))
+
+
 # TODO(): this reads lat lon from the grid_savepoint, which could be read from the grid file/geometry, to make it non datatests
 @pytest.fixture(scope="function")
 def cell_coordinate_source(
     grid_savepoint: sb.IconGridSavepoint, backend: gtx_typing.Backend
 ) -> Generator[SimpleFieldSource, None, None]:
     grid = grid_savepoint.construct_icon_grid(backend=backend)
-    lat = grid_savepoint.lat(dims.CellDim)
-    lon = grid_savepoint.lon(dims.CellDim)
-    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "lat": (lat, {"standard_name": "lat", "units": ""}),
-        "lon": (lon, {"standard_name": "lon", "units": ""}),
-        "x": (
-            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-            {"standard_name": "x", "units": ""},
-        ),
-        "y": (
-            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-            {"standard_name": "y", "units": ""},
-        ),
-        "z": (
-            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-            {"standard_name": "z", "units": ""},
-        ),
-    }
-
+    data = dict(
+        [
+            _prep_for_dict("lat", grid_savepoint.lat(dims.CellDim)),
+            _prep_for_dict("lon", grid_savepoint.lon(dims.CellDim)),
+        ]
+        + [
+            _prep_for_dict(name, data_alloc.random_field(grid, dims.CellDim, dims.KDim))
+            for name in ["x", "y", "z"]
+        ]
+    )
     coordinate_source = SimpleFieldSource(data_=data, backend=backend, grid=grid)
     yield coordinate_source
     coordinate_source.reset()
@@ -144,9 +141,7 @@ def height_coordinate_source(
     z_ifc = metrics_savepoint.z_ifc()
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
-    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})
-    }
+    data = dict([_prep_for_dict("height_coordinate", z_ifc)])
     vertical_grid = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=experiment.config.vertical_grid.num_levels),
         vct_a,
@@ -196,6 +191,10 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     provider = factory.ProgramFieldProvider(
         func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
+    height_coordinate_source.with_metadata(
+        {"output_f": model.FieldMetaData(standard_name="output_f", units="")}
+    )
+    height_coordinate_source.register_provider(provider)
     provider(
         field_name="output_f",
         field_src=height_coordinate_source,
@@ -206,6 +205,75 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     x = provider.fields["output_f"]
     assert isinstance(x, gtx.Field)
     assert dims.CellDim in x.domain.dims
+
+
+def _average_downwards(z_ifc: data_alloc.NDArray) -> data_alloc.NDArray:
+    return 0.5 * (z_ifc[:, 1:-1] + z_ifc[:, 2:])
+
+
+def _program_provider(domain: dict) -> factory.FieldProvider:
+    return factory.ProgramFieldProvider(
+        func=vertical_ops.average_two_vertical_levels_downwards_on_cells,
+        domain=domain,
+        fields={"average": "output_f"},
+        deps={"input_field": "height_coordinate"},
+        do_exchange=False,
+    )
+
+
+def _field_operator_provider(domain: dict) -> factory.FieldProvider:
+    return factory.EmbeddedFieldOperatorProvider(
+        func=vertical_ops.average_level_plus1_on_cells.with_backend(None),
+        domain=domain,
+        fields={"average": "output_f"},
+        deps={"half_level_field": "height_coordinate"},
+        do_exchange=False,
+    )
+
+
+def _numpy_provider(domain: dict) -> factory.FieldProvider:
+    return factory.NumpyDataProvider(
+        func=_average_downwards,
+        domain=domain,
+        fields=("output_f",),
+        deps={"z_ifc": "height_coordinate"},
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "make_provider", [_program_provider, _field_operator_provider, _numpy_provider]
+)
+def test_provider_vertical_extent_is_declared_domain(
+    height_coordinate_source: SimpleFieldSource,
+    make_provider: Callable[[dict], factory.FieldProvider],
+) -> None:
+    assert height_coordinate_source.vertical_grid is not None
+    num_levels = height_coordinate_source.vertical_grid.num_levels
+    provider = make_provider(
+        {
+            dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
+            dims.KDim: (v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1), k_domain(v_grid.Zone.BOTTOM)),
+        }
+    )
+    height_coordinate_source.with_metadata(
+        {"output_f": model.FieldMetaData(standard_name="output_f", units="")}
+    )
+    height_coordinate_source.register_provider(provider)
+    provider(
+        field_name="output_f",
+        field_src=height_coordinate_source,
+        backend=height_coordinate_source.backend,
+        grid=height_coordinate_source,
+        exchange=decomposition.SingleNodeExchange(),
+    )
+    x = provider.fields["output_f"]
+    assert isinstance(x, gtx.Field)
+    assert x.domain[dims.CellDim].unit_range == gtx.common.UnitRange(
+        0, height_coordinate_source.grid.num_cells
+    )
+    assert x.domain[dims.KDim].unit_range == gtx.common.UnitRange(1, num_levels)
+    assert np.all(x.asnumpy() != 0.0)
 
 
 @pytest.mark.datatest
@@ -234,10 +302,7 @@ def test_composite_field_source_contains_all_metadata(
     grid = cell_coordinate_source.grid
     foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
     bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "foo": (foo, {"standard_name": "foo", "units": ""}),
-        "bar": (bar, {"standard_name": "bar", "units": ""}),
-    }
+    data = dict([_prep_for_dict("foo", foo), _prep_for_dict("bar", bar)])
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
@@ -259,10 +324,9 @@ def test_composite_field_source_get_all_fields(
     grid = cell_coordinate_source.grid
     foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
     bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "foo": (foo, {"standard_name": "foo", "units": ""}),
-        "bar": (bar, {"standard_name": "bar", "units": ""}),
-    }
+    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = dict(
+        [_prep_for_dict("foo", foo), _prep_for_dict("bar", bar)]
+    )
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
@@ -284,7 +348,7 @@ def test_composite_field_source_get_all_fields(
 
     lat = composite.get("height_coordinate")
     assert isinstance(lat, gtx.Field)
-    assert dims.KDim in lat.domain.dims
+    assert dims.KHalfDim in lat.domain.dims
     assert len(lat.domain.dims) == 2
 
 
@@ -296,10 +360,9 @@ def test_composite_field_source_raises_upon_get_unknown_field(
     grid = cell_coordinate_source.grid
     foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
     bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "foo": (foo, {"standard_name": "foo", "units": ""}),
-        "bar": (bar, {"standard_name": "bar", "units": ""}),
-    }
+    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = dict(
+        [_prep_for_dict("foo", foo), _prep_for_dict("bar", bar)]
+    )
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
@@ -315,7 +378,7 @@ def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:
 
 @pytest.mark.datatest
 def test_compute_scalar_value_from_numpy_provider(
-    height_coordinate_source: factory.FieldSource,
+    height_coordinate_source: SimpleFieldSource,
     metrics_savepoint: serialbox.MetricSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -324,7 +387,63 @@ def test_compute_scalar_value_from_numpy_provider(
     provider = factory.NumpyDataProvider(
         func=sample_func, deps={"ar": "height_coordinate"}, domain=(), fields=("minimal_height",)
     )
+    height_coordinate_source.with_metadata(
+        {"minimal_height": model.FieldMetaData(standard_name="minimal_height", units="")}
+    )
     height_coordinate_source.register_provider(provider)
-    value = height_coordinate_source.get("minimal_height", factory.RetrievalType.FIELD)
+    value = height_coordinate_source.get_scalar("minimal_height")
     assert np.isscalar(value)
     assert value_ref == value
+
+
+def _double_precision_source() -> SimpleFieldSource:
+    """Field source on the simple grid holding float64 data, like the factories do internally."""
+    grid = simple.simple_grid()
+    field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=gtx.float64)
+    source = SimpleFieldSource(
+        data_=dict(
+            [_prep_for_dict("default_dtype", field), _prep_for_dict("explicit_double", field)]
+        ),
+        backend=None,
+        grid=grid,  # type: ignore[arg-type]  # simple grid instead of IconGrid, only used as grid provider here
+    )
+    source.register_provider(
+        factory.PrecomputedFieldProvider(fields={"scalar": gtx.float64(1.0 / 3.0)})
+    )
+    source.with_metadata(
+        {
+            "explicit_double": model.FieldMetaData(
+                standard_name="explicit_double",
+                units="",
+                dtype=gtx.float64,
+                dims=(dims.CellDim, dims.KDim),
+            ),
+            "scalar": model.FieldMetaData(standard_name="scalar", units=""),
+        }
+    )
+    return source
+
+
+@pytest.mark.single_precision_ready
+def test_get_exports_field_in_metadata_dtype() -> None:
+    source = _double_precision_source()
+    full_precision = source.get_full_precision("default_dtype")
+    exported = source.get("default_dtype")
+
+    assert isinstance(full_precision, gtx.Field)
+    assert full_precision.dtype.scalar_type == np.float64
+    assert exported.dtype.scalar_type == ta.wpfloat
+    if ta.wpfloat == gtx.float64:
+        assert exported is full_precision, "no copy expected if the dtype already matches"
+    else:
+        assert np.array_equal(exported.asnumpy(), full_precision.asnumpy().astype(ta.wpfloat))
+
+    explicit_double = source.get("explicit_double")
+    assert explicit_double is source.get_full_precision("explicit_double")
+
+
+@pytest.mark.single_precision_ready
+def test_get_scalar_exports_in_metadata_dtype() -> None:
+    value = _double_precision_source().get_scalar("scalar")
+    assert type(value) is ta.wpfloat
+    assert value == ta.wpfloat(1.0 / 3.0)

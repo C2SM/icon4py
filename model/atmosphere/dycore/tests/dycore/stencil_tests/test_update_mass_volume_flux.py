@@ -74,12 +74,12 @@ class TestUpdateMassVolumeFlux(stencil_tests.StencilTest):
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_contr_w_fl_l = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_contr_w_fl_l = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        rho_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         vwind_impl_wgt = data_alloc.random_field(dims.CellDim, dtype=ta.wpfloat)
-        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        mass_flx_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        vol_flx_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        mass_flx_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        vol_flx_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         r_nsubsteps = 7.0
 
         return dict(
@@ -93,5 +93,5 @@ class TestUpdateMassVolumeFlux(stencil_tests.StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

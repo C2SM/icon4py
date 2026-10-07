@@ -18,7 +18,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 def to_data_array(
     field: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT],
     attrs: FieldMetaData | dict | None = None,
-    is_on_half_levels: bool = False,
     to_host: bool = False,
 ) -> xa.DataArray:
     """Convert a gt4py field to a xarray data array.
@@ -27,7 +26,6 @@ def to_data_array(
         field: gt4py field,
         attrs: optional dictionary of metadata attributes to be added to the data array, empty by default.
             The dictionary is copied, the caller's instance is left untouched.
-        is_on_half_levels: optional boolean flag indicating if the 2d field is defined on the half (interface) levels, False by default.
         to_host: if True, copy the data buffer to host (numpy). netCDF4 cannot consume
             device arrays, so set this when the result is written from a GPU backend.
 
@@ -36,11 +34,16 @@ def to_data_array(
         ``to_host=True`` is a copy only on GPU; on CPU it still references ``field``.
         Callers that keep the DataArray past the next mutation of ``field`` must copy it.
     """
-    attrs = {} if attrs is None else dict(attrs)
-    dims = tuple(dimension_mapping(d, is_on_half_levels) for d in field.domain.dims)
+    if attrs is None:
+        attrs = {}
+    elif isinstance(attrs, FieldMetaData):
+        attrs = attrs.as_dict()
+    else:
+        attrs = dict(attrs)
+    dims = tuple(dimension_mapping(d) for d in field.domain.dims)
     horizontal_dim = next(d for d in field.domain.dims if _is_horizontal(d))
     uxgrid_attrs = ugrid_attributes(horizontal_dim)
-    attrs.update(uxgrid_attrs)  # type: ignore [typeddict-item] # mypy does not accept the dict types flexibility
+    attrs.update(uxgrid_attrs)
     data = data_alloc.as_numpy(field) if to_host else field.ndarray
     return xa.DataArray(data=data, dims=dims, attrs=attrs)
 

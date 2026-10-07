@@ -33,34 +33,35 @@ def compute_hydrostatic_correction_term_numpy(
     grav_o_cpd: float,
 ) -> np.ndarray:
     def _apply_index_field(
-        shape: tuple, to_index: np.ndarray, neighbor_table: np.ndarray, offset_field: np.ndarray
-    ) -> tuple:
-        indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
+        shape: tuple,
+        to_index: np.ndarray,
+        neighbor_table: np.ndarray,
+        offset_field: np.ndarray,
+        extra_offset: int = 0,
+    ) -> np.ndarray:
+        indexed = np.zeros(shape)
         for iprimary in range(shape[0]):
             for isparse in range(shape[1]):
                 for ik in range(shape[2]):
                     indexed[iprimary, isparse, ik] = to_index[
                         neighbor_table[iprimary, isparse],
-                        ik + offset_field[iprimary, isparse, ik],
+                        ik + offset_field[iprimary, isparse, ik] + extra_offset,
                     ]
-                    indexed_p1[iprimary, isparse, ik] = to_index[
-                        neighbor_table[iprimary, isparse],
-                        ik + offset_field[iprimary, isparse, ik] + 1,
-                    ]
-        return indexed, indexed_p1
+        return indexed
 
     e2c = connectivities[dims.E2C]
     full_shape = ikoffset.shape
 
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
-    theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, e2c, ikoffset)
+    theta_v_at_kidx = _apply_index_field(full_shape, theta_v, e2c, ikoffset)
 
-    theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
-        full_shape, theta_v_ic, e2c, ikoffset
+    theta_v_ic_at_kidx = _apply_index_field(full_shape, theta_v_ic, e2c, ikoffset)
+    theta_v_ic_at_kidx_p1 = _apply_index_field(
+        full_shape, theta_v_ic, e2c, ikoffset, extra_offset=1
     )
 
-    inv_ddqz_z_full_at_kidx, _ = _apply_index_field(full_shape, inv_ddqz_z_full, e2c, ikoffset)
+    inv_ddqz_z_full_at_kidx = _apply_index_field(full_shape, inv_ddqz_z_full, e2c, ikoffset)
 
     z_theta1 = (
         theta_v_at_kidx[:, 0, :]
@@ -142,10 +143,11 @@ class TestComputeHydrostaticCorrectionTerm(stencil_tests.StencilTest):
         )
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
-            # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
+            # `theta_v` and `inv_ddqz_z_full` are model-level fields, so `k + ikoffset` must stay
+            # below `num_levels`; the `+1` read of the half-level `theta_v_ic` is then still in range.
             ikoffset_buffer[:, :, k] = rng.integers(
                 low=0 - k,
-                high=grid.num_levels - k - 1,
+                high=grid.num_levels - k,
                 size=ikoffset_buffer.shape[:2],
             )
         ikoffset = data_alloc.as_field(ikoffset_buffer, dims.EdgeDim, dims.E2CDim, dims.KDim)
@@ -154,7 +156,7 @@ class TestComputeHydrostaticCorrectionTerm(stencil_tests.StencilTest):
         zdiff_gradp = data_alloc.random_field(
             dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat
         )
-        theta_v_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_v_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         inv_ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
         grav_o_cpd = ta.wpfloat("10.0")

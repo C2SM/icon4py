@@ -130,7 +130,10 @@ variables:
     ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR: /gt4py_cache
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
+    ICON4PY_FLOAT_PRECISION: "${FLOAT_PRECISION}"
     PYTEST_ADDOPTS: "--durations=0"
+    # gt4py skips formatting generated code when `$CLANG_FORMAT_EXECUTABLE --version` fails.
+    CLANG_FORMAT_EXECUTABLE: /bin/false
 
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_runner_base]
@@ -150,7 +153,7 @@ variables:
     # that don't run many tests.
     NUM_PROCESSES: 32
     OMP_NUM_THREADS: 8
-    GT4PY_BUILD_JOBS: 12
+    GT4PY_BUILD_JOBS: 8
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
@@ -224,6 +227,9 @@ variables:
 
 .test_tools_aarch64:
   extends: [.test_runner_serial, .test_template_aarch64, .retry_on_transient_failure]
+  variables:
+    # The bindings reference test compares against clang-formatted generated code.
+    CLANG_FORMAT_EXECUTABLE: clang-format
   script:
     - nox -s "test_tools_and_bindings-${PYVERSION_SHORT}($SELECTION)"
 
@@ -277,7 +283,7 @@ variables:
     OMPI_MCA_mpi_cuda_support: "0"
     SLURM_NTASKS: "1"
     SLURM_GPUS_PER_TASK: "1"
-    SLURM_TIMELIMIT: "00:10:00"
+    SLURM_TIMELIMIT: "00:20:00"
   script:
     - cd /icon4py
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml

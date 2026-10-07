@@ -35,6 +35,7 @@ members = [
   "icon4py-atmosphere-microphysics",
   "icon4py-atmosphere-muphys",
   "icon4py-atmosphere-physics-driver",
+  "icon4py-atmosphere-tmx",
   "icon4py-atmosphere-tracer-advection",
   "icon4py-bindings",
   "icon4py-common",
@@ -1777,6 +1778,7 @@ dependencies = [
   {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-atmosphere-physics-driver"},
+  {name = "icon4py-atmosphere-tmx"},
   {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common"},
   {name = "icon4py-driver"}
@@ -1797,6 +1799,7 @@ dev = [
   {name = "bump-my-version"},
   {name = "coverage"},
   {name = "esbonio"},
+  {name = "f90nml"},
   {name = "icon4py-testing"},
   {name = "mypy", extra = ["faster-cache"]},
   {name = "myst-parser"},
@@ -1860,6 +1863,7 @@ scripts = [
 ]
 test = [
   {name = "coverage"},
+  {name = "f90nml"},
   {name = "icon4py-testing"},
   {name = "nox"},
   {name = "pytest"},
@@ -1892,6 +1896,7 @@ requires-dist = [
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
   {name = "icon4py-atmosphere-physics-driver", editable = "model/atmosphere/subgrid_scale_physics/physics_driver"},
+  {name = "icon4py-atmosphere-tmx", editable = "model/atmosphere/subgrid_scale_physics/tmx"},
   {name = "icon4py-atmosphere-tracer-advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-bindings", marker = "extra == 'fortran'", editable = "bindings"},
   {name = "icon4py-common", editable = "model/common"},
@@ -1917,6 +1922,7 @@ dev = [
   {name = "bump-my-version", specifier = ">=0.16.0"},
   {name = "coverage", extras = ["toml"], specifier = ">=7.5.0"},
   {name = "esbonio", specifier = ">=0.16.0"},
+  {name = "f90nml", specifier = ">=1.5"},
   {name = "icon4py-testing", editable = "model/testing"},
   {name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0"},
   {name = "myst-parser", specifier = ">=4.0.0"},
@@ -1980,6 +1986,7 @@ scripts = [
 ]
 test = [
   {name = "coverage", extras = ["toml"], specifier = ">=7.5.0"},
+  {name = "f90nml", specifier = ">=1.5"},
   {name = "icon4py-testing", editable = "model/testing"},
   {name = "nox", specifier = ">=2025.5.1"},
   {name = "pytest", specifier = ">=8.0.1"},
@@ -2090,7 +2097,6 @@ requires-dist = [
 dependencies = [
   {name = "gt4py"},
   {name = "icon4py-common", extra = ["io"]},
-  {name = "numpy"},
   {name = "packaging"}
 ]
 name = "icon4py-atmosphere-muphys"
@@ -2101,12 +2107,12 @@ version = "0.4.1"
 requires-dist = [
   {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
-  {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
 ]
 
 [[package]]
 dependencies = [
+  {name = "gt4py"},
   {name = "icon4py-common"},
   {name = "packaging"}
 ]
@@ -2116,6 +2122,24 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
+  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "icon4py-common", editable = "model/common"},
+  {name = "packaging", specifier = ">=20.0"}
+]
+
+[[package]]
+dependencies = [
+  {name = "gt4py"},
+  {name = "icon4py-common"},
+  {name = "packaging"}
+]
+name = "icon4py-atmosphere-tmx"
+source = {editable = "model/atmosphere/subgrid_scale_physics/tmx"}
+version = "0.4.1"
+
+[package.metadata]
+requires-dist = [
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2144,7 +2168,6 @@ dependencies = [
   {name = "gt4py"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
-  {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-common", extra = ["distributed"]},
   {name = "icon4py-tools"},
   {name = "numpy"},
@@ -2166,7 +2189,6 @@ requires-dist = [
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
-  {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
   {name = "icon4py-common", extras = ["distributed"], editable = "model/common"},
   {name = "icon4py-tools", editable = "tools"},
   {name = "numpy", specifier = ">=1.23.3"},
@@ -2288,6 +2310,7 @@ dependencies = [
   {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-atmosphere-physics-driver"},
+  {name = "icon4py-atmosphere-tmx"},
   {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common", extra = ["io"]},
   {name = "packaging"},
@@ -2306,6 +2329,7 @@ requires-dist = [
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
   {name = "icon4py-atmosphere-physics-driver", editable = "model/atmosphere/subgrid_scale_physics/physics_driver"},
+  {name = "icon4py-atmosphere-tmx", editable = "model/atmosphere/subgrid_scale_physics/tmx"},
   {name = "icon4py-atmosphere-tracer-advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"},

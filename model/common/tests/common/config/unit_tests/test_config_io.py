@@ -12,6 +12,7 @@ import textwrap
 import typing
 
 import cattrs
+import numpy as np
 import pytest
 
 from icon4py.model.common import time
@@ -73,6 +74,12 @@ class UnionConfig:
 @dataclasses.dataclass
 class EndtimeConfig:
     endtime: time.EndOfSimulation
+
+
+@dataclasses.dataclass
+class NumpyFloatConfig:
+    single: np.float32
+    double: np.float64
 
 
 def test_read_yaml_str_empty_fails() -> None:
@@ -144,7 +151,9 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             time.AbsoluteTime(year=2026, month=7, day=30, hour=14, minute=41, second=25),
             id="abstime",
         ),
-        pytest.param("300\n...\n", time.RelativeTime, time.RelativeTime(seconds=300), id="reltime"),
+        pytest.param(
+            "300 seconds\n...\n", time.RelativeTime, time.RelativeTime(seconds=300), id="reltime"
+        ),
         pytest.param(
             "endtime:\n  type: absolute\n  value: '2026-07-30T14:41:46'\n",
             EndtimeConfig,
@@ -154,7 +163,7 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             id="endtime-abs",
         ),
         pytest.param(
-            "endtime:\n  type: relative\n  value: 50\n",
+            "endtime:\n  type: relative\n  value: 50 seconds\n",
             EndtimeConfig,
             EndtimeConfig(time.RelativeTime(seconds=50)),
             id="endtime-rel",
@@ -166,6 +175,13 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             id="endtime-nstep",
         ),
         pytest.param("foo\n...\n", ExampleEnum, ExampleEnum.FOO, id="enum"),
+        pytest.param(
+            "single: 0.8500000238418579\ndouble: 0.85\n",
+            NumpyFloatConfig,
+            # the gt4py mypy plugin turns the np.float32 annotation into float
+            NumpyFloatConfig(np.float32(0.85), np.float64(0.85)),  # type: ignore[arg-type]
+            id="numpy-floats",
+        ),
         pytest.param(
             textwrap.dedent(
                 """\

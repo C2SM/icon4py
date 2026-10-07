@@ -78,7 +78,7 @@ def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,),
+            (dims.KHalfDim,),
             np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1),  # type: ignore[arg-type]
         ),
         vct_b=None,
@@ -104,7 +104,7 @@ def test_io_monitor_write_ugrid_file(test_path: pathlib.Path) -> None:
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,),
+            (dims.KHalfDim,),
             np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1),  # type: ignore[arg-type]
         ),
         vct_b=None,
@@ -146,7 +146,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
+        vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
         vct_b=None,
     )
 
@@ -201,7 +201,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
+        vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
         vct_b=None,
     )
 
@@ -285,17 +285,19 @@ def read_back_as_uxarray(path: pathlib.Path) -> Any:
     return uxds
 
 
-def test_fieldgroup_monitor_no_output_between_step_intervals(test_path: pathlib.Path) -> None:
-    # output every 3rd step: the first two stores must not produce any output
+def test_fieldgroup_monitor_writes_only_on_interval_steps(test_path: pathlib.Path) -> None:
+    # output every 3rd step: output is written at first time step, no output at second and third time steps
     _, group_monitor = create_field_group_monitor(
         test_path, test_io_utils.simple_grid, output_interval=time.NumTimeSteps(3)
     )
     state = test_io_utils.model_state(test_io_utils.simple_grid)
     step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
     group_monitor.store(state, step_time)
+    assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 1
     group_monitor.store(state, step_time + dt.timedelta(hours=1))
+    group_monitor.store(state, step_time + dt.timedelta(hours=2))
     group_monitor.close()
-    assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 0
+    assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 1
 
 
 def test_fieldgroup_monitor_records_phase_timings_per_capture(test_path: pathlib.Path) -> None:
@@ -331,7 +333,7 @@ def create_field_group_monitor(
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,),
+            (dims.KHalfDim,),
             np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1),  # type: ignore[arg-type]
         ),
         vct_b=None,
@@ -473,7 +475,7 @@ def test_fieldgroup_monitor_wires_rank_blocks_into_netcdf_writer(
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
+        vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
         vct_b=None,
     )
     group_monitor = FieldGroupMonitor(
@@ -543,11 +545,10 @@ def test_fieldgroup_monitor_time_interval_normalized_to_steps(test_path: pathlib
     )
     state = test_io_utils.model_state(test_io_utils.simple_grid)
     step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
-    # first two steps: no output
+    # first step: output is written
     group_monitor.store(state, step_time)
+    assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 1
     group_monitor.store(state, step_time + dt.timedelta(hours=1))
-    assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 0
-    # third step: output is written
     group_monitor.store(state, step_time + dt.timedelta(hours=2))
     group_monitor.close()
     assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 1
@@ -670,7 +671,7 @@ def test_fieldgroup_monitor_wires_chunking_into_zarr_writer(test_path: pathlib.P
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
+        vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
         vct_b=None,
     )
     group_monitor = FieldGroupMonitor(
@@ -728,7 +729,7 @@ def _simple_grid_vertical() -> v_grid.VerticalGrid:
     num_levels = test_io_utils.simple_grid.num_levels
     return v_grid.VerticalGrid(
         config=v_grid.VerticalGridConfig(num_levels=num_levels),
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, num_levels + 1)),  # type: ignore[arg-type]
+        vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, num_levels + 1)),  # type: ignore[arg-type]
         vct_b=None,
     )
 

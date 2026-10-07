@@ -15,6 +15,7 @@ import numpy as np
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb, test_utils
 
@@ -74,9 +75,7 @@ def construct_diagnostic_init_state(
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
         hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend),
-        vfl_tracer=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
+        vfl_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend),
     )
 
 
@@ -97,8 +96,8 @@ def construct_diagnostic_exit_state(
 
 def construct_prep_adv(
     savepoint: sb.AdvectionInitSavepoint,
-) -> tracer_advection_states.AdvectionPrepAdvState:
-    return tracer_advection_states.AdvectionPrepAdvState(
+) -> prep_adv_states.TracerPrepAdvState:
+    return prep_adv_states.TracerPrepAdvState(
         vn_traj=savepoint.vn_traj(),
         mass_flx_me=savepoint.mass_flx_me(),
         mass_flx_ic=savepoint.mass_flx_ic(),
@@ -111,7 +110,7 @@ def log_dbg(field, name=""):
 
 def log_serialized(
     diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-    prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+    prep_adv: prep_adv_states.TracerPrepAdvState,
     p_tracer_now: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
 ):
@@ -168,19 +167,18 @@ def verify_advection_fields(
     log_dbg(p_tracer_new_ref.asnumpy()[p_tracer_new_range, :], "p_tracer_new_ref")
 
     # verify tracer_advection output fields
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
-        rtol=1e-10,
-        atol=1e-11,
+        atol=1e-11 if test_utils.wp_is_dp else 2e-5,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
         diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
-        rtol=1e-10,
+        atol=2e-14,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         p_tracer_new.asnumpy()[p_tracer_new_range, :],
         p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
-        atol=1e-16,
+        atol=1e-16 if test_utils.wp_is_dp else 1e-8,
     )

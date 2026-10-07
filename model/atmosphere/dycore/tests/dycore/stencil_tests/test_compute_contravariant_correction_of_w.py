@@ -31,10 +31,13 @@ def compute_contravariant_correction_of_w_numpy(
     c2e = connectivities[dims.C2E]
 
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    z_w_concorr_me_offset_1 = np.roll(z_w_concorr_me, shift=1, axis=1)
     z_w_concorr_mc_m0 = np.sum(e_bln_c_s * z_w_concorr_me[c2e], axis=1)
-    z_w_concorr_mc_m1 = np.sum(e_bln_c_s * z_w_concorr_me_offset_1[c2e], axis=1)
-    w_concorr_c = wgtfac_c * z_w_concorr_mc_m0 + (1.0 - wgtfac_c) * z_w_concorr_mc_m1
+    _nlev = z_w_concorr_mc_m0.shape[1]
+    w_concorr_c = np.zeros((z_w_concorr_mc_m0.shape[0], _nlev + 1))
+    _w = wgtfac_c[:, 1:_nlev]
+    w_concorr_c[:, 1:_nlev] = (
+        _w * z_w_concorr_mc_m0[:, 1:_nlev] + (1.0 - _w) * z_w_concorr_mc_m0[:, 0 : _nlev - 1]
+    )
     w_concorr_c[:, 0] = 0
     return w_concorr_c
 
@@ -64,8 +67,8 @@ class TestComputeContravariantCorrectionOfW(stencil_tests.StencilTest):
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=wpfloat)
         z_w_concorr_me = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        w_concorr_c = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        w_concorr_c = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
 
         return dict(
             e_bln_c_s=e_bln_c_s,

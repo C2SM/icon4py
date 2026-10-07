@@ -50,7 +50,7 @@ class TestApplyVerticalDensityIncrement(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
         rhodz_ast = data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_mflx_contra_v = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_mflx_contra_v = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         deepatmo_divzl = data_alloc.random_field(dims.KDim)
         deepatmo_divzu = data_alloc.random_field(dims.KDim)
         rhodz_ast2 = data_alloc.zero_field(dims.CellDim, dims.KDim)

@@ -12,12 +12,14 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import initial_condition, model_backends, model_options
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     nonhydro_states,
     prognostic_state as prognostics,
+    tracer_prep_adv_states as prep_adv_states,
     tracer_states,
 )
 from icon4py.model.driver import config as driver_config, driver, driver_states, driver_utils
@@ -124,9 +126,11 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     single_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
     )
-    initial_condition.create(
-        config=single_rank_icon4py_driver.config.initial_condition,
-        vertical_config=single_rank_icon4py_driver.config.vertical_grid,
+    single_rank_tracer_prep_adv_state = prep_adv_states.initialize_tracer_prep_adv_state(
+        grid=single_rank_icon4py_driver.grid, allocator=allocator
+    )
+    ic_apply(
+        config=driver_utils.make_ic_config_ctx(single_rank_icon4py_driver.config),
         grid=single_rank_icon4py_driver.grid,
         static_fields=single_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=single_rank_prognostic,
@@ -135,6 +139,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         exchange=single_rank_icon4py_driver.exchange,
         global_reductions=single_rank_icon4py_driver.global_reductions,
         solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
+        tracer_prep_adv_state=single_rank_tracer_prep_adv_state,
     )
     single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
@@ -150,6 +155,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         diagnostic_state=single_rank_diagnostic,
         experiment_config=single_rank_icon4py_driver.config,
         solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
+        tracer_prep_adv_state=single_rank_tracer_prep_adv_state,
     )
 
     multi_rank_config = experiment.config.with_overrides(
@@ -180,9 +186,11 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     multi_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
-    initial_condition.create(
-        config=multi_rank_icon4py_driver.config.initial_condition,
-        vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
+    multi_rank_tracer_prep_adv_state = prep_adv_states.initialize_tracer_prep_adv_state(
+        grid=multi_rank_icon4py_driver.grid, allocator=allocator
+    )
+    ic_apply(
+        config=driver_utils.make_ic_config_ctx(multi_rank_icon4py_driver.config),
         grid=multi_rank_icon4py_driver.grid,
         static_fields=multi_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=multi_rank_prognostic,
@@ -191,6 +199,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         exchange=multi_rank_icon4py_driver.exchange,
         global_reductions=multi_rank_icon4py_driver.global_reductions,
         solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
+        tracer_prep_adv_state=multi_rank_tracer_prep_adv_state,
     )
     multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
@@ -206,6 +215,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         diagnostic_state=multi_rank_diagnostic,
         experiment_config=multi_rank_icon4py_driver.config,
         solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
+        tracer_prep_adv_state=multi_rank_tracer_prep_adv_state,
     )
 
     fields_to_check: list[tuple[str, object, object]] = [

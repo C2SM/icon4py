@@ -14,8 +14,8 @@ from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO(dastrm): this stencil is unused
-# TODO(dastrm): this stencil has no test
+# TODO(nfarabullini, OngChia): this stencil is unused
+# TODO(nfarabullini, OngChia): this stencil has no test
 
 
 @gtx.field_operator

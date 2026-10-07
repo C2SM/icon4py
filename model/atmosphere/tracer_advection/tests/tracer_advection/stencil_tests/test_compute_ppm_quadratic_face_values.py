@@ -24,7 +24,9 @@ outslice = (slice(None), slice(1, None))
 
 class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_quadratic_face_values
-    OUTPUTS = (stencil_tests.Output("p_face", refslice=outslice, gtslice=outslice),)
+    OUTPUTS = (
+        stencil_tests.Output("p_face", refslice=outslice, gtslice=(slice(None), slice(1, -1))),
+    )
 
     @stencil_tests.static_reference
     def reference(
@@ -44,7 +46,7 @@ class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
-        p_face = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_face = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KDim)
         return dict(
