@@ -13,6 +13,7 @@ import logging
 import pathlib
 import types
 from collections.abc import Callable
+from typing import Any
 
 import gt4py.next as gtx
 from gt4py.next import config as gtx_config
@@ -22,7 +23,7 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.stencils import compute_airmass
-from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
+from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
     dimension as dims,
     model_backends,
@@ -48,7 +49,6 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
     static_fields,
-    tracer_prep_adv_states as prep_adv_states,
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
@@ -200,7 +200,6 @@ class Icon4pyDriver:
         prognostic_states = ds.prognostics
         tracers = ds.tracers
         prep_adv = ds.prep_advection_prognostic
-        tracer_prep_adv = ds.prep_tracer_advection_prognostic
 
         log.debug(
             f"starting time loop for dtime = {self.model_time_variables.dtime_in_seconds} s, substep_timestep = {self.model_time_variables.substep_timestep} s, n_timesteps = {self.model_time_variables.n_time_steps}"
@@ -254,7 +253,6 @@ class Icon4pyDriver:
                     prognostic_states=prognostic_states,
                     tracers=tracers,
                     prep_adv=prep_adv,
-                    tracer_prep_adv=tracer_prep_adv,
                 )
                 device_utils.sync(self.backend)
 
@@ -291,11 +289,10 @@ class Icon4pyDriver:
         diffusion_diagnostic_state: states.DiffusionDiagnostics | None,
         dycore_forcing: states.DycoreForcing | None,
         dycore_diagnostics: states.DycoreDiagnostics | None,
-        tracer_advection_diagnostic_state: tracer_advection_states.AdvectionDiagnosticState | None,
+        tracer_advection_diagnostic_state: states.AdvectionDiagnostics | None,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         tracers: common_utils.TimeStepPair[tracer_states.TracerState],
         prep_adv: states.PrepAdvection | None,
-        tracer_prep_adv: prep_adv_states.TracerPrepAdvState | None,
     ) -> None:
         # Airmass (rho * dz) is tracer advection's density<->mixing-ratio conversion
         # factor: computed from rho at the beginning of the time step and from the rho
@@ -303,7 +300,7 @@ class Icon4pyDriver:
         if tracer_advection_diagnostic_state is not None:
             self._compute_airmass(
                 rho_in=prognostic_states.current.rho,
-                airmass_out=tracer_advection_diagnostic_state.airmass_now,
+                airmass_out=tracer_advection_diagnostic_state.airmass_now.data,
             )
 
         if self.config.nonhydrostatic is not None:
@@ -327,7 +324,7 @@ class Icon4pyDriver:
             )
             self._compute_airmass(
                 rho_in=rho_after_dynamics,
-                airmass_out=tracer_advection_diagnostic_state.airmass_new,
+                airmass_out=tracer_advection_diagnostic_state.airmass_new.data,
             )
 
         if self.granules.diffusion is not None:
@@ -350,23 +347,12 @@ class Icon4pyDriver:
                         )
                     )
 
-        # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
-        # Precondition: passing data test with ntracer > 0
         if self.granules.tracer_advection is not None:
             assert tracer_advection_diagnostic_state is not None
-            assert tracer_prep_adv is not None
-            for tracer_current in tracers.current.active_fields():
-                tracer_next_field = getattr(tracers.next, tracer_current.name)
-                assert tracer_next_field is not None, (
-                    f"tracer '{tracer_current.name}' active in current state but missing in next state"
-                )
-                self.granules.tracer_advection.run(
-                    diagnostic_state=tracer_advection_diagnostic_state,
-                    prep_adv=tracer_prep_adv,
-                    p_tracer_now=tracer_current.field,
-                    p_tracer_new=tracer_next_field,
-                    dtime=self.model_time_variables.dtime_in_seconds,
-                )
+            assert prep_adv is not None
+            self.granules.tracer_advection.run(
+                *self._advection_views(tracers, tracer_advection_diagnostic_state, prep_adv)
+            )
 
         if self.granules.physics is not None:
             self.granules.physics.run(
@@ -612,6 +598,39 @@ class Icon4pyDriver:
         self.granules.solve_nonhydro.max_vertical_cfl = data_alloc.scalar_like_array(
             ta.wpfloat(0.0), self._allocator
         )
+
+    @staticmethod
+    def _tracer_leaves(tracer_state: tracer_states.TracerState) -> dict[str, Any]:
+        """The active tracers of the not yet converted tracer state, as typed fields."""
+        quantities = {d.name: d.quantity for d in states.TracerState.declarations()}
+        return {
+            tracer.name: fw.Field(quantities[tracer.name], tracer.field)
+            for tracer in tracer_state.active_fields()
+        }
+
+    def _advection_views(
+        self,
+        tracers: common_utils.TimeStepPair[tracer_states.TracerState],
+        diagnostics: states.AdvectionDiagnostics,
+        prep_adv: states.PrepAdvection,
+    ) -> tuple[tracer_advection.Advection.Input, tracer_advection.Advection.Output]:
+        """The advection's views: the tracers at `current` in, at `next` out, with the fluxes."""
+        inputs = tracer_advection.Advection.Input(
+            **self._tracer_leaves(tracers.current),
+            airmass_now=diagnostics.airmass_now,
+            airmass_new=diagnostics.airmass_new,
+            grf_tend_tracer=diagnostics.grf_tend_tracer,
+            vn_traj=prep_adv.vn_traj,
+            mass_flx_me=prep_adv.mass_flx_me,
+            mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dtime=self.model_time_variables.dtime_in_seconds,
+        )
+        out = tracer_advection.Advection.Output(
+            **self._tracer_leaves(tracers.next),
+            hfl_tracer=diagnostics.hfl_tracer,
+            vfl_tracer=diagnostics.vfl_tracer,
+        )
+        return inputs, out
 
     def _diffusion_views(
         self,
@@ -921,11 +940,9 @@ def run_driver(
         if dycore_enabled
         else None
     )
-    tracer_prep_adv_state = (
-        prep_adv_states.initialize_tracer_prep_adv_state(
-            grid=icon4py_driver.grid, allocator=allocator
-        )
-        if icon4py_driver.config.tracer_advection is not None
+    prep_adv = (
+        fw.allocate(states.PrepAdvection, icon4py_driver.grid, allocator)
+        if dycore_enabled or icon4py_driver.config.tracer_advection is not None
         else None
     )
     ic_apply(
@@ -935,7 +952,7 @@ def run_driver(
         prognostic_state_now=prognostic_state_now,
         tracer_state_now=tracer_state_now,
         dycore_diagnostics=dycore_diagnostics,
-        tracer_prep_adv_state=tracer_prep_adv_state,
+        tracer_prep_adv_state=prep_adv,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
@@ -955,7 +972,7 @@ def run_driver(
         experiment_config=icon4py_driver.config,
         dycore_forcing=dycore_forcing,
         dycore_diagnostics=dycore_diagnostics,
-        tracer_prep_adv_state=tracer_prep_adv_state,
+        prep_adv=prep_adv,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,

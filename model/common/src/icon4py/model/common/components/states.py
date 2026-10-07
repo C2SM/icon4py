@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from icon4py.model.common.components import framework as fw, quantities as qty
 from icon4py.model.common.states.tracer_states import TracerConfig
@@ -26,6 +26,8 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "TRACERS",
+    "AdvectionDiagnostics",
     "Diagnostics",
     "DiffusionDiagnostics",
     "DycoreDiagnostics",
@@ -71,6 +73,12 @@ class TracerState(fw.State):
             for declaration, field in self.leaves()
         }
         return TracerState(**copies)
+
+
+#: the tracer names, in ICON's order (QV=0, QC=1, QI=2, QR=3, QS=4, QG=5)
+TRACERS: Final[tuple[str, ...]] = tuple(
+    declaration.name for declaration in TracerState.declarations()
+)
 
 
 class PrepAdvection(fw.State):
@@ -152,6 +160,17 @@ class DiffusionDiagnostics(fw.State):
     div_ic: fw.Field[qty.DivergenceOnCellKHalf]
     dwdx: fw.Field[qty.ZonalGradientOfWOnCellKHalf]
     dwdy: fw.Field[qty.MeridionalGradientOfWOnCellKHalf]
+
+
+class AdvectionDiagnostics(fw.State):
+    """The diagnostics of the tracer advection, owned by the composer."""
+
+    #: mass of air in the layer at the beginning and the end of the time step
+    airmass_now: fw.Field[qty.AirMassOnCellK]
+    airmass_new: fw.Field[qty.AirMassOnCellK]
+    grf_tend_tracer: fw.Field[qty.GrfTendencyOfTracerOnCellK]
+    hfl_tracer: fw.Field[qty.HorizontalTracerFluxOnEdgeK]
+    vfl_tracer: fw.Field[qty.VerticalTracerFluxOnCellKHalf]
 
 
 class Diagnostics(fw.State):

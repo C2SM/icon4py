@@ -115,9 +115,9 @@ def validate_granule_state_consistency(
             raise ValueError(
                 "tracer_advection granule is present but tracer_advection_diagnostic state is None."
             )
-        if states.prep_tracer_advection_prognostic is None:
+        if states.prep_advection_prognostic is None:
             raise ValueError(
-                "tracer_advection granule is present but prep_tracer_advection_prognostic state is None."
+                "tracer_advection granule is present but prep_advection_prognostic state is None."
             )
 
 
