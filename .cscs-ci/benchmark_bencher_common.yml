@@ -9,7 +9,6 @@
     OMP_PROC_BIND: close
     OMP_PLACES: cores
     OMP_NUM_THREADS: 72
-    ICON4PY_BACKEND_WORKSPACE_SIZE: 17179869184
 
 .benchmark_nox_job:
   stage: benchmark
