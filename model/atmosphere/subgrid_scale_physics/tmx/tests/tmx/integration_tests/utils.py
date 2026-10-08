@@ -131,13 +131,14 @@ def assert_tmx_exit_fields(
     diagnostic_state: tmx_states.TmxDiagnosticState,
     exit_savepoint: sb.TmxExitSavepoint,
     use_km_const: bool,
-    cells: slice | np.ndarray,
+    owner_mask: np.ndarray,
 ) -> None:
     """
     Assert that the outputs of a tmx step match the tmx-exit savepoint.
 
     The tendencies ICON exchanges (temperature, u, v) are compared on all cells, including
-    the halo; every other output is compared on `cells`, because ICON leaves its halo unsynced.
+    the halo; every other output only on the owned cells, because ICON leaves its halo
+    unsynced.
     """
     num_levels = diagnostic_state.km.ndarray.shape[1]
     # the surface level of km and kh is the surface exchange coefficient, written only with
@@ -166,7 +167,7 @@ def assert_tmx_exit_fields(
         ),
     }
     for name, (computed, reference, atol) in fields.items():
-        compared = slice(None) if name in synced_fields else cells
+        compared = slice(None) if name in synced_fields else owner_mask
         test_utils.assert_dallclose(
             computed.asnumpy()[compared],
             reference.asnumpy()[compared],
@@ -179,8 +180,8 @@ def assert_tmx_exit_fields(
         ("kh", diagnostic_state.kh, exit_savepoint.kh(), 3.0e-10),
     ):
         test_utils.assert_dallclose(
-            computed.asnumpy()[cells, exchange_coefficient_levels],
-            reference.asnumpy()[cells, exchange_coefficient_levels],
+            computed.asnumpy()[owner_mask, exchange_coefficient_levels],
+            reference.asnumpy()[owner_mask, exchange_coefficient_levels],
             rtol=RTOL,
             atol=atol,
             err_msg=name,

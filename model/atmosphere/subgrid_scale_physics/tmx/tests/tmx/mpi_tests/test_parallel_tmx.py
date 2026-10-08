@@ -107,5 +107,5 @@ def test_parallel_tmx_run_single_step(
         diagnostic_state=diagnostic_state,
         exit_savepoint=data_provider.from_savepoint_tmx_exit(date=date),
         use_km_const=tmx_config.use_km_const,
-        cells=data_alloc.as_numpy(decomposition_info.owner_mask(dims.CellDim)),
+        owner_mask=data_alloc.as_numpy(decomposition_info.owner_mask(dims.CellDim)),
     )
