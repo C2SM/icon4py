@@ -13,7 +13,7 @@ import enum
 import functools
 import logging
 import statistics
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import devtools
 
@@ -30,6 +30,7 @@ from icon4py.model.driver import config as driver_config
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+    from gt4py.next import backend as gtx_backend
 
 
 log = logging.getLogger(__name__)
@@ -251,7 +252,7 @@ def assemble_driver_states(
     *,
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
-    backend: gtx_typing.Backend | None,
+    backend: gtx_backend.Backend[Any] | None,
     exchange: decomposition_defs.ExchangeRuntime,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: states.PrognosticState,

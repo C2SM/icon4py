@@ -22,11 +22,10 @@ import pytest
 import xarray as xr
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common.components import framework as fw, states
+from icon4py.model.common.components import framework as fw, quantities as qty, states
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base, simple
-from icon4py.model.common.io import io as common_io, utils as io_utils, writers
-from icon4py.model.common.states import data as state_data
+from icon4py.model.common.io import io as common_io, writers
 from icon4py.model.driver import driver_io
 
 from ..fixtures import *  # noqa: F403
@@ -48,9 +47,6 @@ EXPECTED_LEAVES: dict[str, str] = {
     "pressure": "pressure",
 }
 
-# the CF table entries the output attributes were rendered from before the IO component
-CF_TABLE = state_data.PROGNOSTIC_CF_ATTRIBUTES | state_data.DIAGNOSTIC_CF_ATTRIBUTES
-
 # (UGRID horizontal dimension, vertical dimension) of each output variable
 EXPECTED_DIMS: dict[str, tuple[str, str]] = {
     name: ("cell", "level") for name in EXPECTED_LEAVES
@@ -69,6 +65,13 @@ class StubWriter:
 
     def store(self, state: dict[str, xr.DataArray], model_time: datetime.datetime) -> None:
         self.stored.append((dict(state), model_time))
+
+
+class DuplicatedIOMonitor(driver_io.IOMonitor):
+    """Two leaves of one quantity: both would be written as `air_density`."""
+
+    class Input(driver_io.IOMonitor.Input):
+        rho_again: fw.Field[qty.RhoOnCellK]
 
 
 def make_monitor(
@@ -140,6 +143,13 @@ def test_unknown_variable_raises(grid: base.Grid) -> None:
         make_monitor(grid, StubWriter(), ["air_density", "not_a_field"])
 
 
+def test_two_leaves_with_one_output_name_are_rejected(grid: base.Grid) -> None:
+    with pytest.raises(AssertionError, match=r"'rho' and 'rho_again'.*'air_density'"):
+        DuplicatedIOMonitor(
+            grid=grid, writer=cast(common_io.IOMonitor, StubWriter()), variables=["air_density"]
+        )
+
+
 def test_dataarrays_carry_the_dims_of_their_leaf(grid: base.Grid) -> None:
     state = stored_state(grid)
 
@@ -151,19 +161,22 @@ def test_dataarrays_carry_the_dims_of_their_leaf(grid: base.Grid) -> None:
         assert state[name].shape == (sizes[horizontal], levels[vertical])
 
 
-def test_written_attributes_equal_the_cf_table_ones(grid: base.Grid) -> None:
-    """The attributes the writers put in the file are those rendered from the CF tables."""
+def test_written_attributes_are_those_of_the_leaf_quantity(grid: base.Grid) -> None:
+    """The file attributes are the quantity's CF attributes plus the UGRID association."""
     inputs = make_inputs(grid)
     state = stored_state(grid)
 
     for name, leaf in EXPECTED_LEAVES.items():
-        from_table = io_utils.to_data_array(getattr(inputs, leaf).data, CF_TABLE[name])
-        assert writers.data_variable_attributes(state[name]) == (
-            writers.data_variable_attributes(from_table)
-        )
-        # the table rendering also carried `icon_var_name` and `dtype`, which no writer writes
+        quantity = getattr(inputs, leaf).quantity
+        attrs = writers.data_variable_attributes(state[name])
         assert set(state[name].attrs) == {*writers.DATA_VARIABLE_ATTRIBUTES}
-        assert state[name].attrs == {key: from_table.attrs[key] for key in state[name].attrs}
+        assert (attrs["standard_name"], attrs["long_name"], attrs["units"]) == (
+            quantity.standard_name,
+            quantity.long_name,
+            quantity.units,
+        )
+    # the file name and the CF standard_name of a variable may differ
+    assert state["exner_function"].attrs["standard_name"] == "dimensionless_exner_function"
 
 
 def test_data_is_host_numpy(grid: base.Grid, backend: gtx_backend.Backend[Any] | None) -> None:

@@ -10,9 +10,12 @@
 The quantities of the model, one type-level tag per quantity at one place on the grid.
 
 The tags are named `<Quantity>On<Place>`, as icon4py names its fields
-(`theta_v_at_cells_on_half_levels`). The CF attributes are those of the tables in
-`icon4py.model.common.states.data`; a quantity without a CF name has `standard_name=None`
-and a `long_name` from the docstring of the field it replaces.
+(`theta_v_at_cells_on_half_levels`). The CF attributes of the fields icon4py already had
+attribute tables for are those tables' values, kept so the output files do not change; some of
+their standard names are not in the CF standard name table (`normal_velocity`,
+`specific_cloud_content`, `virtual_potential_temperature`, ...). Any other quantity has a
+`standard_name` only where the CF table has one, otherwise `standard_name=None` and a
+`long_name` from the docstring of the field it replaces.
 """
 
 from icon4py.model.common import dimension as dims
@@ -58,7 +61,7 @@ class PressureOnCellK(Quantity, dims=CELL_K, standard_name="air_pressure", long_
 class PressureOnCellKHalf(Quantity, dims=CELL_KHALF, long_name="air pressure at half levels", units="Pa"): ...
 class SurfacePressureOnCell(Quantity, dims=CELL, standard_name="air_pressure_at_ground_level", long_name="air pressure at ground level", units="Pa"): ...
 
-# --- dycore diagnostics (DiagnosticStateNonHydro) ---
+# --- dycore diagnostics ---
 
 class ContravariantCorrectionOnCellKHalf(Quantity, dims=CELL_KHALF, long_name="contravariant correction at cell centers on half levels (w_concorr_c)", units="m s-1", precision="vp"): ...
 class PerturbedExnerOnCellK(Quantity, dims=CELL_K, long_name="perturbation of the exner function (exner_pr)", units="1"): ...

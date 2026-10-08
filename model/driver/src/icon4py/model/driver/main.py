@@ -57,9 +57,9 @@ def main(
     log_level: Annotated[
         str,
         typer.Option(
-            help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
+            help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils.LOGGING_LEVELS.keys()])}",
         ),
-    ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
+    ] = next(iter(driver_utils.LOGGING_LEVELS.keys())),
     print_distributed_debug_msg: Annotated[
         bool,
         typer.Option(
@@ -96,7 +96,7 @@ def main(
     """
 
     process_props = decomposition_defs.get_process_properties(
-        decomposition_defs.get_runtype(with_mpi=mpi_decomp.mpi4py is not None)
+        decomposition_defs.get_runtype(with_mpi=mpi_decomp.import_error is None)
     )
     driver_utils.configure_logging(
         logging_level=log_level,

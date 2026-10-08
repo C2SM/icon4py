@@ -243,6 +243,10 @@ class Component:
     first use; `component.run(inputs, out=view)` writes where the caller says, numpy `out=`
     style. Either way `run` returns the output. Whether `out` may alias the input is the
     component's business; nothing checks it here.
+
+    The own buffers (`output`) hold every leaf of `Output`, the optional ones included: a
+    component with optional leaves (`Advection`, `PhysicsDriver`: the tracers) would allocate
+    all of them, so its composer always passes `out=`, views over the active ones only.
     """
 
     Input: type[State]
