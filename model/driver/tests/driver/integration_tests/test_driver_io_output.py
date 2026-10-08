@@ -16,10 +16,11 @@ Being a datatest, it requires the JW grid and experiment configuration.
 """
 
 import pathlib
+from typing import Any
 
-import gt4py.next.typing as gtx_typing
 import pytest
 import xarray as xr
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
@@ -41,7 +42,8 @@ def _open_output(path: pathlib.Path, output_backend: common_io.OutputBackend) ->
         case common_io.OutputBackend.NETCDF:
             return xr.open_dataset(path, decode_times=False)
         case common_io.OutputBackend.ZARR:
-            return xr.open_zarr(path, decode_times=False)
+            dataset: xr.Dataset = xr.open_zarr(path, decode_times=False)  # untyped in xarray
+            return dataset
 
 
 @pytest.mark.datatest
@@ -57,10 +59,10 @@ def test_driver_writes_output(
     download_ser_data: None,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend: gtx_backend.Backend[Any],
 ) -> None:
     allocator = model_backends.get_allocator(backend)
-    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)  # pyright: ignore[reportPrivateUsage]
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
