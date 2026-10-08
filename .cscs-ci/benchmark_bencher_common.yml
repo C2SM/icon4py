@@ -54,6 +54,7 @@
     matrix:
       - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         GRID: [R02B06_GLOBAL]
+
 .benchmark_driver_nox_job:
   stage: benchmark
   script:
@@ -70,6 +71,7 @@
     matrix:
       - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         GRID: [R02B06_GLOBAL]
+
 .bencher_github_event_setup:
   script:
     - export PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
