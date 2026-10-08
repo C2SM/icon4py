@@ -108,7 +108,9 @@ def test_tmx_init_and_run_diagnostics_single_step(
     )
 
     diagnostic_state = tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator)
-    component.run(construct_input_state(entry_savepoint), diagnostic_state)
+    component.run(
+        input_state=construct_input_state(entry_savepoint), diagnostic_state=diagnostic_state
+    )
 
     nlev = icon_grid.num_levels
     # (diagnostic state attribute, exit savepoint accessor, K slice compared, absolute tolerance)

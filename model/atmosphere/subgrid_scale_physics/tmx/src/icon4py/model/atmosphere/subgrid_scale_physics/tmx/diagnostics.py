@@ -339,6 +339,7 @@ class Diagnostics:
 
     def run(
         self,
+        *,
         input_state: tmx_states.TmxInputState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
     ) -> None:

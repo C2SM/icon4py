@@ -113,7 +113,7 @@ class Tmx:
         """
         log.debug("tmx step: start")
 
-        self.diagnostics.run(input_state, diagnostic_state)
+        self.diagnostics.run(input_state=input_state, diagnostic_state=diagnostic_state)
         states = dict(
             input_state=input_state,
             surface_flux_state=surface_flux_state,
