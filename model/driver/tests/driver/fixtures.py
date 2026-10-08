@@ -47,8 +47,8 @@ def linit(timeloop_diffusion_linit_exit: bool) -> bool:
 
 BENCHMARK_EXPERIMENTS: list[test_defs.ExperimentDescription] = [test_defs.Experiments.JW]
 BENCHMARK_STEPS: int = 100
-BENCHMARK_ROUNDS: int = 5
-BENCHMARK_WARMUP_ROUNDS: int = 2
+BENCHMARK_ROUNDS: int = 3
+BENCHMARK_WARMUP_ROUNDS: int = 1
 
 
 def _resolve_grid(grid_option: str) -> test_defs.GridDescription:
