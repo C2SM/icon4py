@@ -12,7 +12,7 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics_stencils import (
     compute_shear_and_viscosity_diagnostics,
     compute_smagorinsky_mixing_length,
     compute_thermodynamic_diagnostics,

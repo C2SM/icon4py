@@ -10,7 +10,7 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.wind_diffusion import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.wind_diffusion_stencils import (
     compute_vn_diffusion_tendency,
     compute_w_diffusion_tendency_and_update_w,
     interpolate_vn_tendency_to_cells_and_update_uv,
@@ -20,7 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_vertical_diffusion import (
+from .test_vertical_diffusion_stencils import (
     diffusion_matrix_numpy,
     implicit_diffusion_tendency_numpy,
     matrix_diagonals_on_rows,

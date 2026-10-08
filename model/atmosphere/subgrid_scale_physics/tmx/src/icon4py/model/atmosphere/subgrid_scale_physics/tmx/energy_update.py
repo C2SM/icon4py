@@ -22,7 +22,7 @@ import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import (
-    energy_update as energy_stencils,
+    energy_update_stencils as energy_stencils,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition

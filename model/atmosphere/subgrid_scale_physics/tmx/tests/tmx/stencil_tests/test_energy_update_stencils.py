@@ -11,7 +11,7 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.energy_update import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.energy_update_stencils import (
     update_temperature_and_compute_end_of_step_diagnostics,
 )
 from icon4py.model.common import constants, dimension as dims
@@ -20,8 +20,8 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_scalar_diffusion import internal_energy_per_area_numpy
-from .test_wind_diffusion import on_rows
+from .test_scalar_diffusion_stencils import internal_energy_per_area_numpy
+from .test_wind_diffusion_stencils import on_rows
 
 
 class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilTest):

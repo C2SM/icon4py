@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import broadcast, neighbor_sum
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.vertical_diffusion import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.vertical_diffusion_stencils import (
     _assemble_vertical_diffusion_matrix_on_cells,
     _solve_implicit_vertical_diffusion_on_cells,
 )

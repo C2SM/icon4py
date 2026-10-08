@@ -10,7 +10,7 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.vertical_diffusion import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.vertical_diffusion_stencils import (
     _assemble_vertical_diffusion_matrix_on_cell_half_levels,
     _assemble_vertical_diffusion_matrix_on_cells,
     _assemble_vertical_diffusion_matrix_on_edges,
