@@ -9,7 +9,10 @@
 """Smoke test of the tmx component on the simple grid.
 
 Runs one step on random but physically plausible fields and checks that every output is
-finite. Correctness is covered by the stencil tests and the integration datatests.
+finite and every tendency non-zero. Correctness is covered by the stencil tests and the
+integration datatests. Those need serialized data and run only on CSCS; this is the only
+test of `Tmx` that runs in GitHub Actions, where it catches broken wiring (constructor
+arguments, stage order, the states passed between the stages) on every PR.
 """
 
 from __future__ import annotations
