@@ -143,6 +143,8 @@ def assert_tmx_exit_fields(
     num_levels = diagnostic_state.km.ndarray.shape[1]
     # the surface level of km and kh is the surface exchange coefficient, written only with
     # `use_km_const`
+    # TODO(jcanton): drop this slicing once the tmx surface scheme, which computes km_sfc and
+    # kh_sfc, is ported.
     exchange_coefficient_levels = slice(None, None if use_km_const else num_levels - 1)
     # (computed, reference, absolute tolerance). The tolerances are the largest deviations
     # measured on the v08 archive in #1359, with headroom; not yet measured on v11.
