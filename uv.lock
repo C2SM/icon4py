@@ -24,7 +24,7 @@ resolution-markers = [
   "python_full_version < '3.13' and sys_platform == 'emscripten'",
   "python_full_version < '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'"
 ]
-revision = 3
+revision = 5
 version = 1
 
 [manifest]
@@ -1181,7 +1181,7 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/spcl/dace.git?branch=main#3b1dccf81a5ce03a03596937ae65adf08112382f"}
+source = {git = "https://github.com/spcl/dace.git?branch=main#dbc35f3564bda62d96d1fc7cfd2d0070ca1882d6"}
 version = "2.0.0a10"
 
 [[package]]
