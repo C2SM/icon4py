@@ -7,7 +7,7 @@ tags:
 
 # Physics components interface: return values
 
-- **Status**: valid
+- **Status**: superseded by the components stack (typed states and components), see C2SM/icon4py-knowledge `mwe/components` (`DESIGN.md`) and `model/common/src/icon4py/model/common/components/README.md`
 - **Authors**: Magdalena Luz (@halungge), Ong Chia Rui (@ongchia)
 - **Created**: 2024-07-23
 - **Updated**: 2024-09-11

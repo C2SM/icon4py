@@ -13,9 +13,10 @@ import logging
 import pathlib
 import types
 from collections.abc import Callable
+from typing import Any
 
 import gt4py.next as gtx
-from gt4py.next import config as gtx_config
+from gt4py.next import backend as gtx_backend, config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
@@ -66,7 +67,7 @@ class Icon4pyDriver:
         self,
         *,
         config: driver_config.ExperimentConfig,
-        backend: gtx.typing.Backend | None,
+        backend: gtx_backend.Backend[Any] | None,
         grid: IconGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: static_fields.StaticFieldFactories,
@@ -98,12 +99,12 @@ class Icon4pyDriver:
         driver_utils.display_driver_setup_in_log_file(
             config=self.config.driver,
             model_time_variables=self.model_time_variables,
-            vertical_params=self.static_field_factories.metrics._vertical_grid,
+            vertical_params=self.static_field_factories.metrics.vertical_grid,
             tracer_config=self.config.tracer_config,
         )
 
     @functools.cached_property
-    def _allocator(self) -> gtx.typing.Backend:
+    def _allocator(self) -> gtx_backend.Backend[Any]:
         return model_backends.get_allocator(self.backend)
 
     @functools.cached_property
@@ -117,11 +118,11 @@ class Icon4pyDriver:
     def _is_first_substep(step_nr: int) -> bool:
         return step_nr == 0
 
-    def _full_name(self, func: Callable) -> str:
+    def _full_name(self, func: Callable[..., Any]) -> str:
         return f"{self.__class__.__name__}:{func.__name__}"
 
     @functools.cached_property
-    def _dry_air_tracers(self) -> tuple[gtx.Field, ...]:
+    def _dry_air_tracers(self) -> tuple[gtx.Field[Any, Any], ...]:
         """qv, qc, qi, qr, qs, qg for the output diagnostics: zero, the dry-air path."""
         return tuple(
             data_alloc.zero_field(
@@ -131,7 +132,7 @@ class Icon4pyDriver:
         )
 
     @functools.cached_property
-    def _pressure_ifc_on_model_levels(self) -> gtx.Field:
+    def _pressure_ifc_on_model_levels(self) -> gtx.Field[Any, Any]:
         """Scratch of the hydrostatic pressure integration for output."""
         return data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
@@ -497,8 +498,9 @@ class Icon4pyDriver:
             rho_iau_increment=forcing.rho_iau_increment,
             normal_wind_iau_increment=forcing.normal_wind_iau_increment,
             exner_iau_increment=forcing.exner_iau_increment,
-            second_order_divdamp_factor=second_order_divdamp_factor,
-            dtime=self.model_time_variables.substep_timestep,
+            # pyright resolves wpfloat to float32, which is not a float
+            second_order_divdamp_factor=second_order_divdamp_factor,  # pyright: ignore[reportArgumentType]
+            dtime=self.model_time_variables.substep_timestep,  # pyright: ignore[reportArgumentType]
             ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
             at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
             prepare_fluxes_for_advection=self.granules.tracer_advection is not None,
@@ -686,7 +688,8 @@ class Icon4pyDriver:
             vn_traj=prep_adv.vn_traj,
             mass_flx_me=prep_adv.mass_flx_me,
             mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
-            dtime=self.model_time_variables.dtime_in_seconds,
+            # pyright resolves wpfloat to float32, which is not a float
+            dtime=self.model_time_variables.dtime_in_seconds,  # pyright: ignore[reportArgumentType]
         )
         out = tracer_advection.Advection.Output(
             qv=next_.qv,
@@ -748,7 +751,13 @@ class Icon4pyDriver:
             prognostic_state.theta_v,
         )
         inputs = diffusion.Diffusion.Input(
-            vn=vn, w=w, exner=exner, theta_v=theta_v, dtime=dtime, initial_run=initial_run
+            # pyright resolves wpfloat to float32, which is not a float
+            vn=vn,
+            w=w,
+            exner=exner,
+            theta_v=theta_v,
+            dtime=dtime,  # pyright: ignore[reportArgumentType]
+            initial_run=initial_run,
         )
         out = diffusion.Diffusion.Output(
             vn=vn,
@@ -904,7 +913,7 @@ def initialize_driver(
     config: driver_config.ExperimentConfig,
     grid_manager: gm.GridManager,
     process_props: decomposition_defs.ProcessProperties,
-    backend: gtx.typing.Backend | None,
+    backend: gtx_backend.Backend[Any] | None,
 ) -> Icon4pyDriver:
     output_path = driver_config.prepare_output_directory(
         config_output_path=config.driver.output_path,
@@ -1010,7 +1019,7 @@ def run_driver(
     config: driver_config.ExperimentConfig,
     grid_manager: gm.GridManager,
     process_props: decomposition_defs.ProcessProperties,
-    backend: gtx.typing.Backend | None,
+    backend: gtx_backend.Backend[Any] | None,
 ) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
     icon4py_driver = initialize_driver(
         config=config,
