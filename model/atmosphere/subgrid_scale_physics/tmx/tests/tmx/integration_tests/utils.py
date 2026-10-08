@@ -190,7 +190,7 @@ def assert_tmx_exit_fields(
         )
 
 
-#: the echoed namelist; every other `NAMELIST_*` file of an archive is the input namelist
+# the echoed namelist; every other `NAMELIST_*` file of an archive is the input namelist
 _NAMELIST_ATM_FNAME = "NAMELIST_ICON_output_atm"
 
 
