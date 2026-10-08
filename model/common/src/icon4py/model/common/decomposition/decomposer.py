@@ -54,10 +54,11 @@ class MetisDecomposer(Decomposer):
 
         # METIS only runs on CPU. Invalid entries denote physical boundaries and are excluded.
         adjacency_matrix_np = data_alloc.as_numpy(adjacency_matrix)
-        valid_neighbors = [row[row >= 0] for row in adjacency_matrix_np]
-        xadj = np.zeros(len(valid_neighbors) + 1, dtype=np.int32)
-        xadj[1:] = np.cumsum([len(row) for row in valid_neighbors])
-        adjncy = np.concatenate(valid_neighbors)
+        mask = adjacency_matrix_np >= 0
+        counts = mask.sum(axis=1)
+        xadj = np.zeros(len(counts) + 1, dtype=np.int32)
+        xadj[1:] = np.cumsum(counts)
+        adjncy = adjacency_matrix_np[mask]
 
         # The partitioning is done on all ranks, and this assumes that the partitioning is deterministic.
         _, partition_index = pymetis.part_graph(
