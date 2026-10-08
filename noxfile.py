@@ -161,7 +161,14 @@ def _serial_testbed() -> str:
 
     Shape: ``RUNNER:SYSTEM_TAG:BACKEND:GRID``.
     """
-    return f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}"
+    return ":".join(
+        (
+            os.environ["RUNNER"],
+            os.environ["SYSTEM_TAG"],
+            os.environ["BACKEND"],
+            os.environ["GRID"],
+        )
+    )
 
 
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_model-{python}"])
