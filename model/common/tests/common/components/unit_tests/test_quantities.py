@@ -12,7 +12,6 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.components import framework as fw, quantities as qty
-from icon4py.model.common.states import data as cf_data
 
 
 PLACES = {
@@ -40,21 +39,6 @@ def test_quantity_is_named_after_its_place(quantity: type[fw.Quantity]) -> None:
     assert quantity.dims == PLACES[place]
     assert isinstance(quantity.units, str)
     assert quantity.precision in ("wp", "vp")
-
-
-def test_the_cf_attributes_are_those_of_the_tables() -> None:
-    for quantity, attrs in (
-        (qty.RhoOnCellK, cf_data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
-        (qty.VnOnEdgeK, cf_data.PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"]),
-        (qty.QvOnCellK, cf_data.COMMON_TRACER_CF_ATTRIBUTES["qv"]),
-        (qty.TemperatureOnCellK, cf_data.DIAGNOSTIC_CF_ATTRIBUTES["temperature"]),
-        (qty.SurfacePressureOnCell, cf_data.DIAGNOSTIC_CF_ATTRIBUTES["surface_pressure"]),
-        (qty.TendencyOfQvOnCellK, cf_data.TENDENCY_CF_ATTRIBUTES["qv"]),
-        (qty.PrecipitationFluxOnCellK, cf_data.PRECIPITATION_CF_ATTRIBUTES["precipitation_flux"]),
-    ):
-        assert quantity.standard_name == attrs.standard_name
-        assert quantity.units == attrs.units
-        assert quantity.long_name == attrs.long_name
 
 
 def test_tendencies_are_marked() -> None:

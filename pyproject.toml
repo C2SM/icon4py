@@ -249,12 +249,10 @@ disallow_untyped_calls = true
 disallow_untyped_decorators = true
 extra_checks = true
 module = [
-  "icon4py.model.common.components.framework",
-  "icon4py.model.common.components.quantities",
-  "icon4py.model.common.components.states",
+  "icon4py.model.common.components.*",
   "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.*",
   "icon4py.model.atmosphere.subgrid_scale_physics.muphys.component",
-  "icon4py.model.driver.driver_io",
+  "icon4py.model.driver.*",
   "*.components.unit_tests.*",
   "*.physics_driver.unit_tests.*",
   "*.muphys.unit_tests.*",
@@ -283,15 +281,13 @@ module = [
 
 [tool.pyright]
 include = [
-  "model/common/src/icon4py/model/common/components/framework.py",
-  "model/common/src/icon4py/model/common/components/quantities.py",
-  "model/common/src/icon4py/model/common/components/states.py",
+  "model/common/src/icon4py/model/common/components",
   "model/common/tests/common/components",
   "model/atmosphere/subgrid_scale_physics/physics_driver/src/icon4py/model/atmosphere/subgrid_scale_physics/physics_driver",
   "model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests",
   "model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py",
   "model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/unit_tests",
-  "model/driver/src/icon4py/model/driver/driver_io.py",
+  "model/driver/src/icon4py/model/driver",
   "model/driver/tests/driver/unit_tests/test_driver_io.py",
   "model/driver/tests/driver/integration_tests/test_driver_io_output.py"
 ]

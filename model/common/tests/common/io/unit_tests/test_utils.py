@@ -11,14 +11,19 @@ import xarray as xa
 import icon4py.model.common.grid.simple as simple_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.io import ugrid, utils
-from icon4py.model.common.states import data, model
+from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+AIR_DENSITY = model.FieldMetaData(
+    standard_name="air_density", long_name="density", units="kg m-3", icon_var_name="rho"
+)
 
 
 def test_data_array_has_ugrid_and_cf_attributes():
     grid = simple_grid.simple_grid()
     buffer = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-    data_array = utils.to_data_array(buffer, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"])
+    data_array = utils.to_data_array(buffer, AIR_DENSITY)
     assert data_array.attrs["units"] == "kg m-3"
     assert data_array.attrs["standard_name"] == "air_density"
     assert data_array.attrs["icon_var_name"] == "rho"
@@ -32,7 +37,7 @@ def test_data_array_has_ugrid_and_cf_attributes():
 def test_type_check_for_datafields():
     grid = simple_grid.simple_grid()
     field = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
-    model_field = model.ModelField(data=field, attrs=data.DIAGNOSTIC_CF_ATTRIBUTES["eastward_wind"])
+    model_field = model.ModelField(data=field, attrs=AIR_DENSITY)
     assert not isinstance(field, model.ModelField)
     assert isinstance(model_field, model.DataField)
     dataarray = utils.to_data_array(field, attrs=model_field.attrs)
