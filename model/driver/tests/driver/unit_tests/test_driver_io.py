@@ -6,32 +6,108 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Unit tests for the driver-side IO bridge (``driver_io``).
+"""Unit tests of the driver's IO component (``driver_io.IOMonitor``).
 
-These tests are data-free: they use the ``simple_grid`` and a zero-initialised
-``PrognosticState`` so they need no serialized/grid test data.
+Data-free: the ``simple_grid``, zero states and a stub writer in place of the common one.
 """
 
-import copy
-import dataclasses
 import datetime
 import pathlib
 import uuid
+from typing import Any, cast
 
-import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 import xarray as xr
+from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.components import framework as fw, states
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import base, simple, vertical as v_grid
-from icon4py.model.common.io import io as common_io
-from icon4py.model.common.states import data as state_data, model as state_model
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.grid import base, simple
+from icon4py.model.common.io import io as common_io, utils as io_utils, writers
+from icon4py.model.common.states import data as state_data
 from icon4py.model.driver import driver_io
-from icon4py.model.testing.fixtures import backend
+
+from ..fixtures import *  # noqa: F403
+
+
+START = datetime.datetime(2000, 1, 1)
+
+# the output variable of each Input leaf, as the output files name them
+EXPECTED_LEAVES: dict[str, str] = {
+    "air_density": "rho",
+    "exner_function": "exner",
+    "virtual_potential_temperature": "theta_v",
+    "upward_air_velocity": "w",
+    "normal_velocity": "vn",
+    "eastward_wind": "u",
+    "northward_wind": "v",
+    "temperature": "temperature",
+    "virtual_temperature": "virtual_temperature",
+    "pressure": "pressure",
+}
+
+# the CF table entries the output attributes were rendered from before the IO component
+CF_TABLE = state_data.PROGNOSTIC_CF_ATTRIBUTES | state_data.DIAGNOSTIC_CF_ATTRIBUTES
+
+# (UGRID horizontal dimension, vertical dimension) of each output variable
+EXPECTED_DIMS: dict[str, tuple[str, str]] = {
+    name: ("cell", "level") for name in EXPECTED_LEAVES
+} | {"upward_air_velocity": ("cell", "half_level"), "normal_velocity": ("edge", "level")}
+
+
+class StubWriter:
+    """The writer's `at_capture_time`/`store` contract: `store` advances the schedule."""
+
+    def __init__(self, captures: list[bool] | None = None) -> None:
+        self.captures = captures
+        self.stored: list[tuple[dict[str, xr.DataArray], datetime.datetime]] = []
+
+    def at_capture_time(self) -> bool:
+        return True if self.captures is None else self.captures[len(self.stored)]
+
+    def store(self, state: dict[str, xr.DataArray], model_time: datetime.datetime) -> None:
+        self.stored.append((dict(state), model_time))
+
+
+def make_monitor(
+    grid: base.Grid, writer: StubWriter, variables: list[str] | None = None
+) -> driver_io.IOMonitor:
+    return driver_io.IOMonitor(
+        grid=grid,
+        writer=cast(common_io.IOMonitor, writer),
+        variables=driver_io.DEFAULT_OUTPUT_VARIABLES if variables is None else variables,
+    )
+
+
+def make_inputs(
+    grid: base.Grid,
+    allocator: gtx_typing.Allocator | None = None,
+    simulation_time: datetime.datetime = START,
+) -> driver_io.IOMonitor.Input:
+    prognostics = fw.allocate(states.PrognosticState, grid, allocator)
+    diagnostics = fw.allocate(states.Diagnostics, grid, allocator)
+    return driver_io.IOMonitor.Input(
+        rho=prognostics.rho,
+        w=prognostics.w,
+        vn=prognostics.vn,
+        exner=prognostics.exner,
+        theta_v=prognostics.theta_v,
+        temperature=diagnostics.temperature,
+        virtual_temperature=diagnostics.virtual_temperature,
+        pressure=diagnostics.pressure,
+        u=diagnostics.u,
+        v=diagnostics.v,
+        simulation_time=simulation_time,
+    )
+
+
+def stored_state(grid: base.Grid, allocator: gtx_typing.Allocator | None = None) -> Any:
+    writer = StubWriter()
+    make_monitor(grid, writer).run(make_inputs(grid, allocator))
+    ((state, _),) = writer.stored
+    return state
 
 
 @pytest.fixture
@@ -39,189 +115,106 @@ def grid() -> base.Grid:
     return simple.simple_grid()
 
 
-def _make_prognostic_state(
-    grid: base.Grid, allocator: gtx.typing.Backend | None = None
-) -> states.PrognosticState:
-    return fw.allocate(states.PrognosticState, grid, allocator)
+def test_selects_each_variable_from_its_leaf(grid: base.Grid) -> None:
+    monitor = make_monitor(grid, StubWriter())
+
+    assert monitor.selected == EXPECTED_LEAVES
 
 
-@pytest.fixture
-def prognostic_state(grid: base.Grid) -> states.PrognosticState:
-    return _make_prognostic_state(grid)
+def test_default_variables_are_every_variable_in_file_order() -> None:
+    assert list(EXPECTED_LEAVES) == driver_io.DEFAULT_OUTPUT_VARIABLES
 
 
-def _expected(
-    cf_key: str, horizontal_dim: gtx.Dimension, *, vertical_dim: gtx.Dimension = dims.KDim
-) -> state_model.FieldMetaData:
-    """Expected output metadata: the shared CF entry plus the expected dims.
-    ``standard_name``/``units`` come from the shared table rather than being
-    re-spelled here; ``dims`` is stated independently of the production code so
-    the assertions stay a genuine check. A field on interface levels is expected
-    on ``KHalfDim``, which is what decides the netCDF vertical dimension name."""
-    return dataclasses.replace(
-        state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_key],
-        dims=(horizontal_dim, vertical_dim),
-    )
+def test_variables_subset(grid: base.Grid) -> None:
+    writer = StubWriter()
+    monitor = make_monitor(grid, writer, ["air_density", "normal_velocity"])
+
+    monitor.run(make_inputs(grid))
+
+    assert monitor.selected == {"air_density": "rho", "normal_velocity": "vn"}
+    assert set(writer.stored[0][0]) == {"air_density", "normal_velocity"}
 
 
-#: Expected output metadata per output variable (keyed by CF name).
-_EXPECTED: dict[str, state_model.FieldMetaData] = {
-    "air_density": _expected("air_density", dims.CellDim),
-    "exner_function": _expected("exner_function", dims.CellDim),
-    "virtual_potential_temperature": _expected("virtual_potential_temperature", dims.CellDim),
-    "upward_air_velocity": _expected(
-        "upward_air_velocity", dims.CellDim, vertical_dim=dims.KHalfDim
-    ),
-    "normal_velocity": _expected("normal_velocity", dims.EdgeDim),
-}
-
-#: UGRID dimension names of the horizontal dimensions.
-_UGRID_DIM_NAMES: dict[gtx.Dimension, str] = {
-    dims.CellDim: "cell",
-    dims.EdgeDim: "edge",
-    dims.VertexDim: "vertex",
-}
+def test_unknown_variable_raises(grid: base.Grid) -> None:
+    with pytest.raises(ValueError, match=r"Unknown output variable 'not_a_field'.*air_density"):
+        make_monitor(grid, StubWriter(), ["air_density", "not_a_field"])
 
 
-def _horizontal_size(grid: base.Grid, dim: gtx.Dimension) -> int:
-    return {
-        dims.CellDim: grid.num_cells,
-        dims.EdgeDim: grid.num_edges,
-        dims.VertexDim: grid.num_vertices,
-    }[dim]
+def test_dataarrays_carry_the_dims_of_their_leaf(grid: base.Grid) -> None:
+    state = stored_state(grid)
+
+    sizes = {"cell": grid.num_cells, "edge": grid.num_edges}
+    levels = {"level": grid.num_levels, "half_level": grid.num_levels + 1}
+    assert set(state) == set(EXPECTED_LEAVES)
+    for name, (horizontal, vertical) in EXPECTED_DIMS.items():
+        assert state[name].dims == (horizontal, vertical)
+        assert state[name].shape == (sizes[horizontal], levels[vertical])
 
 
-def test_assembles_all_default_variables(
-    prognostic_state: states.PrognosticState, grid: base.Grid
-) -> None:
-    state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
+def test_written_attributes_equal_the_cf_table_ones(grid: base.Grid) -> None:
+    """The attributes the writers put in the file are those rendered from the CF tables."""
+    inputs = make_inputs(grid)
+    state = stored_state(grid)
 
-    assert set(state.keys()) == set(driver_io.PROGNOSTIC_VARIABLES)
-    for name, da in state.items():
-        assert isinstance(da, xr.DataArray)
-        expected = _EXPECTED[name]
-        assert expected.dims is not None
-        horizontal_dim = next(d for d in expected.dims if d.kind == gtx.DimensionKind.HORIZONTAL)
-        on_half_levels = dims.KHalfDim in expected.dims
-
-        vertical_name = "half_level" if on_half_levels else "level"
-        assert da.dims == (_UGRID_DIM_NAMES[horizontal_dim], vertical_name)
-
-        vertical_size = grid.num_levels + 1 if on_half_levels else grid.num_levels
-        assert da.shape == (_horizontal_size(grid, horizontal_dim), vertical_size)
-
-
-def test_dataarrays_carry_cf_and_ugrid_metadata(
-    prognostic_state: states.PrognosticState,
-) -> None:
-    state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-
-    air_density = state["air_density"]
-    # CF metadata from states.data
-    assert air_density.attrs["standard_name"] == "air_density"
-    assert air_density.attrs["units"] == "kg m-3"
-    # UGRID metadata added by io.utils.to_data_array for the horizontal dimension
-    assert air_density.attrs["location"] == "face"
-    assert air_density.attrs["mesh"] == "mesh"
-    assert air_density.attrs["coordinates"] == "clon clat"
-
-    # edge field gets the edge location mapping
-    assert state["normal_velocity"].attrs["location"] == "edge"
-
-
-def test_does_not_mutate_shared_cf_attributes(
-    prognostic_state: states.PrognosticState,
-) -> None:
-    """`to_data_array` adds UGRID keys to the attrs it is handed; the shared
-    module-level CF attribute table must be left untouched."""
-    before = copy.deepcopy(state_data.PROGNOSTIC_CF_ATTRIBUTES)
-
-    driver_io.prognostic_state_to_dataarrays(prognostic_state)
-
-    assert before == state_data.PROGNOSTIC_CF_ATTRIBUTES
-    # specifically, no UGRID keys reach the attrs the shared table renders
-    for entry in state_data.PROGNOSTIC_CF_ATTRIBUTES.values():
-        rendered = entry.as_dict()
-        assert "location" not in rendered
-        assert "mesh" not in rendered
-        assert "coordinates" not in rendered
-
-
-def test_variables_subset(prognostic_state: states.PrognosticState) -> None:
-    subset = ["air_density", "normal_velocity"]
-    state = driver_io.prognostic_state_to_dataarrays(prognostic_state, variables=subset)
-    assert set(state.keys()) == set(subset)
-
-
-def test_unknown_variable_raises(prognostic_state: states.PrognosticState) -> None:
-    with pytest.raises(ValueError, match="Unknown prognostic output variable"):
-        driver_io.prognostic_state_to_dataarrays(prognostic_state, variables=["not_a_field"])
-
-
-def test_data_is_host_numpy(
-    grid: base.Grid,
-    backend: gtx.typing.Backend | None,
-) -> None:
-    """The buffer handed to the writers must be a host numpy array, not a device array.
-
-    Parameterized on the backend (``--backend``) so that with a GPU backend the inputs
-    really are device buffers and the host transfer is exercised.
-    """
-    prognostic_state = _make_prognostic_state(grid, allocator=backend)
-    state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-    for da in state.values():
-        assert isinstance(da.data, np.ndarray)
-
-
-def test_diagnostic_data_is_host_numpy(
-    grid: base.Grid,
-    backend: gtx.typing.Backend | None,
-) -> None:
-    """Same host-transfer guarantee for the diagnostic assembly path.
-
-    The diagnostic fields come from the (device-resident, on GPU backends) buffers of
-    the ``DiagnosticsComputer``; assembling them must also land host numpy arrays.
-    """
-    diagnostic_fields = {
-        name: data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+    for name, leaf in EXPECTED_LEAVES.items():
+        from_table = io_utils.to_data_array(getattr(inputs, leaf).data, CF_TABLE[name])
+        assert writers.data_variable_attributes(state[name]) == (
+            writers.data_variable_attributes(from_table)
         )
-        for name in driver_io.DIAGNOSTIC_VARIABLES
-    }
-    state = driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields)
+        # the table rendering also carried `icon_var_name` and `dtype`, which no writer writes
+        assert set(state[name].attrs) == {*writers.DATA_VARIABLE_ATTRIBUTES}
+        assert state[name].attrs == {key: from_table.attrs[key] for key in state[name].attrs}
+
+
+def test_data_is_host_numpy(grid: base.Grid, backend: gtx_backend.Backend[Any] | None) -> None:
+    """With a GPU backend the leaves are device buffers and the host transfer is exercised."""
+    state = stored_state(grid, allocator=backend)
+
     for da in state.values():
         assert isinstance(da.data, np.ndarray)
 
 
-def test_create_io_monitor_builds_single_field_group(
+def test_run_stores_every_call_and_assembles_at_capture_time_only(grid: base.Grid) -> None:
+    writer = StubWriter(captures=[True, False, True])
+    monitor = make_monitor(grid, writer)
+    times = [START + datetime.timedelta(seconds=s) for s in (0, 10, 20)]
+
+    for t in times:
+        out = monitor.run(make_inputs(grid, simulation_time=t))
+        assert isinstance(out, fw.Empty)
+
+    assert [t for _, t in writer.stored] == times
+    assert [set(state) for state, _ in writer.stored] == [
+        set(EXPECTED_LEAVES),
+        set(),
+        set(EXPECTED_LEAVES),
+    ]
+
+
+def test_stored_data_is_the_leaf_at_store_time(grid: base.Grid) -> None:
+    writer = StubWriter()
+    inputs = make_inputs(grid)
+    rho: Any = inputs.rho.data.ndarray
+    rho[...] = 1.5
+
+    make_monitor(grid, writer).run(inputs)
+
+    np.testing.assert_array_equal(writer.stored[0][0]["air_density"].data, rho)
+
+
+def test_create_io_monitor_builds_one_field_group_with_every_variable(
     grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The monitor holds one field group with all output fields, capturing every step.
+    """The common writer is replaced by a recorder so the test needs no real grid file."""
+    recorded: dict[str, Any] = {}
 
-    ``IOMonitor`` is replaced by a recorder so the test needs no real grid file.
-    """
-    recorded: dict[str, object] = {}
+    class RecordingWriter:
+        def __init__(self, **kwargs: Any) -> None:
+            recorded.update(kwargs)
 
-    class _RecordingMonitor:
-        def __init__(
-            self,
-            *,
-            config: common_io.IOConfig,
-            vertical_size: v_grid.VerticalGrid,
-            horizontal_size: base.HorizontalGridSize,
-            grid_file_name: pathlib.Path,
-            grid_id: uuid.UUID,
-            dtime: datetime.timedelta,
-            process_props: decomposition_defs.ProcessProperties,
-            decomposition_info: decomposition_defs.DecompositionInfo | None,
-        ) -> None:
-            recorded["config"] = config
-            recorded["grid_file_name"] = grid_file_name
-            recorded["grid_id"] = grid_id
+    monkeypatch.setattr(common_io, "IOMonitor", RecordingWriter)
 
-    monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
-
-    driver_io.create_io_monitor(
+    monitor = driver_io.create_io_monitor(
         output_path=tmp_path,
         grid_file_path=tmp_path / "grid.nc",
         grid=grid,
@@ -231,77 +224,18 @@ def test_create_io_monitor_builds_single_field_group(
         decomposition_info=None,
     )
 
+    assert isinstance(monitor, driver_io.IOMonitor)
+    assert isinstance(monitor.writer, RecordingWriter)
+    assert monitor.selected == EXPECTED_LEAVES
     config = recorded["config"]
     assert isinstance(config, common_io.IOConfig)
-    assert len(config.field_groups) == 1
-    field_group = config.field_groups[0]
-    # default cadence: capture on every model step
+    assert config.output_path == str(tmp_path)
+    (field_group,) = config.field_groups
+    assert list(field_group.variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
     assert field_group.output_interval == 1
-    # default output setup: zarr stores, every rank writing its own block under MPI
     assert field_group.backend == common_io.OutputBackend.ZARR
     assert field_group.mode == common_io.OutputMode.DISTRIBUTED
-    # a single group holding all fields, prognostic + diagnostic, in one file
-    assert list(field_group.variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
-    assert list(field_group.variables) == [
-        *driver_io.PROGNOSTIC_VARIABLES,
-        *driver_io.DIAGNOSTIC_VARIABLES,
-    ]
     assert field_group.basename == driver_io.DEFAULT_OUTPUT_BASENAME
-    # output is written directly into the run output directory
-    assert config.output_path == str(tmp_path)
     # the string grid id is converted to a UUID at the IO boundary
     assert recorded["grid_id"] == uuid.UUID(grid.id)
-
-
-def test_create_io_monitor_has_no_separate_diagnostic_group(
-    grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Prognostics and diagnostics are not split: there is exactly one field group."""
-    recorded: dict[str, common_io.IOConfig] = {}
-
-    class _RecordingMonitor:
-        def __init__(self, *, config: common_io.IOConfig, **kwargs: object) -> None:
-            recorded["config"] = config
-
-    monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
-
-    driver_io.create_io_monitor(
-        output_path=tmp_path,
-        grid_file_path=tmp_path / "grid.nc",
-        grid=grid,
-        vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
-        dtime=datetime.timedelta(seconds=1),
-        process_props=decomposition_defs.SingleNodeProcessProperties(),
-        decomposition_info=None,
-    )
-
-    groups = recorded["config"].field_groups
-    assert len(groups) == 1
-    assert set(driver_io.DIAGNOSTIC_VARIABLES) <= set(groups[0].variables)
-    assert set(driver_io.PROGNOSTIC_VARIABLES) <= set(groups[0].variables)
-
-
-def test_diagnostic_fields_to_dataarrays(grid: base.Grid) -> None:
-    """The diagnostic assembly mirrors the prognostic one: correct dims/metadata, host
-    numpy buffers, and the shared CF table is not mutated."""
-    before = copy.deepcopy(state_data.DIAGNOSTIC_CF_ATTRIBUTES)
-
-    # cell/full-level fields, like what compute_diagnostics returns
-    def _zero_cell_k() -> gtx.Field:
-        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-
-    fields = {name: _zero_cell_k() for name in driver_io.DIAGNOSTIC_VARIABLES}
-    state = driver_io.diagnostic_fields_to_dataarrays(fields)
-
-    assert set(state.keys()) == set(driver_io.DIAGNOSTIC_VARIABLES)
-    for da in state.values():
-        assert da.dims == ("cell", "level")
-        assert da.shape == (grid.num_cells, grid.num_levels)
-        assert isinstance(da.data, np.ndarray)
-
-    assert state["temperature"].attrs["standard_name"] == "air_temperature"
-    assert state["pressure"].attrs["units"] == "Pa"
-    assert state["eastward_wind"].attrs["location"] == "face"
-
-    # shared diagnostic CF table must be untouched
-    assert before == state_data.DIAGNOSTIC_CF_ATTRIBUTES
+    assert recorded["grid_file_name"] == tmp_path / "grid.nc"

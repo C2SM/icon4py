@@ -161,6 +161,21 @@ def test_component_writes_its_own_buffers_or_the_callers(grid: base_grid.Grid) -
     assert np.all(np.asarray(pressure.data.ndarray) == 4.0)
 
 
+def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid.Grid) -> None:
+    class Sink(fw.Component):
+        Input = Halve.Input
+        Output = fw.Empty
+
+        def run(self, inputs: Halve.Input, out: fw.Empty | None = None) -> fw.Empty:
+            return self.buffers(out)
+
+    sink = Sink(grid, allocator=None)
+    assert fw.Empty.declarations() == ()
+    assert list(fw.Empty().leaves()) == []
+    own = sink.run(Halve.Input(pressure=fw.zeros(Pressure, grid, allocator=None)))
+    assert isinstance(own, fw.Empty) and own is sink.output
+
+
 def test_pairs_swap(grid: base_grid.Grid) -> None:
     a = fw.allocate(Halve.Output, grid, allocator=None)
     b = fw.allocate(Halve.Output, grid, allocator=None)

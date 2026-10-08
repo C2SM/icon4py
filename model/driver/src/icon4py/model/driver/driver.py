@@ -38,13 +38,15 @@ from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
     grid_manager as gm,
+    horizontal as h_grid,
     vertical as v_grid,
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
-from icon4py.model.common.io import io as common_io
+from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
+from icon4py.model.common.physics.thermodynamics import compute_pressure, compute_temperature
 from icon4py.model.common.states import static_fields
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.driver import (
@@ -72,7 +74,7 @@ class Icon4pyDriver:
         model_time_variables: driver_states.ModelTimeVariables,
         vertical_grid_config: v_grid.VerticalGridConfig,
         process_props: decomposition_defs.ProcessProperties,
-        io_monitor: common_io.IOMonitor | None = None,
+        io_monitor: driver_io.IOMonitor | None = None,
         tendencies: prescribed_tendencies.PrescribedTendencies | None = None,
     ):
         self.config = config
@@ -119,9 +121,21 @@ class Icon4pyDriver:
         return f"{self.__class__.__name__}:{func.__name__}"
 
     @functools.cached_property
-    def _diagnostics_computer(self) -> driver_io.DiagnosticsComputer:
-        """Reuses its scratch/output buffers across output steps (allocated once)."""
-        return driver_io.DiagnosticsComputer(grid=self.grid, backend=self.backend)
+    def _dry_air_tracers(self) -> tuple[gtx.Field, ...]:
+        """qv, qc, qi, qr, qs, qg for the output diagnostics: zero, the dry-air path."""
+        return tuple(
+            data_alloc.zero_field(
+                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
+            )
+            for _ in range(6)
+        )
+
+    @functools.cached_property
+    def _pressure_ifc_on_model_levels(self) -> gtx.Field:
+        """Scratch of the hydrostatic pressure integration for output."""
+        return data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
+        )
 
     @functools.cached_property
     def _compute_airmass(self) -> Callable[..., None]:
@@ -151,38 +165,97 @@ class Icon4pyDriver:
             offset_provider={},
         )
 
+    def _diagnose_for_output(
+        self, prognostics: states.PrognosticState, diagnostics: states.Diagnostics
+    ) -> None:
+        """
+        Temperature, virtual temperature, pressure (pressure_ifc as a by-product), u and v.
+
+        Dry air (zero tracers), as the output always had it; the physics diagnoses the same
+        fields for moist air into its own state, which could replace this.
+        """
+        cell_domain = h_grid.domain(dims.CellDim)
+        end_cell_end = self.grid.end_index(cell_domain(h_grid.Zone.END))
+        num_levels = self.grid.num_levels
+        metrics = self.static_field_factories.metrics
+        interpolation = self.static_field_factories.interpolation
+        qv, qc, qi, qr, qs, qg = self._dry_air_tracers
+
+        compute_temperature.compute_virtual_temperature_and_temperature.with_backend(self.backend)(
+            qv=qv,
+            qc=qc,
+            qi=qi,
+            qr=qr,
+            qs=qs,
+            qg=qg,
+            theta_v=prognostics.theta_v.data,
+            exner=prognostics.exner.data,
+            virtual_temperature=diagnostics.virtual_temperature.data,
+            temperature=diagnostics.temperature.data,
+            horizontal_start=0,
+            horizontal_end=end_cell_end,
+            vertical_start=0,
+            vertical_end=num_levels,
+            offset_provider={},
+        )
+        rbf.edge_2_cell_vector_rbf_interpolation.with_backend(self.backend)(
+            p_e_in=prognostics.vn.data,
+            ptr_coeff_1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
+            ptr_coeff_2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
+            p_u_out=diagnostics.u.data,
+            p_v_out=diagnostics.v.data,
+            horizontal_start=self.grid.end_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
+            horizontal_end=end_cell_end,
+            vertical_start=0,
+            vertical_end=num_levels,
+            offset_provider={"C2E2C2E": self.grid.get_connectivity("C2E2C2E")},
+        )
+        compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(self.backend)(
+            exner=prognostics.exner.data,
+            virtual_temperature=diagnostics.virtual_temperature.data,
+            ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
+            pressure=diagnostics.pressure.data,
+            pressure_ifc_on_model_levels=self._pressure_ifc_on_model_levels,
+            pressure_ifc=diagnostics.pressure_ifc.data,
+            horizontal_start=0,
+            horizontal_end=end_cell_end,
+            vertical_start=0,
+            vertical_end=num_levels,
+            offset_provider={},
+        )
+
     def _store_output(
         self,
-        prognostic_state: states.PrognosticState,
+        prognostics: states.PrognosticState,
+        diagnostics: states.Diagnostics,
         simulation_current_datetime: time.AbsoluteTime,
     ) -> None:
-        """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
+        """
+        Diagnose for output and run the IO component.
 
-        The assembled DataArrays reference the live state (see ``io.utils.to_data_array``),
-        so they must be written here and now -- before the next step mutates the state. The
-        static diagnostic inputs are fetched directly from the field factories.
-
-        At steps no field group captures, only the monitor's schedule counters advance:
-        nothing is assembled, timed or written -- so the diagnostics are not computed
-        for steps that discard them, and the output timers hold only real capture work.
+        The component runs at every step (the writer's schedule advances on every store);
+        the diagnostics are computed only at the steps the writer captures.
         """
         assert self.io_monitor is not None
-        if self.io_monitor.at_capture_time():
+        if self.io_monitor.writer.at_capture_time():
             with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
-                metrics = self.static_field_factories.metrics
-                interpolation = self.static_field_factories.interpolation
-                state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-                diagnostic_fields = self._diagnostics_computer.compute(
-                    prognostic_state,
-                    ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
-                    rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
-                    rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
-                )
-                state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
-        else:
-            state_to_store = {}
+                self._diagnose_for_output(prognostics, diagnostics)
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_STORE.value]:
-            self.io_monitor.store(state_to_store, simulation_current_datetime)
+            self.io_monitor.run(
+                driver_io.IOMonitor.Input(
+                    rho=prognostics.rho,
+                    exner=prognostics.exner,
+                    theta_v=prognostics.theta_v,
+                    w=prognostics.w,
+                    vn=prognostics.vn,
+                    u=diagnostics.u,
+                    v=diagnostics.v,
+                    temperature=diagnostics.temperature,
+                    virtual_temperature=diagnostics.virtual_temperature,
+                    pressure=diagnostics.pressure,
+                    simulation_time=simulation_current_datetime,
+                )
+            )
 
     def time_integration(
         self,
@@ -209,7 +282,9 @@ class Icon4pyDriver:
                 # write the initial state; the simulation datetime is still the start here
                 # (it is advanced below, per step)
                 self._store_output(
-                    prognostic_states.current, self.model_time_variables.simulation_current_datetime
+                    prognostic_states.current,
+                    ds.diagnostic,
+                    self.model_time_variables.simulation_current_datetime,
                 )
 
             self._diffuse_before_time_loop(diffusion_diagnostic_state, prognostic_states.current)
@@ -259,13 +334,14 @@ class Icon4pyDriver:
                 if self.io_monitor is not None:
                     self._store_output(
                         prognostic_states.current,
+                        ds.diagnostic,
                         self.model_time_variables.simulation_current_datetime,
                     )
             if self.io_monitor is not None:
-                self.io_monitor.report_timings()
+                self.io_monitor.writer.report_timings()
         finally:
             if self.io_monitor is not None:
-                self.io_monitor.close()
+                self.io_monitor.writer.close()
 
         self._compute_mean_at_final_time_step(prognostic_states.current)
 
