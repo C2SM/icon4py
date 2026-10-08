@@ -114,7 +114,7 @@ class Tmx:
         log.debug("tmx step: start")
 
         self.diagnostics.run(input_state=input_state, diagnostic_state=diagnostic_state)
-        states = dict(
+        self.scalar_diffusion.run_hydrometeor_diffusion(
             input_state=input_state,
             surface_flux_state=surface_flux_state,
             diagnostic_state=diagnostic_state,
@@ -122,9 +122,29 @@ class Tmx:
             new_state=new_state,
             dtime=dtime,
         )
-        self.scalar_diffusion.run_hydrometeor_diffusion(**states)
-        self.scalar_diffusion.run_temperature_diffusion(**states)
-        self.wind_diffusion.run(**states)
-        self.energy_update.run(**states)
+        self.scalar_diffusion.run_temperature_diffusion(
+            input_state=input_state,
+            surface_flux_state=surface_flux_state,
+            diagnostic_state=diagnostic_state,
+            tendency_state=tendency_state,
+            new_state=new_state,
+            dtime=dtime,
+        )
+        self.wind_diffusion.run(
+            input_state=input_state,
+            surface_flux_state=surface_flux_state,
+            diagnostic_state=diagnostic_state,
+            tendency_state=tendency_state,
+            new_state=new_state,
+            dtime=dtime,
+        )
+        self.energy_update.run(
+            input_state=input_state,
+            surface_flux_state=surface_flux_state,
+            diagnostic_state=diagnostic_state,
+            tendency_state=tendency_state,
+            new_state=new_state,
+            dtime=dtime,
+        )
 
         log.debug("tmx step: end")
