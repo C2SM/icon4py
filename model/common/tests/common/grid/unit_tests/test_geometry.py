@@ -525,7 +525,7 @@ def test_geometry_mean_fields(
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     value_ref = utils.GRID_REFERENCE_VALUES[experiment.grid.name][attr_name]
-    value = grid_geometry.get(attr_name)
+    value = grid_geometry.get_scalar(attr_name)
     assert value == pytest.approx(value_ref)
 
 
@@ -552,8 +552,8 @@ def test_analytical_and_global_reduction_mean_fields_agree(
     )
     analytical_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, analytical_config)
     reduction_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, reduction_config)
-    analytical_value = analytical_geometry.get(attr_name)
-    reduction_value = reduction_geometry.get(attr_name)
+    analytical_value = analytical_geometry.get_scalar(attr_name)
+    reduction_value = reduction_geometry.get_scalar(attr_name)
     match experiment.grid.params.geometry_type:
         case icon_grid.GeometryType.TORUS:
             rtol = 1e-15

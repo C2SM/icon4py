@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
@@ -47,7 +47,7 @@ def _compute_ffsl_backtrajectory(
     fa.EdgeKField[ta.vpfloat],
 ]:
     # logical switch for MERGE operations: True for p_vn >= 0
-    lvn_pos = p_vn >= 0.0
+    lvn_pos = p_vn >= wpfloat(0.0)
 
     # get line and block indices of upwind cell
     p_cell_idx = where(lvn_pos, cell_idx[dims.E2CDim(0)], cell_idx[dims.E2CDim(1)])

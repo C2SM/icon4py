@@ -109,7 +109,7 @@ def _graupel_to_rain(
 
     Return:                 Conversion rate
     """
-    A_MELT = wpfloat(GraupelConsts.tx) - wpfloat(389.5)  # melting prefactor
+    A_MELT = GraupelConsts.tx - wpfloat(389.5)  # melting prefactor
     B_MELT = wpfloat(0.6)  # melting exponent
     C1_MELT = wpfloat(12.31698)  # Constants in melting formula
     C2_MELT = wpfloat(7.39441e-05)  # Constants in melting formula
