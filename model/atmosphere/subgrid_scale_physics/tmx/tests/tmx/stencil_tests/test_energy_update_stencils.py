@@ -29,7 +29,7 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
     OUTPUTS = (
         "dissip_ke",
         "heating",
-        "tend_temperature",
+        "new_tend_temperature",
         "new_temperature",
         "cptgz",
         "cptgz_vi",
@@ -107,12 +107,10 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
         cells = slice(horizontal_start, horizontal_end)
         levels = slice(vertical_start, vertical_end)
         above_surface = slice(vertical_start, vertical_end - 1)
-        expected_tend_temperature = tend_temperature.copy()
-        expected_tend_temperature[cells, levels] = new_tend_temperature[cells, levels]
         return dict(
             dissip_ke=on_rows(dissip_ke, cells, levels),
             heating=on_rows(heating, cells, levels),
-            tend_temperature=expected_tend_temperature,
+            new_tend_temperature=on_rows(new_tend_temperature, cells, levels),
             new_temperature=on_rows(new_temperature, cells, levels),
             cptgz=on_rows(cptgz, cells, levels),
             cptgz_vi=on_rows(np.cumsum(cptgz * rho * ddqz_z_full, axis=1), cells, levels),
@@ -171,6 +169,7 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
             ),
             dissip_ke=output(),
             heating=output(),
+            new_tend_temperature=output(),
             new_temperature=output(),
             cptgz=output(),
             cptgz_vi=output(),

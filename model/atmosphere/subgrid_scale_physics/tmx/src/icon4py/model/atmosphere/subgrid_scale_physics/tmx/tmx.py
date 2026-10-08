@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import typing
 
@@ -20,12 +21,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
     tmx_states,
     wind_diffusion,
 )
+from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if typing.TYPE_CHECKING:
     import icon4py.model.common.grid.states as grid_states
     from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
-    from icon4py.model.common import model_backends
+    from icon4py.model.common import field_type_aliases as fa, type_alias as ta
     from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.common.grid import base as base_grid
 
@@ -96,6 +99,11 @@ class Tmx:
             use_km_const=config.use_km_const,
             km_const=config.km_const,
         )
+        # the temperature tendency of the heat diffusion, before the energy update adds the
+        # dissipation heating and writes the total to the tendency state
+        self._heat_diffusion_tendency: fa.CellKField[ta.wpfloat] = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=model_backends.get_allocator(backend)
+        )
 
     def run(
         self,
@@ -126,7 +134,9 @@ class Tmx:
             input_state=input_state,
             surface_flux_state=surface_flux_state,
             diagnostic_state=diagnostic_state,
-            tendency_state=tendency_state,
+            tendency_state=dataclasses.replace(
+                tendency_state, tend_temperature=self._heat_diffusion_tendency
+            ),
             new_state=new_state,
             dtime=dtime,
         )
@@ -141,6 +151,7 @@ class Tmx:
         self.energy_update.run(
             input_state=input_state,
             surface_flux_state=surface_flux_state,
+            heat_diffusion_tendency=self._heat_diffusion_tendency,
             diagnostic_state=diagnostic_state,
             tendency_state=tendency_state,
             new_state=new_state,

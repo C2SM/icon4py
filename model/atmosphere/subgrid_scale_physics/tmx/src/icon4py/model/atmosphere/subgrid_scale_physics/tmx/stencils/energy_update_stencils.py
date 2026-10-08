@@ -146,6 +146,7 @@ def update_temperature_and_compute_end_of_step_diagnostics(
     height_above_ground: fa.CellKField[wpfloat],
     dissip_ke: fa.CellKField[wpfloat],
     heating: fa.CellKField[wpfloat],
+    new_tend_temperature: fa.CellKField[wpfloat],
     new_temperature: fa.CellKField[wpfloat],
     cptgz: fa.CellKField[wpfloat],
     cptgz_vi: fa.CellKField[wpfloat],
@@ -166,10 +167,10 @@ def update_temperature_and_compute_end_of_step_diagnostics(
     Update the temperature with the dissipation heating and compute the end-of-step
     diagnostics on the full column.
 
-    `tend_temperature` is updated in place. `km` and `kh` are written above the lowest level
-    only; the lowest level is the surface exchange coefficient.
+    `tend_temperature` is the heat-diffusion tendency and `new_tend_temperature` the total
+    tendency, including the heating. `km` and `kh` are written above the lowest level only;
+    the lowest level is the surface exchange coefficient.
     """
-    # TODO(havogt): write it in a way that tend_temperature is not inout.
     _update_temperature(
         u=u,
         v=v,
@@ -187,7 +188,7 @@ def update_temperature_and_compute_end_of_step_diagnostics(
         # `vertically_implicit_solver_at_predictor_step` (twice, as `nlev` and `n_lev`) and in
         # `vertically_implicit_solver_at_corrector_step`.
         nlev=vertical_end,
-        out=(dissip_ke, heating, tend_temperature, new_temperature),
+        out=(dissip_ke, heating, new_tend_temperature, new_temperature),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

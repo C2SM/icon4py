@@ -85,10 +85,7 @@ def test_tmx_run_energy_update_single_step(
         km_ic=diagnostics_savepoint.km_ic(),
         kh_ic=diagnostics_savepoint.kh_ic(),
     )
-    tendency_state = dataclasses.replace(
-        tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator),
-        tend_temperature=temperature_savepoint.tend_ta(),
-    )
+    tendency_state = tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator)
     new_state = dataclasses.replace(
         tmx_states.TmxNewState.allocate(icon_grid, allocator=allocator),
         qv=hydro_savepoint.qv_new(),
@@ -103,6 +100,7 @@ def test_tmx_run_energy_update_single_step(
         surface_flux_state=construct_surface_flux_state(
             data_provider.from_savepoint_tmx_surface_fluxes(date=date)
         ),
+        heat_diffusion_tendency=temperature_savepoint.tend_ta(),
         diagnostic_state=diagnostic_state,
         tendency_state=tendency_state,
         new_state=new_state,
