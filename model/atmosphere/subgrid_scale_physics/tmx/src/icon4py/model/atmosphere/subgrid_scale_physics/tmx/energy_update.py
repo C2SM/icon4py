@@ -97,7 +97,7 @@ class EnergyUpdate:
             self._surface_exchange_coefficients = (km_const, km_const * (1.0 / turb_prandtl))
             self._set_constant_on_surface_level = setup_program(
                 backend=backend,
-                program=vertical_operations.set_constant_on_model_levels_on_cells,
+                program=vertical_operations.set_constant_on_model_levels_on_cells_wp,
                 horizontal_sizes=horizontal_sizes,
                 vertical_sizes={
                     "vertical_start": gtx.int32(self._surface_level),
