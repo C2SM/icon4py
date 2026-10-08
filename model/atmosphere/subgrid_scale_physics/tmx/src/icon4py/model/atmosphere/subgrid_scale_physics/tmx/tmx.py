@@ -110,9 +110,6 @@ class Tmx:
         """
         Run one tmx step: write the tendencies to `tendency_state`, the updated fields to
         `new_state` and the diagnostics to `diagnostic_state`.
-
-        The surface fluxes are inputs (`surface_flux_state`); ICON's surface scheme, which
-        produces them between the diagnostics and the diffusion, is not part of this component.
         """
         log.debug("tmx step: start")
 
