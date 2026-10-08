@@ -149,8 +149,8 @@ def _tmx_step(sources: _ProcessSources) -> physics_driver.Step:
 
 
 # the physics processes, by the name of their section in the experiment configuration, in
-# ICON's order (aes_phy_main: mig, then vdf/tmx); the driver runs those whose section is set.
-# Under the driver's parallel coupling the order only fixes the summation order.
+# ICON's call order (aes_phy_main: mig, then vdf/tmx); the driver runs those whose section is
+# set. The order matters: coupled sequentially, tmx reads the state muphys advanced.
 PROCESSES: dict[str, Callable[[_ProcessSources], physics_driver.Step]] = {
     "muphys": _muphys_step,
     "tmx": _tmx_step,

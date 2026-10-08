@@ -49,23 +49,20 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "theta_v": (1.2e-3, 3.6e-6),
         "rho": (3.5e-6, 3.7e-6),
     },
-    # The physics driver couples muphys and tmx in parallel (both read the same entry state),
-    # ICON sequentially (aes_phy_main: graupel first, tmx on the state graupel updated). The
-    # temperature and moisture fields carry that difference, measured on gtfn_cpu (double):
-    # exner 1.4e-4, theta_v 3.5e-4 relative, qv 5.2e-5, qc 5.0e-5, qi 2.9e-5, and the
-    # tolerances below are those with headroom. Coupled sequentially, the same fields stay
-    # within 4.8e-11 (exner), 1.5e-10 relative (theta_v) and 1.9e-12 (qv, qc, qi).
+    # muphys and tmx coupled sequentially, as ICON AES couples them. Measured on v13, gtfn_cpu
+    # (double): vn 5.5e-7, w 8.4e-9, rho 1.6e-10, exner 4.8e-11, theta_v 1.5e-10 relative,
+    # qv 1.8e-12, qc 1.6e-12, qi 5.7e-13, qr 1.5e-13; qs and qg are zero in both.
     test_defs.Experiments.EXCLAIM_APE_AES: {
         "vn": (6e-7 if test_utils.wp_is_dp else 2e-4, 0.0),
         "w": (1e-8 if test_utils.wp_is_dp else 4e-5, 0.0),
         "rho": (9e-10 if test_utils.wp_is_dp else 2e-06, 0.0),
-        "exner": (3e-4, 0.0),
-        "theta_v": (0.0, 7e-4),
-        "qv": (1e-4, 0.0),
-        "qc": (1e-4, 0.0),
+        "exner": (1e-8 if test_utils.wp_is_dp else 4e-7, 0.0),
+        "theta_v": (0.0, 3e-8 if test_utils.wp_is_dp else 2e-6),
+        "qv": (1e-8 if test_utils.wp_is_dp else 2e-7, 0.0),
+        "qc": (1e-10 if test_utils.wp_is_dp else 8e-8, 0.0),
         "qr": (1e-10 if test_utils.wp_is_dp else 5e-8, 0.0),
         "qs": (1e-10, 0.0),
-        "qi": (6e-5, 0.0),
+        "qi": (1e-10 if test_utils.wp_is_dp else 8e-9, 0.0),
         "qg": (1e-10, 0.0),
     },
 }
@@ -149,21 +146,19 @@ def test_driver(
     Per-field tolerances live in ``_TOLERANCES``.
 
     muphys and tmx (EXCLAIM_APE_AES): runs the aes-graupel scheme and the tmx turbulent
-    mixing -- the ports of the ICON formulations that generated the reference. The physics
-    driver couples them in parallel, ICON sequentially (graupel, then tmx on the updated
-    state): exner, theta_v, qv, qc and qi carry that difference (see `_TOLERANCES`); vn, w
-    and rho compare tightly. Besides the coupling, the tracer comparison carries residuals
-    from gaps not yet ported:
+    mixing -- the ports of the ICON formulations that generated the reference -- coupled
+    sequentially as ICON AES couples them (graupel first, tmx on the temperature and
+    tracers graupel advanced). Residuals, measured on v13 (gtfn_cpu, double):
 
     - exner / theta_v: recomputed via the exact EOS, mirroring ICON's phy2dyn coupling
-      (mo_interface_iconam_aes.f90). Measured on v13 (gtfn_cpu): exner ~5e-11 and theta_v
-      ~1.5e-10 relative under ICON's sequential coupling (a scratch run), 1.4e-4 and 3.5e-4
-      under the driver's parallel coupling, which `_TOLERANCES` carries.
+      (mo_interface_iconam_aes.f90): exner ~5e-11, theta_v ~1.5e-10 relative.
     - tracer transport: the driver runs MIURA/PPM advection on the dycore-accumulated
       mass fluxes and airmass, matching the reference configuration (ltransport=.TRUE.),
-      so this validates transport+muphys+tmx. Measured on v13 (gtfn_cpu): qr/qs/qg are
-      exact to 1e-13; qv/qc/qi carry the coupling difference (~5e-5, 5e-5, 3e-5; ~1e-12
-      under sequential coupling) plus the clipping / vertical-extent items below.
+      so this validates transport+muphys+tmx: qv/qc ~2e-12, qi ~6e-13, qr ~1.5e-13; qs/qg
+      are zero in both after one step.
+
+    Gaps not yet ported:
+
     - negative tracers: ICON clips them (iqneg_d2p/iqneg_p2d); the driver does not.
     - vertical extent: ICON runs graupel on jks_cloudy..nlev; muphys runs the full column.
 

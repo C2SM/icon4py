@@ -10,8 +10,10 @@ fields. The design and its trade-offs are in C2SM/icon4py-knowledge `mwe/compone
 - `Quantity`: a type-level tag, one subclass per quantity at one place on the grid, never
   instantiated. The metadata is on the class: `dims`, `units`, the CF `standard_name`,
   `long_name` and `precision` (`"wp"` or `"vp"`, resolved through `type_alias` when a field
-  is allocated). Tendencies derive from the `Tendency` marker base: the physics driver
-  accumulates exactly those.
+  is allocated). Tendencies derive from the `Tendency` marker base: the physics driver sums
+  exactly those and advances its physics state by them, so a process output leaf
+  `tend_<name>` needs a leaf `<name>` the driver advances (the temperature, the tracers, `u`,
+  `v`, `w`).
 - `Field[Q]`: a gt4py field tagged by its quantity, `Field(qty.VnOnEdgeK, data)`. The tag is
   a phantom, invariant type parameter: `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` are
   different types to the checkers and the same array to gt4py. Stencils read `.data`.
@@ -72,7 +74,7 @@ Optional leaves carry the tracers: `TracerState`, `Advection.Input`/`Output` and
 `PhysicsDriver.Input`/`Output` declare `qv`...`qg` as `Field[Q] | None`, and the driver's
 `TracerConfig` decides which are present. Since `Component.output` would allocate every
 optional leaf, the composer always passes `out=` to these components. The physics processes
-pick their `Input` from the physics driver's `EntryState` with a `collect_input`; `bind`
+pick their `Input` from the physics driver's `PhysicsState` with a `collect_input`; `bind`
 pairs it with the component's `run`, so pairing one process's `collect_input` with another's
 `run` is a type error.
 

@@ -226,21 +226,21 @@ def _data(out: TmxComponent.Output, names: tuple[str, ...]) -> dict[str, Any]:
     return {name: getattr(out, name).data for name in names}
 
 
-def collect_input(entry: physics_state.EntryState) -> TmxComponent.Input:
-    """The tmx input from the physics entry state (no copies)."""
+def collect_input(state: physics_state.PhysicsState) -> TmxComponent.Input:
+    """The tmx input from the physics state (no copies)."""
     return TmxComponent.Input(
-        temperature=entry.temperature,
-        virtual_temperature=entry.virtual_temperature,
-        pressure=entry.pressure,
-        pressure_ifc=entry.pressure_ifc,
-        u=entry.u,
-        v=entry.v,
-        w=entry.w,
-        rho=entry.rho,
-        qv=entry.qv,
-        qc=entry.qc,
-        qi=entry.qi,
-        qr=entry.qr,
-        qs=entry.qs,
-        qg=entry.qg,
+        temperature=state.temperature,
+        virtual_temperature=state.virtual_temperature,
+        pressure=state.pressure,
+        pressure_ifc=state.pressure_ifc,
+        u=state.u,
+        v=state.v,
+        w=state.w,
+        rho=state.rho,
+        qv=state.qv,
+        qc=state.qc,
+        qi=state.qi,
+        qr=state.qr,
+        qs=state.qs,
+        qg=state.qg,
     )

@@ -95,13 +95,13 @@ def _inputs(grid: base_grid.Grid, seed: int) -> tmx_component.TmxComponent.Input
     return fw.allocate(tmx_component.TmxComponent.Input, grid, None, fill=fill)
 
 
-def test_collect_input_views_the_entry_state(grid: base_grid.Grid) -> None:
-    entry = fw.allocate(physics_state.EntryState, grid, None)
+def test_collect_input_views_the_physics_state(grid: base_grid.Grid) -> None:
+    state = fw.allocate(physics_state.PhysicsState, grid, None)
 
-    inputs = tmx_component.collect_input(entry)
+    inputs = tmx_component.collect_input(state)
 
     for declaration, field in inputs.leaves():
-        assert field is getattr(entry, declaration.name), declaration.name
+        assert field is getattr(state, declaration.name), declaration.name
 
 
 def test_run_writes_where_the_caller_says(grid: base_grid.Grid) -> None:

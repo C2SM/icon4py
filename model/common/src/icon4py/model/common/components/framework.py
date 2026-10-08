@@ -94,7 +94,10 @@ class Quantity:
 
 
 class Tendency(Quantity):
-    """Marker base of the tendencies: what the physics driver accumulates."""
+    """
+    Marker base of the tendencies: what the physics driver sums and advances its physics
+    state by. A process output leaf `tend_<name>` needs a leaf `<name>` the driver advances.
+    """
 
 
 class Field[Q: Quantity]:
