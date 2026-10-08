@@ -20,22 +20,12 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_vertical_diffusion_stencils import (
+from .utils import (
     diffusion_matrix_numpy,
     implicit_diffusion_tendency_numpy,
     matrix_diagonals_on_rows,
+    on_rows,
 )
-
-
-# TODO(nfarabullini, jcanton): move the numpy helpers the tmx stencil tests import from each
-# other (this, the matrix helpers of test_vertical_diffusion, the energy and heat-capacity
-# references of test_scalar_diffusion) into a stencil_tests/utils.py, and merge this with
-# `_on_subdomain` of test_diagnostics: they differ only in what the output keeps outside the
-# domain (zero here, the initial value there).
-def on_rows(values: np.ndarray, rows: slice, levels: slice) -> np.ndarray:
-    out = np.zeros_like(values)
-    out[rows, levels] = values[rows, levels]
-    return out
 
 
 def edge_projection(field: np.ndarray, neighbors: np.ndarray, x: np.ndarray, y: np.ndarray):

@@ -20,8 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_scalar_diffusion_stencils import internal_energy_per_area_numpy
-from .test_wind_diffusion_stencils import on_rows
+from .utils import internal_energy_per_area_numpy, on_rows
 
 
 class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilTest):
