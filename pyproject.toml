@@ -260,11 +260,14 @@ module = [
   "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.*",
   "icon4py.model.atmosphere.subgrid_scale_physics.muphys.component",
   "icon4py.model.atmosphere.subgrid_scale_physics.tmx.component",
+  "icon4py.model.driver.driver_io",
   "*.components.unit_tests.*",
   "*.physics_driver.unit_tests.*",
   "*.muphys.unit_tests.*",
   "*.tmx.unit_tests.test_component",
-  "*.tmx.integration_tests.test_component"
+  "*.tmx.integration_tests.test_component",
+  "driver.unit_tests.test_driver_io",
+  "driver.integration_tests.test_driver_io_output"
 ]
 no_implicit_reexport = true
 strict_equality = true
@@ -298,7 +301,10 @@ include = [
   "model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/unit_tests",
   "model/atmosphere/subgrid_scale_physics/tmx/src/icon4py/model/atmosphere/subgrid_scale_physics/tmx/component.py",
   "model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/unit_tests/test_component.py",
-  "model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/integration_tests/test_component.py"
+  "model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/integration_tests/test_component.py",
+  "model/driver/src/icon4py/model/driver/driver_io.py",
+  "model/driver/tests/driver/unit_tests/test_driver_io.py",
+  "model/driver/tests/driver/integration_tests/test_driver_io_output.py"
 ]
 # gt4py's allocators and fields are partially typed; these would report every use of them
 reportUnknownArgumentType = false
