@@ -165,7 +165,8 @@ def update_temperature_and_compute_end_of_step_diagnostics(
 ) -> None:
     """
     Update the temperature with the dissipation heating and compute the end-of-step
-    diagnostics on the full column.
+    diagnostics on the full column, as the column integrals require; the lowest model level
+    is `vertical_end - 1`.
 
     `tend_temperature` is the heat-diffusion tendency and `new_tend_temperature` the total
     tendency, including the heating. `km` and `kh` are written above the lowest level only;
@@ -183,10 +184,6 @@ def update_temperature_and_compute_end_of_step_diagnostics(
         q_snocpymlt=q_snocpymlt,
         dissipation_factor=dissipation_factor,
         dtime=dtime,
-        # TODO(OngChia, havogt, jcanton): decide whether the lowest model level should come from
-        # the domain bound or be a separate program argument. The dycore does the same, in
-        # `vertically_implicit_solver_at_predictor_step` (twice, as `nlev` and `n_lev`) and in
-        # `vertically_implicit_solver_at_corrector_step`.
         nlev=vertical_end,
         out=(dissip_ke, heating, new_tend_temperature, new_temperature),
         domain={
