@@ -227,7 +227,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={attrs.GEOFAC_ROT: attrs.GEOFAC_ROT},
             deps={
                 "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
-                "edge_orientation": geometry_attrs.VERTEX_EDGE_ORIENTATION,
+                "edge_orientation": geometry_attrs.VERTEX_EDGE_ORIENTATION_WITH_VALID_NEIGHBORS,
                 "dual_area": geometry_attrs.DUAL_AREA,
                 "owner_mask": "vertex_owner_mask",
             },

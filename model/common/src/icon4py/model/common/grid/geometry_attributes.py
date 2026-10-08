@@ -42,6 +42,9 @@ EDGE_VERTEX_DISTANCE: Final[str] = "edge_midpoint_to_vertex_distance"
 TANGENT_ORIENTATION: Final[str] = "edge_orientation"
 CELL_NORMAL_ORIENTATION: Final[str] = "orientation_of_normal_to_cell_edges"
 VERTEX_EDGE_ORIENTATION: Final[str] = "orientation_of_edges_around_vertex"
+VERTEX_EDGE_ORIENTATION_WITH_VALID_NEIGHBORS: Final[str] = (
+    "orientation_of_edges_around_vertex_with_valid_neighbors"
+)
 CELL_OWNER_MASK: Final[str] = "cell_owner_mask"
 EDGE_OWNER_MASK: Final[str] = "edge_owner_mask"
 VERTEX_OWNER_MASK: Final[str] = "vertex_owner_mask"

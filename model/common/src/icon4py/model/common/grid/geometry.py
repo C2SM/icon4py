@@ -131,6 +131,8 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(coordinate_provider)
 
         # Setup input fields
+        vertex_edge_orientation = extra_fields[gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX]
+        vertex_to_edge = self._grid.get_connectivity(dims.V2E).ndarray
         input_fields_provider = factory.PrecomputedFieldProvider(
             fields={
                 # TODO(halungge): rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
@@ -149,6 +151,15 @@ class GridGeometry(factory.FieldSource):
                 attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
                     gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX
                 ],
+                attrs.VERTEX_EDGE_ORIENTATION_WITH_VALID_NEIGHBORS: gtx.as_field(
+                    (dims.VertexDim, dims.V2EDim),
+                    self._xp.where(
+                        vertex_to_edge != gridfile.GridFile.INVALID_INDEX,
+                        vertex_edge_orientation.ndarray,
+                        0,
+                    ),
+                    allocator=self._backend,
+                ),
                 attrs.EDGE_OWNER_MASK: gtx.as_field(
                     (dims.EdgeDim,),
                     decomposition_info.owner_mask(dims.EdgeDim),
