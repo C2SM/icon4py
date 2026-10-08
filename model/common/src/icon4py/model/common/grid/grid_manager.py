@@ -249,6 +249,18 @@ class GridManager:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
+        vertex_edge_orientation = self._reader.int_variable(
+            gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
+            transpose=True,
+            apply_offset=False,
+            indices=my_vertex_indices,
+        )
+        vertex_to_edge = self._get_index_field(
+            gridfile.ConnectivityName.V2E,
+            indices=my_vertex_indices,
+        )
+        vertex_edge_orientation[vertex_to_edge == gridfile.GridFile.INVALID_INDEX] = 0
+
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
@@ -312,12 +324,7 @@ class GridManager:
             ),
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
                 (dims.VertexDim, dims.V2EDim),
-                self._reader.int_variable(
-                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
-                    transpose=True,
-                    apply_offset=False,
-                    indices=my_vertex_indices,
-                ),
+                vertex_edge_orientation,
                 allocator=allocator,
             ),
         }
@@ -402,9 +409,6 @@ class GridManager:
         global_size = self._read_full_grid_size()
         global_params = self._construct_grid_params(geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement)
-
-        if limited_area and not process_props.is_single_rank():
-            raise NotImplementedError("Limited-area grids are not supported in distributed runs")
 
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C, array_ns=xp)
         global_neighbor_tables = {
