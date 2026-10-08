@@ -175,8 +175,27 @@ def __bencher_baseline_CI(session: nox.Session) -> None:
     """
     testbed = _serial_testbed()
     session.run(
-        *_bencher_baseline_command(f"pytest_benchmark_results_{session.python}.json"),
-        env=_bencher_baseline_env(testbed),
+        *f"bencher run \
+        --average median \
+        --threshold-measure latency \
+        --threshold-test percentage \
+        --threshold-max-sample-size 64 \
+        --threshold-upper-boundary 0.1 \
+        --thresholds-reset \
+        --err \
+        --file pytest_benchmark_results_{session.python}.json".split(),
+        env={
+            "BENCHER_PROJECT": os.environ[
+                "BENCHER_PROJECT"
+            ].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_BRANCH": "main",
+            "BENCHER_TESTBED": testbed,
+            "BENCHER_ADAPTER": "python_pytest",
+            "BENCHER_HOST": os.environ[
+                "BENCHER_HOST"
+            ].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
+        },
         external=True,
         silent=True,
     )
@@ -192,10 +211,28 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
     """
     bencher_testbed = _serial_testbed()
     session.run(
-        *_bencher_feature_command(
-            f"pytest_benchmark_results_{session.python}.json", bencher_testbed
-        ),
-        env=_bencher_feature_env(bencher_testbed, os.environ["FEATURE_BRANCH"].strip()),
+        *f"bencher run \
+        --average median \
+        --start-point main \
+        --start-point-clone-thresholds \
+        --start-point-reset \
+        --err \
+        --github-actions {os.environ['GD_COMMENT_TOKEN']} \
+        --ci-number {os.environ['PR_ID']} \
+        --ci-id run-{bencher_testbed.replace(':', '_')}-{int(datetime.now().strftime('%Y%m%d%H%M%S%f'))} \
+        --file pytest_benchmark_results_{session.python}.json".split(),
+        env={
+            "BENCHER_PROJECT": os.environ[
+                "BENCHER_PROJECT"
+            ].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_BRANCH": os.environ["FEATURE_BRANCH"].strip(),
+            "BENCHER_TESTBED": bencher_testbed,
+            "BENCHER_ADAPTER": "python_pytest",
+            "BENCHER_HOST": os.environ[
+                "BENCHER_HOST"
+            ].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
+        },
         external=True,
         silent=True,
     )
