@@ -24,7 +24,7 @@ from .utils import (
     diffusion_matrix_numpy,
     implicit_diffusion_tendency_numpy,
     matrix_diagonals_on_rows,
-    on_rows,
+    on_subdomain,
 )
 
 
@@ -127,7 +127,7 @@ class TestComputeVnDiffusionTendency(stencil_tests.StencilTest):
         )
         tendency[:, rows] += horizontal_tendency[:, rows]
         return dict(
-            vn_tendency=on_rows(
+            vn_tendency=on_subdomain(
                 tendency,
                 slice(horizontal_start, horizontal_end),
                 slice(vertical_start, vertical_end),
@@ -200,10 +200,10 @@ class TestInterpolateVnTendencyToCellsAndUpdateUv(stencil_tests.StencilTest):
         tendency_rows = slice(tendency_horizontal_start, horizontal_end)
         update_rows = slice(update_horizontal_start, horizontal_end)
         return dict(
-            tend_u=on_rows(tend_u, tendency_rows, levels),
-            tend_v=on_rows(tend_v, tendency_rows, levels),
-            new_u=on_rows(u + tend_u * dtime, update_rows, levels),
-            new_v=on_rows(v + tend_v * dtime, update_rows, levels),
+            tend_u=on_subdomain(tend_u, tendency_rows, levels),
+            tend_v=on_subdomain(tend_v, tendency_rows, levels),
+            new_u=on_subdomain(u + tend_u * dtime, update_rows, levels),
+            new_v=on_subdomain(v + tend_v * dtime, update_rows, levels),
         )
 
     @stencil_tests.input_data_fixture
@@ -320,7 +320,7 @@ class TestComputeWDiffusionTendencyAndUpdateW(stencil_tests.StencilTest):
             :, np.newaxis
         ] + (flux_v[1] - flux_v[0]) * tangent * 2.0 * inv_primal_edge_length[:, np.newaxis]
         edges = slice(edge_start, edge_end)
-        stress_tendency = on_rows(stress_tendency, edges, slice(None))
+        stress_tendency = on_subdomain(stress_tendency, edges, slice(None))
 
         inv_rho_ic = 1.0 / rho_ic
         horizontal_tendency = inv_rho_ic * np.sum(
@@ -350,7 +350,7 @@ class TestComputeWDiffusionTendencyAndUpdateW(stencil_tests.StencilTest):
         expected_new_w[cells, levels] = (w + tend_w * dtime)[cells, levels]
         return dict(
             horizontal_stress_tendency=stress_tendency,
-            tend_w=on_rows(tend_w, cells, levels),
+            tend_w=on_subdomain(tend_w, cells, levels),
             new_w=expected_new_w,
         )
 

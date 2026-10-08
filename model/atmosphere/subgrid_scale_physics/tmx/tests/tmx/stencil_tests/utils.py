@@ -98,10 +98,17 @@ def internal_energy_per_area_numpy(
     )
 
 
-# TODO(nfarabullini, jcanton): merge this with `_on_subdomain` of test_diagnostics_stencils:
-# they differ only in what the output keeps outside the domain (zero here, the initial value
-# there).
-def on_rows(values: np.ndarray, rows: slice, levels: slice) -> np.ndarray:
-    out = np.zeros_like(values)
-    out[rows, levels] = values[rows, levels]
+def on_subdomain(
+    values: np.ndarray,
+    horizontal: slice,
+    vertical: slice,
+    *,
+    initial: np.ndarray | None = None,
+) -> np.ndarray:
+    """
+    An output as a program with this domain writes it: `values` on the domain, and outside it
+    the output's initial value (`initial`, zero if not given).
+    """
+    out = np.zeros_like(values) if initial is None else initial.copy()
+    out[horizontal, vertical] = values[horizontal, vertical]
     return out

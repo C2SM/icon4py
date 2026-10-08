@@ -20,7 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .utils import internal_energy_per_area_numpy, on_rows
+from .utils import internal_energy_per_area_numpy, on_subdomain
 
 
 class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilTest):
@@ -107,19 +107,19 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
         levels = slice(vertical_start, vertical_end)
         above_surface = slice(vertical_start, vertical_end - 1)
         return dict(
-            dissip_ke=on_rows(dissip_ke, cells, levels),
-            heating=on_rows(heating, cells, levels),
-            new_tend_temperature=on_rows(new_tend_temperature, cells, levels),
-            new_temperature=on_rows(new_temperature, cells, levels),
-            cptgz=on_rows(cptgz, cells, levels),
-            cptgz_vi=on_rows(np.cumsum(cptgz * rho * ddqz_z_full, axis=1), cells, levels),
-            dissip_ke_vi=on_rows(np.cumsum(dissip_ke, axis=1), cells, levels),
-            int_energy_vi=on_rows(int_energy_vi, cells, levels),
-            tend_int_energy_vi=on_rows(
+            dissip_ke=on_subdomain(dissip_ke, cells, levels),
+            heating=on_subdomain(heating, cells, levels),
+            new_tend_temperature=on_subdomain(new_tend_temperature, cells, levels),
+            new_temperature=on_subdomain(new_temperature, cells, levels),
+            cptgz=on_subdomain(cptgz, cells, levels),
+            cptgz_vi=on_subdomain(np.cumsum(cptgz * rho * ddqz_z_full, axis=1), cells, levels),
+            dissip_ke_vi=on_subdomain(np.cumsum(dissip_ke, axis=1), cells, levels),
+            int_energy_vi=on_subdomain(int_energy_vi, cells, levels),
+            tend_int_energy_vi=on_subdomain(
                 (int_energy_vi - np.cumsum(old_int_energy, axis=1)) / dtime, cells, levels
             ),
-            km=on_rows(km_ic[:, 1:], cells, above_surface),
-            kh=on_rows(kh_ic[:, 1:], cells, above_surface),
+            km=on_subdomain(km_ic[:, 1:], cells, above_surface),
+            kh=on_subdomain(kh_ic[:, 1:], cells, above_surface),
         )
 
     @stencil_tests.input_data_fixture
