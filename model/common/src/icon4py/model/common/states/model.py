@@ -68,6 +68,7 @@ class FieldMetaData:
         | type[gtx.int64]
         | type[gtx.float32]
         | type[gtx.float64]
+        | type[bool]
         | None
     ) = ta.wpfloat
     #: set when a consumer must handle this output specially; see ``FieldKind``
