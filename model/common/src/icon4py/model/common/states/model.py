@@ -14,7 +14,6 @@ from typing import Any, Literal, Protocol, runtime_checkable
 import gt4py._core.definitions as gt_coredefs
 import gt4py.next as gtx
 import gt4py.next.common as gt_common
-import numpy as np
 import numpy.typing as np_t
 
 import icon4py.model.common.type_alias as ta
@@ -109,4 +108,3 @@ class ModelField(DataField):
     @functools.cached_property
     def metadata(self) -> FieldMetaData:
         return self.attrs
-
