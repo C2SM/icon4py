@@ -304,7 +304,7 @@ class TestComputeWDiffusionTendencyAndUpdateW(stencil_tests.StencilTest):
         tangent = tangent_orientation[:, np.newaxis]
 
         vt_e = np.sum(rbf_coeff_e[..., np.newaxis] * vn[e2c2e], axis=1)
-        dvn = edge_projection((u, v), e2c, primal_normal_cell_x, primal_normal_cell_y)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        dvn = edge_projection((u, v), e2c, primal_normal_cell_x, primal_normal_cell_y)
         dvn = dvn[..., above] - dvn[..., below]
         vt_vert = edge_projection(
             (u_vert, v_vert),

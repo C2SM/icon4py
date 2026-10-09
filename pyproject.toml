@@ -163,16 +163,7 @@ exclude = '''(?x)^(
   ^tools/tests/.*|            # untyped tools tests (future annotation work)
   ^scripts/.*|                # command-line scripts not imported as part of the checked packages
   ^noxfile\.py$|              # nox session definitions
-  ^scripts-cli\.py$|          # CLI entry point
-  # TEMPORARY (merge of origin/main 2026-10): upstream code not yet annotated
-  # for type-checking; each entry is removed in the follow-up annotation commit
-  # for its package. Do not add new entries.
-  ^model/common/src/icon4py/model/common/grid/(states|vertical)\.py$|  # common grid
-  ^model/common/src/icon4py/model/common/interpolation/interpolation_factory\.py$|  # common interpolation
-  ^model/common/src/icon4py/model/common/metrics/metrics_factory\.py$|  # common metrics
-  ^model/common/src/icon4py/model/common/model_backends\.py$|  # common backends
-  ^model/common/src/icon4py/model/common/physics/thermodynamics/compute_pressure\.py$|  # common thermodynamics
-  ^model/common/tests/common/interpolation/unit_tests/test_interpolation_factory\.py$  # common interpolation tests
+  ^scripts-cli\.py$          # CLI entry point
 )$'''
 explicit_package_bases = true
 files = [
@@ -286,16 +277,6 @@ ignore_missing_imports = true
 # f90nml is an optional Fortran-namelist dependency with no type stubs. Treat it
 # as Any so tmx namelist tests can be checked whether f90nml is installed.
 module = ["f90nml"]
-
-[[tool.mypy.overrides]]
-# TEMPORARY (merge of origin/main 2026-10): these test modules are imported by
-# sibling stencil tests, so path exclusion alone does not suppress their
-# errors. Ignore them here until the follow-up annotation commit.
-ignore_errors = true
-module = [
-  "model.atmosphere.diffusion.tests.diffusion.stencil_tests.test_apply_nabla2_to_vn_in_lateral_boundary",
-  "model.atmosphere.subgrid_scale_physics.tmx.tests.tmx.stencil_tests.test_wind_diffusion"
-]
 
 # -- pytest --
 [tool.pytest]

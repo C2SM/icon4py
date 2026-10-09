@@ -495,14 +495,18 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         self,
         *,
         func: gtx_typing.Program,
-        domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
+        domain: dict[
+            gtx.Dimension, tuple[h_grid.Domain | v_grid.Domain, h_grid.Domain | v_grid.Domain]
+        ],
         fields: dict[str, str],
         deps: dict[str, str],
         do_exchange: bool,
         params: dict[str, state_utils.ScalarType] | None = None,
     ):
         self._func = func
-        self._domain: dict[gtx.Dimension, tuple[Any, Any]] = domain
+        self._domain: dict[
+            gtx.Dimension, tuple[h_grid.Domain | v_grid.Domain, h_grid.Domain | v_grid.Domain]
+        ] = domain
         self._dims: collections.abc.KeysView[gtx.Dimension] = domain.keys()
         self._dependencies = deps
         self._output = fields
