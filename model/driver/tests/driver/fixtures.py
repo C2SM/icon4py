@@ -46,8 +46,8 @@ def linit(timeloop_diffusion_linit_exit: bool) -> bool:
 
 
 BENCHMARK_EXPERIMENTS: list[test_defs.ExperimentDescription] = [test_defs.Experiments.JW]
-# TODO(msimberg): increase again
-BENCHMARK_STEPS: int = 1
+# TODO(msimberg): increase again; 10 is a temporary probing value, target is 100
+BENCHMARK_STEPS: int = 10
 BENCHMARK_ROUNDS: int = 3
 BENCHMARK_WARMUP_ROUNDS: int = 1
 
