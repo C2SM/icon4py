@@ -34,9 +34,8 @@ from icon4py.bindings import (
     icon4py_export,
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
-from icon4py.model.common.states import nonhydro_states
-from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.components import framework as fw, quantities as qty
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 from icon4py.tools import py2fgen
 
@@ -367,67 +366,43 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
             "exner_incr", domain=exner_now.domain, dtype=exner_now.dtype
         )
 
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=vn_traj,
-        mass_flx_me=mass_flx_me,
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=mass_flx_ic,
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=vol_flx_ic,
+    # the dycore's scratch and its CFL maximum point at ICON's buffers for this call
+    granule.solve_nh.diagnostics = solve_nonhydro.SolveNonhydro.Diagnostics(
+        tangential_wind=fw.Field(qty.TangentialWindOnEdgeK, vt),
+        vn_on_half_levels=fw.Field(qty.VnOnEdgeKHalf, vn_ie),
+        contravariant_correction_at_cells_on_half_levels=fw.Field(
+            qty.ContravariantCorrectionOnCellKHalf, w_concorr_c
+        ),
+        theta_v_at_cells_on_half_levels=fw.Field(qty.ThetaVOnCellKHalf, theta_v_ic),
+        rho_at_cells_on_half_levels=fw.Field(qty.RhoOnCellKHalf, rho_ic),
+        mass_flux_at_edges_on_model_levels=fw.Field(qty.MassFluxOnEdgeK, mass_fl_e),
     )
-
     # Make `max_vcfl` a 0-d array to avoid cupy synchronization, see `_update_max_vertical_cfl`.
     # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
-    max_vcfl = data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)
-
-    diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=max_vcfl,
-        theta_v_at_cells_on_half_levels=theta_v_ic,
-        perturbed_exner_at_cells_on_model_levels=exner_pr,
-        rho_at_cells_on_half_levels=rho_ic,
-        exner_tendency_due_to_slow_physics=ddt_exner_phy,
-        grf_tend_rho=grf_tend_rho,
-        grf_tend_thv=grf_tend_thv,
-        grf_tend_w=grf_tend_w,
-        mass_flux_at_edges_on_model_levels=mass_fl_e,
-        normal_wind_tendency_due_to_slow_physics_process=ddt_vn_phy,
-        grf_tend_vn=grf_tend_vn,
-        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            ddt_vn_apc_ntl1, ddt_vn_apc_ntl2
-        ),
-        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            ddt_w_adv_ntl1, ddt_w_adv_ntl2
-        ),
-        tangential_wind=vt,
-        vn_on_half_levels=vn_ie,
-        contravariant_correction_at_cells_on_half_levels=w_concorr_c,
-        rho_iau_increment=rho_incr,
-        normal_wind_iau_increment=vn_incr,
-        exner_iau_increment=exner_incr,
-        exner_dynamical_increment=exner_dyn_incr,
-    )
-
-    prognostic_state_nnow = PrognosticState(
-        w=w_now,
-        vn=vn_now,
-        theta_v=theta_v_now,
-        rho=rho_now,
-        exner=exner_now,
-    )
-    prognostic_state_nnew = PrognosticState(
-        w=w_new,
-        vn=vn_new,
-        theta_v=theta_v_new,
-        rho=rho_new,
-        exner=exner_new,
-    )
-    prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
+    granule.solve_nh.max_vertical_cfl = data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)
 
     # adjust for Fortran indexes
     idyn_timestep = idyn_timestep - 1
 
-    granule.solve_nh.time_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        prep_adv=prep_adv,
+    inputs = solve_nonhydro.SolveNonhydro.Input(
+        rho=fw.Field(qty.RhoOnCellK, rho_now),
+        w=fw.Field(qty.WOnCellKHalf, w_now),
+        vn=fw.Field(qty.VnOnEdgeK, vn_now),
+        exner=fw.Field(qty.ExnerOnCellK, exner_now),
+        theta_v=fw.Field(qty.ThetaVOnCellK, theta_v_now),
+        exner_tendency_due_to_slow_physics=fw.Field(
+            qty.ExnerTendencyDueToSlowPhysicsOnCellK, ddt_exner_phy
+        ),
+        normal_wind_tendency_due_to_slow_physics_process=fw.Field(
+            qty.NormalWindTendencyDueToSlowPhysicsOnEdgeK, ddt_vn_phy
+        ),
+        grf_tend_rho=fw.Field(qty.GrfTendencyOfRhoOnCellK, grf_tend_rho),
+        grf_tend_thv=fw.Field(qty.GrfTendencyOfThetaVOnCellK, grf_tend_thv),
+        grf_tend_w=fw.Field(qty.GrfTendencyOfWOnCellKHalf, grf_tend_w),
+        grf_tend_vn=fw.Field(qty.GrfTendencyOfVnOnEdgeK, grf_tend_vn),
+        rho_iau_increment=fw.Field(qty.RhoIauIncrementOnCellK, rho_incr),
+        normal_wind_iau_increment=fw.Field(qty.NormalWindIauIncrementOnEdgeK, vn_incr),
+        exner_iau_increment=fw.Field(qty.ExnerIauIncrementOnCellK, exner_incr),
         second_order_divdamp_factor=divdamp_fac_o2,
         dtime=dtime,
         ndyn_substeps_var=ndyn_substeps_var,
@@ -438,9 +413,40 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
     )
+    out = solve_nonhydro.SolveNonhydro.Output(
+        rho=fw.Field(qty.RhoOnCellK, rho_new),
+        w=fw.Field(qty.WOnCellKHalf, w_new),
+        vn=fw.Field(qty.VnOnEdgeK, vn_new),
+        exner=fw.Field(qty.ExnerOnCellK, exner_new),
+        theta_v=fw.Field(qty.ThetaVOnCellK, theta_v_new),
+        vn_traj=fw.Field(qty.VnOnEdgeK, vn_traj),
+        mass_flx_me=fw.Field(qty.MassFluxOnEdgeK, mass_flx_me),
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=fw.Field(
+            qty.MassFluxOnCellKHalf, mass_flx_ic
+        ),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.Field(
+            qty.VolumetricFluxOnCellKHalf, vol_flx_ic
+        ),
+        perturbed_exner_at_cells_on_model_levels=fw.Field(qty.PerturbedExnerOnCellK, exner_pr),
+        exner_dynamical_increment=fw.Field(qty.ExnerDynamicalIncrementOnCellK, exner_dyn_incr),
+        normal_wind_advective_tendency_predictor=fw.Field(
+            qty.NormalWindAdvectiveTendencyOnEdgeK, ddt_vn_apc_ntl1
+        ),
+        normal_wind_advective_tendency_corrector=fw.Field(
+            qty.NormalWindAdvectiveTendencyOnEdgeK, ddt_vn_apc_ntl2
+        ),
+        vertical_wind_advective_tendency_predictor=fw.Field(
+            qty.VerticalWindAdvectiveTendencyOnCellKHalf, ddt_w_adv_ntl1
+        ),
+        vertical_wind_advective_tendency_corrector=fw.Field(
+            qty.VerticalWindAdvectiveTendencyOnCellKHalf, ddt_w_adv_ntl2
+        ),
+    )
+
+    granule.solve_nh.run(inputs=inputs, out=out)
 
     # TODO(havogt): create separate bindings for writing the timers
     if gtx_config.COLLECT_METRICS_LEVEL > 0:
         gtx_metrics.dump_json("gt4py_timers.json")
 
-    max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl[()]  # pass back to Fortran
+    max_vcfl_size1_array[0] = granule.solve_nh.max_vertical_cfl[()]  # pass back to Fortran

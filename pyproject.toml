@@ -169,9 +169,9 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/state.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/data.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/unit_tests',
   # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
@@ -183,6 +183,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/io/unit_tests/test_io.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/components',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/config',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
@@ -242,6 +243,29 @@ module = [
 disallow_untyped_defs = false
 module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 
+[[tool.mypy.overrides]]  # the components and their tests are checked as `mypy --strict` would
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+extra_checks = true
+module = [
+  "icon4py.model.common.components.*",
+  "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.*",
+  "icon4py.model.atmosphere.subgrid_scale_physics.muphys.component",
+  "icon4py.model.driver.*",
+  "*.components.unit_tests.*",
+  "*.physics_driver.unit_tests.*",
+  "*.muphys.unit_tests.*",
+  "driver.unit_tests.test_driver_io",
+  "driver.integration_tests.test_driver_io_output"
+]
+no_implicit_reexport = true
+strict_equality = true
+warn_return_any = true
+warn_unused_ignores = true
+
 [[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
 disable_error_code = ["index", "misc"]
 module = ["icon4py.model.common.initial_condition.*"]
@@ -256,6 +280,28 @@ module = [
   "icon4py.model.atmosphere.dycore.dycore_states",
   "icon4py.model.atmosphere.dycore.stencils.*"
 ]
+
+[tool.pyright]
+include = [
+  "model/common/src/icon4py/model/common/components",
+  "model/common/tests/common/components",
+  "model/atmosphere/subgrid_scale_physics/physics_driver/src/icon4py/model/atmosphere/subgrid_scale_physics/physics_driver",
+  "model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests",
+  "model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py",
+  "model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/unit_tests",
+  "model/driver/src/icon4py/model/driver",
+  "model/driver/tests/driver/unit_tests/test_driver_io.py",
+  "model/driver/tests/driver/integration_tests/test_driver_io_output.py"
+]
+# gt4py's allocators and fields are partially typed; these would report every use of them
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownVariableType = false
+reportUnnecessaryTypeIgnoreComment = "error"
+typeCheckingMode = "strict"
+venv = ".venv"
+venvPath = "."
 
 # -- pytest --
 [tool.pytest]

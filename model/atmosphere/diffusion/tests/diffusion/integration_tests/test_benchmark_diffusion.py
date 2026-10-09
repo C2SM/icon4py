@@ -16,6 +16,7 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import constants, model_backends, model_options
+from icon4py.model.common.components import framework as fw, states
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -25,7 +26,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
@@ -34,6 +34,8 @@ from icon4py.model.testing.fixtures.benchmark import (
 )
 from icon4py.model.testing.fixtures.datatest import backend_like
 from icon4py.model.testing.fixtures.stencil_tests import grid_manager
+
+from ..utils import diffusion_views
 
 
 @pytest.mark.embedded_remap_error
@@ -148,21 +150,21 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
         zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET),
         zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF),
     )
-    # initialization of the diagnostic and prognostic state
-    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
-        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
-        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
-        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
-    )
 
-    prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, low=0.0, allocator=allocator),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-    )
+    # initialization of the diagnostic and prognostic state
+    def random(name: str, shape: tuple[int, ...]) -> Any:
+        low = 0.0 if name == "w" else -1.0
+        return data_alloc.random_field(mesh, *dims_of[name], low=low, allocator=allocator).ndarray
+
+    dims_of = {
+        decl.name: decl.quantity.dims
+        for decl in (
+            *states.DiffusionDiagnostics.declarations(),
+            *states.PrognosticState.declarations(),
+        )
+    }
+    diagnostic_state = fw.allocate(states.DiffusionDiagnostics, mesh, allocator, fill=random)
+    prognostic_state = fw.allocate(states.PrognosticState, mesh, allocator, fill=random)
 
     diffusion_granule = diffusion.Diffusion(
         grid=mesh,
@@ -181,7 +183,5 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
 
     benchmark(
         device_utils.synchronized_function(diffusion_granule.run, allocator=allocator),
-        diagnostic_state,
-        prognostic_state,
-        dtime,
+        *diffusion_views(prognostic_state, diagnostic_state, dtime),
     )

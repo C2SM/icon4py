@@ -13,17 +13,16 @@ import logging
 import os
 import pathlib
 import sys
+from collections.abc import Callable
 from typing import Any, Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
-    component as muphys_component,
-    state as muphys_state,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as muphys_component
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
@@ -34,6 +33,7 @@ from icon4py.model.common import (
     time,
     type_alias as ta,
 )
+from icon4py.model.common.components import states
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition_defs,
@@ -51,7 +51,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.initial_condition import config as ic_config
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import static_fields, tracer_states
+from icon4py.model.common.states import static_fields
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver_constants, driver_states
 
@@ -60,7 +60,7 @@ log = logging.getLogger(__name__)
 
 DRIVER_LOGGING_LEVEL: str = os.environ.get("ICON4PY_DRIVER_LOGGING_LEVEL", "debug")
 
-_LOGGING_LEVELS: dict[str, int] = {
+LOGGING_LEVELS: dict[str, int] = {
     "notset": logging.NOTSET,
     "debug": logging.DEBUG,
     "info": logging.INFO,
@@ -76,6 +76,39 @@ class Granules:
     solve_nonhydro: solve_nh.SolveNonhydro | None = None
     tracer_advection: tracer_advection.Advection | None = None
     physics: physics_driver.PhysicsDriver | None = None
+
+
+def _muphys_step(
+    config: driver_config.ExperimentConfig,
+    grid: icon_grid.IconGrid,
+    static_field_factories: static_fields.StaticFieldFactories,
+    backend: gtx_backend.Backend[Any] | None,
+) -> physics_driver.Step:
+    if config.muphys is None:
+        raise ValueError("The 'muphys' process is not configured.")
+    component = muphys_component.MuphysComponent(
+        grid=grid,
+        dtime=config.driver.dtime,
+        qnc=config.muphys.qnc,
+        dz=static_field_factories.metrics.get(metrics_attributes.DDQZ_Z_FULL),
+        backend=backend,
+    )
+    return physics_driver.bind(component.run, muphys_component.collect_input)
+
+
+type _StepBuilder = Callable[
+    [
+        driver_config.ExperimentConfig,
+        icon_grid.IconGrid,
+        static_fields.StaticFieldFactories,
+        gtx_backend.Backend[Any] | None,
+    ],
+    physics_driver.Step,
+]
+
+# the physics processes, by the name of their section in the experiment configuration; the
+# driver runs those whose section is set
+PROCESSES: dict[str, _StepBuilder] = {"muphys": _muphys_step}
 
 
 def validate_granule_state_consistency(
@@ -102,9 +135,9 @@ def validate_granule_state_consistency(
     if granules.diffusion is not None and states.diffusion_diagnostic is None:
         raise ValueError("diffusion granule is present but diffusion_diagnostic state is None.")
     if granules.solve_nonhydro is not None:
-        if states.solve_nonhydro_diagnostic is None:
+        if states.dycore_forcing is None or states.dycore_diagnostics is None:
             raise ValueError(
-                "solve_nonhydro granule is present but solve_nonhydro_diagnostic state is None."
+                "solve_nonhydro granule is present but dycore_forcing or dycore_diagnostics is None."
             )
         if states.prep_advection_prognostic is None:
             raise ValueError(
@@ -115,9 +148,9 @@ def validate_granule_state_consistency(
             raise ValueError(
                 "tracer_advection granule is present but tracer_advection_diagnostic state is None."
             )
-        if states.prep_tracer_advection_prognostic is None:
+        if states.prep_advection_prognostic is None:
             raise ValueError(
-                "tracer_advection granule is present but prep_tracer_advection_prognostic state is None."
+                "tracer_advection granule is present but prep_advection_prognostic state is None."
             )
 
 
@@ -169,7 +202,7 @@ def create_static_field_factories(
     decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
-    backend: gtx_typing.Backend | None,
+    backend: gtx_backend.Backend[Any] | None,
     process_props: decomposition_defs.ProcessProperties,
     geometry_config: geometry_configuration.GeometryConfig,
     interpolation_config: interpolation_factory.InterpolationConfig,
@@ -201,7 +234,8 @@ def create_static_field_factories(
         vertical_grid=vertical_grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        topography=cell_topography,
+        # pyright resolves wpfloat to float32
+        topography=cell_topography,  # pyright: ignore[reportArgumentType]
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
@@ -223,7 +257,7 @@ def initialize_granules(
     model_time_variables: driver_states.ModelTimeVariables,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
-    backend: gtx_typing.Backend | None,
+    backend: gtx_backend.Backend[Any] | None,
 ) -> Granules:
     geometry_field_source = static_field_factories.geometry
     interpolation_field_source = static_field_factories.interpolation
@@ -234,7 +268,8 @@ def initialize_granules(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        mean_cell_area=geometry_field_source.get_scalar(geometry_meta.MEAN_CELL_AREA),
+        # get_scalar returns gt4py's ScalarType
+        mean_cell_area=geometry_field_source.get_scalar(geometry_meta.MEAN_CELL_AREA),  # pyright: ignore[reportArgumentType]
     )
 
     log.info("creating edge geometry")
@@ -464,24 +499,22 @@ def initialize_granules(
         )
 
     physics_granule: physics_driver.PhysicsDriver | None = None
-    if config.muphys is not None:
-        muphys_process = physics_driver.PhysicsProcess(
-            name="muphys",
-            component=muphys_component.MuphysComponent(
-                grid=grid,
-                dtime=config.driver.dtime,
-                qnc=config.muphys.qnc,
-                backend=backend,
-            ),
-            state=muphys_state.State(metrics=metrics_field_source),
+    physics_processes = [
+        physics_driver.PhysicsProcess(
+            name=name,
+            step=build(config, grid, static_field_factories, backend),
             time_control=physics_driver.ProcessTimeControl(
                 interval=config.driver.dtime,
                 start_date=config.driver.start_of_simulation,
                 end_date=model_time_variables.simulation_end_datetime,
             ),
         )
+        for name, build in PROCESSES.items()
+        if getattr(config, name) is not None
+    ]
+    if physics_processes:
         physics_granule = physics_driver.PhysicsDriver.from_sources(
-            [muphys_process],
+            physics_processes,
             grid=grid,
             geometry=geometry_field_source,
             interpolation=interpolation_field_source,
@@ -525,7 +558,7 @@ def spinup_second_order_divdamp_factor(
 
 
 def find_maximum_from_field(
-    input_field: gtx.Field,
+    input_field: gtx.Field[Any, Any],
 ) -> tuple[tuple[int, ...], float]:
     array_ns = data_alloc.array_namespace(input_field.ndarray)
     max_indices = array_ns.unravel_index(
@@ -599,10 +632,10 @@ def display_driver_setup_in_log_file(
     config: driver_config.DriverConfig,
     model_time_variables: driver_states.ModelTimeVariables,
     vertical_params: v_grid.VerticalGrid,
-    tracer_config: tracer_states.TracerConfig | None = None,
+    tracer_config: states.TracerConfig | None = None,
 ) -> None:
     if tracer_config is None:
-        tracer_config = tracer_states.TracerConfig.none()
+        tracer_config = states.TracerConfig.none()
     log.info("===== ICON4Py Driver Configuration =====")
     log.info(f"Experiment name        : {config.experiment_name}")
     log.info(f"Time step              : {config.dtime.total_seconds()} s")
@@ -694,9 +727,9 @@ def configure_logging(
         process_props: ProcessProperties
 
     """
-    if logging_level.lower() not in _LOGGING_LEVELS:
+    if logging_level.lower() not in LOGGING_LEVELS:
         raise ValueError(
-            f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([*_LOGGING_LEVELS.keys()])}"
+            f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([*LOGGING_LEVELS.keys()])}"
         )
 
     logging.Formatter.converter = time.localtime  # set to local time instead of utc
@@ -723,9 +756,9 @@ def configure_logging(
         ],
     )
     driver_module_name = __name__[: __name__.rindex(".")]
-    logging.getLogger("icon4py.model").setLevel(_LOGGING_LEVELS[logging_level])
+    logging.getLogger("icon4py.model").setLevel(LOGGING_LEVELS[logging_level])
     logging.getLogger(driver_module_name).setLevel(
-        _LOGGING_LEVELS.get(DRIVER_LOGGING_LEVEL, logging.DEBUG)
+        LOGGING_LEVELS.get(DRIVER_LOGGING_LEVEL, logging.DEBUG)
     )
     logging.getLogger("filelock").setLevel(logging.WARNING)
     logging.getLogger("factory.generate").setLevel(logging.WARNING)

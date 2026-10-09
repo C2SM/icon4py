@@ -14,15 +14,11 @@ import math
 import typing
 from typing import TYPE_CHECKING
 
+from icon4py.model.common.components import states
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta
-from icon4py.model.common.states import (
-    prognostic_state as prognostics,
-    tracer_prep_adv_states as prep_adv_states,
-    tracer_states,
-)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -232,7 +228,7 @@ def _compute_idealized_horizontal_velocity_field(
 def _fill_prep_adv_from_prescribed_wind_field(
     *,
     velocity_field: HorizontalVelocityField,
-    prep_adv_state: prep_adv_states.TracerPrepAdvState,
+    prep_adv_state: states.PrepAdvection,
     primal_normal_x: data_alloc.NDArray,
     primal_normal_y: data_alloc.NDArray,
     domain_length: float,
@@ -247,9 +243,9 @@ def _fill_prep_adv_from_prescribed_wind_field(
     )
     vn = u * primal_normal_x + v * primal_normal_y
 
-    vn_traj = prep_adv_state.vn_traj.ndarray
-    mass_flx_me = prep_adv_state.mass_flx_me.ndarray
-    mass_flx_ic = prep_adv_state.mass_flx_ic.ndarray
+    vn_traj = prep_adv_state.vn_traj.data.ndarray
+    mass_flx_me = prep_adv_state.mass_flx_me.data.ndarray
+    mass_flx_ic = prep_adv_state.dynamical_vertical_mass_flux_at_cells_on_half_levels.data.ndarray
     vn_traj[:, :] = vn[:, None]
     mass_flx_me[:, :] = vn[:, None]
     mass_flx_ic[:, :] = 0.0
@@ -333,9 +329,9 @@ def linear_horizontal_advection(
     config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
-    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState,
+    prognostic_state_now: states.PrognosticState,
+    tracer_state_now: states.TracerState,
+    tracer_prep_adv_state: states.PrepAdvection,
 ) -> None:
     """
     Initial condition for the idealized horizontal advection test case.
@@ -356,7 +352,7 @@ def linear_horizontal_advection(
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
 
     # density is set to the inverse of the vertical grid spacing, so that the mass flux equals the velocity
-    prognostic_state_now.rho.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray
+    prognostic_state_now.rho.data.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray
 
     weights, nodes = _prepare_torus_quadratic_quadrature(
         vertex_x=vertex_x,
@@ -386,7 +382,7 @@ def linear_horizontal_advection(
     )
     _fill_tracer_from_analytical_profile(
         config=ic_config,
-        tracer_buffer=tracer_state_now.qv.ndarray,
+        tracer_buffer=tracer_state_now.qv.data.ndarray,
         weights=weights,
         nodes=nodes,
         tracer_center_x=center_x,

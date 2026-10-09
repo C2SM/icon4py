@@ -41,12 +41,11 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     TurbulenceShearForcingType,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
-from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.components import framework as fw, quantities as qty
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -279,15 +278,6 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     if granule is None:
         raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init' first.")
 
-    # prognostic and diagnostic variables
-    prognostic_state = PrognosticState(
-        w=w,
-        vn=vn,
-        exner=exner,
-        theta_v=theta_v,
-        rho=rho,
-    )
-
     if hdef_ic is None:
         hdef_ic = granule.dummy_field_factory("hdef_ic", domain=w.domain, dtype=w.dtype)
     if div_ic is None:
@@ -296,16 +286,23 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dwdx = granule.dummy_field_factory("dwdx", domain=w.domain, dtype=w.dtype)
     if dwdy is None:
         dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=w.dtype)
-    diagnostic_state = DiffusionDiagnosticState(
-        hdef_ic=hdef_ic,
-        div_ic=div_ic,
-        dwdx=dwdx,
-        dwdy=dwdy,
-    )
-
-    granule.diffusion.run(
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
+    # the prognostics are diffused in place in ICON's buffers
+    inputs = Diffusion.Input(
+        vn=fw.Field(qty.VnOnEdgeK, vn),
+        w=fw.Field(qty.WOnCellKHalf, w),
+        exner=fw.Field(qty.ExnerOnCellK, exner),
+        theta_v=fw.Field(qty.ThetaVOnCellK, theta_v),
         dtime=dtime,
         initial_run=linit,
     )
+    out = Diffusion.Output(
+        vn=inputs.vn,
+        w=inputs.w,
+        exner=inputs.exner,
+        theta_v=inputs.theta_v,
+        hdef_ic=fw.Field(qty.HorizontalWindDeformationOnCellKHalf, hdef_ic),
+        div_ic=fw.Field(qty.DivergenceOnCellKHalf, div_ic),
+        dwdx=fw.Field(qty.ZonalGradientOfWOnCellKHalf, dwdx),
+        dwdy=fw.Field(qty.MeridionalGradientOfWOnCellKHalf, dwdy),
+    )
+    granule.diffusion.run(inputs=inputs, out=out)

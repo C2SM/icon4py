@@ -15,6 +15,7 @@ import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.components import framework as fw, quantities as qty, states
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import simple, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
@@ -24,7 +25,6 @@ from icon4py.model.common.physics.thermodynamics import (
     compute_temperature,
     compute_tendencies,
 )
-from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_states as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -183,23 +183,25 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     )
     exner_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
 
-    tracer_state = tracers.TracerState(
-        qv=satad_exit.qv(),
-        qc=satad_exit.qc(),
-        qr=satad_init.qr(),
-        qi=satad_init.qi(),
-        qs=satad_init.qs(),
-        qg=satad_init.qg(),
+    tracer_state = states.TracerState(
+        qv=fw.Field(qty.QvOnCellK, satad_exit.qv()),
+        qc=fw.Field(qty.QcOnCellK, satad_exit.qc()),
+        qr=fw.Field(qty.QrOnCellK, satad_init.qr()),
+        qi=fw.Field(qty.QiOnCellK, satad_init.qi()),
+        qs=fw.Field(qty.QsOnCellK, satad_init.qs()),
+        qg=fw.Field(qty.QgOnCellK, satad_init.qg()),
     )
     exner = satad_init.exner()
 
-    diagnostic_state = diagnostics.DiagnosticState(
-        temperature=satad_exit.temperature(),
-        virtual_temperature=satad_init.virtual_temperature(),
-        pressure=satad_init.pressure(),
-        pressure_ifc=satad_init.pressure_ifc(),
-        u=None,
-        v=None,
+    diagnostic_state = states.Diagnostics(
+        temperature=fw.Field(qty.TemperatureOnCellK, satad_exit.temperature()),
+        virtual_temperature=fw.Field(
+            qty.VirtualTemperatureOnCellK, satad_init.virtual_temperature()
+        ),
+        pressure=fw.Field(qty.PressureOnCellK, satad_init.pressure()),
+        pressure_ifc=fw.Field(qty.PressureOnCellKHalf, satad_init.pressure_ifc()),
+        u=fw.zeros(qty.UOnCellK, icon_grid, backend),
+        v=fw.zeros(qty.VOnCellK, icon_grid, backend),
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -207,14 +209,14 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     end_cell_local = icon_grid.start_index(cell_domain(h_grid.Zone.END))
     compute_tendencies.compute_virtual_temperature_tendency.with_backend(backend)(
         dtime=dtime,
-        qv=tracer_state.qv,
-        qc=tracer_state.qc,
-        qi=tracer_state.qi,
-        qr=tracer_state.qr,
-        qs=tracer_state.qs,
-        qg=tracer_state.qg,
-        temperature=diagnostic_state.temperature,
-        virtual_temperature=diagnostic_state.virtual_temperature,
+        qv=tracer_state.qv.data,
+        qc=tracer_state.qc.data,
+        qi=tracer_state.qi.data,
+        qr=tracer_state.qr.data,
+        qs=tracer_state.qs.data,
+        qg=tracer_state.qg.data,
+        temperature=diagnostic_state.temperature.data,
+        virtual_temperature=diagnostic_state.virtual_temperature.data,
         virtual_temperature_tendency=virtual_temperature_tendency,
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,
@@ -224,13 +226,13 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     )
 
     updated_virtual_temperature = (
-        diagnostic_state.virtual_temperature.asnumpy()
+        diagnostic_state.virtual_temperature.data.asnumpy()
         + virtual_temperature_tendency.asnumpy() * dtime
     )
 
     compute_tendencies.compute_exner_tendency.with_backend(backend)(
         dtime=dtime,
-        virtual_temperature=diagnostic_state.virtual_temperature,
+        virtual_temperature=diagnostic_state.virtual_temperature.data,
         virtual_temperature_tendency=virtual_temperature_tendency,
         exner=exner,
         out=exner_tendency,
@@ -247,9 +249,9 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
         gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         metrics_savepoint.ddqz_z_full(),
-        diagnostic_state.pressure,
+        diagnostic_state.pressure.data,
         data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
-        diagnostic_state.pressure_ifc,
+        diagnostic_state.pressure_ifc.data,
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,
         vertical_start=gtx.int32(0),
@@ -268,12 +270,12 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         atol=1.0e-13,
     )
     assert test_utils.dallclose(
-        diagnostic_state.pressure.asnumpy(),
+        diagnostic_state.pressure.data.asnumpy(),
         satad_exit.pressure().asnumpy(),
         atol=1.0e-13,
     )
     assert test_utils.dallclose(
-        diagnostic_state.pressure_ifc.asnumpy(),
+        diagnostic_state.pressure_ifc.data.asnumpy(),
         satad_exit.pressure_ifc().asnumpy(),
         atol=1.0e-13,
     )

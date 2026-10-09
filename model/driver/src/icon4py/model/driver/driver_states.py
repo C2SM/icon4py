@@ -13,33 +13,24 @@ import enum
 import functools
 import logging
 import statistics
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import devtools
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import diffusion_states
-from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import dimension as dims, time, type_alias as ta
+from icon4py.model.common.components import framework as fw, states
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import base as base_grid, horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    nonhydro_states,
-    prognostic_state as prognostics,
-    static_fields,
-    tracer_prep_adv_states as prep_adv_states,
-    tracer_states,
-)
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.states import static_fields
 from icon4py.model.driver import config as driver_config
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+    from gt4py.next import backend as gtx_backend
 
 
 log = logging.getLogger(__name__)
@@ -51,24 +42,24 @@ class DriverStates(NamedTuple):
 
     Attributes:
         prep_advection_prognostic: Fields collecting data for advection during the solve nonhydro timestep.
-        solve_nonhydro_diagnostic: Initial state for solve_nonhydro diagnostic variables.
+        dycore_forcing: The tendencies and increments the dycore reads.
+        dycore_diagnostics: The diagnostics the dycore carries between the substeps.
         diffusion_diagnostic: Initial state for diffusion diagnostic variables.
         tracer_advection_diagnostic: Initial state for tracer advection diagnostic variables.
-        prep_tracer_advection_prognostic: Precalculated fields for tracer advection.
         prognostics: Initial state for prognostic variables (double buffered, swapped
             once per dynamics substep).
         tracers: Initial tracer state (double buffered, swapped once per time step).
         diagnostic: Initial state for global diagnostic variables.
     """
 
-    prep_advection_prognostic: dycore_states.PrepAdvection | None
-    solve_nonhydro_diagnostic: nonhydro_states.DiagnosticStateNonHydro | None
-    diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
-    tracer_advection_diagnostic: tracer_advection_states.AdvectionDiagnosticState | None
-    prep_tracer_advection_prognostic: prep_adv_states.TracerPrepAdvState | None
-    prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
-    tracers: common_utils.TimeStepPair[tracer_states.TracerState]
-    diagnostic: diagnostics.DiagnosticState
+    prep_advection_prognostic: states.PrepAdvection | None
+    dycore_forcing: states.DycoreForcing | None
+    dycore_diagnostics: states.DycoreDiagnostics | None
+    diffusion_diagnostic: states.DiffusionDiagnostics | None
+    tracer_advection_diagnostic: states.AdvectionDiagnostics | None
+    prognostics: common_utils.TimeStepPair[states.PrognosticState]
+    tracers: common_utils.TimeStepPair[states.TracerState]
+    diagnostic: states.Diagnostics
 
 
 class ModelTimeVariables:
@@ -179,10 +170,10 @@ class DriverTimers(enum.Enum):
     SOLVE_NH = "solve_nh"
     DIFFUSION_FIRST_STEP = "diffusion_first_step"
     DIFFUSION = "diffusion"
-    #: assembly of the output state: diagnostics computation + host transfer (every step)
+    #: the diagnostics for output (capture steps only)
     OUTPUT_ASSEMBLE = "output_assemble"
-    #: handover to the IO monitor: gather/halo stripping + file writing (writes only at
-    #: capture steps; a near-zero sample otherwise)
+    #: the IO component: host transfer, gather/halo stripping and file writing at capture
+    #: steps; a near-zero sample otherwise
     OUTPUT_STORE = "output_store"
 
 
@@ -257,55 +248,26 @@ class TimerCollection:
             )
 
 
-def link_tracer_prep_adv_to_dycore(
-    *,
-    grid: base_grid.Grid,
-    allocator: gtx_typing.Allocator,
-    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
-    solve_nonhydro_enabled: bool,
-) -> dycore_states.PrepAdvection | None:
-    """
-    Build the tracer-advection prep adv state for dycore.
-    If tracer advection is enabled, both tracer-advection and dycore prep adv state share the same buffer.
-    """
-    if not solve_nonhydro_enabled:
-        return None
-    if tracer_prep_adv_state is not None:
-        return dycore_states.PrepAdvection(
-            vn_traj=tracer_prep_adv_state.vn_traj,
-            mass_flx_me=tracer_prep_adv_state.mass_flx_me,
-            dynamical_vertical_mass_flux_at_cells_on_half_levels=tracer_prep_adv_state.mass_flx_ic,
-            dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.wpfloat
-            ),
-        )
-    return dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
-
-
 def assemble_driver_states(
     *,
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
-    backend: gtx_typing.Backend | None,
+    backend: gtx_backend.Backend[Any] | None,
     exchange: decomposition_defs.ExchangeRuntime,
     static_fields: static_fields.StaticFieldFactories,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
-    diagnostic_state: diagnostics.DiagnosticState,
+    prognostic_state_now: states.PrognosticState,
+    tracer_state_now: states.TracerState,
+    diagnostic_state: states.Diagnostics,
     experiment_config: driver_config.ExperimentConfig,
-    solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
-    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
+    dycore_forcing: states.DycoreForcing | None,
+    dycore_diagnostics: states.DycoreDiagnostics | None,
+    prep_adv: states.PrepAdvection | None,
 ) -> DriverStates:
-    prognostic_state_next = prognostics.PrognosticState(
-        vn=data_alloc.reallocate(prognostic_state_now.vn, allocator=allocator),
-        w=data_alloc.reallocate(prognostic_state_now.w, allocator=allocator),
-        exner=data_alloc.reallocate(prognostic_state_now.exner, allocator=allocator),
-        rho=data_alloc.reallocate(prognostic_state_now.rho, allocator=allocator),
-        theta_v=data_alloc.reallocate(prognostic_state_now.theta_v, allocator=allocator),
+    prognostic_states = common_utils.TimeStepPair(
+        prognostic_state_now, fw.copy(prognostic_state_now, allocator)
     )
-    prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
     tracer_states = common_utils.TimeStepPair(
-        tracer_state_now, tracer_state_now.copy(allocator=allocator)
+        tracer_state_now, fw.copy(tracer_state_now, allocator)
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -318,46 +280,35 @@ def assemble_driver_states(
     rbf_vec_coeff_c2 = static_fields.interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2)
 
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-        p_e_in=prognostic_states.current.vn,
+        p_e_in=prognostic_states.current.vn.data,
         ptr_coeff_1=rbf_vec_coeff_c1,
         ptr_coeff_2=rbf_vec_coeff_c2,
-        p_u_out=diagnostic_state.u,
-        p_v_out=diagnostic_state.v,
+        p_u_out=diagnostic_state.u.data,
+        p_v_out=diagnostic_state.v.data,
         horizontal_start=end_cell_lateral_boundary_level_2,
         horizontal_end=end_cell_end,
         vertical_start=0,
         vertical_end=grid.num_levels,
         offset_provider=grid.connectivities,
     )
-    exchange.exchange(dims.CellDim, diagnostic_state.u, diagnostic_state.v)
+    exchange.exchange(dims.CellDim, diagnostic_state.u.data, diagnostic_state.v.data)
 
     diffusion_enabled = experiment_config.diffusion is not None
-    solve_nonhydro_enabled = experiment_config.nonhydrostatic is not None
     tracer_advection_enabled = experiment_config.tracer_advection is not None
 
     diffusion_diagnostic_state = (
-        diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
-        if diffusion_enabled
-        else None
-    )
-    prep_adv = link_tracer_prep_adv_to_dycore(
-        grid=grid,
-        allocator=allocator,
-        tracer_prep_adv_state=tracer_prep_adv_state,
-        solve_nonhydro_enabled=solve_nonhydro_enabled,
+        fw.allocate(states.DiffusionDiagnostics, grid, allocator) if diffusion_enabled else None
     )
     tracer_advection_diagnostic_state = (
-        tracer_advection_states.initialize_advection_diagnostic_state(
-            grid=grid, allocator=allocator
-        )
+        fw.allocate(states.AdvectionDiagnostics, grid, allocator)
         if tracer_advection_enabled
         else None
     )
 
     return DriverStates(
         prep_advection_prognostic=prep_adv,
-        solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
-        prep_tracer_advection_prognostic=tracer_prep_adv_state,
+        dycore_forcing=dycore_forcing,
+        dycore_diagnostics=dycore_diagnostics,
         tracer_advection_diagnostic=tracer_advection_diagnostic_state,
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,

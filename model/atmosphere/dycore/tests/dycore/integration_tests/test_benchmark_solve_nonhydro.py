@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import functools
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
@@ -18,10 +17,10 @@ import pytest
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import model_backends, utils as common_utils
+from icon4py.model.common import model_backends
+from icon4py.model.common.components import framework as fw, quantities as qty, states
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -31,7 +30,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory, nonhydro_states, prognostic_state as prognostics
+from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
@@ -244,99 +243,67 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     at_initial_timestep = False
     second_order_divdamp_factor = 0.02
 
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        mass_flx_me=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
-        ),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
-        ),
-    )
+    def random_prognostics() -> states.PrognosticState:
+        def random(quantity: type[fw.Quantity]) -> fw.Field[Any]:
+            return fw.Field(
+                quantity, data_alloc.random_field(mesh, *quantity.dims, allocator=allocator)
+            )
 
-    diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=data_alloc.scalar_like_array(0.0, allocator),
-        theta_v_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
-        ),
-        perturbed_exner_at_cells_on_model_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=allocator
-        ),
-        rho_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
-        ),
-        exner_tendency_due_to_slow_physics=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=allocator
-        ),
-        grf_tend_rho=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        grf_tend_thv=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        grf_tend_w=data_alloc.zero_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
-        mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, allocator=allocator
-        ),
-        normal_wind_tendency_due_to_slow_physics_process=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, allocator=allocator
-        ),
-        grf_tend_vn=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-            data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        ),
-        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            data_alloc.zero_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
-            data_alloc.zero_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
-        ),
-        tangential_wind=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        vn_on_half_levels=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KHalfDim, allocator=allocator
-        ),
-        contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
-        ),
-        rho_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        normal_wind_iau_increment=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, allocator=allocator
-        ),
-        exner_iau_increment=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=allocator
-        ),
-        exner_dynamical_increment=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=allocator
-        ),
-    )
+        return states.PrognosticState(
+            rho=random(qty.RhoOnCellK),
+            w=random(qty.WOnCellKHalf),
+            vn=random(qty.VnOnEdgeK),
+            exner=random(qty.ExnerOnCellK),
+            theta_v=random(qty.ThetaVOnCellK),
+        )
 
-    prognostic_state_nnow = prognostics.PrognosticState(
-        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-    )
-    prognostic_state_nnew = prognostics.PrognosticState(
-        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-    )
-
-    prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
-
-    solve_nonhydro_timestep_variants = functools.partial(
-        device_utils.synchronized_function(solve_nonhydro.time_step, allocator=allocator),
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        prep_adv=prep_adv,
+    current, next_ = random_prognostics(), random_prognostics()
+    forcing = fw.allocate(states.DycoreForcing, mesh, allocator)
+    prep_adv = fw.allocate(states.PrepAdvection, mesh, allocator)
+    dycore_diagnostics = states.DycoreDiagnostics.allocate(mesh, allocator)
+    inputs = solve_nh.SolveNonhydro.Input(
+        rho=current.rho,
+        w=current.w,
+        vn=current.vn,
+        exner=current.exner,
+        theta_v=current.theta_v,
+        exner_tendency_due_to_slow_physics=forcing.exner_tendency_due_to_slow_physics,
+        normal_wind_tendency_due_to_slow_physics_process=forcing.normal_wind_tendency_due_to_slow_physics_process,
+        grf_tend_rho=forcing.grf_tend_rho,
+        grf_tend_thv=forcing.grf_tend_thv,
+        grf_tend_w=forcing.grf_tend_w,
+        grf_tend_vn=forcing.grf_tend_vn,
+        rho_iau_increment=forcing.rho_iau_increment,
+        normal_wind_iau_increment=forcing.normal_wind_iau_increment,
+        exner_iau_increment=forcing.exner_iau_increment,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
         ndyn_substeps_var=ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
         prepare_fluxes_for_advection=prepare_fluxes_for_advection,
+        at_first_substep=at_first_substep,
+        at_last_substep=at_last_substep,
+    )
+    out = solve_nh.SolveNonhydro.Output(
+        rho=next_.rho,
+        w=next_.w,
+        vn=next_.vn,
+        exner=next_.exner,
+        theta_v=next_.theta_v,
+        vn_traj=prep_adv.vn_traj,
+        mass_flx_me=prep_adv.mass_flx_me,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=prep_adv.dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+        perturbed_exner_at_cells_on_model_levels=dycore_diagnostics.perturbed_exner_at_cells_on_model_levels,
+        exner_dynamical_increment=dycore_diagnostics.exner_dynamical_increment,
+        normal_wind_advective_tendency_predictor=dycore_diagnostics.normal_wind_advective_tendency.predictor,
+        normal_wind_advective_tendency_corrector=dycore_diagnostics.normal_wind_advective_tendency.corrector,
+        vertical_wind_advective_tendency_predictor=dycore_diagnostics.vertical_wind_advective_tendency.predictor,
+        vertical_wind_advective_tendency_corrector=dycore_diagnostics.vertical_wind_advective_tendency.corrector,
     )
 
     benchmark(
-        solve_nonhydro_timestep_variants,
-        at_first_substep=at_first_substep,
-        at_last_substep=at_last_substep,
+        device_utils.synchronized_function(solve_nonhydro.run, allocator=allocator),
+        inputs,
+        out,
     )
