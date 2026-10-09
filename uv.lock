@@ -1181,7 +1181,7 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/spcl/dace.git?branch=main#dbc35f3564bda62d96d1fc7cfd2d0070ca1882d6"}
+source = {git = "https://github.com/edopao/dace.git?branch=fix-staging#8a90455953dc52e917cfc709a875e9b2b0aae33a"}
 version = "2.0.0a10"
 
 [[package]]
@@ -1658,8 +1658,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/GridTools/gt4py?branch=dace_noview_nested_sdfg#475516a9ca8108f0b23243747d4e5869ec6cc59a"}
-version = "1.2.3.post10+475516a9"
+source = {git = "https://github.com/GridTools/gt4py?branch=dace_noview_nested_sdfg#1462e255e919278bca4d7e0f814af821338f1999"}
+version = "1.2.3.post21+1462e255"
 
 [package.optional-dependencies]
 cuda12 = [
