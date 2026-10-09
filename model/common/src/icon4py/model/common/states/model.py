@@ -100,11 +100,6 @@ class DataField(Protocol):
     data: BufferT
     attrs: dict
 
-    def asnumpy(self) -> np.ndarray: ...
-
-    @property
-    def ndarray(self) -> np.ndarray: ...
-
 
 @dataclasses.dataclass
 class ModelField(DataField):
