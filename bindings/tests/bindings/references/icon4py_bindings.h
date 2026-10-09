@@ -24,7 +24,8 @@ extern int diffusion_init_wrapper(
     double smagorinski_scaling_height2, double smagorinski_scaling_height3,
     double smagorinski_scaling_height4, unsigned char hdiff_temp,
     double denom_diffu_v, double nudge_max_coeff, int itype_sher, int iforcing,
-    double a_hshr, unsigned char loutshs, int backend, unsigned char on_gpu);
+    double a_hshr, unsigned char loutshs, int backend,
+    unsigned char device_enabled);
 extern int diffusion_run_wrapper(
     double *w, int w_size_0, int w_size_1, double *vn, int vn_size_0,
     int vn_size_1, double *exner, int exner_size_0, int exner_size_1,
@@ -33,7 +34,7 @@ extern int diffusion_run_wrapper(
     int hdef_ic_size_1, double *div_ic, int div_ic_size_0, int div_ic_size_1,
     double *dwdx, int dwdx_size_0, int dwdx_size_1, double *dwdy,
     int dwdy_size_0, int dwdy_size_1, double dtime, unsigned char linit,
-    unsigned char on_gpu);
+    unsigned char device_enabled);
 extern int grid_init_wrapper(
     int *cell_starts, int cell_starts_size_0, int *cell_ends,
     int cell_ends_size_0, int *vertex_starts, int vertex_starts_size_0,
@@ -77,7 +78,7 @@ extern int grid_init_wrapper(
     double stretch_factor, double flat_height, double rayleigh_damping_height,
     double mean_cell_area, int comm_id, int num_vertices, int num_cells,
     int num_edges, int vertical_size, unsigned char limited_area, int backend,
-    unsigned char on_gpu);
+    unsigned char device_enabled);
 extern int solve_nh_init_wrapper(
     double *c_lin_e, int c_lin_e_size_0, int c_lin_e_size_1, double *c_intp,
     int c_intp_size_0, int c_intp_size_1, double *e_flx_avg,
@@ -135,7 +136,7 @@ extern int solve_nh_init_wrapper(
     double veladv_offctr, double nudge_max_coeff, double divdamp_fac,
     double divdamp_fac2, double divdamp_fac3, double divdamp_fac4,
     double divdamp_z, double divdamp_z2, double divdamp_z3, double divdamp_z4,
-    int nflat_gradp, int backend, unsigned char on_gpu);
+    int nflat_gradp, int backend, unsigned char device_enabled);
 extern int solve_nh_run_wrapper(
     double *rho_now, int rho_now_size_0, int rho_now_size_1, double *rho_new,
     int rho_new_size_0, int rho_new_size_1, double *exner_now,
@@ -175,6 +176,7 @@ extern int solve_nh_run_wrapper(
     double *max_vcfl_size1_array, int max_vcfl_size1_array_size_0,
     unsigned char lprep_adv, unsigned char at_initial_timestep,
     double divdamp_fac_o2, int ndyn_substeps_var, int idyn_timestep,
-    unsigned char is_iau_active, double iau_wgt_dyn, unsigned char on_gpu);
+    unsigned char is_iau_active, double iau_wgt_dyn,
+    unsigned char device_enabled);
 
 #endif
