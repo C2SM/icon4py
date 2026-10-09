@@ -114,17 +114,17 @@ def test_tmx_run_wind_diffusion_single_step(
 
     # (computed, reference, atol, rtol), chosen as described in `assert_tmx_exit_fields`
     fields = {
-        # rtol 5.0e-4
+        # measured atol=3.1e-17, rtol=3.9e-4
         "tend_ua": (tendency_state.tend_u, hor_wind_savepoint.tend_ua(), 4.0e-17, 0.0),
-        # rtol 2.0
+        # measured atol=2.6e-17, rtol=1.5
         "tend_va": (tendency_state.tend_v, hor_wind_savepoint.tend_va(), 3.0e-17, 0.0),
-        # atol 2.0e-14
+        # measured atol=1.4e-14, rtol=6.2e-16
         "ua_new": (new_state.u, hor_wind_savepoint.ua_new(), 0.0, 7.0e-16),
-        # rtol 4.0e-9
+        # measured atol=7.7e-15, rtol=3.1e-9
         "va_new": (new_state.v, hor_wind_savepoint.va_new(), 9.0e-15, 0.0),
-        # rtol 5.0e-5
+        # measured atol=7.4e-19, rtol=4.3e-5
         "tend_wa": (tendency_state.tend_w, vert_wind_savepoint.tend_wa(), 9.0e-19, 0.0),
-        # atol 3.0e-16
+        # measured atol=2.2e-16, rtol=1.1e-11
         "wa_new": (new_state.w, vert_wind_savepoint.wa_new(), 0.0, 2.0e-11),
     }
     for name, (computed, reference, atol, rtol) in fields.items():

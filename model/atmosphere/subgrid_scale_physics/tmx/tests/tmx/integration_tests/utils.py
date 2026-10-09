@@ -138,48 +138,48 @@ def assert_tmx_exit_fields(
     # kh_sfc, is ported.
     exchange_coefficient_levels = slice(None, None if use_km_const else num_levels - 1)
     synced_fields = {"tend_ta", "tend_ua", "tend_va"}
-    # Tolerances of the tmx datatests, per field: the worst deviation from the serialized ICON
-    # fields measured on the five backends (CSCS, v13 archive), times 1.1 and rounded up to one
-    # digit. Only the bound that fits the field is enforced: rtol where the relative deviation
-    # is at roundoff level (at most 1e-9), atol otherwise. The other bound is 0.0, and the
-    # comment above the field gives its measured value, with the same margin; `rtol inf` means
-    # the reference is zero where the result is not.
+    # Tolerances of the tmx datatests, per field. The comment above each field gives the worst
+    # deviations from the serialized ICON fields measured on the five backends (CSCS, v13
+    # archive); `rtol=inf` means the reference is zero where the result is not. Only the bound
+    # that fits the field is enforced, as its measured value times 1.1 rounded up to one digit:
+    # rtol where the relative deviation is at roundoff level (at most 1e-9), atol otherwise.
+    # The other bound is 0.0.
     fields = {
-        # rtol 9.0
+        # measured atol=9.5e-16, rtol=7.3
         "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 2.0e-15, 0.0),
-        # rtol inf
+        # measured atol=1.9e-18, rtol=inf
         "tend_qv": (tendency_state.tend_qv, exit_savepoint.tend_qv(), 3.0e-18, 0.0),
-        # rtol 4.0e-5
+        # measured atol=5.0e-19, rtol=3.2e-5
         "tend_qc": (tendency_state.tend_qc, exit_savepoint.tend_qc(), 6.0e-19, 0.0),
-        # rtol 2.0e-7
+        # measured atol=5.9e-22, rtol=9.9e-8
         "tend_qi": (tendency_state.tend_qi, exit_savepoint.tend_qi(), 7.0e-22, 0.0),
-        # rtol 6.0e-4
+        # measured atol=9.6e-17, rtol=5.1e-4
         "tend_ua": (tendency_state.tend_u, exit_savepoint.tend_ua(), 2.0e-16, 0.0),
-        # rtol 2.0
+        # measured atol=3.2e-17, rtol=1.7
         "tend_va": (tendency_state.tend_v, exit_savepoint.tend_va(), 4.0e-17, 0.0),
-        # rtol 5.0e-5
+        # measured atol=1.1e-17, rtol=4.3e-5
         "tend_wa": (tendency_state.tend_w, exit_savepoint.tend_wa(), 2.0e-17, 0.0),
-        # rtol 2.0e-3
+        # measured atol=7.0e-13, rtol=1.1e-3
         "heating": (diagnostic_state.heating, exit_savepoint.heating(), 8.0e-13, 0.0),
-        # rtol 2.0e-3
+        # measured atol=7.0e-13, rtol=1.1e-3
         "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 8.0e-13, 0.0),
-        # atol 3.0e-6
+        # measured atol=1.9e-6, rtol=6.8e-16
         "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 0.0, 8.0e-16),
-        # rtol 2.0e-8
+        # measured atol=2.0e-12, rtol=1.2e-8
         "dissip_ke_vi": (
             diagnostic_state.dissip_ke_vi,
             exit_savepoint.dissip_ke_vi(),
             3.0e-12,
             0.0,
         ),
-        # atol 2.0e-6
+        # measured atol=1.2e-6, rtol=6.5e-16
         "int_energy_vi": (
             diagnostic_state.int_energy_vi,
             exit_savepoint.int_energy_vi(),
             0.0,
             8.0e-16,
         ),
-        # atol 6.0e-9
+        # measured atol=4.8e-9, rtol=5.7e-11
         "tend_int_energy_vi": (
             diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
@@ -197,9 +197,9 @@ def assert_tmx_exit_fields(
             err_msg=name,
         )
     for name, computed, reference, atol, rtol in (
-        # atol 9.0e-11
+        # measured atol=7.7e-11, rtol=3.9e-11
         ("km", diagnostic_state.km, exit_savepoint.km(), 0.0, 5.0e-11),
-        # atol 3.0e-10
+        # measured atol=2.3e-10, rtol=3.9e-11
         ("kh", diagnostic_state.kh, exit_savepoint.kh(), 0.0, 5.0e-11),
     ):
         test_utils.assert_dallclose(

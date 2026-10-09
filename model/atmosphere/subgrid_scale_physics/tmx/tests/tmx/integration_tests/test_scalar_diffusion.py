@@ -143,17 +143,17 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
     # (computed, reference, name, atol, rtol), chosen as described in
     # `assert_tmx_exit_fields`
     fields = (
-        # rtol inf
+        # measured atol=3.5e-20, rtol=inf
         (setup.tendency_state.tend_qv, exit_savepoint.tend_qv(), "tend_qv", 4.0e-20, 0.0),
-        # rtol 4.0e-5
+        # measured atol=3.6e-21, rtol=3.2e-5
         (setup.tendency_state.tend_qc, exit_savepoint.tend_qc(), "tend_qc", 4.0e-21, 0.0),
-        # atol 2.0e-22
+        # measured atol=1.8e-22, rtol=6.1e-11
         (setup.tendency_state.tend_qi, exit_savepoint.tend_qi(), "tend_qi", 0.0, 7.0e-11),
-        # atol 2.0e-17
+        # measured atol=1.0e-17, rtol=6.6e-16
         (setup.new_state.qv, exit_savepoint.qv_new(), "qv_new", 0.0, 8.0e-16),
-        # atol 2.0e-18
+        # measured atol=1.1e-18, rtol=5.4e-13
         (setup.new_state.qc, exit_savepoint.qc_new(), "qc_new", 0.0, 6.0e-13),
-        # atol 6.0e-20
+        # measured atol=5.4e-20, rtol=1.7e-15
         (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new", 0.0, 2.0e-15),
     )
     for actual, desired, name, atol, rtol in fields:
@@ -214,11 +214,11 @@ def test_tmx_run_temperature_diffusion_single_step(
     # (computed, reference, name, atol, rtol), chosen as described in
     # `assert_tmx_exit_fields`
     fields = (
-        # atol 1.0e-10
+        # measured atol=8.7e-11, rtol=4.7e-16
         (setup.component.energy, exit_savepoint.energy(), "energy", 0.0, 6.0e-16),
-        # atol 4.0e-13
+        # measured atol=2.8e-13, rtol=1.1e-15
         (new_state.temperature, exit_savepoint.ta_new(), "ta_new", 0.0, 2.0e-15),
-        # rtol inf
+        # measured atol=9.5e-16, rtol=inf
         (setup.tendency_state.tend_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15, 0.0),
     )
     for actual, desired, name, atol, rtol in fields:

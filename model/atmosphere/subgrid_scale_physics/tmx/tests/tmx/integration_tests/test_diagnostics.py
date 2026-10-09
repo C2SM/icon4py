@@ -129,45 +129,45 @@ def test_tmx_init_and_run_diagnostics_single_step(
     # (attribute and savepoint accessor, K slice compared, atol, rtol), chosen as described in
     # `assert_tmx_exit_fields`
     fields = (
-        # atol 7.0e-11
+        # measured atol=5.8e-11, rtol=2.2e-16
         ("cptgz", everything, 0.0, 3.0e-16),
-        # atol 2.0e-13
+        # measured atol=1.1e-13, rtol=4.1e-16
         ("theta_v", everything, 0.0, 5.0e-16),
-        # atol 5.0e-16
+        # measured atol=4.4e-16, rtol=4.0e-16
         ("rho_ic", everything, 0.0, 5.0e-16),
-        # atol 4.0e-17
+        # measured atol=3.6e-17, rtol=8.5e-10
         ("bruvais", interior, 0.0, 1.0e-9),
-        # atol 2.0e-14
+        # measured atol=1.4e-14, rtol=1.1e-13
         ("vn", everything, 0.0, 2.0e-13),
-        # atol 4.0e-16
+        # measured atol=3.3e-16, rtol=6.7e-13
         ("w_vert", everything, 0.0, 8.0e-13),
-        # atol 2.0e-16
+        # measured atol=1.1e-16, rtol=9.0e-13
         ("w_ie", everything, 0.0, 1.0e-12),
-        # rtol 1.0e-6
+        # measured atol=2.1e-14, rtol=8.3e-7
         ("u_vert", everything, 3.0e-14, 0.0),
-        # rtol 3.0e-5
+        # measured atol=4.0e-15, rtol=2.0e-5
         ("v_vert", everything, 5.0e-15, 0.0),
-        # atol 3.0e-14
+        # measured atol=2.1e-14, rtol=3.9e-14
         ("vn_ie", everything, 0.0, 5.0e-14),
-        # atol 2.0e-14
+        # measured atol=1.4e-14, rtol=9.9e-11
         ("vt_ie", everything, 0.0, 2.0e-10),
-        # atol 5.0e-18
+        # measured atol=4.3e-18, rtol=4.3e-12
         ("shear", everything, 0.0, 5.0e-12),
-        # rtol 3.0e-9
+        # measured atol=2.6e-19, rtol=2.3e-9
         ("div_of_stress", everything, 3.0e-19, 0.0),
-        # atol 3.0e-19
+        # measured atol=2.0e-19, rtol=7.9e-10
         ("div_c", everything, 0.0, 9.0e-10),
-        # atol 2.0e-18
+        # measured atol=1.7e-18, rtol=3.1e-13
         ("mech_prod", interior, 0.0, 4.0e-13),
-        # atol 9.0e-11
+        # measured atol=7.7e-11, rtol=3.9e-11
         ("km_ic", everything, 0.0, 5.0e-11),
-        # atol 3.0e-10
+        # measured atol=2.3e-10, rtol=3.9e-11
         ("kh_ic", everything, 0.0, 5.0e-11),
-        # atol 5.0e-11
+        # measured atol=3.8e-11, rtol=3.5e-11
         ("km_c", everything, 0.0, 4.0e-11),
-        # atol 2.0e-11
+        # measured atol=1.4e-11, rtol=5.1e-12
         ("km_iv", everything, 0.0, 6.0e-12),
-        # atol 5.0e-11
+        # measured atol=3.8e-11, rtol=1.9e-11
         ("km_ie", everything, 0.0, 3.0e-11),
     )
     # single precision (#970): one atol per field and the scaled shared rtol

@@ -113,29 +113,29 @@ def test_tmx_run_energy_update_single_step(
     )
     # (computed, reference, atol, rtol), chosen as described in `assert_tmx_exit_fields`
     fields = {
-        # rtol 3.0e-5
+        # measured atol=5.2e-19, rtol=2.6e-5
         "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 6.0e-19, 0.0),
-        # rtol 4.0e-4
+        # measured atol=1.5e-13, rtol=3.0e-4
         "heating": (diagnostic_state.heating, exit_savepoint.heating(), 2.0e-13, 0.0),
-        # rtol 4.0e-4
+        # measured atol=1.5e-13, rtol=3.0e-4
         "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 2.0e-13, 0.0),
-        # atol 2.0e-6
+        # measured atol=1.4e-6, rtol=5.0e-16
         "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 0.0, 6.0e-16),
-        # rtol 4.0e-9
+        # measured atol=7.5e-13, rtol=3.4e-9
         "dissip_ke_vi": (
             diagnostic_state.dissip_ke_vi,
             exit_savepoint.dissip_ke_vi(),
             9.0e-13,
             0.0,
         ),
-        # atol 2.0e-6
+        # measured atol=1.2e-6, rtol=6.4e-16
         "int_energy_vi": (
             diagnostic_state.int_energy_vi,
             exit_savepoint.int_energy_vi(),
             0.0,
             8.0e-16,
         ),
-        # atol 6.0e-9
+        # measured atol=4.8e-9, rtol=5.7e-11
         "tend_int_energy_vi": (
             diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
