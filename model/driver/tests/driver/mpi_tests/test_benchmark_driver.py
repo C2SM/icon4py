@@ -74,12 +74,17 @@ def test_benchmark_driver_init(
         grid_manager: gm.GridManager,
         props: decomp_defs.ProcessProperties,
         bench_backend: gtx_typing.Backend | None,
-    ) -> driver.Icon4pyDriver:
-        return driver.initialize_driver(
+    ) -> driver_states.DriverStates:
+        icon4py_driver = driver.initialize_driver(
             config=config,
             grid_manager=grid_manager,
             process_props=props,
             backend=bench_backend,
+        )
+        allocator = model_backends.get_allocator(bench_backend)
+        return driver.initialize_driver_states(
+            icon4py_driver=icon4py_driver,
+            allocator=allocator,
         )
 
     benchmark.pedantic(
