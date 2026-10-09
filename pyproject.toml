@@ -172,8 +172,6 @@ exclude = '''(?x)^(
   ^model/common/src/icon4py/model/common/metrics/metrics_factory\.py$|  # common metrics
   ^model/common/src/icon4py/model/common/model_backends\.py$|  # common backends
   ^model/common/src/icon4py/model/common/physics/thermodynamics/compute_pressure\.py$|  # common thermodynamics
-  ^model/common/src/icon4py/model/common/states/(factory|prognostic_state)\.py$|  # common states
-  ^model/common/src/icon4py/model/common/type_alias\.py$|  # common type_alias
   ^model/common/tests/common/interpolation/unit_tests/test_interpolation_factory\.py$  # common interpolation tests
 )$'''
 explicit_package_bases = true
@@ -248,6 +246,20 @@ module = [
 disable_error_code = ["arg-type"]
 module = [
   "icon4py.bindings.grid_wrapper"
+]
+
+[[tool.mypy.overrides]]
+# GT4Py/numpy typing incompatibilities in common/states/factory.py: NDArrayObject
+# protocol members (reshape), FieldOperator/Program __call__ kwargs signatures,
+# Field|scalar union narrowing, and supertype return unions are rejected by mypy
+# even though the program accepts them at runtime.
+# NOTE: ~14 errors. Empirically verified: cannot be fixed in user code without
+# distorting the factory API. Per-line ignores would add ~14 lines of identical
+# boilerplate with no type-safety benefit. Module-level override kept per D6
+# documented-justification rule.
+disable_error_code = ["arg-type", "attr-defined", "misc", "override", "assignment"]
+module = [
+  "icon4py.model.common.states.factory"
 ]
 
 [[tool.mypy.overrides]]

@@ -45,7 +45,7 @@ import inspect
 import logging
 import types
 import typing
-from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, Sequence
 from typing import Any, Protocol, TypeVar
 
 import gt4py.next as gtx
@@ -100,6 +100,9 @@ class NeedsExchange(Protocol):
             # hence as a simple workaround we loop over the fields
             for name, field in fields.items():
                 log.debug(f"preparing exchange of {name} - {field}")
+                assert isinstance(field, gtx.Field), (
+                    f"exchange requires a GT4Py Field, got {type(field)}"
+                )
                 first_dim = field.domain.dims[0]
                 assert first_dim.kind == gtx.DimensionKind.HORIZONTAL, (
                     f"1st dimension {first_dim} needs to be one of {list(dims.horizontal_dims())} for exchange"
@@ -204,7 +207,8 @@ class FieldSource(GridProvider, Protocol):
             raise TypeError(
                 f"This function is intended to return a Field. Field name {field_name!r} looks like a Scalar ('dims' missing in metadata)."
             )
-        return data_alloc.astype_if_needed(field, this_metadata.dtype)
+        assert isinstance(field, gtx.Field)
+        return data_alloc.astype_if_needed(field, self.output_dtype(field_name))
 
     def get_scalar(self, field_name: str) -> state_utils.ScalarType:
         scalar = self.get_full_precision(field_name)
@@ -213,19 +217,22 @@ class FieldSource(GridProvider, Protocol):
             raise TypeError(
                 f"This function is intended to return a Scalar. Field name {field_name!r} looks like a Field (contains 'dims' in metadata)."
             )
-        return this_metadata.dtype(scalar)
+        assert not isinstance(scalar, gtx.Field)
+        return self.output_dtype(field_name)(scalar)
 
-    def output_dtype(self, field_name: str) -> state_utils.ScalarType:
-        return self.metadata[field_name].dtype
+    def output_dtype(self, field_name: str) -> type[Any]:
+        dtype = self.metadata[field_name].dtype
+        assert dtype is not None
+        return dtype
 
-    def internal_dtype(self, field_name: str) -> state_utils.ScalarType:
+    def internal_dtype(self, field_name: str) -> type[Any]:
         return allfloats_as_double(self.output_dtype(field_name))
 
-    def dtypes_for_factory(self, field_names: Iterator[str]) -> dict[str, state_utils.ScalarType]:
+    def dtypes_for_factory(self, field_names: Iterable[str]) -> dict[str, type[Any]]:
         dtypes = {field_name: self.internal_dtype(field_name) for field_name in field_names}
         return dtypes
 
-    def _provided_by_source(self, name) -> bool:
+    def _provided_by_source(self, name: str) -> bool:
         return name in self._sources._providers or name in self._sources.metadata
 
     def register_provider(self, provider: FieldProvider) -> None:
@@ -299,8 +306,10 @@ class PrecomputedFieldProvider(FieldProvider):
         return lambda: self.fields
 
 
-def _field_extent[DomainT: (h_grid.Domain, v_grid.Domain)](
-    dim: gtx.Dimension, declared: tuple[DomainT, DomainT] | None, grid: GridProvider
+def _field_extent(
+    dim: gtx.Dimension,
+    declared: tuple[Any, Any] | None,
+    grid: GridProvider,
 ) -> tuple[int, int]:
     """
     The range a provider allocates for `dim`.
@@ -314,6 +323,7 @@ def _field_extent[DomainT: (h_grid.Domain, v_grid.Domain)](
     if declared is not None and dim.kind == gtx.DimensionKind.VERTICAL:
         assert grid.vertical_grid is not None
         start, end = declared
+        assert isinstance(start, v_grid.Domain) and isinstance(end, v_grid.Domain)
         return grid.vertical_grid.index(start), grid.vertical_grid.index(end)
     return 0, grid.grid.size[dim]
 
@@ -339,8 +349,14 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         params: dict[str, state_utils.ScalarType] | None = None,
     ):
         self._func = func
-        self._domain = domain if isinstance(domain, dict) else dict.fromkeys(domain)
-        self._dims = tuple(self._domain)
+        self._domain: dict[gtx.Dimension, tuple[Any, Any] | None] = {}
+        if isinstance(domain, dict):
+            for k, v in domain.items():
+                self._domain[k] = v
+        else:
+            for d in domain:
+                self._domain[d] = None
+        self._dims: tuple[gtx.Dimension, ...] = tuple(self._domain)
         self._dependencies = deps
         self._output = fields
         self._params = {} if params is None else params
@@ -375,6 +391,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
             log.debug(f"computing fields  {self.fields.keys()}")
+            assert field_src is not None
             self._compute(field_src, grid)
             self.exchange(self.fields, exchange)
         return self.fields[field_name]
@@ -408,14 +425,18 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             )
             self._fields[k] = data_alloc.reallocate(v, allocator=factory.backend)
 
-    def _unravel_output_fields(self):
+    def _unravel_output_fields(
+        self,
+    ) -> tuple[state_utils.FieldType, ...] | state_utils.FieldType:
         out_fields = tuple(self._fields.values())
         if len(out_fields) == 1:
             out_fields = out_fields[0]
         return out_fields
 
     # TODO(): do we need that here?
-    def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
+    def _get_offset_providers(
+        self, grid: icon_grid.IconGrid
+    ) -> dict[str, gtx_common.NeighborTable]:
         offset_providers = {}
         for dim in self._dims:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
@@ -440,9 +461,9 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         self,
         backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
-        dtypes: dict[str, state_utils.ScalarType],
+        dtypes: dict[str, type[Any]],
     ) -> dict[str, state_utils.FieldType]:
-        allocate = gtx.constructors.zeros.partial(allocator=backend)
+        allocate = functools.partial(gtx.constructors.zeros, allocator=backend)
         field_domain = {
             dim: _field_extent(dim, declared, grid_provider)
             for dim, declared in self._domain.items()
@@ -481,8 +502,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         params: dict[str, state_utils.ScalarType] | None = None,
     ):
         self._func = func
-        self._domain = domain
-        self._dims = domain.keys()
+        self._domain: dict[gtx.Dimension, tuple[Any, Any]] = domain
+        self._dims: collections.abc.KeysView[gtx.Dimension] = domain.keys()
         self._dependencies = deps
         self._output = fields
         self._params = params if params is not None else {}
@@ -496,9 +517,9 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         self,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
-        dtypes: dict[str, state_utils.ScalarType],
+        dtypes: dict[str, type[Any]],
     ) -> dict[str, state_utils.FieldType]:
-        allocate = gtx.constructors.zeros.partial(allocator=backend)
+        allocate = functools.partial(gtx.constructors.zeros, allocator=backend)
         field_domain = {
             dim: _field_extent(dim, declared, grid) for dim, declared in self._domain.items()
         }
@@ -506,7 +527,9 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
     # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
-    def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
+    def _get_offset_providers(
+        self, grid: icon_grid.IconGrid
+    ) -> dict[str, gtx_common.NeighborTable]:
         offset_providers = {}
         for dim in self._domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
@@ -556,8 +579,9 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
-    ):
+    ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
+            assert field_src is not None
             self._compute(field_src=field_src, grid=grid, backend=backend)
             self.exchange(self.fields, exchange=exchange)
         return self.fields[field_name]
@@ -624,8 +648,10 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         do_exchange: bool = False,
     ):
         self._func = func
-        self._domain = domain if isinstance(domain, dict) else None
-        self._dims = tuple(domain)
+        self._domain: dict[gtx.Dimension, tuple[Any, Any]] | None = (
+            domain if isinstance(domain, dict) else None
+        )
+        self._dims: tuple[gtx.Dimension, ...] = tuple(domain)
         self._fields: dict[str, state_utils.ScalarType | state_utils.FieldType | None] = {
             name: None for name in fields
         }
@@ -687,7 +713,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self,
         backend: gtx_typing.Backend | None,
         value: data_alloc.NDArray,
-        dtype,
+        dtype: type[Any],
         grid: GridProvider,
     ) -> state_utils.GTXFieldType:
         if self._domain is None:
@@ -774,7 +800,7 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.__name__
 
 
-def allfloats_as_double(dtype_metadata: state_utils.ScalarType) -> state_utils.ScalarType:
+def allfloats_as_double(dtype_metadata: type[Any]) -> type[Any]:
     if dtype_metadata in [gtx.float32, gtx.float64]:
         return gtx.float64
     else:
