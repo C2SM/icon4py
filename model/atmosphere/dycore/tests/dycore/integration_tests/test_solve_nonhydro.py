@@ -502,7 +502,6 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     caplog.set_level(logging.WARN)
     config = experiment.config.nonhydrostatic
     assert config is not None
-    assert experiment.config.diffusion is not None
     init_savepoint = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = experiment.config.vertical_grid
@@ -702,7 +701,6 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     caplog.set_level(logging.WARN)
     config = experiment.config.nonhydrostatic
     assert config is not None
-    assert experiment.config.diffusion is not None
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
@@ -827,7 +825,6 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
 ) -> None:
     config = experiment.config.nonhydrostatic
     assert config is not None
-    assert experiment.config.diffusion is not None
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
