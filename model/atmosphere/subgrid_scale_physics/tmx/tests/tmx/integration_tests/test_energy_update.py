@@ -157,7 +157,6 @@ def test_tmx_run_energy_update_single_step(
         test_utils.assert_dallclose(
             computed.asnumpy()[:, exchange_coefficient_levels],
             reference.asnumpy()[:, exchange_coefficient_levels],
-            atol=0.0,
             rtol=0.0,
             err_msg=name,
         )

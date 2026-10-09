@@ -94,21 +94,18 @@ def test_tmx_init_and_run_diagnostics_single_step(
     test_utils.assert_dallclose(
         component.mixing_length_sq.asnumpy(),
         init_savepoint.mix_len_sq().asnumpy(),
-        atol=0.0,
         rtol=0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL,
         err_msg="mixing_length_sq",
     )
     test_utils.assert_dallclose(
         component.scaling_factor_louis.asnumpy(),
         init_savepoint.scaling_factor_louis().asnumpy(),
-        atol=0.0,
         rtol=0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL,
         err_msg="scaling_factor_louis",
     )
     test_utils.assert_dallclose(
         metric_state.height_above_ground.asnumpy(),
         exit_savepoint.ghf().asnumpy(),
-        atol=0.0,
         rtol=0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL,
         err_msg="height_above_ground",
     )
