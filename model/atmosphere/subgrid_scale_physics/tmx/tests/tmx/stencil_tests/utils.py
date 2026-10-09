@@ -24,7 +24,9 @@ def diffusion_matrix_numpy(interface_coeff: np.ndarray, inv_air_mass: np.ndarray
     vectors. interface_coeff[:, j] couples rows j and j + 1; no flux crosses the column ends.
     """
     num_rows = inv_air_mass.shape[1]
-    unit_vectors = np.broadcast_to(np.eye(num_rows), (inv_air_mass.shape[0], num_rows, num_rows))
+    unit_vectors = np.broadcast_to(
+        np.identity(num_rows), (inv_air_mass.shape[0], num_rows, num_rows)
+    )
     downward_flux = interface_coeff[:, :, np.newaxis] * (unit_vectors[:, :-1] - unit_vectors[:, 1:])
     downward_flux = np.pad(downward_flux, ((0, 0), (1, 1), (0, 0)))
     return inv_air_mass[:, :, np.newaxis] * (downward_flux[:, 1:] - downward_flux[:, :-1])
@@ -60,7 +62,7 @@ def implicit_diffusion_tendency_numpy(
     rows: slice,
 ) -> np.ndarray:
     matrix = tridiagonal_matrix_numpy(a[:, rows], b[:, rows], c[:, rows])
-    matrix += np.eye(matrix.shape[1]) / dtime
+    matrix += np.identity(matrix.shape[1]) / dtime
     new_var = np.linalg.solve(matrix, (var[:, rows] / dtime + rhs[:, rows])[..., np.newaxis])
     out = np.zeros_like(var)
     out[:, rows] = (new_var[..., 0] - var[:, rows]) / dtime
