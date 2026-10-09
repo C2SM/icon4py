@@ -110,7 +110,7 @@ def test_tmx_run_wind_diffusion_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
-    # (computed, reference, atol, rtol), chosen as described in the integration-test utils
+    # (computed, reference, atol, rtol), chosen as described in `assert_tmx_exit_fields`
     fields = {
         # rtol 5.0e-4
         "tend_ua": (tendency_state.tend_u, hor_wind_savepoint.tend_ua(), 4.0e-17, 0.0),

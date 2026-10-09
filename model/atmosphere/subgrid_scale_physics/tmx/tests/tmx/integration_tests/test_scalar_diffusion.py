@@ -138,8 +138,8 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
-    # (computed, reference, name, atol, rtol), chosen as described in the integration-test
-    # utils
+    # (computed, reference, name, atol, rtol), chosen as described in
+    # `assert_tmx_exit_fields`
     fields = (
         # rtol inf
         (setup.tendency_state.tend_qv, exit_savepoint.tend_qv(), "tend_qv", 4.0e-20, 0.0),
@@ -206,8 +206,8 @@ def test_tmx_run_temperature_diffusion_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
-    # (computed, reference, name, atol, rtol), chosen as described in the integration-test
-    # utils
+    # (computed, reference, name, atol, rtol), chosen as described in
+    # `assert_tmx_exit_fields`
     fields = (
         # atol 1.0e-10
         (setup.component.energy, exit_savepoint.energy(), "energy", 0.0, 6.0e-16),

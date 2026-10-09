@@ -129,7 +129,7 @@ def test_tmx_init_and_run_diagnostics_single_step(
     interior = slice(1, nlev)
     everything = slice(None)
     # (attribute and savepoint accessor, K slice compared, atol, rtol), chosen as described in
-    # the integration-test utils
+    # `assert_tmx_exit_fields`
     fields = (
         # atol 7.0e-11
         ("cptgz", everything, 0.0, 3.0e-16),

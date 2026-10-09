@@ -35,12 +35,6 @@ if TYPE_CHECKING:
 # over the subsequent steps only.
 TMX_DATES: tuple[str, ...] = definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
 
-# Tolerances of the tmx datatests, per field: the worst deviation from the serialized ICON
-# fields measured on the five backends (CSCS, v13 archive), times 1.1 and rounded up to one
-# digit. Only the bound that fits the field is enforced: rtol where the relative deviation
-# is at roundoff level (at most 1e-9), atol otherwise; the other bound is 0.0, and the
-# comment above the field gives the value it would have.
-
 
 def construct_metric_state(
     *,
@@ -149,8 +143,13 @@ def assert_tmx_exit_fields(
     # TODO(jcanton): drop this slicing once the tmx surface scheme, which computes km_sfc and
     # kh_sfc, is ported.
     exchange_coefficient_levels = slice(None, None if use_km_const else num_levels - 1)
-    # (computed, reference, atol, rtol), chosen as described at the top of this module
     synced_fields = {"tend_ta", "tend_ua", "tend_va"}
+    # Tolerances of the tmx datatests, per field: the worst deviation from the serialized ICON
+    # fields measured on the five backends (CSCS, v13 archive), times 1.1 and rounded up to one
+    # digit. Only the bound that fits the field is enforced: rtol where the relative deviation
+    # is at roundoff level (at most 1e-9), atol otherwise. The other bound is 0.0, and the
+    # comment above the field gives its measured value, with the same margin; `rtol inf` means
+    # the reference is zero where the result is not.
     fields = {
         # rtol 9.0
         "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 2.0e-15, 0.0),

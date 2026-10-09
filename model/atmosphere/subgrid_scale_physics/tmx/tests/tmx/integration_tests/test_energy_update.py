@@ -113,7 +113,7 @@ def test_tmx_run_energy_update_single_step(
     exchange_coefficient_levels = slice(
         None, None if tmx_config.use_km_const else icon_grid.num_levels - 1
     )
-    # (computed, reference, atol, rtol), chosen as described in the integration-test utils
+    # (computed, reference, atol, rtol), chosen as described in `assert_tmx_exit_fields`
     fields = {
         # rtol 3.0e-5
         "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 6.0e-19, 0.0),
