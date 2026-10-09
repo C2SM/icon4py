@@ -28,7 +28,6 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
-    RTOL,
     TMX_DATES,
     construct_input_state,
     construct_metric_state,
@@ -114,32 +113,51 @@ def test_tmx_run_energy_update_single_step(
     exchange_coefficient_levels = slice(
         None, None if tmx_config.use_km_const else icon_grid.num_levels - 1
     )
-    # (computed, reference, absolute tolerance)
+    # (computed, reference, atol, rtol), chosen as described in the integration-test utils
     fields = {
-        "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 1.0e-18),
-        "heating": (diagnostic_state.heating, exit_savepoint.heating(), 3.0e-13),
-        "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 3.0e-13),
-        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 3.0e-6),
-        "dissip_ke_vi": (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), 2.0e-12),
-        "int_energy_vi": (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), 3.0e-6),
+        # rtol 3.0e-5
+        "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 6.0e-19, 0.0),
+        # rtol 4.0e-4
+        "heating": (diagnostic_state.heating, exit_savepoint.heating(), 2.0e-13, 0.0),
+        # rtol 4.0e-4
+        "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 2.0e-13, 0.0),
+        # atol 2.0e-6
+        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 0.0, 6.0e-16),
+        # rtol 4.0e-9
+        "dissip_ke_vi": (
+            diagnostic_state.dissip_ke_vi,
+            exit_savepoint.dissip_ke_vi(),
+            9.0e-13,
+            0.0,
+        ),
+        # atol 2.0e-6
+        "int_energy_vi": (
+            diagnostic_state.int_energy_vi,
+            exit_savepoint.int_energy_vi(),
+            0.0,
+            8.0e-16,
+        ),
+        # atol 6.0e-9
         "tend_int_energy_vi": (
             diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
-            7.0e-9,
+            0.0,
+            7.0e-11,
         ),
     }
-    for name, (computed, reference, atol) in fields.items():
+    for name, (computed, reference, atol, rtol) in fields.items():
         test_utils.assert_dallclose(
-            computed.asnumpy(), reference.asnumpy(), rtol=RTOL, atol=atol, err_msg=name
+            computed.asnumpy(), reference.asnumpy(), atol=atol, rtol=rtol, err_msg=name
         )
-    for name, computed, reference, atol in (
-        ("km", diagnostic_state.km, exit_savepoint.km(), 0.0),
-        ("kh", diagnostic_state.kh, exit_savepoint.kh(), 0.0),
+    # copies of the serialized km_ic and kh_ic: exact on every backend
+    for name, computed, reference in (
+        ("km", diagnostic_state.km, exit_savepoint.km()),
+        ("kh", diagnostic_state.kh, exit_savepoint.kh()),
     ):
         test_utils.assert_dallclose(
             computed.asnumpy()[:, exchange_coefficient_levels],
             reference.asnumpy()[:, exchange_coefficient_levels],
-            rtol=RTOL,
-            atol=atol,
+            atol=0.0,
+            rtol=0.0,
             err_msg=name,
         )

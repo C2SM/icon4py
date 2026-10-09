@@ -35,9 +35,6 @@ if TYPE_CHECKING:
 # over the subsequent steps only.
 TMX_DATES: tuple[str, ...] = definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
 
-# Relative tolerance of all tmx integration datatests.
-RTOL: float = test_utils.scale_tol(3.0e-12)
-
 # Tolerances of the tmx datatests, per field: the worst deviation from the serialized ICON
 # fields measured on the five backends (CSCS, v13 archive), times 1.1 and rounded up to one
 # digit. Only the bound that fits the field is enforced: rtol where the relative deviation
