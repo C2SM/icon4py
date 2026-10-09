@@ -26,11 +26,12 @@ def _sum_neighbor_contributions(
     p_cc: fa.CellKField[ta.wpfloat],
     elev: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
-    js_eq0 = js == 0.0
-    js_eq1 = js == 1.0
-    js_eq2 = js == 2.0
-    js_eq3 = js == 3.0
-    js_eq4 = js == 4.0
+    js_int = astype(js, gtx.int32)
+    js_eq0 = js_int == 0
+    js_eq1 = js_int == 1
+    js_eq2 = js_int == 2
+    js_eq3 = js_int == 3
+    js_eq4 = js_int == 4
     p_cc_k = p_cc(dims.KHalfDim + 0.5)
 
     p_cc_p0 = where(mask1 & js_eq0, p_cc_k, 0.0)
@@ -110,11 +111,11 @@ def _compute_ppm4gpu_fractional_flux(
 ) -> fa.CellKHalfField[ta.wpfloat]:
     js = floor(abs(z_cfl))
     z_cflfrac = abs(z_cfl) - js
-    z_cflfrac_nonzero = z_cflfrac != 0.0
+    z_cflfrac_nonzero = z_cflfrac != wpfloat("0.0")
 
-    z_cfl_pos = z_cfl > 0.0
-    z_cfl_neg = z_cfl < 0.0
-    wsign = where(z_cfl_pos, 1.0, -1.0)
+    z_cfl_pos = z_cfl > wpfloat("0.0")
+    z_cfl_neg = z_cfl < wpfloat("0.0")
+    wsign = where(z_cfl_pos, wpfloat("1.0"), wpfloat("-1.0"))
 
     mask1 = z_cfl_pos & z_cflfrac_nonzero
     mask2 = z_cfl_neg & z_cflfrac_nonzero
@@ -132,12 +133,13 @@ def _compute_ppm4gpu_fractional_flux(
 
     z_q_int = (
         p_cc_jks
-        + wsign * (z_delta_q_jks * (1.0 - z_cflfrac))
-        - z_a1_jks * (1.0 - 3.0 * z_cflfrac + 2.0 * z_cflfrac * z_cflfrac)
+        + wsign * (z_delta_q_jks * (wpfloat("1.0") - z_cflfrac))
+        - z_a1_jks
+        * (wpfloat("1.0") - wpfloat("3.0") * z_cflfrac + wpfloat("2.0") * z_cflfrac * z_cflfrac)
     )
 
     p_upflux = where(
-        in_slev_bounds, wsign * p_cellmass_now_jks * z_cflfrac * z_q_int / p_dtime, 0.0
+        in_slev_bounds, wsign * p_cellmass_now_jks * z_cflfrac * z_q_int / p_dtime, wpfloat("0.0")
     )
 
     return p_upflux
