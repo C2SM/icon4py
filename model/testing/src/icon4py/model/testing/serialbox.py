@@ -2226,6 +2226,9 @@ class TmxVertWindExitSavepoint(IconSavepoint):
 class TmxExitSavepoint(IconSavepoint):
     """Savepoint at exit of vdf Compute in mo_vdf.f90."""
 
+    def tend_wa(self):
+        return self._get_field("tend_wa", dims.CellDim, dims.KHalfDim)
+
     def tend_ta(self):
         return self._get_field("tend_ta", dims.CellDim, dims.KDim)
 
@@ -2252,6 +2255,21 @@ class TmxExitSavepoint(IconSavepoint):
 
     def kh(self):
         return self._get_field("kh", dims.CellDim, dims.KDim)
+
+    def tend_qv(self):
+        return self._get_field("tend_qv", dims.CellDim, dims.KDim)
+
+    def tend_qc(self):
+        return self._get_field("tend_qc", dims.CellDim, dims.KDim)
+
+    def tend_qi(self):
+        return self._get_field("tend_qi", dims.CellDim, dims.KDim)
+
+    def tend_ua(self):
+        return self._get_field("tend_ua", dims.CellDim, dims.KDim)
+
+    def tend_va(self):
+        return self._get_field("tend_va", dims.CellDim, dims.KDim)
 
 
 class IconTimeStepExitSavepoint(IconSavepoint):

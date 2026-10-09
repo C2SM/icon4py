@@ -12,7 +12,7 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.scalar_diffusion import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.scalar_diffusion_stencils import (
     compute_energy_from_temperature,
     diffuse_energy_and_update_temperature,
     diffuse_tracer,
@@ -23,45 +23,16 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_vertical_diffusion import (
+from .utils import (
     diffusion_matrix_numpy,
     implicit_diffusion_tendency_numpy,
+    internal_energy_per_area_numpy,
     matrix_diagonals_on_rows,
+    moist_heat_capacity_numpy,
 )
 
 
 _DOMAIN_ARGS = ("horizontal_start", "horizontal_end", "vertical_start", "vertical_end")
-
-
-def moist_heat_capacity_numpy(
-    qv: np.ndarray, q_liquid: np.ndarray, q_solid: np.ndarray
-) -> np.ndarray:
-    return (
-        phy.cvd * (1.0 - qv - q_liquid - q_solid)
-        + phy.cvv * qv
-        + phy.cpl * q_liquid
-        + phy.cpi * q_solid
-    )
-
-
-def internal_energy_per_area_numpy(
-    *,
-    temperature: np.ndarray,
-    qv: np.ndarray,
-    q_liquid: np.ndarray,
-    q_solid: np.ndarray,
-    rho: np.ndarray | float,
-    dz: np.ndarray | float,
-) -> np.ndarray:
-    return (
-        rho
-        * dz
-        * (
-            moist_heat_capacity_numpy(qv, q_liquid, q_solid) * temperature
-            - q_liquid * phy.lvc
-            - q_solid * phy.lsc
-        )
-    )
 
 
 def energy_from_temperature_numpy(

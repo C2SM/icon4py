@@ -10,7 +10,7 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.wind_diffusion import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.wind_diffusion_stencils import (
     compute_vn_diffusion_tendency,
     compute_w_diffusion_tendency_and_update_w,
     interpolate_vn_tendency_to_cells_and_update_uv,
@@ -20,22 +20,12 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_vertical_diffusion import (
+from .utils import (
     diffusion_matrix_numpy,
     implicit_diffusion_tendency_numpy,
     matrix_diagonals_on_rows,
+    on_subdomain,
 )
-
-
-# TODO(nfarabullini, jcanton): move the numpy helpers the tmx stencil tests import from each
-# other (this, the matrix helpers of test_vertical_diffusion, the energy and heat-capacity
-# references of test_scalar_diffusion) into a stencil_tests/utils.py, and merge this with
-# `_on_subdomain` of test_diagnostics: they differ only in what the output keeps outside the
-# domain (zero here, the initial value there).
-def on_rows(values: np.ndarray, rows: slice, levels: slice) -> np.ndarray:
-    out = np.zeros_like(values)
-    out[rows, levels] = values[rows, levels]
-    return out
 
 
 def edge_projection(field: np.ndarray, neighbors: np.ndarray, x: np.ndarray, y: np.ndarray):
@@ -137,10 +127,10 @@ class TestComputeVnDiffusionTendency(stencil_tests.StencilTest):
         )
         tendency[:, rows] += horizontal_tendency[:, rows]
         return dict(
-            vn_tendency=on_rows(
+            vn_tendency=on_subdomain(
                 tendency,
-                slice(horizontal_start, horizontal_end),
-                slice(vertical_start, vertical_end),
+                (horizontal_start, horizontal_end),
+                (vertical_start, vertical_end),
             )
         )
 
@@ -206,14 +196,14 @@ class TestInterpolateVnTendencyToCellsAndUpdateUv(stencil_tests.StencilTest):
         c2e2c2e = stencil_tests.connectivities_asnumpy(grid)[dims.C2E2C2E]
         tend_u = np.sum(rbf_coeff_c1[..., np.newaxis] * vn_tendency[c2e2c2e], axis=1)
         tend_v = np.sum(rbf_coeff_c2[..., np.newaxis] * vn_tendency[c2e2c2e], axis=1)
-        levels = slice(vertical_start, vertical_end)
-        tendency_rows = slice(tendency_horizontal_start, horizontal_end)
-        update_rows = slice(update_horizontal_start, horizontal_end)
+        levels = (vertical_start, vertical_end)
+        tendency_rows = (tendency_horizontal_start, horizontal_end)
+        update_rows = (update_horizontal_start, horizontal_end)
         return dict(
-            tend_u=on_rows(tend_u, tendency_rows, levels),
-            tend_v=on_rows(tend_v, tendency_rows, levels),
-            new_u=on_rows(u + tend_u * dtime, update_rows, levels),
-            new_v=on_rows(v + tend_v * dtime, update_rows, levels),
+            tend_u=on_subdomain(tend_u, tendency_rows, levels),
+            tend_v=on_subdomain(tend_v, tendency_rows, levels),
+            new_u=on_subdomain(u + tend_u * dtime, update_rows, levels),
+            new_v=on_subdomain(v + tend_v * dtime, update_rows, levels),
         )
 
     @stencil_tests.input_data_fixture
@@ -329,8 +319,8 @@ class TestComputeWDiffusionTendencyAndUpdateW(stencil_tests.StencilTest):
         stress_tendency[:, interior] = (flux_c[1] - flux_c[0]) * inv_dual_edge_length[
             :, np.newaxis
         ] + (flux_v[1] - flux_v[0]) * tangent * 2.0 * inv_primal_edge_length[:, np.newaxis]
-        edges = slice(edge_start, edge_end)
-        stress_tendency = on_rows(stress_tendency, edges, slice(None))
+        levels = (vertical_start, vertical_end)
+        stress_tendency = on_subdomain(stress_tendency, (edge_start, edge_end), levels)
 
         inv_rho_ic = 1.0 / rho_ic
         horizontal_tendency = inv_rho_ic * np.sum(
@@ -353,15 +343,11 @@ class TestComputeWDiffusionTendencyAndUpdateW(stencil_tests.StencilTest):
         )
         tend_w[:, interior] += horizontal_tendency[:, interior]
 
-        cells = slice(cell_start, cell_end)
-        levels = slice(vertical_start, vertical_end)
-        # the diffused rows, and the input elsewhere
-        expected_new_w = new_w.copy()
-        expected_new_w[cells, levels] = (w + tend_w * dtime)[cells, levels]
+        cells = (cell_start, cell_end)
         return dict(
             horizontal_stress_tendency=stress_tendency,
-            tend_w=on_rows(tend_w, cells, levels),
-            new_w=expected_new_w,
+            tend_w=on_subdomain(tend_w, cells, levels),
+            new_w=on_subdomain(w + tend_w * dtime, cells, levels, initial=new_w),
         )
 
     @stencil_tests.input_data_fixture

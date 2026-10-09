@@ -19,6 +19,7 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import energy_update, tmx_states
@@ -27,13 +28,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
-from .utils import (
-    RTOL,
-    TMX_DATES,
-    construct_input_state,
-    construct_metric_state,
-    construct_surface_flux_state,
-)
+from .utils import construct_input_state, construct_metric_state, construct_surface_flux_state
 
 
 if TYPE_CHECKING:
@@ -46,7 +41,10 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
 )
 def test_tmx_run_energy_update_single_step(
     *,
@@ -85,10 +83,7 @@ def test_tmx_run_energy_update_single_step(
         km_ic=diagnostics_savepoint.km_ic(),
         kh_ic=diagnostics_savepoint.kh_ic(),
     )
-    tendency_state = dataclasses.replace(
-        tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator),
-        tend_temperature=temperature_savepoint.tend_ta(),
-    )
+    tendency_state = tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator)
     new_state = dataclasses.replace(
         tmx_states.TmxNewState.allocate(icon_grid, allocator=allocator),
         qv=hydro_savepoint.qv_new(),
@@ -103,6 +98,7 @@ def test_tmx_run_energy_update_single_step(
         surface_flux_state=construct_surface_flux_state(
             data_provider.from_savepoint_tmx_surface_fluxes(date=date)
         ),
+        heat_diffusion_tendency=temperature_savepoint.tend_ta(),
         diagnostic_state=diagnostic_state,
         tendency_state=tendency_state,
         new_state=new_state,
@@ -116,32 +112,49 @@ def test_tmx_run_energy_update_single_step(
     exchange_coefficient_levels = slice(
         None, None if tmx_config.use_km_const else icon_grid.num_levels - 1
     )
-    # (computed, reference, absolute tolerance)
+    # (computed, reference, atol, rtol), chosen as described in `assert_tmx_exit_fields`
     fields = {
-        "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 1.0e-18),
-        "heating": (diagnostic_state.heating, exit_savepoint.heating(), 3.0e-13),
-        "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 3.0e-13),
-        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 3.0e-6),
-        "dissip_ke_vi": (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), 2.0e-12),
-        "int_energy_vi": (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), 3.0e-6),
+        # measured atol=5.2e-19, rtol=2.6e-5
+        "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 6.0e-19, 0.0),
+        # measured atol=1.5e-13, rtol=3.0e-4
+        "heating": (diagnostic_state.heating, exit_savepoint.heating(), 2.0e-13, 0.0),
+        # measured atol=1.5e-13, rtol=3.0e-4
+        "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 2.0e-13, 0.0),
+        # measured atol=1.4e-6, rtol=5.0e-16
+        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 0.0, 6.0e-16),
+        # measured atol=7.5e-13, rtol=3.4e-9
+        "dissip_ke_vi": (
+            diagnostic_state.dissip_ke_vi,
+            exit_savepoint.dissip_ke_vi(),
+            9.0e-13,
+            0.0,
+        ),
+        # measured atol=1.2e-6, rtol=6.4e-16
+        "int_energy_vi": (
+            diagnostic_state.int_energy_vi,
+            exit_savepoint.int_energy_vi(),
+            0.0,
+            8.0e-16,
+        ),
+        # measured atol=4.8e-9, rtol=5.7e-11
         "tend_int_energy_vi": (
             diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
-            7.0e-9,
+            0.0,
+            7.0e-11,
         ),
     }
-    for name, (computed, reference, atol) in fields.items():
+    for name, (computed, reference, atol, rtol) in fields.items():
         test_utils.assert_dallclose(
-            computed.asnumpy(), reference.asnumpy(), rtol=RTOL, atol=atol, err_msg=name
+            computed.asnumpy(), reference.asnumpy(), atol=atol, rtol=rtol, err_msg=name
         )
-    for name, computed, reference, atol in (
-        ("km", diagnostic_state.km, exit_savepoint.km(), 0.0),
-        ("kh", diagnostic_state.kh, exit_savepoint.kh(), 0.0),
+    # copies of the serialized km_ic and kh_ic: exact on every backend
+    for name, computed, reference in (
+        ("km", diagnostic_state.km, exit_savepoint.km()),
+        ("kh", diagnostic_state.kh, exit_savepoint.kh()),
     ):
-        test_utils.assert_dallclose(
+        np.testing.assert_array_equal(
             computed.asnumpy()[:, exchange_coefficient_levels],
             reference.asnumpy()[:, exchange_coefficient_levels],
-            rtol=RTOL,
-            atol=atol,
             err_msg=name,
         )
