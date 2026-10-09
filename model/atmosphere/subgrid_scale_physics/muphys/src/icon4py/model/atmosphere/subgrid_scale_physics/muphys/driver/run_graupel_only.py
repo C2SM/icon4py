@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import copy
+from collections.abc import Callable
 
 from gt4py import next as gtx
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
@@ -32,7 +33,7 @@ def setup_graupel(
     vertical_end: int,
     enable_masking: bool = True,
     enable_dace_hooks: bool = True,
-):
+) -> Callable[..., None]:
     if enable_dace_hooks and model_backends.is_backend_descriptor(backend):
         # The graupel scan needs two dace auto-opt hooks. They can only be injected into
         # the backend *descriptor* (a dict), before it is turned into a concrete backend.

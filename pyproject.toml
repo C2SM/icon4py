@@ -167,9 +167,6 @@ exclude = '''(?x)^(
   # TEMPORARY (merge of origin/main 2026-10): upstream code not yet annotated
   # for type-checking; each entry is removed in the follow-up annotation commit
   # for its package. Do not add new entries.
-  ^model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/core/(properties|transitions)\.py$|  # muphys core
-  ^model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/driver/run_(full_muphys|graupel_only)\.py$|  # muphys driver
-  ^model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/implementations/graupel\.py$|  # muphys implementations
   ^model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests/test_physics_(driver|state)\.py$|  # physics_driver unit tests
   ^model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/(integration_tests/test_namelist_config|stencil_tests/test_wind_diffusion)\.py$|  # tmx tests
   ^model/common/src/icon4py/model/common/grid/(states|vertical)\.py$|  # common grid
