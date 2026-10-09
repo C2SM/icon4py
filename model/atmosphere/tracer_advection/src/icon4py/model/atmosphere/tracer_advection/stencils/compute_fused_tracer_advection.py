@@ -146,6 +146,7 @@ def _compute_ppm4gpu_flux(
         p_upflux=p_upflux,
         k_half=k,
         slev=slev,
+        elev=elev,
         p_dtime=p_dtime,
     )
     return concat_where(

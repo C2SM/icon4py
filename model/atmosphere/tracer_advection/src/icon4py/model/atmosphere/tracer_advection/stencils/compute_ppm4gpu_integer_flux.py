@@ -105,6 +105,7 @@ def _compute_ppm4gpu_integer_flux(
     p_upflux: fa.CellKHalfField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
+    elev: gtx.int32,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     js = floor(abs(z_cfl)) - wpfloat(1.0)
@@ -138,6 +139,7 @@ def compute_ppm4gpu_integer_flux(
     p_upflux: fa.CellKHalfField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
+    elev: gtx.int32,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -151,6 +153,7 @@ def compute_ppm4gpu_integer_flux(
         p_upflux=p_upflux,
         k_half=k_half,
         slev=slev,
+        elev=elev,
         p_dtime=p_dtime,
         out=p_upflux,
         domain={
