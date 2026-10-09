@@ -8,7 +8,7 @@
 import contextlib
 import os
 import re
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from typing import Any
 
 import numpy as np
@@ -40,7 +40,7 @@ def _clear_decomposition_cache() -> Iterator[Any]:
     mpi_decomposition.clear_caches()
 
 
-def pytest_configure(config: Any) -> None:
+def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "datatest: this test uses binary data")
     config.addinivalue_line(
         "markers", "with_netcdf: test uses netcdf which is an optional dependency"
@@ -128,7 +128,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_collection_modifyitems(config: Any, items: Any) -> Any:
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     """Modify collected test items based on command line options."""
     scheduler = getattr(config, "_mpi_scheduler", None)
     if scheduler is not None:
@@ -203,7 +203,7 @@ def _name_from_fullname(fullname: str) -> str:
 
 # pytest benchmark hook, see:
 #     https://pytest-benchmark.readthedocs.io/en/latest/hooks.html#pytest_benchmark.hookspec.pytest_benchmark_update_json
-def pytest_benchmark_update_json(output_json: Any) -> None:
+def pytest_benchmark_update_json(output_json: dict[str, Any]) -> None:
     """
     Replace 'fullname' of pytest benchmarks with a shorter name for better readability in bencher.
 
@@ -232,14 +232,16 @@ def pytest_benchmark_update_json(output_json: Any) -> None:
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item: Any, call: Any) -> Iterator[Any]:
+def pytest_runtest_makereport(
+    item: pytest.Item, call: pytest.CallInfo[None]
+) -> Generator[None, Any, None]:
     """
     Gather GT4Py timer metrics from benchmark fixture and add them to the test report.
     """
     outcome = yield
-    report = outcome.get_result()  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
+    report = outcome.get_result()
     if call.when == "call":
-        benchmark = item.funcargs.get("benchmark", None)
+        benchmark = item.funcargs.get("benchmark", None)  # type: ignore[attr-defined]  # pytest internal funcargs not exposed in type stubs
         if benchmark and hasattr(benchmark, "extra_info"):
             info = benchmark.extra_info.get("gtx_metrics", None)
             if info:
@@ -248,7 +250,9 @@ def pytest_runtest_makereport(item: Any, call: Any) -> Iterator[Any]:
                 report.sections.append(("benchmark-extra", tuple([filtered_benchmark_name, info])))
 
 
-def pytest_terminal_summary(terminalreporter: Any, exitstatus: Any, config: Any) -> None:
+def pytest_terminal_summary(
+    terminalreporter: pytest.TerminalReporter, exitstatus: int, config: pytest.Config
+) -> None:
     """
     Add a custom section to the terminal summary with GT4Py timer metrics from benchmarks.
     """
@@ -283,7 +287,7 @@ def pytest_terminal_summary(terminalreporter: Any, exitstatus: Any, config: Any)
         terminalreporter.line("-" * len(header), blue=True)
 
 
-def handle_mpi_options(config: Any) -> None:
+def handle_mpi_options(config: pytest.Config) -> None:
     with_mpi = config.getoption("--with-mpi", default=False)
     only_mpi = config.getoption("--only-mpi", default=False)
     subcomm_size = config.getoption("--mpi-subcomm-size", default=None)
@@ -316,7 +320,7 @@ def handle_mpi_options(config: Any) -> None:
 
         if subcomm_size is not None:
             scheduler = MPISubcommScheduler(subcomm_size)
-            config._mpi_scheduler = scheduler
+            config._mpi_scheduler = scheduler  # type: ignore[attr-defined]  # pytest internal _mpi_scheduler not exposed in type stubs
 
             if scheduler.subcomm.Get_rank() == 0:
                 start_rank = scheduler.group_id * scheduler.subcomm_size
@@ -330,7 +334,7 @@ def handle_mpi_options(config: Any) -> None:
 class MPISubcommScheduler:
     """Splits MPI_COMM_WORLD into subcommunicators for parallel test execution."""
 
-    def __init__(self, subcomm_size: int) -> Any:  # type: ignore[misc]  # GT4Py NDArrayObject protocol limitation
+    def __init__(self, subcomm_size: int) -> None:
         from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
 
         if subcomm_size <= 0:
@@ -358,7 +362,7 @@ class MPISubcommScheduler:
 
         self._original_get_props = mpi_decomposition._get_process_properties
 
-        def _patched_get_props(with_mpi: Any = False, comm_id: Any = None, **kwargs: Any) -> Any:
+        def _patched_get_props(with_mpi: bool = False, comm_id: Any = None, **kwargs: Any) -> Any:
             if with_mpi and comm_id is None:
                 comm_id = self.subcomm
             return self._original_get_props(with_mpi=with_mpi, comm_id=comm_id, **kwargs)
@@ -373,11 +377,12 @@ class MPISubcommScheduler:
         )
         non_mpi_items = [i for i in items if i not in mpi_items]
 
-        valid_mpi_items = [
-            item
-            for item in mpi_items
-            if item.get_closest_marker("mpi").kwargs.get("min_size", 1) <= self.subcomm_size  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
-        ]
+        valid_mpi_items = []
+        for item in mpi_items:
+            marker = item.get_closest_marker("mpi")
+            assert marker is not None
+            if marker.kwargs.get("min_size", 1) <= self.subcomm_size:
+                valid_mpi_items.append(item)
 
         assigned_mpi = [
             item
