@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import diagnostics, tmx_states
@@ -89,24 +90,19 @@ def test_tmx_init_and_run_diagnostics_single_step(
 
     # Smagorinsky_init runs in the constructor; 'ghf' is only serialized at diagnostics exit.
     # All three match exactly on every backend in double precision.
-    test_utils.assert_dallclose(
-        component.mixing_length_sq.asnumpy(),
-        init_savepoint.mix_len_sq().asnumpy(),
-        rtol=0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL,
-        err_msg="mixing_length_sq",
-    )
-    test_utils.assert_dallclose(
-        component.scaling_factor_louis.asnumpy(),
-        init_savepoint.scaling_factor_louis().asnumpy(),
-        rtol=0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL,
-        err_msg="scaling_factor_louis",
-    )
-    test_utils.assert_dallclose(
-        metric_state.height_above_ground.asnumpy(),
-        exit_savepoint.ghf().asnumpy(),
-        rtol=0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL,
-        err_msg="height_above_ground",
-    )
+    for name, computed, reference in (
+        ("mixing_length_sq", component.mixing_length_sq, init_savepoint.mix_len_sq()),
+        (
+            "scaling_factor_louis",
+            component.scaling_factor_louis,
+            init_savepoint.scaling_factor_louis(),
+        ),
+        ("height_above_ground", metric_state.height_above_ground, exit_savepoint.ghf()),
+    ):
+        if test_utils.wp_is_dp:
+            np.testing.assert_equal(computed.asnumpy(), reference.asnumpy(), err_msg=name)
+        else:
+            test_utils.assert_dallclose(computed.asnumpy(), reference.asnumpy(), err_msg=name)
 
     diagnostic_state = tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator)
     component.run(

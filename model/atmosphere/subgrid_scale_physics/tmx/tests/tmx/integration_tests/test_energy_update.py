@@ -19,6 +19,7 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import energy_update, tmx_states
@@ -152,9 +153,8 @@ def test_tmx_run_energy_update_single_step(
         ("km", diagnostic_state.km, exit_savepoint.km()),
         ("kh", diagnostic_state.kh, exit_savepoint.kh()),
     ):
-        test_utils.assert_dallclose(
+        np.testing.assert_equal(
             computed.asnumpy()[:, exchange_coefficient_levels],
             reference.asnumpy()[:, exchange_coefficient_levels],
-            rtol=0.0,
             err_msg=name,
         )
