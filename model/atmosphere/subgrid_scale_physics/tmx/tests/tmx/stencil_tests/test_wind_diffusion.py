@@ -27,6 +27,11 @@ from .test_vertical_diffusion import (
 )
 
 
+# TODO(nfarabullini, jcanton): move the numpy helpers the tmx stencil tests import from each
+# other (this, the matrix helpers of test_vertical_diffusion, the energy and heat-capacity
+# references of test_scalar_diffusion) into a stencil_tests/utils.py, and merge this with
+# `_on_subdomain` of test_diagnostics: they differ only in what the output keeps outside the
+# domain (zero here, the initial value there).
 def on_rows(values: np.ndarray, rows: slice, levels: slice) -> np.ndarray:
     out = np.zeros_like(values)
     out[rows, levels] = values[rows, levels]
