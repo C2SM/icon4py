@@ -2072,6 +2072,9 @@ class TmxEntrySavepoint(IconSavepoint):
     def pres(self):
         return self._get_field("pres", dims.CellDim, dims.KDim)
 
+    def cvair(self):
+        return self._get_field("cvair", dims.CellDim, dims.KDim)
+
 
 class TmxSurfaceFluxesSavepoint(IconSavepoint):
     """Savepoint after the surface model call in vdf Compute in mo_vdf.f90."""
@@ -2087,6 +2090,9 @@ class TmxSurfaceFluxesSavepoint(IconSavepoint):
 
     def tauv(self):
         return self._get_field("tauv", dims.CellDim)
+
+    def q_snocpymlt(self):
+        return self._get_field("q_snocpymlt", dims.CellDim)
 
 
 class TmxDiagnosticsExitSavepoint(IconSavepoint):
@@ -2215,6 +2221,37 @@ class TmxVertWindExitSavepoint(IconSavepoint):
 
     def wa_new(self):
         return self._get_field("wa_new", dims.CellDim, dims.KHalfDim)
+
+
+class TmxExitSavepoint(IconSavepoint):
+    """Savepoint at exit of vdf Compute in mo_vdf.f90."""
+
+    def tend_ta(self):
+        return self._get_field("tend_ta", dims.CellDim, dims.KDim)
+
+    def heating(self):
+        return self._get_field("heating", dims.CellDim, dims.KDim)
+
+    def dissip_ke(self):
+        return self._get_field("dissip_ke", dims.CellDim, dims.KDim)
+
+    def cptgzvi(self):
+        return self._get_field("cptgzvi", dims.CellDim)
+
+    def dissip_ke_vi(self):
+        return self._get_field("dissip_ke_vi", dims.CellDim)
+
+    def int_energy_vi(self):
+        return self._get_field("int_energy_vi", dims.CellDim)
+
+    def tend_int_energy_vi(self):
+        return self._get_field("tend_int_energy_vi", dims.CellDim)
+
+    def km(self):
+        return self._get_field("km", dims.CellDim, dims.KDim)
+
+    def kh(self):
+        return self._get_field("kh", dims.CellDim, dims.KDim)
 
 
 class IconTimeStepExitSavepoint(IconSavepoint):
@@ -2688,5 +2725,11 @@ class IconSerialDataProvider:
     def from_savepoint_tmx_vert_wind_exit(self, date: str) -> TmxVertWindExitSavepoint:
         savepoint = self.serializer.savepoint["tmx-vert-wind-exit"].id[1].date[date].as_savepoint()
         return TmxVertWindExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_exit(self, date: str) -> TmxExitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-exit"].id[1].date[date].as_savepoint()
+        return TmxExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
