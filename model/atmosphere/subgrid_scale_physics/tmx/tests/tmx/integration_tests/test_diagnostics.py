@@ -26,7 +26,6 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
-    RTOL,
     TMX_DATES,
     construct_input_state,
     construct_interpolation_state,
@@ -90,28 +89,36 @@ def test_tmx_init_and_run_diagnostics_single_step(
         use_louis_ice=tmx_config.use_louis_ice,
     )
 
-    # Smagorinsky_init runs in the constructor; 'ghf' is only serialized at diagnostics exit
+    # Smagorinsky_init runs in the constructor; 'ghf' is only serialized at diagnostics exit.
+    # All three match exactly on every backend in double precision.
     test_utils.assert_dallclose(
         component.mixing_length_sq.asnumpy(),
         init_savepoint.mix_len_sq().asnumpy(),
+        atol=0.0,
+        rtol=0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL,
         err_msg="mixing_length_sq",
     )
     test_utils.assert_dallclose(
         component.scaling_factor_louis.asnumpy(),
         init_savepoint.scaling_factor_louis().asnumpy(),
+        atol=0.0,
+        rtol=0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL,
         err_msg="scaling_factor_louis",
     )
     test_utils.assert_dallclose(
         metric_state.height_above_ground.asnumpy(),
         exit_savepoint.ghf().asnumpy(),
+        atol=0.0,
+        rtol=0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL,
         err_msg="height_above_ground",
     )
 
     diagnostic_state = tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator)
-    component.run(construct_input_state(entry_savepoint), diagnostic_state)
+    component.run(
+        input_state=construct_input_state(entry_savepoint), diagnostic_state=diagnostic_state
+    )
 
     nlev = icon_grid.num_levels
-    # (diagnostic state attribute, exit savepoint accessor, K slice compared, absolute tolerance)
     # K rows are excluded only where the Fortran leaves them dead:
     # - bruvais: brunt_vaisala_freq (mo_nh_vert_interp_les.f90) computes
     #   jk = 2..nlev (1-based), i.e. rows 1..nlev-1; rows 0 and nlev are never
@@ -124,33 +131,79 @@ def test_tmx_init_and_run_diagnostics_single_step(
     #   (wgtfacq1_c extrapolation) and row nlev (wgtfacq_c extrapolation).
     interior = slice(1, nlev)
     everything = slice(None)
+    # (attribute and savepoint accessor, K slice compared, atol, rtol), chosen as described in
+    # the integration-test utils
     fields = (
-        ("cptgz", "cptgz", everything, 7.0e-11),
-        ("theta_v", "theta_v", everything, 2.0e-13),
-        ("rho_ic", "rho_ic", everything, 6.0e-16),
-        ("bruvais", "bruvais", interior, 5.0e-17 if test_utils.wp_is_dp else 5.0e-8),
-        ("vn", "vn", everything, 2.0e-14 if test_utils.wp_is_dp else 1.5e-5),
-        ("w_vert", "w_vert", everything, 4.0e-16 if test_utils.wp_is_dp else 2.0e-7),
-        ("w_ie", "w_ie", everything, 2.0e-16 if test_utils.wp_is_dp else 2.0e-7),
-        ("u_vert", "u_vert", everything, 3.0e-14 if test_utils.wp_is_dp else 1.5e-5),
-        ("v_vert", "v_vert", everything, 5.0e-15 if test_utils.wp_is_dp else 4.0e-6),
-        ("vn_ie", "vn_ie", everything, 3.0e-14 if test_utils.wp_is_dp else 2.0e-5),
-        ("vt_ie", "vt_ie", everything, 2.0e-14 if test_utils.wp_is_dp else 1.5e-5),
-        ("shear", "shear", everything, 6.0e-18 if test_utils.wp_is_dp else 3.0e-9),
-        ("div_of_stress", "div_of_stress", everything, 4.0e-19 if test_utils.wp_is_dp else 2e-10),
-        ("div_c", "div_c", everything, 3.0e-19 if test_utils.wp_is_dp else 2e-10),
-        ("mech_prod", "mech_prod", interior, 3.0e-18 if test_utils.wp_is_dp else 2.0e-9),
-        ("km_ic", "km_ic", everything, 1.0e-10 if test_utils.wp_is_dp else 0.1),
-        ("kh_ic", "kh_ic", everything, 3.0e-10 if test_utils.wp_is_dp else 0.3),
-        ("km_c", "km_c", everything, 5.0e-11 if test_utils.wp_is_dp else 0.05),
-        ("km_iv", "km_iv", everything, 2.0e-11 if test_utils.wp_is_dp else 0.03),
-        ("km_ie", "km_ie", everything, 5.0e-11 if test_utils.wp_is_dp else 0.06),
+        # atol 7.0e-11
+        ("cptgz", everything, 0.0, 3.0e-16),
+        # atol 2.0e-13
+        ("theta_v", everything, 0.0, 5.0e-16),
+        # atol 5.0e-16
+        ("rho_ic", everything, 0.0, 5.0e-16),
+        # atol 4.0e-17
+        ("bruvais", interior, 0.0, 1.0e-9),
+        # atol 2.0e-14
+        ("vn", everything, 0.0, 2.0e-13),
+        # atol 4.0e-16
+        ("w_vert", everything, 0.0, 8.0e-13),
+        # atol 2.0e-16
+        ("w_ie", everything, 0.0, 1.0e-12),
+        # rtol 1.0e-6
+        ("u_vert", everything, 3.0e-14, 0.0),
+        # rtol 3.0e-5
+        ("v_vert", everything, 5.0e-15, 0.0),
+        # atol 3.0e-14
+        ("vn_ie", everything, 0.0, 5.0e-14),
+        # atol 2.0e-14
+        ("vt_ie", everything, 0.0, 2.0e-10),
+        # atol 5.0e-18
+        ("shear", everything, 0.0, 5.0e-12),
+        # rtol 3.0e-9
+        ("div_of_stress", everything, 3.0e-19, 0.0),
+        # atol 3.0e-19
+        ("div_c", everything, 0.0, 9.0e-10),
+        # atol 2.0e-18
+        ("mech_prod", interior, 0.0, 4.0e-13),
+        # atol 9.0e-11
+        ("km_ic", everything, 0.0, 5.0e-11),
+        # atol 3.0e-10
+        ("kh_ic", everything, 0.0, 5.0e-11),
+        # atol 5.0e-11
+        ("km_c", everything, 0.0, 4.0e-11),
+        # atol 2.0e-11
+        ("km_iv", everything, 0.0, 6.0e-12),
+        # atol 5.0e-11
+        ("km_ie", everything, 0.0, 3.0e-11),
     )
-    for attr_name, accessor_name, k_slice, atol in fields:
+    # single precision (#970): one atol per field and the scaled shared rtol
+    single_precision_atol = {
+        "cptgz": 7.0e-11,
+        "theta_v": 2.0e-13,
+        "rho_ic": 6.0e-16,
+        "bruvais": 5.0e-8,
+        "vn": 1.5e-5,
+        "w_vert": 2.0e-7,
+        "w_ie": 2.0e-7,
+        "u_vert": 1.5e-5,
+        "v_vert": 4.0e-6,
+        "vn_ie": 2.0e-5,
+        "vt_ie": 1.5e-5,
+        "shear": 3.0e-9,
+        "div_of_stress": 2.0e-10,
+        "div_c": 2.0e-10,
+        "mech_prod": 2.0e-9,
+        "km_ic": 0.1,
+        "kh_ic": 0.3,
+        "km_c": 0.05,
+        "km_iv": 0.03,
+        "km_ie": 0.06,
+    }
+    single_precision_rtol = test_utils.scale_tol(3.0e-12)
+    for name, k_slice, atol, rtol in fields:
         test_utils.assert_dallclose(
-            getattr(diagnostic_state, attr_name).asnumpy()[:, k_slice],
-            getattr(exit_savepoint, accessor_name)().asnumpy()[:, k_slice],
-            rtol=RTOL,
-            atol=atol,
-            err_msg=attr_name,
+            getattr(diagnostic_state, name).asnumpy()[:, k_slice],
+            getattr(exit_savepoint, name)().asnumpy()[:, k_slice],
+            atol=atol if test_utils.wp_is_dp else single_precision_atol[name],
+            rtol=rtol if test_utils.wp_is_dp else single_precision_rtol,
+            err_msg=name,
         )

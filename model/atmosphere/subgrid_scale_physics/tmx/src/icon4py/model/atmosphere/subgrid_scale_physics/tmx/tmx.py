@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import typing
 
@@ -20,12 +21,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
     tmx_states,
     wind_diffusion,
 )
+from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if typing.TYPE_CHECKING:
     import icon4py.model.common.grid.states as grid_states
     from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
-    from icon4py.model.common import model_backends
+    from icon4py.model.common import field_type_aliases as fa, type_alias as ta
     from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.common.grid import base as base_grid
 
@@ -96,6 +99,11 @@ class Tmx:
             use_km_const=config.use_km_const,
             km_const=config.km_const,
         )
+        # the temperature tendency of the heat diffusion, before the energy update adds the
+        # dissipation heating and writes the total to the tendency state
+        self._heat_diffusion_tendency: fa.CellKField[ta.wpfloat] = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=model_backends.get_allocator(backend)
+        )
 
     def run(
         self,
@@ -110,14 +118,11 @@ class Tmx:
         """
         Run one tmx step: write the tendencies to `tendency_state`, the updated fields to
         `new_state` and the diagnostics to `diagnostic_state`.
-
-        The surface fluxes are inputs (`surface_flux_state`); ICON's surface scheme, which
-        produces them between the diagnostics and the diffusion, is not part of this component.
         """
         log.debug("tmx step: start")
 
-        self.diagnostics.run(input_state, diagnostic_state)
-        states = dict(
+        self.diagnostics.run(input_state=input_state, diagnostic_state=diagnostic_state)
+        self.scalar_diffusion.run_hydrometeor_diffusion(
             input_state=input_state,
             surface_flux_state=surface_flux_state,
             diagnostic_state=diagnostic_state,
@@ -125,9 +130,32 @@ class Tmx:
             new_state=new_state,
             dtime=dtime,
         )
-        self.scalar_diffusion.run_hydrometeor_diffusion(**states)
-        self.scalar_diffusion.run_temperature_diffusion(**states)
-        self.wind_diffusion.run(**states)
-        self.energy_update.run(**states)
+        self.scalar_diffusion.run_temperature_diffusion(
+            input_state=input_state,
+            surface_flux_state=surface_flux_state,
+            diagnostic_state=diagnostic_state,
+            tendency_state=dataclasses.replace(
+                tendency_state, tend_temperature=self._heat_diffusion_tendency
+            ),
+            new_state=new_state,
+            dtime=dtime,
+        )
+        self.wind_diffusion.run(
+            input_state=input_state,
+            surface_flux_state=surface_flux_state,
+            diagnostic_state=diagnostic_state,
+            tendency_state=tendency_state,
+            new_state=new_state,
+            dtime=dtime,
+        )
+        self.energy_update.run(
+            input_state=input_state,
+            surface_flux_state=surface_flux_state,
+            heat_diffusion_tendency=self._heat_diffusion_tendency,
+            diagnostic_state=diagnostic_state,
+            tendency_state=tendency_state,
+            new_state=new_state,
+            dtime=dtime,
+        )
 
         log.debug("tmx step: end")
