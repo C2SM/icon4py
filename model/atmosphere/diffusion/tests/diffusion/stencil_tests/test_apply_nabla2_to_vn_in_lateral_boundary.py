@@ -24,7 +24,7 @@ def apply_nabla2_to_vn_in_lateral_boundary_numpy(
     z_nabla2_e: np.ndarray,
     area_edge: np.ndarray,
     vn: np.ndarray,
-    fac_bdydiff_v: wpfloat,
+    fac_bdydiff_v: wpfloat | np.ndarray,
 ) -> np.ndarray:
     area_edge = np.expand_dims(area_edge, axis=-1)
     vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)

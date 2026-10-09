@@ -104,7 +104,7 @@ class TestApplyDiffusionToVn(stencil_tests.StencilTest):
                     z_nabla2_e,
                     area_edge,
                     vn,
-                    fac_bdydiff_v,  # type: ignore[arg-type]  # caller passes ndarray for broadcasting; numpy reference accepts it at runtime
+                    fac_bdydiff_v,
                 ),
             )
         else:
