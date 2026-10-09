@@ -140,7 +140,8 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched() -> None:
     # the invariant: inputs untouched
     np.testing.assert_array_equal(prognostic.exner.asnumpy(), exner_before)
     np.testing.assert_array_equal(prognostic.vn.asnumpy(), vn_before)
-    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3, rtol=0)  # type: ignore[union-attr]  # test fixture always provides qv
+    assert tracers.qv is not None
+    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3, rtol=0)
 
     # the facade binds pointers, not copies: same objects, physics names
     assert ws.exner is prognostic.exner
@@ -251,7 +252,8 @@ def test_apply_updates_tracers_w_and_thermodynamics_once() -> None:
 
     acc.apply(ws, dt_seconds=dt)
 
-    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)  # type: ignore[union-attr]  # test fixture always provides qv
+    assert tracers.qv is not None
+    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)
     np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
     # EOS wiring smoke test: the exact-EOS update must have rewritten exner and
     # theta_v (their new values are EOS-consistent with rho and the updated Tv;
