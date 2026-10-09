@@ -27,7 +27,6 @@ from icon4py.model.testing import definitions, parallel_helpers
 
 from ..fixtures import *  # noqa: F403
 from ..integration_tests.utils import (
-    TMX_DATES,
     assert_tmx_exit_fields,
     construct_input_state,
     construct_interpolation_state,
@@ -50,7 +49,10 @@ _log = logging.getLogger(__file__)
 @pytest.mark.mpi
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
 )
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_parallel_tmx_run_single_step(

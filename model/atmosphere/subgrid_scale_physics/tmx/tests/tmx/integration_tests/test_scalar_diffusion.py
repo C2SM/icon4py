@@ -28,7 +28,6 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
-    TMX_DATES,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -100,7 +99,10 @@ def _setup(
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
 )
 def test_tmx_run_hydrometeor_diffusion_single_step(
     *,
@@ -163,7 +165,10 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
 )
 def test_tmx_run_temperature_diffusion_single_step(
     *,

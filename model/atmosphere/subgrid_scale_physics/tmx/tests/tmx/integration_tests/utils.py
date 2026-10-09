@@ -30,12 +30,6 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-# Serialized timesteps of the exclaim_ape_aesPhys archive. The first one is the
-# call made during model initialization, so the verification tests parametrize
-# over the subsequent steps only.
-TMX_DATES: tuple[str, ...] = definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
-
-
 def construct_metric_state(
     *,
     metrics_savepoint: sb.MetricSavepoint,

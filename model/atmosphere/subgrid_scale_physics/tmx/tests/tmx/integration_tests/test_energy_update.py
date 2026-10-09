@@ -27,12 +27,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
-from .utils import (
-    TMX_DATES,
-    construct_input_state,
-    construct_metric_state,
-    construct_surface_flux_state,
-)
+from .utils import construct_input_state, construct_metric_state, construct_surface_flux_state
 
 
 if TYPE_CHECKING:
@@ -45,7 +40,10 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
 )
 def test_tmx_run_energy_update_single_step(
     *,
