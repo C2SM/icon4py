@@ -14,11 +14,11 @@ build = [
   "pooch>=1.7.0"
 ]
 dev = [
-  {include-group = "build"},
-  {include-group = "docs"},
-  {include-group = "lint"},
-  {include-group = "test"},
-  {include-group = "typing"}
+  { include-group = "build" },
+  { include-group = "docs" },
+  { include-group = "lint" },
+  { include-group = "test" },
+  { include-group = "typing" }
 ]
 docs = [
   "esbonio>=0.16.0",
@@ -45,12 +45,14 @@ scripts = [
   "serialbox4py>=2.6.2",
   "typer>=0.15",
   "f90nml>=1.5",
-  {include-group = "build"}
+  { include-group = "build" }
 ]
 test = [
   # workspace members
   "icon4py-testing~=0.4.1",
   # external dependencies
+  "black>=25.11",
+  "clang-format>=22.1.0",
   "coverage[toml]>=7.5.0",
   # reading the experiments' raw namelists, to cross-check the converted config
   "f90nml>=1.5",
@@ -75,7 +77,7 @@ typing-distributed = ["mpi4py>=3.1.5", "pymetis>2022.1"]
 
 # -- Standard project description options (PEP 621) --
 [project]
-authors = [{email = "gridtools@cscs.ch", name = "ETH Zurich"}]
+authors = [{ email = "gridtools@cscs.ch", name = "ETH Zurich" }]
 classifiers = [
   'Development Status :: 4 - Beta',
   'Intended Audience :: Science/Research',
@@ -104,7 +106,7 @@ dependencies = [
   "icon4py-driver~=0.4.1"
 ]
 description = 'ICON model in Python.'
-license = {text = "BSD-3 License"}
+license = { text = "BSD-3 License" }
 name = "icon4py"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -411,7 +413,7 @@ packages = []
 
 # -- uv: packages & workspace --
 [tool.uv]
-conflicts = [[{extra = "cuda12"}, {extra = "cuda13"}, {extra = "rocm7"}]]
+conflicts = [[{ extra = "cuda12" }, { extra = "cuda13" }, { extra = "rocm7" }]]
 
 [[tool.uv.index]]
 explicit = true
@@ -427,18 +429,18 @@ url = 'https://gridtools.github.io/pypi/'
 # dace = {index = "gridtools"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
-icon4py-atmosphere-diffusion = {workspace = true}
-icon4py-atmosphere-dycore = {workspace = true}
-icon4py-atmosphere-microphysics = {workspace = true}
-icon4py-atmosphere-muphys = {workspace = true}
-icon4py-atmosphere-physics-driver = {workspace = true}
-icon4py-atmosphere-tmx = {workspace = true}
-icon4py-atmosphere-tracer_advection = {workspace = true}
-icon4py-bindings = {workspace = true}
-icon4py-common = {workspace = true}
-icon4py-driver = {workspace = true}
-icon4py-testing = {workspace = true}
-icon4py-tools = {workspace = true}
+icon4py-atmosphere-diffusion = { workspace = true }
+icon4py-atmosphere-dycore = { workspace = true }
+icon4py-atmosphere-microphysics = { workspace = true }
+icon4py-atmosphere-muphys = { workspace = true }
+icon4py-atmosphere-physics-driver = { workspace = true }
+icon4py-atmosphere-tmx = { workspace = true }
+icon4py-atmosphere-tracer_advection = { workspace = true }
+icon4py-bindings = { workspace = true }
+icon4py-common = { workspace = true }
+icon4py-driver = { workspace = true }
+icon4py-testing = { workspace = true }
+icon4py-tools = { workspace = true }
 
 [tool.uv.workspace]
 members = [

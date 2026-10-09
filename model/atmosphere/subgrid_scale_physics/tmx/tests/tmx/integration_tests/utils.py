@@ -35,8 +35,11 @@ if TYPE_CHECKING:
 # over the subsequent steps only.
 TMX_DATES: tuple[str, ...] = definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
 
-# Relative tolerance of all tmx integration datatests.
-RTOL: float = test_utils.scale_tol(3.0e-12)
+# Tolerances of the tmx datatests, per field: the worst deviation from the serialized ICON
+# fields measured on the five backends (CSCS, v13 archive), times 1.1 and rounded up to one
+# digit. Only the bound that fits the field is enforced: rtol where the relative deviation
+# is at roundoff level (at most 1e-9), atol otherwise; the other bound is 0.0, and the
+# comment above the field gives the value it would have.
 
 
 def construct_metric_state(
@@ -131,63 +134,91 @@ def assert_tmx_exit_fields(
     diagnostic_state: tmx_states.TmxDiagnosticState,
     exit_savepoint: sb.TmxExitSavepoint,
     use_km_const: bool,
-    cells: slice | np.ndarray,
+    owner_mask: np.ndarray,
 ) -> None:
     """
     Assert that the outputs of a tmx step match the tmx-exit savepoint.
 
     The tendencies ICON exchanges (temperature, u, v) are compared on all cells, including
-    the halo; every other output is compared on `cells`, because ICON leaves its halo unsynced.
+    the halo; every other output only on the owned cells, because ICON leaves its halo
+    unsynced.
     """
     num_levels = diagnostic_state.km.ndarray.shape[1]
     # the surface level of km and kh is the surface exchange coefficient, written only with
     # `use_km_const`
+    # TODO(jcanton): drop this slicing once the tmx surface scheme, which computes km_sfc and
+    # kh_sfc, is ported.
     exchange_coefficient_levels = slice(None, None if use_km_const else num_levels - 1)
-    # (computed, reference, absolute tolerance). The tolerances are the largest deviations
-    # measured on the v08 archive in #1359, with headroom; not yet measured on v11.
+    # (computed, reference, atol, rtol), chosen as described at the top of this module
     synced_fields = {"tend_ta", "tend_ua", "tend_va"}
     fields = {
-        "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 2.0e-15),
-        "tend_qv": (tendency_state.tend_qv, exit_savepoint.tend_qv(), 3.0e-18),
-        "tend_qc": (tendency_state.tend_qc, exit_savepoint.tend_qc(), 6.0e-19),
-        "tend_qi": (tendency_state.tend_qi, exit_savepoint.tend_qi(), 8.0e-22),
-        "tend_ua": (tendency_state.tend_u, exit_savepoint.tend_ua(), 2.0e-16),
-        "tend_va": (tendency_state.tend_v, exit_savepoint.tend_va(), 4.0e-17),
-        "tend_wa": (tendency_state.tend_w, exit_savepoint.tend_wa(), 2.0e-17),
-        "heating": (diagnostic_state.heating, exit_savepoint.heating(), 9.0e-13),
-        "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 9.0e-13),
-        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 4.0e-6),
-        "dissip_ke_vi": (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), 3.0e-12),
-        "int_energy_vi": (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), 3.0e-6),
+        # rtol 9.0
+        "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 2.0e-15, 0.0),
+        # rtol inf
+        "tend_qv": (tendency_state.tend_qv, exit_savepoint.tend_qv(), 3.0e-18, 0.0),
+        # rtol 4.0e-5
+        "tend_qc": (tendency_state.tend_qc, exit_savepoint.tend_qc(), 6.0e-19, 0.0),
+        # rtol 2.0e-7
+        "tend_qi": (tendency_state.tend_qi, exit_savepoint.tend_qi(), 7.0e-22, 0.0),
+        # rtol 6.0e-4
+        "tend_ua": (tendency_state.tend_u, exit_savepoint.tend_ua(), 2.0e-16, 0.0),
+        # rtol 2.0
+        "tend_va": (tendency_state.tend_v, exit_savepoint.tend_va(), 4.0e-17, 0.0),
+        # rtol 5.0e-5
+        "tend_wa": (tendency_state.tend_w, exit_savepoint.tend_wa(), 2.0e-17, 0.0),
+        # rtol 2.0e-3
+        "heating": (diagnostic_state.heating, exit_savepoint.heating(), 8.0e-13, 0.0),
+        # rtol 2.0e-3
+        "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 8.0e-13, 0.0),
+        # atol 3.0e-6
+        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 0.0, 8.0e-16),
+        # rtol 2.0e-8
+        "dissip_ke_vi": (
+            diagnostic_state.dissip_ke_vi,
+            exit_savepoint.dissip_ke_vi(),
+            3.0e-12,
+            0.0,
+        ),
+        # atol 2.0e-6
+        "int_energy_vi": (
+            diagnostic_state.int_energy_vi,
+            exit_savepoint.int_energy_vi(),
+            0.0,
+            8.0e-16,
+        ),
+        # atol 6.0e-9
         "tend_int_energy_vi": (
             diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
-            7.0e-9,
+            0.0,
+            7.0e-11,
         ),
     }
-    for name, (computed, reference, atol) in fields.items():
-        compared = slice(None) if name in synced_fields else cells
+    for name, (computed, reference, atol, rtol) in fields.items():
+        compared = slice(None) if name in synced_fields else owner_mask
         test_utils.assert_dallclose(
             computed.asnumpy()[compared],
             reference.asnumpy()[compared],
-            rtol=RTOL,
             atol=atol,
+            rtol=rtol,
             err_msg=name,
         )
-    for name, computed, reference, atol in (
-        ("km", diagnostic_state.km, exit_savepoint.km(), 1.0e-10),
-        ("kh", diagnostic_state.kh, exit_savepoint.kh(), 3.0e-10),
+    for name, computed, reference, atol, rtol in (
+        # atol 9.0e-11
+        ("km", diagnostic_state.km, exit_savepoint.km(), 0.0, 5.0e-11),
+        # atol 3.0e-10
+        ("kh", diagnostic_state.kh, exit_savepoint.kh(), 0.0, 5.0e-11),
     ):
         test_utils.assert_dallclose(
-            computed.asnumpy()[cells, exchange_coefficient_levels],
-            reference.asnumpy()[cells, exchange_coefficient_levels],
-            rtol=RTOL,
+            computed.asnumpy()[owner_mask, exchange_coefficient_levels],
+            reference.asnumpy()[owner_mask, exchange_coefficient_levels],
             atol=atol,
+            rtol=rtol,
             err_msg=name,
         )
 
 
-#: the echoed namelist; every other `NAMELIST_*` file of an archive is the input namelist
+# the echoed namelist; every other `NAMELIST_*` file of an archive is the input namelist
 _NAMELIST_ATM_FNAME = "NAMELIST_ICON_output_atm"
 
 

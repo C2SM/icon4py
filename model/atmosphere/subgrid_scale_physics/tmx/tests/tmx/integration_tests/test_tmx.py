@@ -20,8 +20,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
-from icon4py.model.common import model_backends
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions
 
 from ..fixtures import *  # noqa: F403
@@ -54,6 +55,7 @@ def test_tmx_run_single_step(
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: icon_grid_.IconGrid,
+    decomposition_info: decomposition.DecompositionInfo,
     backend: gtx_typing.Backend | None,
     date: str,
     experiment: definitions.Experiment,
@@ -95,5 +97,5 @@ def test_tmx_run_single_step(
         diagnostic_state=diagnostic_state,
         exit_savepoint=data_provider.from_savepoint_tmx_exit(date=date),
         use_km_const=tmx_config.use_km_const,
-        cells=slice(None),
+        owner_mask=data_alloc.as_numpy(decomposition_info.owner_mask(dims.CellDim)),
     )

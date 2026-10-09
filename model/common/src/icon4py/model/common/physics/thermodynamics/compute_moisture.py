@@ -6,24 +6,20 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Moisture helpers.
+"""Host-side moisture helpers.
 
-NumPy/CuPy functions on host arrays (e.g. during initial-condition setup), and GT4Py
-field operators on surface fields; the saturation-adjustment microphysics has its own
-GT4Py implementation in the muphys package.
+NumPy/CuPy functions on host arrays (e.g. during initial-condition setup), not
+GT4Py field operators; the saturation-adjustment microphysics has its own GT4Py
+implementation in the muphys package.
 """
 
 from __future__ import annotations
 
-import gt4py.next as gtx
-
-from icon4py.model.common import constants as phy_const, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.constants import PhysicsConstants
+from icon4py.model.common import constants as phy_const
 from icon4py.model.common.physics.thermodynamics.compute_pressure import (
     sat_pres_ice,
     sat_pres_water,
 )
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -67,15 +63,3 @@ def qv_from_relative_humidity(
     saturation_qv = vapour_pressure / (rho * phy_const.RV * temperature)
     # cap relative humidity at 1.0 to avoid supersaturation
     return array_ns.minimum(relative_humidity, 1.0) * saturation_qv
-
-
-@gtx.field_operator
-def specific_humidity_on_cells(
-    vapor_pressure: fa.CellField[ta.wpfloat], pressure: fa.CellField[ta.wpfloat]
-) -> fa.CellField[ta.wpfloat]:
-    """Specific humidity [kg/kg] from the water-vapour partial pressure and the total pressure."""
-    return (
-        PhysicsConstants.rd_o_rv
-        * vapor_pressure
-        / (pressure - (wpfloat("1.0") - PhysicsConstants.rd_o_rv) * vapor_pressure)
-    )
