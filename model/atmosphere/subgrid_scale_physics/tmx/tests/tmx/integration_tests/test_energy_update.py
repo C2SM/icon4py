@@ -153,7 +153,7 @@ def test_tmx_run_energy_update_single_step(
         ("km", diagnostic_state.km, exit_savepoint.km()),
         ("kh", diagnostic_state.kh, exit_savepoint.kh()),
     ):
-        np.testing.assert_equal(
+        np.testing.assert_array_equal(
             computed.asnumpy()[:, exchange_coefficient_levels],
             reference.asnumpy()[:, exchange_coefficient_levels],
             err_msg=name,

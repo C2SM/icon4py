@@ -100,7 +100,7 @@ def test_tmx_init_and_run_diagnostics_single_step(
         ("height_above_ground", metric_state.height_above_ground, exit_savepoint.ghf()),
     ):
         if test_utils.wp_is_dp:
-            np.testing.assert_equal(computed.asnumpy(), reference.asnumpy(), err_msg=name)
+            np.testing.assert_array_equal(computed.asnumpy(), reference.asnumpy(), err_msg=name)
         else:
             test_utils.assert_dallclose(computed.asnumpy(), reference.asnumpy(), err_msg=name)
 
