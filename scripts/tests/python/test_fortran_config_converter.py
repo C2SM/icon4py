@@ -396,3 +396,41 @@ def test_tmx_rejects_dry_static_energy() -> None:
     }
     with pytest.raises(ValueError, match="only internal energy"):
         fcc.TMX.build(fortran_dict)
+
+
+def _input_vdf(**members: object) -> dict:
+    """The aes_vdf_nml of an input namelist, setting the first domain's members by name."""
+    return {"aes_vdf_nml": {"aes_vdf_config": [{"use_tmx": True, "turb": 2} | members]}}
+
+
+def test_tmx_config_agrees_with_the_input_namelist() -> None:
+    fortran_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(
+                solver_type=2, energy_type=2, dissipation_factor=0.5, turb_prandtl=0.5
+            )
+        }
+    }
+    config = fcc.make_tmx_config(
+        atm_dict=fortran_dict,
+        input_dict=_input_vdf(solver_type=2, energy_type=2, dissipation_factor=0.5),
+    )
+    assert config is not None
+    assert config.dissipation_factor == 0.5
+
+
+def test_tmx_rejects_positions_that_disagree_with_the_input_namelist() -> None:
+    # as if a member was inserted before dissipation_factor: its pinned position now holds
+    # the value of the member before it
+    fortran_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(
+                solver_type=2, energy_type=2, dissipation_factor=2, turb_prandtl=0.5
+            )
+        }
+    }
+    with pytest.raises(ValueError, match="member order changed"):
+        fcc.make_tmx_config(
+            atm_dict=fortran_dict,
+            input_dict=_input_vdf(solver_type=2, energy_type=2, dissipation_factor=0.5),
+        )
