@@ -63,8 +63,6 @@ def test_grid_manager_validate_decomposer(
     process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     file = dt_utils.get_grid_filepath(experiment.grid)
     manager = gm.GridManager(
@@ -158,8 +156,6 @@ def _compare_geometry_fields_single_multi_rank(
     grid_description: test_defs.GridDescription,
     attrs_name: str,
 ) -> None:
-    if grid_description.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
         pytest.xfail(f"Field {attrs_name} can't be computed with the embedded backend")
@@ -200,6 +196,7 @@ def _compare_geometry_fields_single_multi_rank(
         check_halos=True,
         atol=atol,
         rtol=rtol,
+        equal_nan=True,
     )
 
     _log.info(f"rank = {process_props.rank} - DONE")
@@ -295,8 +292,6 @@ def _compare_interpolation_fields_single_multi_rank(
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    if experiment.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
         pytest.xfail(f"Field {attrs_name} can't be computed with the embedded backend")
@@ -430,8 +425,6 @@ def _compare_metrics_fields_single_multi_rank(
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    if experiment.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
         pytest.xfail(f"Field {attrs_name} can't be computed with the embedded backend")
@@ -665,8 +658,6 @@ def test_metrics_mask_prog_halo_c(
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     file = dt_utils.get_grid_filepath(experiment.grid)
 
@@ -761,8 +752,6 @@ def test_validate_skip_values_in_distributed_connectivities(
     experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    if experiment.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     file = dt_utils.get_grid_filepath(experiment.grid)
     multi_rank_grid_manager = utils.run_grid_manager_for_multi_rank(
@@ -787,26 +776,6 @@ def test_validate_skip_values_in_distributed_connectivities(
                 ), (
                     f"rank={process_props.rank} / {process_props.comm_size}: {k} has skip found in table, expected none"
                 )
-
-
-@pytest.mark.datatest
-@pytest.mark.mpi
-@pytest.mark.parametrize("process_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", [test_defs.Grids.MCH_CH_R04B09_DSL])
-def test_limited_area_raises(
-    process_props: decomp_defs.ProcessProperties,
-    grid: test_defs.GridDescription,
-    backend: gtx_typing.Backend | None,
-) -> None:
-    with pytest.raises(
-        NotImplementedError, match="Limited-area grids are not supported in distributed runs"
-    ):
-        _ = utils.run_grid_manager_for_multi_rank(
-            file=dt_utils.get_grid_filepath(grid),
-            process_props=process_props,
-            decomposer=decomp.MetisDecomposer(),
-            allocator=model_backends.get_allocator(backend),
-        )
 
 
 @pytest.mark.datatest
@@ -843,8 +812,6 @@ def test_global_reductions_single_vs_multi_rank(
     edge_length on EdgeDim, dual_area on VertexDim) so that all three
     horizontal dimensions are exercised.
     """
-    if experiment.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     allocator = model_backends.get_allocator(backend)
     grid_file = grid_utils._download_grid_file(experiment.grid)

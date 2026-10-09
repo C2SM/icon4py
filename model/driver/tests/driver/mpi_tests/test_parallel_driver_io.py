@@ -150,8 +150,6 @@ def test_parallel_output_matches_single_rank_reference(
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
-    if experiment_description.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-10, rtol=0.0)
     _log.info(f"running on {process_props.comm_size} ranks with atol={atol}, rtol={rtol}")
