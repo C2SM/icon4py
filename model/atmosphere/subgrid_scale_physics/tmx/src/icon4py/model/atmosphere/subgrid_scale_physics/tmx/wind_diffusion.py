@@ -18,7 +18,7 @@ import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import (
-    wind_diffusion as wind_stencils,
+    wind_diffusion_stencils as wind_stencils,
 )
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
