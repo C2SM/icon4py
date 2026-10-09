@@ -33,13 +33,13 @@ def set_precision(new_precision: Literal["double", "mixed", "single"]) -> None:
     match precision:
         case "double":
             wpfloat = gtx.float64  # type: ignore[assignment]  # runtime type alias reassignment
-            vpfloat = gtx.float64  # type: ignore[assignment]
+            vpfloat = gtx.float64  # type: ignore[assignment]  # runtime type alias reassignment
         case "mixed":
-            wpfloat = gtx.float64  # type: ignore[assignment]
-            vpfloat = gtx.float32  # type: ignore[assignment]
+            wpfloat = gtx.float64  # type: ignore[assignment]  # runtime type alias reassignment
+            vpfloat = gtx.float32  # type: ignore[assignment]  # runtime type alias reassignment
         case "single":
-            vpfloat = gtx.float32  # type: ignore[assignment]
-            wpfloat = gtx.float32  # type: ignore[assignment]
+            vpfloat = gtx.float32  # type: ignore[assignment]  # runtime type alias reassignment
+            wpfloat = gtx.float32  # type: ignore[assignment]  # runtime type alias reassignment
         case _:
             raise ValueError("Only 'double', 'mixed' and 'single' precision are supported.")
 
