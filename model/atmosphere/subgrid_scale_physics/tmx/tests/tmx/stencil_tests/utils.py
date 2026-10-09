@@ -100,15 +100,17 @@ def internal_energy_per_area_numpy(
 
 def on_subdomain(
     values: np.ndarray,
-    horizontal: slice,
-    vertical: slice,
+    horizontal: tuple[int, int],
+    vertical: tuple[int, int],
     *,
     initial: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     An output as a program with this domain writes it: `values` on the domain, and outside it
-    the output's initial value (`initial`, zero if not given).
+    the output's initial value (`initial`, zero if not given). `horizontal` and `vertical` are
+    the (start, end) bounds of the domain, as in the program's `domain`.
     """
     out = np.zeros_like(values) if initial is None else initial.copy()
-    out[horizontal, vertical] = values[horizontal, vertical]
+    subdomain = (slice(*horizontal), slice(*vertical))
+    out[subdomain] = values[subdomain]
     return out

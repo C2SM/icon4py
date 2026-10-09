@@ -237,26 +237,26 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         return dict(
             dry_static_energy=on_subdomain(
                 dry_static_energy_full,
-                slice(cell_start_nudging, cell_end_local),
-                slice(0, nlev),
+                (cell_start_nudging, cell_end_local),
+                (0, nlev),
                 initial=dry_static_energy,
             ),
             theta_v=on_subdomain(
                 theta_v_full,
-                slice(cell_start_lateral_boundary_level_3, cell_end_local),
-                slice(0, nlev),
+                (cell_start_lateral_boundary_level_3, cell_end_local),
+                (0, nlev),
                 initial=theta_v,
             ),
             rho_ic=on_subdomain(
                 rho_ic_full,
-                slice(cell_start_lateral_boundary_level_2, cell_end_halo_level_2),
-                slice(0, nlev + 1),
+                (cell_start_lateral_boundary_level_2, cell_end_halo_level_2),
+                (0, nlev + 1),
                 initial=rho_ic,
             ),
             bruvais=on_subdomain(
                 bruvais_full,
-                slice(cell_start_lateral_boundary_level_3, cell_end_local),
-                slice(1, nlev),
+                (cell_start_lateral_boundary_level_3, cell_end_local),
+                (1, nlev),
                 initial=bruvais,
             ),
         )
@@ -606,60 +606,60 @@ def shear_and_viscosity_reference(
         use_louis_ice=use_louis_ice,
     )
 
-    all_half_levels = slice(0, nlev + 1)
-    all_full_levels = slice(0, nlev)
+    all_half_levels = (0, nlev + 1)
+    all_full_levels = (0, nlev)
     return dict(
         w_ie=on_subdomain(
             w_ie_full,
-            slice(edge_start_lateral_boundary_level_2, edge_end_halo_level_2),
+            (edge_start_lateral_boundary_level_2, edge_end_halo_level_2),
             all_half_levels,
             initial=w_ie,
         ),
         vn_ie=on_subdomain(
             vn_ie_full,
-            slice(edge_start_lateral_boundary_level_2, edge_end_halo_level_3),
+            (edge_start_lateral_boundary_level_2, edge_end_halo_level_3),
             all_half_levels,
             initial=vn_ie,
         ),
         vt_ie=on_subdomain(
             vt_ie_full,
-            slice(edge_start_lateral_boundary_level_3, edge_end_halo_level_2),
+            (edge_start_lateral_boundary_level_3, edge_end_halo_level_2),
             all_half_levels,
             initial=vt_ie,
         ),
         shear=on_subdomain(
             shear_full,
-            slice(edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
+            (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
             all_full_levels,
             initial=shear,
         ),
         div_of_stress=on_subdomain(
             div_stress_full,
-            slice(edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
+            (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
             all_full_levels,
             initial=div_of_stress,
         ),
         div_c=on_subdomain(
             div_c_full,
-            slice(cell_start_nudging, cell_end_halo),
+            (cell_start_nudging, cell_end_halo),
             all_full_levels,
             initial=div_c,
         ),
         mech_prod=on_subdomain(
             mech_prod_full,
-            slice(cell_start_lateral_boundary_level_3, cell_end_halo),
-            slice(1, nlev),
+            (cell_start_lateral_boundary_level_3, cell_end_halo),
+            (1, nlev),
             initial=mech_prod,
         ),
         km_ic=on_subdomain(
             km_ic_full,
-            slice(cell_start_lateral_boundary_level_3, cell_end_local),
+            (cell_start_lateral_boundary_level_3, cell_end_local),
             all_half_levels,
             initial=km_ic,
         ),
         kh_ic=on_subdomain(
             kh_ic_full,
-            slice(cell_start_lateral_boundary_level_3, cell_end_local),
+            (cell_start_lateral_boundary_level_3, cell_end_local),
             all_half_levels,
             initial=kh_ic,
         ),

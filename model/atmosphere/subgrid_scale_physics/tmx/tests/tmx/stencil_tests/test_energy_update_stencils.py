@@ -103,9 +103,9 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
         )
         int_energy_vi = np.cumsum(new_int_energy, axis=1)
 
-        cells = slice(horizontal_start, horizontal_end)
-        levels = slice(vertical_start, vertical_end)
-        above_surface = slice(vertical_start, vertical_end - 1)
+        cells = (horizontal_start, horizontal_end)
+        levels = (vertical_start, vertical_end)
+        above_surface = (vertical_start, vertical_end - 1)
         return dict(
             dissip_ke=on_subdomain(dissip_ke, cells, levels),
             heating=on_subdomain(heating, cells, levels),
