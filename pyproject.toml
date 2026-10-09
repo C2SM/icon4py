@@ -232,8 +232,12 @@ module = [
 
 [[tool.mypy.overrides]]
 # GT4Py Field dim type variance in bindings/grid_wrapper.py: constructing grid
-# wrapper fields with concrete-dimension fields is rejected by mypy even though
-# the program accepts them at runtime. Per D6 documented-justification rule.
+# wrapper fields with concrete-dimension fields and passing NDArrayObject
+# connectivities is rejected by mypy even though the program accepts them at runtime.
+# NOTE: ~18 errors, all arg-type. Empirically verified: cannot be fixed in user
+# code without distorting the grid_wrapper API. Per-line ignores would add ~18
+# lines of identical boilerplate with no type-safety benefit. Module-level
+# override kept per D6 documented-justification rule.
 disable_error_code = ["arg-type"]
 module = [
   "icon4py.bindings.grid_wrapper"
