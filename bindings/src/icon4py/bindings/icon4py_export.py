@@ -87,9 +87,11 @@ def icon_scalar_kind(kind: IconKind) -> ts.ScalarKind:
     """
     C kind ICON passes for an argument of Fortran kind `kind`.
 
-    Mirrors `icon/src/shared/mo_kind.f90:60-67`: `wp` is always `dp`; `vp` is `sp` under
-    `__MIXED_PRECISION` and `dp` otherwise. ICON's `__SINGLE_PRECISION` is not supported (yet).
+    Mirrors `icon/src/shared/mo_kind.f90`: `wp` and `vp` are `sp` under `__SINGLE_PRECISION`;
+    otherwise `wp` is `dp`, and `vp` is `sp` under `__MIXED_PRECISION` and `dp` otherwise.
     """
+    if config.ICON_PRECISION == "single":
+        return ts.ScalarKind.FLOAT32
     if kind is IconKind.VP and config.ICON_PRECISION == "mixed":
         return ts.ScalarKind.FLOAT32
     return ts.ScalarKind.FLOAT64
@@ -181,8 +183,11 @@ def field_annotation_descriptor_hook(annotation: Any) -> py2fgen.ParamDescriptor
         if dtype is ts.ScalarKind.FLOAT32: #TODO(pstark): simplified this
             raise TypeError(
                 f"Float scalar {annotation} would cross as {dtype}, but ICON passes REAL(wp) "
-                "scalars, which are always double: annotate it `gtx.float64`."
+                "scalars, which are always double unless ICON is built in single: annotate it "
+                "`gtx.float64`."
             )
+        if dtype is ts.ScalarKind.FLOAT64:
+            dtype = icon_scalar_kind(IconKind.WP)
         return py2fgen.ScalarParamDescriptor(dtype=dtype)
 
     # The generated Fortran/C signature must describe what ICON passes, which is fixed by the

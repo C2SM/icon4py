@@ -126,21 +126,26 @@ ICON_INOUT_ARGUMENTS: typing.Final = {
     },
 }
 
-_FLOAT32_ARGUMENTS_SCRIPT = """
-import json
+_ARGUMENTS_OF_DTYPE_SCRIPT = """
+import json, sys
 from icon4py.bindings import all_bindings
 from icon4py.tools import py2fgen
+dtype = getattr(py2fgen, sys.argv[1])
 print(json.dumps({
-    f.__name__: sorted(n for n, d in f.param_descriptors.items() if d.dtype == py2fgen.FLOAT32)
+    f.__name__: sorted(n for n, d in f.param_descriptors.items() if d.dtype == dtype)
     for f in all_bindings.FUNCTIONS
 }))
 """
 
 
 def _float32_arguments(**env: str) -> dict[str, set[str]]:
+    return _arguments_of_dtype("FLOAT32", **env)
+
+
+def _arguments_of_dtype(dtype: str, **env: str) -> dict[str, set[str]]:
     """Import the bindings in a fresh interpreter, since both precisions are read at import."""
     result = subprocess.run(
-        [sys.executable, "-c", _FLOAT32_ARGUMENTS_SCRIPT],
+        [sys.executable, "-c", _ARGUMENTS_OF_DTYPE_SCRIPT, dtype],
         env={**os.environ, **env},
         capture_output=True,
         text=True,
@@ -170,6 +175,24 @@ def test_icon_double_interface_is_all_double(icon4py_precision):
 
 
 @pytest.mark.single_precision_ready
+@pytest.mark.parametrize("icon4py_precision", ["double", "single"])
+def test_icon_single_interface_is_all_single(icon4py_precision):
+    env = {"ICON4PY_FLOAT_PRECISION": icon4py_precision}
+    double_floats = _arguments_of_dtype(
+        "FLOAT64", ICON4PY_BINDINGS_ICON_PRECISION="double", **env
+    )
+    single_floats = _float32_arguments(ICON4PY_BINDINGS_ICON_PRECISION="single", **env)
+    single_doubles = _arguments_of_dtype(
+        "FLOAT64", ICON4PY_BINDINGS_ICON_PRECISION="single", **env
+    )
+
+    # scalars included: ICON passes them as REAL(wp)
+    assert {"dtime", "mean_cell_area", "nudge_max_coeff"} <= set().union(*double_floats.values())
+    assert single_floats == double_floats
+    assert single_doubles == {name: set() for name in ICON_VP_ARGUMENTS}
+
+
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "icon_precision, kind, expected",
     [
@@ -177,6 +200,8 @@ def test_icon_double_interface_is_all_double(icon4py_precision):
         ("double", icon4py_export.IconKind.VP, py2fgen.FLOAT64),
         ("mixed", icon4py_export.IconKind.WP, py2fgen.FLOAT64),
         ("mixed", icon4py_export.IconKind.VP, py2fgen.FLOAT32),
+        ("single", icon4py_export.IconKind.WP, py2fgen.FLOAT32),
+        ("single", icon4py_export.IconKind.VP, py2fgen.FLOAT32),
     ],
 )
 def test_icon_scalar_kind(monkeypatch, icon_precision, kind, expected):
@@ -212,7 +237,7 @@ def test_split_boundary_leaves_unmarked_hints_alone():
 
 
 @pytest.mark.single_precision_ready
-@pytest.mark.parametrize("icon_precision", ["double", "mixed"])
+@pytest.mark.parametrize("icon_precision", ["double", "mixed", "single"])
 def test_descriptor_is_icon_kind_not_compute_dtype(monkeypatch, icon_precision):
     monkeypatch.setattr(config, "ICON_PRECISION", icon_precision)
     # icon4py computes in float32 here; what crosses is decided by ICON alone
@@ -222,6 +247,21 @@ def test_descriptor_is_icon_kind_not_compute_dtype(monkeypatch, icon_precision):
 
     assert descriptor.dtype == icon4py_export.icon_scalar_kind(icon4py_export.IconKind.VP)
     assert descriptor.rank == 1
+
+
+@pytest.mark.single_precision_ready
+@pytest.mark.parametrize(
+    "icon_precision, expected",
+    [("double", py2fgen.FLOAT64), ("mixed", py2fgen.FLOAT64), ("single", py2fgen.FLOAT32)],
+)
+@pytest.mark.parametrize("hint", [gtx.float64, float])
+def test_float_scalar_crosses_as_icon_wp(monkeypatch, icon_precision, expected, hint):
+    monkeypatch.setattr(config, "ICON_PRECISION", icon_precision)
+
+    descriptor = icon4py_export.field_annotation_descriptor_hook(hint)
+
+    assert isinstance(descriptor, py2fgen.ScalarParamDescriptor)
+    assert descriptor.dtype == expected
 
 
 @pytest.mark.single_precision_ready
@@ -317,7 +357,9 @@ def _expected_copies() -> set[str]:
     for fun_name, name, descriptor, _ in _field_mappers():
         if descriptor.dtype not in (py2fgen.FLOAT32, py2fgen.FLOAT64):
             continue
-        icon_is_single = icon_vp_is_single and name in ICON_VP_ARGUMENTS[fun_name]
+        icon_is_single = config.ICON_PRECISION == "single" or (
+            icon_vp_is_single and name in ICON_VP_ARGUMENTS[fun_name]
+        )
         # icon4py computes every float field in single or in double, never mixed, here
         compute_is_single = ta.precision == "single"
         if icon_is_single != compute_is_single:
@@ -326,9 +368,10 @@ def _expected_copies() -> set[str]:
 
 
 @pytest.mark.single_precision_ready
-def test_field_mapper_refuses_to_copy_an_argument_without_declared_intent():
+def test_field_mapper_refuses_to_copy_an_argument_without_declared_intent(monkeypatch):
+    monkeypatch.setattr(config, "ICON_PRECISION", "double")
     ffi = cffi.FFI()
-    hint = Wp[gtx.Field[gtx.Dims[SomeDim], gtx.float32]]  # ICON passes double, always
+    hint = Wp[gtx.Field[gtx.Dims[SomeDim], gtx.float32]]  # ICON passes double
     descriptor = icon4py_export.field_annotation_descriptor_hook(hint)
     mapper = icon4py_export.field_annotation_mapping_hook(hint, descriptor)
     fortran_array = np.zeros(5, dtype=np.float64)
@@ -346,8 +389,8 @@ def _mapper_for(hint):
 @pytest.mark.parametrize(
     "hint",
     [
-        Wp[gtx.Field[gtx.Dims[SomeDim], gtx.float32]],  # wp is always double in ICON
-        Vp[gtx.Field[gtx.Dims[SomeDim], gtx.float32]],  # vp is double unless ICON is mixed
+        Wp[gtx.Field[gtx.Dims[SomeDim], gtx.float32]],  # wp is double in a double ICON
+        Vp[gtx.Field[gtx.Dims[SomeDim], gtx.float32]],  # so is vp
         icon4py_export.VpInOut[gtx.Field[gtx.Dims[SomeDim], gtx.float32]],
     ],
 )

@@ -26,7 +26,7 @@ _SNAPSHOT_SUFFIXES = (".py", ".f90", ".h")
 
 
 # ICON4PY_BINDINGS_ICON_PRECISION -> subdirectory of its snapshot
-_ICON_PRECISION_SUBDIRS = {"double": "", "mixed": "mixed"}
+_ICON_PRECISION_SUBDIRS = {"double": "", "mixed": "mixed", "single": "single"}
 
 
 def _reference(suffix: str, icon_precision: str) -> pathlib.Path:
