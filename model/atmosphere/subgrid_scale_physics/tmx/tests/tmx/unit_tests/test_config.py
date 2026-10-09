@@ -50,3 +50,30 @@ def test_config_round_trips_through_config_io() -> None:
     assert unstructured["solver_type"] == "implicit"
     assert unstructured["energy_type"] == "internal"
     assert config_io.CONV.structure(unstructured, tmx_config.TmxConfig) == config
+
+
+def _surface_config(**overrides: object) -> tmx_config.TmxSurfaceConfig:
+    kwargs: dict = {"surface_flux_type": 1, "sea_surface_temperature": 303.15, **overrides}
+    return tmx_config.TmxSurfaceConfig(**kwargs)
+
+
+def test_surface_config_defaults_are_those_of_the_testcase_namelist() -> None:
+    config = _surface_config()
+    assert config.surface_flux_type is tmx_config.SurfaceFluxType.FIXED_HEAT_FLUXES
+    # mo_nh_testcases_nml.f90: shflx = 0.1, lhflx = 0.0
+    assert config.kinematic_sensible_heat_flux == 0.1
+    assert config.kinematic_latent_heat_flux == 0.0
+
+
+@pytest.mark.parametrize("surface_flux_type", [0, 2])
+def test_surface_config_rejects_unimplemented_surface_flux_types(surface_flux_type: int) -> None:
+    with pytest.raises(ValueError, match="surface_flux_type"):
+        _surface_config(surface_flux_type=surface_flux_type)
+
+
+def test_surface_config_round_trips_through_config_io() -> None:
+    config = _surface_config()
+    unstructured = config_io.CONV.unstructure(config)
+
+    assert unstructured["surface_flux_type"] == "fixed_heat_fluxes"
+    assert config_io.CONV.structure(unstructured, tmx_config.TmxSurfaceConfig) == config

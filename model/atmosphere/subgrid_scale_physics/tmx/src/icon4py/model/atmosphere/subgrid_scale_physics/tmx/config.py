@@ -35,6 +35,13 @@ class EnergyType(int, enum.Enum):
     INTERNAL = 2  # internal energy cv*T
 
 
+@config_io.register_enum
+class SurfaceFluxType(int, enum.Enum):
+    """How tmx gets its surface fluxes; ICON's surface models (0) are not ported."""
+
+    FIXED_HEAT_FLUXES = 1  # fixed kinematic heat fluxes over a fixed surface temperature
+
+
 @dataclasses.dataclass(kw_only=True)
 class TmxConfig:
     """
@@ -176,3 +183,51 @@ class TmxConfig:
             raise ValueError(
                 f"Invalid argument 'km_min': should be non-negative, got {self.km_min}."
             )
+
+
+@dataclasses.dataclass(kw_only=True)
+class TmxSurfaceConfig:
+    """
+    The surface boundary of tmx, which ICON reads from ``nh_testcase_nml``.
+
+    Default values are taken from ``mo_nh_testcases_nml.f90`` where ICON's default is ported.
+    """
+
+    surface_flux_type: typing.Annotated[
+        SurfaceFluxType,
+        common_conf_opt.ConfigOption(
+            description="How tmx gets its surface fluxes (`isrfc_type`; only the fixed "
+            "kinematic heat fluxes are implemented).",
+        ),
+    ]
+
+    kinematic_sensible_heat_flux: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Kinematic sensible heat flux at the surface (`shflx`) [K m/s].",
+        ),
+    ] = 0.1
+
+    kinematic_latent_heat_flux: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Kinematic latent heat flux at the surface (`lhflx`) [m/s].",
+        ),
+    ] = 0.0
+
+    sea_surface_temperature: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Sea surface temperature, constant in space and time [K].",
+        ),
+    ]
+
+    def __post_init__(self) -> None:
+        try:
+            self.surface_flux_type = SurfaceFluxType(self.surface_flux_type)
+        except ValueError:
+            raise ValueError(
+                f"Invalid argument 'surface_flux_type': only fixed kinematic heat fluxes "
+                f"({SurfaceFluxType.FIXED_HEAT_FLUXES.value}) are implemented, "
+                f"got {self.surface_flux_type}."
+            ) from None

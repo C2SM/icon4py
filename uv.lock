@@ -2343,6 +2343,7 @@ requires-dist = [
 
 [[package]]
 dependencies = [
+  { name = "f90nml" },
   { name = "filelock" },
   { name = "gt4py" },
   { name = "icon4py-common", extra = ["io"] },
@@ -2359,6 +2360,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
+  { name = "f90nml", specifier = ">=1.5" },
   { name = "filelock", specifier = ">=3.18.0,<3.20" },
   { name = "gt4py", specifier = "==1.2.3" },
   { name = "icon4py-common", extras = ["io"], editable = "model/common" },
