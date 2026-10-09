@@ -8,6 +8,7 @@
 
 import dataclasses
 import datetime
+from typing import Any
 
 import pytest
 
@@ -100,11 +101,14 @@ class TestProcessTimeControl:
 
 def test_physics_process_construction() -> None:
     class _DummyComponent:
-        inputs_properties = {}
-        outputs_properties = {}
+        inputs_properties: dict[str, Any] = {}
+        outputs_properties: dict[str, Any] = {}
 
-        def __call__(self, state, time_step):
+        def __call__(self, state: dict[str, Any], time_step: datetime.datetime) -> dict[str, Any]:
             return {}
+
+        def bind_output_buffers(self, buffers: dict[str, Any]) -> None:
+            pass
 
     state = RecordingComponentState()
     proc = PhysicsProcess(
@@ -146,7 +150,7 @@ class RecordingComponent:
             for k in self.outputs
         }
 
-    def __call__(self, state, time_step):
+    def __call__(self, state: dict[str, Any], time_step: datetime.datetime) -> dict[str, Any]:
         self.call_count += 1
         self.last_state = state
         self.last_time = time_step
@@ -162,7 +166,7 @@ class RecordingComponentState(ComponentState):
 
     input_calls: list = dataclasses.field(default_factory=list)
 
-    def as_component_input(self, state) -> dict:
+    def as_component_input(self, state: Any) -> dict[str, str]:
         self.input_calls.append(state)
         return {"foo": "bar"}
 
@@ -178,23 +182,25 @@ class RecordingCoupling:
     events: list = dataclasses.field(default_factory=list)
 
     # EntryState surface
-    def compute_diagnostics(self, prognostic, tracers) -> None:
+    def compute_diagnostics(self, prognostic: Any, tracers: Any) -> None:
         self.events.append(("compute_diagnostics", prognostic))
 
     # Tendencies surface
     def zero(self) -> None:
         self.events.append(("zero",))
 
-    def accumulate(self, outputs, outputs_properties) -> None:
+    def accumulate(self, outputs: dict[str, Any], outputs_properties: dict[str, Any]) -> None:
         self.events.append(("accumulate", dict(outputs)))
 
-    def apply(self, entry_state, dt_seconds) -> None:
+    def apply(self, entry_state: Any, dt_seconds: float) -> None:
         self.events.append(("apply", dt_seconds))
 
     # DiagnosticsStore surface
     store: dict = dataclasses.field(default_factory=dict)
 
-    def allocate(self, process_name, outputs_properties):
+    def allocate(
+        self, process_name: str, outputs_properties: dict[str, FieldMetaData]
+    ) -> dict[str, str]:
         self.events.append(("allocate", process_name))
         buffers = {
             name: f"BUF_{name}"
@@ -204,17 +210,17 @@ class RecordingCoupling:
         self.store[process_name] = buffers
         return buffers
 
-    def __getitem__(self, process_name):
+    def __getitem__(self, process_name: str) -> dict[str, str]:
         return self.store[process_name]
 
 
-def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
+def _driver(processes: list[PhysicsProcess]) -> tuple[PhysicsDriver, RecordingCoupling]:
     coupling = RecordingCoupling()
     driver = PhysicsDriver(
         processes=processes,
-        entry_state=coupling,
-        tendencies=coupling,
-        diagnostics=coupling,
+        entry_state=coupling,  # type: ignore[arg-type]  # recording stub stands in for multiple state protocols
+        tendencies=coupling,  # type: ignore[arg-type]  # recording stub stands in for multiple state protocols
+        diagnostics=coupling,  # type: ignore[arg-type]  # recording stub stands in for multiple state protocols
     )
     return driver, coupling
 
@@ -237,8 +243,8 @@ def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
     )
 
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
+        prognostic="prog",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
+        tracers="tracers",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
         dtime=_DT,
         simulation_current_datetime=_T0 + _DT,
     )
@@ -279,8 +285,8 @@ def test_run_raises_for_non_multiple_interval() -> None:
 
     with pytest.raises(ValueError, match="integer multiple"):
         driver.run(
-            prognostic="prog",
-            tracers="tracers",
+            prognostic="prog",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
+            tracers="tracers",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
             dtime=_DT,
             simulation_current_datetime=_T0,
         )
@@ -301,8 +307,8 @@ def test_out_of_window_process_does_nothing() -> None:
     )
 
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
+        prognostic="prog",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
+        tracers="tracers",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
         dtime=_DT,
         simulation_current_datetime=_T0,
     )
@@ -334,11 +340,17 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
 
     # Step 1: active (step start == _T0, elapsed == 0), compute + cache.
     driver.run(
-        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + _DT
+        prognostic="prog",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
+        tracers="tracers",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
+        dtime=_DT,
+        simulation_current_datetime=_T0 + _DT,
     )
     # Step 2: in window, but not active (elapsed == _DT) — recycle the cached outputs.
     driver.run(
-        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + 2 * _DT
+        prognostic="prog",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
+        tracers="tracers",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
+        dtime=_DT,
+        simulation_current_datetime=_T0 + 2 * _DT,
     )
 
     assert comp.call_count == 1
@@ -369,7 +381,10 @@ def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
 
     # First call lands in-window but off the firing tick (step start == _T0 + _DT).
     driver.run(
-        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + 2 * _DT
+        prognostic="prog",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
+        tracers="tracers",  # type: ignore[arg-type]  # opaque sentinel; driver under test forwards it unchanged
+        dtime=_DT,
+        simulation_current_datetime=_T0 + 2 * _DT,
     )
 
     assert comp.call_count == 1

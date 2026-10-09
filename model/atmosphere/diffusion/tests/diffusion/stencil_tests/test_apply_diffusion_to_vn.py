@@ -101,7 +101,10 @@ class TestApplyDiffusionToVn(stencil_tests.StencilTest):
                     nudgezone_diff=nudgezone_diff,
                 ),
                 apply_nabla2_to_vn_in_lateral_boundary_numpy(
-                    z_nabla2_e, area_edge, vn, fac_bdydiff_v
+                    z_nabla2_e,
+                    area_edge,
+                    vn,
+                    fac_bdydiff_v,  # type: ignore[arg-type]  # caller passes ndarray for broadcasting; numpy reference accepts it at runtime
                 ),
             )
         else:

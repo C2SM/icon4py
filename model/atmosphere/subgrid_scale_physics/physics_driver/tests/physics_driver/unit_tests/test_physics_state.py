@@ -8,13 +8,15 @@
 
 """Tests of the PhysicsState layer (EntryState facade, accumulators, apply-once)."""
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import geometry_attributes, simple
+from icon4py.model.common.grid import base, geometry_attributes, simple
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import (
@@ -48,15 +50,15 @@ _TENDENCY = model.FieldKind.TENDENCY
 class _StubFieldSource:
     """Minimal FieldSource stand-in: serves pre-built fields by attribute name."""
 
-    def __init__(self, fields):
+    def __init__(self, fields: dict[str, Any]):
         self._fields = fields
 
-    def get(self, name, *args, **kwargs):
+    def get(self, name: str, *args: Any, **kwargs: Any) -> Any:
         return self._fields[name]
 
 
 def _uniform_prognostic(
-    grid,
+    grid: base.Grid,
     *,
     rho: float = 1.2,
     exner: float = 0.95,
@@ -72,7 +74,7 @@ def _uniform_prognostic(
     )
 
 
-def _tracer_state(grid, *, qv: float = 0.0) -> tracer_states.TracerState:
+def _tracer_state(grid: base.Grid, *, qv: float = 0.0) -> tracer_states.TracerState:
     """TracerState with all six species active."""
     ck = lambda value: data_alloc.constant_field(grid, value, dims.CellDim, dims.KDim)  # noqa: E731
     return tracer_states.TracerState(
@@ -80,7 +82,7 @@ def _tracer_state(grid, *, qv: float = 0.0) -> tracer_states.TracerState:
     )
 
 
-def _entry_state(grid) -> physics_state.EntryState:
+def _entry_state(grid: base.Grid) -> physics_state.EntryState:
     metrics = _StubFieldSource(
         {
             metrics_attributes.DDQZ_Z_FULL: data_alloc.constant_field(
@@ -100,8 +102,8 @@ def _entry_state(grid) -> physics_state.EntryState:
     )
     return physics_state.EntryState(
         grid=grid,
-        interpolation=interpolation,
-        metrics=metrics,
+        interpolation=interpolation,  # type: ignore[arg-type]  # test stub implements only part of the FieldSource protocol
+        metrics=metrics,  # type: ignore[arg-type]  # test stub implements only part of the FieldSource protocol
         backend=None,
     )
 
@@ -111,7 +113,7 @@ def _entry_state(grid) -> physics_state.EntryState:
 # ---------------------------------------------------------------------------
 
 
-def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
+def test_diagnose_fills_working_fields_and_leaves_inputs_untouched() -> None:
     """The dyn2phy diagnosis fills plausible fields and is strictly read-only.
 
     Read-only-ness is the load-bearing invariant of parallel coupling: the
@@ -138,7 +140,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     # the invariant: inputs untouched
     np.testing.assert_array_equal(prognostic.exner.asnumpy(), exner_before)
     np.testing.assert_array_equal(prognostic.vn.asnumpy(), vn_before)
-    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3, rtol=0)
+    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3, rtol=0)  # type: ignore[union-attr]  # test fixture always provides qv
 
     # the facade binds pointers, not copies: same objects, physics names
     assert ws.exner is prognostic.exner
@@ -153,7 +155,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 # ---------------------------------------------------------------------------
 
 
-def test_accumulate_sums_tendencies_and_skips_diagnostics():
+def test_accumulate_sums_tendencies_and_skips_diagnostics() -> None:
     grid = simple.simple_grid()
     acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY), "km": _meta()}
@@ -170,7 +172,7 @@ def test_accumulate_sums_tendencies_and_skips_diagnostics():
     assert "km" not in acc.acc
 
 
-def test_zero_resets_between_steps():
+def test_zero_resets_between_steps() -> None:
     grid = simple.simple_grid()
     acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY)}
@@ -189,7 +191,7 @@ def test_zero_resets_between_steps():
 # ---------------------------------------------------------------------------
 
 
-def _tendencies(grid) -> physics_state.Tendencies:
+def _tendencies(grid: base.Grid) -> physics_state.Tendencies:
     # neutral geometry: primal_normal_x = 1, primal_normal_y = 0, c_lin_e = 0.5
     # => two-neighbor projection of a uniform u-tendency is the identity
     geometry = _StubFieldSource(
@@ -210,11 +212,14 @@ def _tendencies(grid) -> physics_state.Tendencies:
         }
     )
     return physics_state.Tendencies(
-        grid=grid, geometry=geometry, interpolation=interpolation, backend=None
+        grid=grid,
+        geometry=geometry,  # type: ignore[arg-type]  # test stub implements only part of the FieldSource protocol
+        interpolation=interpolation,  # type: ignore[arg-type]  # test stub implements only part of the FieldSource protocol
+        backend=None,
     )
 
 
-def _accumulated(grid, **tendencies) -> physics_state.Tendencies:
+def _accumulated(grid: base.Grid, **tendencies: Any) -> physics_state.Tendencies:
     """Tendencies pre-filled with the given constant tendencies (single process)."""
     acc = _tendencies(grid)
     props = {name: _meta(kind=_TENDENCY) for name in tendencies}
@@ -223,7 +228,7 @@ def _accumulated(grid, **tendencies) -> physics_state.Tendencies:
     return acc
 
 
-def test_apply_updates_tracers_w_and_thermodynamics_once():
+def test_apply_updates_tracers_w_and_thermodynamics_once() -> None:
     grid = simple.simple_grid()
     ws = _entry_state(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
@@ -235,7 +240,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
     # ddt_w spans KDim+1 half-levels; constant_field does not support 'extend',
     # so we use zero_field (which does) and fill the backing array.
     tend_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-    tend_w.ndarray[...] = 1e-4
+    tend_w.ndarray[...] = 1e-4  # type: ignore[index]  # gt4py ndarray attribute is not typed for item assignment
     dt = 300.0
     acc = _accumulated(
         grid,
@@ -246,7 +251,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
 
     acc.apply(ws, dt_seconds=dt)
 
-    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)
+    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)  # type: ignore[union-attr]  # test fixture always provides qv
     np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
     # EOS wiring smoke test: the exact-EOS update must have rewritten exner and
     # theta_v (their new values are EOS-consistent with rho and the updated Tv;
@@ -255,7 +260,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
     assert not np.array_equal(prognostic.theta_v.asnumpy(), theta_v_before)
 
 
-def test_apply_projects_accumulated_wind_tendency_to_vn():
+def test_apply_projects_accumulated_wind_tendency_to_vn() -> None:
     # uniform ddt_u = 1e-4, ddt_v = 0; primal_normal_cell_x = 1, c_lin_e = 0.5 (two neighbors)
     # => ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on all edges of the periodic simple grid
     grid = simple.simple_grid()
@@ -275,7 +280,7 @@ def test_apply_projects_accumulated_wind_tendency_to_vn():
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
 
 
-def test_apply_rejects_a_lone_horizontal_wind_tendency():
+def test_apply_rejects_a_lone_horizontal_wind_tendency() -> None:
     # vn is ONE projection of (u, v), so a process declaring only one of the two would
     # silently lose the other half of the momentum: an error, not a no-op.
     grid = simple.simple_grid()
@@ -289,7 +294,7 @@ def test_apply_rejects_a_lone_horizontal_wind_tendency():
         acc.apply(ws, dt_seconds=300.0)
 
 
-def test_entry_state_groups_diagnostics_in_common_container():
+def test_entry_state_groups_diagnostics_in_common_container() -> None:
     grid = simple.simple_grid()
     ws = _entry_state(grid)
     assert isinstance(ws.diagnostics, diagnostic_state.DiagnosticState)
@@ -303,7 +308,7 @@ def test_entry_state_groups_diagnostics_in_common_container():
 # ---------------------------------------------------------------------------
 
 
-def test_diagnostics_store_allocates_from_metadata():
+def test_diagnostics_store_allocates_from_metadata() -> None:
     grid = simple.simple_grid()
     store = physics_state.DiagnosticsStore(grid=grid)
     props = {
@@ -319,7 +324,7 @@ def test_diagnostics_store_allocates_from_metadata():
     assert store["tmx"] is buffers
 
 
-def test_diagnostics_store_allocates_a_half_level_output_from_khalfdim():
+def test_diagnostics_store_allocates_a_half_level_output_from_khalfdim() -> None:
     # Half levels are stated by the dimension alone, so a KHalfDim output must get
     # one level more than a full-level one.
     grid = simple.simple_grid()

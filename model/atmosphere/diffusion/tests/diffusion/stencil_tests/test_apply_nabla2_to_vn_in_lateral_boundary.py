@@ -21,11 +21,11 @@ from icon4py.model.testing import stencil_tests
 
 
 def apply_nabla2_to_vn_in_lateral_boundary_numpy(
-    z_nabla2_e: np.array,
-    area_edge: np.array,
-    vn: np.array,
-    fac_bdydiff_v: Any,  # type: ignore[valid-type]  # numpy typing limitation
-) -> np.array:  # type: ignore[valid-type]  # numpy typing limitation
+    z_nabla2_e: np.ndarray,
+    area_edge: np.ndarray,
+    vn: np.ndarray,
+    fac_bdydiff_v: wpfloat,
+) -> np.ndarray:
     area_edge = np.expand_dims(area_edge, axis=-1)
     vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
     return vn
@@ -61,7 +61,7 @@ class TestApplyNabla2ToVnInLateralBoundary(stencil_tests.StencilTest):
         z_nabla2_e: np.ndarray,
         area_edge: np.ndarray,
         vn: np.ndarray,
-        fac_bdydiff_v: np.ndarray,
+        fac_bdydiff_v: wpfloat,
         **kwargs: Any,
     ) -> dict:
         vn = apply_nabla2_to_vn_in_lateral_boundary_numpy(z_nabla2_e, area_edge, vn, fac_bdydiff_v)
