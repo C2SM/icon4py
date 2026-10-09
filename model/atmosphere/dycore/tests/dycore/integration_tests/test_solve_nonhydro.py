@@ -1046,6 +1046,7 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
     )
 
     config = experiment.config.nonhydrostatic
+    assert config is not None
     igradp_method = config.igradp_method
 
     nflatlev = vertical_params.nflatlev
@@ -1371,6 +1372,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     config = experiment.config.nonhydrostatic
+    assert config is not None
     primal_normal_cell_1 = grid_savepoint.primal_normal_cell_x()
     primal_normal_cell_2 = grid_savepoint.primal_normal_cell_y()
     dual_normal_cell_1 = grid_savepoint.dual_normal_cell_x()
@@ -1545,6 +1547,7 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
     config = experiment.config.nonhydrostatic
+    assert config is not None
     mean_cell_area = grid_savepoint.mean_cell_area()
 
     # TODO: Use serialized data ('enh_divdamp_fac' in icon) instead of computing 'interpolated_fourth_order_divdamp_factor'
@@ -2158,6 +2161,7 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
     at_first_substep = substep_init == 0
     at_last_substep = substep_exit == 0
     config = experiment.config.nonhydrostatic
+    assert config is not None
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
