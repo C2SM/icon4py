@@ -65,4 +65,4 @@ def read_from_file(
     log.debug("Reading prognostics initial-state from %s / %s", data_path, fname)
 
     nc = grid_manager.grid.num_cells
-    return array_ns.asarray(array_ns.squeeze(ser.read("topography", sp).astype(float))[:nc])
+    return array_ns.asarray(array_ns.squeeze(ser.read("topography", sp).astype(float)))
