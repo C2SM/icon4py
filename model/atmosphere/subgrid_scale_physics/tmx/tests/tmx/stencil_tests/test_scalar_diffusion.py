@@ -44,6 +44,26 @@ def moist_heat_capacity_numpy(
     )
 
 
+def internal_energy_per_area_numpy(
+    *,
+    temperature: np.ndarray,
+    qv: np.ndarray,
+    q_liquid: np.ndarray,
+    q_solid: np.ndarray,
+    rho: np.ndarray | float,
+    dz: np.ndarray | float,
+) -> np.ndarray:
+    return (
+        rho
+        * dz
+        * (
+            moist_heat_capacity_numpy(qv, q_liquid, q_solid) * temperature
+            - q_liquid * phy.lvc
+            - q_solid * phy.lsc
+        )
+    )
+
+
 def energy_from_temperature_numpy(
     *,
     temperature: np.ndarray,
@@ -54,9 +74,9 @@ def energy_from_temperature_numpy(
     grav: float,
 ) -> np.ndarray:
     return (
-        moist_heat_capacity_numpy(qv, q_liquid, q_solid) * temperature
-        - q_liquid * phy.lvc
-        - q_solid * phy.lsc
+        internal_energy_per_area_numpy(
+            temperature=temperature, qv=qv, q_liquid=q_liquid, q_solid=q_solid, rho=1.0, dz=1.0
+        )
         + grav * height_above_ground * phy.cvd / phy.cpd
     )
 
