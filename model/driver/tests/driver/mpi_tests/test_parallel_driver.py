@@ -154,7 +154,7 @@ def _run_driver_compare_single_multi_rank(
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
     single_rank_reference_fields: dict[str, object] = {
-        field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
+        field_name: getattr(single_rank_ds.prognostics.current, field_name).data.asnumpy()
         for field_name in fields
     }
 
@@ -164,7 +164,7 @@ def _run_driver_compare_single_multi_rank(
             single_rank_reference_fields.get(field_name),
             root=0,
         )
-        local_field = getattr(multi_rank_ds.prognostics.current, field_name)
+        local_field = getattr(multi_rank_ds.prognostics.current, field_name).data
         dim = local_field.domain.dims[0]
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_driver.decomposition_info,

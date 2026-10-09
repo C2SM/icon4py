@@ -23,13 +23,16 @@ In addition, upon start-up the monitor writes a copy of the original ICON grid f
 in the datafiles. This grid file has the same name as the original grid file with the suffix `_ugrid.nc`.
 
 The model state is a dictionary of `xarray.DataArrays` containing the ICON4Py fields as data buffers and
-CF conventional metadata. For some basic examples see [data.py](../states/data.py).
+CF conventional metadata. In the model it is built by the driver's `IOMonitor` component
+(`icon4py.model.driver.driver_io`) from the leaves of its `Input`, with the CF attributes of each
+leaf's quantity tag (`icon4py.model.common.components.quantities`).
 
 #### Adding fields
 
-When adding new fields to the state the `short_name` should be taken from the
+A new output field is a new leaf on the driver's `IOMonitor.Input`. Its quantity tag carries the
+CF attributes: the `standard_name` from the
 [CF standard name table](https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html)
-or, if not available there, built up according to [guidelines of CF standard names](http://cfconventions.org/Data/cf-standard-names/docs/guidelines.html).
+where the table has one (see the components README, "Adding a quantity").
 
 ### Usage
 
@@ -47,7 +50,7 @@ Field groups are stored in the same file and share a common setting of
 - `output_interval`: the output schedule, given as either a positive integer N (write every N model steps, i.e. every N calls to `store`) or a `datetime.timedelta` (a simulation-time delta, e.g. `timedelta(hours=2)`, must be a multiple of the model time step). A time delta is normalized to a number of steps using the model time step, so the schedule is always evaluated in steps. Defaults to every step.
 - `basename`: Base name of the datafiles, without an extension (the backend's extension and a roll-over counter are appended, see `timesteps_per_file`); it may contain a _relative_ path which is appended to the `output_path`.
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
-- `variables`: List of variables names to be output. Variable names are the CF names used as keys in the model state (see [data.py](../states/data.py)).
+- `variables`: List of variables names to be output. Variable names are the keys of the model state; for the driver's `IOMonitor` they are the `standard_name`s of its `Input` leaves' quantities (not all of them CF standard names), except the historical file names in `driver_io._FILE_NAMES` (`exner_function`, `temperature`, `virtual_temperature`, `pressure`).
 - `backend` (default="zarr"): File format of the group, `"netcdf"` or `"zarr"`.
 - `mode` (default="distributed"): Write strategy of distributed (MPI) runs; single-rank runs write the full state either way:
     - `"gather"`: the owned entries of all ranks are collected on the root rank, which writes them in global order.

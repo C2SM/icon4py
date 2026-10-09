@@ -37,6 +37,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muph
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, prescribed_tendencies, time
+from icon4py.model.common.components import states
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file as from_file_ic
@@ -47,7 +48,6 @@ from icon4py.model.common.initial_condition.analytical import (
 )
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states import tracer_states
 from icon4py.model.common.topography import from_file as from_file_topo
 from icon4py.model.common.topography.analytical import (
     flat_topography as flat_topo,
@@ -702,9 +702,7 @@ def convert_experiment(
     # dt_mig>0 check needs the raw namelist (see docs/2026-07-22-muphys-namelist-dt-mig-gate.md).
     aes_physics_on = "aes_phy_nml" in atm_dict
     tracer_cfg = (
-        tracer_states.TracerConfig.all()
-        if aes_physics_on
-        else tracer_states.TracerConfig.from_ntracer(ntracer)
+        states.TracerConfig.all() if aes_physics_on else states.TracerConfig.from_ntracer(ntracer)
     )
 
     # If these two namelists are missing it means that the experiment was run

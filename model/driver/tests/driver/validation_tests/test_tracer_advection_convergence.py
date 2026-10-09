@@ -176,7 +176,8 @@ def test_horizontal_tracer_advection_convergence(
             process_props=process_props,
             backend=backend,
         )
-        simulated_tracer = ds.tracers.current.qv.ndarray
+        assert ds.tracers.current.qv is not None
+        simulated_tracer = ds.tracers.current.qv.data.ndarray
 
         assert (
             type(experiment_config.initial_condition)
@@ -296,7 +297,8 @@ def test_vertical_tracer_advection_convergence(
             process_props=process_props,
             backend=backend,
         )
-        simulated_tracer = ds.tracers.current.qv.ndarray
+        assert ds.tracers.current.qv is not None
+        simulated_tracer = ds.tracers.current.qv.data.ndarray
 
         assert (
             type(experiment_config_local.initial_condition)

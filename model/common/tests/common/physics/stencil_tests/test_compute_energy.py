@@ -123,7 +123,7 @@ class TestComputeMoistAirHeatCapacityPerArea(stencil_tests.StencilTest):
             constants.CVD * (1.0 - (qv + qliq + qice))
             + constants.CVV * qv
             + constants.CPL * qliq
-            + constants.SPECIFIC_HEAT_CAPACITY_ICE_AES * qice
+            + constants.SPECIFIC_HEAT_CAPACITY_ICE_PHYSICAL_CONSTANTS * qice
         )
         return dict(heat_capacity=cv * air_mass)
 

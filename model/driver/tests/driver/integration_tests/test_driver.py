@@ -205,11 +205,11 @@ def test_driver(
     prognostics = ds.prognostics.current
 
     computed = {
-        "vn": prognostics.vn,
-        "w": prognostics.w,
-        "rho": prognostics.rho,
-        "exner": prognostics.exner,
-        "theta_v": prognostics.theta_v,
+        "vn": prognostics.vn.data,
+        "w": prognostics.w.data,
+        "rho": prognostics.rho.data,
+        "exner": prognostics.exner.data,
+        "theta_v": prognostics.theta_v.data,
     }
     if experiment_description is test_defs.Experiments.MCH_CH_R04B09:
         # The MCH reference runs the full NWP physics suite (nwp_phy_nml: convection,
@@ -237,9 +237,9 @@ def test_driver(
             "theta_v": savepoint_time_step_exit.theta_v(),
         }
 
-    for tracer in ds.tracers.current.active_fields():
-        computed[tracer.name] = tracer.field
-        references[tracer.name] = getattr(savepoint_time_step_exit, tracer.name)()
+    for declaration, tracer in ds.tracers.current.leaves():
+        computed[declaration.name] = tracer.data
+        references[declaration.name] = getattr(savepoint_time_step_exit, declaration.name)()
 
     tolerances = _TOLERANCES[experiment_description]
 

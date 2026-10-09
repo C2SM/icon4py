@@ -107,19 +107,11 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
 
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: diffusion initialized ")
 
-    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=savepoint_diffusion_init.hdef_ic(),
-        div_ic=savepoint_diffusion_init.div_ic(),
-        dwdx=savepoint_diffusion_init.dwdx(),
-        dwdy=savepoint_diffusion_init.dwdy(),
-    )
+    diagnostic_state = utils.construct_diagnostics(savepoint_diffusion_init)
 
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
     diffusion.run(
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        dtime=dtime,
-        initial_run=linit,
+        *utils.diffusion_views(prognostic_state, diagnostic_state, dtime, initial_run=linit)
     )
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: diffusion run ")
 

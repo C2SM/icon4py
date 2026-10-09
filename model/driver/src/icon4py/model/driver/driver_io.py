@@ -7,15 +7,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-Driver-side glue between the model state and the ``icon4py.model.common.io`` module.
+The driver's output: the IO component and its factory.
 
-- assembles the prognostic model state into the ``dict[str, xarray.DataArray]`` consumed
-  by ``IOMonitor.store`` (:func:`prognostic_state_to_dataarrays`),
-- computes the standard diagnostic output fields (u, v, temperature, virtual temperature,
-  pressure) from the prognostic state (:class:`DiagnosticsComputer`) and assembles them
-  (:func:`diagnostic_fields_to_dataarrays`),
-- builds an ``IOMonitor`` that writes all requested fields to one file
-  (:func:`create_io_monitor`).
+`IOMonitor` declares every leaf the driver can write; the config selects the variables by
+name and `run` hands them, as CF/UGRID-annotated DataArrays, to the common writer
+(`icon4py.model.common.io.io.IOMonitor`). The diagnostics among them are derived by the
+driver before each store.
 """
 
 import datetime
@@ -23,77 +20,24 @@ import pathlib
 import uuid
 from typing import Any, Final
 
-import gt4py.next as gtx
 import xarray as xr
 
-from icon4py.model.common import dimension as dims, time, type_alias as ta
+from icon4py.model.common import time
+from icon4py.model.common.components import framework as fw, quantities as qty
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
-from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
+from icon4py.model.common.grid import base as grid_base, vertical as v_grid
 from icon4py.model.common.io import io as common_io, utils as io_utils
-from icon4py.model.common.physics.thermodynamics import compute_pressure, compute_temperature
-from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-#: File-name stub for the output file (a counter + the backend's suffix, ``.nc`` or
-#: ``.zarr``, is appended).
+# file-name stub of the output file (a counter and the backend's suffix are appended)
 DEFAULT_OUTPUT_BASENAME: Final[str] = "icon4py_output"
 
-
-# --------------------------------------------------------------------------------------
-# Prognostic fields
-# --------------------------------------------------------------------------------------
-
-
-#: Default prognostic output variables, selected by CF name from the
-#: ``states.data.PROGNOSTIC_CF_ATTRIBUTES`` catalog (which also holds fields the driver does
-#: not output, e.g. ``tangential_velocity``). The metadata, the state attribute
-#: (``icon_var_name``) all come from that
-#: catalog; this list only selects which entries to emit.
-PROGNOSTIC_VARIABLES: Final[list[str]] = [
+DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [
     "air_density",
     "exner_function",
     "virtual_potential_temperature",
     "upward_air_velocity",
     "normal_velocity",
-]
-
-
-def prognostic_state_to_dataarrays(
-    prognostic_state: prognostics.PrognosticState,
-    variables: list[str] | None = None,
-) -> dict[str, xr.DataArray]:
-    """Assemble a CF/UGRID-annotated model-state dict from a ``PrognosticState``."""
-    selected = PROGNOSTIC_VARIABLES if variables is None else variables
-
-    state: dict[str, xr.DataArray] = {}
-    for name in selected:
-        try:
-            metadata = state_data.PROGNOSTIC_CF_ATTRIBUTES[name]
-        except KeyError as err:
-            raise ValueError(
-                f"Unknown prognostic output variable '{name}'. "
-                f"Known variables are: {PROGNOSTIC_VARIABLES}."
-            ) from err
-        assert metadata.icon_var_name is not None, (
-            f"prognostic output '{name}' must declare icon_var_name to be read from the state"
-        )
-        field = getattr(prognostic_state, metadata.icon_var_name)
-        state[name] = io_utils.to_data_array(
-            field,
-            metadata,
-            to_host=True,
-        )
-    return state
-
-
-# --------------------------------------------------------------------------------------
-# Diagnostic fields
-# --------------------------------------------------------------------------------------
-
-
-DIAGNOSTIC_VARIABLES: Final[list[str]] = [
     "eastward_wind",
     "northward_wind",
     "temperature",
@@ -101,154 +45,85 @@ DIAGNOSTIC_VARIABLES: Final[list[str]] = [
     "pressure",
 ]
 
-#: All output variables (prognostic + diagnostic), written together into the same file.
-DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [*PROGNOSTIC_VARIABLES, *DIAGNOSTIC_VARIABLES]
+# A variable is named by its quantity's standard_name, except these leaves, which keep the
+# names the output files have always used (`exner_function`, not
+# `dimensionless_exner_function`).
+_FILE_NAMES: Final[dict[str, str]] = {
+    "exner": "exner_function",
+    "temperature": "temperature",
+    "virtual_temperature": "virtual_temperature",
+    "pressure": "pressure",
+}
 
 
-class DiagnosticsComputer:
-    """Computes the diagnostic output fields from the prognostic state.
+def _attributes(quantity: type[fw.Quantity]) -> dict[str, str]:
+    """The CF attributes of a variable, from its quantity."""
+    attributes = {
+        "standard_name": quantity.standard_name,
+        "long_name": quantity.long_name,
+        "units": quantity.units,
+    }
+    return {key: value for key, value in attributes.items() if value is not None}
 
-    The ~14 scratch/output buffers are allocated **once** and reused on every
-    :meth:`compute` call, avoiding per-step allocation (significant on GPU backends,
-    since output is written every step). The static fields (``ddqz_z_full`` and the cell
-    rbf coefficients) are passed to :meth:`compute` so callers fetch them from their field
-    factories; tests can pass artificial fields.
 
-    TODO(kotsaloscv): refactor once the driver groups model state -- derive these diagnostic
-    buffers from that shared grouping instead of recomputing them here. Physics relies
-    heavily on the same diagnostic variables, so they should be shared rather than
-    duplicated across IO and physics.
+class IOMonitor(fw.Component):
+    """
+    Writes the selected variables through the common writer.
+
+    The writer's schedule advances on every `store`, so `run` must be called at every step;
+    the DataArrays are built only when the writer captures.
     """
 
-    def __init__(self, *, grid: grid_base.Grid, backend: gtx.typing.Backend | None) -> None:
-        self._grid = grid
-        self._backend = backend
-        self._num_levels = grid.num_levels
-        cell_domain = h_grid.domain(dims.CellDim)
-        self._end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
-        self._cell_lateral_boundary_level_2 = grid.end_index(
-            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-        )
+    class Input(fw.State):
+        rho: fw.Field[qty.RhoOnCellK]
+        exner: fw.Field[qty.ExnerOnCellK]
+        theta_v: fw.Field[qty.ThetaVOnCellK]
+        w: fw.Field[qty.WOnCellKHalf]
+        vn: fw.Field[qty.VnOnEdgeK]
+        u: fw.Field[qty.UOnCellK]
+        v: fw.Field[qty.VOnCellK]
+        temperature: fw.Field[qty.TemperatureOnCellK]
+        virtual_temperature: fw.Field[qty.VirtualTemperatureOnCellK]
+        pressure: fw.Field[qty.PressureOnCellK]
+        simulation_time: datetime.datetime
 
-        def _zero_full() -> gtx.Field:
-            return data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
-            )
+    Output = fw.Empty
 
-        def _zero_interface() -> gtx.Field:
-            return data_alloc.zero_field(
-                grid,
-                dims.CellDim,
-                dims.KHalfDim,
-                dtype=ta.wpfloat,
-                allocator=backend,
-            )
-
-        # dry air: all hydrometeors stay zero (never written, so allocated once)
-        self._qv, self._qc, self._qi, self._qr, self._qs, self._qg = (
-            _zero_full() for _ in range(6)
-        )
-        self._temperature = _zero_full()
-        self._virtual_temperature = _zero_full()
-        self._u = _zero_full()
-        self._v = _zero_full()
-        self._pressure = _zero_full()
-        # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
-        # in-place buffer fills below would not type-check against the precise Field type.
-        self._pressure_on_cells_half_levels: Any = _zero_interface()
-        self._pressure_ifc_on_model_levels = _zero_full()
-
-    def compute(
+    def __init__(
         self,
-        prognostic_state: prognostics.PrognosticState,
         *,
-        ddqz_z_full: gtx.Field,
-        rbf_vec_coeff_c1: gtx.Field,
-        rbf_vec_coeff_c2: gtx.Field,
-    ) -> dict[str, gtx.Field]:
-        """Diagnose temperature/virtual temperature from ``theta_v``/``exner``, the cell
-        winds by RBF interpolation of ``vn``, and pressure by vertical integration from the
-        diagnosed surface pressure (dry-air path). Buffers are overwritten in place.
+        grid: grid_base.Grid,
+        writer: common_io.IOMonitor,
+        variables: list[str],
+    ) -> None:
+        super().__init__(grid, None)
+        self.writer = writer
+        leaves: dict[str, str] = {}
+        for declaration in type(self).Input.declarations():
+            name = _FILE_NAMES.get(declaration.name, declaration.quantity.standard_name)
+            assert name is not None, f"Output leaf '{declaration.name}' has no name."
+            assert name not in leaves, (
+                f"Input leaves '{leaves[name]}' and '{declaration.name}' are both written as '{name}'."
+            )
+            leaves[name] = declaration.name
+        unknown = [name for name in variables if name not in leaves]
+        if unknown:
+            raise ValueError(
+                f"Unknown output variable '{unknown[0]}'. Known variables are: {list(leaves)}."
+            )
+        # output variable name -> Input leaf name
+        self.selected = {name: leaves[name] for name in variables}
 
-        Returns:
-            ``{eastward_wind, northward_wind, temperature, virtual_temperature, pressure}``.
-        """
-        backend = self._backend
-        num_levels = self._num_levels
-        end_cell_end = self._end_cell_end
-
-        compute_temperature.compute_virtual_temperature_and_temperature.with_backend(backend)(
-            qv=self._qv,
-            qc=self._qc,
-            qi=self._qi,
-            qr=self._qr,
-            qs=self._qs,
-            qg=self._qg,
-            theta_v=prognostic_state.theta_v,
-            exner=prognostic_state.exner,
-            virtual_temperature=self._virtual_temperature,
-            temperature=self._temperature,
-            horizontal_start=0,
-            horizontal_end=end_cell_end,
-            vertical_start=0,
-            vertical_end=num_levels,
-            offset_provider={},
-        )
-
-        rbf.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-            p_e_in=prognostic_state.vn,
-            ptr_coeff_1=rbf_vec_coeff_c1,
-            ptr_coeff_2=rbf_vec_coeff_c2,
-            p_u_out=self._u,
-            p_v_out=self._v,
-            horizontal_start=self._cell_lateral_boundary_level_2,
-            horizontal_end=end_cell_end,
-            vertical_start=0,
-            vertical_end=num_levels,
-            offset_provider={"C2E2C2E": self._grid.get_connectivity("C2E2C2E")},
-        )
-
-        compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(backend)(
-            exner=prognostic_state.exner,
-            virtual_temperature=self._virtual_temperature,
-            ddqz_z_full=ddqz_z_full,
-            pressure=self._pressure,
-            pressure_ifc_on_model_levels=self._pressure_ifc_on_model_levels,
-            pressure_ifc=self._pressure_on_cells_half_levels,
-            horizontal_start=0,
-            horizontal_end=end_cell_end,
-            vertical_start=0,
-            vertical_end=num_levels,
-            offset_provider={},
-        )
-
-        return {
-            "eastward_wind": self._u,
-            "northward_wind": self._v,
-            "temperature": self._temperature,
-            "virtual_temperature": self._virtual_temperature,
-            "pressure": self._pressure,
-        }
-
-
-def diagnostic_fields_to_dataarrays(
-    diagnostic_fields: dict[str, gtx.Field],
-) -> dict[str, xr.DataArray]:
-    """Assemble CF/UGRID-annotated DataArrays from computed diagnostic fields."""
-    state: dict[str, xr.DataArray] = {}
-    for name, field in diagnostic_fields.items():
-        metadata = state_data.DIAGNOSTIC_CF_ATTRIBUTES[name]
-        state[name] = io_utils.to_data_array(
-            field,
-            metadata,
-            to_host=True,
-        )
-    return state
-
-
-# --------------------------------------------------------------------------------------
-# Monitor factory
-# --------------------------------------------------------------------------------------
+    def run(self, inputs: Input, out: fw.Empty | None = None) -> fw.Empty:
+        state: dict[str, xr.DataArray] = {}
+        if self.writer.at_capture_time():
+            for name, leaf in self.selected.items():
+                field: fw.Field[Any] = getattr(inputs, leaf)
+                state[name] = io_utils.to_data_array(
+                    field.data, _attributes(field.quantity), to_host=True
+                )
+        self.writer.store(state, inputs.simulation_time)
+        return self.buffers(out)
 
 
 def create_io_monitor(
@@ -264,8 +139,8 @@ def create_io_monitor(
     output_mode: common_io.OutputMode = common_io.OutputMode.DISTRIBUTED,
     process_props: decomposition_defs.ProcessProperties,
     decomposition_info: decomposition_defs.DecompositionInfo | None,
-) -> common_io.IOMonitor:
-    """Build an ``IOMonitor`` with one field group holding all output fields.
+) -> IOMonitor:
+    """Build an ``IOMonitor`` writing through one field group that holds all output fields.
 
     ``output_interval`` is either a number of model steps or a simulation-time delta
     (normalized to steps using ``dtime``); it defaults to every step. In a distributed
@@ -287,7 +162,7 @@ def create_io_monitor(
     ]
 
     config = common_io.IOConfig(output_path=str(output_path), field_groups=field_groups)
-    return common_io.IOMonitor(
+    writer = common_io.IOMonitor(
         config=config,
         vertical_size=vertical_grid,
         horizontal_size=grid.config.horizontal_config,
@@ -298,3 +173,4 @@ def create_io_monitor(
         process_props=process_props,
         decomposition_info=decomposition_info,
     )
+    return IOMonitor(grid=grid, writer=writer, variables=output_variables)
