@@ -103,16 +103,10 @@ class DataField(Protocol):
 
 @dataclasses.dataclass
 class ModelField(DataField):
-    data: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT]  # type: ignore[valid-type]  # numpy typing limitation
+    data: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT]  # type: ignore[valid-type]  # GT4Py Field generics / ScalarT variance
     attrs: FieldMetaData  # type: ignore[assignment]  # GT4Py field/metadata type inference limitation
 
     @functools.cached_property
     def metadata(self) -> FieldMetaData:
         return self.attrs
 
-    def asnumpy(self) -> np.ndarray:
-        return self.data.asnumpy()
-
-    @property
-    def ndarray(self) -> np.ndarray:
-        return self.data.ndarray  # type: ignore[return-value]  # GT4Py backend/field inference limitation
