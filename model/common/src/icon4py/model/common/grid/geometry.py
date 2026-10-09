@@ -148,10 +148,7 @@ class GridGeometry(factory.FieldSource):
                 attrs.CELL_NORMAL_ORIENTATION: extra_fields[
                     gridfile.GeometryName.CELL_NORMAL_ORIENTATION
                 ],
-                attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
-                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX
-                ],
-                attrs.VERTEX_EDGE_ORIENTATION_WITH_VALID_NEIGHBORS: gtx.as_field(
+                attrs.VERTEX_EDGE_ORIENTATION: gtx.as_field(
                     (dims.VertexDim, dims.V2EDim),
                     self._xp.where(
                         vertex_to_edge != gridfile.GridFile.INVALID_INDEX,
