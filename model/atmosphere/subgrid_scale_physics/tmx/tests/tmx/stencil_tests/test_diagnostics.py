@@ -6,10 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from collections.abc import Mapping
-from typing import Any
+from collections.abc import Mapping, Sequence
+from typing import Any, ClassVar
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
@@ -825,7 +826,7 @@ def shear_and_viscosity_input_data(
     )
 
 
-class _ShearAndViscosityDiagnostics(stencil_tests.StencilTest):
+class _ShearAndViscosityDiagnostics:
     """
     The edge, strain-rate and eddy-viscosity diagnostics ``Compute_diagnostics`` runs
     between the vertex and the cell halo exchange, fused into one program with one
@@ -833,10 +834,16 @@ class _ShearAndViscosityDiagnostics(stencil_tests.StencilTest):
 
     The subclasses cover the stability-correction variants; the shear part is the same
     in all of them.
+
+    This class is intentionally not a ``StencilTest`` subclass: it is a mixin that
+    provides shared declarations for concrete ``StencilTest`` subclasses, each of which
+    supplies the required ``input_data`` method.
     """
 
-    PROGRAM = compute_shear_and_viscosity_diagnostics
-    OUTPUTS = (
+    PROGRAM: ClassVar[gtx_typing.Program | gtx_typing.FieldOperator] = (
+        compute_shear_and_viscosity_diagnostics
+    )
+    OUTPUTS: ClassVar[tuple[str | stencil_tests.Output, ...]] = (
         "w_ie",
         "vn_ie",
         "vt_ie",
@@ -847,7 +854,7 @@ class _ShearAndViscosityDiagnostics(stencil_tests.StencilTest):
         "km_ic",
         "kh_ic",
     )
-    STATIC_PARAMS = {
+    STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = {
         stencil_tests.StandardStaticVariants.NONE: (),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "edge_start_lateral_boundary_level_2",
@@ -883,7 +890,7 @@ class _ShearAndViscosityDiagnostics(stencil_tests.StencilTest):
     }
 
     @stencil_tests.static_reference
-    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+    def reference(grid: base.Grid, **kwargs: Any) -> dict[str, np.ndarray | tuple[np.ndarray, ...]]:
         return shear_and_viscosity_reference(grid, **kwargs)
 
 
