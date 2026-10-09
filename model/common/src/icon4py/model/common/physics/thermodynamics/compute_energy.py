@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import wpfloat
 
@@ -96,3 +96,70 @@ def _compute_dry_static_energy(
         static energy at full levels [J/kg]
     """
     return PhysicsConstants.cpd * temperature + grav * height_above_ground
+
+
+@gtx.field_operator
+def _compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
+    qv: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qi: fa.CellKField[ta.wpfloat],
+    qr: fa.CellKField[ta.wpfloat],
+    qs: fa.CellKField[ta.wpfloat],
+    qg: fa.CellKField[ta.wpfloat],
+    air_mass: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Heat capacity at constant volume of the moist air per unit area [J/K/m2].
+
+    get_cvair in mo_aes_phy_diag.f90: the specific heat of the mixture times the air mass
+    per unit area, with the AES heat capacity of ice.
+
+    Args:
+        qv:        Specific mass of vapor
+        qc:        Specific mass of cloud water
+        qi:        Specific mass of cloud ice
+        qr:        Specific mass of rain
+        qs:        Specific mass of snow
+        qg:        Specific mass of graupel
+        air_mass:  Air mass per unit area
+    """
+    qliq = qc + qr
+    qice = qi + qs + qg
+    cv = (
+        PhysicsConstants.cvd * (wpfloat(1.0) - (qv + qliq + qice))
+        + PhysicsConstants.cvv * qv
+        + PhysicsConstants.cpl * qliq
+        + PhysicsConstants.ci_aes * qice
+    )
+    return cv * air_mass
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
+    qv: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qi: fa.CellKField[ta.wpfloat],
+    qr: fa.CellKField[ta.wpfloat],
+    qs: fa.CellKField[ta.wpfloat],
+    qg: fa.CellKField[ta.wpfloat],
+    air_mass: fa.CellKField[ta.wpfloat],
+    heat_capacity: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _compute_moist_air_heat_capacity_per_area(
+        qv=qv,
+        qc=qc,
+        qi=qi,
+        qr=qr,
+        qs=qs,
+        qg=qg,
+        air_mass=air_mass,
+        out=heat_capacity,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
