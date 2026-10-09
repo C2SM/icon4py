@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Mapping
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,9 +15,27 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
+
+
+def compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(  # noqa: PLR0917
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    geofac_div: np.ndarray,
+    p_cc: np.ndarray,
+    p_rhodz_now: np.ndarray,
+    p_mflx_tracer_h: np.ndarray,
+    p_dtime: ta.wpfloat,
+    wp_eps: ta.wpfloat,
+) -> np.ndarray:
+    c2e = connectivities[dims.C2E]
+    geofac_div = np.expand_dims(geofac_div, axis=-1)
+    p_m_0 = np.maximum(0.0, p_mflx_tracer_h[c2e[:, 0]] * geofac_div[:, 0] * p_dtime)
+    p_m_1 = np.maximum(0.0, p_mflx_tracer_h[c2e[:, 1]] * geofac_div[:, 1] * p_dtime)
+    p_m_2 = np.maximum(0.0, p_mflx_tracer_h[c2e[:, 2]] * geofac_div[:, 2] * p_dtime)
+    p_m = p_m_0 + p_m_1 + p_m_2
+    return np.minimum(1.0, p_cc * p_rhodz_now / (p_m + wp_eps))
 
 
 class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_tests.StencilTest):
@@ -35,24 +55,9 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         **kwargs,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        c2e = connectivities[dims.C2E]
-        geofac_div = np.expand_dims(geofac_div, axis=-1)
-        p_m_0 = np.maximum(
-            0.0,
-            p_mflx_tracer_h[c2e[:, 0]] * geofac_div[:, 0] * p_dtime,
+        r_m = compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(
+            connectivities, geofac_div, p_cc, p_rhodz_now, p_mflx_tracer_h, p_dtime, wp_eps
         )
-        p_m_1 = np.maximum(
-            0.0,
-            p_mflx_tracer_h[c2e[:, 1]] * geofac_div[:, 1] * p_dtime,
-        )
-        p_m_2 = np.maximum(
-            0.0,
-            p_mflx_tracer_h[c2e[:, 2]] * geofac_div[:, 2] * p_dtime,
-        )
-
-        p_m = p_m_0 + p_m_1 + p_m_2
-        r_m = np.minimum(1.0, p_cc * p_rhodz_now / (p_m + wp_eps))
-
         return dict(r_m=r_m)
 
     @stencil_tests.input_data_fixture
@@ -62,8 +67,8 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         p_rhodz_now = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_mflx_tracer_h = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         r_m = data_alloc.zero_field(dims.CellDim, dims.KDim)
-        p_dtime = np.float64(5)
-        wp_eps = np.float64(1e-9)
+        p_dtime = ta.wpfloat(5)
+        wp_eps = ta.wpfloat(1e-9)
         return dict(
             geofac_div=geofac_div,
             p_cc=p_cc,
