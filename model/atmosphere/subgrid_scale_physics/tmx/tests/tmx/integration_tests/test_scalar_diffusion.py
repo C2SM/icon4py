@@ -28,7 +28,6 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
-    RTOL,
     TMX_DATES,
     construct_input_state,
     construct_interpolation_state,
@@ -139,17 +138,25 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
+    # (computed, reference, name, atol, rtol), chosen as described in the integration-test
+    # utils
     fields = (
-        (setup.tendency_state.tend_qv, exit_savepoint.tend_qv(), "tend_qv", 5.0e-20),
-        (setup.tendency_state.tend_qc, exit_savepoint.tend_qc(), "tend_qc", 5.0e-21),
-        (setup.tendency_state.tend_qi, exit_savepoint.tend_qi(), "tend_qi", 3.0e-22),
-        (setup.new_state.qv, exit_savepoint.qv_new(), "qv_new", 2.0e-17),
-        (setup.new_state.qc, exit_savepoint.qc_new(), "qc_new", 2.0e-18),
-        (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new", 7.0e-20),
+        # rtol inf
+        (setup.tendency_state.tend_qv, exit_savepoint.tend_qv(), "tend_qv", 4.0e-20, 0.0),
+        # rtol 4.0e-5
+        (setup.tendency_state.tend_qc, exit_savepoint.tend_qc(), "tend_qc", 4.0e-21, 0.0),
+        # atol 2.0e-22
+        (setup.tendency_state.tend_qi, exit_savepoint.tend_qi(), "tend_qi", 0.0, 7.0e-11),
+        # atol 2.0e-17
+        (setup.new_state.qv, exit_savepoint.qv_new(), "qv_new", 0.0, 8.0e-16),
+        # atol 2.0e-18
+        (setup.new_state.qc, exit_savepoint.qc_new(), "qc_new", 0.0, 6.0e-13),
+        # atol 6.0e-20
+        (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new", 0.0, 2.0e-15),
     )
-    for actual, desired, name, atol in fields:
+    for actual, desired, name, atol, rtol in fields:
         test_utils.assert_dallclose(
-            actual.asnumpy(), desired.asnumpy(), rtol=RTOL, atol=atol, err_msg=name
+            actual.asnumpy(), desired.asnumpy(), atol=atol, rtol=rtol, err_msg=name
         )
 
 
@@ -199,12 +206,17 @@ def test_tmx_run_temperature_diffusion_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
+    # (computed, reference, name, atol, rtol), chosen as described in the integration-test
+    # utils
     fields = (
-        (setup.component.energy, exit_savepoint.energy(), "energy", 2.0e-10),
-        (new_state.temperature, exit_savepoint.ta_new(), "ta_new", 4.0e-13),
-        (setup.tendency_state.tend_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
+        # atol 1.0e-10
+        (setup.component.energy, exit_savepoint.energy(), "energy", 0.0, 6.0e-16),
+        # atol 4.0e-13
+        (new_state.temperature, exit_savepoint.ta_new(), "ta_new", 0.0, 2.0e-15),
+        # rtol inf
+        (setup.tendency_state.tend_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15, 0.0),
     )
-    for actual, desired, name, atol in fields:
+    for actual, desired, name, atol, rtol in fields:
         test_utils.assert_dallclose(
-            actual.asnumpy(), desired.asnumpy(), rtol=RTOL, atol=atol, err_msg=name
+            actual.asnumpy(), desired.asnumpy(), atol=atol, rtol=rtol, err_msg=name
         )
