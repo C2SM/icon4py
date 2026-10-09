@@ -25,9 +25,8 @@ classifiers = [
 ]
 dependencies = [
   # external dependencies
-  'clang-format>=22.1.0',
   'cffi>=1.5',
-  'gt4py==1.2.2',
+  'gt4py==1.2.3',
   "numpy>=1.23.3",
   'packaging>=20.0',
   'click>=8.1.7',
