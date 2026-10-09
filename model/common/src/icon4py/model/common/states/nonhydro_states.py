@@ -48,21 +48,21 @@ class DiagnosticStateNonHydro:
     Declared as vt in ICON. Tangential wind at edge.
     """
 
-    vn_on_half_levels: fa.EdgeKField[
+    vn_on_half_levels: fa.EdgeKHalfField[
         ta.vpfloat
-    ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s] # TODO(): change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s]
     """
     Declared as vn_ie in ICON. Normal wind at edge on k-half levels.
     """
 
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[
         ta.vpfloat
-    ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO(): change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s]
     """
     Declared as w_concorr_c in ICON. Contravariant correction at cell center on k-half levels. vn dz/dn + vt dz/dt, z is topography height
     """
 
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat]
+    theta_v_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat]
     """
     Declared as theta_v_ic in ICON.
     """
@@ -72,7 +72,7 @@ class DiagnosticStateNonHydro:
     Declared as exner_pr in ICON.
     """
 
-    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat]
+    rho_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat]
     """
     Declared as rho_ic in ICON.
     """
@@ -83,7 +83,7 @@ class DiagnosticStateNonHydro:
     """
     grf_tend_rho: fa.CellKField[ta.wpfloat]
     grf_tend_thv: fa.CellKField[ta.wpfloat]
-    grf_tend_w: fa.CellKField[ta.wpfloat]
+    grf_tend_w: fa.CellKHalfField[ta.wpfloat]
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat]
     """
     Declared as mass_fl_e in ICON.
@@ -99,7 +99,9 @@ class DiagnosticStateNonHydro:
     Declared as ddt_vn_apc_pc in ICON. Advective tendency of normal wind (including coriolis force).
     """
 
-    vertical_wind_advective_tendency: common_utils.PredictorCorrectorPair[fa.CellKField[ta.vpfloat]]
+    vertical_wind_advective_tendency: common_utils.PredictorCorrectorPair[
+        fa.CellKHalfField[ta.vpfloat]
+    ]
     """
     Declared as ddt_w_adv_pc in ICON. Advective tendency of vertical wind.
     """
@@ -151,16 +153,14 @@ def initialize_solve_nonhydro_diagnostic_state(
         data_alloc.zero_field(
             grid,
             dims.CellDim,
-            dims.KDim,
-            extend={dims.KDim: 1},
+            dims.KHalfDim,
             allocator=allocator,
             dtype=ta.vpfloat,
         ),
         data_alloc.zero_field(
             grid,
             dims.CellDim,
-            dims.KDim,
-            extend={dims.KDim: 1},
+            dims.KHalfDim,
             allocator=allocator,
             dtype=ta.vpfloat,
         ),
@@ -169,16 +169,14 @@ def initialize_solve_nonhydro_diagnostic_state(
     theta_v_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     rho_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
@@ -194,8 +192,7 @@ def initialize_solve_nonhydro_diagnostic_state(
     grf_tend_w = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
@@ -214,16 +211,14 @@ def initialize_solve_nonhydro_diagnostic_state(
     vn_on_half_levels = data_alloc.zero_field(
         grid,
         dims.EdgeDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.vpfloat,
     )
     contravariant_correction_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.vpfloat,
     )

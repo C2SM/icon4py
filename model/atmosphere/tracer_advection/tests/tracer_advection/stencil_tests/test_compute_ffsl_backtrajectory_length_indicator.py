@@ -5,14 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
-
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,7 +16,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ffsl_backtraject
     compute_ffsl_backtrajectory_length_indicator,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -30,8 +24,9 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
     PROGRAM = compute_ffsl_backtrajectory_length_indicator
     OUTPUTS = ("opt_famask_dsl",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
+        grid: base.Grid,
         *,
         p_vn: np.ndarray,
         p_vt: np.ndarray,
@@ -54,12 +49,12 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
 
         return dict(opt_famask_dsl=opt_famask_dsl)
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        edge_cell_length = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        opt_famask_dsl = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_vt = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        edge_cell_length = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        opt_famask_dsl = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_dt = 1.0
 
         return dict(

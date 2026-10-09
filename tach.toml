@@ -6,6 +6,7 @@ source_roots = [
     "model/atmosphere/dycore/src",
     "model/atmosphere/subgrid_scale_physics/microphysics/src",
     "model/atmosphere/subgrid_scale_physics/muphys/src",
+    "model/atmosphere/subgrid_scale_physics/tmx/src",
     "model/atmosphere/subgrid_scale_physics/physics_driver/src",
     "model/driver/src",
     "model/common/src",
@@ -26,7 +27,6 @@ exclude = [
     "ghex",
     "dace",
     "mpi4py",
-    "mypy",  # imported only by the icon4py mypy plugin at type-check time, not at runtime
     "netcdf4",
     "pymetis",
     "xarray",
@@ -35,11 +35,16 @@ exclude = [
     "cftime",
     "viztracer",
     "clang_format",
+    "mypy",
 ]
 rename = ["serialbox:serialbox4py"]
 
 [[modules]]
 path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys"
+depends_on = [{ path = "icon4py.model.common" }]
+
+[[modules]]
+path = "icon4py.model.atmosphere.subgrid_scale_physics.tmx"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
@@ -67,6 +72,7 @@ path = "icon4py.model.driver"
 depends_on = [
     { path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys" },
     { path = "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver" },
+    { path = "icon4py.model.atmosphere.subgrid_scale_physics.tmx" },
     { path = "icon4py.model.common" },
 ]
 
@@ -92,7 +98,6 @@ path = "icon4py.bindings"
 depends_on = [
     { path = "icon4py.model.atmosphere.diffusion" },
     { path = "icon4py.model.atmosphere.dycore" },
-    { path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys" },
     { path = "icon4py.model.common" },
     { path = "icon4py.tools.py2fgen" },
 ]

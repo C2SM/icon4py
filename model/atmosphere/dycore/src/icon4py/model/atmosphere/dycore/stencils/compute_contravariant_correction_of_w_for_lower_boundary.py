@@ -18,13 +18,13 @@ def _compute_contravariant_correction_of_w_for_lower_boundary(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
-) -> fa.CellKField[vpfloat]:
+) -> fa.CellKHalfField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_40."""
     z_w_concorr_me_wp = astype(z_w_concorr_me, wpfloat)
 
-    z_w_concorr_me_offset_1 = z_w_concorr_me_wp(dims.KDim - 1)
-    z_w_concorr_me_offset_2 = z_w_concorr_me_wp(dims.KDim - 2)
-    z_w_concorr_me_offset_3 = z_w_concorr_me_wp(dims.KDim - 3)
+    z_w_concorr_me_offset_1 = z_w_concorr_me_wp(dims.KHalfDim - 0.5)
+    z_w_concorr_me_offset_2 = z_w_concorr_me_wp(dims.KHalfDim - 1.5)
+    z_w_concorr_me_offset_3 = z_w_concorr_me_wp(dims.KHalfDim - 2.5)
 
     z_w_concorr_mc_m1 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_1(C2E), axis=dims.C2EDim)
     z_w_concorr_mc_m2 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_2(C2E), axis=dims.C2EDim)
@@ -34,9 +34,9 @@ def _compute_contravariant_correction_of_w_for_lower_boundary(
     z_w_concorr_mc_m2_vp = astype(z_w_concorr_mc_m2, vpfloat)
     z_w_concorr_mc_m3_vp = astype(z_w_concorr_mc_m3, vpfloat)
     w_concorr_c_vp = (
-        wgtfacq_c(dims.KDim - 1) * z_w_concorr_mc_m1_vp
-        + wgtfacq_c(dims.KDim - 2) * z_w_concorr_mc_m2_vp
-        + wgtfacq_c(dims.KDim - 3) * z_w_concorr_mc_m3_vp
+        wgtfacq_c(dims.KHalfDim - 0.5) * z_w_concorr_mc_m1_vp
+        + wgtfacq_c(dims.KHalfDim - 1.5) * z_w_concorr_mc_m2_vp
+        + wgtfacq_c(dims.KHalfDim - 2.5) * z_w_concorr_mc_m3_vp
     )
 
     return w_concorr_c_vp
@@ -47,7 +47,7 @@ def compute_contravariant_correction_of_w_for_lower_boundary(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
+    w_concorr_c: fa.CellKHalfField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -60,6 +60,6 @@ def compute_contravariant_correction_of_w_for_lower_boundary(
         out=w_concorr_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

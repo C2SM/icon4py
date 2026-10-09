@@ -6,10 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 import logging
-from typing import TYPE_CHECKING
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -18,12 +16,9 @@ import numpy as np
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb, test_utils
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
 
 
 log = logging.getLogger(__name__)
@@ -46,23 +41,21 @@ def construct_least_squares_state(
     return tracer_advection_states.AdvectionLeastSquaresState(
         lsq_pseudoinv_1=gtx.as_field(
             (dims.CellDim, dims.C2E2CDim),
-            least_squares_coeffs[:, 0, :],  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol is not assignable to data_alloc.NDArray
+            least_squares_coeffs[:, 0, :],  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             allocator=backend,
         ),
         lsq_pseudoinv_2=gtx.as_field(
             (dims.CellDim, dims.C2E2CDim),
-            least_squares_coeffs[:, 1, :],  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol is not assignable to data_alloc.NDArray
+            least_squares_coeffs[:, 1, :],  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             allocator=backend,
         ),
     )
 
 
 def construct_metric_state(
-    grid: base_grid.Grid,
-    savepoint: sb.MetricSavepoint,
-    backend: gtx_typing.Backend | None,
+    icon_grid: Any, savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend | None
 ) -> tracer_advection_states.AdvectionMetricState:
-    constant_f = data_alloc.constant_field(grid, 1.0, dims.KDim, allocator=backend)
+    constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim, allocator=backend)
     ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
     return tracer_advection_states.AdvectionMetricState(
         deepatmo_divh=constant_f,
@@ -73,7 +66,7 @@ def construct_metric_state(
 
 
 def construct_diagnostic_init_state(
-    grid: base_grid.Grid,
+    icon_grid: Any,
     savepoint: sb.AdvectionInitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
@@ -82,23 +75,21 @@ def construct_diagnostic_init_state(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
-        hfl_tracer=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend),
-        vfl_tracer=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
+        hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend),
+        vfl_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend),
     )
 
 
 def construct_diagnostic_exit_state(
-    grid: base_grid.Grid,
+    icon_grid: Any,
     savepoint: sb.AdvectionExitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
 ) -> tracer_advection_states.AdvectionDiagnosticState:
     return tracer_advection_states.AdvectionDiagnosticState(
-        airmass_now=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
-        airmass_new=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
-        grf_tend_tracer=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        airmass_new=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        grf_tend_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
         hfl_tracer=savepoint.hfl_tracer(ntracer),
         vfl_tracer=savepoint.vfl_tracer(ntracer),
     )
@@ -106,21 +97,21 @@ def construct_diagnostic_exit_state(
 
 def construct_prep_adv(
     savepoint: sb.AdvectionInitSavepoint,
-) -> tracer_advection_states.AdvectionPrepAdvState:
-    return tracer_advection_states.AdvectionPrepAdvState(
+) -> prep_adv_states.TracerPrepAdvState:
+    return prep_adv_states.TracerPrepAdvState(
         vn_traj=savepoint.vn_traj(),
         mass_flx_me=savepoint.mass_flx_me(),
         mass_flx_ic=savepoint.mass_flx_ic(),
     )
 
 
-def log_dbg(field: data_alloc.NDArray, name: str = "") -> None:
+def log_dbg(field: Any, name: Any = "") -> None:
     log.debug(f"{name}: min={field.min()}, max={field.max()}, mean={field.mean()}")
 
 
 def log_serialized(
     diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-    prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+    prep_adv: prep_adv_states.TracerPrepAdvState,
     p_tracer_now: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
 ) -> None:
@@ -177,19 +168,18 @@ def verify_advection_fields(
     log_dbg(p_tracer_new_ref.asnumpy()[p_tracer_new_range, :], "p_tracer_new_ref")
 
     # verify tracer_advection output fields
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
-        rtol=1e-10,
-        atol=1e-11,
+        atol=1e-11 if test_utils.wp_is_dp else 2e-5,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
         diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
-        rtol=1e-10,
+        atol=2e-14,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         p_tracer_new.asnumpy()[p_tracer_new_range, :],
         p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
-        atol=1e-16,
+        atol=1e-16 if test_utils.wp_is_dp else 1e-8,
     )

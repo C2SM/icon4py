@@ -9,7 +9,7 @@ import functools
 import logging
 import math
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, cast
+from typing import Any
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -33,7 +33,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import coordinate_transformations as coord_trans, utils as math_utils
 from icon4py.model.common.states import factory, model, utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class GridGeometry(factory.FieldSource):
     Computes geometry fields from the grid geographical coordinates fo cells, edges, vertices.
     Computations are triggered upon first request.
 
-    Can be queried for geometry fields and metadata
+    Can be queried for geometry fields
 
     Examples:
         >>> geometry = GridGeometry(
@@ -58,31 +58,10 @@ class GridGeometry(factory.FieldSource):
         ...     metadata=geometry_attributes.attrs,
         ...     config=geometry_config.GeometryConfig(),
         ...     process_props=process_props,
-        ...     exchange=exchange,
-        ...     global_reductions=global_reductions,
         ... )
         GridGeometry for geometry_type=SPHERE grid=f2e06839-694a-cca1-a3d5-028e0ff326e0 : R9B4
         >>> geometry.get("edge_length")
         NumPyArrayField(_domain=Domain(dims=(Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),), ranges=(UnitRange(0, 31558),)), _ndarray=array([3746.2669054 , 3746.2669066 , 3746.33418138, ..., 3736.61622936, 3792.41317057]))
-        >>> geometry.get("edge_length", RetrievalType.METADATA)
-        {'standard_name': 'edge_length',
-        'long_name': 'edge length',
-        'units': 'm',
-        'dims': (Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),),
-        'icon_var_name': 't_grid_edges%primal_edge_length',
-        'dtype': numpy.float64}
-        >>> geometry.get("edge_length", RetrievalType.DATA_ARRAY)
-        <xarray.DataArray (dim_0: 31558)> Size: 252kB
-        array([3746.2669054 , 3746.2669066 , 3746.33418138, ..., 3889.53098062, 3736.61622936, 3792.41317057])
-        Dimensions without coordinates: dim_0
-        .Attributes:
-        standard_name:  edge_length
-        long_name:      edge length
-        units:          m
-        dims:           (Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: ...
-        icon_var_name:  t_grid_edges%primal_edge_length
-        dtype:          <class 'numpy.float64'>
-
 
     """
 
@@ -97,13 +76,6 @@ class GridGeometry(factory.FieldSource):
         metadata: dict[str, model.FieldMetaData],
         config: geometry_config.GeometryConfig,
         process_props: decomposition.ProcessProperties,
-        # TODO(msimberg): There's no need to pass exchange and global_reductions
-        # if process_props is passed. The former can all be constructed from
-        # process_props. Refactor this consistently across the code base to use
-        # process_props only. We may need special care to make sure that we
-        # don't create many different GHEX communication objects.
-        exchange: decomposition.ExchangeRuntime,
-        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ) -> None:
         """
         Args:
@@ -121,16 +93,16 @@ class GridGeometry(factory.FieldSource):
         self._providers = {}
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]  # GT4Py constructors don't expose .partial in type stubs
+        self._allocator = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._geometry_type: icon.GeometryType = grid.grid_params.geometry_type  # type: ignore[assignment]  # geometry_type is not None for IconGrid
+        self._geometry_type: icon.GeometryType = grid.grid_params.geometry_type  # type: ignore[assignment]  # GT4Py field/metadata type inference limitation
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         self._config = config
-        self._exchange = exchange
         self._process_props = process_props
-        self._global_reductions = global_reductions
+        self._exchange = decomposition.create_exchange(process_props, decomposition_info)
+        self._global_reductions = decomposition.create_reduction(process_props, decomposition_info)
         log.info(
             f"initializing geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
@@ -177,21 +149,21 @@ class GridGeometry(factory.FieldSource):
                 attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
                     gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX
                 ],
-                "edge_owner_mask": gtx.as_field(
+                attrs.EDGE_OWNER_MASK: gtx.as_field(
                     (dims.EdgeDim,),
-                    decomposition_info.owner_mask(dims.EdgeDim),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
+                    decomposition_info.owner_mask(dims.EdgeDim),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
                     dtype=bool,
                     allocator=self._backend,
                 ),
-                "vertex_owner_mask": gtx.as_field(
+                attrs.VERTEX_OWNER_MASK: gtx.as_field(
                     (dims.VertexDim,),
-                    decomposition_info.owner_mask(dims.VertexDim),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
+                    decomposition_info.owner_mask(dims.VertexDim),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
                     allocator=self._backend,
                     dtype=bool,
                 ),
-                "cell_owner_mask": gtx.as_field(
+                attrs.CELL_OWNER_MASK: gtx.as_field(
                     (dims.CellDim,),
-                    decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
+                    decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
                     allocator=self._backend,
                     dtype=bool,
                 ),
@@ -222,17 +194,13 @@ class GridGeometry(factory.FieldSource):
         match self._geometry_type:
             case icon.GeometryType.ICOSAHEDRON:
                 radius = grid_params.radius
-                # runtime invariant: icosahedron grid_params always has radius
-                assert radius is not None, "radius must not be None for icosahedron"
                 subdivision = grid_params.subdivision
-                # runtime invariant: icosahedron grid_params always has subdivision
-                assert subdivision is not None, "subdivision must not be None for icosahedron"
-                root = subdivision.root
-                level = subdivision.level
+                root = subdivision.root  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+                level = subdivision.level  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
                 num_cells = 20 * root**2 * 4**level
                 num_vertices = num_cells // 2 + 2
-                mean_cell_area = 4.0 * math.pi * radius**2 / num_cells
-                mean_dual_area = 4.0 * math.pi * radius**2 / num_vertices
+                mean_cell_area = 4.0 * math.pi * radius**2 / num_cells  # type: ignore[operator]  # GT4Py NDArrayObject protocol limitation
+                mean_dual_area = 4.0 * math.pi * radius**2 / num_vertices  # type: ignore[operator]  # GT4Py NDArrayObject protocol limitation
                 mean_edge_length = math.sqrt(4.0 * mean_cell_area / math.sqrt(3.0))
                 mean_dual_edge_length = mean_edge_length / math.sqrt(3.0)
             case icon.GeometryType.TORUS:
@@ -242,15 +210,15 @@ class GridGeometry(factory.FieldSource):
                 # TODO(msimberg): Check if we can/should get it from the grid
                 # file directly instead (e.g. via
                 # MPIMPropertyName.MEAN_EDGE_LENGTH).
-                edge_length = self.get(attrs.EDGE_LENGTH).ndarray
+                edge_length = self.get_full_precision(attrs.EDGE_LENGTH).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
                 if self._process_props.comm is not None:
-                    assert edge_length.size > 0  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks size
+                    assert edge_length.size > 0  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
                     send_buffer = np.empty(1, dtype=edge_length.dtype)
                     send_buffer[0] = edge_length[0]
                     self._process_props.comm.Bcast(send_buffer, root=0)
                     mean_edge_length = float(send_buffer[0])
                 else:
-                    mean_edge_length = float(edge_length[0])  # type: ignore[arg-type]  # NDArrayObject not compatible with float()
+                    mean_edge_length = float(edge_length[0])  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
                 mean_cell_area = mean_edge_length**2 * math.sqrt(3.0) / 4.0
                 mean_dual_area = 2.0 * mean_cell_area
                 mean_dual_edge_length = mean_edge_length / math.sqrt(3.0)
@@ -267,7 +235,7 @@ class GridGeometry(factory.FieldSource):
 
     def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
-        name = meta["standard_name"]
+        name = meta.standard_name
         self._attrs.update({name: meta})
         provider = factory.ProgramFieldProvider(
             func=math_utils.compute_inverse_on_edges,
@@ -287,7 +255,7 @@ class GridGeometry(factory.FieldSource):
         """Register all computed geometry fields."""
         # Common fields for both geometries
         meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
-        name = meta["standard_name"]
+        name = meta.standard_name
         self._attrs.update({name: meta})
 
         inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
@@ -313,7 +281,7 @@ class GridGeometry(factory.FieldSource):
                         "vertex_lat": attrs.VERTEX_LAT,
                         "vertex_lon": attrs.VERTEX_LON,
                     },
-                    params={"radius": self._grid.grid_params.radius},  # type: ignore[dict-item]  # radius is float | None
+                    params={"radius": gtx.float64(self._grid.grid_params.radius)},
                     do_exchange=True,
                 )
                 self.register_provider(vertex_vertex_distance)
@@ -321,7 +289,7 @@ class GridGeometry(factory.FieldSource):
                 coriolis_param = factory.ProgramFieldProvider(
                     func=stencils.compute_coriolis_parameter_on_edges,
                     deps={"edge_center_lat": attrs.EDGE_LAT},
-                    params={"angular_velocity": constants.EARTH_ANGULAR_VELOCITY},
+                    params={"angular_velocity": gtx.float64(constants.EARTH_ANGULAR_VELOCITY)},
                     fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
                     domain={
                         dims.EdgeDim: (
@@ -336,9 +304,6 @@ class GridGeometry(factory.FieldSource):
                 self._register_normals_and_tangents_icosahedron()
 
             case icon.GeometryType.TORUS:
-                assert self._backend is not None, (
-                    "backend must not be None for geometry computation"
-                )
                 vertex_vertex_distance = factory.ProgramFieldProvider(
                     func=stencils.compute_distance_of_far_edges_in_diamond_torus,
                     domain={
@@ -353,21 +318,21 @@ class GridGeometry(factory.FieldSource):
                         "vertex_y": attrs.VERTEX_Y,
                     },
                     params={
-                        "domain_length": self._grid.grid_params.domain_length,  # type: ignore[dict-item]  # domain_length is float | None
-                        "domain_height": self._grid.grid_params.domain_height,  # type: ignore[dict-item]  # domain_height is float | None
+                        "domain_length": self._grid.grid_params.domain_length,  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+                        "domain_height": self._grid.grid_params.domain_height,  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
                     },
                     do_exchange=True,
                 )
                 self.register_provider(vertex_vertex_distance)
 
-                coriolis_param = factory.PrecomputedFieldProvider(  # type: ignore[assignment]  # variable was ProgramFieldProvider in icosahedron case
+                coriolis_param = factory.PrecomputedFieldProvider(  # type: ignore[assignment]  # GT4Py field/metadata type inference limitation
                     fields={
                         # TODO(jcanton): this constant (0.0) should eventually
                         # come from the config
                         "coriolis_parameter": stencils.coriolis_parameter_on_edges_torus(
                             coriolis_coefficient=0.0,
                             num_edges=self._grid.num_edges,
-                            backend=self._backend,
+                            backend=self._backend,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
                         )
                     }
                 )
@@ -385,7 +350,7 @@ class GridGeometry(factory.FieldSource):
         edge_areas = factory.ProgramFieldProvider(
             func=stencils.compute_edge_area,
             deps={
-                "owner_mask": "edge_owner_mask",
+                "owner_mask": attrs.EDGE_OWNER_MASK,
                 "primal_edge_length": attrs.EDGE_LENGTH,
                 "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
             },
@@ -445,8 +410,11 @@ class GridGeometry(factory.FieldSource):
             )
             self.register_provider(mean_dual_cell_area_np)
 
+            def _sqrt(input_val: np.float64) -> np.float64:
+                return gtx.sqrt(input_val)
+
             characteristic_length_np = factory.NumpyDataProvider(
-                func=math_utils.compute_sqrt,
+                func=_sqrt,
                 domain=(),
                 deps={
                     "input_val": attrs.MEAN_CELL_AREA,
@@ -562,7 +530,7 @@ class GridGeometry(factory.FieldSource):
         )
         normal_vert_wrapper = SparseFieldProviderWrapper(
             field_provider=normal_vert,
-            target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
+            target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U].dims,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
             pairs=(
                 ("u_vertex_1", "u_vertex_2", "u_vertex_3", "u_vertex_4"),
@@ -623,7 +591,7 @@ class GridGeometry(factory.FieldSource):
         )
         tangent_vert_wrapper = SparseFieldProviderWrapper(
             field_provider=tangent_vert,
-            target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
+            target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U].dims,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
             pairs=(
                 ("u_vertex_1", "u_vertex_2", "u_vertex_3", "u_vertex_4"),
@@ -686,8 +654,8 @@ class GridGeometry(factory.FieldSource):
                 )
             },
             params={
-                "domain_length": self._grid.grid_params.domain_length,  # type: ignore[dict-item]  # domain_length is float | None
-                "domain_height": self._grid.grid_params.domain_height,  # type: ignore[dict-item]  # domain_height is float | None
+                "domain_length": self._grid.grid_params.domain_length,  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+                "domain_height": self._grid.grid_params.domain_height,  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
             },
             do_exchange=False,
         )
@@ -696,7 +664,7 @@ class GridGeometry(factory.FieldSource):
         # primal_normal_vert, primal_normal_cell
         normal_vert_wrapper = SparseFieldProviderWrapper(
             field_provider=tangent_normal_coordinates,
-            target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
+            target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U].dims,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
             pairs=(
                 (
@@ -718,7 +686,7 @@ class GridGeometry(factory.FieldSource):
 
         normal_cell_wrapper = SparseFieldProviderWrapper(
             field_provider=tangent_normal_coordinates,
-            target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
+            target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U].dims,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
             pairs=(
                 (attrs.EDGE_NORMAL_X, attrs.EDGE_NORMAL_X),
@@ -731,7 +699,7 @@ class GridGeometry(factory.FieldSource):
         # dual normals: the dual normals are the edge tangents
         tangent_vert_wrapper = SparseFieldProviderWrapper(
             field_provider=tangent_normal_coordinates,
-            target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
+            target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U].dims,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
             pairs=(
                 (
@@ -753,7 +721,7 @@ class GridGeometry(factory.FieldSource):
 
         tangent_cell_wrapper = SparseFieldProviderWrapper(
             field_provider=tangent_normal_coordinates,
-            target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
+            target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U].dims,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
             pairs=(
                 (attrs.EDGE_TANGENT_X, attrs.EDGE_TANGENT_X),
@@ -832,16 +800,13 @@ class GridGeometry(factory.FieldSource):
             f"{self.__class__.__name__} for geometry_type={geometry_name} (grid={self._grid.id!r})"
         )
 
-    def get_wpfloat(self, name: str) -> float:
-        return ta.wpfloat(self.get(name, type_=factory.RetrievalType.SCALAR))
-
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
         return self._attrs
 
     @property
-    def backend(self) -> gtx_typing.Backend | None:
-        return self._backend
+    def backend(self) -> gtx_typing.Backend:
+        return self._backend  # type: ignore[return-value]  # GT4Py backend/field inference limitation
 
     @property
     def grid(self) -> icon.IconGrid:
@@ -850,6 +815,20 @@ class GridGeometry(factory.FieldSource):
     @property
     def vertical_grid(self) -> None:
         return None
+
+
+class _IntermediateFields(factory.FieldSource):
+    """The outputs of a wrapped provider, declared with the metadata of the field they feed."""
+
+    def __init__(
+        self, provider: factory.FieldProvider, metadata: dict[str, model.FieldMetaData]
+    ) -> None:
+        self._providers = dict.fromkeys(metadata, provider)
+        self._metadata = metadata
+
+    @property
+    def metadata(self) -> dict[str, model.FieldMetaData]:
+        return self._metadata
 
 
 class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
@@ -861,18 +840,16 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
         do_exchange: bool,
-    ):
+    ) -> None:
         assert len(target_dims) == 2
         assert target_dims[1].kind == gtx.DimensionKind.LOCAL
         self._wrapped_provider = field_provider
         self._fields = {name: None for name in fields}
-        self._func = functools.partial(
-            as_sparse_field, cast(tuple[gtx.Dimension, gtx.Dimension], target_dims)
-        )
+        self._func = functools.partial(as_sparse_field, target_dims)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         self._pairs = pairs
         self._do_exchange = do_exchange
 
-    def __call__(  # type: ignore[override]  # returns FieldType (includes NDArray) vs supertype's GTXFieldType | ScalarType
+    def __call__(  # type: ignore[override]  # provider may return None before first computation
         self,
         *,
         field_name: str,
@@ -882,7 +859,16 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | None:
         if self._fields.get(field_name) is None:
-            assert field_src is not None, "field_src must not be None when fields are not cached"
+            assert field_src is not None
+            intermediates = _IntermediateFields(  # type: ignore[abstract]  # intermediate source only needs partial Protocol implementation
+                self._wrapped_provider,
+                {
+                    name: field_src.metadata[target]
+                    for target, pair in zip(self.fields, self._pairs, strict=True)
+                    for name in pair
+                },
+            )
+            source = factory.CompositeSource(me=field_src, others=(intermediates,))
             # get the fields from the wrapped provider
             input_fields = []
             for p in self._pairs:
@@ -890,7 +876,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
                     [
                         self._wrapped_provider(
                             field_name=name,
-                            field_src=field_src,
+                            field_src=source,
                             backend=backend,
                             grid=grid,
                             exchange=exchange,
@@ -928,8 +914,7 @@ def as_sparse_field(
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
     assert target_dims[1].kind == gtx.DimensionKind.LOCAL
-    on_gpu = device_utils.is_cupy_device(backend)
-    xp = data_alloc.array_ns(on_gpu)
+    xp = data_alloc.import_array_ns(backend)
     fields = []
     for t in data:
         buffers = list(b.ndarray for b in t)
@@ -974,14 +959,14 @@ def create_auxiliary_coordinate_arrays_for_orientation(
         latitude of second neighbor
         longitude of second neighbor
     """
-    xp = data_alloc.array_ns(device_utils.is_cupy_device(allocator))
+    xp = data_alloc.import_array_ns(allocator)
     e2c_table = grid.get_connectivity(dims.E2C).ndarray
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
     for i in (0, 1):
         boundary_edges = xp.where(e2c_table[:, i] == gridfile.GridFile.INVALID_INDEX)
-        lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__
-        lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__
+        lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+        lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
     return (
         gtx.as_field((dims.EdgeDim,), lat[:, 0], allocator=allocator),

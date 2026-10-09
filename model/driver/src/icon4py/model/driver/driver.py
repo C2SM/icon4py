@@ -16,7 +16,6 @@ from collections.abc import Callable
 
 import gt4py.next as gtx
 from gt4py.next import config as gtx_config
-from gt4py.next.custom_layout_allocators import FieldBufferAllocatorProtocol
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
@@ -26,7 +25,6 @@ from icon4py.model.atmosphere.dycore.stencils import compute_airmass
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import (
     dimension as dims,
-    initial_condition,
     model_backends,
     model_options,
     prescribed_tendencies,
@@ -41,6 +39,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
@@ -49,6 +48,7 @@ from icon4py.model.common.states import (
     nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
+    tracer_prep_adv_states as prep_adv_states,
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
@@ -76,8 +76,7 @@ class Icon4pyDriver:
         granules: driver_utils.Granules,
         model_time_variables: driver_states.ModelTimeVariables,
         vertical_grid_config: v_grid.VerticalGridConfig,
-        exchange: decomposition_defs.ExchangeRuntime,
-        global_reductions: decomposition_defs.Reductions,
+        process_props: decomposition_defs.ProcessProperties,
         io_monitor: common_io.IOMonitor | None = None,
         tendencies: prescribed_tendencies.PrescribedTendencies | None = None,
     ):
@@ -93,8 +92,10 @@ class Icon4pyDriver:
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
-        self.exchange = exchange
-        self.global_reductions = global_reductions
+        self.exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
+        self.global_reductions = decomposition_defs.create_reduction(
+            process_props, decomposition_info
+        )
         self.tendencies = tendencies
 
         driver_utils.display_driver_setup_in_log_file(
@@ -105,7 +106,7 @@ class Icon4pyDriver:
         )
 
     @functools.cached_property
-    def _allocator(self) -> FieldBufferAllocatorProtocol:
+    def _allocator(self) -> gtx.typing.Backend:
         return model_backends.get_allocator(self.backend)
 
     @functools.cached_property
@@ -171,20 +172,20 @@ class Icon4pyDriver:
         for steps that discard them, and the output timers hold only real capture work.
         """
         assert self.io_monitor is not None
-        if not self.io_monitor.captures_next_store():
-            self.io_monitor.store({}, simulation_current_datetime)
-            return
-        with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
-            metrics = self.static_field_factories.metrics
-            interpolation = self.static_field_factories.interpolation
-            state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-            diagnostic_fields = self._diagnostics_computer.compute(
-                prognostic_state,
-                ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
-                rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
-                rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
-            )
-            state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
+        if self.io_monitor.at_capture_time():
+            with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
+                metrics = self.static_field_factories.metrics
+                interpolation = self.static_field_factories.interpolation
+                state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
+                diagnostic_fields = self._diagnostics_computer.compute(
+                    prognostic_state,
+                    ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
+                    rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
+                    rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
+                )
+                state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
+        else:
+            state_to_store = {}
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_STORE.value]:
             self.io_monitor.store(state_to_store, simulation_current_datetime)
 
@@ -292,7 +293,7 @@ class Icon4pyDriver:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         tracers: common_utils.TimeStepPair[tracer_states.TracerState],
         prep_adv: dycore_states.PrepAdvection | None,
-        tracer_prep_adv: tracer_advection_states.AdvectionPrepAdvState | None,
+        tracer_prep_adv: prep_adv_states.TracerPrepAdvState | None,
     ) -> None:
         # Airmass (rho * dz) is tracer advection's density<->mixing-ratio conversion
         # factor: computed from rho at the beginning of the time step and from the rho
@@ -446,7 +447,7 @@ class Icon4pyDriver:
                     dtime=self.model_time_variables.substep_timestep,
                     ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
                     at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
-                    lprep_adv=self.config.driver.do_prep_adv,
+                    prepare_fluxes_for_advection=self.granules.tracer_advection is not None,
                     at_first_substep=self._is_first_substep(dyn_substep),
                     at_last_substep=self._is_last_substep(dyn_substep),
                 )
@@ -549,7 +550,7 @@ class Icon4pyDriver:
 
         # reset max_vertical_cfl to zero
         solve_nonhydro_diagnostic_state.max_vertical_cfl = data_alloc.scalar_like_array(
-            0.0, self._allocator
+            ta.wpfloat(0.0), self._allocator
         )
 
     def _diffuse_before_time_loop(
@@ -613,7 +614,7 @@ class Icon4pyDriver:
             not self.config.driver.apply_extra_second_order_divdamp
             or elapsed_time_in_seconds > spinup_cutoff
         ):
-            return ta.wpfloat("0.0")
+            return ta.wpfloat(0.0)
 
         return driver_utils.spinup_second_order_divdamp_factor(
             elapsed_time_in_seconds=elapsed_time_in_seconds,
@@ -711,7 +712,6 @@ def initialize_driver(
 
     decomposition_info = grid_manager.decomposition_info
     exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
-    global_reductions = decomposition_defs.create_reduction(process_props, decomposition_info)
 
     log.info("initializing the vertical grid")
     vertical_grid = driver_utils.create_vertical_grid(
@@ -735,8 +735,6 @@ def initialize_driver(
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
         process_props=process_props,
-        exchange=exchange,
-        global_reductions=global_reductions,
         geometry_config=config.geometry,
         interpolation_config=config.interpolation,
         metrics_config=config.metrics,
@@ -783,14 +781,13 @@ def initialize_driver(
         granules=granules,
         model_time_variables=model_time_variables,
         vertical_grid_config=config.vertical_grid,
-        exchange=exchange,
-        global_reductions=global_reductions,
+        process_props=process_props,
         tendencies=(
             prescribed_tendencies.PrescribedTendencies(
                 config=config.prescribed_tendencies,
                 grid=grid_manager.grid,
                 backend=backend,
-                rank=exchange.my_rank(),
+                rank=process_props.rank,
             )
             if config.prescribed_tendencies.data_path is not None
             else None
@@ -831,14 +828,21 @@ def run_driver(
         if icon4py_driver.config.nonhydrostatic is not None
         else None
     )
-    initial_condition.create(
-        config=icon4py_driver.config.initial_condition,
-        vertical_config=icon4py_driver.config.vertical_grid,
+    tracer_prep_adv_state = (
+        prep_adv_states.initialize_tracer_prep_adv_state(
+            grid=icon4py_driver.grid, allocator=allocator
+        )
+        if icon4py_driver.config.tracer_advection is not None
+        else None
+    )
+    ic_apply(
+        config=driver_utils.make_ic_config_ctx(icon4py_driver.config),
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
         tracer_state_now=tracer_state_now,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+        tracer_prep_adv_state=tracer_prep_adv_state,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
@@ -857,6 +861,7 @@ def run_driver(
         diagnostic_state=diagnostic_state,
         experiment_config=icon4py_driver.config,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+        tracer_prep_adv_state=tracer_prep_adv_state,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,

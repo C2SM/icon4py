@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.decomposition.definitions import single_node_exchange
+from icon4py.model.common.decomposition.definitions import SingleNodeProcessProperties
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_meta,
@@ -79,7 +79,7 @@ def _get_interpolation_factory(
             config=experiment.config.interpolation,
             backend=backend,
             metadata=attrs.attrs,
-            exchange=single_node_exchange,
+            process_props=SingleNodeProcessProperties(),
         )
         interpolation_factories[registry_key] = factory
     return factory
@@ -99,10 +99,10 @@ def test_factory_raises_error_on_unknown_field(
         config=experiment.config.interpolation,
         backend=backend,
         metadata=attrs.attrs,
-        exchange=single_node_exchange,
+        process_props=SingleNodeProcessProperties(),
     )
     with pytest.raises(ValueError, match="Field 'foo' not provided by the source"):
-        interpolation_source.get("foo", factory.RetrievalType.METADATA)
+        interpolation_source.get_full_precision("foo")
 
 
 @pytest.mark.level("integration")
@@ -116,7 +116,7 @@ def test_get_c_lin_e(
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.C_LIN_E)
-    assert field.shape == (grid.num_edges, E2C_SIZE)  # type: ignore[attr-defined]  # Field.shape is runtime-only
+    assert field.shape == (grid.num_edges, E2C_SIZE)
     assert test_helpers.dallclose(field.asnumpy(), field_ref.asnumpy())
 
 
@@ -131,7 +131,7 @@ def test_get_geofac_div(
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.GEOFAC_DIV)
-    assert field.shape == (grid.num_cells, C2E_SIZE)  # type: ignore[attr-defined]  # Field.shape is runtime-only
+    assert field.shape == (grid.num_cells, C2E_SIZE)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
@@ -227,7 +227,7 @@ def test_e_flx_avg(
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.E_FLX_AVG).asnumpy()
-    assert field.shape == (grid.num_edges, grid.get_connectivity(dims.E2C2EO).shape[1])  # type: ignore[attr-defined]  # NeighborTable.shape is runtime-only
+    assert field.shape == (grid.num_edges, grid.get_connectivity(dims.E2C2EO).shape[1])
     assert test_helpers.dallclose(field, field_ref.asnumpy(), atol=1e-12)
 
 
@@ -252,7 +252,7 @@ def test_e_bln_c_s(
     grid = factory.grid
     field = factory.get(attrs.E_BLN_C_S).asnumpy()
     assert field.shape == (grid.num_cells, C2E_SIZE)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field, rtol=rtol)
+    test_helpers.assert_dallclose(field, field_ref.asnumpy(), rtol=rtol)
 
 
 @pytest.mark.level("integration")

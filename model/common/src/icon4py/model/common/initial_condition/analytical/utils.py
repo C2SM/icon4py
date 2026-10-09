@@ -8,11 +8,7 @@
 
 import math
 
-from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
-    thermodynamic_functions as thermo,
-)
+from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -22,6 +18,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.math.stencils import generic_math_operations_array_ns
+from icon4py.model.common.physics.thermodynamics import compute_moisture
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -227,7 +224,7 @@ def init_w(
         num_cells=grid.num_cells,
     )
 
-    w = array_ns.zeros((grid.num_cells, nlev + 1))
+    w = array_ns.zeros((grid.num_cells, nlev + 1), dtype=ta.wpfloat)
     w[lb_c:ub_c, nlev] = z_wsfc_c[lb_c:ub_c]
     w[lb_c:ub_c, 1:] = z_wsfc_c[lb_c:ub_c, array_ns.newaxis] * vct_b[array_ns.newaxis, 1:]
 
@@ -270,7 +267,9 @@ def init_inwp_tracers(
     )
 
     def _qv(temperature: data_alloc.NDArray) -> data_alloc.NDArray:
-        q = thermo.qv_from_relative_humidity(temperature, pressure, rho, relative_humidity)
+        q = compute_moisture.qv_from_relative_humidity(
+            temperature, pressure, rho, relative_humidity
+        )
         # stratosphere and tropics caps (init_nh_inwp_tracers)
         q = array_ns.where(
             pressure <= phy_const.STRATOSPHERE_PRESSURE_THRESHOLD,

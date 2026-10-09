@@ -29,14 +29,16 @@ class TracerField(NamedTuple):
     field: fa.CellKField[ta.wpfloat]
 
 
+def _tracer_list_index(name: str) -> int:
+    """The tracer's Fortran list index; every tracer must declare one."""
+    index = COMMON_TRACER_CF_ATTRIBUTES[name].icon_var_list_index
+    if index is None:
+        raise ValueError(f"tracer '{name}' must declare icon_var_list_index")
+    return index
+
+
 #: Tracer names sorted by their Fortran index (QV=0, QC=1, QI=2, QR=3, QS=4, QG=5).
-#: Every tracer must define ``icon_var_list_index``; a missing key raises ``KeyError``.
-_TRACER_FIELDS: tuple[str, ...] = tuple(
-    sorted(
-        COMMON_TRACER_CF_ATTRIBUTES,
-        key=lambda k: COMMON_TRACER_CF_ATTRIBUTES[k]["icon_var_list_index"],
-    )
-)
+_TRACER_FIELDS: tuple[str, ...] = tuple(sorted(COMMON_TRACER_CF_ATTRIBUTES, key=_tracer_list_index))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -94,9 +96,6 @@ class TracerConfig:
     def __contains__(self, name: str) -> bool:
         return name in _TRACER_FIELDS and getattr(self, name)
 
-    def __bool__(self) -> bool:
-        return self.nactive > 0
-
     def __str__(self) -> str:
         names = ", ".join(self.active_names)
         return names if names else "none"
@@ -137,7 +136,7 @@ class TracerState:
         """A new state with a copy of each active field, for the other time level."""
         return TracerState(
             **{
-                tracer.name: data_alloc.as_field(tracer.field, allocator=allocator)
+                tracer.name: data_alloc.reallocate(tracer.field, allocator=allocator)
                 for tracer in self.active_fields()
             }
         )

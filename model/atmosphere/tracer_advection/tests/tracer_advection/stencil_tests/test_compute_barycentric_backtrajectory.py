@@ -5,24 +5,18 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
-
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_backtrajectory import (
     compute_barycentric_backtrajectory,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -30,8 +24,9 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
     PROGRAM = compute_barycentric_backtrajectory
     OUTPUTS = ("p_cell_idx", "p_distv_bary_1", "p_distv_bary_2")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
+        grid: base.Grid,
         *,
         p_vn: np.ndarray,
         p_vt: np.ndarray,
@@ -57,10 +52,10 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
         p_cell_idx = np.where(lvn_pos, cell_idx[:, 0], cell_idx[:, 1])
         p_cell_rel_idx_dsl = np.where(lvn_pos, 0, 1)
 
-        z_ntdistv_bary_1 = np.negative(
+        z_ntdistv_bary_1 = -(  # type: ignore[misc]  # GT4Py NDArrayObject protocol limitation
             p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
         )
-        z_ntdistv_bary_2 = np.negative(
+        z_ntdistv_bary_2 = -(  # type: ignore[misc]  # GT4Py NDArrayObject protocol limitation
             p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
         )
 
@@ -87,24 +82,24 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
             p_distv_bary_2=p_distv_bary_2,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_idx = grid.get_connectivity("E2C")
-        pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_vt = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        cell_idx = data_alloc.connectivity_field("E2C")
+        pos_on_tplane_e_1 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        pos_on_tplane_e_2 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_1 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
 
-        dual_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_1 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_2 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
 
-        dual_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_2 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
 
-        p_cell_idx = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_cell_rel_idx_dsl = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_cell_idx = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_cell_rel_idx_dsl = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_distv_bary_1 = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_distv_bary_2 = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         p_dthalf = 2.0
 
         return dict(

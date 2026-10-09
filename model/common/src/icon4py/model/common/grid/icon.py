@@ -9,7 +9,6 @@ import dataclasses
 import enum
 import logging
 from collections.abc import Callable
-from typing import cast
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -187,7 +186,7 @@ def icon_grid(
 ) -> IconGrid:
     limited_area_or_distributed = config.limited_area or config.distributed
     connectivities = {
-        cast(str, offset.value): base.construct_connectivity(
+        offset.value: base.construct_connectivity(
             offset,
             data_alloc.import_array_ns(allocator).asarray(table),
             skip_value=-1 if _has_skip_values(offset, limited_area_or_distributed) else None,

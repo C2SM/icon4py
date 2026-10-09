@@ -5,14 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
-
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,7 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.limit_vertical_parabola_
     limit_vertical_parabola_semi_monotonically,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -30,8 +23,9 @@ class TestLimitVerticalParabolaSemiMonotonically(stencil_tests.StencilTest):
     PROGRAM = limit_vertical_parabola_semi_monotonically
     OUTPUTS = ("p_face_up", "p_face_low")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
+        grid: base.Grid,
         *,
         l_limit: np.ndarray,
         p_face: np.ndarray,
@@ -53,13 +47,13 @@ class TestLimitVerticalParabolaSemiMonotonically(stencil_tests.StencilTest):
         )
         return dict(p_face_up=q_face_up, p_face_low=q_face_low)
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        l_limit = data_alloc.random_mask(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        p_face_up = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_face_low = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        l_limit = data_alloc.random_mask(dims.CellDim, dims.KDim, dtype=gtx.int32)
+        p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_face = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        p_face_up = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_face_low = data_alloc.zero_field(dims.CellDim, dims.KDim)
         return dict(
             l_limit=l_limit,
             p_cc=p_cc,

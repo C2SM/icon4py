@@ -353,7 +353,7 @@ class GridFile:
 
         """
         _log.debug(f"reading {name}: transposing = {transpose} apply_offset={apply_offset}")
-        variable = self.variable(name, indices, transpose=transpose, dtype=gtx.int32)
+        variable = self.variable(name, indices, transpose=transpose, dtype=gtx.int32)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         if apply_offset:
             return variable + self._offset_transformation(variable)
         return variable
@@ -363,7 +363,7 @@ class GridFile:
         name: FieldName,
         indices: data_alloc.NDArray | None = None,
         transpose: bool = False,
-        dtype: DTypeT = gtx.float64,
+        dtype: DTypeT = gtx.float64,  # type: ignore[assignment]  # GT4Py field/metadata type inference limitation
     ) -> np.ndarray:
         """Read a field from the grid file.
 
@@ -390,7 +390,7 @@ class GridFile:
                 slicer[(1 if transpose else 0)] = data_alloc.as_numpy(indices)
             _log.debug(f"reading {name}: transposing = {transpose}")
             data = np.asarray(variable[tuple(slicer)])
-            data = np.array(data, dtype=dtype).ravel(order="K").reshape(target_shape)
+            data = np.array(data, dtype=dtype).ravel(order="K").reshape(target_shape)  # type: ignore[call-overload]  # GT4Py scan_operator stub limitation
             return np.transpose(data) if transpose else data
         except KeyError as err:
             msg = f"{name} does not exist in dataset"

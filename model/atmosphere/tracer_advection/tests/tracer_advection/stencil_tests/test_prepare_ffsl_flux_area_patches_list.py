@@ -5,36 +5,30 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
-
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.tracer_advection.stencils.prepare_ffsl_flux_area_patches_list import (
     prepare_ffsl_flux_area_patches_list,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
 def _ccw_numpy(
     *,
-    p0_lon: np.ndarray,
-    p0_lat: np.ndarray,
-    p1_lon: np.ndarray,
-    p1_lat: np.ndarray,
-    p2_lon: np.ndarray,
-    p2_lat: np.ndarray,
-) -> np.ndarray:
+    p0_lon: Any,
+    p0_lat: Any,
+    p1_lon: Any,
+    p1_lat: Any,
+    p2_lon: Any,
+    p2_lat: Any,
+) -> Any:
     """
     Counter-clockwise test.
     Given three points P0, P1, P2, it computes the sign of the cross product of vectors (P1-P0) and (P2-P0):
@@ -57,15 +51,15 @@ def _ccw_numpy(
 
 def _lintersect_numpy(
     *,
-    line1_p1_lon: np.ndarray,
-    line1_p1_lat: np.ndarray,
-    line1_p2_lon: np.ndarray,
-    line1_p2_lat: np.ndarray,
-    line2_p1_lon: np.ndarray,
-    line2_p1_lat: np.ndarray,
-    line2_p2_lon: np.ndarray,
-    line2_p2_lat: np.ndarray,
-) -> np.ndarray:
+    line1_p1_lon: Any,
+    line1_p1_lat: Any,
+    line1_p2_lon: Any,
+    line1_p2_lat: Any,
+    line2_p1_lon: Any,
+    line2_p1_lat: Any,
+    line2_p2_lon: Any,
+    line2_p2_lat: Any,
+) -> Any:
     """
     Line segment intersection test.
     Uses the CCW-based intersection test: two line segments AB and CD intersect if and only if:
@@ -111,15 +105,15 @@ def _lintersect_numpy(
 # Compute intersection point of two lines in 2D
 def _line_intersect_numpy(
     *,
-    line1_p1_lon: np.ndarray,
-    line1_p1_lat: np.ndarray,
-    line1_p2_lon: np.ndarray,
-    line1_p2_lat: np.ndarray,
-    line2_p1_lon: np.ndarray,
-    line2_p1_lat: np.ndarray,
-    line2_p2_lon: np.ndarray,
-    line2_p2_lat: np.ndarray,
-) -> tuple[np.ndarray, ...]:
+    line1_p1_lon: Any,
+    line1_p1_lat: Any,
+    line1_p2_lon: Any,
+    line1_p2_lat: Any,
+    line2_p1_lon: Any,
+    line2_p1_lat: Any,
+    line2_p2_lon: Any,
+    line2_p2_lat: Any,
+) -> Any:
     d1 = line1_p2_lon - line1_p1_lon
     d1 = np.where(d1 != 0.0, d1, line1_p2_lon)
 
@@ -168,18 +162,18 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _generate_flux_area_geometry(
         *,
-        dreg_patch0_1_lon_dsl: np.ndarray,
-        dreg_patch0_1_lat_dsl: np.ndarray,
-        dreg_patch0_2_lon_dsl: np.ndarray,
-        dreg_patch0_2_lat_dsl: np.ndarray,
-        dreg_patch0_3_lon_dsl: np.ndarray,
-        dreg_patch0_3_lat_dsl: np.ndarray,
-        dreg_patch0_4_lon_dsl: np.ndarray,
-        dreg_patch0_4_lat_dsl: np.ndarray,
-        p_vn: np.ndarray,
-        ptr_v3_lon_e: np.ndarray,
-        ptr_v3_lat_e: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        dreg_patch0_1_lon_dsl: Any,
+        dreg_patch0_1_lat_dsl: Any,
+        dreg_patch0_2_lon_dsl: Any,
+        dreg_patch0_2_lat_dsl: Any,
+        dreg_patch0_3_lon_dsl: Any,
+        dreg_patch0_3_lat_dsl: Any,
+        dreg_patch0_4_lon_dsl: Any,
+        dreg_patch0_4_lat_dsl: Any,
+        p_vn: Any,
+        ptr_v3_lon_e: Any,
+        ptr_v3_lat_e: Any,
+    ) -> Any:
         arrival_pts_1_lon_dsl = dreg_patch0_1_lon_dsl
         arrival_pts_1_lat_dsl = dreg_patch0_1_lat_dsl
         arrival_pts_2_lon_dsl = dreg_patch0_2_lon_dsl
@@ -248,21 +242,21 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case1_patch0(
         *,
-        mask_case1: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        arrival_pts_1_lon_dsl: np.ndarray,
-        arrival_pts_1_lat_dsl: np.ndarray,
-        arrival_pts_2_lon_dsl: np.ndarray,
-        arrival_pts_2_lat_dsl: np.ndarray,
-        ps1_x: np.ndarray,
-        ps1_y: np.ndarray,
-        ps2_x: np.ndarray,
-        ps2_y: np.ndarray,
-        depart_pts_1_lon_dsl: np.ndarray,
-        depart_pts_1_lat_dsl: np.ndarray,
-        depart_pts_2_lon_dsl: np.ndarray,
-        depart_pts_2_lat_dsl: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case1: Any,
+        lvn_sys_pos: Any,
+        arrival_pts_1_lon_dsl: Any,
+        arrival_pts_1_lat_dsl: Any,
+        arrival_pts_2_lon_dsl: Any,
+        arrival_pts_2_lat_dsl: Any,
+        ps1_x: Any,
+        ps1_y: Any,
+        ps2_x: Any,
+        ps2_y: Any,
+        depart_pts_1_lon_dsl: Any,
+        depart_pts_1_lat_dsl: Any,
+        depart_pts_2_lon_dsl: Any,
+        depart_pts_2_lat_dsl: Any,
+    ) -> Any:
         dreg_patch0_1_lon_dsl = arrival_pts_1_lon_dsl
         dreg_patch0_1_lat_dsl = arrival_pts_1_lat_dsl
         dreg_patch0_2_lon_dsl = np.where(
@@ -302,15 +296,15 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case1_patch1(
         *,
-        mask_case1: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        arrival_pts_1_lon_dsl: np.ndarray,
-        arrival_pts_1_lat_dsl: np.ndarray,
-        depart_pts_1_lon_dsl: np.ndarray,
-        depart_pts_1_lat_dsl: np.ndarray,
-        ps1_x: np.ndarray,
-        ps1_y: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case1: Any,
+        lvn_sys_pos: Any,
+        arrival_pts_1_lon_dsl: Any,
+        arrival_pts_1_lat_dsl: Any,
+        depart_pts_1_lon_dsl: Any,
+        depart_pts_1_lat_dsl: Any,
+        ps1_x: Any,
+        ps1_y: Any,
+    ) -> Any:
         dreg_patch1_1_lon_vmask = np.where(mask_case1, arrival_pts_1_lon_dsl, 0.0)
         dreg_patch1_1_lat_vmask = np.where(mask_case1, arrival_pts_1_lat_dsl, 0.0)
         dreg_patch1_4_lon_vmask = np.where(mask_case1, arrival_pts_1_lon_dsl, 0.0)
@@ -342,15 +336,15 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case1_patch2(
         *,
-        mask_case1: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        arrival_pts_2_lon_dsl: np.ndarray,
-        arrival_pts_2_lat_dsl: np.ndarray,
-        depart_pts_2_lon_dsl: np.ndarray,
-        depart_pts_2_lat_dsl: np.ndarray,
-        ps2_x: np.ndarray,
-        ps2_y: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case1: Any,
+        lvn_sys_pos: Any,
+        arrival_pts_2_lon_dsl: Any,
+        arrival_pts_2_lat_dsl: Any,
+        depart_pts_2_lon_dsl: Any,
+        depart_pts_2_lat_dsl: Any,
+        ps2_x: Any,
+        ps2_y: Any,
+    ) -> Any:
         # Case 1 - patch 2
         dreg_patch2_1_lon_vmask = np.where(mask_case1, arrival_pts_2_lon_dsl, 0.0)
         dreg_patch2_1_lat_vmask = np.where(mask_case1, arrival_pts_2_lat_dsl, 0.0)
@@ -383,25 +377,25 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case2a_patch0(
         *,
-        mask_case2a: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        arrival_pts_1_lon_dsl: np.ndarray,
-        arrival_pts_1_lat_dsl: np.ndarray,
-        arrival_pts_2_lon_dsl: np.ndarray,
-        arrival_pts_2_lat_dsl: np.ndarray,
-        ps1_x: np.ndarray,
-        ps1_y: np.ndarray,
-        depart_pts_2_lon_dsl: np.ndarray,
-        depart_pts_2_lat_dsl: np.ndarray,
-        dreg_patch0_1_lon_dsl: np.ndarray,
-        dreg_patch0_1_lat_dsl: np.ndarray,
-        dreg_patch0_2_lon_dsl: np.ndarray,
-        dreg_patch0_2_lat_dsl: np.ndarray,
-        dreg_patch0_3_lon_dsl: np.ndarray,
-        dreg_patch0_3_lat_dsl: np.ndarray,
-        dreg_patch0_4_lon_dsl: np.ndarray,
-        dreg_patch0_4_lat_dsl: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case2a: Any,
+        lvn_sys_pos: Any,
+        arrival_pts_1_lon_dsl: Any,
+        arrival_pts_1_lat_dsl: Any,
+        arrival_pts_2_lon_dsl: Any,
+        arrival_pts_2_lat_dsl: Any,
+        ps1_x: Any,
+        ps1_y: Any,
+        depart_pts_2_lon_dsl: Any,
+        depart_pts_2_lat_dsl: Any,
+        dreg_patch0_1_lon_dsl: Any,
+        dreg_patch0_1_lat_dsl: Any,
+        dreg_patch0_2_lon_dsl: Any,
+        dreg_patch0_2_lat_dsl: Any,
+        dreg_patch0_3_lon_dsl: Any,
+        dreg_patch0_3_lat_dsl: Any,
+        dreg_patch0_4_lon_dsl: Any,
+        dreg_patch0_4_lat_dsl: Any,
+    ) -> Any:
         dreg_patch0_1_lon_dsl = np.where(mask_case2a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
         dreg_patch0_1_lat_dsl = np.where(mask_case2a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
         dreg_patch0_2_lon_dsl = np.where(
@@ -441,23 +435,23 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case2a_patch1(
         *,
-        mask_case2a: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        arrival_pts_1_lon_dsl: np.ndarray,
-        arrival_pts_1_lat_dsl: np.ndarray,
-        ps1_x: np.ndarray,
-        ps1_y: np.ndarray,
-        depart_pts_1_lon_dsl: np.ndarray,
-        depart_pts_1_lat_dsl: np.ndarray,
-        dreg_patch1_1_lon_vmask: np.ndarray,
-        dreg_patch1_1_lat_vmask: np.ndarray,
-        dreg_patch1_4_lon_vmask: np.ndarray,
-        dreg_patch1_4_lat_vmask: np.ndarray,
-        dreg_patch1_2_lon_vmask: np.ndarray,
-        dreg_patch1_2_lat_vmask: np.ndarray,
-        dreg_patch1_3_lon_vmask: np.ndarray,
-        dreg_patch1_3_lat_vmask: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case2a: Any,
+        lvn_sys_pos: Any,
+        arrival_pts_1_lon_dsl: Any,
+        arrival_pts_1_lat_dsl: Any,
+        ps1_x: Any,
+        ps1_y: Any,
+        depart_pts_1_lon_dsl: Any,
+        depart_pts_1_lat_dsl: Any,
+        dreg_patch1_1_lon_vmask: Any,
+        dreg_patch1_1_lat_vmask: Any,
+        dreg_patch1_4_lon_vmask: Any,
+        dreg_patch1_4_lat_vmask: Any,
+        dreg_patch1_2_lon_vmask: Any,
+        dreg_patch1_2_lat_vmask: Any,
+        dreg_patch1_3_lon_vmask: Any,
+        dreg_patch1_3_lat_vmask: Any,
+    ) -> Any:
         dreg_patch1_1_lon_vmask = np.where(
             mask_case2a, arrival_pts_1_lon_dsl, dreg_patch1_1_lon_vmask
         )
@@ -505,25 +499,25 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case2b_patch0(
         *,
-        mask_case2b: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        arrival_pts_1_lon_dsl: np.ndarray,
-        arrival_pts_1_lat_dsl: np.ndarray,
-        arrival_pts_2_lon_dsl: np.ndarray,
-        arrival_pts_2_lat_dsl: np.ndarray,
-        depart_pts_1_lon_dsl: np.ndarray,
-        depart_pts_1_lat_dsl: np.ndarray,
-        ps2_x: np.ndarray,
-        ps2_y: np.ndarray,
-        dreg_patch0_1_lon_dsl: np.ndarray,
-        dreg_patch0_1_lat_dsl: np.ndarray,
-        dreg_patch0_2_lon_dsl: np.ndarray,
-        dreg_patch0_2_lat_dsl: np.ndarray,
-        dreg_patch0_3_lon_dsl: np.ndarray,
-        dreg_patch0_3_lat_dsl: np.ndarray,
-        dreg_patch0_4_lon_dsl: np.ndarray,
-        dreg_patch0_4_lat_dsl: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case2b: Any,
+        lvn_sys_pos: Any,
+        arrival_pts_1_lon_dsl: Any,
+        arrival_pts_1_lat_dsl: Any,
+        arrival_pts_2_lon_dsl: Any,
+        arrival_pts_2_lat_dsl: Any,
+        depart_pts_1_lon_dsl: Any,
+        depart_pts_1_lat_dsl: Any,
+        ps2_x: Any,
+        ps2_y: Any,
+        dreg_patch0_1_lon_dsl: Any,
+        dreg_patch0_1_lat_dsl: Any,
+        dreg_patch0_2_lon_dsl: Any,
+        dreg_patch0_2_lat_dsl: Any,
+        dreg_patch0_3_lon_dsl: Any,
+        dreg_patch0_3_lat_dsl: Any,
+        dreg_patch0_4_lon_dsl: Any,
+        dreg_patch0_4_lat_dsl: Any,
+    ) -> Any:
         dreg_patch0_1_lon_dsl = np.where(mask_case2b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
         dreg_patch0_1_lat_dsl = np.where(mask_case2b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
         dreg_patch0_2_lon_dsl = np.where(
@@ -563,16 +557,16 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case2b_patch1(
         *,
-        mask_case2b: np.ndarray,
-        dreg_patch1_1_lon_vmask: np.ndarray,
-        dreg_patch1_1_lat_vmask: np.ndarray,
-        dreg_patch1_2_lon_vmask: np.ndarray,
-        dreg_patch1_2_lat_vmask: np.ndarray,
-        dreg_patch1_3_lon_vmask: np.ndarray,
-        dreg_patch1_3_lat_vmask: np.ndarray,
-        dreg_patch1_4_lon_vmask: np.ndarray,
-        dreg_patch1_4_lat_vmask: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case2b: Any,
+        dreg_patch1_1_lon_vmask: Any,
+        dreg_patch1_1_lat_vmask: Any,
+        dreg_patch1_2_lon_vmask: Any,
+        dreg_patch1_2_lat_vmask: Any,
+        dreg_patch1_3_lon_vmask: Any,
+        dreg_patch1_3_lat_vmask: Any,
+        dreg_patch1_4_lon_vmask: Any,
+        dreg_patch1_4_lat_vmask: Any,
+    ) -> Any:
         zeros_array = np.zeros_like(mask_case2b)
 
         dreg_patch1_1_lon_vmask = np.where(mask_case2b, zeros_array, dreg_patch1_1_lon_vmask)
@@ -598,23 +592,23 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case2b_patch2(
         *,
-        mask_case2b: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        arrival_pts_2_lon_dsl: np.ndarray,
-        arrival_pts_2_lat_dsl: np.ndarray,
-        depart_pts_2_lon_dsl: np.ndarray,
-        depart_pts_2_lat_dsl: np.ndarray,
-        ps2_x: np.ndarray,
-        ps2_y: np.ndarray,
-        dreg_patch2_1_lon_vmask: np.ndarray,
-        dreg_patch2_1_lat_vmask: np.ndarray,
-        dreg_patch2_4_lon_vmask: np.ndarray,
-        dreg_patch2_4_lat_vmask: np.ndarray,
-        dreg_patch2_2_lon_vmask: np.ndarray,
-        dreg_patch2_2_lat_vmask: np.ndarray,
-        dreg_patch2_3_lon_vmask: np.ndarray,
-        dreg_patch2_3_lat_vmask: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case2b: Any,
+        lvn_sys_pos: Any,
+        arrival_pts_2_lon_dsl: Any,
+        arrival_pts_2_lat_dsl: Any,
+        depart_pts_2_lon_dsl: Any,
+        depart_pts_2_lat_dsl: Any,
+        ps2_x: Any,
+        ps2_y: Any,
+        dreg_patch2_1_lon_vmask: Any,
+        dreg_patch2_1_lat_vmask: Any,
+        dreg_patch2_4_lon_vmask: Any,
+        dreg_patch2_4_lat_vmask: Any,
+        dreg_patch2_2_lon_vmask: Any,
+        dreg_patch2_2_lat_vmask: Any,
+        dreg_patch2_3_lon_vmask: Any,
+        dreg_patch2_3_lat_vmask: Any,
+    ) -> Any:
         dreg_patch2_1_lon_vmask = np.where(
             mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask
         )
@@ -662,25 +656,25 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case3a_patch0(
         *,
-        mask_case3a: np.ndarray,
-        arrival_pts_1_lon_dsl: np.ndarray,
-        arrival_pts_1_lat_dsl: np.ndarray,
-        arrival_pts_2_lon_dsl: np.ndarray,
-        arrival_pts_2_lat_dsl: np.ndarray,
-        depart_pts_1_lon_dsl: np.ndarray,
-        depart_pts_1_lat_dsl: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        ps2_x: np.ndarray,
-        ps2_y: np.ndarray,
-        dreg_patch0_1_lon_dsl: np.ndarray,
-        dreg_patch0_1_lat_dsl: np.ndarray,
-        dreg_patch0_2_lon_dsl: np.ndarray,
-        dreg_patch0_2_lat_dsl: np.ndarray,
-        dreg_patch0_3_lon_dsl: np.ndarray,
-        dreg_patch0_3_lat_dsl: np.ndarray,
-        dreg_patch0_4_lon_dsl: np.ndarray,
-        dreg_patch0_4_lat_dsl: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case3a: Any,
+        arrival_pts_1_lon_dsl: Any,
+        arrival_pts_1_lat_dsl: Any,
+        arrival_pts_2_lon_dsl: Any,
+        arrival_pts_2_lat_dsl: Any,
+        depart_pts_1_lon_dsl: Any,
+        depart_pts_1_lat_dsl: Any,
+        lvn_sys_pos: Any,
+        ps2_x: Any,
+        ps2_y: Any,
+        dreg_patch0_1_lon_dsl: Any,
+        dreg_patch0_1_lat_dsl: Any,
+        dreg_patch0_2_lon_dsl: Any,
+        dreg_patch0_2_lat_dsl: Any,
+        dreg_patch0_3_lon_dsl: Any,
+        dreg_patch0_3_lat_dsl: Any,
+        dreg_patch0_4_lon_dsl: Any,
+        dreg_patch0_4_lat_dsl: Any,
+    ) -> Any:
         dreg_patch0_1_lon_dsl = np.where(mask_case3a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
         dreg_patch0_1_lat_dsl = np.where(mask_case3a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
         dreg_patch0_2_lon_dsl = np.where(
@@ -720,25 +714,25 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case3a_patch1(
         *,
-        mask_case3a: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        arrival_pts_1_lon_dsl: np.ndarray,
-        arrival_pts_1_lat_dsl: np.ndarray,
-        pi1_x: np.ndarray,
-        pi1_y: np.ndarray,
-        depart_pts_1_lon_dsl: np.ndarray,
-        depart_pts_1_lat_dsl: np.ndarray,
-        depart_pts_2_lon_dsl: np.ndarray,
-        depart_pts_2_lat_dsl: np.ndarray,
-        dreg_patch1_1_lon_vmask: np.ndarray,
-        dreg_patch1_1_lat_vmask: np.ndarray,
-        dreg_patch1_4_lon_vmask: np.ndarray,
-        dreg_patch1_4_lat_vmask: np.ndarray,
-        dreg_patch1_2_lon_vmask: np.ndarray,
-        dreg_patch1_2_lat_vmask: np.ndarray,
-        dreg_patch1_3_lon_vmask: np.ndarray,
-        dreg_patch1_3_lat_vmask: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case3a: Any,
+        lvn_sys_pos: Any,
+        arrival_pts_1_lon_dsl: Any,
+        arrival_pts_1_lat_dsl: Any,
+        pi1_x: Any,
+        pi1_y: Any,
+        depart_pts_1_lon_dsl: Any,
+        depart_pts_1_lat_dsl: Any,
+        depart_pts_2_lon_dsl: Any,
+        depart_pts_2_lat_dsl: Any,
+        dreg_patch1_1_lon_vmask: Any,
+        dreg_patch1_1_lat_vmask: Any,
+        dreg_patch1_4_lon_vmask: Any,
+        dreg_patch1_4_lat_vmask: Any,
+        dreg_patch1_2_lon_vmask: Any,
+        dreg_patch1_2_lat_vmask: Any,
+        dreg_patch1_3_lon_vmask: Any,
+        dreg_patch1_3_lat_vmask: Any,
+    ) -> Any:
         dreg_patch1_1_lon_vmask = np.where(
             mask_case3a, arrival_pts_1_lon_dsl, dreg_patch1_1_lon_vmask
         )
@@ -786,23 +780,23 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case3b_patch0(
         *,
-        mask_case3b: np.ndarray,
-        arrival_pts_1_lon_dsl: np.ndarray,
-        arrival_pts_1_lat_dsl: np.ndarray,
-        arrival_pts_2_lon_dsl: np.ndarray,
-        arrival_pts_2_lat_dsl: np.ndarray,
-        pi2_x: np.ndarray,
-        pi2_y: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        dreg_patch0_1_lon_dsl: np.ndarray,
-        dreg_patch0_1_lat_dsl: np.ndarray,
-        dreg_patch0_4_lon_dsl: np.ndarray,
-        dreg_patch0_4_lat_dsl: np.ndarray,
-        dreg_patch0_2_lon_dsl: np.ndarray,
-        dreg_patch0_2_lat_dsl: np.ndarray,
-        dreg_patch0_3_lon_dsl: np.ndarray,
-        dreg_patch0_3_lat_dsl: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case3b: Any,
+        arrival_pts_1_lon_dsl: Any,
+        arrival_pts_1_lat_dsl: Any,
+        arrival_pts_2_lon_dsl: Any,
+        arrival_pts_2_lat_dsl: Any,
+        pi2_x: Any,
+        pi2_y: Any,
+        lvn_sys_pos: Any,
+        dreg_patch0_1_lon_dsl: Any,
+        dreg_patch0_1_lat_dsl: Any,
+        dreg_patch0_4_lon_dsl: Any,
+        dreg_patch0_4_lat_dsl: Any,
+        dreg_patch0_2_lon_dsl: Any,
+        dreg_patch0_2_lat_dsl: Any,
+        dreg_patch0_3_lon_dsl: Any,
+        dreg_patch0_3_lat_dsl: Any,
+    ) -> Any:
         dreg_patch0_1_lon_dsl = np.where(mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
         dreg_patch0_1_lat_dsl = np.where(mask_case3b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
         dreg_patch0_4_lon_dsl = np.where(mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_4_lon_dsl)
@@ -842,25 +836,25 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     @staticmethod
     def _apply_case3b_patch2(
         *,
-        mask_case3b: np.ndarray,
-        arrival_pts_2_lon_dsl: np.ndarray,
-        arrival_pts_2_lat_dsl: np.ndarray,
-        depart_pts_1_lon_dsl: np.ndarray,
-        depart_pts_1_lat_dsl: np.ndarray,
-        depart_pts_2_lon_dsl: np.ndarray,
-        depart_pts_2_lat_dsl: np.ndarray,
-        pi2_x: np.ndarray,
-        pi2_y: np.ndarray,
-        lvn_sys_pos: np.ndarray,
-        dreg_patch2_1_lon_vmask: np.ndarray,
-        dreg_patch2_1_lat_vmask: np.ndarray,
-        dreg_patch2_2_lon_vmask: np.ndarray,
-        dreg_patch2_2_lat_vmask: np.ndarray,
-        dreg_patch2_3_lon_vmask: np.ndarray,
-        dreg_patch2_3_lat_vmask: np.ndarray,
-        dreg_patch2_4_lon_vmask: np.ndarray,
-        dreg_patch2_4_lat_vmask: np.ndarray,
-    ) -> tuple[np.ndarray, ...]:
+        mask_case3b: Any,
+        arrival_pts_2_lon_dsl: Any,
+        arrival_pts_2_lat_dsl: Any,
+        depart_pts_1_lon_dsl: Any,
+        depart_pts_1_lat_dsl: Any,
+        depart_pts_2_lon_dsl: Any,
+        depart_pts_2_lat_dsl: Any,
+        pi2_x: Any,
+        pi2_y: Any,
+        lvn_sys_pos: Any,
+        dreg_patch2_1_lon_vmask: Any,
+        dreg_patch2_1_lat_vmask: Any,
+        dreg_patch2_2_lon_vmask: Any,
+        dreg_patch2_2_lat_vmask: Any,
+        dreg_patch2_3_lon_vmask: Any,
+        dreg_patch2_3_lat_vmask: Any,
+        dreg_patch2_4_lon_vmask: Any,
+        dreg_patch2_4_lat_vmask: Any,
+    ) -> Any:
         dreg_patch2_1_lon_vmask = np.where(
             mask_case3b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask
         )
@@ -905,30 +899,30 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_4_lat_vmask,
         )
 
-    @classmethod
+    @stencil_tests.static_reference
     def reference(
-        cls,
+        grid: base.Grid,
         *,
-        famask_int: np.ndarray,
-        p_vn: np.ndarray,
-        ptr_v3_lon: np.ndarray,
-        ptr_v3_lat: np.ndarray,
-        tangent_orientation_dsl: np.ndarray,
-        dreg_patch0_1_lon_dsl: np.ndarray,
-        dreg_patch0_1_lat_dsl: np.ndarray,
-        dreg_patch0_2_lon_dsl: np.ndarray,
-        dreg_patch0_2_lat_dsl: np.ndarray,
-        dreg_patch0_3_lon_dsl: np.ndarray,
-        dreg_patch0_3_lat_dsl: np.ndarray,
-        dreg_patch0_4_lon_dsl: np.ndarray,
-        dreg_patch0_4_lat_dsl: np.ndarray,
+        famask_int: Any,
+        p_vn: Any,
+        ptr_v3_lon: Any,
+        ptr_v3_lat: Any,
+        tangent_orientation_dsl: Any,
+        dreg_patch0_1_lon_dsl: Any,
+        dreg_patch0_1_lat_dsl: Any,
+        dreg_patch0_2_lon_dsl: Any,
+        dreg_patch0_2_lat_dsl: Any,
+        dreg_patch0_3_lon_dsl: Any,
+        dreg_patch0_3_lat_dsl: Any,
+        dreg_patch0_4_lon_dsl: Any,
+        dreg_patch0_4_lat_dsl: Any,
         **kwargs: Any,
     ) -> dict:
         ptr_v3_lon_e = np.expand_dims(ptr_v3_lon, axis=-1)
         ptr_v3_lat_e = np.expand_dims(ptr_v3_lat, axis=-1)
         tangent_orientation_dsl = np.expand_dims(tangent_orientation_dsl, axis=-1)
 
-        result_tuple = cls._generate_flux_area_geometry(
+        result_tuple = TestPrepareFfslFluxAreaPatchesList._generate_flux_area_geometry(
             dreg_patch0_1_lon_dsl=dreg_patch0_1_lon_dsl,
             dreg_patch0_1_lat_dsl=dreg_patch0_1_lat_dsl,
             dreg_patch0_2_lon_dsl=dreg_patch0_2_lon_dsl,
@@ -1027,7 +1021,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch0_3_lat_dsl,
             dreg_patch0_4_lon_dsl,
             dreg_patch0_4_lat_dsl,
-        ) = cls._apply_case1_patch0(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case1_patch0(
             mask_case1=mask_case1,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1053,7 +1047,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch1_2_lat_vmask,
             dreg_patch1_3_lon_vmask,
             dreg_patch1_3_lat_vmask,
-        ) = cls._apply_case1_patch1(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case1_patch1(
             mask_case1=mask_case1,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1073,7 +1067,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_2_lat_vmask,
             dreg_patch2_3_lon_vmask,
             dreg_patch2_3_lat_vmask,
-        ) = cls._apply_case1_patch2(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case1_patch2(
             mask_case1=mask_case1,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
@@ -1089,7 +1083,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             [lintersect_line1, np.logical_not(lintersect_line2), famask_bool]
         )
         # Case 2a - patch 0
-        result_tuple_patch0 = cls._apply_case2a_patch0(
+        result_tuple_patch0 = TestPrepareFfslFluxAreaPatchesList._apply_case2a_patch0(
             mask_case2a=mask_case2a,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1121,7 +1115,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch0_4_lat_dsl,
         ) = result_tuple_patch0
         # Case 2a - patch 1
-        result_tuple_patch1 = cls._apply_case2a_patch1(
+        result_tuple_patch1 = TestPrepareFfslFluxAreaPatchesList._apply_case2a_patch1(
             mask_case2a=mask_case2a,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1165,7 +1159,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             [lintersect_line2, np.logical_not(lintersect_line1), famask_bool]
         )
         # Case 2b - patch 0
-        result_tuple_patch0_case2b = cls._apply_case2b_patch0(
+        result_tuple_patch0_case2b = TestPrepareFfslFluxAreaPatchesList._apply_case2b_patch0(
             mask_case2b=mask_case2b,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1198,7 +1192,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         ) = result_tuple_patch0_case2b
 
         # Case 2b - patch 1
-        result_tuple_patch1_case2b = cls._apply_case2b_patch1(
+        result_tuple_patch1_case2b = TestPrepareFfslFluxAreaPatchesList._apply_case2b_patch1(
             mask_case2b=mask_case2b,
             dreg_patch1_1_lon_vmask=dreg_patch1_1_lon_vmask,
             dreg_patch1_1_lat_vmask=dreg_patch1_1_lat_vmask,
@@ -1222,7 +1216,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         ) = result_tuple_patch1_case2b
 
         # Case 2b - patch 2
-        result_tuple_patch2_case2b = cls._apply_case2b_patch2(
+        result_tuple_patch2_case2b = TestPrepareFfslFluxAreaPatchesList._apply_case2b_patch2(
             mask_case2b=mask_case2b,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
@@ -1286,7 +1280,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             line2_p2_lat=tri_line1_p2_lat,
         )
         # Case 3a - patch 0
-        result = cls._apply_case3a_patch0(
+        result = TestPrepareFfslFluxAreaPatchesList._apply_case3a_patch0(
             mask_case3a=mask_case3a,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
             arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
@@ -1328,7 +1322,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch1_2_lat_vmask,
             dreg_patch1_3_lon_vmask,
             dreg_patch1_3_lat_vmask,
-        ) = cls._apply_case3a_patch1(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case3a_patch1(
             mask_case3a=mask_case3a,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1391,7 +1385,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch0_2_lat_dsl,
             dreg_patch0_3_lon_dsl,
             dreg_patch0_3_lat_dsl,
-        ) = cls._apply_case3b_patch0(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case3b_patch0(
             mask_case3b=mask_case3b,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
             arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
@@ -1429,7 +1423,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_3_lat_vmask,
             dreg_patch2_4_lon_vmask,
             dreg_patch2_4_lat_vmask,
-        ) = cls._apply_case3b_patch2(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case3b_patch2(
             mask_case3b=mask_case3b,
             arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
             arrival_pts_2_lat_dsl=arrival_pts_2_lat_dsl,
@@ -1505,41 +1499,37 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_4_lat_vmask=dreg_patch2_4_lat_vmask,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        famask_int = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ptr_v3_lon_field = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0
-        )
-        ptr_v3_lat_field = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0
-        )
-        tangent_orientation_dsl = data_alloc.random_field(grid, dims.EdgeDim, low=0.1, high=1.0)
-        dreg_patch0_1_lon_dsl = data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_1_lat_dsl = data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_2_lon_dsl = data_alloc.constant_field(grid, 2.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_2_lat_dsl = data_alloc.constant_field(grid, 2.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_3_lon_dsl = data_alloc.constant_field(grid, 3.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_3_lat_dsl = data_alloc.constant_field(grid, 3.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_4_lon_dsl = data_alloc.constant_field(grid, 4.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_4_lat_dsl = data_alloc.constant_field(grid, 4.0, dims.EdgeDim, dims.KDim)
-        dreg_patch1_1_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_1_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_2_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_2_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_3_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_3_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_4_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_4_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_1_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_1_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_2_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_2_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_3_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_3_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_4_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_4_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        famask_int = data_alloc.random_mask(dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        ptr_v3_lon_field = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
+        ptr_v3_lat_field = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
+        tangent_orientation_dsl = data_alloc.random_field(dims.EdgeDim, low=0.1, high=1.0)
+        dreg_patch0_1_lon_dsl = data_alloc.constant_field(1.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_1_lat_dsl = data_alloc.constant_field(1.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_2_lon_dsl = data_alloc.constant_field(2.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_2_lat_dsl = data_alloc.constant_field(2.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_3_lon_dsl = data_alloc.constant_field(3.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_3_lat_dsl = data_alloc.constant_field(3.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_4_lon_dsl = data_alloc.constant_field(4.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_4_lat_dsl = data_alloc.constant_field(4.0, dims.EdgeDim, dims.KDim)
+        dreg_patch1_1_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_1_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_2_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_2_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_3_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_3_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_4_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_4_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_1_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_1_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_2_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_2_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_3_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_3_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_4_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_4_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         return dict(
             famask_int=famask_int,
             p_vn=p_vn,

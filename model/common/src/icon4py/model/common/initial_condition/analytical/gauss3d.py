@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-from typing import TYPE_CHECKING, ClassVar
+import typing
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
@@ -28,6 +30,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.common.initial_condition.config import ConfigContext
     from icon4py.model.common.states import static_fields
 
 log = logging.getLogger(__name__)
@@ -35,22 +38,30 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class Gauss3DConfig:
-    u0: float = 0.0
-    t0: float = 300.0
-    brunt_vais: float = 0.01
+    u0: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Zonal wind speed (m/s)",
+        ),
+    ] = 0.0
+    t0: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Surface potential temperature (K)",
+        ),
+    ] = 300.0
+    brunt_vais: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Brunt-Väisälä frequency.",
+        ),
+    ] = 0.01
     # The default values are from mo_nh_testcases.f90 and mo_nh_testcases_nml.f90
-
-    fortran_name_map: ClassVar[dict[str, str]] = {
-        "nh_u0": "u0",
-        "nh_t0": "t0",
-        "nh_brunt_vais": "brunt_vais",
-    }
 
 
 def gauss3d(
     *,
-    config: Gauss3DConfig,
-    vertical_config: v_grid.VerticalGridConfig,
+    config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
@@ -63,6 +74,8 @@ def gauss3d(
     The reference experiment config for this is
     exp.exclaim_gauss3d_sb.
     """
+    ic_config = config.initial_condition
+    assert isinstance(ic_config, Gauss3DConfig)
     allocator = model_backends.get_allocator(backend)
     array_ns = data_alloc.import_array_ns(allocator)
 
@@ -86,9 +99,9 @@ def gauss3d(
     num_edges = grid.num_edges
     num_levels = grid.num_levels
 
-    u0 = config.u0
-    t0 = config.t0
-    brunt_vais = config.brunt_vais
+    u0 = ic_config.u0
+    t0 = ic_config.t0
+    brunt_vais = ic_config.brunt_vais
 
     exner_ndarray = prognostic_state_now.exner.ndarray
     rho_ndarray = prognostic_state_now.rho.ndarray
@@ -132,7 +145,7 @@ def gauss3d(
     )
     log.info("Hydrostatic adjustment (constant theta_v) computation completed.")
 
-    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
+    _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
         grid=grid,

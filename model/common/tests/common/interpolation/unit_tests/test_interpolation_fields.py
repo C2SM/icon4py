@@ -58,7 +58,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 def test_compute_c_lin_e(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     func = compute_c_lin_e
@@ -93,7 +93,7 @@ def test_compute_geofac_div(
     experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
 ) -> None:
     mesh = icon_grid
     primal_edge_length = grid_savepoint.primal_edge_length()
@@ -118,7 +118,7 @@ def test_compute_geofac_rot(
     experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     mesh = icon_grid
@@ -149,7 +149,7 @@ def test_compute_geofac_rot(
 def test_compute_geofac_n2s(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     dual_edge_length = grid_savepoint.dual_edge_length()
@@ -175,7 +175,7 @@ def test_compute_geofac_n2s(
 def test_compute_geofac_grg(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     primal_normal_cell_x = grid_savepoint.primal_normal_cell_x().ndarray
@@ -190,7 +190,7 @@ def test_compute_geofac_grg(
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     geofac_grg_0, geofac_grg_1 = functools.partial(
-        compute_geofac_grg, exchange=decomposition.single_node_exchange
+        compute_geofac_grg, exchange=decomposition.SingleNodeExchange()
     )(
         primal_normal_cell_x=primal_normal_cell_x,
         primal_normal_cell_y=primal_normal_cell_y,
@@ -221,7 +221,7 @@ def test_compute_geofac_grg(
 def test_compute_geofac_grdiv(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     geofac_div = interpolation_savepoint.geofac_div()
@@ -249,7 +249,7 @@ def test_compute_geofac_grdiv(
 def test_compute_c_bln_avg(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     cell_areas = grid_savepoint.cell_areas().ndarray
@@ -265,7 +265,7 @@ def test_compute_c_bln_avg(
 
     c2e2c0 = icon_grid.get_connectivity(dims.C2E2CO).ndarray
 
-    match icon_grid.grid_params.geometry_type:  # type: ignore[attr-defined]  # IconGrid-specific attribute
+    match icon_grid.grid_params.geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
             c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight(
                 c2e2c0=c2e2c0,
@@ -276,7 +276,7 @@ def test_compute_c_bln_avg(
                 divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
                 horizontal_start=horizontal_start,
                 horizontal_start_level_3=horizontal_start_p2,
-                exchange=decomposition.single_node_exchange,
+                exchange=decomposition.SingleNodeExchange(),
             )
         case icon.GeometryType.TORUS:
             c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight_torus(
@@ -286,7 +286,7 @@ def test_compute_c_bln_avg(
                 divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
                 horizontal_start=horizontal_start,
                 horizontal_start_level_3=horizontal_start_p2,
-                exchange=decomposition.single_node_exchange,
+                exchange=decomposition.SingleNodeExchange(),
             )
 
     assert test_helpers.dallclose(data_alloc.as_numpy(c_bln_avg), c_bln_avg_ref, rtol=1e-11)
@@ -297,7 +297,7 @@ def test_compute_c_bln_avg(
 def test_compute_e_flx_avg(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
@@ -314,7 +314,7 @@ def test_compute_e_flx_avg(
     horizontal_start_1 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
-    e_flx_avg = functools.partial(compute_e_flx_avg, exchange=decomposition.single_node_exchange)(
+    e_flx_avg = functools.partial(compute_e_flx_avg, exchange=decomposition.SingleNodeExchange())(
         c_bln_avg=c_bln_avg,
         geofac_div=geofac_div,
         owner_mask=owner_mask,
@@ -336,7 +336,7 @@ def test_compute_e_flx_avg(
 def test_compute_cells_aw_verts(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
@@ -369,7 +369,7 @@ def test_compute_cells_aw_verts(
 def test_compute_e_bln_c_s(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     e_bln_c_s_ref = interpolation_savepoint.e_bln_c_s()
@@ -379,7 +379,7 @@ def test_compute_e_bln_c_s(
     edges_lat = grid_savepoint.edges_center_lat().ndarray
     edges_lon = grid_savepoint.edges_center_lon().ndarray
 
-    match icon_grid.grid_params.geometry_type:  # type: ignore[attr-defined]  # IconGrid-specific attribute
+    match icon_grid.grid_params.geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
             e_bln_c_s = compute_e_bln_c_s(
                 c2e=c2e,
@@ -400,7 +400,7 @@ def test_compute_e_bln_c_s(
 def test_compute_pos_on_tplane_e(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     pos_on_tplane_e_x_ref = interpolation_savepoint.pos_on_tplane_e_x().asnumpy()
@@ -419,7 +419,7 @@ def test_compute_pos_on_tplane_e(
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
 
-    match icon_grid.grid_params.geometry_type:  # type: ignore[attr-defined]  # IconGrid-specific attribute
+    match icon_grid.grid_params.geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
             pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
                 grid_sphere_radius=sphere_radius,
@@ -450,7 +450,7 @@ def test_compute_lsq_coeffs(
     interpolation_savepoint: sb.InterpolationSavepoint,
     experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     lsq_pseudoinv = compute_lsq_coeffs(
@@ -472,8 +472,8 @@ def test_compute_lsq_coeffs(
         lsq_wgt_exp=experiment.config.interpolation.lsq_wgt_exp,
         start_idx=icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         min_rlcell_int=icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
-        geometry_type=icon_grid.grid_params.geometry_type,  # type: ignore[attr-defined]  # icon_grid is base_grid.Grid at type level, but actually IconGrid
-        exchange=decomposition.single_node_exchange,
+        geometry_type=icon_grid.grid_params.geometry_type,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     assert test_helpers.dallclose(

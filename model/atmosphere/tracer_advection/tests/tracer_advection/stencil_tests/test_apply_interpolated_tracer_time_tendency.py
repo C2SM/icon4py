@@ -5,14 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
-
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,7 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_trace
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -30,8 +23,9 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
     PROGRAM = apply_interpolated_tracer_time_tendency
     OUTPUTS = ("p_tracer_new",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
+        grid: base.Grid,
         *,
         p_tracer_now: np.ndarray,
         p_grf_tend_tracer: np.ndarray,
@@ -39,15 +33,15 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
         **kwargs: Any,
     ) -> dict:
         p_tracer_new = p_tracer_now + p_dtime * p_grf_tend_tracer
-        p_tracer_new = np.where(p_tracer_new < 0.0, 0.0, p_tracer_new)  # type: ignore[operator]  # numpy comparison
+        p_tracer_new = np.where(p_tracer_new < 0.0, 0.0, p_tracer_new)  # type: ignore[operator]  # GT4Py NDArrayObject protocol limitation
 
         return dict(p_tracer_new=p_tracer_new)
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        p_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_grf_tend_tracer = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_tracer_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_tracer_now = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_grf_tend_tracer = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_tracer_new = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_dtime = np.float64(5.0)
         return dict(
             p_tracer_now=p_tracer_now,

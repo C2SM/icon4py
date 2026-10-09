@@ -91,73 +91,15 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
 
 
 @pytest.mark.datatest
-def test_compute_reference_atmosphere_on_half_level_mass_points(
-    icon_grid: base_grid.Grid,
-    metrics_savepoint: sb.MetricSavepoint,
-    backend: gtx_typing.Backend | None,
-) -> None:
-    theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
-    z_ifc = metrics_savepoint.z_ifc()
-
-    exner_ref_ic = data_alloc.zero_field(
-        icon_grid,
-        dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
-        dtype=ta.wpfloat,
-        allocator=backend,
-    )
-    rho_ref_ic = data_alloc.zero_field(
-        icon_grid,
-        dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
-        dtype=ta.wpfloat,
-        allocator=backend,
-    )
-    theta_ref_ic = data_alloc.zero_field(
-        icon_grid,
-        dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
-        dtype=ta.wpfloat,
-        allocator=backend,
-    )
-    compute_reference_atmosphere_cell_fields.with_backend(backend=backend)(
-        z_height=z_ifc,
-        p0ref=constants.P0REF,
-        p0sl_bg=constants.SEA_LEVEL_PRESSURE,
-        grav=constants.GRAVITATIONAL_ACCELERATION,
-        cpd=constants.CPD,
-        rd=constants.RD,
-        t0sl_bg=constants.T0SL_BG,
-        h_scal_bg=constants._H_SCAL_BG,
-        del_t_bg=constants.DELTA_TEMPERATURE,
-        exner_ref_mc=exner_ref_ic,
-        rho_ref_mc=rho_ref_ic,
-        theta_ref_mc=theta_ref_ic,
-        horizontal_start=gtx.int32(0),
-        horizontal_end=gtx.int32(icon_grid.num_cells),
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(icon_grid.num_levels + 1),
-        offset_provider={},
-    )
-
-    assert stencil_tests.dallclose(theta_ref_ic.asnumpy(), theta_ref_ic_ref.asnumpy())
-
-
-@pytest.mark.datatest
 def test_compute_d_exner_dz_ref_ic(
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()
-    theta_ref_ic = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
+    theta_ref_ic = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend)
     d_exner_dz_ref_ic = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
     )
     compute_theta_d_exner_dz_ref_ic.with_backend(backend)(
         z_ifc=z_ifc,

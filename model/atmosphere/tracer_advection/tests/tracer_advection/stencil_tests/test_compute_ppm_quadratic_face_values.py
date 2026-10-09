@@ -5,14 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
-
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,7 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_quadratic_fa
     compute_ppm_quadratic_face_values,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -31,10 +24,13 @@ outslice = (slice(None), slice(1, None))
 
 class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_quadratic_face_values
-    OUTPUTS = (stencil_tests.Output("p_face", refslice=outslice, gtslice=outslice),)
+    OUTPUTS = (
+        stencil_tests.Output("p_face", refslice=outslice, gtslice=(slice(None), slice(1, -1))),
+    )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
+        grid: base.Grid,
         *,
         p_cc: np.ndarray,
         p_cellhgt_mc_now: np.ndarray,
@@ -48,11 +44,11 @@ class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
         )
         return dict(p_face=p_face)
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_face = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KDim)
         return dict(
             p_cc=p_cc,
             p_cellhgt_mc_now=p_cellhgt_mc_now,

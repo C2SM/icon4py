@@ -5,14 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
-
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -20,7 +13,7 @@ import pytest
 
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_slope import compute_ppm_slope
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -33,8 +26,9 @@ class TestComputePpmSlope(stencil_tests.StencilTest):
         ),
     )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
+        grid: base.Grid,
         *,
         p_cc: np.ndarray,
         p_cellhgt_mc_now: np.ndarray,
@@ -70,13 +64,11 @@ class TestComputePpmSlope(stencil_tests.StencilTest):
         z_slope = np.where(k[1:-1] < elev, z_slope_a, z_slope_b)
         return dict(z_slope=z_slope)
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        z_slope = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        p_cellhgt_mc_now = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
-        )
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        z_slope = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_cc = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
         elev = grid.num_levels - 2
         return dict(

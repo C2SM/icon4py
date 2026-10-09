@@ -14,9 +14,10 @@ from __future__ import annotations
 
 import dataclasses
 import itertools
-import json
+import os
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -24,12 +25,9 @@ import tarfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated, Final
 
-import f90nml
 import typer
-
-from icon4py.model.common.utils import fortran_config
 
 
 if TYPE_CHECKING:
@@ -47,6 +45,7 @@ class SerializationSettings:
     comm_sizes: list[int]
     experiment_descriptions: list[test_defs.ExperimentDescription]
     sbatch_partition: str
+    sbatch_gpus_per_node: int
     sbatch_time: str
     sbatch_account: str
     sbatch_uenv: str
@@ -82,18 +81,24 @@ class SerializationSettings:
 
         # Slurm settings
         SBATCH_PARTITION = "normal"
-        SBATCH_TIME = "00:15:00"
+        # santis nodes carry 4 GH200s. "normal" allocates whole exclusive nodes, so the
+        # GPUs come with them, but shared partitions such as "debug" grant none unless
+        # asked - and this is a GPU build, so ask explicitly either way.
+        SBATCH_GPUS_PER_NODE = 4
+        SBATCH_TIME = "00:20:00"
         SBATCH_ACCOUNT = "cwd01"
-        SBATCH_UENV = "icon/25.2:v3"
+        SBATCH_UENV = "icon/26.7:v1"
         SBATCH_UENV_VIEW = "default"
         JOB_POLL_SECONDS = 10
 
         # Directories (derived from this script's location in icon4py/)
         _THIS_FILE = pathlib.Path(__file__).resolve()
         ICON4PY_REPO_DIR = _THIS_FILE.parents[2]
-        assert ICON4PY_REPO_DIR.name == "icon4py", (
-            f"Expected icon4py repo dir, got {ICON4PY_REPO_DIR}"
-        )
+        if not (ICON4PY_REPO_DIR / "pyproject.toml").is_file():
+            raise RuntimeError(
+                f"Expected the icon4py repository root at '{ICON4PY_REPO_DIR}', derived from "
+                f"the location of '{_THIS_FILE}', but found no 'pyproject.toml' there."
+            )
         ROOT_PROJECT_DIR = ICON4PY_REPO_DIR.parent
         ICONF90_REPO_DIR = ROOT_PROJECT_DIR / "icon"
         BUILD_DIR = ROOT_PROJECT_DIR / "build_serialize"
@@ -110,6 +115,7 @@ class SerializationSettings:
             comm_sizes=COMM_SIZES,
             experiment_descriptions=EXPERIMENTS,
             sbatch_partition=SBATCH_PARTITION,
+            sbatch_gpus_per_node=SBATCH_GPUS_PER_NODE,
             sbatch_time=SBATCH_TIME,
             sbatch_account=SBATCH_ACCOUNT,
             sbatch_uenv=SBATCH_UENV,
@@ -127,6 +133,16 @@ class SerializationSettings:
         # ======================================
         # END DEFAULT USER CONFIGURATION
         # ======================================
+
+
+#: Set by the husk sandbox, whose slurm broker builds its own submission. It refuses a
+#: job that names a partition in the script body, or that chooses an account or a uenv at
+#: all: those come from the launching session.
+HUSK_SENTINEL_ENV_VAR: Final = "HUSK_SLURM_SPOOL"
+
+
+def running_under_husk() -> bool:
+    return bool(os.environ.get(HUSK_SENTINEL_ENV_VAR))
 
 
 def get_f90exp_name(experiment_description: test_defs.ExperimentDescription) -> str:
@@ -207,7 +223,14 @@ def cleanup_exp_output(
 def run_command(
     cmd: list[str], check: bool = True, cwd: pathlib.Path | None = None
 ) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, check=check, text=True, capture_output=True, cwd=cwd)
+    result = subprocess.run(cmd, check=False, text=True, capture_output=True, cwd=cwd)
+    if check and result.returncode != 0:
+        details = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(
+            f"Command '{shlex.join(cmd)}' failed with exit status {result.returncode}"
+            + (f":\n{details}" if details else " and printed nothing.")
+        )
+    return result
 
 
 def log_status(message: str) -> None:
@@ -287,7 +310,11 @@ def parse_extra_mpi_ranks(script_path: pathlib.Path, comm_size: int) -> int:
 
 
 def update_slurm_variables(script_path: pathlib.Path, *, settings: SerializationSettings) -> None:
-    """Update SBATCH directives in the Slurm script (partition, account, time, uenv, view)."""
+    """Update SBATCH directives in the Slurm script (partition, account, time, uenv, view).
+
+    Under husk only ``--time`` survives here: the broker takes the partition from the
+    sbatch command line (see `submit_job`) and supplies the account and the uenv itself.
+    """
     content = script_path.read_text()
 
     # Find the position after #SBATCH --job-name= line
@@ -296,13 +323,19 @@ def update_slurm_variables(script_path: pathlib.Path, *, settings: Serialization
         raise RuntimeError("Could not find #SBATCH --job-name= line in script")
 
     # Prepare the new SBATCH lines to insert
-    new_lines = (
-        f"#SBATCH --partition={settings.sbatch_partition}\n"
-        f"#SBATCH --account={settings.sbatch_account}\n"
-        f"#SBATCH --time={settings.sbatch_time}\n"
-        f"#SBATCH --uenv='{settings.sbatch_uenv}'\n"
-        f"#SBATCH --view='{settings.sbatch_uenv_view}'"
-    )
+    directives = [
+        f"#SBATCH --time={settings.sbatch_time}",
+        f"#SBATCH --gpus-per-node={settings.sbatch_gpus_per_node}",
+    ]
+    if not running_under_husk():
+        directives = [
+            f"#SBATCH --partition={settings.sbatch_partition}",
+            f"#SBATCH --account={settings.sbatch_account}",
+            *directives,
+            f"#SBATCH --uenv='{settings.sbatch_uenv}'",
+            f"#SBATCH --view='{settings.sbatch_uenv_view}'",
+        ]
+    new_lines = "\n".join(directives)
 
     # Remove existing partition, account, time, uenv, and view lines if they exist
     content = re.sub(r"^#SBATCH\s+--partition=.*$\n?", "", content, flags=re.MULTILINE)
@@ -310,6 +343,7 @@ def update_slurm_variables(script_path: pathlib.Path, *, settings: Serialization
     content = re.sub(r"^#SBATCH\s+--time=.*$\n?", "", content, flags=re.MULTILINE)
     content = re.sub(r"^#SBATCH\s+--uenv=.*$\n?", "", content, flags=re.MULTILINE)
     content = re.sub(r"^#SBATCH\s+--view=.*$\n?", "", content, flags=re.MULTILINE)
+    content = re.sub(r"^#SBATCH\s+--gpus-per-node=.*$\n?", "", content, flags=re.MULTILINE)
 
     # Re-find job-name position in the cleaned text
     job_name_match = re.search(r"^(#SBATCH\s+--job-name=.*$)", content, flags=re.MULTILINE)
@@ -353,7 +387,10 @@ def update_slurm_ranks(script_path: pathlib.Path, mpi_ranks: int, extra_mpi_rank
 
 
 def submit_job(script_path: pathlib.Path, *, settings: SerializationSettings) -> str:
-    cmd = ["sbatch", str(script_path)]
+    cmd = ["sbatch"]
+    if running_under_husk():
+        cmd.append(f"--partition={settings.sbatch_partition}")
+    cmd.append(str(script_path))
     result = run_command(cmd, cwd=settings.runscript_dir)
     match = re.search(r"Submitted batch job\s+(\d+)", result.stdout)
     if not match:
@@ -443,24 +480,23 @@ def copy_ser_data(
     # Copy ser_data folder
     shutil.copytree(src_dir, dest_dir / test_defs.SERIALIZED_DATA_SUBDIR)
 
-    # Translate to json and copy NAMELIST_ICON_output_atm
-    nml = f90nml.read(exp_dir / fortran_config.NAMELIST_ATM_FNAME)
-    with (dest_dir / (fortran_config.ATM_DICT_FNAME)).open("w") as f:
-        json.dump(nml.todict(), f, indent=4)
-    # same for icon_master.namelist
-    nml = f90nml.read(exp_dir / fortran_config.NAMELIST_MASTER_FNAME)
-    with (dest_dir / (fortran_config.MASTER_DICT_FNAME)).open("w") as f:
-        json.dump(nml.todict(), f, indent=4)
-    # same for NAMELIST_expname
-    nml = f90nml.read(exp_dir / get_dumped_nmlfile_name(experiment_description))
-    with (dest_dir / (fortran_config.INPUT_DICT_FNAME)).open("w") as f:
-        json.dump(nml.todict(), f, indent=4)
-
     # Copy NAMELIST files
     namelist_files = sorted(itertools.chain(exp_dir.glob("NAMELIST_*"), exp_dir.glob("*.namelist")))
     for src_file in namelist_files:
         if src_file.is_file():
             shutil.copy2(src_file, dest_dir / src_file.name)
+
+    # Convert namelists to config.yml
+    import fortran_config_converter  # noqa: PLC0415 [import-outside-top-level]
+
+    from icon4py.model.common.config import config_io  # noqa: PLC0415 [import-outside-top-level]
+
+    namelist_expname = get_dumped_nmlfile_name(experiment_description)
+    config = fortran_config_converter.convert_experiment(
+        dest_dir,
+        namelist_expname=namelist_expname,
+    )
+    (dest_dir / "config.yml").write_text(config_io.write_yaml_str(config))
 
     # Copy LOG file if available
     if job_id is not None:
@@ -510,8 +546,8 @@ def run_experiment(
     comm_size: int,
     *,
     settings: SerializationSettings,
-) -> None:
-    """Execute a single experiment with the given communicator size."""
+) -> str | None:
+    """Execute a single experiment; returns a message if it failed."""
     try:
         # Clean up previous experiment output
         cleanup_exp_output(experiment_description, comm_size, settings=settings)
@@ -547,13 +583,68 @@ def run_experiment(
         tar_folder(dest_dir, experiment_description, comm_size, settings=settings)
 
         log_status(f"Completed {experiment_description.name} with {comm_size} ranks")
+        return None
     except Exception as e:
-        log_status(f"ERROR in {experiment_description.name} with {comm_size} ranks: {e}")
-        raise
+        # A campaign is 18 slurm tasks over several hours; one bad task reports itself
+        # rather than discarding the rest.
+        message = f"{experiment_description.name} ranks={comm_size}: {type(e).__name__}: {e}"
+        log_status(f"ERROR in {message}")
+        return message
+
+
+def preflight(*, settings: SerializationSettings, allow_dirty: bool = False) -> None:
+    """Show what this campaign will be built from, before spending hours on it.
+
+    The archives record their own provenance in the ICON log, but by then the data
+    exists; the point of printing it here is that an unexpected upstream revision can
+    still be reverted.
+    """
+    if settings.iconf90_repo_dir.is_dir():
+        describe = run_command(
+            ["git", "describe", "--always", "--dirty"], cwd=settings.iconf90_repo_dir, check=False
+        )
+        log_status(f"ICON source tree: {describe.stdout.strip() or 'unknown'}")
+    else:
+        log_status(f"No ICON source tree at {settings.iconf90_repo_dir}")
+
+    dirty = run_command(
+        ["git", "status", "--porcelain"], cwd=settings.icon4py_repo_dir, check=False
+    )
+    if not allow_dirty and (dirty.returncode != 0 or dirty.stdout.strip()):
+        raise typer.BadParameter(
+            f"The icon4py checkout at '{settings.icon4py_repo_dir}' has uncommitted changes; "
+            "the data would not be reproducible. Commit them or pass '--allow-dirty'."
+        )
+
+
+def print_next_steps(*, settings: SerializationSettings) -> None:
+    """Print what still has to be done by hand, with the paths filled in.
+
+    This repeats docs/testdata_generation.md on purpose: a campaign ends in a terminal
+    on the cluster, which is not where the runbook is.
+    """
+    runbook = settings.icon4py_repo_dir / "docs" / "testdata_generation.md"
+    print(
+        f"""
+Next:
+  test    ICON4PY_TEST_DATA_PATH={settings.experiments_dir} ICON4PY_ENABLE_TESTDATA_DOWNLOAD=0 \\
+            uv run --group test --frozen pytest --datatest-only --backend=gtfn_cpu model/common
+  upload  cd {settings.output_root} && aws --profile cscs-icon4py s3 sync . \\
+            s3://testdata/experiments/ --exclude "*" --include "*.tar.gz"
+  docs    {runbook}
+"""
+    )
 
 
 @cli.command()
-def run_serialization() -> None:
+def run_serialization(
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="List the archives that would be written, then stop.")
+    ] = False,
+    allow_dirty: Annotated[
+        bool, typer.Option("--allow-dirty", help="Generate from a modified icon4py checkout.")
+    ] = False,
+) -> None:
     """Run the serialization experiment series."""
 
     # Import here to reduce startup time for the CLI
@@ -564,8 +655,19 @@ def run_serialization() -> None:
     )
 
     settings = SerializationSettings.defaults()
+
+    if dry_run:
+        for comm_size in settings.comm_sizes:
+            for experiment_description in settings.experiment_descriptions:
+                print(
+                    f"  {get_tar_path(experiment_description, comm_size, settings=settings).name}"
+                )
+        return
+
+    preflight(settings=settings, allow_dirty=allow_dirty)
     settings.output_root.mkdir(parents=True, exist_ok=True)
 
+    failures: list[str] = []
     total_tasks = len(settings.experiment_descriptions) * len(settings.comm_sizes)
     log_status(
         f"Starting experiment series with {total_tasks} tasks ({len(settings.experiment_descriptions)} experiments x {len(settings.comm_sizes)} communicator sizes)"
@@ -590,15 +692,19 @@ def run_serialization() -> None:
                 f"All {len(futures)} experiments queued for {comm_size} ranks, waiting for completion..."
             )
 
-            # Wait for all futures to complete and collect exceptions
-            for future in futures:
-                future.result()  # Re-raises any exceptions from the thread
+            failures.extend(filter(None, (future.result() for future in futures)))
 
         log_status(
             f"Completed communicator size {rank_idx}/{len(settings.comm_sizes)}: {comm_size} ranks"
         )
 
+    if failures:
+        for failure in failures:
+            log_status(f"FAILED {failure}")
+        raise typer.Exit(code=1)
+
     log_status(f"All {total_tasks} tasks completed successfully!")
+    print_next_steps(settings=settings)
 
 
 if __name__ == "__main__":

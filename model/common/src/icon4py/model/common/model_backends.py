@@ -5,12 +5,17 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any, Final, TypeAlias, TypeGuard, cast
+from __future__ import annotations
+
+from typing import Any, Final, TypeAlias, TypeGuard
 
 import gt4py.next as gtx
+import gt4py.next.custom_layout_allocators as gtx_allocators
 import gt4py.next.typing as gtx_typing
-from gt4py.next import backend as gtx_backend, custom_layout_allocators as gtx_allocators
+from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
+from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
+from gt4py.next.program_processors.runners.dace.workflow import common as gtx_wfdcommon
 
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
@@ -37,23 +42,23 @@ def is_cpu_backend(
     backend: BackendLike,
 ) -> bool:
     if isinstance(backend, gtx_backend.Backend):
-        return backend.allocator.__gt_device_type__ == CPU
-    return get_allocator(backend).__gt_device_type__ == CPU
+        return backend.allocator.device_type == CPU
+    return get_allocator(backend).device_type == CPU
 
 
 def is_gpu_backend(
     backend: BackendLike,
 ) -> bool:
     if isinstance(backend, gtx_backend.Backend):
-        return backend.allocator.__gt_device_type__ == GPU
-    return get_allocator(backend).__gt_device_type__ == GPU
+        return backend.allocator.device_type == GPU
+    return get_allocator(backend).device_type == GPU
 
 
 def get_allocator(
     backend: BackendLike,
-) -> gtx_allocators.FieldBufferAllocatorProtocol:
+) -> gtx_typing.Backend:
     if isinstance(backend, gtx_backend.Backend):
-        return backend.allocator
+        return backend
     if backend is None:
         # TODO(havogt): currently the testing infrastructure doesn't allow to specify
         # embedded backend aka `None` for cupy, as there is no separation
@@ -67,9 +72,9 @@ def get_allocator(
     raise ValueError(f"Cannot get allocator from {backend}")
 
 
-def make_custom_gtfn_backend(device: DeviceType, **_: Any) -> gtx_typing.Backend:
+def make_custom_gtfn_backend(device: DeviceType, **_) -> gtx_typing.Backend:
     on_gpu = device == GPU
-    return cast(gtx_typing.Backend, gtfn.GTFNBackendFactory(gpu=on_gpu))
+    return gtfn.make_gtfn_toolchain(gtfn.GTFNConfig(gpu=on_gpu))
 
 
 def make_custom_dace_backend(
@@ -81,7 +86,8 @@ def make_custom_dace_backend(
     use_metrics: bool = True,
     use_zero_origin: bool = False,
     use_max_domain_range_on_unstructured_shift: bool | None = None,
-    **kwargs: Any,
+    external_workspace: gtx_wfdcommon.ExternalWorkspace | None = None,
+    **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
 
@@ -97,15 +103,34 @@ def make_custom_dace_backend(
         use_max_domain_range_on_unstructured_shift: When True, compute `as_fieldop`
             expressions everywhere. Otherwise, when all connectivities are given
             at compile time, infer the minimal domain of all `as_fieldop` statically.
+        external_workspace: The external workspace memory to use as storage for
+            the transient arrays. If `None`, the transient arrays will be allocated
+            inside the SDFG with scope lifetime.
 
     Returns:
         A dace backend with custom configuration for the target device.
     """
+    if external_workspace is not None:
+        if optimization_args is None:
+            optimization_args = {
+                "transient_memory_mode": gtx_transformations.TransientMemoryMode.EXTERNAL,
+            }
+        elif transient_memory_mode := optimization_args.get("transient_memory_mode"):
+            if transient_memory_mode != gtx_transformations.TransientMemoryMode.EXTERNAL:
+                raise ValueError(
+                    f"Cannot use external workspace with transient_memory_mode={transient_memory_mode}."
+                )
+        else:
+            optimization_args["transient_memory_mode"] = (
+                gtx_transformations.TransientMemoryMode.EXTERNAL
+            )
+
     on_gpu = device == GPU
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
         auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
+        external_workspace=external_workspace,
         optimization_args=optimization_args,
         unstructured_horizontal_has_unit_stride=True,
         use_metrics=use_metrics,

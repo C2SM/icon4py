@@ -5,13 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -19,18 +13,18 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import deposition_factor
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestDepositionFactor(StencilTest):
+class TestDepositionFactor(stencil_tests.StencilTest):
     PROGRAM = deposition_factor
     OUTPUTS = ("deposition_rate",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         t: np.ndarray,
         qvsi: np.ndarray,
@@ -38,12 +32,10 @@ class TestDepositionFactor(StencilTest):
     ) -> dict:
         return dict(deposition_rate=np.full(t.shape, 1.3234329478493952e-05))
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
-            t=data_alloc.constant_field(grid, 272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qvsi=data_alloc.constant_field(
-                grid, 0.00416891, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
-            deposition_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qvsi=data_alloc.constant_field(0.00416891, dims.CellDim, dims.KDim, dtype=wpfloat),
+            deposition_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -387,7 +387,7 @@ class ExchangeRuntime(Protocol):
         ex_req = self.start(
             dim,
             *fields,
-            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]  # BLOCK is a blocking sentinel
+            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
         )
         ex_req.finish(stream)
 
@@ -430,7 +430,7 @@ class ExchangeRuntime(Protocol):
         ex_req = self.start(
             dim,
             *fields,
-            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]  # BLOCK is a blocking sentinel
+            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
         )
         if not full_exchange:
             return ex_req
@@ -634,9 +634,10 @@ def create_reduction(
     process_props: ProcessProperties, decomposition_info: DecompositionInfo
 ) -> Reductions:
     """
-    Create a Global Reduction depending on the runtime size.
+    Create a reductions object depending on the runtime size.
 
-    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+    For a single-rank run, returns a `SingleNodeReductions` object.
+    For a distributed run, returns a `GlobalReductions` object.
     """
     raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
 
@@ -700,7 +701,3 @@ class ParallelLogger(logging.Filter):
         return record.levelno >= logging.WARNING or (
             self._print_distributed_debug_msg and record.levelno == logging.DEBUG
         )
-
-
-single_node_exchange = SingleNodeExchange()
-single_node_reductions = SingleNodeReductions()

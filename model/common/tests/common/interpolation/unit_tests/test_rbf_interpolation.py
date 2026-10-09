@@ -196,8 +196,8 @@ def test_rbf_interpolation_coeffs_cell(
         geometry_type=geometry_type.value,
         scale_factor=rbf.compute_default_rbf_scale_cell(
             geometry_type.value,
-            geometry.get_wpfloat(geometry_attrs.CHARACTERISTIC_LENGTH),
-            geometry.get_wpfloat(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
+            geometry.get_scalar(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get_scalar(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
@@ -270,8 +270,8 @@ def test_rbf_interpolation_coeffs_vertex(
         geometry_type=geometry_type.value,
         scale_factor=rbf.compute_default_rbf_scale_vertex(
             geometry_type.value,
-            geometry.get_wpfloat(geometry_attrs.CHARACTERISTIC_LENGTH),
-            geometry.get_wpfloat(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
+            geometry.get_scalar(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get_scalar(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
@@ -346,8 +346,8 @@ def test_rbf_interpolation_coeffs_edge(
         geometry_type=geometry_type.value,
         scale_factor=rbf.compute_default_rbf_scale_edge(
             geometry_type.value,
-            geometry.get_wpfloat(geometry_attrs.CHARACTERISTIC_LENGTH),
-            geometry.get_wpfloat(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
+            geometry.get_scalar(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get_scalar(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,

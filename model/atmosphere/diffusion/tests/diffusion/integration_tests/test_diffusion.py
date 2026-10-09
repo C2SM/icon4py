@@ -18,7 +18,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon, vertical as v_grid
+from icon4py.model.common.grid import geometry_attributes as geometry_meta, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions as test_defs,
@@ -32,24 +32,22 @@ from ..fixtures import *  # noqa: F403
 from ..utils import diff_multfac_vn_numpy, smag_limit_numpy, verify_diffusion_fields
 
 
-grid_functionality: collections.defaultdict[str, dict[str, Any]] = collections.defaultdict(dict)
+grid_functionality: dict[str, dict[str, Any]] = collections.defaultdict(dict)
 
 
-def get_grid_for_experiment(
-    experiment: test_defs.Experiment, backend: gtx_typing.Backend
-) -> icon.IconGrid:
+def get_grid_for_experiment(experiment: test_defs.Experiment, backend: gtx_typing.Backend) -> Any:
     return _get_or_initialize(experiment, backend, "grid")
 
 
 def get_edge_geometry_for_experiment(
     experiment: test_defs.Experiment, backend: gtx_typing.Backend
-) -> grid_states.EdgeParams:
+) -> Any:
     return _get_or_initialize(experiment, backend, "edge_geometry")
 
 
 def get_cell_geometry_for_experiment(
     experiment: test_defs.Experiment, backend: gtx_typing.Backend
-) -> grid_states.CellParams:
+) -> Any:
     return _get_or_initialize(experiment, backend, "cell_geometry")
 
 
@@ -66,28 +64,40 @@ def _get_or_initialize(
             area=geometry_.get(geometry_meta.CELL_AREA),
         )
         edge_params = grid_states.EdgeParams(
-            edge_center_lat=geometry_.get(geometry_meta.EDGE_LAT),
-            edge_center_lon=geometry_.get(geometry_meta.EDGE_LON),
             tangent_orientation=geometry_.get(geometry_meta.TANGENT_ORIENTATION),
-            coriolis_frequency=geometry_.get(geometry_meta.CORIOLIS_PARAMETER),
-            edge_areas=geometry_.get(geometry_meta.EDGE_AREA),
-            primal_edge_lengths=geometry_.get(geometry_meta.EDGE_LENGTH),
             inverse_primal_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
-            dual_edge_lengths=geometry_.get(geometry_meta.DUAL_EDGE_LENGTH),
             inverse_dual_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
             inverse_vertex_vertex_lengths=geometry_.get(
                 f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
             ),
-            primal_normal_x=geometry_.get(geometry_meta.EDGE_NORMAL_U),
-            primal_normal_y=geometry_.get(geometry_meta.EDGE_NORMAL_V),
-            primal_normal_cell_x=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_U),
-            primal_normal_cell_y=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_V),
-            primal_normal_vert_x=geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-            primal_normal_vert_y=geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-            dual_normal_cell_x=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_U),
-            dual_normal_cell_y=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_V),
-            dual_normal_vert_x=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-            dual_normal_vert_y=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+            primal_normal_vert=(
+                geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+                geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+            ),
+            dual_normal_vert=(
+                geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+                geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+            ),
+            primal_normal_cell=(
+                geometry_.get(geometry_meta.EDGE_NORMAL_CELL_U),
+                geometry_.get(geometry_meta.EDGE_NORMAL_CELL_V),
+            ),
+            dual_normal_cell=(
+                geometry_.get(geometry_meta.EDGE_TANGENT_CELL_U),
+                geometry_.get(geometry_meta.EDGE_TANGENT_CELL_V),
+            ),
+            edge_areas=geometry_.get(geometry_meta.EDGE_AREA),
+            coriolis_frequency=geometry_.get(geometry_meta.CORIOLIS_PARAMETER),
+            edge_center=(
+                geometry_.get(geometry_meta.EDGE_LAT),
+                geometry_.get(geometry_meta.EDGE_LON),
+            ),
+            primal_normal=(
+                geometry_.get(geometry_meta.EDGE_NORMAL_U),
+                geometry_.get(geometry_meta.EDGE_NORMAL_V),
+            ),
+            primal_edge_lengths=geometry_.get(geometry_meta.EDGE_LENGTH),
+            dual_edge_lengths=geometry_.get(geometry_meta.DUAL_EDGE_LENGTH),
         )
         grid_functionality[experiment.name]["grid"] = grid
         grid_functionality[experiment.name]["edge_geometry"] = edge_params
@@ -95,23 +105,21 @@ def _get_or_initialize(
     return grid_functionality[experiment.name].get(name)
 
 
+@pytest.mark.single_precision_ready
 def test_diffusion_coefficients_with_hdiff_efdt_ratio() -> None:
-    config = diffusion.DiffusionConfig()
-    config.hdiff_efdt_ratio = 1.0
-    config.hdiff_w_efdt_ratio = 2.0
+    config = diffusion.DiffusionConfig(hdiff_efdt_ratio=1.0, hdiff_w_efdt_ratio=2.0)
 
     params = diffusion.DiffusionParams(config)
 
-    assert pytest.approx(0.125, abs=1e-12) == params.K2
-    assert pytest.approx(0.125 / 8.0, abs=1e-12) == params.K4
-    assert pytest.approx(0.125 / 64.0, abs=1e-12) == params.K6
-    assert pytest.approx(1.0 / 72.0, abs=1e-12) == params.K4W
+    assert pytest.approx(0.125, abs=test_utils.scale_tol(1e-12)) == params.K2
+    assert pytest.approx(0.125 / 8.0, abs=test_utils.scale_tol(1e-12)) == params.K4
+    assert pytest.approx(0.125 / 64.0, abs=test_utils.scale_tol(1e-12)) == params.K6
+    assert pytest.approx(1.0 / 72.0, abs=test_utils.scale_tol(1e-12)) == params.K4W
 
 
+@pytest.mark.single_precision_ready
 def test_diffusion_coefficients_without_hdiff_efdt_ratio() -> None:
-    config = diffusion.DiffusionConfig()
-    config.hdiff_efdt_ratio = 0.0
-    config.hdiff_w_efdt_ratio = 0.0
+    config = diffusion.DiffusionConfig(hdiff_efdt_ratio=0.0, hdiff_w_efdt_ratio=0.0)
 
     params = diffusion.DiffusionParams(config)
 
@@ -121,10 +129,9 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio() -> None:
     assert params.K4W == 0.0
 
 
+@pytest.mark.single_precision_ready
 def test_smagorinski_heights_diffusion_type_5_are_consistent() -> None:
-    config = diffusion.DiffusionConfig()
-    config.smagorinski_scaling_factor = 0.15
-    config.diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
+    config = diffusion.DiffusionConfig(smagorinski_scaling_factor=0.15, diffusion_type=5)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
 
     params = diffusion.DiffusionParams(config)
     assert len(params.smagorinski_height) == 4
@@ -136,6 +143,7 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent() -> None:
     assert params.smagorinski_height[2] != params.smagorinski_height[3]
 
 
+@pytest.mark.single_precision_ready
 def test_smagorinski_factor_diffusion_type_5() -> None:
     params = diffusion.DiffusionParams(diffusion.DiffusionConfig())
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
@@ -145,6 +153,7 @@ def test_smagorinski_factor_diffusion_type_5() -> None:
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 # TODO(havogt): Remove custom `experiment` parametrization
 @pytest.mark.parametrize(
     "experiment_description,step_date_init",
@@ -154,16 +163,16 @@ def test_smagorinski_factor_diffusion_type_5() -> None:
     ],
 )
 def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
-    savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
+    savepoint_diffusion_init: Any,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
-    experiment: test_defs.Experiment,
-    step_date_init: str,
-    backend: gtx_typing.Backend,
+    experiment: Any,
+    step_date_init: Any,
+    backend: Any,
 ) -> None:
     config = experiment.config.diffusion
-    assert config is not None
     additional_parameters = diffusion.DiffusionParams(config)
+    ndyn_substeps_as_float = float(experiment.config.driver.ndyn_substeps)
 
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
@@ -182,6 +191,7 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
 
+    assert experiment.config.interpolation.max_nudging_coefficient is not None
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
@@ -192,11 +202,13 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
+        ndyn_substeps=experiment.config.driver.ndyn_substeps,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
     assert diffusion_granule.diff_multfac_w == min(
-        1.0 / 48.0, additional_parameters.K4W * config.substep_as_float
+        1.0 / 48.0, additional_parameters.K4W * ndyn_substeps_as_float
     )
 
     assert test_utils.dallclose(diffusion_granule.v_vert.asnumpy(), 0.0)
@@ -209,16 +221,14 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         diff_multfac_vn_numpy,
         shape_k,
         additional_parameters.K4,
-        config.substep_as_float,
+        ndyn_substeps_as_float,
     )
 
-    assert (
-        diffusion_granule.smag_offset == 0.25 * additional_parameters.K4 * config.substep_as_float
-    )
+    assert diffusion_granule.smag_offset == 0.25 * additional_parameters.K4 * ndyn_substeps_as_float
     assert test_utils.dallclose(diffusion_granule.smag_limit.asnumpy(), expected_smag_limit)
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(
-        shape_k, additional_parameters.K4, config.substep_as_float
+        shape_k, additional_parameters.K4, ndyn_substeps_as_float
     )
 
     assert test_utils.dallclose(
@@ -227,23 +237,30 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     expected_enh_smag_fac = ref_funcs.enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
-        vertical_params.vct_a.ndarray,  # type: ignore[attr-defined]  # vct_a is an InitVar, property returns unparameterized KField
+        vertical_params.interface_physical_height.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
     assert test_utils.dallclose(diffusion_granule.enh_smag_fac.asnumpy(), expected_enh_smag_fac)
 
 
 def _verify_init_values_against_savepoint(
-    savepoint: sb.IconDiffusionInitSavepoint,
-    diffusion_granule: diffusion.Diffusion,
-    backend: gtx_typing.Backend,
+    savepoint: sb.IconDiffusionInitSavepoint, diffusion_granule: diffusion.Diffusion, backend: Any
 ) -> None:
-    dtime = savepoint.get_metadata("dtime")["dtime"]
+    dtime = savepoint.dtime()
 
-    assert savepoint.nudgezone_diff() == diffusion_granule.nudgezone_diff
-    assert savepoint.bdy_diff() == diffusion_granule.bdy_diff
-    assert savepoint.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
-    assert savepoint.smag_offset() == diffusion_granule.smag_offset
-    assert savepoint.diff_multfac_w() == diffusion_granule.diff_multfac_w
+    scalar_rtol = 0.0 if test_utils.wp_is_dp else test_utils.STD_RTOL
+    test_utils.assert_dallclose(
+        savepoint.nudgezone_diff(), diffusion_granule.nudgezone_diff, rtol=scalar_rtol
+    )
+    test_utils.assert_dallclose(savepoint.bdy_diff(), diffusion_granule.bdy_diff, rtol=scalar_rtol)
+    test_utils.assert_dallclose(
+        savepoint.fac_bdydiff_v(), diffusion_granule.fac_bdydiff_v, rtol=scalar_rtol
+    )
+    test_utils.assert_dallclose(
+        savepoint.smag_offset(), diffusion_granule.smag_offset, rtol=scalar_rtol
+    )
+    test_utils.assert_dallclose(
+        savepoint.diff_multfac_w(), diffusion_granule.diff_multfac_w, rtol=scalar_rtol
+    )
 
     # this is done in diffusion.run(...) because it depends on the dtime
     diffusion_utils.scale_k.with_backend(backend)(
@@ -252,24 +269,41 @@ def _verify_init_values_against_savepoint(
         diffusion_granule.diff_multfac_smag,
         offset_provider={},
     )
-    assert test_utils.dallclose(
-        diffusion_granule.enh_smag_fac.asnumpy(), savepoint.enh_smag_fac(), rtol=1e-7
+    test_utils.assert_dallclose(
+        diffusion_granule.enh_smag_fac.asnumpy(),
+        savepoint.enh_smag_fac(),
+        rtol=test_utils.scale_tol(1e-7),
+        err_msg="enh_smag_fac",
     )
-    assert test_utils.dallclose(
-        diffusion_granule.diff_multfac_smag.asnumpy(), savepoint.diff_multfac_smag(), rtol=1e-7
+    test_utils.assert_dallclose(
+        diffusion_granule.diff_multfac_smag.asnumpy(),
+        savepoint.diff_multfac_smag(),
+        rtol=test_utils.scale_tol(1e-7),
+        err_msg="diff_multfac_smag",
     )
 
-    assert test_utils.dallclose(diffusion_granule.smag_limit.asnumpy(), savepoint.smag_limit())
-    assert test_utils.dallclose(
-        diffusion_granule.diff_multfac_n2w.asnumpy(), savepoint.diff_multfac_n2w()
+    test_utils.assert_dallclose(
+        diffusion_granule.smag_limit.asnumpy(), savepoint.smag_limit(), err_msg="smag_limit"
     )
-    assert test_utils.dallclose(
-        diffusion_granule.diff_multfac_vn.asnumpy(), savepoint.diff_multfac_vn()
+    # ICON allocates this half-level factor with only nlev entries, as the surface half level is unused.
+    # In single precision the relative error grows where the factor goes to zero (cancellation in
+    # the height difference), hence an absolute tolerance.
+    test_utils.assert_dallclose(
+        diffusion_granule.diff_multfac_n2w.asnumpy()[:-1],
+        savepoint.diff_multfac_n2w(),
+        atol=0.0 if test_utils.wp_is_dp else 2e-7,
+        err_msg="diff_multfac_n2w",
+    )
+    test_utils.assert_dallclose(
+        diffusion_granule.diff_multfac_vn.asnumpy(),
+        savepoint.diff_multfac_vn(),
+        err_msg="diff_multfac_vn",
     )
 
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "experiment_description,step_date_init",
     [
@@ -280,18 +314,17 @@ def _verify_init_values_against_savepoint(
     ],
 )
 def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: test_defs.Experiment,
-    step_date_init: str,
+    experiment: Any,
+    step_date_init: Any,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
-    savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
-    backend: gtx_typing.Backend,
+    savepoint_diffusion_init: Any,
+    backend: Any,
 ) -> None:
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
     config = experiment.config.diffusion
-    assert config is not None
     additional_parameters = diffusion.DiffusionParams(config)
     vertical_config = experiment.config.vertical_grid
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
@@ -301,6 +334,7 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
         vct_b=vct_b,
     )
 
+    assert experiment.config.interpolation.max_nudging_coefficient is not None
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
@@ -311,13 +345,16 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
+        ndyn_substeps=experiment.config.driver.ndyn_substeps,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
     _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule, backend)
 
 
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
@@ -335,20 +372,20 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
     ],
 )
 def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: test_defs.Experiment,
-    step_date_init: str,
-    step_date_exit: str,
-    savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
-    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
+    experiment: Any,
+    step_date_init: Any,
+    step_date_exit: Any,
+    savepoint_diffusion_init: Any,
+    savepoint_diffusion_exit: Any,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
-    backend: gtx_typing.Backend,
+    backend: Any,
 ) -> None:
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
 
-    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_diffusion_init.dtime()
 
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -367,9 +404,9 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
 
     config = experiment.config.diffusion
-    assert config is not None
     additional_parameters = diffusion.DiffusionParams(config)
 
+    assert experiment.config.interpolation.max_nudging_coefficient is not None
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
@@ -380,7 +417,9 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
+        ndyn_substeps=experiment.config.driver.ndyn_substeps,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -392,22 +431,23 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
 
 
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
 def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: test_defs.Experiment,
-    linit: bool,
-    savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
-    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
+    experiment: Any,
+    linit: Any,
+    savepoint_diffusion_init: Any,
+    savepoint_diffusion_exit: Any,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
-    backend: gtx_typing.Backend,
+    backend: Any,
 ) -> None:
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
-    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_diffusion_init.dtime()
 
     vertical_config = experiment.config.vertical_grid
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
@@ -424,9 +464,9 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
     )
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
     config = experiment.config.diffusion
-    assert config is not None
     params = diffusion.DiffusionParams(config)
 
+    assert experiment.config.interpolation.max_nudging_coefficient is not None
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
@@ -437,7 +477,9 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
+        ndyn_substeps=experiment.config.driver.ndyn_substeps,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -458,6 +500,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
 
 
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("linit", [True])
 # TODO(havogt): Remove custom `experiment` parametrization
 @pytest.mark.parametrize(
@@ -467,15 +510,10 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
     ],
 )
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
-    experiment: test_defs.Experiment,
-    icon_grid: icon.IconGrid,
-    linit: bool,
-    backend: gtx_typing.Backend,
+    savepoint_diffusion_init: Any, experiment: Any, icon_grid: Any, linit: Any, backend: Any
 ) -> None:
     savepoint = savepoint_diffusion_init
     config = experiment.config.diffusion
-    assert config is not None
 
     params = diffusion.DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()

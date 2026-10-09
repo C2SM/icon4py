@@ -8,7 +8,7 @@
 import contextlib
 import os
 import re
-from collections.abc import Generator
+from collections.abc import Iterator
 from typing import Any
 
 import numpy as np
@@ -30,7 +30,17 @@ __all__ = [
 _TEST_LEVELS = ("any", "unit", "integration", "validation")
 
 
-def pytest_configure(config: pytest.Config) -> None:
+@pytest.fixture(autouse=True)
+def _clear_decomposition_cache() -> Iterator[Any]:
+    yield
+    from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
+        mpi_decomposition,
+    )
+
+    mpi_decomposition.clear_caches()
+
+
+def pytest_configure(config: Any) -> None:
     config.addinivalue_line("markers", "datatest: this test uses binary data")
     config.addinivalue_line(
         "markers", "with_netcdf: test uses netcdf which is an optional dependency"
@@ -39,19 +49,20 @@ def pytest_configure(config: pytest.Config) -> None:
         "markers",
         "level(name): marks test as unit, integration, or validation tests. Validation tests are excluded by default and must be explicitly requested with --level=validation",
     )
+    config.addinivalue_line(
+        "markers", "single_precision_ready: intended to run if single precision is selected"
+    )
 
-    # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
-    if config.getoption("--enable-mixed-precision"):
-        os.environ["FLOAT_PRECISION"] = "mixed"
-
-    # Handle datatest options: --datatest-only  and --datatest-skip
-    if m_option := config.getoption("-m", []):
-        m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
+    # add parenthesis around original k_option just in case
+    m_option = [f"({m_expr})"] if (m_expr := config.getoption("-m")) else []
     if config.getoption("--datatest-only"):
-        config.option.markexpr = " and ".join(["datatest", *m_option])
-
+        m_option.append("datatest")
     if config.getoption("--datatest-skip"):
-        config.option.markexpr = " and ".join(["not datatest", *m_option])
+        m_option.append("not datatest")
+    if os.environ.get("ICON4PY_FLOAT_PRECISION", "double").lower() == "single":
+        # if precision is set to single per env variable, only run tests marked as single_precision_ready
+        m_option.append("single_precision_ready")
+    config.option.markexpr = " and ".join(m_option[::-1])
 
     handle_mpi_options(config)
 
@@ -91,14 +102,6 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
     with contextlib.suppress(ValueError):
         parser.addoption(
-            "--enable-mixed-precision",
-            action="store_true",
-            help="Switch unit tests from double to mixed-precision",
-            default=False,
-        )
-
-    with contextlib.suppress(ValueError):
-        parser.addoption(
             "--level",
             action="store",
             choices=_TEST_LEVELS,
@@ -125,7 +128,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+def pytest_collection_modifyitems(config: Any, items: Any) -> Any:
     """Modify collected test items based on command line options."""
     scheduler = getattr(config, "_mpi_scheduler", None)
     if scheduler is not None:
@@ -200,7 +203,7 @@ def _name_from_fullname(fullname: str) -> str:
 
 # pytest benchmark hook, see:
 #     https://pytest-benchmark.readthedocs.io/en/latest/hooks.html#pytest_benchmark.hookspec.pytest_benchmark_update_json
-def pytest_benchmark_update_json(output_json: dict[str, Any]) -> None:
+def pytest_benchmark_update_json(output_json: Any) -> None:
     """
     Replace 'fullname' of pytest benchmarks with a shorter name for better readability in bencher.
 
@@ -229,16 +232,14 @@ def pytest_benchmark_update_json(output_json: dict[str, Any]) -> None:
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(
-    item: pytest.Item, call: pytest.CallInfo[None]
-) -> Generator[None, pytest.TestReport, None]:
+def pytest_runtest_makereport(item: Any, call: Any) -> Iterator[Any]:
     """
     Gather GT4Py timer metrics from benchmark fixture and add them to the test report.
     """
     outcome = yield
-    report = outcome.get_result()
+    report = outcome.get_result()  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
     if call.when == "call":
-        benchmark = item.funcargs.get("benchmark", None)  # type: ignore[attr-defined]  # pytest internal funcargs not exposed in type stubs
+        benchmark = item.funcargs.get("benchmark", None)
         if benchmark and hasattr(benchmark, "extra_info"):
             info = benchmark.extra_info.get("gtx_metrics", None)
             if info:
@@ -247,9 +248,7 @@ def pytest_runtest_makereport(
                 report.sections.append(("benchmark-extra", tuple([filtered_benchmark_name, info])))
 
 
-def pytest_terminal_summary(
-    terminalreporter: pytest.TerminalReporter, exitstatus: int, config: pytest.Config
-) -> None:
+def pytest_terminal_summary(terminalreporter: Any, exitstatus: Any, config: Any) -> None:
     """
     Add a custom section to the terminal summary with GT4Py timer metrics from benchmarks.
     """
@@ -284,7 +283,7 @@ def pytest_terminal_summary(
         terminalreporter.line("-" * len(header), blue=True)
 
 
-def handle_mpi_options(config: pytest.Config) -> None:
+def handle_mpi_options(config: Any) -> None:
     with_mpi = config.getoption("--with-mpi", default=False)
     only_mpi = config.getoption("--only-mpi", default=False)
     subcomm_size = config.getoption("--mpi-subcomm-size", default=None)
@@ -317,7 +316,7 @@ def handle_mpi_options(config: pytest.Config) -> None:
 
         if subcomm_size is not None:
             scheduler = MPISubcommScheduler(subcomm_size)
-            config._mpi_scheduler = scheduler  # type: ignore[attr-defined]  # pytest internal _mpi_scheduler not exposed in type stubs
+            config._mpi_scheduler = scheduler
 
             if scheduler.subcomm.Get_rank() == 0:
                 start_rank = scheduler.group_id * scheduler.subcomm_size
@@ -331,7 +330,7 @@ def handle_mpi_options(config: pytest.Config) -> None:
 class MPISubcommScheduler:
     """Splits MPI_COMM_WORLD into subcommunicators for parallel test execution."""
 
-    def __init__(self, subcomm_size: int):
+    def __init__(self, subcomm_size: int) -> Any:  # type: ignore[misc]  # GT4Py NDArrayObject protocol limitation
         from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
 
         if subcomm_size <= 0:
@@ -359,7 +358,7 @@ class MPISubcommScheduler:
 
         self._original_get_props = mpi_decomposition._get_process_properties
 
-        def _patched_get_props(with_mpi: bool = False, comm_id: Any = None, **kwargs: Any) -> Any:
+        def _patched_get_props(with_mpi: Any = False, comm_id: Any = None, **kwargs: Any) -> Any:
             if with_mpi and comm_id is None:
                 comm_id = self.subcomm
             return self._original_get_props(with_mpi=with_mpi, comm_id=comm_id, **kwargs)
@@ -377,8 +376,7 @@ class MPISubcommScheduler:
         valid_mpi_items = [
             item
             for item in mpi_items
-            if (marker := item.get_closest_marker("mpi")) is not None
-            and marker.kwargs.get("min_size", 1) <= self.subcomm_size
+            if item.get_closest_marker("mpi").kwargs.get("min_size", 1) <= self.subcomm_size  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
         ]
 
         assigned_mpi = [

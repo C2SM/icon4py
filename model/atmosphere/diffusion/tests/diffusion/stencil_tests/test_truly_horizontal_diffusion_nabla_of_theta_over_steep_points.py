@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
@@ -17,13 +18,12 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     *,
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     zd_vertoffset: np.ndarray,
     zd_diffcoef: np.ndarray,
     geofac_n2s_c: np.ndarray,
@@ -33,7 +33,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     z_temp: np.ndarray,
     **kwargs: Any,
 ) -> np.ndarray:
-    c2e2c = connectivities[dims.C2E2CDim]
+    c2e2c = connectivities[dims.C2E2C]
     full_shape = vcoef.shape
 
     geofac_n2s_nbh = np.expand_dims(geofac_n2s_nbh, axis=2)
@@ -43,6 +43,8 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     for ic in range(full_shape[0]):
         for isparse in range(full_shape[1]):
             for ik in range(full_shape[2]):
+                if zd_diffcoef[ic, ik] == 0.0:
+                    continue
                 theta_v_at_zd_vertidx[ic, isparse, ik] = theta_v[
                     c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik]
                 ]
@@ -60,13 +62,13 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     return z_temp
 
 
-class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
+class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(stencil_tests.StencilTest):
     PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
     OUTPUTS = ("z_temp",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         zd_vertoffset: np.ndarray,
         zd_diffcoef: np.ndarray,
@@ -77,6 +79,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         z_temp: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
             connectivities=connectivities,
             zd_vertoffset=zd_vertoffset,
@@ -89,24 +92,42 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         )
         return dict(z_temp=z_temp)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        zd_vertoffset = zero_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        zd_vertoffset_buffer = np.zeros(
+            (grid.size[dims.CellDim], grid.size[dims.C2E2CDim], grid.size[dims.KDim]),
+            dtype=gtx.int32,
+        )
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            zd_vertoffset[:, :, k] = rng.integers(  # type: ignore[index]  # NDArrayObject Protocol limitation
+            zd_vertoffset_buffer[:, :, k] = rng.integers(
                 low=0 - k,
                 high=grid.num_levels - k - 1,
-                size=(zd_vertoffset.ndarray.shape[0], zd_vertoffset.ndarray.shape[1]),
+                size=zd_vertoffset_buffer.shape[:2],
             )
+        # Non-steep points carry a zero offset and a zero coefficient, as the metric produces them;
+        # cell 0 is non-steep on every level, the bottom one included.
+        is_steep = rng.random((grid.num_cells, grid.num_levels)) < 0.5  # type: ignore[operator]  # GT4Py NDArrayObject protocol limitation
+        is_steep[0, :] = False
+        zd_vertoffset_buffer = np.where(is_steep[:, np.newaxis, :], zd_vertoffset_buffer, 0)
+        zd_vertoffset = data_alloc.as_field(
+            zd_vertoffset_buffer, dims.CellDim, dims.C2E2CDim, dims.KDim
+        )
 
-        zd_diffcoef = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        geofac_n2s_c = random_field(grid, dims.CellDim, dtype=wpfloat)
-        geofac_n2s_nbh = random_field(grid, dims.CellDim, dims.C2E2CDim, dtype=wpfloat)
-        vcoef = random_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=wpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        zd_diffcoef = data_alloc.as_field(
+            np.where(is_steep, rng.uniform(-1.0, 1.0, is_steep.shape), 0.0),
+            dims.CellDim,
+            dims.KDim,
+            dtype=wpfloat,
+        )
+        geofac_n2s_c = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        geofac_n2s_nbh = data_alloc.random_field(dims.CellDim, dims.C2E2CDim, dtype=wpfloat)
+        vcoef = data_alloc.random_field(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=wpfloat)
+        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_temp = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             zd_vertoffset=zd_vertoffset,

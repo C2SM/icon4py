@@ -5,50 +5,41 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
-    GraupelConsts,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import snow_lambda
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestSnowLambda(StencilTest):
+class TestSnowLambda(stencil_tests.StencilTest):
     PROGRAM = snow_lambda
     OUTPUTS = ("riming_snow_rate",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
-        rho: np.ndarray,
-        qs: np.ndarray,
+        rho_s: np.ndarray,
         ns: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        return dict(riming_snow_rate=np.full(rho.shape, 1.0e10))
+        # mirrors ICON mo_aes_graupel.f90 snow_lambda
+        lam = np.where(rho_s > 1.0e-15, (2.0 * 0.069 * ns / rho_s) ** (1.0 / 3.0), 1.0e10)
+        return dict(riming_snow_rate=lam)
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
-            rho=data_alloc.constant_field(grid, 1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(
-                grid, GraupelConsts.qmin, dims.CellDim, dims.KDim, dtype=wpfloat
+            rho_s=data_alloc.constant_field(
+                1.12204 * 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            ns=data_alloc.constant_field(grid, 1.76669e07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_snow_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ns=data_alloc.constant_field(1.76669e07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_snow_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

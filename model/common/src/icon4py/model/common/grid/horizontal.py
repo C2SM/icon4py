@@ -166,7 +166,7 @@ class Zone(enum.Enum):
     |:---------------------------------------|:-------|:---------------------------|
     | `min_rledge` (-13)                     |   0    | `END`                      |
     | (-12)                                  |   1    |                            |
-    | (-11)                                  |   2    |                            |
+    | `min_rledge_int-3` (-11)               |   2    | `HALO_LEVEL_3`             |
     | `min_rledge_int-2` (-10)               |   3    | `HALO_LEVEL_2`             |
     | `min_rledge_int-1` (-9)                |   4    | `HALO`                     |
     | `min_rledge_int`   (-8)                |   5    | `LOCAL`                    |
@@ -208,6 +208,9 @@ class Zone(enum.Enum):
 
     #: 2nd halo line
     HALO_LEVEL_2 = ("halo_level", 2)
+
+    #: 3rd halo line (``min_rledge_int-3``); only exists for edges
+    HALO_LEVEL_3 = ("halo_level", 3)
 
     #: all entries owned on the local grid, that is all entries excluding halo lines
     LOCAL = ("local", 0)
@@ -260,7 +263,7 @@ class Zone(enum.Enum):
         return (self.name, self.level) == (other.name, other.level)
 
     def is_halo(self) -> bool:
-        return self in (Zone.HALO, Zone.HALO_LEVEL_2)
+        return self in (Zone.HALO, Zone.HALO_LEVEL_2, Zone.HALO_LEVEL_3)
 
     def is_lateral_boundary(self) -> bool:
         return self in (
@@ -307,6 +310,7 @@ _ZONE_TO_INDEX_MAPPING = {
     Zone.INTERIOR: lambda dim: _icon_domain_index(_ICON_INTERIOR, dim),
     Zone.HALO: lambda dim: _icon_domain_index(_ICON_HALO, dim),
     Zone.HALO_LEVEL_2: lambda dim: _icon_domain_index(_ICON_HALO, dim, -1),
+    Zone.HALO_LEVEL_3: lambda dim: _icon_domain_index(_ICON_HALO, dim, -2),
     Zone.LOCAL: lambda dim: _icon_domain_index(ICON_LOCAL, dim),
     Zone.LATERAL_BOUNDARY: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim),
     Zone.LATERAL_BOUNDARY_LEVEL_2: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 1),

@@ -9,18 +9,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import numpy as np
 import pytest
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
-from icon4py.model.common.decomposition import (
-    decomposer as decomp,
-    definitions as decomp_defs,
-    mpi_decomposition,
-)
+from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.states import factory
+from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
 
@@ -31,10 +26,6 @@ from ..unit_tests.test_factory import SimpleFieldSource
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
 @gtx.field_operator
@@ -84,7 +75,13 @@ def test_program_provider_exchange(
         data_={},
         backend=backend,
         grid=grid,
-    ).with_metadata({"out": {"dtype": np.int32, "standard_name": "out", "units": ""}})
+    ).with_metadata(
+        {
+            "out": model.FieldMetaData(
+                standard_name="out", units="", dims=(dims.EdgeDim,), dtype=gtx.int32
+            )
+        }
+    )
     source._exchange = exchange
     edge_domain = h_grid.domain(dims.EdgeDim)
     provider = factory.ProgramFieldProvider(
@@ -112,11 +109,11 @@ def test_program_provider_exchange(
     )
     arr = field.ndarray
 
-    assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol
+    assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]
     if do_exchange:
         assert xp.all(xp.isin(arr[halo_points], valid_values))
     else:
-        assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol
+        assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]
 
 
 @pytest.mark.datatest
@@ -151,6 +148,12 @@ def test_numpy_provider_exchange(
         data_={},
         backend=backend,
         grid=grid,
+    ).with_metadata(
+        {
+            "out": model.FieldMetaData(
+                standard_name="out", units="", dims=(dims.EdgeDim,), dtype=gtx.int32
+            )
+        }
     )
     source._exchange = exchange
 
@@ -181,8 +184,8 @@ def test_numpy_provider_exchange(
     )
     arr = field.ndarray
 
-    assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol
+    assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]
     if do_exchange:
         assert xp.all(xp.isin(arr[halo_points], valid_values))
     else:
-        assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol
+        assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]

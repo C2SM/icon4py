@@ -107,7 +107,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     edge_center_lon: fa.EdgeField[wpfloat],
     primal_normal_x: fa.EdgeField[wpfloat],
     primal_normal_y: fa.EdgeField[wpfloat],
-    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
+    vct_a: gtx.Field[gtx.Dims[dims.KHalfDim], gtx.float64],
     lowest_layer_thickness: gtx.float64,
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,
@@ -157,15 +157,15 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
         vertex_ends=vertex_ends,
         edge_starts=edge_starts,
         edge_ends=edge_ends,
-        c2e=c2e.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
-        e2c=e2c.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
-        c2e2c=c2e2c.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
-        e2c2e=e2c2e.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
-        e2v=e2v.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
-        v2e=v2e.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
-        v2c=v2c.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
-        e2c2v=e2c2v.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
-        c2v=c2v.ndarray,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol mismatch
+        c2e=c2e.ndarray,
+        e2c=e2c.ndarray,
+        c2e2c=c2e2c.ndarray,
+        e2c2e=e2c2e.ndarray,
+        e2v=e2v.ndarray,
+        v2e=v2e.ndarray,
+        v2c=v2c.ndarray,
+        e2c2v=e2c2v.ndarray,
+        c2v=c2v.ndarray,
         grid_id="icon_grid",
         num_vertices=num_vertices,
         num_cells=num_cells,
@@ -211,20 +211,32 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        primal_normal_cell_x=primal_normal_cell_x,
-        primal_normal_cell_y=primal_normal_cell_y,
-        dual_normal_cell_x=dual_normal_cell_x,
-        dual_normal_cell_y=dual_normal_cell_y,
+        primal_normal_vert=(
+            primal_normal_vert_x,
+            primal_normal_vert_y,
+        ),
+        dual_normal_vert=(
+            dual_normal_vert_x,
+            dual_normal_vert_y,
+        ),
+        primal_normal_cell=(
+            primal_normal_cell_x,
+            primal_normal_cell_y,
+        ),
+        dual_normal_cell=(
+            dual_normal_cell_x,
+            dual_normal_cell_y,
+        ),
         edge_areas=edge_areas,
         coriolis_frequency=f_e,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
+        edge_center=(
+            edge_center_lat,
+            edge_center_lon,
+        ),
+        primal_normal=(
+            primal_normal_x,
+            primal_normal_y,
+        ),
     )
 
     # Cell geometry

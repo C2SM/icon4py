@@ -5,14 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
-
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,7 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_all_face_val
     compute_ppm_all_face_values,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -31,12 +24,14 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_all_face_values
     OUTPUTS = ("p_face",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
+        grid: base.Grid,
         *,
         p_cc: np.ndarray,
         p_cellhgt_mc_now: np.ndarray,
         p_face_in: np.ndarray,
+        p_face: np.ndarray,
         slev: gtx.int32,
         elev: gtx.int32,
         slevp1: gtx.int32,
@@ -44,23 +39,26 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         **kwargs: Any,
     ) -> dict:
         p_face_a = p_face_in.copy()
-        p_face_a[:, 1:] = p_cc[:, 1:] * (
+        p_face_a[:, 1:-1] = p_cc[:, 1:] * (
             1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])
         ) + (p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])) * (
             (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1]) * p_cc[:, 1:] + p_cc[:, :-1]
         )
-        k = np.arange(p_cc.shape[1])
-        p_face = np.where((k == slevp1) | (k == elev), p_face_a, p_face_in)
-        p_face = np.where((k == slev), p_cc, p_face)
-        p_face[:, 1:] = np.where((k[1:] == elevp1), p_cc[:, :-1], p_face[:, 1:])
+
+        p_face = p_face.copy()
+        p_face[:, :-1] = p_face_in[:, :-1]
+        p_face[:, slevp1] = p_face_a[:, slevp1]
+        p_face[:, elev] = p_face_a[:, elev]
+        p_face[:, slev] = p_cc[:, slev]
+        p_face[:, elevp1] = p_cc[:, elevp1 - 1]
         return dict(p_face=p_face)
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_face_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_face = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_face_in = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        p_face = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
         slev = gtx.int32(1)
         slevp1 = gtx.int32(2)
         elev = grid.num_levels - 2
