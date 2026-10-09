@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 import serialbox  # type: ignore[import-untyped]
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -64,5 +64,9 @@ def read_from_file(
     sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()
     log.debug("Reading prognostics initial-state from %s / %s", data_path, fname)
 
-    nc = grid_manager.grid.num_cells
-    return array_ns.asarray(array_ns.squeeze(ser.read("topography", sp).astype(float)))
+    local_indices = grid_manager.decomposition_info.global_index(
+        dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.ALL
+    )
+    return array_ns.asarray(array_ns.squeeze(ser.read("topography", sp).astype(float)))[
+        local_indices
+    ]
