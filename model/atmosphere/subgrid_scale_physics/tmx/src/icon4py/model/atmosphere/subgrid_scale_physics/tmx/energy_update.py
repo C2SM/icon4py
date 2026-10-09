@@ -22,7 +22,7 @@ import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import (
-    energy_update as energy_stencils,
+    energy_update_stencils as energy_stencils,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -97,7 +97,7 @@ class EnergyUpdate:
             self._surface_exchange_coefficients = (km_const, km_const * (1.0 / turb_prandtl))
             self._set_constant_on_surface_level = setup_program(
                 backend=backend,
-                program=vertical_operations.set_constant_on_model_levels_on_cells,
+                program=vertical_operations.set_constant_on_model_levels_on_cells_wp,
                 horizontal_sizes=horizontal_sizes,
                 vertical_sizes={
                     "vertical_start": gtx.int32(self._surface_level),
@@ -111,20 +111,23 @@ class EnergyUpdate:
         *,
         input_state: tmx_states.TmxInputState,
         surface_flux_state: tmx_states.TmxSurfaceFluxState,
+        heat_diffusion_tendency: fa.CellKField[ta.wpfloat],
         diagnostic_state: tmx_states.TmxDiagnosticState,
         tendency_state: tmx_states.TmxTendencyState,
         new_state: tmx_states.TmxNewState,
         dtime: float,
     ) -> None:
         """
-        Add the dissipation heating to `tendency_state.tend_temperature`, write the updated
-        temperature to `new_state` and the end-of-step diagnostics to `diagnostic_state`.
+        Add the dissipation heating to the temperature tendency of the heat diffusion
+        (`heat_diffusion_tendency`) and write the sum to `tendency_state.tend_temperature`,
+        the updated temperature to `new_state` and the end-of-step diagnostics to
+        `diagnostic_state`.
 
-        Runs after the scalar and the wind diffusion: needs their tendencies and new states,
-        and `km_ic` and `kh_ic` of `diagnostic_state`. Above the lowest model level, `km` and
-        `kh` are copied from the half level below. At the lowest level, `use_km_const=True` sets
-        `km = km_const` and `kh = km_const / turb_prandtl`; otherwise the caller must fill that
-        level with the surface exchange coefficient.
+        Runs after the scalar and the wind diffusion: needs their new states, the heat-diffusion
+        tendency, and `km_ic` and `kh_ic` of `diagnostic_state`. Above the lowest model level,
+        `km` and `kh` are copied from the half level below. At the lowest level,
+        `use_km_const=True` sets `km = km_const` and `kh = km_const / turb_prandtl`; otherwise
+        the caller must fill that level with the surface exchange coefficient.
         """
         log.debug("tmx energy update: start")
 
@@ -136,7 +139,7 @@ class EnergyUpdate:
             air_mass=input_state.air_mass,
             cv_air=input_state.cv_air,
             temperature=input_state.temperature,
-            tend_temperature=tendency_state.tend_temperature,
+            tend_temperature=heat_diffusion_tendency,
             q_snocpymlt=surface_flux_state.q_snocpymlt,
             qv=input_state.qv,
             qc=input_state.qc,
@@ -152,6 +155,7 @@ class EnergyUpdate:
             kh_ic=diagnostic_state.kh_ic,
             dissip_ke=diagnostic_state.dissip_ke,
             heating=diagnostic_state.heating,
+            new_tend_temperature=tendency_state.tend_temperature,
             new_temperature=new_state.temperature,
             cptgz=diagnostic_state.cptgz,
             cptgz_vi=self._cptgz_vi,

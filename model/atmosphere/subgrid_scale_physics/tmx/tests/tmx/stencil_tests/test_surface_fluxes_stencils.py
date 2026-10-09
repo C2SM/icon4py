@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.surface_fluxes import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.surface_fluxes_stencils import (
     compute_prescribed_surface_fluxes,
 )
 from icon4py.model.common import constants, dimension as dims

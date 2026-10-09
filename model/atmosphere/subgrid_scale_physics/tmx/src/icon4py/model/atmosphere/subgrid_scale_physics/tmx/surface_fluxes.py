@@ -15,7 +15,7 @@ import typing
 from typing import Protocol
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import (
-    surface_fluxes as surface_flux_stencils,
+    surface_fluxes_stencils as surface_flux_stencils,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid
