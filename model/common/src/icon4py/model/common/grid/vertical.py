@@ -330,8 +330,8 @@ def _read_vct_a_and_vct_b_from_file(
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
     return (
-        gtx.as_field((dims.KHalfDim,), vct_a, allocator=allocator),  # type: ignore [arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
-        gtx.as_field((dims.KHalfDim,), vct_b, allocator=allocator),  # type: ignore [arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        gtx.as_field((dims.KHalfDim,), vct_a, allocator=allocator),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        gtx.as_field((dims.KHalfDim,), vct_b, allocator=allocator),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
 
 

@@ -163,12 +163,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._allocator)
         e_owner_mask = gtx.as_field(
             (dims.EdgeDim,),
-            self._decomposition_info.owner_mask(dims.EdgeDim),  # type: ignore [arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+            self._decomposition_info.owner_mask(dims.EdgeDim),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
             allocator=self._allocator,
         )
         c_owner_mask = gtx.as_field(
             (dims.CellDim,),
-            self._decomposition_info.owner_mask(dims.CellDim),  # type: ignore [arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+            self._decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
             allocator=self._allocator,
         )
         refinement_control = self._grid.refinement_control

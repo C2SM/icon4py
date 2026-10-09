@@ -60,7 +60,7 @@ def _compute_surface_pressure(
 @gtx.scan_operator(
     axis=dims.KDim,
     forward=False,
-    init=(wpfloat(0.0), wpfloat(0.0), True),  # type: ignore [call-overload]  # GT4Py scan_operator typing does not accept tuple init for multi-element scan state
+    init=(wpfloat(0.0), wpfloat(0.0), True),  # type: ignore[call-overload]  # GT4Py scan_operator typing does not accept tuple init for multi-element scan state
 )
 def _scan_pressure(
     state: tuple[ta.wpfloat, ta.wpfloat, bool],
