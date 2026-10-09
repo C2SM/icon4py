@@ -34,52 +34,52 @@ def _sum_neighbor_contributions(
     js_eq4 = js_int == 4
     p_cc_k = p_cc(dims.KHalfDim + 0.5)
 
-    p_cc_p0 = where(mask1 & js_eq0, p_cc_k, 0.0)
+    p_cc_p0 = where(mask1 & js_eq0, p_cc_k, wpfloat("0.0"))
     p_cc_p1 = where(
         mask1 & js_eq1,
         concat_where(dims.KHalfDim < elev, p_cc(dims.KHalfDim + 1.5), p_cc_k),
-        0.0,
+        wpfloat("0.0"),
     )
     p_cc_p2 = where(
         mask1 & js_eq2,
         concat_where(dims.KHalfDim < elev - 1, p_cc(dims.KHalfDim + 2.5), p_cc_k),
-        0.0,
+        wpfloat("0.0"),
     )
     p_cc_p3 = where(
         mask1 & js_eq3,
         concat_where(dims.KHalfDim < elev - 2, p_cc(dims.KHalfDim + 3.5), p_cc_k),
-        0.0,
+        wpfloat("0.0"),
     )
     p_cc_p4 = where(
         mask1 & js_eq4,
         concat_where(dims.KHalfDim < elev - 3, p_cc(dims.KHalfDim + 4.5), p_cc_k),
-        0.0,
+        wpfloat("0.0"),
     )
 
     p_cc_m0 = where(
         mask2 & js_eq0,
         concat_where(dims.KHalfDim > 0, p_cc(dims.KHalfDim - 0.5), p_cc_k),
-        0.0,
+        wpfloat("0.0"),
     )
     p_cc_m1 = where(
         mask2 & js_eq1,
         concat_where(dims.KHalfDim > 1, p_cc(dims.KHalfDim - 1.5), p_cc_k),
-        0.0,
+        wpfloat("0.0"),
     )
     p_cc_m2 = where(
         mask2 & js_eq2,
         concat_where(dims.KHalfDim > 2, p_cc(dims.KHalfDim - 2.5), p_cc_k),
-        0.0,
+        wpfloat("0.0"),
     )
     p_cc_m3 = where(
         mask2 & js_eq3,
         concat_where(dims.KHalfDim > 3, p_cc(dims.KHalfDim - 3.5), p_cc_k),
-        0.0,
+        wpfloat("0.0"),
     )
     p_cc_m4 = where(
         mask2 & js_eq4,
         concat_where(dims.KHalfDim > 4, p_cc(dims.KHalfDim - 4.5), p_cc_k),
-        0.0,
+        wpfloat("0.0"),
     )
 
     p_cc_jks = (
