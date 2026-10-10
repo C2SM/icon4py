@@ -115,7 +115,7 @@ class MetricsConfig:
     igradp_method: int = 3
     """Method for computing the horizontal pressure gradient."""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.rayleigh_type != constants.RayleighType.KLEMP:
             raise NotImplementedError(
                 f"Only rayleigh_type = KLEMP is implemented, got {self.rayleigh_type}."
@@ -163,17 +163,19 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._allocator)
         e_owner_mask = gtx.as_field(
             (dims.EdgeDim,),
-            self._decomposition_info.owner_mask(dims.EdgeDim),
+            self._decomposition_info.owner_mask(dims.EdgeDim),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
             allocator=self._allocator,
         )
         c_owner_mask = gtx.as_field(
             (dims.CellDim,),
-            self._decomposition_info.owner_mask(dims.CellDim),
+            self._decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
             allocator=self._allocator,
         )
-        c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
+        refinement_control = self._grid.refinement_control
+        assert refinement_control is not None
+        c_refin_ctrl = refinement_control[dims.CellDim]
 
-        e_refin_ctrl = self._grid.refinement_control[dims.EdgeDim]
+        e_refin_ctrl = refinement_control[dims.EdgeDim]
 
         self.register_provider(
             factory.PrecomputedFieldProvider(
@@ -717,7 +719,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.END),
                 ),
             },
-            fields={"flat_idx_max": attrs.FLAT_IDX_MAX},
+            fields=(attrs.FLAT_IDX_MAX,),
         )
         self.register_provider(max_flat_index_provider)
 
@@ -804,8 +806,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP: attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP},
             params={
-                "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),  # type: ignore [attr-defined]
-                "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
+                "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
+                "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),
             },
             do_exchange=True,
         )

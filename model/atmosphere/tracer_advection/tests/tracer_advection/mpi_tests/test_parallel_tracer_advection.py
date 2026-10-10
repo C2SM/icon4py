@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import pytest
 from gt4py.next import typing as gtx_typing
 
@@ -98,25 +100,25 @@ from ..utils import (
 )
 @pytest.mark.mpi
 def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    date,
-    even_timestep,
-    ntracer,
-    horizontal_advection_type,
-    horizontal_advection_limiter,
-    vertical_advection_type,
-    vertical_advection_limiter,
+    date: Any,
+    even_timestep: Any,
+    ntracer: Any,
+    horizontal_advection_type: Any,
+    horizontal_advection_limiter: Any,
+    vertical_advection_type: Any,
+    vertical_advection_limiter: Any,
     *,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
-    backend,
-    advection_init_savepoint,
-    advection_exit_savepoint,
+    grid_savepoint: Any,
+    icon_grid: Any,
+    interpolation_savepoint: Any,
+    metrics_savepoint: Any,
+    backend: Any,
+    advection_init_savepoint: Any,
+    advection_exit_savepoint: Any,
     process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
-    construct_advection_lsq_state,
-):
+    construct_advection_lsq_state: Any,
+) -> None:
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
         pytest.xfail("ValueError: axes don't match array")

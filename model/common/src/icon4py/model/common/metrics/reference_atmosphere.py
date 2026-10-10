@@ -57,7 +57,7 @@ def compute_reference_atmosphere_edge_fields(  # noqa: PLR0917 [too-many-positio
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_reference_atmosphere_edge_fields(
         z_mc=z_mc,
         c_lin_e=c_lin_e,
@@ -160,7 +160,7 @@ def compute_reference_atmosphere_cell_fields(  # noqa: PLR0917 [too-many-positio
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
         Calculate reference atmosphere fields on full levels.
 
@@ -212,7 +212,7 @@ def _compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-argu
     p0sl_bg: gtx.float64,
     rd_o_cpd: gtx.float64,
     p0ref: gtx.float64,
-):
+) -> tuple[fa.CellKHalfField[gtx.float64], fa.CellKHalfField[gtx.float64]]:
     """
     Calculate the reference Exner pressure and its first vertical derivative, half level mass points.
     """
@@ -292,7 +292,7 @@ def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-argum
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_theta_d_exner_dz_ref_ic(
         z_ifc=z_ifc,
         t0sl_bg=t0sl_bg,

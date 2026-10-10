@@ -103,13 +103,13 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     a_hshr: gtx.float64,
     loutshs: bool,
     backend: gtx.int32,
-):
+) -> None:
     if grid_wrapper.grid_state is None:
         raise Exception(
             "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    xp = theta_ref_mc.array_ns
+    xp = theta_ref_mc.array_ns  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
     on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
@@ -172,9 +172,9 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         # only the first row is needed, the others are for C2E2C neighbors, but slicing in fortran causes issues
         zd_cellidx = zd_cellidx[0, :]
         # these are the three k offsets for the C2E2C neighbors
-        zd_vertoffset = zd_vertidx[1:, :] - zd_vertidx[0, :]
+        zd_vertoffset = zd_vertidx[1:, :] - zd_vertidx[0, :]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
         # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
-        zd_vertidx = zd_vertidx[0, :]
+        zd_vertidx = zd_vertidx[0, :]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
         zd_diffcoef = data_alloc.scattered_field(
             domain=cell_k_domain,
@@ -188,7 +188,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         )
         zd_intcoef = data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
-            values=zd_intcoef.T,
+            values=zd_intcoef.T,  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
             indices=(
                 data_alloc.adjust_fortran_indices(zd_cellidx),
                 slice(None),
@@ -197,7 +197,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             default_value=wpfloat(0.0),
             allocator=allocator,
         )
-        zd_vertoffset = data_alloc.scattered_field(
+        zd_vertoffset = data_alloc.scattered_field(  # type: ignore[assignment]  # GT4Py field/metadata type inference limitation
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(
@@ -275,7 +275,7 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
     dtime: gtx.float64,
     linit: bool,
-):
+) -> None:
     if granule is None:
         raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init' first.")
 

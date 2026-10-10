@@ -54,9 +54,9 @@ def test_update_exner_and_theta_v(backend: gtx_typing.Backend) -> None:
     )
     exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
     theta_v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    rho.ndarray[...] = rho_value
-    virtual_temperature.ndarray[...] = tv_value
-    virtual_temperature_tendency.ndarray[...] = tv_tendency_value
+    rho.ndarray[...] = rho_value  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    virtual_temperature.ndarray[...] = tv_value  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    virtual_temperature_tendency.ndarray[...] = tv_tendency_value  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
     compute_temperature.update_exner_and_theta_v.with_backend(backend)(
         rho=rho,

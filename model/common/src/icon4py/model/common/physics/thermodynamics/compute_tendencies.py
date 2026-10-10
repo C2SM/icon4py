@@ -66,7 +66,7 @@ def compute_virtual_temperature_tendency(  # noqa: PLR0917 [too-many-positional-
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_virtual_temperature_tendency(
         dtime=dtime,
         qv=qv,

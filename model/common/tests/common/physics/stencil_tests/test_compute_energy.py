@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -35,12 +37,14 @@ class TestComputeInternalEnergyPerArea(stencil_tests.StencilTest):
         qice: np.ndarray,
         rho: np.ndarray,
         dz: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(out=np.full(t.shape, 38265357.270336017))
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         return dict(
             t=data_alloc.constant_field(255.756, dims.CellDim, dims.KDim, dtype=wpfloat),
             qv=data_alloc.constant_field(0.00122576, dims.CellDim, dims.KDim, dtype=wpfloat),
@@ -67,7 +71,7 @@ class TestComputeDryStaticEnergy(stencil_tests.StencilTest):
         temperature: np.ndarray,
         height_above_ground: np.ndarray,
         grav: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         dry_static_energy = reference_funcs.compute_dry_static_energy_numpy(
             temperature,
@@ -90,7 +94,7 @@ class TestComputeDryStaticEnergy(stencil_tests.StencilTest):
             temperature=temperature,
             height_above_ground=height_above_ground,
             grav=constants.GRAV,
-            domain={
+            domain={  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
                 dims.KDim: (0, gtx.int32(grid.num_levels)),
             },

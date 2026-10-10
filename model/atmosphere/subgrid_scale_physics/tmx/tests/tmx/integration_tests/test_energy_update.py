@@ -121,10 +121,10 @@ def test_tmx_run_energy_update_single_step(
         "tend_ta": (tendency_state.tend_temperature, exit_savepoint.tend_ta(), 1.0e-18),
         "heating": (diagnostic_state.heating, exit_savepoint.heating(), 3.0e-13),
         "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 3.0e-13),
-        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 3.0e-6),
-        "dissip_ke_vi": (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), 2.0e-12),
-        "int_energy_vi": (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), 3.0e-6),
-        "tend_int_energy_vi": (
+        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 3.0e-6),  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+        "dissip_ke_vi": (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), 2.0e-12),  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+        "int_energy_vi": (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), 3.0e-6),  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+        "tend_int_energy_vi": (  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
             diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
             7.0e-9,

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -20,15 +22,15 @@ from icon4py.model.testing import stencil_tests
 
 def apply_nabla2_and_nabla4_to_vn_numpy(
     *,
-    area_edge,
-    kh_smag_e,
-    z_nabla2_e,
-    z_nabla4_e2,
-    diff_multfac_vn,
-    nudgecoeff_e,
-    vn,
-    nudgezone_diff,
-):
+    area_edge: Any,
+    kh_smag_e: Any,
+    z_nabla2_e: Any,
+    z_nabla4_e2: Any,
+    diff_multfac_vn: Any,
+    nudgecoeff_e: Any,
+    vn: Any,
+    nudgezone_diff: Any,
+) -> Any:
     area_edge = np.expand_dims(area_edge, axis=-1)
     diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
     nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
@@ -44,7 +46,9 @@ class TestApplyNabla2AndNabla4ToVn(stencil_tests.StencilTest):
     OUTPUTS = ("vn",)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         area_edge = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
         kh_smag_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         z_nabla2_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
@@ -81,7 +85,7 @@ class TestApplyNabla2AndNabla4ToVn(stencil_tests.StencilTest):
         nudgecoeff_e: np.ndarray,
         vn: np.ndarray,
         nudgezone_diff: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         vn = apply_nabla2_and_nabla4_to_vn_numpy(
             area_edge=area_edge,

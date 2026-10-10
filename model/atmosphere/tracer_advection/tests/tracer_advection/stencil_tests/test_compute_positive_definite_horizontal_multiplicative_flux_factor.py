@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -30,9 +32,9 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         p_cc: np.ndarray,
         p_rhodz_now: np.ndarray,
         p_mflx_tracer_h: np.ndarray,
-        p_dtime,
-        wp_eps,
-        **kwargs,
+        p_dtime: Any,
+        wp_eps: Any,
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         c2e = connectivities[dims.C2E]

@@ -34,7 +34,7 @@ class SaturationAdjustmentConfig:
     #: in ICON, 1.e-3 is always used for the tolerance when subroutine satad_v_3D is called.
     tolerance: ta.wpfloat = 1.0e-3
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         ta.dataclass_float_to_wp(self)
 
 
@@ -49,25 +49,25 @@ class ConvergenceError(Exception):
 
 #: CF attributes of saturation adjustment input variables
 _SATURATION_ADJUST_INPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
-    air_density=dict(
+    air_density=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
         standard_name="air_density",
         long_name="density",
         units="kg m-3",
         icon_var_name="rho",
     ),
-    temperature=dict(
+    temperature=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
         standard_name="air_temperature",
         long_name="air temperature",
         units="K",
         icon_var_name="temp",
     ),
-    specific_humidity=dict(
+    specific_humidity=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
         standard_name="specific_humidity",
         long_name="ratio of water vapor mass to total moist air parcel mass",
         units="1",
         icon_var_name="qv",
     ),
-    specific_cloud=dict(
+    specific_cloud=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
         standard_name="specific_cloud_content",
         long_name="ratio of cloud water mass to total moist air parcel mass",
         units="1",
@@ -78,17 +78,17 @@ _SATURATION_ADJUST_INPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dic
 
 #: CF attributes of saturation adjustment output variables
 _SATURATION_ADJUST_OUTPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
-    tend_temperature_due_to_satad=dict(
+    tend_temperature_due_to_satad=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
         standard_name="tendency_of_air_temperature_due_to_saturation_adjustment",
         long_name="tendency of air temperature due to saturation adjustment",
         units="K s-1",
     ),
-    tend_specific_humidity_due_to_satad=dict(
+    tend_specific_humidity_due_to_satad=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
         standard_name="tendency_of_specific_humidity_due_to_saturation_adjustment",
         long_name="tendency of ratio of water vapor mass to total moist air parcel mass due to saturation adjustment",
         units="s-1",
     ),
-    tend_specific_cloud_due_to_satad=dict(
+    tend_specific_cloud_due_to_satad=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
         standard_name="tendency_of_specific_cloud_content_due_to_saturation_adjustment",
         long_name="tendency of ratio of cloud water mass to total moist air parcel mass due to saturation adjustment",
         units="s-1",
@@ -105,7 +105,7 @@ class SaturationAdjustment:
         vertical_params: v_grid.VerticalGrid,
         metric_state: MetricStateSaturationAdjustment,
         backend: gtx_typing.Backend | None,
-    ):
+    ) -> None:
         self._backend = backend
         self.config = config
         self._grid = grid
@@ -124,7 +124,7 @@ class SaturationAdjustment:
     def output_properties(self) -> dict[str, model.FieldMetaData]:
         raise NotImplementedError
 
-    def _allocate_local_variables(self):
+    def _allocate_local_variables(self) -> None:
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
         self._temperature1 = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
@@ -146,7 +146,7 @@ class SaturationAdjustment:
             self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
 
-    def _initialize_gt4py_programs(self):
+    def _initialize_gt4py_programs(self) -> None:
         self._compute_subsaturated_case_and_initialize_newton_iterations = (
             model_options.setup_program(
                 backend=self._backend,
@@ -204,7 +204,7 @@ class SaturationAdjustment:
             },
         )
 
-    def _determine_horizontal_domains(self):
+    def _determine_horizontal_domains(self) -> None:
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
@@ -228,7 +228,7 @@ class SaturationAdjustment:
         temperature_tendency: fa.CellKField[ta.wpfloat],
         qv_tendency: fa.CellKField[ta.wpfloat],
         qc_tendency: fa.CellKField[ta.wpfloat],
-    ):
+    ) -> None:
         """
         Adjust saturation at each grid point.
         Saturation adjustment condenses/evaporates specific humidity (qv) into/from

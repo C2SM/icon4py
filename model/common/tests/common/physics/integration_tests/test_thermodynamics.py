@@ -197,8 +197,8 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         virtual_temperature=satad_init.virtual_temperature(),
         pressure=satad_init.pressure(),
         pressure_ifc=satad_init.pressure_ifc(),
-        u=None,
-        v=None,
+        u=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        v=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -244,7 +244,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
 
     compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(backend)(
         gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
-        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
+        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         metrics_savepoint.ddqz_z_full(),
         diagnostic_state.pressure,
         data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),

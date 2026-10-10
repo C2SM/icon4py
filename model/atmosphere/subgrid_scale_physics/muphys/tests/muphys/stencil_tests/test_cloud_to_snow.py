@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -29,7 +31,7 @@ class TestCloudToSnow(stencil_tests.StencilTest):
         qs: np.ndarray,
         ns: np.ndarray,
         lam: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         # mirrors ICON mo_aes_graupel.f90 cloud_to_snow (riming tuning factor 3.0)
         c_rim = 2.61 * 0.9 * 25.0 * 3.0
@@ -41,7 +43,7 @@ class TestCloudToSnow(stencil_tests.StencilTest):
         return dict(riming_snow_rate=rate)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
             t=data_alloc.constant_field(256.571, dims.CellDim, dims.KDim, dtype=wpfloat),
             qc=data_alloc.constant_field(3.31476e-05, dims.CellDim, dims.KDim, dtype=wpfloat),

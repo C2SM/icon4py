@@ -19,7 +19,7 @@ from icon4py.tools.py2fgen import _codegen, _definitions
 
 
 try:
-    import cupy as cp  # type: ignore[import-not-found]
+    import cupy as cp  # type: ignore[import-not-found]  # optional dependency without stubs
 except ImportError:
     cp = None
 

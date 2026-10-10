@@ -16,7 +16,7 @@ import typing
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-import serialbox  # type: ignore[import-untyped]
+import serialbox  # type: ignore[import-untyped]  # optional dependency without stubs
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.config import options as common_conf_opt
@@ -102,12 +102,12 @@ def _read_prognostic_state(
     prognostic_state: prognostics.PrognosticState,
     read_cell_k: Callable[[str], data_alloc.NDArray],
     read_edge_k: Callable[[str], data_alloc.NDArray],
-):
-    prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")
-    prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")
-    prognostic_state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
-    prognostic_state.vn.ndarray[:, :] = read_edge_k("vn_now")
-    prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")
+) -> None:
+    prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
+    prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
+    prognostic_state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
+    prognostic_state.vn.ndarray[:, :] = read_edge_k("vn_now")  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
+    prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
 
 
 def read_initial_condition_from_file(
@@ -139,7 +139,7 @@ def read_initial_condition_from_file(
     if ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
         for i, tracer in enumerate(tracer_state_now.active_fields()):
-            tracer.field.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
+            tracer.field.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
 
 
 def read_restart_from_file(
@@ -204,7 +204,7 @@ def read_restart_from_file(
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
-    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = (
+    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = (  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
         read_cell_k("exner_pr")
     )
 
@@ -214,18 +214,18 @@ def read_restart_from_file(
     vertical_wind_tendency = _read_predictor_corrector_fields(
         serializer, velocity_savepoint, "ddt_w_adv_pc", grid.num_cells, array_ns
     )
-    solve_nonhydro_diagnostic_state.normal_wind_advective_tendency.predictor.ndarray[:, :] = (
+    solve_nonhydro_diagnostic_state.normal_wind_advective_tendency.predictor.ndarray[:, :] = (  # type: ignore[attr-defined]  # PredictorCorrectorPair descriptor typed as Callable by mypy
         normal_wind_tendency[0]
     )
-    solve_nonhydro_diagnostic_state.normal_wind_advective_tendency.corrector.ndarray[:, :] = (
+    solve_nonhydro_diagnostic_state.normal_wind_advective_tendency.corrector.ndarray[:, :] = (  # type: ignore[attr-defined]  # PredictorCorrectorPair descriptor typed as Callable by mypy
         normal_wind_tendency[1]
     )
     # The dycore swaps the vertical advective tendency at the first substep of a time step
     # that is not the initial one, and then consumes the predictor without recomputing it.
     # The two time levels are therefore stored swapped.
-    solve_nonhydro_diagnostic_state.vertical_wind_advective_tendency.predictor.ndarray[:, :] = (
+    solve_nonhydro_diagnostic_state.vertical_wind_advective_tendency.predictor.ndarray[:, :] = (  # type: ignore[attr-defined]  # PredictorCorrectorPair descriptor typed as Callable by mypy
         vertical_wind_tendency[1]
     )
-    solve_nonhydro_diagnostic_state.vertical_wind_advective_tendency.corrector.ndarray[:, :] = (
+    solve_nonhydro_diagnostic_state.vertical_wind_advective_tendency.corrector.ndarray[:, :] = (  # type: ignore[attr-defined]  # PredictorCorrectorPair descriptor typed as Callable by mypy
         vertical_wind_tendency[0]
     )

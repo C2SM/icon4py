@@ -176,7 +176,7 @@ class EnergyUpdate:
             (self._int_energy_vi, diagnostic_state.int_energy_vi),
             (self._tend_int_energy_vi, diagnostic_state.tend_int_energy_vi),
         ):
-            column_sum.ndarray[cells] = running_sum.ndarray[cells, self._surface_level]
+            column_sum.ndarray[cells] = running_sum.ndarray[cells, self._surface_level]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
         temperature_exchange.finish()
 
         log.debug("tmx energy update: end")

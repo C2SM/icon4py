@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -30,7 +32,7 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
         p_vt: np.ndarray,
         edge_cell_length: np.ndarray,
         p_dt: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         lvn_pos = p_vn >= 0.0
         traj_length = np.sqrt(p_vn**2 + p_vt**2) * p_dt

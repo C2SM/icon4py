@@ -95,7 +95,7 @@ else:
     type ArrayInfo = tuple[Any, tuple[int, ...], bool, bool]
 
 if TYPE_CHECKING:
-    import cupy as cp  # type: ignore[import-not-found]
+    import cupy as cp  # type: ignore[import-not-found]  # optional dependency without stubs
 
     type NDArray = cp.ndarray | np.ndarray
 else:

@@ -16,6 +16,7 @@ suites (where a hole in a check simply goes unnoticed).
 
 import inspect
 import types
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -36,25 +37,25 @@ data_alloc = data_allocation
 # -- helpers ---------------------------------------------------------------------------
 
 
-def valid_reference():
+def valid_reference() -> Any:
     """A `reference` implementation following the convention."""
 
-    def reference(grid, **kwargs):
+    def reference(grid: Any, **kwargs: Any) -> Any:
         return {}
 
     return reference
 
 
-def valid_input_data():
+def valid_input_data() -> Any:
     """An `input_data` fixture function following the convention."""
 
-    def input_data(data_alloc):
+    def input_data(data_alloc: Any) -> Any:
         return {}
 
     return input_data
 
 
-def make_suite(**namespace):
+def make_suite(**namespace: Any) -> Any:
     """A minimal valid `StencilTest` subclass, with `namespace` merged into its body."""
     body = {
         "reference": stencil_tests.static_reference(valid_reference()),
@@ -65,12 +66,12 @@ def make_suite(**namespace):
     return type("Suite", (stencil_tests.StencilTest,), body)
 
 
-def cell_field(values):
-    return gtx.as_field((dims.CellDim,), np.asarray(values, dtype=np.float64))
+def cell_field(values: Any) -> Any:
+    return gtx.as_field((dims.CellDim,), np.asarray(values, dtype=np.float64))  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
 
 
 @pytest.fixture
-def grid():
+def grid() -> Any:
     return simple.simple_grid()
 
 
@@ -78,57 +79,57 @@ def grid():
 
 
 class TestStaticReference:
-    def test_returns_marked_staticmethod(self):
+    def test_returns_marked_staticmethod(self) -> None:
         marked = stencil_tests.static_reference(valid_reference())
 
         assert isinstance(marked, staticmethod)
         assert getattr(marked, "__stencil_test_reference__", False)
 
-    def test_accepts_an_existing_staticmethod(self):
+    def test_accepts_an_existing_staticmethod(self) -> None:
         marked = stencil_tests.static_reference(staticmethod(valid_reference()))
 
         assert isinstance(marked, staticmethod)
         assert getattr(marked, "__stencil_test_reference__", False)
 
-    def test_does_not_wrap_twice(self):
+    def test_does_not_wrap_twice(self) -> None:
         once = stencil_tests.static_reference(valid_reference())
 
         assert stencil_tests.static_reference(once) is once
 
-    def test_rejects_non_function(self):
+    def test_rejects_non_function(self) -> None:
         with pytest.raises(TypeError, match="must be a regular function or a staticmethod"):
-            stencil_tests.static_reference(object())
+            stencil_tests.static_reference(object())  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
 
-    def test_rejects_wrong_name(self):
-        def not_reference(grid, **kwargs): ...
+    def test_rejects_wrong_name(self) -> None:
+        def not_reference(grid: Any, **kwargs: Any) -> None: ...
 
         with pytest.raises(ValueError, match="must be named 'reference'"):
             stencil_tests.static_reference(not_reference)
 
-    def test_rejects_wrong_first_parameter(self):
-        def reference(connectivities, **kwargs): ...
+    def test_rejects_wrong_first_parameter(self) -> None:
+        def reference(connectivities: Any, **kwargs: Any) -> None: ...
 
         with pytest.raises(ValueError, match=r"must be 'reference\(grid, \.\.\.\)'"):
             stencil_tests.static_reference(reference)
 
-    def test_rejects_empty_signature(self):
+    def test_rejects_empty_signature(self) -> None:
         """Regression: this used to raise `IndexError` while checking the convention."""
 
-        def reference(): ...
+        def reference() -> None: ...
 
         with pytest.raises(ValueError, match=r"must be 'reference\(grid, \.\.\.\)'"):
             stencil_tests.static_reference(reference)
 
-    def test_rejects_positional_only_grid(self):
+    def test_rejects_positional_only_grid(self) -> None:
         """`test_and_benchmark` calls `reference(grid=...)`, so positional-only would fail late."""
 
-        def reference(grid, /, **kwargs): ...
+        def reference(grid: Any, /, **kwargs: Any) -> None: ...
 
         with pytest.raises(ValueError, match="cannot be positional-only"):
             stencil_tests.static_reference(reference)
 
-    def test_reports_the_actual_signature_readably(self):
-        def reference(connectivities, other, **kwargs): ...
+    def test_reports_the_actual_signature_readably(self) -> None:
+        def reference(connectivities: Any, other: Any, **kwargs: Any) -> None: ...
 
         with pytest.raises(ValueError) as excinfo:
             stencil_tests.static_reference(reference)
@@ -141,36 +142,36 @@ class TestStaticReference:
 
 
 class TestInputDataFixture:
-    def test_returns_a_marked_class_scoped_static_fixture(self):
+    def test_returns_a_marked_class_scoped_static_fixture(self) -> None:
         fixture = stencil_tests.input_data_fixture(valid_input_data())
 
         # a staticmethod: pytest deprecated class-scoped fixtures defined as instance methods
         assert isinstance(fixture, staticmethod)
         assert getattr(fixture, "__stencil_test_input_fixture__", False)
-        assert fixture.__func__._fixture_function_marker.scope == "class"
+        assert fixture.__func__._fixture_function_marker.scope == "class"  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
 
-    def test_forwards_keyword_arguments_to_pytest_fixture(self):
+    def test_forwards_keyword_arguments_to_pytest_fixture(self) -> None:
         fixture = stencil_tests.input_data_fixture(params=[1, 2], scope="function")(
             valid_input_data()
         )
-        marker = fixture.__func__._fixture_function_marker
+        marker = fixture.__func__._fixture_function_marker  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
 
         assert getattr(fixture, "__stencil_test_input_fixture__", False)
         assert marker.params == (1, 2)
         assert marker.scope == "function"  # an explicit scope wins over the default
 
-    def test_accepts_an_existing_staticmethod(self):
+    def test_accepts_an_existing_staticmethod(self) -> None:
         fixture = stencil_tests.input_data_fixture(staticmethod(valid_input_data()))
 
         assert isinstance(fixture, staticmethod)
         assert getattr(fixture, "__stencil_test_input_fixture__", False)
 
-    def test_rejects_non_function(self):
+    def test_rejects_non_function(self) -> None:
         with pytest.raises(TypeError, match="must be a regular function"):
-            stencil_tests.input_data_fixture(object())
+            stencil_tests.input_data_fixture(object())  # type: ignore[call-overload]  # GT4Py scan_operator stub limitation
 
-    def test_rejects_wrong_name(self):
-        def not_input_data(data_alloc): ...
+    def test_rejects_wrong_name(self) -> None:
+        def not_input_data(data_alloc: Any) -> None: ...
 
         with pytest.raises(ValueError, match="must be named 'input_data'"):
             stencil_tests.input_data_fixture(not_input_data)
@@ -183,24 +184,24 @@ class TestInputDataFixture:
             pytest.param(lambda grid, data_alloc: None, id="grid_first"),
         ],
     )
-    def test_rejects_wrong_leading_parameters(self, func):
+    def test_rejects_wrong_leading_parameters(self, func: Any) -> None:
         func.__name__ = "input_data"
 
         with pytest.raises(ValueError, match=r"must be 'input_data\(data_alloc, \.\.\.\)'"):
             stencil_tests.input_data_fixture(func)
 
-    def test_rejects_direct_data_allocation_call(self):
-        def input_data(data_alloc, grid):
+    def test_rejects_direct_data_allocation_call(self) -> None:
+        def input_data(data_alloc: Any, grid: Any) -> Any:
             return {"a": data_allocation.zero_field(grid, dims.CellDim)}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
             stencil_tests.input_data_fixture(input_data)
 
-    def test_rejects_a_call_hidden_in_a_nested_function(self):
+    def test_rejects_a_call_hidden_in_a_nested_function(self) -> None:
         """A scan of only the fixture's own code object would miss this."""
 
-        def input_data(data_alloc, grid):
-            def build():
+        def input_data(data_alloc: Any, grid: Any) -> Any:
+            def build() -> Any:
                 return data_allocation.zero_field(grid, dims.CellDim)
 
             return {"a": build()}
@@ -208,26 +209,26 @@ class TestInputDataFixture:
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
             stencil_tests.input_data_fixture(input_data)
 
-    def test_rejects_a_call_hidden_in_a_comprehension(self):
-        def input_data(data_alloc, grid):
+    def test_rejects_a_call_hidden_in_a_comprehension(self) -> None:
+        def input_data(data_alloc: Any, grid: Any) -> Any:
             return {"a": [data_allocation.zero_field(grid, dims.CellDim) for _ in range(1)]}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
             stencil_tests.input_data_fixture(input_data)
 
-    def test_rejects_a_gt4py_constructor_without_an_allocator(self):
+    def test_rejects_a_gt4py_constructor_without_an_allocator(self) -> None:
         """It would allocate on the host, which a GPU backend cannot use."""
 
-        def input_data(data_alloc, grid):
+        def input_data(data_alloc: Any, grid: Any) -> Any:
             return {"a": gtx.constructors.zeros(domain={dims.CellDim: (0, 3)}, dtype=float)}
 
         with pytest.raises(TypeError, match="without an 'allocator'"):
             stencil_tests.input_data_fixture(input_data)
 
-    def test_accepts_a_gt4py_constructor_given_the_allocator(self):
+    def test_accepts_a_gt4py_constructor_given_the_allocator(self) -> None:
         """Needed when the domain is one `zero_field` cannot express."""
 
-        def input_data(data_alloc, grid):
+        def input_data(data_alloc: Any, grid: Any) -> Any:
             return {
                 "a": gtx.constructors.zeros(
                     domain={dims.CellDim: (0, 3)}, dtype=float, allocator=data_alloc.allocator
@@ -236,41 +237,41 @@ class TestInputDataFixture:
 
         assert stencil_tests.input_data_fixture(input_data) is not None
 
-    def test_is_skipped_when_no_source_is_available(self):
+    def test_is_skipped_when_no_source_is_available(self) -> None:
         """Dynamically generated fixtures cannot be inspected; they must not blow up."""
         namespace: dict = {}
         exec("def input_data(data_alloc):\n    return {}", namespace)
 
         assert stencil_tests.input_data_fixture(namespace["input_data"]) is not None
 
-    def test_rejects_a_directly_imported_constructor(self):
+    def test_rejects_a_directly_imported_constructor(self) -> None:
         """A `from ...data_allocation import zero_field` binds the function, not the module."""
         zero_field = data_allocation.zero_field
 
-        def input_data(data_alloc, grid):
+        def input_data(data_alloc: Any, grid: Any) -> Any:
             return {"a": zero_field(grid, dims.CellDim)}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
             stencil_tests.input_data_fixture(input_data)
 
-    def test_rejects_positional_only_data_alloc(self):
+    def test_rejects_positional_only_data_alloc(self) -> None:
         """pytest injects fixtures by keyword, so positional-only would fail at run time."""
 
-        def input_data(data_alloc, /): ...
+        def input_data(data_alloc: Any, /) -> None: ...
 
         with pytest.raises(ValueError, match="cannot be positional-only"):
             stencil_tests.input_data_fixture(input_data)
 
-    def test_rejects_data_allocation_from_an_enclosing_scope(self):
+    def test_rejects_data_allocation_from_an_enclosing_scope(self) -> None:
         module = data_allocation
 
-        def input_data(data_alloc, grid):
+        def input_data(data_alloc: Any, grid: Any) -> Any:
             return {"a": module.zero_field(grid, dims.CellDim)}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
             stencil_tests.input_data_fixture(input_data)
 
-    def test_accepts_a_parameter_shadowing_the_module_alias(self):
+    def test_accepts_a_parameter_shadowing_the_module_alias(self) -> None:
         """
         Regression: the `data_alloc` parameter must not be read as the `data_alloc` global.
 
@@ -279,7 +280,7 @@ class TestInputDataFixture:
         parameters.
         """
 
-        def input_data(data_alloc):
+        def input_data(data_alloc: Any) -> Any:
             return {"a": data_alloc.zero_field(dims.CellDim)}
 
         assert stencil_tests.input_data_fixture(input_data) is not None
@@ -289,39 +290,39 @@ class TestInputDataFixture:
 
 
 class TestSuiteConventions:
-    def test_attaches_a_test_function_named_after_the_subclass(self):
+    def test_attaches_a_test_function_named_after_the_subclass(self) -> None:
         suite = make_suite()
 
         assert "test_Suite" in vars(suite)
         assert vars(suite)["test_Suite"] is stencil_tests.test_and_benchmark
 
-    def test_rejects_missing_reference(self):
+    def test_rejects_missing_reference(self) -> None:
         with pytest.raises(TypeError, match="does not implement the required 'reference'"):
 
             class Suite(stencil_tests.StencilTest):
                 input_data = stencil_tests.input_data_fixture(valid_input_data())
 
-    def test_rejects_missing_input_data(self):
+    def test_rejects_missing_input_data(self) -> None:
         with pytest.raises(TypeError, match="does not implement the required 'input_data'"):
 
             class Suite(stencil_tests.StencilTest):
                 reference = stencil_tests.static_reference(valid_reference())
 
-    def test_rejects_undecorated_reference(self):
+    def test_rejects_undecorated_reference(self) -> None:
         with pytest.raises(TypeError, match="must be decorated with '@static_reference'"):
 
             class Suite(stencil_tests.StencilTest):
                 reference = staticmethod(valid_reference())
                 input_data = stencil_tests.input_data_fixture(valid_input_data())
 
-    def test_rejects_undecorated_input_data(self):
+    def test_rejects_undecorated_input_data(self) -> None:
         with pytest.raises(TypeError, match="must be decorated with '@input_data_fixture'"):
 
             class Suite(stencil_tests.StencilTest):
                 reference = stencil_tests.static_reference(valid_reference())
                 input_data = pytest.fixture(valid_input_data())
 
-    def test_accepts_members_inherited_from_another_suite(self):
+    def test_accepts_members_inherited_from_another_suite(self) -> None:
         """Regression: the members were looked up in `cls.__dict__`, raising `KeyError`."""
         base = make_suite()
 
@@ -329,7 +330,7 @@ class TestSuiteConventions:
 
         assert "test_Derived" in vars(derived)
 
-    def test_static_variant_is_empty_without_static_params(self):
+    def test_static_variant_is_empty_without_static_params(self) -> None:
         suite = make_suite()
 
         fixture = inspect.getattr_static(suite, "static_variant").__func__
@@ -340,14 +341,16 @@ class TestSuiteConventions:
         ("param", "expected"),
         [(("domain", ("horizontal_start",)), ("horizontal_start",)), (("none", None), ())],
     )
-    def test_static_variant_reads_the_variant_off_the_request(self, param, expected):
+    def test_static_variant_reads_the_variant_off_the_request(
+        self, param: Any, expected: Any
+    ) -> None:
         suite = make_suite(STATIC_PARAMS={"domain": ("horizontal_start",)})
         variant_of = inspect.getattr_static(suite, "static_variant").__func__
         request = types.SimpleNamespace(param=param)
 
         assert variant_of._get_wrapped_function()(request) == expected
 
-    def test_configured_program_rejects_static_params_absent_from_input_data(self):
+    def test_configured_program_rejects_static_params_absent_from_input_data(self) -> None:
         """`STATIC_PARAMS` names arguments of `input_data`; a typo should say so."""
         build = inspect.getattr_static(
             stencil_tests.StencilTest, "configured_program"
@@ -362,7 +365,7 @@ class TestSuiteConventions:
                 grid=None,
             )
 
-    def test_static_variant_is_parametrized_from_static_params(self):
+    def test_static_variant_is_parametrized_from_static_params(self) -> None:
         static_params = {"none": (), "domain": ("horizontal_start",)}
 
         suite = make_suite(STATIC_PARAMS=static_params)
@@ -376,7 +379,7 @@ class TestSuiteConventions:
 
 
 class TestOutput:
-    def test_defaults_select_the_whole_field(self):
+    def test_defaults_select_the_whole_field(self) -> None:
         """`verify_data` wraps a bare name in an `Output`, so the defaults must be no-ops."""
         out = stencil_tests.Output("field")
 
@@ -390,22 +393,22 @@ class TestOutput:
 class StubGrid:
     """Minimal stand-in exposing only what the connectivities view uses."""
 
-    def __init__(self, connectivities):
+    def __init__(self, connectivities: Any) -> None:
         self.connectivities = connectivities
 
-    def get_connectivity(self, offset):
+    def get_connectivity(self, offset: Any) -> Any:
         return self.connectivities[offset if isinstance(offset, str) else offset.value]
 
 
 class TestConnectivitiesAsNumpy:
-    def test_lookup_by_name_and_by_field_offset_agree(self, grid):
+    def test_lookup_by_name_and_by_field_offset_agree(self, grid: Any) -> None:
         view = stencil_tests.connectivities_asnumpy(grid)
 
         assert isinstance(view[dims.E2C], np.ndarray)
-        np.testing.assert_array_equal(view[dims.E2C], view["E2C"])
+        np.testing.assert_array_equal(view[dims.E2C], view["E2C"])  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
         np.testing.assert_array_equal(view[dims.E2C], grid.get_connectivity("E2C").asnumpy())
 
-    def test_iteration_and_length_cover_the_neighbor_tables(self, grid):
+    def test_iteration_and_length_cover_the_neighbor_tables(self, grid: Any) -> None:
         view = stencil_tests.connectivities_asnumpy(grid)
 
         expected = {
@@ -416,24 +419,24 @@ class TestConnectivitiesAsNumpy:
         assert set(view) == expected
         assert len(view) == len(expected)
 
-    def test_non_neighbor_table_entries_are_skipped(self, grid):
+    def test_non_neighbor_table_entries_are_skipped(self, grid: Any) -> None:
         stub = StubGrid({**dict(grid.connectivities), "Koff": dims.KDim})
-        view = stencil_tests.connectivities_asnumpy(stub)
+        view = stencil_tests.connectivities_asnumpy(stub)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
 
         assert "Koff" not in set(view)
         assert len(view) == len(set(view))
         with pytest.raises(KeyError, match="is not a neighbor table"):
-            view["Koff"]
+            view["Koff"]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
-    def test_honours_the_mapping_contract_for_a_missing_key(self, grid):
+    def test_honours_the_mapping_contract_for_a_missing_key(self, grid: Any) -> None:
         """`get` and `in` are built on `__getitem__`, so it has to raise `KeyError`."""
         view = stencil_tests.connectivities_asnumpy(grid)
 
-        assert view.get("NoSuchOffset", "default") == "default"
+        assert view.get("NoSuchOffset", "default") == "default"  # type: ignore[call-overload]  # GT4Py scan_operator stub limitation
         assert "NoSuchOffset" not in view
         assert "E2C" in view
         with pytest.raises(KeyError):
-            view["NoSuchOffset"]
+            view["NoSuchOffset"]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
 
 # -- DataAllocationWrapper -------------------------------------------------------------
@@ -441,7 +444,7 @@ class TestConnectivitiesAsNumpy:
 
 class TestDataAllocationWrapper:
     @pytest.fixture
-    def wrapper(self, grid):
+    def wrapper(self, grid: Any) -> Any:
         return stencil_tests.DataAllocationWrapper(grid=grid, allocator=None)
 
     @pytest.mark.parametrize(
@@ -455,29 +458,31 @@ class TestDataAllocationWrapper:
             pytest.param(lambda w: w.zero_field(dims.CellDim), id="zero_field"),
         ],
     )
-    def test_every_constructor_binds_the_grid(self, wrapper, grid, construct):
+    def test_every_constructor_binds_the_grid(
+        self, wrapper: Any, grid: Any, construct: Any
+    ) -> None:
         assert construct(wrapper).shape == (grid.num_cells,)
 
-    def test_binds_the_grid(self, wrapper, grid):
+    def test_binds_the_grid(self, wrapper: Any, grid: Any) -> None:
         assert wrapper.zero_field(dims.CellDim).shape == (grid.num_cells,)
         assert wrapper.random_field(dims.EdgeDim, dims.KDim).shape == (
             grid.num_edges,
             grid.num_levels,
         )
 
-    def test_forwards_keyword_arguments(self, wrapper, grid):
+    def test_forwards_keyword_arguments(self, wrapper: Any, grid: Any) -> None:
         field = wrapper.zero_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
         assert field.shape == (grid.num_cells, grid.num_levels + 1)
         assert np.all(field.asnumpy() == 0.0)
         assert np.all(wrapper.constant_field(3.5, dims.CellDim).asnumpy() == 3.5)
 
-    def test_random_field_respects_bounds(self, wrapper):
+    def test_random_field_respects_bounds(self, wrapper: Any) -> None:
         values = wrapper.random_field(dims.CellDim, low=2.0, high=3.0).asnumpy()
 
         assert np.all((values >= 2.0) & (values < 3.0))
 
-    def test_as_field_hands_host_data_to_the_allocator(self, wrapper, grid):
+    def test_as_field_hands_host_data_to_the_allocator(self, wrapper: Any, grid: Any) -> None:
         """
         A fixture that must build its input with NumPy has to hand the array over.
 
@@ -494,7 +499,7 @@ class TestDataAllocationWrapper:
         assert field.domain.dims == (dims.CellDim, dims.KDim)
         np.testing.assert_array_equal(field.asnumpy(), values)
 
-    def test_connectivity_field_returns_a_plain_field(self, wrapper, grid):
+    def test_connectivity_field_returns_a_plain_field(self, wrapper: Any, grid: Any) -> None:
         """
         Regression: dropping `allocate_data` also dropped the conversion it performed.
 
@@ -507,7 +512,7 @@ class TestDataAllocationWrapper:
         assert not gtx_common.is_neighbor_table(field)
         np.testing.assert_array_equal(field.asnumpy(), grid.get_connectivity("E2C").asnumpy())
 
-    def test_signatures_stay_in_sync_with_data_allocation(self):
+    def test_signatures_stay_in_sync_with_data_allocation(self) -> None:
         """The wrapper duplicates the wrapped signatures, so guard against drift."""
         for name in (
             "constant_field",
@@ -536,7 +541,7 @@ class TestDataAllocationWrapper:
 
 
 class TestVerifyData:
-    def test_passes_when_the_output_matches(self):
+    def test_passes_when_the_output_matches(self) -> None:
         suite = make_suite(OUTPUTS=("out",))()
 
         suite.verify_data(
@@ -544,7 +549,7 @@ class TestVerifyData:
             reference_outputs={"out": np.array([1.0, 2.0, 3.0])},
         )
 
-    def test_fails_and_names_the_output(self):
+    def test_fails_and_names_the_output(self) -> None:
         suite = make_suite(OUTPUTS=("out",))()
 
         with pytest.raises(AssertionError, match="Verification failed for 'out'"):
@@ -553,7 +558,7 @@ class TestVerifyData:
                 reference_outputs={"out": np.array([1.0, 2.0, 9.0])},
             )
 
-    def test_honours_the_output_slices(self):
+    def test_honours_the_output_slices(self) -> None:
         out = stencil_tests.Output("out", refslice=(slice(1, None),), gtslice=(slice(1, None),))
         suite = make_suite(OUTPUTS=(out,))()
 
@@ -563,7 +568,7 @@ class TestVerifyData:
             reference_outputs={"out": np.array([-1.0, 2.0, 3.0])},
         )
 
-    def test_applies_each_slice_to_its_own_side(self):
+    def test_applies_each_slice_to_its_own_side(self) -> None:
         """`gtslice` indexes the computed field and `refslice` the reference, not vice versa."""
         out = stencil_tests.Output("out", refslice=(slice(None, -1),), gtslice=(slice(1, None),))
         suite = make_suite(OUTPUTS=(out,))()
@@ -575,7 +580,7 @@ class TestVerifyData:
             reference_outputs={"out": np.array([1.0, 2.0, 9.0])},
         )
 
-    def test_verifies_every_element_of_a_tuple_output(self):
+    def test_verifies_every_element_of_a_tuple_output(self) -> None:
         suite = make_suite(OUTPUTS=("out",))()
         fields = (cell_field([1.0, 2.0]), cell_field([3.0, 4.0]))
 
@@ -590,7 +595,7 @@ class TestVerifyData:
                 reference_outputs={"out": (np.array([1.0, 2.0]), np.array([3.0, 9.0]))},
             )
 
-    def test_rejects_a_tuple_output_of_the_wrong_length(self):
+    def test_rejects_a_tuple_output_of_the_wrong_length(self) -> None:
         suite = make_suite(OUTPUTS=("out",))()
 
         with pytest.raises(ValueError):

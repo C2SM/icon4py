@@ -25,12 +25,12 @@ def clear_backend_workspace_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ICON4PY_BACKEND_WORKSPACE_SIZE", raising=False)
 
 
-@gtx.field_operator  # type: ignore[call-overload]
+@gtx.field_operator
 def field_op_return_field(field: fa.CellKField[float], factor: float) -> fa.CellKField[float]:
     return field + factor
 
 
-@gtx.program  # type: ignore[call-overload]
+@gtx.program
 def program_return_field(field: fa.CellKField[float], factor: float):  # type: ignore[no-untyped-def]
     field_op_return_field(field, factor, out=field)
 
@@ -116,7 +116,7 @@ def test_setup_program_defaults(
                 "backend_factory": model_backends.make_custom_dace_backend,
                 "device": model_backends.GPU,
             },
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            model_backends.make_custom_dace_backend(device=model_backends.GPU),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         ),
         (
             {"backend_factory": model_backends.make_custom_dace_backend},
@@ -124,7 +124,7 @@ def test_setup_program_defaults(
         ),
         (
             {"device": model_backends.GPU},
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            model_backends.make_custom_dace_backend(device=model_backends.GPU),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         ),
     ],
 )

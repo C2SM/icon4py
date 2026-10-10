@@ -70,7 +70,7 @@ class TestApplyDiffusionToVn(stencil_tests.StencilTest):
         start_2nd_nudge_line_idx_e: np.int32,
         limited_area: bool,
         **kwargs: Any,
-    ):
+    ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         edge = np.arange(area_edge.shape[0])
         vn_cp = vn.copy()
@@ -101,7 +101,10 @@ class TestApplyDiffusionToVn(stencil_tests.StencilTest):
                     nudgezone_diff=nudgezone_diff,
                 ),
                 apply_nabla2_to_vn_in_lateral_boundary_numpy(
-                    z_nabla2_e, area_edge, vn, fac_bdydiff_v
+                    z_nabla2_e,
+                    area_edge,
+                    vn,
+                    fac_bdydiff_v,
                 ),
             )
         else:

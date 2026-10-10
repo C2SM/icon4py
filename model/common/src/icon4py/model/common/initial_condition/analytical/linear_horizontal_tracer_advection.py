@@ -250,9 +250,9 @@ def _fill_prep_adv_from_prescribed_wind_field(
     vn_traj = prep_adv_state.vn_traj.ndarray
     mass_flx_me = prep_adv_state.mass_flx_me.ndarray
     mass_flx_ic = prep_adv_state.mass_flx_ic.ndarray
-    vn_traj[:, :] = vn[:, None]
-    mass_flx_me[:, :] = vn[:, None]
-    mass_flx_ic[:, :] = 0.0
+    vn_traj[:, :] = vn[:, None]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    mass_flx_me[:, :] = vn[:, None]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    mass_flx_ic[:, :] = 0.0  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
 
 def _fill_tracer_from_analytical_profile(
@@ -356,7 +356,7 @@ def linear_horizontal_advection(
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
 
     # density is set to the inverse of the vertical grid spacing, so that the mass flux equals the velocity
-    prognostic_state_now.rho.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray
+    prognostic_state_now.rho.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
     weights, nodes = _prepare_torus_quadratic_quadrature(
         vertex_x=vertex_x,
@@ -364,8 +364,8 @@ def linear_horizontal_advection(
         cell_center_x=cell_center_x,
         cell_center_y=cell_center_y,
         c2v_connectivity=grid.connectivities["C2V"].ndarray,
-        domain_length=grid.grid_params.domain_length,
-        domain_height=grid.grid_params.domain_height,
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
 
     _fill_prep_adv_from_prescribed_wind_field(
@@ -373,16 +373,16 @@ def linear_horizontal_advection(
         prep_adv_state=tracer_prep_adv_state,
         primal_normal_x=geometry.get(geometry_meta.EDGE_NORMAL_U).ndarray,
         primal_normal_y=geometry.get(geometry_meta.EDGE_NORMAL_V).ndarray,
-        domain_length=grid.grid_params.domain_length,
-        domain_height=grid.grid_params.domain_height,
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
 
     center_x, center_y = _compute_tracer_center(
         initial_center=ic_config.initial_center,
-        origin_x=vertex_x.min(),
-        origin_y=vertex_y.min(),
-        domain_length=grid.grid_params.domain_length,
-        domain_height=grid.grid_params.domain_height,
+        origin_x=vertex_x.min(),  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
+        origin_y=vertex_y.min(),  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
     _fill_tracer_from_analytical_profile(
         config=ic_config,
@@ -391,8 +391,8 @@ def linear_horizontal_advection(
         nodes=nodes,
         tracer_center_x=center_x,
         tracer_center_y=center_y,
-        domain_length=grid.grid_params.domain_length,
-        domain_height=grid.grid_params.domain_height,
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
 
 
@@ -416,23 +416,23 @@ def construct_reference_tracer(
         cell_center_x=cell_center_x,
         cell_center_y=cell_center_y,
         c2v_connectivity=grid.connectivities["C2V"].ndarray,
-        domain_length=grid.grid_params.domain_length,
-        domain_height=grid.grid_params.domain_height,
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
 
     array_ns = data_alloc.array_namespace(cell_center_x)
     reference_tracer = array_ns.tile(array_ns.zeros_like(cell_center_x)[:, None], (1, num_levels))
     u, v = _compute_idealized_horizontal_velocity_field(
         velocity_field=config.velocity_field,
-        domain_length=grid.grid_params.domain_length,
-        domain_height=grid.grid_params.domain_height,
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
     end_center_x, end_center_y = _compute_tracer_center(
         initial_center=config.initial_center,
-        origin_x=vertex_x.min(),
-        origin_y=vertex_y.min(),
-        domain_length=grid.grid_params.domain_length,
-        domain_height=grid.grid_params.domain_height,
+        origin_x=vertex_x.min(),  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
+        origin_y=vertex_y.min(),  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         displacement_x=u * integration_time,
         displacement_y=v * integration_time,
     )
@@ -443,7 +443,7 @@ def construct_reference_tracer(
         nodes=nodes,
         tracer_center_x=end_center_x,
         tracer_center_y=end_center_y,
-        domain_length=grid.grid_params.domain_length,
-        domain_height=grid.grid_params.domain_height,
+        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
     return reference_tracer

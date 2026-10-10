@@ -21,8 +21,14 @@ from icon4py.model.testing import stencil_tests
 
 
 def apply_nabla2_and_nabla4_global_to_vn_numpy(
-    *, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
-):
+    *,
+    area_edge: Any,
+    kh_smag_e: Any,
+    z_nabla2_e: Any,
+    z_nabla4_e2: Any,
+    diff_multfac_vn: Any,
+    vn: Any,
+) -> Any:
     area_edge = np.expand_dims(area_edge, axis=-1)
     diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
     vn = vn + area_edge * (kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge)
@@ -34,7 +40,9 @@ class TestApplyNabla2AndNabla4GlobalToVn(stencil_tests.StencilTest):
     OUTPUTS = ("vn",)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         area_edge = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
         kh_smag_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         z_nabla2_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)

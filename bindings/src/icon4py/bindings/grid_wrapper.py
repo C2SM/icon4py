@@ -24,6 +24,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, mo
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid, vertical
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools import py2fgen
 
 
@@ -121,7 +122,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     limited_area: bool,
     backend: gtx.int32,
 ) -> None:
-    on_gpu = c2e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = data_alloc.array_namespace(c2e) != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )

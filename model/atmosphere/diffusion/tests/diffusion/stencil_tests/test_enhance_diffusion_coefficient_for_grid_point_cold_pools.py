@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import math
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -30,7 +31,7 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(stencil_tests.Stencil
         *,
         kh_smag_e: np.ndarray,
         enh_diffu_3d: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         e2c = connectivities[dims.E2C]

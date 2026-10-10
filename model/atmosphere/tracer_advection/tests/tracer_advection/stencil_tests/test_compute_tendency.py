@@ -27,7 +27,7 @@ class TestComputeTendency(stencil_tests.StencilTest):
         *,
         p_tracer_now: np.ndarray,
         p_tracer_new: np.ndarray,
-        p_dtime,
+        p_dtime: Any,
         **kwargs: Any,
     ) -> dict:
         opt_ddt_tracer_adv = (p_tracer_new - p_tracer_now) / p_dtime

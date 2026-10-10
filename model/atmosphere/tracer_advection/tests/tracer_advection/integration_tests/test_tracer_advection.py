@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import pytest
 
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
@@ -99,23 +101,23 @@ from ..utils import (
     ],
 )
 def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    date,
-    even_timestep,
-    ntracer,
-    horizontal_advection_type,
-    horizontal_advection_limiter,
-    vertical_advection_type,
-    vertical_advection_limiter,
+    date: Any,
+    even_timestep: Any,
+    ntracer: Any,
+    horizontal_advection_type: Any,
+    horizontal_advection_limiter: Any,
+    vertical_advection_type: Any,
+    vertical_advection_limiter: Any,
     *,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
-    backend,
-    advection_init_savepoint,
-    advection_exit_savepoint,
+    grid_savepoint: Any,
+    icon_grid: Any,
+    interpolation_savepoint: Any,
+    metrics_savepoint: Any,
+    backend: Any,
+    advection_init_savepoint: Any,
+    advection_exit_savepoint: Any,
     experiment: test_defs.Experiment,
-):
+) -> None:
     config = tracer_advection.AdvectionConfig(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
@@ -126,10 +128,10 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
     geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     least_squares_coeffs = compute_lsq_coeffs(
-        cell_center_x=geometry.get_full_precision(geometry_attrs.CELL_CENTER_X).asnumpy(),
-        cell_center_y=geometry.get_full_precision(geometry_attrs.CELL_CENTER_Y).asnumpy(),
-        cell_lat=geometry.get_full_precision(geometry_attrs.CELL_LAT).asnumpy(),
-        cell_lon=geometry.get_full_precision(geometry_attrs.CELL_LON).asnumpy(),
+        cell_center_x=geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy(),
+        cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy(),
+        cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
+        cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
         c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
         cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
         domain_length=geometry.grid.grid_params.domain_length,

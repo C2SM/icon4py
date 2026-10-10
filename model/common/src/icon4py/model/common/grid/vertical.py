@@ -13,6 +13,7 @@ import functools
 import logging
 import math
 import pathlib
+from collections.abc import Callable
 from typing import Final
 
 import gt4py.next as gtx
@@ -28,6 +29,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -58,10 +60,10 @@ class Domain:
     marker: Zone
     offset: int = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self._validate()
 
-    def _validate(self):
+    def _validate(self) -> None:
         assert self.dim.kind == gtx.DimensionKind.VERTICAL
         if self.marker == Zone.TOP:
             assert self.offset >= 0, (
@@ -69,8 +71,8 @@ class Domain:
             )
 
 
-def domain(dim: gtx.Dimension):
-    def _domain(marker: Zone):
+def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
+    def _domain(marker: Zone) -> Domain:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
         return Domain(dim, marker)
 
@@ -145,7 +147,7 @@ class VerticalGrid:
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         for name in ("vct_a", "vct_b"):
             vct = getattr(self, name)
             if vct is not None and vct.dtype.scalar_type != np.float64:
@@ -175,7 +177,7 @@ class VerticalGrid:
 
     def __str__(self) -> str:
         vertical_params_properties = ["Model interface height properties:"]
-        for key, value in self.metadata_interface_physical_height.items():
+        for key, value in self.metadata_interface_physical_height.as_dict().items():
             vertical_params_properties.append(f"    {key}: {value}")
         vertical_params_properties.append("Level    Coordinate    Thickness:")
         vct_a_array = self.vct_a.ndarray
@@ -194,11 +196,11 @@ class VerticalGrid:
         return "\n".join(vertical_params_properties)
 
     @property
-    def metadata_interface_physical_height(self):
+    def metadata_interface_physical_height(self) -> model.FieldMetaData:
         return data.attrs["model_interface_height"]
 
     @property
-    def num_levels(self):
+    def num_levels(self) -> int:
         return self.config.num_levels
 
     def index(self, domain: Domain) -> gtx.int32:
@@ -271,7 +273,7 @@ class VerticalGrid:
         return (
             0
             if damping_height > vct_a[0]
-            else gtx.int32(np.argmax(np.where(vct_a >= damping_height)[0]).item())
+            else gtx.int32(np.argmax(np.where(vct_a >= damping_height)[0]))
         )
 
     @classmethod
@@ -328,8 +330,8 @@ def _read_vct_a_and_vct_b_from_file(
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
     return (
-        gtx.as_field((dims.KHalfDim,), vct_a, allocator=allocator),
-        gtx.as_field((dims.KHalfDim,), vct_b, allocator=allocator),
+        gtx.as_field((dims.KHalfDim,), vct_a, allocator=allocator),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        gtx.as_field((dims.KHalfDim,), vct_b, allocator=allocator),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
 
 

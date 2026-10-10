@@ -67,7 +67,7 @@ def construct_metric_state(
         geopot_agl_ifc=init_savepoint.geopot_agl_ifc(),
         height_above_ground=gtx.as_field(
             (dims.CellDim, dims.KDim),
-            metric_fields.compute_height_above_surface(z=z_mc.asnumpy(), z_ifc=z_ifc.asnumpy()),
+            metric_fields.compute_height_above_surface(z=z_mc.asnumpy(), z_ifc=z_ifc.asnumpy()),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             allocator=allocator,
         ),
     )

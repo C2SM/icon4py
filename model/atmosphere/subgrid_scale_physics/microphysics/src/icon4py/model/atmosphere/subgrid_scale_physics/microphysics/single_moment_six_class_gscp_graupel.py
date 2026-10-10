@@ -86,7 +86,7 @@ class SingleMomentSixClassIconGraupelConfig:
     #: coefficient for snow-graupel conversion by riming. Originally defined as csg in mo_nwp_tuning_config.f90 in ICON.
     snow2graupel_riming_coeff: ta.wpfloat = 0.5
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         ta.dataclass_float_to_wp(self)
 
 
@@ -104,7 +104,7 @@ class SingleMomentSixClassIconGraupel:
         metric_state: MetricStateIconGraupel,
         vertical_params: v_grid.VerticalGrid,
         backend: gtx_typing.Backend | None,
-    ):
+    ) -> None:
         self.config = graupel_config
         self._initialize_configurable_parameters()
         self._grid = grid
@@ -116,7 +116,7 @@ class SingleMomentSixClassIconGraupel:
         self._determine_horizontal_domains()
         self._initialize_gt4py_programs()
 
-    def _initialize_configurable_parameters(self):
+    def _initialize_configurable_parameters(self) -> None:
         pi_wp = gtx.astype(math.pi, ta.wpfloat)
         precomputed_riming_coef: ta.wpfloat = (
             ta.wpfloat(0.25)
@@ -161,7 +161,7 @@ class SingleMomentSixClassIconGraupel:
             * gtx.exp(ta.wpfloat(3.2) * self.config.rain_mu)
             * ta.wpfloat(0.01) ** (-self.config.rain_mu)
         )  # empirical relation adapted from Ulbrich (1983)
-        _n0r: ta.wpfloat = _n0r * self.config.rain_n0  # apply tuning factor to rain_n0 variable
+        _n0r = _n0r * self.config.rain_n0  # apply tuning factor to rain_n0 variable
         _ar: ta.wpfloat = (
             pi_wp
             * PhysicsConstants.water_density
@@ -241,7 +241,7 @@ class SingleMomentSixClassIconGraupel:
             power_law_exponent_for_graupel_mean_fall_speed_ln1o2,
         )
 
-    def _initialize_local_fields(self):
+    def _initialize_local_fields(self) -> None:
         self.rhoqrv_old_kup = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
@@ -282,12 +282,12 @@ class SingleMomentSixClassIconGraupel:
             self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
 
-    def _determine_horizontal_domains(self):
+    def _determine_horizontal_domains(self) -> None:
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
-    def _initialize_gt4py_programs(self):
+    def _initialize_gt4py_programs(self) -> None:
         self._icon_graupel = model_options.setup_program(
             backend=self._backend,
             program=graupel_stencils.icon_graupel,
@@ -379,7 +379,7 @@ class SingleMomentSixClassIconGraupel:
         qi_tendency: fa.CellKField[ta.wpfloat],
         qs_tendency: fa.CellKField[ta.wpfloat],
         qg_tendency: fa.CellKField[ta.wpfloat],
-    ):
+    ) -> None:
         """
         Run the ICON single-moment graupel (nwp) microphysics. Precipitation flux is also computed.
         Args:

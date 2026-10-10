@@ -38,7 +38,9 @@ def on_rows(values: np.ndarray, rows: slice, levels: slice) -> np.ndarray:
     return out
 
 
-def edge_projection(field: np.ndarray, neighbors: np.ndarray, x: np.ndarray, y: np.ndarray):
+def edge_projection(
+    field: tuple[np.ndarray, np.ndarray], neighbors: np.ndarray, x: np.ndarray, y: np.ndarray
+) -> np.ndarray:
     """Projection of the vector field (field_x, field_y) at each neighbor onto (x, y)."""
     field_x, field_y = field
     return field_x[neighbors] * x[..., np.newaxis] + field_y[neighbors] * y[..., np.newaxis]
@@ -95,7 +97,10 @@ class TestComputeVnDiffusionTendency(stencil_tests.StencilTest):
         inv_rhoe = 1.0 / np.sum(rho[e2c] * c_lin_e[..., np.newaxis], axis=1)
 
         vn_vert = edge_projection(
-            (u_vert, v_vert), e2c2v, primal_normal_vert_x, primal_normal_vert_y
+            (u_vert, v_vert),
+            e2c2v,
+            primal_normal_vert_x,
+            primal_normal_vert_y,
         )
         vt_vert = edge_projection((u_vert, v_vert), e2c2v, dual_normal_vert_x, dual_normal_vert_y)
         dvt = vt_vert[:, 3] - vt_vert[:, 2]
@@ -145,7 +150,9 @@ class TestComputeVnDiffusionTendency(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         # narrower than the field, which the grid's zones are not
         horizontal_start, horizontal_end = 1, grid.num_edges - 1
         return dict(
@@ -217,7 +224,9 @@ class TestInterpolateVnTendencyToCellsAndUpdateUv(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         tendency_horizontal_start, update_horizontal_start = 1, 2
         horizontal_end = grid.num_cells - 1
         return dict(
@@ -298,7 +307,10 @@ class TestComputeWDiffusionTendencyAndUpdateW(stencil_tests.StencilTest):
         dvn = edge_projection((u, v), e2c, primal_normal_cell_x, primal_normal_cell_y)
         dvn = dvn[..., above] - dvn[..., below]
         vt_vert = edge_projection(
-            (u_vert, v_vert), e2c2v[:, :2], dual_normal_vert_x[:, :2], dual_normal_vert_y[:, :2]
+            (u_vert, v_vert),
+            e2c2v[:, :2],
+            dual_normal_vert_x[:, :2],
+            dual_normal_vert_y[:, :2],
         )
         vt_mid = 0.5 * (vt_vert + vt_e[:, np.newaxis])
         dvt = vt_mid[..., above] - vt_mid[..., below]
@@ -365,7 +377,9 @@ class TestComputeWDiffusionTendencyAndUpdateW(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         # narrower than the fields and different per dimension, which the grid's zones are not
         edge_start, edge_end = 1, grid.num_edges - 1
         cell_start, cell_end = 2, grid.num_cells - 2

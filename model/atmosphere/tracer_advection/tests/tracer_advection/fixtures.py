@@ -27,7 +27,9 @@ def date() -> str:
 
 
 @pytest.fixture
-def advection_init_savepoint(data_provider, date):
+def advection_init_savepoint(
+    data_provider: serialbox.IconSerialDataProvider, date: str
+) -> serialbox.AdvectionInitSavepoint:
     """
     Load data from tracer_advection init ICON savepoint.
 
@@ -38,7 +40,9 @@ def advection_init_savepoint(data_provider, date):
 
 
 @pytest.fixture
-def advection_exit_savepoint(data_provider, date):
+def advection_exit_savepoint(
+    data_provider: serialbox.IconSerialDataProvider, date: str
+) -> serialbox.AdvectionExitSavepoint:
     """
     Load data from tracer_advection exit ICON savepoint.
 

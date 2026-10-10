@@ -162,7 +162,7 @@ class Pair[T]:  # noqa: PLW1641 [eq-without-hash]
         """Property descriptor for the first element of the pair."""
         return self.__first
 
-    @first.setter  # type: ignore[no-redef]
+    @first.setter  # type: ignore[no-redef]  # property setter redefined in class body
     def first(self, value: T) -> T:
         self.__first = value
 
@@ -171,7 +171,7 @@ class Pair[T]:  # noqa: PLW1641 [eq-without-hash]
         """Property descriptor for the second element of the pair."""
         return self.__second
 
-    @second.setter  # type: ignore[no-redef]
+    @second.setter  # type: ignore[no-redef]  # property setter redefined in class body
     def second(self, value: T) -> T:
         self.__second = value
 

@@ -25,7 +25,7 @@ def test_config_rejects_negative_km_min() -> None:
 
 
 def test_config_coerces_enums_from_ints() -> None:
-    config = tmx_config.TmxConfig(solver_type=2, energy_type=2)
+    config = tmx_config.TmxConfig(solver_type=2, energy_type=2)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     assert config.solver_type is tmx_config.SolverType.IMPLICIT
     assert config.energy_type is tmx_config.EnergyType.INTERNAL
 
@@ -33,13 +33,13 @@ def test_config_coerces_enums_from_ints() -> None:
 @pytest.mark.parametrize("solver_type", [1, 3])
 def test_config_rejects_unimplemented_solver_types(solver_type: int) -> None:
     with pytest.raises(ValueError, match="solver_type"):
-        tmx_config.TmxConfig(solver_type=solver_type)
+        tmx_config.TmxConfig(solver_type=solver_type)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
 
 
 @pytest.mark.parametrize("energy_type", [1, 3])
 def test_config_rejects_unimplemented_energy_types(energy_type: int) -> None:
     with pytest.raises(ValueError, match="energy_type"):
-        tmx_config.TmxConfig(energy_type=energy_type)
+        tmx_config.TmxConfig(energy_type=energy_type)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
 
 
 def test_config_round_trips_through_config_io() -> None:

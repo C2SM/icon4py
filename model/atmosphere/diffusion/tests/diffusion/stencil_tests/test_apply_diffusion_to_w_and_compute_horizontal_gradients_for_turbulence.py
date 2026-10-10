@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -56,24 +58,24 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
     def reference(
         grid: base.Grid,
         *,
-        area,
-        geofac_n2s,
-        geofac_grg_x,
-        geofac_grg_y,
-        w_old,
-        type_shear,
-        dwdx,
-        dwdy,
-        diff_multfac_w,
-        diff_multfac_n2w,
-        nrdmax,
-        interior_idx,
-        halo_idx,
-        horizontal_start,
-        horizontal_end,
-        vertical_start,
-        vertical_end,
-        **kwargs,
+        area: Any,
+        geofac_n2s: Any,
+        geofac_grg_x: Any,
+        geofac_grg_y: Any,
+        w_old: Any,
+        type_shear: Any,
+        dwdx: Any,
+        dwdy: Any,
+        diff_multfac_w: Any,
+        diff_multfac_n2w: Any,
+        nrdmax: Any,
+        interior_idx: Any,
+        halo_idx: Any,
+        horizontal_start: Any,
+        horizontal_end: Any,
+        vertical_start: Any,
+        vertical_end: Any,
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         k = np.arange(w_old.shape[1])
