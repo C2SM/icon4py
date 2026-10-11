@@ -27,8 +27,6 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
-    RTOL,
-    TMX_DATES,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -46,7 +44,10 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
 )
 def test_tmx_run_wind_diffusion_single_step(
     *,
@@ -111,16 +112,22 @@ def test_tmx_run_wind_diffusion_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
-    # (computed, reference, absolute tolerance)
+    # (computed, reference, atol, rtol), chosen as described in `assert_tmx_exit_fields`
     fields = {
-        "tend_ua": (tendency_state.tend_u, hor_wind_savepoint.tend_ua(), 4.0e-17),
-        "tend_va": (tendency_state.tend_v, hor_wind_savepoint.tend_va(), 4.0e-17),
-        "ua_new": (new_state.u, hor_wind_savepoint.ua_new(), 2.0e-14),
-        "va_new": (new_state.v, hor_wind_savepoint.va_new(), 1.0e-14),
-        "tend_wa": (tendency_state.tend_w, vert_wind_savepoint.tend_wa(), 9.0e-19),
-        "wa_new": (new_state.w, vert_wind_savepoint.wa_new(), 3.0e-16),
+        # measured atol=3.1e-17, rtol=3.9e-4
+        "tend_ua": (tendency_state.tend_u, hor_wind_savepoint.tend_ua(), 4.0e-17, 0.0),
+        # measured atol=2.6e-17, rtol=1.5
+        "tend_va": (tendency_state.tend_v, hor_wind_savepoint.tend_va(), 3.0e-17, 0.0),
+        # measured atol=1.4e-14, rtol=6.2e-16
+        "ua_new": (new_state.u, hor_wind_savepoint.ua_new(), 0.0, 7.0e-16),
+        # measured atol=7.7e-15, rtol=3.1e-9
+        "va_new": (new_state.v, hor_wind_savepoint.va_new(), 9.0e-15, 0.0),
+        # measured atol=7.4e-19, rtol=4.3e-5
+        "tend_wa": (tendency_state.tend_w, vert_wind_savepoint.tend_wa(), 9.0e-19, 0.0),
+        # measured atol=2.2e-16, rtol=1.1e-11
+        "wa_new": (new_state.w, vert_wind_savepoint.wa_new(), 0.0, 2.0e-11),
     }
-    for name, (computed, reference, atol) in fields.items():
+    for name, (computed, reference, atol, rtol) in fields.items():
         test_utils.assert_dallclose(
-            computed.asnumpy(), reference.asnumpy(), rtol=RTOL, atol=atol, err_msg=name
+            computed.asnumpy(), reference.asnumpy(), atol=atol, rtol=rtol, err_msg=name
         )
