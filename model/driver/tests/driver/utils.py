@@ -18,11 +18,13 @@ import gt4py.next.typing as gtx_typing
 import netCDF4 as nc
 import numpy as np
 
+from icon4py.model.atmosphere.tracer_advection import weno_least_squares
 from icon4py.model.common import dimension as dims, model_backends, time
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import geometry_attributes as geom_attr, gridfile
 from icon4py.model.common.initial_condition.analytical import moving_cylinder
+from icon4py.model.common.math import distance_array_ns
 from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 from icon4py.model.testing import config as test_config
 
@@ -57,6 +59,13 @@ CYLINDER_DOMAIN_LENGTH: Final = 100000.0
 CYLINDER_DOMAIN_HEIGHT: Final = 95262.79441628825
 #: total tracer mass sum(qv * airmass * cell_area) is conserved to round-off
 MASS_CONSERVATION_RTOL: Final = 1e-12
+CYLINDER_ORBIT_RADIUS: Final = 15000.0
+CYLINDER_ORBIT_CYLINDER_RADIUS: Final = 15000.0
+#: clearance in edge lengths between the cylinder's outer reach and the start of the wind's taper
+CYLINDER_TAPER_MARGIN_EDGE_LENGTHS: Final = 1.0
+CYLINDER_N_TIME_STEPS_PER_TURN: Final = 250
+CYLINDER_FAR_FIELD_ATOL: Final = 5e-2
+CYLINDER_RIM_BAND_EDGE_LENGTHS: Final = 1.0
 
 
 @dataclasses.dataclass(frozen=True)
@@ -71,6 +80,9 @@ class CylinderRun:
     dtime_seconds: float
     num_levels: int
     elapsed_wall_time: float
+    domain_length: float
+    domain_height: float
+    cylinder_config: moving_cylinder.MovingCylinderConfig
     #: (time, cell, level); frame 0 is the initial state
     qv_frames: np.ndarray
     #: the cylinder sampled at the cell centres (frame 0) and the exact final state
@@ -114,6 +126,85 @@ def neighbour_pair_error_sums(
     )
 
 
+def _closes_on_initial_state(
+    config: moving_cylinder.MovingCylinderConfig,
+    *,
+    elapsed_time: float,
+    domain_length: float,
+    domain_height: float,
+) -> bool:
+    if config.omega != 0.0:
+        angle = (config.omega * elapsed_time) % (2.0 * math.pi)
+        return min(angle, 2.0 * math.pi - angle) < 1e-9
+    u, v = moving_cylinder.compute_wind_components(config)
+    return math.isclose(u * elapsed_time % domain_length, 0.0, abs_tol=1e-6) and math.isclose(
+        v * elapsed_time % domain_height, 0.0, abs_tol=1e-6
+    )
+
+
+def cylinder_rim_mask(
+    *,
+    run: CylinderRun,
+    band_edge_lengths: float = CYLINDER_RIM_BAND_EDGE_LENGTHS,
+) -> np.ndarray:
+    centers = np.array(
+        [
+            moving_cylinder.compute_cylinder_center_at_time(
+                run.cylinder_config,
+                elapsed_time=frame * run.dtime_seconds,
+                domain_length=run.domain_length,
+                domain_height=run.domain_height,
+            )
+            for frame in range(run.qv_frames.shape[0])
+        ]
+    )
+    dx, dy = distance_array_ns.minimum_image_separation(
+        x=run.cell_x[np.newaxis, :],
+        y=run.cell_y[np.newaxis, :],
+        reference_x=centers[:, 0:1],
+        reference_y=centers[:, 1:2],
+        domain_extent_x=run.domain_length,
+        domain_extent_y=run.domain_height,
+    )
+    distance_to_rim = np.abs(np.hypot(dx, dy) - run.cylinder_config.radius)
+    return distance_to_rim <= band_edge_lengths * run.edge_length
+
+
+def _cylinder_ic_config(
+    *,
+    cylinder_center: tuple[float | None, float | None],
+    cylinder_radius: float,
+    wind_angle: float,
+    orbit_radius: float | None,
+    num_time_steps: int,
+    dtime_seconds: float,
+    edge_length: float,
+    domain_length: float,
+    domain_height: float,
+) -> moving_cylinder.MovingCylinderConfig:
+    if orbit_radius is None:
+        return moving_cylinder.MovingCylinderConfig(
+            center_x=cylinder_center[0],
+            center_y=cylinder_center[1],
+            radius=cylinder_radius,
+            wind_speed=CYLINDER_WIND_SPEED,
+            wind_angle=wind_angle,
+        )
+    assert cylinder_center == (None, None), (
+        "'orbit_radius' puts the cylinder on the orbit itself: leave 'cylinder_center' unset."
+    )
+    return moving_cylinder.MovingCylinderConfig(
+        center_x=0.5 * domain_length + orbit_radius,
+        center_y=0.5 * domain_height,
+        radius=cylinder_radius,
+        wind_speed=0.0,
+        omega=2.0 * math.pi / (num_time_steps * dtime_seconds),
+        clip_inner_radius=orbit_radius
+        + cylinder_radius
+        + CYLINDER_TAPER_MARGIN_EDGE_LENGTHS * edge_length,
+    )
+
+
 def run_cylinder_one_period(
     *,
     grid_file: pathlib.Path,
@@ -123,7 +214,12 @@ def run_cylinder_one_period(
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
     wind_angle: float = CYLINDER_WIND_ANGLE,
+    cfl: float = CYLINDER_CFL,
     dtime_seconds: float | None = None,
+    num_time_steps: int = CYLINDER_N_TIME_STEPS,
+    orbit_radius: float | None = None,
+    cylinder_radius: float = CYLINDER_RADIUS,
+    num_turns: int = 1,
 ) -> CylinderRun:
     """Carry the cylinder once around the torus with the driver and measure the final error.
 
@@ -132,28 +228,25 @@ def run_cylinder_one_period(
     CYLINDER_WIND_SPEED wind; with dt = CYLINDER_CFL * edge_length the CYLINDER_N_TIME_STEPS
     steps are exactly one period in x, so the exact final state is the initial field.
     ``tracer_advection`` are the overrides of the tracer-advection configuration (scheme,
-    limiter, weight set). ``wind_angle`` turns the wind counter-clockwise from the x axis
+    limiter, weight set). ``cfl`` sets dt = cfl * edge_length / CYLINDER_WIND_SPEED, so only
+    CYLINDER_CFL closes a whole period in x with CYLINDER_N_TIME_STEPS steps; an explicit
+    ``dtime_seconds`` overrides it. ``wind_angle`` turns the wind counter-clockwise from the x axis
     [degrees]; 90 carries the cylinder along y, where one period is CYLINDER_DOMAIN_HEIGHT
     rather than CYLINDER_DOMAIN_LENGTH, so ``dtime_seconds``
     must be set for the run to close on the initial state. Off a whole period the exact
     solution is the displaced cylinder and the error measures still hold, but the Table 2
-    gates of the x runs do not. Checks the plumbing every case shares: the grid sizes, a fully
+    gates of the x runs do not.
+
+    Checks the plumbing every case shares: the grid sizes, a fully
     periodic torus (no skip values), unit air mass, one frame per step with identical
     columns, frame 0 the sampled cylinder, mass conservation to MASS_CONSERVATION_RTOL and the
     all-pairs identity of neighbour_pair_error_sums.
     """
     allocator = model_backends.get_allocator(backend)
 
-    ic_config = moving_cylinder.MovingCylinderConfig(
-        center_x=cylinder_center[0],
-        center_y=cylinder_center[1],
-        radius=CYLINDER_RADIUS,
-        wind_speed=CYLINDER_WIND_SPEED,
-        wind_angle=wind_angle,
-    )
     experiment_config = config_io.read_yaml_str(
         CYLINDER_EXPERIMENT_CONFIG.read_text(), driver_config.ExperimentConfig
-    ).with_overrides(initial_condition={"config": ic_config})
+    )
 
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file,
@@ -176,12 +269,26 @@ def run_cylinder_one_period(
         grid_manager.geometry_fields[gridfile.GeometryName.EDGE_LENGTH].asnumpy().mean()
     )
     if dtime_seconds is None:
-        dtime_seconds = CYLINDER_CFL * edge_length / CYLINDER_WIND_SPEED
+        dtime_seconds = cfl * edge_length / CYLINDER_WIND_SPEED
+
+    ic_config = _cylinder_ic_config(
+        cylinder_center=cylinder_center,
+        cylinder_radius=cylinder_radius,
+        wind_angle=wind_angle,
+        orbit_radius=orbit_radius,
+        num_time_steps=num_time_steps,
+        dtime_seconds=dtime_seconds,
+        edge_length=edge_length,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    num_time_steps *= num_turns
     experiment_config = experiment_config.with_overrides(
+        initial_condition={"config": ic_config},
         driver={
             "output_path": tmp_path / "driver_output",
             "dtime": time.RelativeTime(seconds=dtime_seconds),
-            "end_of_simulation": time.NumTimeSteps(CYLINDER_N_TIME_STEPS),
+            "end_of_simulation": time.NumTimeSteps(num_time_steps),
         },
         tracer_advection=tracer_advection,
     )
@@ -207,7 +314,7 @@ def run_cylinder_one_period(
     # frame 0 is the initial state, one frame per step afterwards
     qv_frames = read_qv_frames(tmp_path)
     num_levels = experiment_config.vertical_grid.num_levels
-    assert qv_frames.shape == (CYLINDER_N_TIME_STEPS + 1, grid.num_cells, num_levels)
+    assert qv_frames.shape == (num_time_steps + 1, grid.num_cells, num_levels)
     assert np.isfinite(qv_frames).all()
     # the columns are identical, so the errors are taken on one level
     np.testing.assert_array_equal(qv_frames, np.broadcast_to(qv_frames[:, :, :1], qv_frames.shape))
@@ -222,18 +329,14 @@ def run_cylinder_one_period(
     )
     np.testing.assert_array_equal(qv_frames[0, :, 0], cylinder)
 
-    # the exact solution is the cylinder displaced by the wind; for the default
-    # parameters that is exactly one period in x, i.e. the initial cylinder again
-    u, v = moving_cylinder.compute_wind_components(ic_config)
-    elapsed_time = CYLINDER_N_TIME_STEPS * dtime_seconds
-    center_x, center_y = moving_cylinder.compute_cylinder_center(
-        ic_config, domain_length, domain_height
+    elapsed_time = num_time_steps * dtime_seconds
+    center_x, center_y = moving_cylinder.compute_cylinder_center_at_time(
+        ic_config,
+        elapsed_time=elapsed_time,
+        domain_length=domain_length,
+        domain_height=domain_height,
     )
-    displaced_config = moving_cylinder.MovingCylinderConfig(
-        center_x=(center_x + u * elapsed_time) % domain_length,
-        center_y=(center_y + v * elapsed_time) % domain_height,
-        radius=CYLINDER_RADIUS,
-    )
+    displaced_config = dataclasses.replace(ic_config, center_x=center_x, center_y=center_y)
     reference = moving_cylinder.sample_cylinder(
         config=displaced_config,
         cell_center_x=cell_x,
@@ -241,8 +344,11 @@ def run_cylinder_one_period(
         domain_length=domain_length,
         domain_height=domain_height,
     )
-    one_period = math.isclose(u * elapsed_time % domain_length, 0.0, abs_tol=1e-6) and (
-        math.isclose(v * elapsed_time % domain_height, 0.0, abs_tol=1e-6)
+    one_period = _closes_on_initial_state(
+        ic_config,
+        elapsed_time=elapsed_time,
+        domain_length=domain_length,
+        domain_height=domain_height,
     )
     if one_period:
         np.testing.assert_array_equal(reference, cylinder)
@@ -256,9 +362,10 @@ def run_cylinder_one_period(
     q_final = qv_frames[-1, :, 0]
     error = q_final - reference
     sum_squared_error = float(np.sum(error**2))
+    c2e2c = grid.get_connectivity(dims.C2E2C).asnumpy()
     jocksch_measure, all_pairs_measure = neighbour_pair_error_sums(
         error=error,
-        c2e2c=grid.get_connectivity(dims.C2E2C).asnumpy(),
+        c2e2c=c2e2c,
         cell_x=cell_x,
         cell_y=cell_y,
         edge_length=edge_length,
@@ -274,6 +381,9 @@ def run_cylinder_one_period(
         dtime_seconds=dtime_seconds,
         num_levels=num_levels,
         elapsed_wall_time=elapsed_wall_time,
+        domain_length=domain_length,
+        domain_height=domain_height,
+        cylinder_config=ic_config,
         qv_frames=qv_frames,
         cylinder=cylinder,
         reference=reference,

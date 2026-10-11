@@ -269,7 +269,16 @@ def prescribe_uniform_wind(
     With unit air mass the edge mass flux equals the normal wind ``u n_x + v n_y``, which
     also serves as the trajectory wind; the vertical mass flux is zero.
     """
-    vn = u * primal_normal_x + v * primal_normal_y
+    prescribe_normal_wind(
+        prep_adv_state=prep_adv_state, vn=u * primal_normal_x + v * primal_normal_y
+    )
+
+
+def prescribe_normal_wind(
+    *,
+    prep_adv_state: adv_states.AdvectionPrepAdvState,
+    vn: data_alloc.NDArray,
+) -> None:
 
     vn_traj = prep_adv_state.vn_traj.ndarray
     mass_flx_me = prep_adv_state.mass_flx_me.ndarray

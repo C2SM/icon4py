@@ -29,12 +29,12 @@ import os
 import pathlib
 import tempfile
 from typing import Final
-import numpy as np
 
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.tracer_advection import tracer_advection
+from icon4py.model.atmosphere.tracer_advection import tracer_advection, weno_least_squares
 from icon4py.model.common.decomposition import definitions as decomp_defs
 
 from .. import utils as test_utils
@@ -163,6 +163,7 @@ def test_jocksch_cylinder_one_period(
         tmp_path=tmp_path,
         process_props=process_props,
         backend=backend,
+        num_turns=10,
     )
     paper_value = PAPER_TABLE_2.get((horizontal_advection_type, horizontal_advection_limiter))
     print(
@@ -203,10 +204,10 @@ Y_DTIME_SECONDS: Final = test_utils.CYLINDER_DOMAIN_HEIGHT / (
 @pytest.mark.parametrize(
     "horizontal_advection_type, horizontal_advection_limiter",
     [
-        pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.NO_LIMITER, id="miura"),
-        pytest.param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.NO_LIMITER, id="miura3"),
-        pytest.param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.NO_LIMITER, id="miura_weno"),
-        pytest.param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, id="miura3_weno"),
+        pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.MONOTONIC, id="miura"),
+        pytest.param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.MONOTONIC, id="miura3"),
+        pytest.param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.MONOTONIC, id="miura_weno"),
+        pytest.param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.MONOTONIC, id="miura3_weno"),
     ],
 )
 def test_jocksch_cylinder_y_axis(
@@ -254,11 +255,85 @@ def test_jocksch_cylinder_y_axis(
     assert run.overshoot_run < 1.0 and run.undershoot_run < 1.0
 
 
+#: Number of complete orbits in the circular-wind experiment.
+CYLINDER_NUM_TURNS: Final = 10
+
+
+@pytest.mark.level("integration")
+@pytest.mark.embedded_remap_error
+@pytest.mark.skipif(not GRID_FILE.exists(), reason=f"shared grid file {GRID_FILE} not found")
+@pytest.mark.parametrize(
+    "horizontal_advection_type, horizontal_advection_limiter",
+    [
+        pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.MONOTONIC, id="miura"),
+        pytest.param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.MONOTONIC, id="miura3"),
+        pytest.param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.MONOTONIC, id="miura_weno"),
+        pytest.param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.MONOTONIC, id="miura3_weno"),
+    ],
+)
+def test_jocksch_cylinder_one_turn(
+    horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: tracer_advection.HorizontalAdvectionLimiter,
+    *,
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+) -> None:
+    """Carry the cylinder through CYLINDER_NUM_TURNS complete circular orbits."""
+    run = test_utils.run_cylinder_one_period(
+        grid_file=GRID_FILE,
+        cylinder_center=CYLINDER_CENTER,
+        tracer_advection={
+            "horizontal_advection_type": horizontal_advection_type,
+            "horizontal_advection_limiter": horizontal_advection_limiter,
+            "weno_linear_smoothness_exponent": 2,
+        },
+        tmp_path=tmp_path,
+        process_props=process_props,
+        backend=backend,
+        num_time_steps=test_utils.CYLINDER_N_TIME_STEPS_PER_TURN,
+        orbit_radius=test_utils.CYLINDER_ORBIT_RADIUS,
+        cylinder_radius=test_utils.CYLINDER_ORBIT_CYLINDER_RADIUS,
+        num_turns=CYLINDER_NUM_TURNS,
+    )
+    print(
+        f"\n{horizontal_advection_type.name} ({horizontal_advection_type.value}) + "
+        f"{horizontal_advection_limiter.name} ({horizontal_advection_limiter.value}): "
+        f"{CYLINDER_NUM_TURNS} turn(s), "
+        f"{test_utils.CYLINDER_N_TIME_STEPS_PER_TURN * CYLINDER_NUM_TURNS} steps "
+        f"of dt = {run.dtime_seconds} s, "
+        f"{run.num_levels} level(s), wall time {run.elapsed_wall_time:.1f} s\n"
+        f"  omega                                          = {run.cylinder_config.omega:.6e} 1/s"
+        f"  orbit {test_utils.CYLINDER_ORBIT_RADIUS / 1000:.0f} km,"
+        f" travel {2 * math.pi * test_utils.CYLINDER_ORBIT_RADIUS * CYLINDER_NUM_TURNS / 1000:.1f} km\n"
+        f"  Jocksch measure (pairs within an edge length)  = {run.jocksch_measure:.6f}"
+        f"  sqrt = {math.sqrt(run.jocksch_measure):.6f}\n"
+        f"  all neighbour pairs (= 3 sum e^2)              = {run.all_pairs_measure:.6f}"
+        f"  sqrt = {math.sqrt(run.all_pairs_measure):.6f}\n"
+        f"  sum e^2                                        = {run.sum_squared_error:.6f}"
+        f"  sqrt = {math.sqrt(run.sum_squared_error):.6f}\n"
+        f"  overshoot (max q - 1) final / run              = {run.overshoot_final:.6e} / "
+        f"{run.overshoot_run:.6e}\n"
+        f"  undershoot (-min q) final / run                = {run.undershoot_final:.6e} / "
+        f"{run.undershoot_run:.6e}\n"
+        f"  relative mass change                           = {run.relative_mass_change:.6e}\n"
+        f"  peak |q| beyond the wind's taper               = {run.far_field_peak:.6e}"
+    )
+
+    assert math.isfinite(run.jocksch_measure)
+    assert run.overshoot_run < 1.0 and run.undershoot_run < 1.0
+    assert run.jocksch_measure == pytest.approx(run.all_pairs_measure, rel=1e-4)
+
+
 OPTIMIZE_FOR_P_CSV_ENV: Final = "ICON4PY_OPTIMIZE_FOR_P_CSV"
-OPTIMIZE_FOR_P_CSV_DEFAULT: Final = "optimize_for_p_0.1.csv"
+OPTIMIZE_FOR_P_CSV_DEFAULT: Final = "optimize_for_p_cfl.csv"
+#: set to a directory to also drop the band's raw indicators per run, one '.npz' holding
+#: 'frame', 'cell' and 'beta' (n_selected, 3); off by default, the sweep writes ~2200 runs
+OPTIMIZE_FOR_P_BETA_DIR_ENV: Final = "ICON4PY_OPTIMIZE_FOR_P_BETA_DIR"
 OPTIMIZE_FOR_P_CSV_FIELDS: Final = (
     "theta",
     "p",
+    "cfl",
     "sum_sq",
     "rms",
     "jocksch_measure",
@@ -282,6 +357,7 @@ def test_optimize_for_p(
 ) -> None:
     p_values = np.arange(0.1, 2.01, 0.1)
     angles = np.arange(0, 31, 3)
+    cfls = np.arange(1, 11) / 20.0
     csv_path = pathlib.Path(os.environ.get(OPTIMIZE_FOR_P_CSV_ENV, OPTIMIZE_FOR_P_CSV_DEFAULT))
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     print(f"\nwriting the sweep to {csv_path.resolve()}")
@@ -290,34 +366,37 @@ def test_optimize_for_p(
         writer.writeheader()
         for theta in angles:
             for p in p_values:
-                with tempfile.TemporaryDirectory() as tmp:
-                    run = test_utils.run_cylinder_one_period(
-                        grid_file=GRID_FILE,
-                        cylinder_center=CYLINDER_CENTER,
-                        wind_angle=float(theta),
-                        tracer_advection={
-                            "horizontal_advection_type": _HADV.LINEAR_2ND_ORDER_WENO,
-                            "horizontal_advection_limiter": _HLIM.CELL_LOCAL_POSITIVE_DEFINITE,
-                            "weno_linear_smoothness_exponent": p,
-                        },
-                        tmp_path=pathlib.Path(tmp),
-                        process_props=process_props,
-                        backend=backend,
-                    )
-                record = {
-                    "theta": theta,
-                    "p": p,
-                    "sum_sq": run.sum_squared_error,
-                    "rms": math.sqrt(run.sum_squared_error),
-                    "jocksch_measure": run.jocksch_measure,
-                    "overshoot": run.overshoot_run,
-                    "undershoot": run.undershoot_run,
-                    "overshoot_final": run.overshoot_final,
-                    "undershoot_final": run.undershoot_final,
-                    "relative_mass_change": run.relative_mass_change,
-                    "dtime_seconds": run.dtime_seconds,
-                    "elapsed_wall_time": run.elapsed_wall_time,
-                }
-                writer.writerow(record)
-                csv_file.flush()
-                print(record)
+                for cfl in cfls:
+                    with tempfile.TemporaryDirectory() as tmp:
+                        run = test_utils.run_cylinder_one_period(
+                            grid_file=GRID_FILE,
+                            cylinder_center=CYLINDER_CENTER,
+                            wind_angle=float(theta),
+                            cfl=float(cfl),
+                            tracer_advection={
+                                "horizontal_advection_type": _HADV.LINEAR_2ND_ORDER_WENO,
+                                "horizontal_advection_limiter": _HLIM.CELL_LOCAL_POSITIVE_DEFINITE,
+                                "weno_linear_smoothness_exponent": p,
+                            },
+                            tmp_path=pathlib.Path(tmp),
+                            process_props=process_props,
+                            backend=backend,
+                        )
+                    record = {
+                        "theta": theta,
+                        "p": p,
+                        "cfl": cfl,
+                        "sum_sq": run.sum_squared_error,
+                        "rms": math.sqrt(run.sum_squared_error),
+                        "jocksch_measure": run.jocksch_measure,
+                        "overshoot": run.overshoot_run,
+                        "undershoot": run.undershoot_run,
+                        "overshoot_final": run.overshoot_final,
+                        "undershoot_final": run.undershoot_final,
+                        "relative_mass_change": run.relative_mass_change,
+                        "dtime_seconds": run.dtime_seconds,
+                        "elapsed_wall_time": run.elapsed_wall_time,
+                    }
+                    writer.writerow(record)
+                    csv_file.flush()
+                    print(record)
