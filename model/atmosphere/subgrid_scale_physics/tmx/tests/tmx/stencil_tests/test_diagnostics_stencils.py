@@ -77,7 +77,7 @@ class TestComputeSmagorinskyMixingLength(stencil_tests.StencilTest):
         max_turb_scale: float,
         grav: float,
         **kwargs: Any,
-    ) -> dict:
+    ) -> dict[str, np.ndarray]:
         mixing_length_sq = compute_smagorinsky_mixing_length_numpy(
             ddqz_z_half,
             geopot_agl_ifc,
