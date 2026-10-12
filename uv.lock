@@ -1179,7 +1179,7 @@ dependencies = [
   { name = "typing-extensions" }
 ]
 name = "dace"
-source = { git = "https://github.com/edopao/dace.git?branch=map-fusion-intermediates-symbolic-size#877e91fa195d84b17744c2f7c9664a5b58cdbbdc" }
+source = { git = "https://github.com/edopao/dace.git?branch=map-fusion-intermediates-symbolic-size#6ed5d2555c9f3ae1dc10649fb1b0d30179ed34d9" }
 version = "2.0.0a10"
 
 [[package]]
@@ -1656,8 +1656,8 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-source = { git = "https://github.com/GridTools/gt4py?branch=dace_noview_nested_sdfg#cc3063ae3a834cda1bc73e152a1357c614a24fa7" }
-version = "1.2.3.post27+cc3063ae"
+source = { git = "https://github.com/GridTools/gt4py?branch=dace_noview_nested_sdfg#ff7aaafc1c304c8bc760cffd368569d766e170c5" }
+version = "1.2.3.post28+ff7aaafc"
 
 [package.optional-dependencies]
 cuda12 = [
