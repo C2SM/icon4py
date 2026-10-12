@@ -21,6 +21,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
+import math
 import pathlib
 import typing
 from typing import Any
@@ -443,6 +444,43 @@ def tmx_is_active(atm_dict: dict[str, Any]) -> bool:
     return "aes_vdf_nml" in atm_dict and _read_use_tmx(atm_dict)
 
 
+def _check_tmx_positions(*, atm_dict: dict[str, Any], input_dict: dict[str, Any]) -> None:
+    """Check the pinned positions against the tmx members the input namelist sets by name.
+
+    The input namelist names the `t_vdiff_config` members it sets; each one read through a
+    pinned position must hold the same value in the echoed record. With tmx active the input
+    namelist sets at least `use_tmx`, which is `.FALSE.` by default (`vdiff_config_init`).
+    """
+    echoed = atm_dict["aes_vdf_nml"]["aes_vdf_config"]
+    # the first domain, the record the pinned positions read
+    named = input_dict["aes_vdf_nml"]["aes_vdf_config"][0]
+    positions = {"use_tmx": _TMX_USE_TMX_INDEX} | {
+        opt.field: opt.unnamed_index for opt in TMX.options
+    }
+    for name, value in named.items():
+        if name not in positions:
+            continue
+        echoed_value = echoed[positions[name]]
+        # the echo prints about 12 significant digits
+        if echoed_value != value and not math.isclose(echoed_value, value, rel_tol=1e-10):
+            raise ValueError(
+                f"'{name}' is {value!r} in the input namelist but {echoed_value!r} at "
+                f"position {positions[name]} of the echoed 'aes_vdf_config': the "
+                "t_vdiff_config member order changed and the pinned 'unnamed_index' "
+                "positions must be revised."
+            )
+
+
+def make_tmx_config(
+    *, atm_dict: dict[str, Any], input_dict: dict[str, Any]
+) -> tmx_config.TmxConfig | None:
+    """The tmx configuration, or None when the experiment does not run tmx."""
+    if not tmx_is_active(atm_dict):
+        return None
+    _check_tmx_positions(atm_dict=atm_dict, input_dict=input_dict)
+    return TMX.build(atm_dict)
+
+
 # The analytical test cases are read from `nh_testcase_nml`, which ICON does not dump
 # to NAMELIST_ICON_output_atm: it comes from the experiment's input namelist, which
 # only lists the values that differ from the ICON defaults.
@@ -693,7 +731,7 @@ def convert_experiment(
 
     # tmx is configured by the AES vertical-diffusion namelist; the driver does not run
     # the granule yet (icon4py#1360), but the config travels with the experiment.
-    tmx_cfg = TMX.build(atm_dict) if tmx_is_active(atm_dict) else None
+    tmx_cfg = make_tmx_config(atm_dict=atm_dict, input_dict=input_dict)
 
     return driver_config.ExperimentConfig(
         geometry=geometry_cfg,

@@ -28,8 +28,6 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
-    RTOL,
-    TMX_DATES,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -101,7 +99,10 @@ def _setup(
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
 )
 def test_tmx_run_hydrometeor_diffusion_single_step(
     *,
@@ -139,24 +140,35 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
+    # (computed, reference, name, atol, rtol), chosen as described in
+    # `assert_tmx_exit_fields`
     fields = (
-        (setup.tendency_state.tend_qv, exit_savepoint.tend_qv(), "tend_qv", 5.0e-20),
-        (setup.tendency_state.tend_qc, exit_savepoint.tend_qc(), "tend_qc", 5.0e-21),
-        (setup.tendency_state.tend_qi, exit_savepoint.tend_qi(), "tend_qi", 3.0e-22),
-        (setup.new_state.qv, exit_savepoint.qv_new(), "qv_new", 2.0e-17),
-        (setup.new_state.qc, exit_savepoint.qc_new(), "qc_new", 2.0e-18),
-        (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new", 7.0e-20),
+        # measured atol=3.5e-20, rtol=inf
+        (setup.tendency_state.tend_qv, exit_savepoint.tend_qv(), "tend_qv", 4.0e-20, 0.0),
+        # measured atol=3.6e-21, rtol=3.2e-5
+        (setup.tendency_state.tend_qc, exit_savepoint.tend_qc(), "tend_qc", 4.0e-21, 0.0),
+        # measured atol=1.8e-22, rtol=6.1e-11
+        (setup.tendency_state.tend_qi, exit_savepoint.tend_qi(), "tend_qi", 0.0, 7.0e-11),
+        # measured atol=1.0e-17, rtol=6.6e-16
+        (setup.new_state.qv, exit_savepoint.qv_new(), "qv_new", 0.0, 8.0e-16),
+        # measured atol=1.1e-18, rtol=5.4e-13
+        (setup.new_state.qc, exit_savepoint.qc_new(), "qc_new", 0.0, 6.0e-13),
+        # measured atol=5.4e-20, rtol=1.7e-15
+        (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new", 0.0, 2.0e-15),
     )
-    for actual, desired, name, atol in fields:
+    for actual, desired, name, atol, rtol in fields:
         test_utils.assert_dallclose(
-            actual.asnumpy(), desired.asnumpy(), rtol=RTOL, atol=atol, err_msg=name
+            actual.asnumpy(), desired.asnumpy(), atol=atol, rtol=rtol, err_msg=name
         )
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
 )
 def test_tmx_run_temperature_diffusion_single_step(
     *,
@@ -199,12 +211,17 @@ def test_tmx_run_temperature_diffusion_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
+    # (computed, reference, name, atol, rtol), chosen as described in
+    # `assert_tmx_exit_fields`
     fields = (
-        (setup.component.energy, exit_savepoint.energy(), "energy", 2.0e-10),
-        (new_state.temperature, exit_savepoint.ta_new(), "ta_new", 4.0e-13),
-        (setup.tendency_state.tend_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
+        # measured atol=8.7e-11, rtol=4.7e-16
+        (setup.component.energy, exit_savepoint.energy(), "energy", 0.0, 6.0e-16),
+        # measured atol=2.8e-13, rtol=1.1e-15
+        (new_state.temperature, exit_savepoint.ta_new(), "ta_new", 0.0, 2.0e-15),
+        # measured atol=9.5e-16, rtol=inf
+        (setup.tendency_state.tend_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15, 0.0),
     )
-    for actual, desired, name, atol in fields:
+    for actual, desired, name, atol, rtol in fields:
         test_utils.assert_dallclose(
-            actual.asnumpy(), desired.asnumpy(), rtol=RTOL, atol=atol, err_msg=name
+            actual.asnumpy(), desired.asnumpy(), atol=atol, rtol=rtol, err_msg=name
         )
