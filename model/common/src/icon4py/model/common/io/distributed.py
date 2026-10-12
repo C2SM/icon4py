@@ -51,7 +51,7 @@ log = logging.getLogger(__name__)
 
 #: CF dimension name ("cell", "edge", "vertex") for each horizontal dimension.
 HORIZONTAL_DIM_NAMES: Final[dict[gtx.Dimension, str]] = {
-    dim: ugrid.dimension_mapping(dim, is_on_half_levels=False) for dim in dims.horizontal_dims()
+    dim: ugrid.dimension_mapping(dim) for dim in dims.horizontal_dims()
 }
 
 #: Horizontal dimension for each CF dimension name (inverse of HORIZONTAL_DIM_NAMES).

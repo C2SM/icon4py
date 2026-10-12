@@ -63,7 +63,7 @@ def test_driver_writes_output(
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_experiment_config_from_fortran(config_file_path)
+    config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "io_driver_output",

@@ -42,7 +42,7 @@ from .test_interpolate_cell_field_to_half_levels import (
 from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
 
 
-def interpolate_vn_to_half_levels_numpy(wgtfac_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
+def interpolate_vn_to_half_levels_numpy(vn: np.ndarray, wgtfac_e: np.ndarray) -> np.ndarray:
     nlev = vn.shape[1]
     vn_ie = np.zeros((vn.shape[0], nlev + 1))
     w = wgtfac_e[:, 1:nlev]
@@ -55,7 +55,7 @@ def compute_horizontal_kinetic_energy_at_edges_numpy(vn: np.ndarray, vt: np.ndar
     return 0.5 * (vn * vn + vt * vt)
 
 
-def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
+def extrapolate_to_surface_numpy(vn: np.ndarray, wgtfacq_e: np.ndarray) -> np.ndarray:
     vn_k_minus_1 = vn[:, -1]
     vn_k_minus_2 = vn[:, -2]
     vn_k_minus_3 = vn[:, -3]
@@ -89,13 +89,13 @@ def compute_diagnostics_from_normal_wind_numpy(
     horizontal_kinetic_energy_at_edges_on_model_levels = (
         compute_horizontal_kinetic_energy_at_edges_numpy(vn, tangential_wind)
     )
-    vn_on_half_levels = interpolate_vn_to_half_levels_numpy(wgtfac_e, vn)
-    vn_on_half_levels[:, nlev] = extrapolate_to_surface_numpy(wgtfacq_e, vn)
+    vn_on_half_levels = interpolate_vn_to_half_levels_numpy(vn, wgtfac_e)
+    vn_on_half_levels[:, nlev] = extrapolate_to_surface_numpy(vn, wgtfacq_e)
 
     tangential_wind_on_half_levels = tangential_wind_on_half_levels.copy()
     if not skip_compute_predictor_vertical_advection:
         tangential_wind_on_half_levels[:, :nlev] = interpolate_vt_to_interface_edges_numpy(
-            wgtfac_e, tangential_wind
+            tangential_wind, wgtfac_e
         )[:, :nlev]
 
     contravariant_correction_at_edges_on_model_levels = compute_contravariant_correction_numpy(
@@ -611,7 +611,7 @@ class TestComputeInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.random_field(
             dims.EdgeDim, dims.KHalfDim, dtype=ta.vpfloat
@@ -664,7 +664,7 @@ class TestComputeExtraDiffusionForW(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         contravariant_corrected_w_at_cells_on_half_levels = data_alloc.random_field(
             dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
         )
@@ -718,7 +718,9 @@ class TestComputeCfl(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[
+        str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike | tuple[gtx.Field, ...]
+    ]:
         return dict(
             ddqz_z_half=data_alloc.random_field(
                 dims.CellDim, dims.KHalfDim, low=0.5, high=1.5, dtype=ta.vpfloat
@@ -766,7 +768,7 @@ class TestClipContravariantCorrectedW(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         return dict(
             contravariant_corrected_w_at_cells_on_half_levels=data_alloc.random_field(
                 dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
@@ -830,7 +832,7 @@ class TestComputeExtraDiffusion(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         return dict(
             vn=data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat),
             upward_vorticity_at_vertices_on_model_levels=data_alloc.random_field(
@@ -880,7 +882,7 @@ class TestComputeVerticalAdvectionOfW(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         return dict(
             contravariant_corrected_w_at_cells_on_half_levels=data_alloc.random_field(
                 dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
@@ -916,7 +918,7 @@ class TestInterpolateContravariantVerticalVelocityToFullLevels(stencil_tests.Ste
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         return dict(
             contravariant_corrected_w_at_cells_on_half_levels=data_alloc.random_field(
                 dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
@@ -977,7 +979,7 @@ class TestComputeAdvectiveNormalWindTendency(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         # The operator reads both E2C neighbours unmasked, so it runs where they exist.
         edge_domain = h_grid.domain(dims.EdgeDim)
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
@@ -1054,7 +1056,7 @@ class TestAddExtraDiffusionForNormalWindTendencyWithoutLevelmask(stencil_tests.S
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         dtime = ta.wpfloat("2.0")
         return dict(
             c_lin_e=data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat),
@@ -1122,7 +1124,7 @@ class TestComputeHorizontalAdvectionOfW(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         # The operator reads both E2C neighbours unmasked, so it runs where they exist.
         edge_domain = h_grid.domain(dims.EdgeDim)
         start_edge_lateral_boundary_level_7 = grid.start_index(

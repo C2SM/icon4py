@@ -6,7 +6,7 @@ requires = ["setuptools>=61.0", "wheel>=0.40.0"]
 
 # -- Standard project description options (PEP 621) --
 [project]
-authors = [{email = "gridtools@cscs.ch", name = "ETH Zurich"}]
+authors = [{ email = "gridtools@cscs.ch", name = "ETH Zurich" }]
 classifiers = [
   'Development Status :: 4 - Beta',
   'Intended Audience :: Science/Research',
@@ -25,7 +25,7 @@ classifiers = [
 ]
 dependencies = [
   'array-api-compat>=1.13.0',
-  'gt4py==1.2.2',
+  'gt4py==1.2.3',
   'packaging>=20.0',
   'numpy>=1.23.3',  # needed to read topography from file until IO is done
   "serialbox4py>=2.6.2",
@@ -33,7 +33,7 @@ dependencies = [
   "pyyaml>=6.0.3"
 ]
 description = "Shared code for the icon4py model."
-license = {text = "BSD-3 License"}
+license = { text = "BSD-3 License" }
 name = "icon4py-common"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -107,4 +107,4 @@ known-third-party = ['gt4py']
 '*' = ['*.in', '*.md', '*.rst', '*.txt', 'LICENSE', 'py.typed']
 
 [tool.setuptools.packages]
-find = {namespaces = true, where = ['src']}
+find = { namespaces = true, where = ['src'] }

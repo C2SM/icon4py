@@ -74,7 +74,7 @@ def get_allocator(
 
 def make_custom_gtfn_backend(device: DeviceType, **_) -> gtx_typing.Backend:
     on_gpu = device == GPU
-    return gtfn.GTFNBackendFactory(gpu=on_gpu)
+    return gtfn.make_gtfn_toolchain(gtfn.GTFNConfig(gpu=on_gpu))
 
 
 def make_custom_dace_backend(

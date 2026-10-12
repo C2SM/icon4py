@@ -12,8 +12,9 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import initial_condition, model_backends, model_options
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     nonhydro_states,
@@ -128,9 +129,8 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     single_rank_tracer_prep_adv_state = prep_adv_states.initialize_tracer_prep_adv_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
     )
-    initial_condition.create(
-        config=single_rank_icon4py_driver.config.initial_condition,
-        vertical_config=single_rank_icon4py_driver.config.vertical_grid,
+    ic_apply(
+        config=driver_utils.make_ic_config_ctx(single_rank_icon4py_driver.config),
         grid=single_rank_icon4py_driver.grid,
         static_fields=single_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=single_rank_prognostic,
@@ -187,11 +187,10 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
     multi_rank_tracer_prep_adv_state = prep_adv_states.initialize_tracer_prep_adv_state(
-        grid=single_rank_icon4py_driver.grid, allocator=allocator
+        grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
-    initial_condition.create(
-        config=multi_rank_icon4py_driver.config.initial_condition,
-        vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
+    ic_apply(
+        config=driver_utils.make_ic_config_ctx(multi_rank_icon4py_driver.config),
         grid=multi_rank_icon4py_driver.grid,
         static_fields=multi_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=multi_rank_prognostic,
