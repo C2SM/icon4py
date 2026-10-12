@@ -35,9 +35,9 @@ RUN apt-get update && \
         libuv1-dev \
         libyaml-dev \
         llvm \
-        gfortran \
-        gcc \
-        g++ \
+        gfortran-13 \
+        gcc-13 \
+        g++-13 \
         pkg-config \
         python3 \
         strace \
@@ -48,6 +48,9 @@ RUN apt-get update && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100 && \
+    update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-13 100
 
 ENV CC=gcc
 ENV CXX=g++
@@ -182,7 +185,7 @@ RUN set -eux; \
     tar -C /tmp -xzf /tmp/nccl.tar.gz; \
     cd "/tmp/nccl-${nccl_version}"; \
     # HPC SDK 24.11 (CUDA 12.6) declares cospi/sinpi/rsqrt without noexcept
-    # in crt/math_functions.h, but glibc >= 2.38 (>= 2.42 on Ubuntu 25.10)
+    # in crt/math_functions.h, but glibc >= 2.38 (>= 2.43 on Ubuntu 26.04)
     # declares them with noexcept(true) via bits/mathcalls.h. C++17 forbids
     # redeclaration with differing exception specs. Fixed in CUDA 13.2.
     # https://forums.developer.nvidia.com/t/323591
