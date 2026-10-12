@@ -109,11 +109,8 @@ def metrics_field_source(
         vct_b=vct_b,
     )
 
-    config = topography.TopographyConfig(
-        config=jw_topo.JablonowskiWilliamsonConfig(),
-    )
     topo_c = topography.create(
-        config=config,
+        config=jw_topo.JablonowskiWilliamsonConfig(),
         grid_manager=grid_manager,
         backend=generic_concrete_backend,
         exchange=decomposition.SingleNodeExchange(),

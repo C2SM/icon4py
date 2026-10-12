@@ -99,11 +99,11 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
     exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)
     theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)
     rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)
-    dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
+    dtime = savepoint_diffusion_init.dtime()
 
     # --- Expected objects that form inputs into init and run functions
     expected_icon_grid = icon_grid
-    expected_dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+    expected_dtime = savepoint_diffusion_init.dtime()
     expected_edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     expected_interpolation_state = diffusion_states.DiffusionInterpolationState(
@@ -153,7 +153,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
             zd_vertidx=zd_vertidx,
             zd_intcoef=zd_intcoef,
             zd_diffcoef=zd_diffcoef,
-            ndyn_substeps=cfg.ndyn_substeps,
+            ndyn_substeps=experiment.config.driver.ndyn_substeps,
             diffusion_type=cfg.diffusion_type,
             hdiff_w=cfg.apply_to_vertical_wind,
             hdiff_vn=cfg.apply_to_horizontal_wind,
@@ -173,7 +173,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
             smagorinski_scaling_height4=cfg.smagorinski_scaling_height4,
             hdiff_temp=cfg.apply_to_temperature,
             denom_diffu_v=cfg.velocity_boundary_diffusion_denominator,
-            nudge_max_coeff=cfg.max_nudging_coefficient,
+            nudge_max_coeff=experiment.config.interpolation.max_nudging_coefficient,
             itype_sher=cfg.shear_type.value,
             iforcing=cfg.iforcing.value,
             a_hshr=cfg.a_hshr,
@@ -327,7 +327,7 @@ def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-ar
     exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)
     theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)
     rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)
-    dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
+    dtime = savepoint_diffusion_init.dtime()
 
     ffi = cffi.FFI()
     # Call diffusion_init
@@ -347,7 +347,7 @@ def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-ar
         zd_vertidx=zd_vertidx,
         zd_intcoef=zd_intcoef,
         zd_diffcoef=zd_diffcoef,
-        ndyn_substeps=cfg.ndyn_substeps,
+        ndyn_substeps=experiment.config.driver.ndyn_substeps,
         diffusion_type=cfg.diffusion_type,
         hdiff_w=cfg.apply_to_vertical_wind,
         hdiff_vn=cfg.apply_to_horizontal_wind,
@@ -367,7 +367,7 @@ def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-ar
         smagorinski_scaling_height4=cfg.smagorinski_scaling_height4,
         hdiff_temp=cfg.apply_to_temperature,
         denom_diffu_v=cfg.velocity_boundary_diffusion_denominator,
-        nudge_max_coeff=cfg.max_nudging_coefficient,
+        nudge_max_coeff=experiment.config.interpolation.max_nudging_coefficient,
         itype_sher=cfg.shear_type.value,
         iforcing=cfg.iforcing.value,
         a_hshr=cfg.a_hshr,

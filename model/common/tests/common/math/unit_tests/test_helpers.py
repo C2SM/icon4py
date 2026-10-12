@@ -13,12 +13,14 @@ import numpy as np
 import pytest
 
 import icon4py.model.testing.test_utils
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.math import (
     vector_operations as vector_ops,
     vertical_operations as vertical_ops,
 )
+from icon4py.model.common.math.vertical_operations import _accumulate_from_top
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation
 from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
@@ -57,48 +59,7 @@ def test_cross_product(backend: gtx_typing.Backend) -> None:
 
 class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
     PROGRAM = vertical_ops.average_two_vertical_levels_downwards_on_edges
-    OUTPUTS = (
-        stencil_tests.Output(
-            "average",
-            refslice=(slice(None), slice(None, -1)),
-            gtslice=(slice(None), slice(None, -1)),
-        ),
-    )
-
-    @stencil_tests.static_reference
-    def reference(
-        grid: base.Grid,
-        *,
-        input_field: np.ndarray,
-        **kwargs: Any,
-    ) -> dict:
-        offset = np.roll(input_field, shift=1, axis=1)
-        average = 0.5 * (input_field + offset)
-        return dict(average=average)
-
-    @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
-        input_field = data_alloc.zero_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        result = data_alloc.random_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        return dict(
-            input_field=input_field,
-            average=result,
-            horizontal_start=gtx.int32(0),
-            horizontal_end=gtx.int32(grid.num_edges),
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(grid.num_levels),
-        )
-
-
-class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
-    PROGRAM = vertical_ops.average_two_vertical_levels_downwards_on_cells
-    OUTPUTS = (
-        stencil_tests.Output(
-            "average",
-            refslice=(slice(None), slice(None, -1)),
-            gtslice=(slice(None), slice(None, -1)),
-        ),
-    )
+    OUTPUTS = ("average",)
 
     @stencil_tests.static_reference
     def reference(
@@ -113,7 +74,36 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
-        input_field = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        input_field = data_alloc.zero_field(dims.EdgeDim, dims.KHalfDim)
+        result = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        return dict(
+            input_field=input_field,
+            average=result,
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(grid.num_edges),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(grid.num_levels),
+        )
+
+
+class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
+    PROGRAM = vertical_ops.average_two_vertical_levels_downwards_on_cells
+    OUTPUTS = ("average",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        input_field: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
+        shp = input_field.shape
+        res = 0.5 * (input_field + np.roll(input_field, shift=-1, axis=1))[:, : shp[1] - 1]
+        return dict(average=res)
+
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        input_field = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         result = data_alloc.zero_field(dims.CellDim, dims.KDim)
         return dict(
             input_field=input_field,
@@ -122,4 +112,26 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(grid.num_levels),
+        )
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def _accumulate_from_top_on_cells(summand: fa.CellKField[wpfloat]) -> fa.CellKField[wpfloat]:
+    return _accumulate_from_top(summand)
+
+
+class TestAccumulateFromTop(stencil_tests.StencilTest):
+    PROGRAM = _accumulate_from_top_on_cells
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, *, summand: np.ndarray, **kwargs: Any) -> dict:
+        return dict(out=np.cumsum(summand, axis=1))
+
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        return dict(
+            summand=data_alloc.random_field(dims.CellDim, dims.KDim),
+            out=data_alloc.zero_field(dims.CellDim, dims.KDim),
+            domain={dims.CellDim: (0, grid.num_cells), dims.KDim: (0, grid.num_levels)},
         )

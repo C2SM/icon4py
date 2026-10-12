@@ -19,7 +19,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import icon as icon_grid
+    from icon4py.model.common.grid import base as base_grid
 
 
 @dataclasses.dataclass
@@ -33,7 +33,7 @@ class DiagnosticState:
     #: air pressure [Pa] at cell center and full levels, originally defined as pres in ICON
     pressure: fa.CellKField[ta.wpfloat]
     #: air pressure [Pa] at cell center and half levels, originally defined as pres_ifc and pres_sfc for surface pressure in ICON.
-    pressure_ifc: fa.CellKField[ta.wpfloat]
+    pressure_ifc: fa.CellKHalfField[ta.wpfloat]
     #: air temperature [K] at cell center, originally defined as temp in ICON
     temperature: fa.CellKField[ta.wpfloat]
     #: air virtual temperature [K] at cell center, originally defined as tempv in ICON
@@ -58,8 +58,8 @@ class DiagnosticMetricState:
 
 
 def initialize_diagnostic_state(
-    grid: icon_grid.IconGrid,
-    allocator: gtx_typing.Allocator,
+    grid: base_grid.Grid,
+    allocator: gtx_typing.Allocator | None,
 ) -> DiagnosticState:
     """Initialize the diagnostic state with zero fields."""
     pressure = data_alloc.zero_field(
@@ -72,8 +72,7 @@ def initialize_diagnostic_state(
     pressure_ifc = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )

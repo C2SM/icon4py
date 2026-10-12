@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, maximum, minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
@@ -30,7 +30,7 @@ def _postprocess_antidiffusive_cell_fluxes_and_min_max(
     condition = (refin_ctrl == lo_bound) | (refin_ctrl == hi_bound)
     z_tracer_new_out = where(
         condition,
-        minimum(1.1 * p_cc, maximum(0.9 * p_cc, z_tracer_new_low)),
+        minimum(wpfloat(1.1) * p_cc, maximum(wpfloat(0.9) * p_cc, z_tracer_new_low)),
         z_tracer_new_low,
     )
 

@@ -11,13 +11,14 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
-from typing import Any
+import typing
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
@@ -44,96 +45,94 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class InterpolationConfig:
-    divergence_averaging_central_cell_weight: float = 0.5  # divavg_cntrwgt in ICON
-    """
-    Central-cell weight used in divergence averaging.
-    """
+    divergence_averaging_central_cell_weight: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Central-cell weight used in divergence averaging.",
+        ),
+    ] = 0.5
 
-    max_nudging_coefficient: float | None = None  # default: 0.375, set in __post_init__
-    """
-    Maximum nudging coefficient applied in the lateral nudging zone.
-    """
+    max_nudging_coefficient: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Maximum nudging coefficient applied in the lateral nudging zone.",
+        ),
+    ] = 0.375
 
-    #: Raw namelist value (nudge_max_coeff in mo_interpol_nml.f90), scaled to
-    #: max_nudging_coefficient in __post_init__ if provided.
-    _nudge_max_coeff: float | None = None
+    nudge_efold_width: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="E-folding width controlling the exponential decay of nudging strength.",
+        ),
+    ] = 2.0
 
-    nudge_efold_width: float = 2.0
-    """
-    E-folding width controlling the exponential decay of nudging strength.
-    """
+    nudge_zone_width: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description="Width of the lateral nudging zone in grid refinement levels.",
+        ),
+    ] = 10
 
-    nudge_zone_width: int = 10
-    """
-    Width of the lateral nudging zone in grid refinement levels.
-    """
+    rbf_kernel_cell: typing.Annotated[
+        rbf.InterpolationKernel,
+        common_conf_opt.ConfigOption(
+            description="Radial basis function kernel used for cell-based interpolation.",
+        ),
+    ] = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL]
 
-    rbf_kernel_cell: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL]
-    """
-    Radial basis function kernel used for cell-based interpolation.
-    """
+    rbf_kernel_edge: typing.Annotated[
+        rbf.InterpolationKernel,
+        common_conf_opt.ConfigOption(
+            description="Radial basis function kernel used for edge-based interpolation.",
+        ),
+    ] = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE]
 
-    rbf_kernel_edge: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE]
-    """
-    Radial basis function kernel used for edge-based interpolation.
-    """
+    rbf_kernel_vertex: typing.Annotated[
+        rbf.InterpolationKernel,
+        common_conf_opt.ConfigOption(
+            description="Radial basis function kernel used for vertex-based interpolation.",
+        ),
+    ] = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX]
 
-    rbf_kernel_vertex: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX]
-    """
-    Radial basis function kernel used for vertex-based interpolation.
-    """
+    lsq_dim_unk: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Number of unknowns in the least-squares reconstruction. "
+                "Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter."
+            ),
+        ),
+    ] = 2
 
-    lsq_dim_unk: int = 2
-    """
-    Number of unknowns in the least-squares reconstruction.
-    Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
-    """
-
-    lsq_dim_c: int = 3
-    """
-    Dimension of the least-squares coefficient space.
-    Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
-    """
-
-    lsq_wgt_exp: int = 2
-    """
-    Exponent used in distance-based least-squares weighting.
-    Derived in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
-    """
-
-    lsq_high_ord: int = 1
-    """
-    Complexity of least-squares reconstruction in terms of the polynomial order and stencil size.
-    This is not used in the current implementation, but is kept for higher-order reconstruction in the future.
-    """
-
-    def __post_init__(self):
-        if self._nudge_max_coeff is not None and self.max_nudging_coefficient is not None:
-            raise ValueError("Cannot set both '_nudge_max_coeff' and 'max_nudging_coefficient'.")
-        elif self.max_nudging_coefficient is not None:
-            pass
-        elif self._nudge_max_coeff is not None:
-            self.max_nudging_coefficient = (
-                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * self._nudge_max_coeff
+    lsq_dim_c: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Dimension of the least-squares coefficient space. "
+                "Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter."
             )
-        else:  # default value in ICON
-            self.max_nudging_coefficient = 0.375
+        ),
+    ] = 3
 
-    @classmethod
-    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> InterpolationConfig:
-        interpol_nml = atmo_dict["interpol_nml"]
-        dynamics_nml = atmo_dict["dynamics_nml"]
-        return cls(
-            divergence_averaging_central_cell_weight=dynamics_nml["divavg_cntrwgt"],
-            _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
-            nudge_efold_width=interpol_nml["nudge_efold_width"],
-            nudge_zone_width=interpol_nml["nudge_zone_width"],
-            rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
-            rbf_kernel_edge=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
-            rbf_kernel_vertex=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
-            lsq_high_ord=interpol_nml["lsq_high_ord"],
-            **overrides,
-        )
+    lsq_wgt_exp: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Exponent used in distance-based least-squares weighting. "
+                "Derived in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter."
+            )
+        ),
+    ] = 2
+
+    lsq_high_ord: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Complexity of least-squares reconstruction in terms of the polynomial order and stencil size. "
+                "This is not used in the current implementation, but is kept for higher-order reconstruction in the future."
+            ),
+        ),
+    ] = 1
 
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
@@ -199,7 +198,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             params={
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
-                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "max_nudging_coefficient": gtx.float64(self._config.max_nudging_coefficient),
                 "nudge_efold_width": self._config.nudge_efold_width,
                 "nudge_zone_width": self._config.nudge_zone_width,
             },
@@ -334,7 +333,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "domain_length": self._domain_length,
                 "domain_height": self._domain_height,
-                "grid_sphere_radius": constants.EARTH_RADIUS,
+                "grid_sphere_radius": gtx.float64(constants.EARTH_RADIUS),
                 "lsq_dim_unk": self._config.lsq_dim_unk,
                 "lsq_dim_c": self._config.lsq_dim_c,
                 "lsq_wgt_exp": self._config.lsq_wgt_exp,
@@ -408,7 +407,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     },
                     connectivities={"e2c": dims.E2CDim},
                     params={
-                        "grid_sphere_radius": constants.EARTH_RADIUS,
+                        "grid_sphere_radius": gtx.float64(constants.EARTH_RADIUS),
                         "horizontal_start": self.grid.start_index(
                             edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
                         ),

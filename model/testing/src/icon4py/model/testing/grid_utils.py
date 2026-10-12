@@ -117,11 +117,15 @@ def get_grid_geometry(
     grid: test_defs.GridDescription,
     experiment_config: driver_config.ExperimentConfig,
 ) -> geometry.GridGeometry:
+    # The number of levels is part of the key because it is baked into the
+    # constructed grid, and experiments with different vertical grids share a
+    # grid file (e.g. the two aquaplanet experiments on R02B04).
     register_name = "_".join(
         (
             grid.name,
             data_alloc.backend_name(backend),
             str(experiment_config.geometry.use_analytical_means),
+            str(experiment_config.vertical_grid.num_levels),
         )
     )
 

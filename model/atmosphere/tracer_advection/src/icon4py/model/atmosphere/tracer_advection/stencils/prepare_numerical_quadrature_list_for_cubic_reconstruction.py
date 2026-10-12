@@ -53,7 +53,7 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
     wgt_zeta_2: ta.wpfloat,
     wgt_eta_1: ta.wpfloat,
     wgt_eta_2: ta.wpfloat,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     eps: ta.wpfloat,
 ) -> tuple[
     fa.EdgeKField[ta.vpfloat],
@@ -68,37 +68,37 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-    z_wgt_1 = 0.0625 * wgt_zeta_1 * wgt_eta_1
-    z_wgt_2 = 0.0625 * wgt_zeta_1 * wgt_eta_2
-    z_wgt_3 = 0.0625 * wgt_zeta_2 * wgt_eta_1
-    z_wgt_4 = 0.0625 * wgt_zeta_2 * wgt_eta_2
+    z_wgt_1 = wpfloat(0.0625) * wgt_zeta_1 * wgt_eta_1
+    z_wgt_2 = wpfloat(0.0625) * wgt_zeta_1 * wgt_eta_2
+    z_wgt_3 = wpfloat(0.0625) * wgt_zeta_2 * wgt_eta_1
+    z_wgt_4 = wpfloat(0.0625) * wgt_zeta_2 * wgt_eta_2
 
-    z_eta_1_1 = 1.0 - eta_1
-    z_eta_2_1 = 1.0 - eta_2
-    z_eta_3_1 = 1.0 - eta_3
-    z_eta_4_1 = 1.0 - eta_4
-    z_eta_1_2 = 1.0 + eta_1
-    z_eta_2_2 = 1.0 + eta_2
-    z_eta_3_2 = 1.0 + eta_3
-    z_eta_4_2 = 1.0 + eta_4
-    z_eta_1_3 = 1.0 - zeta_1
-    z_eta_2_3 = 1.0 - zeta_2
-    z_eta_3_3 = 1.0 - zeta_3
-    z_eta_4_3 = 1.0 - zeta_4
-    z_eta_1_4 = 1.0 + zeta_1
-    z_eta_2_4 = 1.0 + zeta_2
-    z_eta_3_4 = 1.0 + zeta_3
-    z_eta_4_4 = 1.0 + zeta_4
+    z_eta_1_1 = wpfloat(1.0) - eta_1
+    z_eta_2_1 = wpfloat(1.0) - eta_2
+    z_eta_3_1 = wpfloat(1.0) - eta_3
+    z_eta_4_1 = wpfloat(1.0) - eta_4
+    z_eta_1_2 = wpfloat(1.0) + eta_1
+    z_eta_2_2 = wpfloat(1.0) + eta_2
+    z_eta_3_2 = wpfloat(1.0) + eta_3
+    z_eta_4_2 = wpfloat(1.0) + eta_4
+    z_eta_1_3 = wpfloat(1.0) - zeta_1
+    z_eta_2_3 = wpfloat(1.0) - zeta_2
+    z_eta_3_3 = wpfloat(1.0) - zeta_3
+    z_eta_4_3 = wpfloat(1.0) - zeta_4
+    z_eta_1_4 = wpfloat(1.0) + zeta_1
+    z_eta_2_4 = wpfloat(1.0) + zeta_2
+    z_eta_3_4 = wpfloat(1.0) + zeta_3
+    z_eta_4_4 = wpfloat(1.0) + zeta_4
 
     famask_bool = famask_int == 1
-    p_coords_dreg_v_1_x = where(famask_bool, p_coords_dreg_v_1_x, 0.0)
-    p_coords_dreg_v_2_x = where(famask_bool, p_coords_dreg_v_2_x, 0.0)
-    p_coords_dreg_v_3_x = where(famask_bool, p_coords_dreg_v_3_x, 0.0)
-    p_coords_dreg_v_4_x = where(famask_bool, p_coords_dreg_v_4_x, 0.0)
-    p_coords_dreg_v_1_y = where(famask_bool, p_coords_dreg_v_1_y, 0.0)
-    p_coords_dreg_v_2_y = where(famask_bool, p_coords_dreg_v_2_y, 0.0)
-    p_coords_dreg_v_3_y = where(famask_bool, p_coords_dreg_v_3_y, 0.0)
-    p_coords_dreg_v_4_y = where(famask_bool, p_coords_dreg_v_4_y, 0.0)
+    p_coords_dreg_v_1_x = where(famask_bool, p_coords_dreg_v_1_x, vpfloat(0.0))
+    p_coords_dreg_v_2_x = where(famask_bool, p_coords_dreg_v_2_x, vpfloat(0.0))
+    p_coords_dreg_v_3_x = where(famask_bool, p_coords_dreg_v_3_x, vpfloat(0.0))
+    p_coords_dreg_v_4_x = where(famask_bool, p_coords_dreg_v_4_x, vpfloat(0.0))
+    p_coords_dreg_v_1_y = where(famask_bool, p_coords_dreg_v_1_y, vpfloat(0.0))
+    p_coords_dreg_v_2_y = where(famask_bool, p_coords_dreg_v_2_y, vpfloat(0.0))
+    p_coords_dreg_v_3_y = where(famask_bool, p_coords_dreg_v_3_y, vpfloat(0.0))
+    p_coords_dreg_v_4_y = where(famask_bool, p_coords_dreg_v_4_y, vpfloat(0.0))
     p_coords_dreg_v_1_x_wp = astype(p_coords_dreg_v_1_x, wpfloat)
     p_coords_dreg_v_2_x_wp = astype(p_coords_dreg_v_2_x, wpfloat)
     p_coords_dreg_v_3_x_wp = astype(p_coords_dreg_v_3_x, wpfloat)
@@ -110,7 +110,7 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
 
     wgt_t_detjac_1 = where(
         famask_bool,
-        dbl_eps
+        wp_eps
         + z_wgt_1
         * (
             (
@@ -130,11 +130,11 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
                 - z_eta_1_4 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_3_x_wp)
             )
         ),
-        0.0,
+        wpfloat(0.0),
     )
     wgt_t_detjac_2 = where(
         famask_bool,
-        dbl_eps
+        wp_eps
         + z_wgt_2
         * (
             (
@@ -154,11 +154,11 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
                 - z_eta_2_4 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_3_x_wp)
             )
         ),
-        0.0,
+        wpfloat(0.0),
     )
     wgt_t_detjac_3 = where(
         famask_bool,
-        dbl_eps
+        wp_eps
         + z_wgt_3
         * (
             (
@@ -178,11 +178,11 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
                 - z_eta_3_4 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_3_x_wp)
             )
         ),
-        0.0,
+        wpfloat(0.0),
     )
     wgt_t_detjac_4 = where(
         famask_bool,
-        dbl_eps
+        wp_eps
         + z_wgt_4
         * (
             (
@@ -202,7 +202,7 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
                 - z_eta_4_4 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_3_x_wp)
             )
         ),
-        0.0,
+        wpfloat(0.0),
     )
 
     z_gauss_pts_1_x = (
@@ -378,7 +378,7 @@ def prepare_numerical_quadrature_list_for_cubic_reconstruction(
     wgt_zeta_2: ta.wpfloat,
     wgt_eta_1: ta.wpfloat,
     wgt_eta_2: ta.wpfloat,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     eps: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -424,7 +424,7 @@ def prepare_numerical_quadrature_list_for_cubic_reconstruction(
         wgt_zeta_2=wgt_zeta_2,
         wgt_eta_1=wgt_eta_1,
         wgt_eta_2=wgt_eta_2,
-        dbl_eps=dbl_eps,
+        wp_eps=wp_eps,
         eps=eps,
         out=(
             p_quad_vector_sum_1,

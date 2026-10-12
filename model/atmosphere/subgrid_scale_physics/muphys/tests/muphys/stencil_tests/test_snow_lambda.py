@@ -9,9 +9,6 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
-    GraupelConsts,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import snow_lambda
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
@@ -27,19 +24,19 @@ class TestSnowLambda(stencil_tests.StencilTest):
     def reference(
         grid: base.Grid,
         *,
-        rho: np.ndarray,
-        qs: np.ndarray,
+        rho_s: np.ndarray,
         ns: np.ndarray,
         **kwargs,
     ) -> dict:
-        return dict(riming_snow_rate=np.full(rho.shape, 1.0e10))
+        # mirrors ICON mo_aes_graupel.f90 snow_lambda
+        lam = np.where(rho_s > 1.0e-15, (2.0 * 0.069 * ns / rho_s) ** (1.0 / 3.0), 1.0e10)
+        return dict(riming_snow_rate=lam)
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            rho=data_alloc.constant_field(1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(
-                GraupelConsts.qmin, dims.CellDim, dims.KDim, dtype=wpfloat
+            rho_s=data_alloc.constant_field(
+                1.12204 * 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             ns=data_alloc.constant_field(1.76669e07, dims.CellDim, dims.KDim, dtype=wpfloat),
             riming_snow_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),

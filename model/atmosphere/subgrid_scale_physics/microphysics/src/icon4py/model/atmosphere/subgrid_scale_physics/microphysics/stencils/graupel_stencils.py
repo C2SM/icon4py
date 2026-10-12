@@ -510,6 +510,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
             cslam = exp(
                 MicrophysicsConstants.CCSLXP * log(MicrophysicsConstants.CCSLAM * n0s / rhoqs)
             )
+
             cslam = minimum(cslam, wpfloat("1.0e15"))
             csdep = wpfloat("4.0") * n0s * chlp
         else:

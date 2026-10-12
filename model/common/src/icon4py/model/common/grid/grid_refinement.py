@@ -155,7 +155,8 @@ _LAST_BOUNDARY: dict[gtx.Dimension, h_grid.Zone] = {
 def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
     """There is a speciality in the setup of the ICON halos: generally halo points are located at the end of the arrays after all
     points owned by a node. This is true for global grids and for a local area model for all points with a
-    refinement control value larger than (6, 2) for HALO level 1 and (4,1) for HALO_LEVEL_2.
+    refinement control value larger than (6, 2) for HALO level 1, (4,1) for HALO_LEVEL_2 and 2 for the
+    edges of HALO_LEVEL_3 (``refine_edges_atm`` in ``mo_setup_subdivision.f90``).
 
     That is for the local area grid some (but not all!) halo points that are lateral boundary points are placed with the lateral boundary
     domains rather than the halo. The reason for this is mysterious (to me) as well as what advantage it might have.
@@ -165,7 +166,13 @@ def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
     assert domain.zone.is_halo(), "Domain must be a halo Zone."
     match domain.dim:
         case dims.EdgeDim:
-            return 6 if domain.zone == h_grid.Zone.HALO else 4
+            match domain.zone:
+                case h_grid.Zone.HALO:
+                    return 6
+                case h_grid.Zone.HALO_LEVEL_2:
+                    return 4
+                case _:
+                    return 2
         case dims.CellDim | dims.VertexDim:
             return 2 if domain.zone == h_grid.Zone.HALO else 1
         case _:
@@ -238,15 +245,28 @@ def compute_domain_bounds(
         else (refinement_ctrl.size, refinement_ctrl.size)
     )
     for domain in halo_domains:
-        my_flag = decomposition.DecompositionFlag(domain.zone.level)
-        if my_flag == h_grid.Zone.HALO.level:
-            start_index = (
-                array_ns.min(halo_region_1).item() if halo_region_1.size > 0 else start_halo_2
-            )
-            end_index = start_halo_2
-        else:
-            start_index = start_halo_2
-            end_index = end_halo_2
+        match domain.zone:
+            case h_grid.Zone.HALO:
+                start_index = (
+                    array_ns.min(halo_region_1).item() if halo_region_1.size > 0 else start_halo_2
+                )
+                end_index = start_halo_2
+            case h_grid.Zone.HALO_LEVEL_2:
+                start_index = start_halo_2
+                end_index = end_halo_2
+            case h_grid.Zone.HALO_LEVEL_3:
+                halo_level_3 = decomposition_info.halo_level_mask(
+                    dim, decomposition.DecompositionFlag.THIRD_HALO_LEVEL
+                )
+                not_lateral_boundary_3 = (refinement_ctrl < 1) | (
+                    refinement_ctrl > _refinement_level_placed_with_halo(domain)
+                )
+                halo_region_3 = array_ns.nonzero(halo_level_3 & not_lateral_boundary_3)[0]
+                start_index, end_index = (
+                    (array_ns.min(halo_region_3).item(), array_ns.max(halo_region_3).item() + 1)
+                    if halo_region_3.size > 0
+                    else (refinement_ctrl.size, refinement_ctrl.size)
+                )
         start_indices[domain] = gtx.int32(start_index)  # type: ignore [attr-defined]
         end_indices[domain] = gtx.int32(end_index)  # type: ignore [attr-defined]
 

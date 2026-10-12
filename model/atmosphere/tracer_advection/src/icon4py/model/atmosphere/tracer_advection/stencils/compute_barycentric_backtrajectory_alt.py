@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
@@ -28,7 +28,7 @@ def _compute_barycentric_backtrajectory_alt(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-    lvn_pos = p_vn >= 0.0
+    lvn_pos = p_vn >= wpfloat(0.0)
 
     z_ntdistv_bary_1 = -(
         p_vn * p_dthalf
