@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
-from typing import Any
 
 import pytest
 from gt4py.next import typing as gtx_typing
@@ -54,7 +53,7 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_savepoint: serialbox.IconGridSavepoint,
     metric_state: diffusion_states.DiffusionMetricState,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
-    caplog: Any,
+    caplog: pytest.LogCaptureFixture,
     backend: gtx_typing.Backend,
 ) -> None:
     caplog.set_level("INFO")

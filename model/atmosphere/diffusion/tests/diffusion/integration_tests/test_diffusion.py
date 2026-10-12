@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import collections
-from typing import Any
+from typing import Any, cast
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -18,7 +18,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.grid import geometry_attributes as geometry_meta, vertical as v_grid
+from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions as test_defs,
@@ -32,28 +32,34 @@ from ..fixtures import *  # noqa: F403
 from ..utils import diff_multfac_vn_numpy, smag_limit_numpy, verify_diffusion_fields
 
 
-grid_functionality: dict[str, dict[str, Any]] = collections.defaultdict(dict)
+grid_functionality: dict[
+    str, dict[str, icon.IconGrid | grid_states.EdgeParams | grid_states.CellParams]
+] = collections.defaultdict(dict)
 
 
-def get_grid_for_experiment(experiment: test_defs.Experiment, backend: gtx_typing.Backend) -> Any:
-    return _get_or_initialize(experiment, backend, "grid")
+def get_grid_for_experiment(
+    experiment: test_defs.Experiment, backend: gtx_typing.Backend
+) -> icon.IconGrid:
+    return cast(icon.IconGrid, _get_or_initialize(experiment, backend, "grid"))
 
 
 def get_edge_geometry_for_experiment(
     experiment: test_defs.Experiment, backend: gtx_typing.Backend
-) -> Any:
-    return _get_or_initialize(experiment, backend, "edge_geometry")
+) -> grid_states.EdgeParams:
+    return cast(grid_states.EdgeParams, _get_or_initialize(experiment, backend, "edge_geometry"))
 
 
 def get_cell_geometry_for_experiment(
     experiment: test_defs.Experiment, backend: gtx_typing.Backend
-) -> Any:
-    return _get_or_initialize(experiment, backend, "cell_geometry")
+) -> grid_states.CellParams:
+    return cast(grid_states.CellParams, _get_or_initialize(experiment, backend, "cell_geometry"))
 
 
 def _get_or_initialize(
-    experiment: test_defs.Experiment, backend: gtx_typing.Backend, name: str
-) -> Any:
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend,
+    name: str,
+) -> icon.IconGrid | grid_states.EdgeParams | grid_states.CellParams:
     if not grid_functionality[experiment.name].get(name):
         geometry_ = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
         grid = geometry_.grid
@@ -102,7 +108,9 @@ def _get_or_initialize(
         grid_functionality[experiment.name]["grid"] = grid
         grid_functionality[experiment.name]["edge_geometry"] = edge_params
         grid_functionality[experiment.name]["cell_geometry"] = cell_params
-    return grid_functionality[experiment.name].get(name)
+    result = grid_functionality[experiment.name].get(name)
+    assert result is not None
+    return result
 
 
 @pytest.mark.single_precision_ready
@@ -163,14 +171,15 @@ def test_smagorinski_factor_diffusion_type_5() -> None:
     ],
 )
 def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
-    savepoint_diffusion_init: Any,
+    savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
-    experiment: Any,
-    step_date_init: Any,
-    backend: Any,
+    experiment: test_defs.Experiment,
+    step_date_init: str,
+    backend: gtx_typing.Backend,
 ) -> None:
     config = experiment.config.diffusion
+    assert config is not None
     additional_parameters = diffusion.DiffusionParams(config)
     ndyn_substeps_as_float = float(experiment.config.driver.ndyn_substeps)
 
@@ -243,7 +252,9 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 def _verify_init_values_against_savepoint(
-    savepoint: sb.IconDiffusionInitSavepoint, diffusion_granule: diffusion.Diffusion, backend: Any
+    savepoint: sb.IconDiffusionInitSavepoint,
+    diffusion_granule: diffusion.Diffusion,
+    backend: gtx_typing.Backend,
 ) -> None:
     dtime = savepoint.dtime()
 
@@ -314,17 +325,18 @@ def _verify_init_values_against_savepoint(
     ],
 )
 def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: Any,
-    step_date_init: Any,
+    experiment: test_defs.Experiment,
+    step_date_init: str,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
-    savepoint_diffusion_init: Any,
-    backend: Any,
+    savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
+    backend: gtx_typing.Backend,
 ) -> None:
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
     config = experiment.config.diffusion
+    assert config is not None
     additional_parameters = diffusion.DiffusionParams(config)
     vertical_config = experiment.config.vertical_grid
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
@@ -372,14 +384,14 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
     ],
 )
 def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: Any,
-    step_date_init: Any,
-    step_date_exit: Any,
-    savepoint_diffusion_init: Any,
-    savepoint_diffusion_exit: Any,
+    experiment: test_defs.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
+    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
-    backend: Any,
+    backend: gtx_typing.Backend,
 ) -> None:
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
@@ -404,6 +416,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
 
     config = experiment.config.diffusion
+    assert config is not None
     additional_parameters = diffusion.DiffusionParams(config)
 
     assert experiment.config.interpolation.max_nudging_coefficient is not None
@@ -436,13 +449,13 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
 def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: Any,
-    linit: Any,
-    savepoint_diffusion_init: Any,
-    savepoint_diffusion_exit: Any,
+    experiment: test_defs.Experiment,
+    linit: bool,
+    savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
+    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
-    backend: Any,
+    backend: gtx_typing.Backend,
 ) -> None:
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
@@ -464,6 +477,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
     )
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
     config = experiment.config.diffusion
+    assert config is not None
     params = diffusion.DiffusionParams(config)
 
     assert experiment.config.interpolation.max_nudging_coefficient is not None
@@ -510,10 +524,15 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
     ],
 )
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init: Any, experiment: Any, icon_grid: Any, linit: Any, backend: Any
+    savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
+    experiment: test_defs.Experiment,
+    icon_grid: icon.IconGrid,
+    linit: bool,
+    backend: gtx_typing.Backend,
 ) -> None:
     savepoint = savepoint_diffusion_init
     config = experiment.config.diffusion
+    assert config is not None
 
     params = diffusion.DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()

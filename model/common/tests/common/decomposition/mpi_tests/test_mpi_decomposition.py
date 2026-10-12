@@ -8,7 +8,6 @@
 import copy
 import functools
 import logging
-from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -70,8 +69,8 @@ def test_decomposition_info_masked(  # noqa: PLR0917 [too-many-positional-argume
     dim: gtx.Dimension,
     owned: tuple[int, int],
     total: tuple[int, int],
-    caplog: Any,
-    download_ser_data: Any,
+    caplog: pytest.LogCaptureFixture,
+    download_ser_data: None,
     decomposition_info: decomp_defs.DecompositionInfo,
     process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
@@ -128,7 +127,7 @@ def test_decomposition_info_local_index(  # noqa: PLR0917 [too-many-positional-a
     dim: gtx.Dimension,
     owned: tuple[int, int],
     total: tuple[int, int],
-    caplog: Any,
+    caplog: pytest.LogCaptureFixture,
     decomposition_info: decomp_defs.DecompositionInfo,
     process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
@@ -224,7 +223,7 @@ def test_domain_descriptor_id_are_globally_unique(
 @pytest.mark.datatest
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_decomposition_info_matches_gridsize(
-    caplog: Any,
+    caplog: pytest.LogCaptureFixture,
     decomposition_info: decomp_defs.DecompositionInfo,
     icon_grid: icon.IconGrid,
     process_props: decomp_defs.ProcessProperties,

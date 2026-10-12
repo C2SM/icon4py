@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
-from typing import Any
 
 import numpy as np
 from gt4py import next as gtx
@@ -185,7 +184,7 @@ def assert_same_entries(
 
 @dataclasses.dataclass(frozen=True, init=False)
 class DummyProps(definitions.ProcessProperties):
-    comm: Any
+    comm: None
     comm_name: str
     comm_size: int
     rank: int

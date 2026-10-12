@@ -6,19 +6,18 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Any
-
 import pytest
 from gt4py.next import typing as gtx_typing
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.atmosphere.tracer_advection import tracer_advection
+from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,
+    icon,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
@@ -100,24 +99,24 @@ from ..utils import (
 )
 @pytest.mark.mpi
 def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    date: Any,
-    even_timestep: Any,
-    ntracer: Any,
-    horizontal_advection_type: Any,
-    horizontal_advection_limiter: Any,
-    vertical_advection_type: Any,
-    vertical_advection_limiter: Any,
+    date: str,
+    even_timestep: bool,
+    ntracer: int,
+    horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: tracer_advection.HorizontalAdvectionLimiter,
+    vertical_advection_type: tracer_advection.VerticalAdvectionType,
+    vertical_advection_limiter: tracer_advection.VerticalAdvectionLimiter,
     *,
-    grid_savepoint: Any,
-    icon_grid: Any,
-    interpolation_savepoint: Any,
-    metrics_savepoint: Any,
-    backend: Any,
-    advection_init_savepoint: Any,
-    advection_exit_savepoint: Any,
+    grid_savepoint: sb.IconGridSavepoint,
+    icon_grid: icon.IconGrid,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    backend: gtx_typing.Backend,
+    advection_init_savepoint: sb.AdvectionInitSavepoint,
+    advection_exit_savepoint: sb.AdvectionExitSavepoint,
     process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
-    construct_advection_lsq_state: Any,
+    construct_advection_lsq_state: tracer_advection_states.AdvectionLeastSquaresState,
 ) -> None:
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583

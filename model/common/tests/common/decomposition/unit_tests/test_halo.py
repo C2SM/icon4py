@@ -6,8 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Any
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py.next import common as gtx_common
@@ -27,7 +26,9 @@ from .test_definitions import get_neighbor_tables_for_simple_grid, offsets
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_halo_constructor_owned_cells(
-    rank: int, simple_neighbor_tables: dict[str, np.ndarray], backend_like: Any
+    rank: int,
+    simple_neighbor_tables: dict[str, np.ndarray],
+    backend_like: model_backends.BackendLike,
 ) -> None:
     process_props = utils.DummyProps(rank=rank)
     allocator = model_backends.get_allocator(backend_like)
@@ -222,7 +223,7 @@ def test_owned_halo_mask_contiguous(rank: int) -> None:
 
 @pytest.mark.parametrize("offset", offsets)
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
-def test_global_to_local_index(offset: Any, rank: int) -> None:
+def test_global_to_local_index(offset: gtx.FieldOffset, rank: int) -> None:
     grid = simple.simple_grid()
     neighbor_tables = {
         k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)

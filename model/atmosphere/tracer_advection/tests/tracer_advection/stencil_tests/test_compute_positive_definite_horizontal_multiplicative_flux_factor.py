@@ -32,9 +32,9 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         p_cc: np.ndarray,
         p_rhodz_now: np.ndarray,
         p_mflx_tracer_h: np.ndarray,
-        p_dtime: Any,
-        wp_eps: Any,
-        **kwargs: Any,
+        p_dtime: float,
+        wp_eps: float,
+        **kwargs: Any,  # framework pattern: reference receives arbitrary stencil params
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         c2e = connectivities[dims.C2E]

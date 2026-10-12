@@ -9,7 +9,6 @@
 """Test of the muphys ComponentState adapter: pure input mapping, no copies."""
 
 import types
-from typing import Any
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     data as muphys_data,
@@ -20,10 +19,10 @@ from icon4py.model.common.states import model
 
 
 class _StubFieldSource:
-    def __init__(self, fields: Any) -> None:
+    def __init__(self, fields: dict[str, object]) -> None:
         self._fields = fields
 
-    def get(self, name: Any, *args: Any, **kwargs: Any) -> Any:
+    def get(self, name: str, *args: object, **kwargs: object) -> object:
         return self._fields[name]
 
 

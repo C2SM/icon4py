@@ -8,8 +8,6 @@
 
 """Tests of the PhysicsState layer (EntryState facade, accumulators, apply-once)."""
 
-from typing import Any
-
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -50,10 +48,10 @@ _TENDENCY = model.FieldKind.TENDENCY
 class _StubFieldSource:
     """Minimal FieldSource stand-in: serves pre-built fields by attribute name."""
 
-    def __init__(self, fields: dict[str, Any]):
+    def __init__(self, fields: dict[str, gtx.Field]):
         self._fields = fields
 
-    def get(self, name: str, *args: Any, **kwargs: Any) -> Any:
+    def get(self, name: str, *args: object, **kwargs: object) -> gtx.Field:
         return self._fields[name]
 
 
@@ -220,7 +218,7 @@ def _tendencies(grid: base.Grid) -> physics_state.Tendencies:
     )
 
 
-def _accumulated(grid: base.Grid, **tendencies: Any) -> physics_state.Tendencies:
+def _accumulated(grid: base.Grid, **tendencies: gtx.Field) -> physics_state.Tendencies:
     """Tendencies pre-filled with the given constant tendencies (single process)."""
     acc = _tendencies(grid)
     props = {name: _meta(kind=_TENDENCY) for name in tendencies}

@@ -6,12 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import serialbox as sb, test_utils
 
 
@@ -61,10 +63,10 @@ def verify_diffusion_fields(
     test_utils.assert_dallclose(val_exner, ref_exner)
 
 
-def smag_limit_numpy(func: Any, *args: Any) -> Any:
+def smag_limit_numpy(func: Callable[..., np.ndarray], *args: Any) -> np.ndarray:
     return 0.125 - 4.0 * func(*args)
 
 
-def diff_multfac_vn_numpy(shape: Any, k4: Any, substeps: Any) -> Any:
+def diff_multfac_vn_numpy(shape: tuple[int, ...], k4: wpfloat, substeps: float) -> np.ndarray:
     factor = min(1.0 / 128.0, k4 * substeps / 3.0)
     return np.full(shape, factor)

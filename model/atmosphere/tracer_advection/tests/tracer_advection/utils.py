@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
-from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -53,7 +52,9 @@ def construct_least_squares_state(
 
 
 def construct_metric_state(
-    icon_grid: Any, savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend | None
+    icon_grid: icon_grid.IconGrid,
+    savepoint: sb.MetricSavepoint,
+    backend: gtx_typing.Backend | None,
 ) -> tracer_advection_states.AdvectionMetricState:
     constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim, allocator=backend)
     ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
@@ -66,7 +67,7 @@ def construct_metric_state(
 
 
 def construct_diagnostic_init_state(
-    icon_grid: Any,
+    icon_grid: icon_grid.IconGrid,
     savepoint: sb.AdvectionInitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
@@ -81,7 +82,7 @@ def construct_diagnostic_init_state(
 
 
 def construct_diagnostic_exit_state(
-    icon_grid: Any,
+    icon_grid: icon_grid.IconGrid,
     savepoint: sb.AdvectionExitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
@@ -105,7 +106,7 @@ def construct_prep_adv(
     )
 
 
-def log_dbg(field: Any, name: Any = "") -> None:
+def log_dbg(field: np.ndarray, name: str = "") -> None:
     log.debug(f"{name}: min={field.min()}, max={field.max()}, mean={field.mean()}")
 
 

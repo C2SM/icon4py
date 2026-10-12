@@ -166,7 +166,7 @@ class RecordingComponentState(ComponentState):
 
     input_calls: list = dataclasses.field(default_factory=list)
 
-    def as_component_input(self, state: Any) -> dict[str, str]:
+    def as_component_input(self, state: object) -> dict[str, str]:
         self.input_calls.append(state)
         return {"foo": "bar"}
 
@@ -182,17 +182,19 @@ class RecordingCoupling:
     events: list = dataclasses.field(default_factory=list)
 
     # EntryState surface
-    def compute_diagnostics(self, prognostic: Any, tracers: Any) -> None:
+    def compute_diagnostics(self, prognostic: object, tracers: object) -> None:
         self.events.append(("compute_diagnostics", prognostic))
 
     # Tendencies surface
     def zero(self) -> None:
         self.events.append(("zero",))
 
-    def accumulate(self, outputs: dict[str, Any], outputs_properties: dict[str, Any]) -> None:
+    def accumulate(
+        self, outputs: dict[str, object], outputs_properties: dict[str, FieldMetaData]
+    ) -> None:
         self.events.append(("accumulate", dict(outputs)))
 
-    def apply(self, entry_state: Any, dt_seconds: float) -> None:
+    def apply(self, entry_state: object, dt_seconds: float) -> None:
         self.events.append(("apply", dt_seconds))
 
     # DiagnosticsStore surface

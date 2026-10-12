@@ -31,9 +31,9 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(stencil_tests.StencilTe
         *,
         theta_v: np.ndarray,
         theta_ref_mc: np.ndarray,
-        thresh_tdiff: Any,
-        smallest_vpfloat: Any,
-        **kwargs: Any,
+        thresh_tdiff: wpfloat,
+        smallest_vpfloat: vpfloat,
+        **kwargs: Any,  # framework pattern: reference receives arbitrary stencil params
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         c2e2c = connectivities[dims.C2E2C]

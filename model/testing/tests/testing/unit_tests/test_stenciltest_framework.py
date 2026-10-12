@@ -16,6 +16,7 @@ suites (where a hole in a check simply goes unnoticed).
 
 import inspect
 import types
+from collections.abc import Callable, Sequence
 from typing import Any
 
 import gt4py.next as gtx
@@ -24,7 +25,7 @@ import pytest
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import simple
+from icon4py.model.common.grid import base, simple
 from icon4py.model.common.utils import data_allocation
 from icon4py.model.testing import stencil_tests
 
@@ -37,25 +38,25 @@ data_alloc = data_allocation
 # -- helpers ---------------------------------------------------------------------------
 
 
-def valid_reference() -> Any:
+def valid_reference() -> Callable[..., dict]:
     """A `reference` implementation following the convention."""
 
-    def reference(grid: Any, **kwargs: Any) -> Any:
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
         return {}
 
     return reference
 
 
-def valid_input_data() -> Any:
+def valid_input_data() -> Callable[[stencil_tests.DataAllocationWrapper], dict]:
     """An `input_data` fixture function following the convention."""
 
-    def input_data(data_alloc: Any) -> Any:
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict:
         return {}
 
     return input_data
 
 
-def make_suite(**namespace: Any) -> Any:
+def make_suite(**namespace: object) -> type:
     """A minimal valid `StencilTest` subclass, with `namespace` merged into its body."""
     body = {
         "reference": stencil_tests.static_reference(valid_reference()),
@@ -66,12 +67,12 @@ def make_suite(**namespace: Any) -> Any:
     return type("Suite", (stencil_tests.StencilTest,), body)
 
 
-def cell_field(values: Any) -> Any:
+def cell_field(values: Sequence[float] | np.ndarray) -> gtx.Field:
     return gtx.as_field((dims.CellDim,), np.asarray(values, dtype=np.float64))  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
 
 
 @pytest.fixture
-def grid() -> Any:
+def grid() -> base.Grid:
     return simple.simple_grid()
 
 
@@ -101,13 +102,15 @@ class TestStaticReference:
             stencil_tests.static_reference(object())  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
 
     def test_rejects_wrong_name(self) -> None:
-        def not_reference(grid: Any, **kwargs: Any) -> None: ...
+        def not_reference(grid: base.Grid, **kwargs: Any) -> None: ...
 
         with pytest.raises(ValueError, match="must be named 'reference'"):
             stencil_tests.static_reference(not_reference)
 
     def test_rejects_wrong_first_parameter(self) -> None:
-        def reference(connectivities: Any, **kwargs: Any) -> None: ...
+        def reference(
+            connectivities: Any, **kwargs: Any
+        ) -> None: ...  # deliberately invalid first parameter name for the rejection test
 
         with pytest.raises(ValueError, match=r"must be 'reference\(grid, \.\.\.\)'"):
             stencil_tests.static_reference(reference)
@@ -123,13 +126,15 @@ class TestStaticReference:
     def test_rejects_positional_only_grid(self) -> None:
         """`test_and_benchmark` calls `reference(grid=...)`, so positional-only would fail late."""
 
-        def reference(grid: Any, /, **kwargs: Any) -> None: ...
+        def reference(grid: base.Grid, /, **kwargs: Any) -> None: ...
 
         with pytest.raises(ValueError, match="cannot be positional-only"):
             stencil_tests.static_reference(reference)
 
     def test_reports_the_actual_signature_readably(self) -> None:
-        def reference(connectivities: Any, other: Any, **kwargs: Any) -> None: ...
+        def reference(
+            connectivities: Any, other: Any, **kwargs: Any
+        ) -> None: ...  # deliberately invalid signature for the rejection test
 
         with pytest.raises(ValueError) as excinfo:
             stencil_tests.static_reference(reference)
@@ -171,7 +176,7 @@ class TestInputDataFixture:
             stencil_tests.input_data_fixture(object())  # type: ignore[call-overload]  # GT4Py scan_operator stub limitation
 
     def test_rejects_wrong_name(self) -> None:
-        def not_input_data(data_alloc: Any) -> None: ...
+        def not_input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> None: ...
 
         with pytest.raises(ValueError, match="must be named 'input_data'"):
             stencil_tests.input_data_fixture(not_input_data)
@@ -184,14 +189,14 @@ class TestInputDataFixture:
             pytest.param(lambda grid, data_alloc: None, id="grid_first"),
         ],
     )
-    def test_rejects_wrong_leading_parameters(self, func: Any) -> None:
+    def test_rejects_wrong_leading_parameters(self, func: Callable[..., Any]) -> None:
         func.__name__ = "input_data"
 
         with pytest.raises(ValueError, match=r"must be 'input_data\(data_alloc, \.\.\.\)'"):
             stencil_tests.input_data_fixture(func)
 
     def test_rejects_direct_data_allocation_call(self) -> None:
-        def input_data(data_alloc: Any, grid: Any) -> Any:
+        def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
             return {"a": data_allocation.zero_field(grid, dims.CellDim)}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
@@ -200,7 +205,7 @@ class TestInputDataFixture:
     def test_rejects_a_call_hidden_in_a_nested_function(self) -> None:
         """A scan of only the fixture's own code object would miss this."""
 
-        def input_data(data_alloc: Any, grid: Any) -> Any:
+        def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
             def build() -> Any:
                 return data_allocation.zero_field(grid, dims.CellDim)
 
@@ -210,7 +215,7 @@ class TestInputDataFixture:
             stencil_tests.input_data_fixture(input_data)
 
     def test_rejects_a_call_hidden_in_a_comprehension(self) -> None:
-        def input_data(data_alloc: Any, grid: Any) -> Any:
+        def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
             return {"a": [data_allocation.zero_field(grid, dims.CellDim) for _ in range(1)]}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
@@ -219,7 +224,7 @@ class TestInputDataFixture:
     def test_rejects_a_gt4py_constructor_without_an_allocator(self) -> None:
         """It would allocate on the host, which a GPU backend cannot use."""
 
-        def input_data(data_alloc: Any, grid: Any) -> Any:
+        def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
             return {"a": gtx.constructors.zeros(domain={dims.CellDim: (0, 3)}, dtype=float)}
 
         with pytest.raises(TypeError, match="without an 'allocator'"):
@@ -228,7 +233,7 @@ class TestInputDataFixture:
     def test_accepts_a_gt4py_constructor_given_the_allocator(self) -> None:
         """Needed when the domain is one `zero_field` cannot express."""
 
-        def input_data(data_alloc: Any, grid: Any) -> Any:
+        def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
             return {
                 "a": gtx.constructors.zeros(
                     domain={dims.CellDim: (0, 3)}, dtype=float, allocator=data_alloc.allocator
@@ -248,7 +253,7 @@ class TestInputDataFixture:
         """A `from ...data_allocation import zero_field` binds the function, not the module."""
         zero_field = data_allocation.zero_field
 
-        def input_data(data_alloc: Any, grid: Any) -> Any:
+        def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
             return {"a": zero_field(grid, dims.CellDim)}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
@@ -257,7 +262,7 @@ class TestInputDataFixture:
     def test_rejects_positional_only_data_alloc(self) -> None:
         """pytest injects fixtures by keyword, so positional-only would fail at run time."""
 
-        def input_data(data_alloc: Any, /) -> None: ...
+        def input_data(data_alloc: stencil_tests.DataAllocationWrapper, /) -> None: ...
 
         with pytest.raises(ValueError, match="cannot be positional-only"):
             stencil_tests.input_data_fixture(input_data)
@@ -265,7 +270,7 @@ class TestInputDataFixture:
     def test_rejects_data_allocation_from_an_enclosing_scope(self) -> None:
         module = data_allocation
 
-        def input_data(data_alloc: Any, grid: Any) -> Any:
+        def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
             return {"a": module.zero_field(grid, dims.CellDim)}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
@@ -280,7 +285,7 @@ class TestInputDataFixture:
         parameters.
         """
 
-        def input_data(data_alloc: Any) -> Any:
+        def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict:
             return {"a": data_alloc.zero_field(dims.CellDim)}
 
         assert stencil_tests.input_data_fixture(input_data) is not None
@@ -342,7 +347,7 @@ class TestSuiteConventions:
         [(("domain", ("horizontal_start",)), ("horizontal_start",)), (("none", None), ())],
     )
     def test_static_variant_reads_the_variant_off_the_request(
-        self, param: Any, expected: Any
+        self, param: tuple[str, tuple[str, ...] | None], expected: tuple[str, ...]
     ) -> None:
         suite = make_suite(STATIC_PARAMS={"domain": ("horizontal_start",)})
         variant_of = inspect.getattr_static(suite, "static_variant").__func__
@@ -393,22 +398,26 @@ class TestOutput:
 class StubGrid:
     """Minimal stand-in exposing only what the connectivities view uses."""
 
-    def __init__(self, connectivities: Any) -> None:
+    def __init__(
+        self, connectivities: dict[str, gtx_common.NeighborTable | gtx_common.Dimension]
+    ) -> None:
         self.connectivities = connectivities
 
-    def get_connectivity(self, offset: Any) -> Any:
+    def get_connectivity(
+        self, offset: str | gtx.FieldOffset
+    ) -> gtx_common.NeighborTable | gtx_common.Dimension:
         return self.connectivities[offset if isinstance(offset, str) else offset.value]
 
 
 class TestConnectivitiesAsNumpy:
-    def test_lookup_by_name_and_by_field_offset_agree(self, grid: Any) -> None:
+    def test_lookup_by_name_and_by_field_offset_agree(self, grid: base.Grid) -> None:
         view = stencil_tests.connectivities_asnumpy(grid)
 
         assert isinstance(view[dims.E2C], np.ndarray)
         np.testing.assert_array_equal(view[dims.E2C], view["E2C"])  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
         np.testing.assert_array_equal(view[dims.E2C], grid.get_connectivity("E2C").asnumpy())
 
-    def test_iteration_and_length_cover_the_neighbor_tables(self, grid: Any) -> None:
+    def test_iteration_and_length_cover_the_neighbor_tables(self, grid: base.Grid) -> None:
         view = stencil_tests.connectivities_asnumpy(grid)
 
         expected = {
@@ -419,7 +428,7 @@ class TestConnectivitiesAsNumpy:
         assert set(view) == expected
         assert len(view) == len(expected)
 
-    def test_non_neighbor_table_entries_are_skipped(self, grid: Any) -> None:
+    def test_non_neighbor_table_entries_are_skipped(self, grid: base.Grid) -> None:
         stub = StubGrid({**dict(grid.connectivities), "Koff": dims.KDim})
         view = stencil_tests.connectivities_asnumpy(stub)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
 
@@ -428,7 +437,7 @@ class TestConnectivitiesAsNumpy:
         with pytest.raises(KeyError, match="is not a neighbor table"):
             view["Koff"]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
-    def test_honours_the_mapping_contract_for_a_missing_key(self, grid: Any) -> None:
+    def test_honours_the_mapping_contract_for_a_missing_key(self, grid: base.Grid) -> None:
         """`get` and `in` are built on `__getitem__`, so it has to raise `KeyError`."""
         view = stencil_tests.connectivities_asnumpy(grid)
 
@@ -444,7 +453,7 @@ class TestConnectivitiesAsNumpy:
 
 class TestDataAllocationWrapper:
     @pytest.fixture
-    def wrapper(self, grid: Any) -> Any:
+    def wrapper(self, grid: base.Grid) -> stencil_tests.DataAllocationWrapper:
         return stencil_tests.DataAllocationWrapper(grid=grid, allocator=None)
 
     @pytest.mark.parametrize(
@@ -459,30 +468,41 @@ class TestDataAllocationWrapper:
         ],
     )
     def test_every_constructor_binds_the_grid(
-        self, wrapper: Any, grid: Any, construct: Any
+        self,
+        wrapper: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        construct: Any,  # polymorphic: parametrized lambda returning different field constructors
     ) -> None:
         assert construct(wrapper).shape == (grid.num_cells,)
 
-    def test_binds_the_grid(self, wrapper: Any, grid: Any) -> None:
-        assert wrapper.zero_field(dims.CellDim).shape == (grid.num_cells,)
-        assert wrapper.random_field(dims.EdgeDim, dims.KDim).shape == (
+    def test_binds_the_grid(
+        self, wrapper: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> None:
+        assert wrapper.zero_field(dims.CellDim).shape == (grid.num_cells,)  # type: ignore[attr-defined]  # GT4Py Field shape attribute is not typed
+        assert wrapper.random_field(dims.EdgeDim, dims.KDim).shape == (  # type: ignore[attr-defined]  # GT4Py Field shape attribute is not typed
             grid.num_edges,
             grid.num_levels,
         )
 
-    def test_forwards_keyword_arguments(self, wrapper: Any, grid: Any) -> None:
+    def test_forwards_keyword_arguments(
+        self, wrapper: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> None:
         field = wrapper.zero_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
-        assert field.shape == (grid.num_cells, grid.num_levels + 1)
+        assert field.shape == (grid.num_cells, grid.num_levels + 1)  # type: ignore[attr-defined]  # GT4Py Field shape attribute is not typed
         assert np.all(field.asnumpy() == 0.0)
         assert np.all(wrapper.constant_field(3.5, dims.CellDim).asnumpy() == 3.5)
 
-    def test_random_field_respects_bounds(self, wrapper: Any) -> None:
+    def test_random_field_respects_bounds(
+        self, wrapper: stencil_tests.DataAllocationWrapper
+    ) -> None:
         values = wrapper.random_field(dims.CellDim, low=2.0, high=3.0).asnumpy()
 
         assert np.all((values >= 2.0) & (values < 3.0))
 
-    def test_as_field_hands_host_data_to_the_allocator(self, wrapper: Any, grid: Any) -> None:
+    def test_as_field_hands_host_data_to_the_allocator(
+        self, wrapper: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> None:
         """
         A fixture that must build its input with NumPy has to hand the array over.
 
@@ -499,7 +519,9 @@ class TestDataAllocationWrapper:
         assert field.domain.dims == (dims.CellDim, dims.KDim)
         np.testing.assert_array_equal(field.asnumpy(), values)
 
-    def test_connectivity_field_returns_a_plain_field(self, wrapper: Any, grid: Any) -> None:
+    def test_connectivity_field_returns_a_plain_field(
+        self, wrapper: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> None:
         """
         Regression: dropping `allocate_data` also dropped the conversion it performed.
 
