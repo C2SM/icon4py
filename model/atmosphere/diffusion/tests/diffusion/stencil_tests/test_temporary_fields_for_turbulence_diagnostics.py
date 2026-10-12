@@ -25,7 +25,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
     def reference(
         grid: base.Grid,
         *,
-        kh_smag_ec: np.ndarray,
+        kh_smag: np.ndarray,
         vn: np.ndarray,
         e_bln_c_s: np.ndarray,
         geofac_div: np.ndarray,
@@ -41,7 +41,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
 
         vn_geofac = vn[c2e] * geofac_div
         div = np.sum(vn_geofac, axis=1)
-        mul = kh_smag_ec[c2e] * e_bln_c_s
+        mul = kh_smag[c2e] * e_bln_c_s
         summed = np.sum(mul, axis=1)
         kh_c = summed / diff_multfac_smag
 
@@ -52,7 +52,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
         vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
 
-        kh_smag_ec = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        kh_smag = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
 
         diff_multfac_smag = data_alloc.random_field(dims.KDim, dtype=ta.vpfloat)
@@ -61,7 +61,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
         div = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
-            kh_smag_ec=kh_smag_ec,
+            kh_smag=kh_smag,
             vn=vn,
             e_bln_c_s=e_bln_c_s,
             geofac_div=geofac_div,

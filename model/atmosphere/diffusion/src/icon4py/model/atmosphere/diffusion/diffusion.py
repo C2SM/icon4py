@@ -42,6 +42,9 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
+from icon4py.model.atmosphere.diffusion.stencils.limit_smag_coefficients import (
+    limit_smag_coefficients,
+)
 from icon4py.model.common import constants, dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -568,6 +571,16 @@ class Diffusion:
             vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
+        self.limit_smag_coefficients = setup_program(
+            backend=backend,
+            program=limit_smag_coefficients,
+            horizontal_sizes={
+                "horizontal_start": self._edge_start_lateral_boundary_level_5,
+                "horizontal_end": self._edge_end_halo_level_2,
+            },
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
+            offset_provider=self._grid.connectivities,
+        )
         self.apply_diffusion_to_vn = setup_program(
             backend=backend,
             program=apply_diffusion_to_vn,
@@ -738,9 +751,6 @@ class Diffusion:
         self.kh_smag_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
-        self.kh_smag_ec = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
-        )
         self.z_nabla2_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
@@ -796,22 +806,16 @@ class Diffusion:
 
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
 
-    def run(
-        self,
-        diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        prognostic_state: prognostics.PrognosticState,
-        dtime: wpfloat,
-        initial_run: bool = False,
-    ) -> None:
-        """
-        Do one diffusion step.
+    def _smag_values_for_run(
+        self, initial_run: bool
+    ) -> tuple[
+        gtx.Field[gtx.Dims[dims.KDim], wpfloat],
+        gtx.Field[gtx.Dims[dims.KDim], wpfloat],
+        vpfloat,
+    ]:
+        """Return the (diff_multfac_vn, smag_limit, smag_offset) values for a run.
 
-        In ICON at the start of the simulation diffusion is run with linit=True:
-
-        'For real-data runs, perform an extra diffusion call before the first time
-        step because no other filtering of the interpolated velocity field is done'
-
-        The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
+        The initial run uses special values, see `run`.
         """
         if initial_run:
             diff_multfac_vn = data_alloc.zero_field(
@@ -831,6 +835,26 @@ class Diffusion:
             diff_multfac_vn = self.diff_multfac_vn
             smag_limit = self.smag_limit
             smag_offset = self.smag_offset
+        return diff_multfac_vn, smag_limit, smag_offset
+
+    def run(
+        self,
+        diagnostic_state: diffusion_states.DiffusionDiagnosticState,
+        prognostic_state: prognostics.PrognosticState,
+        dtime: wpfloat,
+        initial_run: bool = False,
+    ) -> None:
+        """
+        Do one diffusion step.
+
+        In ICON at the start of the simulation diffusion is run with linit=True:
+
+        'For real-data runs, perform an extra diffusion call before the first time
+        step because no other filtering of the interpolated velocity field is done'
+
+        The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
+        """
+        diff_multfac_vn, smag_limit, smag_offset = self._smag_values_for_run(initial_run)
 
         self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
 
@@ -860,11 +884,8 @@ class Diffusion:
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             vn=prognostic_state.vn,
-            smag_limit=smag_limit,
             kh_smag_e=self.kh_smag_e,
-            kh_smag_ec=self.kh_smag_ec,
             z_nabla2_e=self.z_nabla2_e,
-            smag_offset=smag_offset,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
 
@@ -878,7 +899,7 @@ class Diffusion:
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
             )
             self.calculate_diagnostic_quantities_for_turbulence(
-                kh_smag_ec=self.kh_smag_ec,
+                kh_smag=self.kh_smag_e,
                 vn=prognostic_state.vn,
                 diff_multfac_smag=self.diff_multfac_smag,
                 div_ic=diagnostic_state.div_ic,
@@ -887,6 +908,14 @@ class Diffusion:
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
             )
+
+        # The Smagorinsky limiter is applied at the consumer of the raw coefficient; the
+        # turbulence diagnostics above need the pre-limiter value.
+        self.limit_smag_coefficients(
+            kh_smag=self.kh_smag_e,
+            smag_limit=smag_limit,
+            smag_offset=smag_offset,
+        )
 
         # 5.  HALO EXCHANGE -- CALL sync_patch_array(SYNC_E, z_nabla2_e)
         # ICON: mo_nh_diffusion.f90:853. Fill halo edges before second RBF.

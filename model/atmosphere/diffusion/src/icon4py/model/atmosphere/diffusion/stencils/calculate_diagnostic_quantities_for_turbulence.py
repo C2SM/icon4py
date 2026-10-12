@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _calculate_diagnostic_quantities_for_turbulence(
-    kh_smag_ec: fa.EdgeKField[vpfloat],
+    kh_smag: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
@@ -27,7 +27,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
     wgtfac_c: fa.CellKHalfField[vpfloat],
 ) -> tuple[fa.CellKHalfField[vpfloat], fa.CellKHalfField[vpfloat]]:
     kh_c, div = _temporary_fields_for_turbulence_diagnostics(
-        kh_smag_ec, vn, e_bln_c_s, geofac_div, diff_multfac_smag
+        kh_smag, vn, e_bln_c_s, geofac_div, diff_multfac_smag
     )
     div_ic_vp, hdef_ic_vp = _calculate_diagnostics_for_turbulence(div, kh_c, wgtfac_c)
     return div_ic_vp, hdef_ic_vp
@@ -35,7 +35,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def calculate_diagnostic_quantities_for_turbulence(
-    kh_smag_ec: fa.EdgeKField[vpfloat],
+    kh_smag: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
@@ -49,7 +49,7 @@ def calculate_diagnostic_quantities_for_turbulence(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_diagnostic_quantities_for_turbulence(
-        kh_smag_ec=kh_smag_ec,
+        kh_smag=kh_smag,
         vn=vn,
         e_bln_c_s=e_bln_c_s,
         geofac_div=geofac_div,
