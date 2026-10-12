@@ -9,23 +9,23 @@
 The `Diffusion.run()` method on `main` executes, after the two RBF interpolations and
 their exchanges:
 
-| # | Step | Program / call | Zone range (horizontal) | Vertical range |
-|---|------|----------------|--------------------------|----------------|
-| 1 | program | `calculate_nabla2_and_smag_coefficients_for_vn` | edges: LATERAL_BOUNDARY_LEVEL_5 .. HALO_LEVEL_2 | 0 .. nlev |
-| 2 | program | `calculate_diagnostic_quantities_for_turbulence` (conditional: shear_type >= 1 or loutshs or a_hshr > 0) | cells: NUDGING .. LOCAL | 1 .. nlev (KHalf) |
-| 3 | exchange | `z_nabla2_e` (EdgeDim) | | |
-| 4 | program | `mo_intp_rbf_rbf_vec_interpol_vertex` (2nd call) | vertices: LATERAL_BOUNDARY_LEVEL_2 .. LOCAL | 0 .. nlev |
-| 5 | exchange | `u_vert`, `v_vert` (VertexDim, full) | | |
-| 6 | copy | `w` → `w_tmp` (`copy_field_on_cell_khalf`) | all cells | 0 .. nlev+1 (full KHalf allocation; the stencil test uses this wider range) |
-| 7 | program | `apply_diffusion_to_vn` | edges: LATERAL_BOUNDARY_LEVEL_5 .. LOCAL | 0 .. nlev |
-| 8 | exchange | `vn` (async start, `full_exchange=False`) → handle | | |
-| 9 | program | `apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence` | cells: (NUDGING or LATERAL_BOUNDARY_LEVEL_4) .. HALO | 0 .. nlev (KHalf; production wiring `vertical_end = num_levels`, matching Fortran `jk = 1, nlev`) |
-| 10 | wait | `halo_exchange_wait(handle)` | | |
-| 11 | program | `calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools` (conditional: apply_to_temperature) | edges: NUDGING .. HALO | nlev-2 .. nlev |
-| 12 | copy | `theta_v` → `theta_v_tmp` (`copy_field_on_cell_k`) | all cells | 0 .. nlev |
-| 13 | program | `apply_diffusion_to_theta_and_exner` (conditional: apply_to_temperature) | cells: NUDGING .. LOCAL | 0 .. nlev |
-| 14 | exchange | `theta_v`, `exner` (CellDim, conditional) | | |
-| 15 | exchange | `w` (CellDim, conditional) | | |
+| #   | Step     | Program / call                                                                                            | Zone range (horizontal)                              | Vertical range                                                                                    |
+| --- | -------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 1   | program  | `calculate_nabla2_and_smag_coefficients_for_vn`                                                           | edges: LATERAL_BOUNDARY_LEVEL_5 .. HALO_LEVEL_2      | 0 .. nlev                                                                                         |
+| 2   | program  | `calculate_diagnostic_quantities_for_turbulence` (conditional: shear_type >= 1 or loutshs or a_hshr > 0)  | cells: NUDGING .. LOCAL                              | 1 .. nlev (KHalf)                                                                                 |
+| 3   | exchange | `z_nabla2_e` (EdgeDim)                                                                                    |                                                      |                                                                                                   |
+| 4   | program  | `mo_intp_rbf_rbf_vec_interpol_vertex` (2nd call)                                                          | vertices: LATERAL_BOUNDARY_LEVEL_2 .. LOCAL          | 0 .. nlev                                                                                         |
+| 5   | exchange | `u_vert`, `v_vert` (VertexDim, full)                                                                      |                                                      |                                                                                                   |
+| 6   | copy     | `w` → `w_tmp` (`copy_field_on_cell_khalf`)                                                                | all cells                                            | 0 .. nlev+1 (full KHalf allocation; the stencil test uses this wider range)                       |
+| 7   | program  | `apply_diffusion_to_vn`                                                                                   | edges: LATERAL_BOUNDARY_LEVEL_5 .. LOCAL             | 0 .. nlev                                                                                         |
+| 8   | exchange | `vn` (async start, `full_exchange=False`) → handle                                                        |                                                      |                                                                                                   |
+| 9   | program  | `apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence`                                    | cells: (NUDGING or LATERAL_BOUNDARY_LEVEL_4) .. HALO | 0 .. nlev (KHalf; production wiring `vertical_end = num_levels`, matching Fortran `jk = 1, nlev`) |
+| 10  | wait     | `halo_exchange_wait(handle)`                                                                              |                                                      |                                                                                                   |
+| 11  | program  | `calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools` (conditional: apply_to_temperature) | edges: NUDGING .. HALO                               | nlev-2 .. nlev                                                                                    |
+| 12  | copy     | `theta_v` → `theta_v_tmp` (`copy_field_on_cell_k`)                                                        | all cells                                            | 0 .. nlev                                                                                         |
+| 13  | program  | `apply_diffusion_to_theta_and_exner` (conditional: apply_to_temperature)                                  | cells: NUDGING .. LOCAL                              | 0 .. nlev                                                                                         |
+| 14  | exchange | `theta_v`, `exner` (CellDim, conditional)                                                                 |                                                      |                                                                                                   |
+| 15  | exchange | `w` (CellDim, conditional)                                                                                |                                                      |                                                                                                   |
 
 ### 1.2 Data flow between the five programs
 
@@ -154,8 +154,7 @@ today.
 `div_ic`/`hdef_ic` become outputs of the fused program with per-output domain
 `{CellDim: (nudging, local), KHalfDim: (1, nlev)}`, guarded by the
 compile-time variant `compute_diagnostic_quantities: [True, False]` (the guard
-expression `shear_type >= VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND or loutshs or
-a_hshr > 0` is evaluated once in `__init__`, as #1478 does). They read `vn_tmp`
+expression `shear_type >= VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND or loutshs or a_hshr > 0` is evaluated once in `__init__`, as #1478 does). They read `vn_tmp`
 (the copy) and the raw `kh_smag` (replacing `kh_smag_ec`).
 
 ### Step 03 — vn exchange goes last
@@ -172,13 +171,13 @@ The fused program `diffusion_for_prognostic_fields` composes the existing inner
 field_operators and uses a per-output domain tuple aligned with
 `out=(vn, w, dwdx, dwdy, theta_v, exner, div_ic, hdef_ic)`:
 
-| output | domain |
-|---|---|
-| vn | `{EdgeDim: (lateral_boundary_5, local), KDim: (0, nlev)}` |
-| w | `{CellDim: (w_start, halo), KHalfDim: (0, nlev)}` (production range; the stencil test may use `(0, nlev+1)` for the full KHalf allocation) |
-| dwdx, dwdy | `{CellDim: (w_start, halo), KHalfDim: (1, nlev)}` |
-| theta_v, exner | `{CellDim: (nudging, local), KDim: (0, nlev)}` |
-| div_ic, hdef_ic | `{CellDim: (nudging, local), KHalfDim: (1, nlev)}` |
+| output          | domain                                                                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| vn              | `{EdgeDim: (lateral_boundary_5, local), KDim: (0, nlev)}`                                                                                  |
+| w               | `{CellDim: (w_start, halo), KHalfDim: (0, nlev)}` (production range; the stencil test may use `(0, nlev+1)` for the full KHalf allocation) |
+| dwdx, dwdy      | `{CellDim: (w_start, halo), KHalfDim: (1, nlev)}`                                                                                          |
+| theta_v, exner  | `{CellDim: (nudging, local), KDim: (0, nlev)}`                                                                                             |
+| div_ic, hdef_ic | `{CellDim: (nudging, local), KHalfDim: (1, nlev)}`                                                                                         |
 
 Verified against `diffusion.py:764-797` (`_determine_horizontal_domains`) and the
 `setup_program` wiring at `diffusion.py:536-682`: `lateral_boundary_5` =
@@ -311,24 +310,24 @@ uv run --group test --frozen pytest --datatest-only -n0 \
 
 ## 4. Key file paths
 
-| File | Lines | Role |
-|---|---|---|
-| `model/atmosphere/diffusion/src/icon4py/model/atmosphere/diffusion/diffusion.py` | 799–1008 | `Diffusion.run()` call sequence to be rewritten |
-| `…/diffusion.py` | 536–682 | `setup_program` wiring for the five programs |
-| `…/diffusion.py` | 715–762 | `_allocate_local_fields` (kh_smag_e/ec, w_tmp, theta_v_tmp) |
-| `…/stencils/calculate_nabla2_and_smag_coefficients_for_vn.py` | 16–114 | producer to be changed (raw kh_smag) |
-| `…/stencils/apply_diffusion_to_vn.py` | 25–133 | vn update (inner operators stay) |
-| `…/stencils/apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.py` | 25–115 | w update (per-output domains per #1479) |
-| `…/stencils/apply_diffusion_to_theta_and_exner.py` | 28–109 | theta/exner update (cold pool inlines here) |
-| `…/stencils/calculate_diagnostic_quantities_for_turbulence.py` | 20–63 | diagnostics (move into fused program) |
-| `…/stencils/calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.py` | 20–61 | cold pool (to be inlined) |
-| `…/stencils/enhance_diffusion_coefficient_for_grid_point_cold_pools.py` | 21 | edge-side MAX over E2C |
-| `…/stencils/temporary_field_for_grid_point_cold_pools_enhancement.py` | 17–60 | enh_diffu_3d cell computation |
-| `model/common/src/icon4py/model/common/math/stencils/generic_math_operations.py` | 87–129 | copy_field_on_cell_k/_khalf (pattern for edge variant) |
-| `model/common/src/icon4py/model/common/math/operators.py` | 71–73 | `_copy_field_on_cell_k` (pattern) |
-| `model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/velocity_advection_predictor.py` | 395–444 | per-output-domain precedent |
-| `model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/velocity_advection_terms.py` | 47–49 | gt4py#2205 KDim-equality bug citation |
-| `model/common/src/icon4py/model/common/model_options.py` | 146–201 | `setup_program` |
-| `model/atmosphere/diffusion/tests/diffusion/integration_tests/test_diffusion.py` | 209–210 | kh_smag_ec init assertions to drop |
-| `model/atmosphere/diffusion/tests/diffusion/utils.py` | 16–60 | `verify_diffusion_fields` (no change) |
-| `icon-exclaim/src/atm_dyn_iconam/mo_nh_diffusion.f90` | 832–853, 965–1112, 1271, 1315, 1389 | Fortran reference |
+| File                                                                                                   | Lines                               | Role                                                        |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------- |
+| `model/atmosphere/diffusion/src/icon4py/model/atmosphere/diffusion/diffusion.py`                       | 799–1008                            | `Diffusion.run()` call sequence to be rewritten             |
+| `…/diffusion.py`                                                                                       | 536–682                             | `setup_program` wiring for the five programs                |
+| `…/diffusion.py`                                                                                       | 715–762                             | `_allocate_local_fields` (kh_smag_e/ec, w_tmp, theta_v_tmp) |
+| `…/stencils/calculate_nabla2_and_smag_coefficients_for_vn.py`                                          | 16–114                              | producer to be changed (raw kh_smag)                        |
+| `…/stencils/apply_diffusion_to_vn.py`                                                                  | 25–133                              | vn update (inner operators stay)                            |
+| `…/stencils/apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.py`                   | 25–115                              | w update (per-output domains per #1479)                     |
+| `…/stencils/apply_diffusion_to_theta_and_exner.py`                                                     | 28–109                              | theta/exner update (cold pool inlines here)                 |
+| `…/stencils/calculate_diagnostic_quantities_for_turbulence.py`                                         | 20–63                               | diagnostics (move into fused program)                       |
+| `…/stencils/calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.py`                    | 20–61                               | cold pool (to be inlined)                                   |
+| `…/stencils/enhance_diffusion_coefficient_for_grid_point_cold_pools.py`                                | 21                                  | edge-side MAX over E2C                                      |
+| `…/stencils/temporary_field_for_grid_point_cold_pools_enhancement.py`                                  | 17–60                               | enh_diffu_3d cell computation                               |
+| `model/common/src/icon4py/model/common/math/stencils/generic_math_operations.py`                       | 87–129                              | copy_field_on_cell_k/\_khalf (pattern for edge variant)     |
+| `model/common/src/icon4py/model/common/math/operators.py`                                              | 71–73                               | `_copy_field_on_cell_k` (pattern)                           |
+| `model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/velocity_advection_predictor.py` | 395–444                             | per-output-domain precedent                                 |
+| `model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/velocity_advection_terms.py`     | 47–49                               | gt4py#2205 KDim-equality bug citation                       |
+| `model/common/src/icon4py/model/common/model_options.py`                                               | 146–201                             | `setup_program`                                             |
+| `model/atmosphere/diffusion/tests/diffusion/integration_tests/test_diffusion.py`                       | 209–210                             | kh_smag_ec init assertions to drop                          |
+| `model/atmosphere/diffusion/tests/diffusion/utils.py`                                                  | 16–60                               | `verify_diffusion_fields` (no change)                       |
+| `icon-exclaim/src/atm_dyn_iconam/mo_nh_diffusion.f90`                                                  | 832–853, 965–1112, 1271, 1315, 1389 | Fortran reference                                           |
