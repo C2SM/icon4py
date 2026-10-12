@@ -313,13 +313,15 @@ def test_every_float_field_argument_declares_its_intent():
 
 
 @pytest.mark.single_precision_ready
-def test_every_field_argument_is_a_view_or_a_converted_copy():
+@pytest.mark.parametrize("transposed", [False, True])
+def test_every_field_argument_is_a_view_or_a_converted_copy(monkeypatch, transposed):
     """
     Every field argument sees ICON's own memory when ICON's dtype and icon4py's agree.
 
     When they differ it gets a converted copy, which goes back to ICON only for the fields the
     granules write. Holds for any combination of the two precision settings.
     """
+    monkeypatch.setattr(config, "COPY_TRANSPOSED", transposed)
     ffi = cffi.FFI()
     viewed, copied = [], []
     for fun_name, name, descriptor, mapper in _field_mappers():

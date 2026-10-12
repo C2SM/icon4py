@@ -220,6 +220,14 @@ def _synchronize_copies() -> None:
     cp.cuda.get_current_stream().synchronize()
 
 
+def _copy(dst: Any, src: Any) -> None:
+    """Elementwise cast-copy; CuPy indexes in C order whatever the strides, hence the `.T`."""
+    if config.COPY_TRANSPOSED:
+        dst.T[...] = src.T
+    else:
+        dst[...] = src
+
+
 def _as_field(
     dims: Sequence[gtx.Dimension], dtype: np.dtype, intent: Intent, icon_dtype: np.dtype
 ) -> Callable:
@@ -270,7 +278,7 @@ def _as_field(
     def impl(array_info: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> gtx.Field | None:
         field, fortran = cached(array_info, ffi)
         if fortran is not None:
-            field.ndarray[...] = fortran
+            _copy(field.ndarray, fortran)
             if array_info[2]:
                 _synchronize_copies()  # before GT4Py launches work that reads the buffer
         return field
@@ -285,7 +293,7 @@ def _as_field(
                 return  # zero-copy: icon4py already wrote into ICON's memory
             if array_info[2]:
                 _synchronize_device()  # the granule's last write
-            fortran[...] = field.ndarray
+            _copy(fortran, field.ndarray)
             if array_info[2]:
                 _synchronize_copies()  # ICON's `!$ACC WAIT` does not cover CuPy's stream
 
