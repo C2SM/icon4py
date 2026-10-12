@@ -26,12 +26,11 @@ def _sum_neighbor_contributions(
     p_cc: fa.CellKField[ta.wpfloat],
     elev: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
-    js_int = astype(js, gtx.int32)
-    js_eq0 = js_int == 0
-    js_eq1 = js_int == 1
-    js_eq2 = js_int == 2
-    js_eq3 = js_int == 3
-    js_eq4 = js_int == 4
+    js_eq0 = js == wpfloat("0.0")
+    js_eq1 = js == wpfloat("1.0")
+    js_eq2 = js == wpfloat("2.0")
+    js_eq3 = js == wpfloat("3.0")
+    js_eq4 = js == wpfloat("4.0")
     p_cc_k = p_cc(dims.KHalfDim + 0.5)
 
     p_cc_p0 = where(mask1 & js_eq0, p_cc_k, wpfloat("0.0"))
