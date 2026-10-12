@@ -733,12 +733,10 @@ class Diffusion:
         self._edge_start_lateral_boundary_level_5 = self._grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
-        self._edge_start_nudging = self._grid.start_index(edge_domain(h_grid.Zone.NUDGING))
         self._edge_start_nudging_level_2 = self._grid.start_index(
             edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
         )
         self._edge_end_local = self._grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-        self._edge_end_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
         self._edge_end_halo_level_2 = self._grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
         self._vertex_start_lateral_boundary_level_2 = self._grid.start_index(
