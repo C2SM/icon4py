@@ -72,8 +72,6 @@ def _set_program_specific_dace_options(
         if device != model_backends.DeviceType.ROCM:
             optimization_args["gpu_maxnreg"] = 80
             optimization_args["gpu_block_size_2d"] = (64, 6)
-        optimization_args["gpu_memory_pool"] = False
-        optimization_args["make_persistent"] = True
 
 
 def _set_device_specific_dace_options(
