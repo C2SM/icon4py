@@ -274,13 +274,6 @@ ignore_missing_imports = true
 # viztracer is installed.
 module = ["viztracer"]
 
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-# f90nml is an optional Fortran-namelist dependency with no type stubs. Treat it
-# as Any so tmx namelist tests can be checked whether f90nml is installed.
-module = ["f90nml"]
-
-# -- pytest --
 [tool.pytest]
 
 [tool.pytest.ini_options]

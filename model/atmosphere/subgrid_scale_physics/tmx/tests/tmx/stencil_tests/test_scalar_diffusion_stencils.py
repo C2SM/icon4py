@@ -137,7 +137,7 @@ def _diffusion_input_data(
 
 
 def _slices(
-    horizontal_start: Any, horizontal_end: Any, vertical_start: Any, vertical_end: Any
+    horizontal_start: int, horizontal_end: int, vertical_start: int, vertical_end: int
 ) -> tuple[slice, slice]:
     return slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end)
 
@@ -213,7 +213,7 @@ class TestDiffuseTracer(stencil_tests.StencilTest):
 
 
 def _q_liquid_and_solid(
-    qc: Any, qi: Any, qr: Any, qs: Any, qg: Any
+    qc: np.ndarray, qi: np.ndarray, qr: np.ndarray, qs: np.ndarray, qg: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
     return qc + qr, qi + qs + qg
 
