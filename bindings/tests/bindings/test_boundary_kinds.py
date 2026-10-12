@@ -91,6 +91,7 @@ ICON_VP_ARGUMENTS: typing.Final = {
         "max_vcfl_size1_array",
     },
 }
+ICON_VP_ARGUMENTS["solve_nh_substeps_run"] = ICON_VP_ARGUMENTS["solve_nh_run"]
 
 # Float fields the granules write, so their converted copies go back to ICON. Measured 2026-09-28
 # by diffing every float argument of `solve_nh_run` and `diffusion_run` around the real granules on
@@ -125,6 +126,15 @@ ICON_INOUT_ARGUMENTS: typing.Final = {
         "vol_flx_ic",
         "vn_traj",
     },
+}
+# The whole-loop entry point swaps the time levels between substeps, so it writes the `*_now`
+# arrays too.
+ICON_INOUT_ARGUMENTS["solve_nh_substeps_run"] = ICON_INOUT_ARGUMENTS["solve_nh_run"] | {
+    "rho_now",
+    "exner_now",
+    "w_now",
+    "theta_v_now",
+    "vn_now",
 }
 
 _ARGUMENTS_OF_DTYPE_SCRIPT = """

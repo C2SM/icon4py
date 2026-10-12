@@ -557,3 +557,109 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
     )
+
+
+@icon4py_export.export
+def solve_nh_substeps_run(  # noqa: PLR0917 [too-many-positional-arguments]
+    rho_now: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    rho_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    exner_now: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    exner_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    w_now: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    w_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    theta_v_now: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    theta_v_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    vn_now: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    vn_new: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    w_concorr_c: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat]],
+    ddt_vn_apc_ntl1: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
+    ddt_vn_apc_ntl2: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
+    ddt_w_adv_ntl1: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat]],
+    ddt_w_adv_ntl2: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat]],
+    theta_v_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    rho_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    exner_pr: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    exner_dyn_incr: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat]],
+    ddt_exner_phy: VpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat]],
+    grf_tend_rho: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    grf_tend_thv: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    grf_tend_w: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    mass_fl_e: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    ddt_vn_phy: VpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
+    grf_tend_vn: WpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    vn_ie: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KHalfDim], ta.vpfloat]],
+    vt: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
+    vn_incr: VpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat] | None],
+    rho_incr: VpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat] | None],
+    exner_incr: VpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat] | None],
+    mass_flx_me: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    mass_flx_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    vol_flx_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    vn_traj: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    dtime: gtx.float64,
+    max_vcfl_size1_array: NumpyIconVpArray1D,  # REAL(vp) in ICON, a single-element host array
+    lprep_adv: bool,
+    at_initial_timestep: bool,
+    divdamp_fac_o2: gtx.float64,
+    ndyn_substeps_var: gtx.int32,
+    is_iau_active: bool,
+    iau_wgt_dyn: gtx.float64,
+):
+    """
+    All `ndyn_substeps_var` dynamics substeps of one time step in one call, in place of ICON's
+    substep loop around `solve_nh_run` (substitute mode only).
+
+    ICON passes the arrays of its first substep. Between substeps the time levels swap here as
+    ICON's `swap(nnow, nnew)` would, so the `*_now` arrays are written too. ICON afterwards swaps
+    its own nnow/nnew `ndyn_substeps_var - 1` times to find the result where it is left.
+    """
+    if is_iau_active:
+        raise NotImplementedError(
+            "IAU weights change from substep to substep; pass them per substep or call 'solve_nh_run'."
+        )
+    _solve_nh_substeps(
+        range(ndyn_substeps_var),
+        rho_now=rho_now,
+        rho_new=rho_new,
+        exner_now=exner_now,
+        exner_new=exner_new,
+        w_now=w_now,
+        w_new=w_new,
+        theta_v_now=theta_v_now,
+        theta_v_new=theta_v_new,
+        vn_now=vn_now,
+        vn_new=vn_new,
+        w_concorr_c=w_concorr_c,
+        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+        ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+        ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+        theta_v_ic=theta_v_ic,
+        rho_ic=rho_ic,
+        exner_pr=exner_pr,
+        exner_dyn_incr=exner_dyn_incr,
+        ddt_exner_phy=ddt_exner_phy,
+        grf_tend_rho=grf_tend_rho,
+        grf_tend_thv=grf_tend_thv,
+        grf_tend_w=grf_tend_w,
+        mass_fl_e=mass_fl_e,
+        ddt_vn_phy=ddt_vn_phy,
+        grf_tend_vn=grf_tend_vn,
+        vn_ie=vn_ie,
+        vt=vt,
+        vn_incr=vn_incr,
+        rho_incr=rho_incr,
+        exner_incr=exner_incr,
+        mass_flx_me=mass_flx_me,
+        mass_flx_ic=mass_flx_ic,
+        vol_flx_ic=vol_flx_ic,
+        vn_traj=vn_traj,
+        dtime=dtime,
+        max_vcfl_size1_array=max_vcfl_size1_array,
+        lprep_adv=lprep_adv,
+        at_initial_timestep=at_initial_timestep,
+        divdamp_fac_o2=divdamp_fac_o2,
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
+        ndyn_substeps_var=ndyn_substeps_var,
+    )

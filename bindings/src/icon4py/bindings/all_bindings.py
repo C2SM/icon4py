@@ -27,6 +27,7 @@ FUNCTIONS = [
     grid_wrapper.grid_init,
     dycore_wrapper.solve_nh_init,
     dycore_wrapper.solve_nh_run,
+    dycore_wrapper.solve_nh_substeps_run,
 ]
 LIBRARY_NAME = "icon4py_bindings"
 
