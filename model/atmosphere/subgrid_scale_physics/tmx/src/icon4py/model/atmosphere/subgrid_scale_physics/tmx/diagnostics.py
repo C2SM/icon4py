@@ -21,7 +21,9 @@ import typing
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import diagnostics as diag_stencils
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import (
+    diagnostics_stencils as diag_stencils,
+)
 from icon4py.model.common import constants, dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
@@ -339,6 +341,7 @@ class Diagnostics:
 
     def run(
         self,
+        *,
         input_state: tmx_states.TmxInputState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
     ) -> None:
