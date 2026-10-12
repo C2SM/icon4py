@@ -109,6 +109,56 @@ def test_writeback_does_not_run_when_the_function_raises():
     assert [e[0] for e in events] == ["map"]
 
 
+def _recording_call_hooks(events: list) -> py2fgen.CallHooks:
+    return py2fgen.CallHooks(
+        after_convert=lambda: events.append(("after_convert",)),
+        before_writeback=lambda: events.append(("before_writeback",)),
+        after_writeback=lambda: events.append(("after_writeback",)),
+    )
+
+
+def test_call_hooks_run_once_per_call_around_the_mappers():
+    events = []
+
+    @py2fgen.export(
+        param_descriptors={"a": _INT32_SCALAR, "b": _INT32_SCALAR},
+        annotation_mapping_hook=_recording_mapping_hook(events),
+        call_hooks=_recording_call_hooks(events),
+    )
+    def fun(a: int, b: int):
+        events.append(("call", a, b))
+
+    fun(ffi=None, perf_counters=None, a=3, b=4)
+
+    assert events == [
+        ("map", 3),
+        ("map", 4),
+        ("after_convert",),
+        ("call", 6, 8),
+        ("before_writeback",),
+        ("writeback", 3, 6),
+        ("writeback", 4, 8),
+        ("after_writeback",),
+    ]
+
+
+def test_writeback_hooks_do_not_run_when_the_function_raises():
+    events = []
+
+    @py2fgen.export(
+        param_descriptors={"a": _INT32_SCALAR},
+        annotation_mapping_hook=_recording_mapping_hook(events),
+        call_hooks=_recording_call_hooks(events),
+    )
+    def fun(a: int):
+        raise RuntimeError("granule failed")
+
+    with pytest.raises(RuntimeError, match="granule failed"):
+        fun(ffi=None, perf_counters=None, a=3)
+
+    assert [e[0] for e in events] == ["map", "after_convert"]
+
+
 def test_conversion_error_names_the_argument():
     def failing_hook(_: Any, __: py2fgen.ParamDescriptor):
         def mapper(value, *, ffi):

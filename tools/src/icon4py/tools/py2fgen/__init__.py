@@ -19,7 +19,7 @@ from icon4py.tools.py2fgen._definitions import (
     ParamDescriptor,
     ScalarParamDescriptor,
 )
-from icon4py.tools.py2fgen._export import export
+from icon4py.tools.py2fgen._export import CallHooks, export
 from icon4py.tools.py2fgen._generator import RenderedSources, get_cffi_description, render
 from icon4py.tools.py2fgen._utils import write_if_changed
 
@@ -32,6 +32,7 @@ __all__ = [
     "INT64",
     "ArrayInfo",
     "ArrayParamDescriptor",
+    "CallHooks",
     "MemorySpace",
     "ParamDescriptor",
     "RenderedSources",

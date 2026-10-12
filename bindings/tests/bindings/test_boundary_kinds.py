@@ -36,6 +36,7 @@ from icon4py.tools.py2fgen import test_utils
 
 
 SomeDim = gtx.Dimension("SomeDim")
+SomeLevelDim = gtx.Dimension("SomeLevelDim", kind=gtx.DimensionKind.VERTICAL)
 
 # Arguments that ICON declares `REAL(vp)`; every other float argument is `REAL(wp)`.
 # Metric fields: `icon/src/atm_dyn_iconam/mo_nonhydro_types.f90:348` (t_nh_metrics vp block).
@@ -444,3 +445,33 @@ def test_every_raw_float_array_declares_its_icon_kind():
 
     # rbf_vec_coeff_{e,v}, pg_exdist, max_vcfl_size1_array, rbf_vec_coeff_v, zd_{intcoef,diffcoef}
     assert len(raw_float_arrays) == 7
+
+
+@pytest.mark.single_precision_ready
+@pytest.mark.parametrize("transposed", [False, True])
+@pytest.mark.parametrize("sync_per_call", [False, True])
+def test_device_copies_round_trip_with_either_sync(monkeypatch, transposed, sync_per_call):
+    """On the device, a converted INOUT field is copied in and back whether the copies are waited
+    for per argument or once per call through the export's call hooks."""
+    cp = pytest.importorskip("cupy")
+    monkeypatch.setattr(config, "ICON_PRECISION", "double")
+    monkeypatch.setattr(config, "COPY_TRANSPOSED", transposed)
+    monkeypatch.setattr(config, "COPY_SYNC_PER_CALL", sync_per_call)
+    ffi = cffi.FFI()
+    hooks = icon4py_export.export(lambda: None).call_hooks
+    mapper = _mapper_for(icon4py_export.WpInOut[gtx.Field[gtx.Dims[SomeDim, SomeLevelDim], gtx.float32]])
+    values = np.arange(1, 1 + 2000 * 65).reshape(2000, 65) / 3  # not float32-exact
+    fortran_array = cp.asfortranarray(cp.asarray(values))
+    array_info = test_utils.array_to_array_info(fortran_array, ffi=ffi)
+
+    field = mapper(array_info, ffi=ffi)
+    hooks.after_convert()
+    np.testing.assert_array_equal(cp.asnumpy(field.ndarray), values.astype(np.float32))
+    field.ndarray[...] = -1
+    hooks.before_writeback()
+    mapper.writeback(array_info, field, ffi=ffi)
+    hooks.after_writeback()
+
+    np.testing.assert_array_equal(cp.asnumpy(fortran_array), -1)
+    pending = icon4py_export._PendingCopies
+    assert not (pending.copy_in or pending.writeback or pending.copy_out)

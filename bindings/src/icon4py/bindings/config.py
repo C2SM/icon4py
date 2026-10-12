@@ -19,6 +19,11 @@ COPY_TRANSPOSED: bool = env.flag_to_bool("ICON4PY_COPY_TRANSPOSED", False)
 """Copy converted fields through transposed views, so that CuPy walks ICON's column-major arrays
 in memory order. Bit-identical; measurement switch of branch measure/transposed-copy."""
 
+COPY_SYNC_PER_CALL: bool = env.flag_to_bool("ICON4PY_COPY_SYNC_PER_CALL", False)
+"""Wait for the conversion copies once per call instead of once per argument, so the CPU
+launches the next copy while the last one runs. Bit-identical; measurement switch of branch
+measure/transposed-copy."""
+
 
 def _icon_precision() -> Literal["double", "mixed", "single"]:
     value = os.environ.get("ICON4PY_BINDINGS_ICON_PRECISION", "double").lower()

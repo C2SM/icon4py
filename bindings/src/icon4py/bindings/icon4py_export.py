@@ -220,6 +220,32 @@ def _synchronize_copies() -> None:
     cp.cuda.get_current_stream().synchronize()
 
 
+class _PendingCopies:
+    """With `config.COPY_SYNC_PER_CALL`, what the per-call hooks still have to wait for."""
+
+    copy_in = False  # copies into icon4py's buffers launched, not yet waited for
+    writeback = False  # a write-back will copy on the device, so the granule must finish first
+    copy_out = False  # copies back into ICON's arrays launched, not yet waited for
+
+
+def _after_convert() -> None:
+    if _PendingCopies.copy_in:
+        _PendingCopies.copy_in = False
+        _synchronize_copies()  # before GT4Py launches work that reads the buffers
+
+
+def _before_writeback() -> None:
+    if _PendingCopies.writeback:
+        _PendingCopies.writeback = False
+        _synchronize_device()  # the granule's last write
+
+
+def _after_writeback() -> None:
+    if _PendingCopies.copy_out:
+        _PendingCopies.copy_out = False
+        _synchronize_copies()  # ICON's `!$ACC WAIT` does not cover CuPy's stream
+
+
 def _copy(dst: Any, src: Any) -> None:
     """Elementwise cast-copy; CuPy indexes in C order whatever the strides, hence the `.T`."""
     if config.COPY_TRANSPOSED:
@@ -280,7 +306,11 @@ def _as_field(
         if fortran is not None:
             _copy(field.ndarray, fortran)
             if array_info[2]:
-                _synchronize_copies()  # before GT4Py launches work that reads the buffer
+                if config.COPY_SYNC_PER_CALL:
+                    _PendingCopies.copy_in = True
+                    _PendingCopies.writeback |= intent is Intent.INOUT
+                else:
+                    _synchronize_copies()  # before GT4Py launches work that reads the buffer
         return field
 
     if intent is Intent.INOUT:
@@ -291,6 +321,10 @@ def _as_field(
             _, fortran = cached(array_info, ffi)
             if fortran is None:
                 return  # zero-copy: icon4py already wrote into ICON's memory
+            if array_info[2] and config.COPY_SYNC_PER_CALL:
+                _copy(fortran, field.ndarray)  # `_before_writeback` waited for the granule
+                _PendingCopies.copy_out = True
+                return
             if array_info[2]:
                 _synchronize_device()  # the granule's last write
             _copy(fortran, field.ndarray)
@@ -325,4 +359,9 @@ def field_annotation_mapping_hook(
 export = py2fgen.export(
     annotation_descriptor_hook=field_annotation_descriptor_hook,
     annotation_mapping_hook=field_annotation_mapping_hook,
+    call_hooks=py2fgen.CallHooks(
+        after_convert=_after_convert,
+        before_writeback=_before_writeback,
+        after_writeback=_after_writeback,
+    ),
 )
