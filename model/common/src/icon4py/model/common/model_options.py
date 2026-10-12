@@ -95,7 +95,7 @@ def _set_device_specific_dace_options(
             )
     elif device == model_backends.DeviceType.CUDA:
         optimization_args.setdefault("gpu_block_size_2d", (128, 2, 1))
-        optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
+        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
 
 
 def get_dace_options(
