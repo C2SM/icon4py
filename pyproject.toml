@@ -274,6 +274,7 @@ ignore_missing_imports = true
 # viztracer is installed.
 module = ["viztracer"]
 
+# -- pytest --
 [tool.pytest]
 
 [tool.pytest.ini_options]
