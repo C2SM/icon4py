@@ -29,6 +29,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_back
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     _compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_upwind import (
+    _compute_horizontal_tracer_flux_upwind,
+)
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     _compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
@@ -53,6 +56,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_quartic_face
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_slope import _compute_ppm_slope
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_parabola_limiter_condition import (
     _compute_vertical_parabola_limiter_condition,
+)
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_tracer_flux_upwind import (
+    _compute_vertical_tracer_flux_upwind,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_horizontally import (
     _integrate_tracer_horizontally,
@@ -311,23 +317,31 @@ def _compute_tracer_advection_before_horizontal_limiter(
         else p_tracer_now + broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
     )
     p_mflx_tracer_h_unlimited = (
-        _compute_2nd_order_miura_horizontal_flux(
+        _compute_horizontal_tracer_flux_upwind(
             p_cc=tracer_for_h,
             p_mass_flx_e=p_mass_flx_e,
             p_vn=p_vn,
-            rbf_vec_coeff_e=rbf_vec_coeff_e,
-            pos_on_tplane_e_1=pos_on_tplane_e_1,
-            pos_on_tplane_e_2=pos_on_tplane_e_2,
-            primal_normal_cell_1=primal_normal_cell_1,
-            dual_normal_cell_1=dual_normal_cell_1,
-            primal_normal_cell_2=primal_normal_cell_2,
-            dual_normal_cell_2=dual_normal_cell_2,
-            lsq_pseudoinv_1=lsq_pseudoinv_1,
-            lsq_pseudoinv_2=lsq_pseudoinv_2,
-            p_dtime=p_dtime,
         )
-        if (ihadv_tracer == 2)
-        else broadcast(wpfloat(0.0), (dims.EdgeDim, dims.KDim))
+        if (ihadv_tracer == 1)
+        else (
+            _compute_2nd_order_miura_horizontal_flux(
+                p_cc=tracer_for_h,
+                p_mass_flx_e=p_mass_flx_e,
+                p_vn=p_vn,
+                rbf_vec_coeff_e=rbf_vec_coeff_e,
+                pos_on_tplane_e_1=pos_on_tplane_e_1,
+                pos_on_tplane_e_2=pos_on_tplane_e_2,
+                primal_normal_cell_1=primal_normal_cell_1,
+                dual_normal_cell_1=dual_normal_cell_1,
+                primal_normal_cell_2=primal_normal_cell_2,
+                dual_normal_cell_2=dual_normal_cell_2,
+                lsq_pseudoinv_1=lsq_pseudoinv_1,
+                lsq_pseudoinv_2=lsq_pseudoinv_2,
+                p_dtime=p_dtime,
+            )
+            if (ihadv_tracer == 2)
+            else broadcast(wpfloat(0.0), (dims.EdgeDim, dims.KDim))
+        )
     )
 
     r_m = (
@@ -513,21 +527,32 @@ def _compute_tracer_advection_after_horizontal_limiter(
         broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim)),
     )
     p_mflx_tracer_v_computed = (
-        _compute_ppm4gpu_flux(
-            p_cc=p_tracer_after_horizontal,
-            p_cellmass_now=rhodz_ast2,
-            p_mflx_contra_v=p_mflx_contra_v,
-            p_cellhgt_mc_now=p_cellhgt_mc_now,
-            k=k_half,
-            slev=slev,
-            slevp1_ti=slevp1_ti,
-            elev=elev,
-            wp_eps=wp_eps,
-            p_dtime=p_dtime,
-            itype_vlimit=itype_vlimit,
+        concat_where(
+            (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
+            _compute_vertical_tracer_flux_upwind(
+                p_cc=p_tracer_after_horizontal,
+                p_mflx_contra_v=p_mflx_contra_v,
+            ),
+            broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim)),
         )
-        if (ivadv_tracer == 3)
-        else broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim))
+        if (ivadv_tracer == 1)
+        else (
+            _compute_ppm4gpu_flux(
+                p_cc=p_tracer_after_horizontal,
+                p_cellmass_now=rhodz_ast2,
+                p_mflx_contra_v=p_mflx_contra_v,
+                p_cellhgt_mc_now=p_cellhgt_mc_now,
+                k=k_half,
+                slev=slev,
+                slevp1_ti=slevp1_ti,
+                elev=elev,
+                wp_eps=wp_eps,
+                p_dtime=p_dtime,
+                itype_vlimit=itype_vlimit,
+            )
+            if (ivadv_tracer == 3)
+            else broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim))
+        )
     )
     p_mflx_tracer_v_out = p_mflx_tracer_v if do_vertical_first else p_mflx_tracer_v_computed
     p_tracer_new = (

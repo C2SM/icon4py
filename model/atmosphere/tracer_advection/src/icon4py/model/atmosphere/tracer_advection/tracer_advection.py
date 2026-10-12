@@ -25,6 +25,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_adv
     compute_tracer_advection_after_horizontal_limiter,
     compute_tracer_advection_before_horizontal_limiter,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_tracer_flux_upwind import (
+    compute_vertical_tracer_flux_upwind,
+)
 from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import (
     HorizontalAdvectionLimiter,
     HorizontalAdvectionType,
@@ -212,7 +215,7 @@ class GodunovSplittingAdvection(Advection):
             dtype=gtx.int32,
             allocator=allocator,
         )
-        self._ivadv_tracer_is_ppm = vertical_advection_type == VerticalAdvectionType.THIRD_ORDER_PPM
+        self._vertical_advection_type = vertical_advection_type
         self._p_mflx_tracer_v_zero = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
         )
@@ -324,6 +327,19 @@ class GodunovSplittingAdvection(Advection):
             },
             offset_provider=self._grid.connectivities,
         )
+        self._compute_vertical_tracer_flux_upwind = setup_program(
+            backend=self._backend,
+            program=compute_vertical_tracer_flux_upwind,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_2,
+                "horizontal_end": self._end_cell_end,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(1),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
+        )
         log.debug("tracer_advection class init - end")
 
     def _determine_local_domains(self) -> None:
@@ -365,15 +381,25 @@ class GodunovSplittingAdvection(Advection):
             stream=decomposition.DEFAULT_STREAM,
         )
 
-        if self._even_timestep and self._ivadv_tracer_is_ppm:
-            self._compute_ppm4gpu_flux(
-                p_upflux=diagnostic_state.vfl_tracer,
-                p_cc=p_tracer_now,
-                p_cellmass_now=diagnostic_state.airmass_now,
-                p_mflx_contra_v=prep_adv.mass_flx_ic,
-                p_dtime=dtime,
-            )
-            _p_mflx_tracer_v = diagnostic_state.vfl_tracer
+        if self._even_timestep:
+            if self._vertical_advection_type == VerticalAdvectionType.THIRD_ORDER_PPM:
+                self._compute_ppm4gpu_flux(
+                    p_upflux=diagnostic_state.vfl_tracer,
+                    p_cc=p_tracer_now,
+                    p_cellmass_now=diagnostic_state.airmass_now,
+                    p_mflx_contra_v=prep_adv.mass_flx_ic,
+                    p_dtime=dtime,
+                )
+                _p_mflx_tracer_v = diagnostic_state.vfl_tracer
+            elif self._vertical_advection_type == VerticalAdvectionType.FIRST_ORDER_UPWIND:
+                self._compute_vertical_tracer_flux_upwind(
+                    p_cc=p_tracer_now,
+                    p_mflx_contra_v=prep_adv.mass_flx_ic,
+                    p_upflux=diagnostic_state.vfl_tracer,
+                )
+                _p_mflx_tracer_v = diagnostic_state.vfl_tracer
+            else:
+                _p_mflx_tracer_v = self._p_mflx_tracer_v_zero
         else:
             _p_mflx_tracer_v = self._p_mflx_tracer_v_zero
 

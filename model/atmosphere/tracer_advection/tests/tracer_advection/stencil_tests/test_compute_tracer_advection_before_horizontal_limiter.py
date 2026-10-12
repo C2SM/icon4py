@@ -19,6 +19,7 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_advection import (
     compute_tracer_advection_before_horizontal_limiter,
@@ -43,6 +44,16 @@ from .test_compute_positive_definite_horizontal_multiplicative_flux_factor impor
     compute_positive_definite_horizontal_multiplicative_flux_factor_numpy,
 )
 from .test_integrate_tracer_vertically import integrate_tracer_vertically_numpy
+
+
+def compute_horizontal_tracer_flux_upwind_numpy(
+    p_cc: np.ndarray,
+    p_mass_flx_e: np.ndarray,
+    p_vn: np.ndarray,
+    connectivities: dict[gtx.FieldOffset, np.ndarray],
+) -> np.ndarray:
+    e2c = connectivities[dims.E2C]
+    return np.where(p_vn > 0.0, p_cc[e2c[:, 0]], p_cc[e2c[:, 1]]) * p_mass_flx_e
 
 
 class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.StencilTest):
@@ -135,6 +146,10 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
                     p_vn,
                 )
             )
+        elif ihadv_tracer == HorizontalAdvectionType.FIRST_ORDER_UPWIND.value:
+            p_mflx_tracer_h_unlimited = compute_horizontal_tracer_flux_upwind_numpy(
+                p_tracer_after_vertical, p_mass_flx_e, p_vn, connectivities
+            )
         else:
             p_mflx_tracer_h_unlimited = np.zeros(
                 (grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype
@@ -160,8 +175,17 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             r_m=r_m,
         )
 
-    @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+    @stencil_tests.input_data_fixture(
+        params=[
+            gtx.int32(HorizontalAdvectionType.FIRST_ORDER_UPWIND.value),
+            gtx.int32(HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value),
+        ]
+    )
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
+    ) -> dict:
         rhodz_now = data_alloc.random_field(dims.CellDim, dims.KDim)
         rhodz_new = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
@@ -191,7 +215,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         p_dtime = np.float64(5.0)
         wp_eps = np.float64(1e-9)
         ivadv_tracer = gtx.int32(0)
-        ihadv_tracer = gtx.int32(2)
+        ihadv_tracer = request.param
         itype_hlimit = gtx.int32(4)
         iadv_slev_jt = gtx.int32(0)
 
@@ -311,6 +335,10 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
                     p_vn,
                 )
             )
+        elif ihadv_tracer == HorizontalAdvectionType.FIRST_ORDER_UPWIND.value:
+            p_mflx_tracer_h_unlimited = compute_horizontal_tracer_flux_upwind_numpy(
+                p_tracer_now, p_mass_flx_e, p_vn, connectivities
+            )
         else:
             p_mflx_tracer_h_unlimited = np.zeros(
                 (grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype
@@ -336,8 +364,17 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
             r_m=r_m,
         )
 
-    @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+    @stencil_tests.input_data_fixture(
+        params=[
+            gtx.int32(HorizontalAdvectionType.FIRST_ORDER_UPWIND.value),
+            gtx.int32(HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value),
+        ]
+    )
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
+    ) -> dict:
         rhodz_now = data_alloc.random_field(dims.CellDim, dims.KDim)
         rhodz_new = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
@@ -367,7 +404,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         p_dtime = np.float64(5.0)
         wp_eps = np.float64(1e-9)
         ivadv_tracer = gtx.int32(0)
-        ihadv_tracer = gtx.int32(2)
+        ihadv_tracer = request.param
         itype_hlimit = gtx.int32(4)
         iadv_slev_jt = gtx.int32(0)
 

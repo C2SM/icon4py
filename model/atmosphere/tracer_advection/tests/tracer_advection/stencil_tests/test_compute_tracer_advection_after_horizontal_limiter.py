@@ -25,6 +25,7 @@ from .test_compute_fused_tracer_advection_terms import (
     apply_positive_definite_horizontal_multiplicative_flux_factor_numpy,
 )
 from .test_integrate_tracer_horizontally import integrate_tracer_horizontally_numpy
+from .test_integrate_tracer_vertically import integrate_tracer_vertically_numpy
 
 
 @pytest.mark.uses_concat_where
@@ -49,11 +50,17 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         rhodz_ast2: np.ndarray,
         rhodz_now: np.ndarray,
         rhodz_new: np.ndarray,
+        p_mflx_contra_v: np.ndarray,
         deepatmo_divh: np.ndarray,
+        deepatmo_divzl: np.ndarray,
+        deepatmo_divzu: np.ndarray,
         geofac_div: np.ndarray,
+        k: np.ndarray,
         do_vertical_first: bool,
+        ivadv_tracer: int,
         ihadv_tracer: int,
         itype_hlimit: int,
+        iadv_slev_jt: int,
         p_dtime: float,
         **kwargs: Any,
     ) -> dict:
@@ -89,14 +96,46 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         else:
             p_tracer_new = tracer_now_for_h.copy()
 
+        p_mflx_tracer_v_computed = np.zeros_like(p_mflx_tracer_v)
+        if ivadv_tracer == 1:
+            p_mflx_tracer_v_computed[:, 1:-1] = (
+                np.where(
+                    p_mflx_contra_v[:, 1:-1] >= 0.0,
+                    p_tracer_new[:, 1:],
+                    p_tracer_new[:, :-1],
+                )
+                * p_mflx_contra_v[:, 1:-1]
+            )
+
+        if do_vertical_first:
+            p_mflx_tracer_v_out = p_mflx_tracer_v
+        else:
+            p_mflx_tracer_v_out = p_mflx_tracer_v_computed
+            p_tracer_new = integrate_tracer_vertically_numpy(
+                p_tracer_new,
+                rhodz_ast2,
+                p_mflx_tracer_v_computed,
+                deepatmo_divzl,
+                deepatmo_divzu,
+                rhodz_new,
+                k,
+                p_dtime,
+                ivadv_tracer,
+                iadv_slev_jt,
+            )
+
         return dict(
             p_mflx_tracer_h=p_mflx_tracer_h,
-            p_mflx_tracer_v=p_mflx_tracer_v,
+            p_mflx_tracer_v=p_mflx_tracer_v_out,
             p_tracer_new=p_tracer_new,
         )
 
-    @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+    @stencil_tests.input_data_fixture(params=[(True, 0), (False, 1)])
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
+    ) -> dict:
         r_m = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_mflx_tracer_h_unlimited = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         p_tracer_now = data_alloc.random_field(dims.CellDim, dims.KDim)
@@ -122,8 +161,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
 
         p_dtime = ta.wpfloat(5.0)
         wp_eps = ta.wpfloat(1e-9)
-        do_vertical_first = True
-        ivadv_tracer = gtx.int32(0)
+        do_vertical_first, ivadv_tracer = request.param
         ihadv_tracer = gtx.int32(2)
         itype_hlimit = gtx.int32(4)
         itype_vlimit = gtx.int32(1)
@@ -154,7 +192,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             slevp1_ti=slevp1_ti,
             elev=elev,
             do_vertical_first=do_vertical_first,
-            ivadv_tracer=ivadv_tracer,
+            ivadv_tracer=gtx.int32(ivadv_tracer),
             ihadv_tracer=ihadv_tracer,
             itype_hlimit=itype_hlimit,
             itype_vlimit=itype_vlimit,
