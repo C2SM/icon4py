@@ -11,7 +11,7 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.energy_update import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.energy_update_stencils import (
     update_temperature_and_compute_end_of_step_diagnostics,
 )
 from icon4py.model.common import constants, dimension as dims
@@ -20,8 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_scalar_diffusion import internal_energy_per_area_numpy
-from .test_wind_diffusion import on_rows
+from .utils import internal_energy_per_area_numpy, on_subdomain
 
 
 class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilTest):
@@ -29,7 +28,7 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
     OUTPUTS = (
         "dissip_ke",
         "heating",
-        "tend_temperature",
+        "new_tend_temperature",
         "new_temperature",
         "cptgz",
         "cptgz_vi",
@@ -104,25 +103,23 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
         )
         int_energy_vi = np.cumsum(new_int_energy, axis=1)
 
-        cells = slice(horizontal_start, horizontal_end)
-        levels = slice(vertical_start, vertical_end)
-        above_surface = slice(vertical_start, vertical_end - 1)
-        expected_tend_temperature = tend_temperature.copy()
-        expected_tend_temperature[cells, levels] = new_tend_temperature[cells, levels]
+        cells = (horizontal_start, horizontal_end)
+        levels = (vertical_start, vertical_end)
+        above_surface = (vertical_start, vertical_end - 1)
         return dict(
-            dissip_ke=on_rows(dissip_ke, cells, levels),
-            heating=on_rows(heating, cells, levels),
-            tend_temperature=expected_tend_temperature,
-            new_temperature=on_rows(new_temperature, cells, levels),
-            cptgz=on_rows(cptgz, cells, levels),
-            cptgz_vi=on_rows(np.cumsum(cptgz * rho * ddqz_z_full, axis=1), cells, levels),
-            dissip_ke_vi=on_rows(np.cumsum(dissip_ke, axis=1), cells, levels),
-            int_energy_vi=on_rows(int_energy_vi, cells, levels),
-            tend_int_energy_vi=on_rows(
+            dissip_ke=on_subdomain(dissip_ke, cells, levels),
+            heating=on_subdomain(heating, cells, levels),
+            new_tend_temperature=on_subdomain(new_tend_temperature, cells, levels),
+            new_temperature=on_subdomain(new_temperature, cells, levels),
+            cptgz=on_subdomain(cptgz, cells, levels),
+            cptgz_vi=on_subdomain(np.cumsum(cptgz * rho * ddqz_z_full, axis=1), cells, levels),
+            dissip_ke_vi=on_subdomain(np.cumsum(dissip_ke, axis=1), cells, levels),
+            int_energy_vi=on_subdomain(int_energy_vi, cells, levels),
+            tend_int_energy_vi=on_subdomain(
                 (int_energy_vi - np.cumsum(old_int_energy, axis=1)) / dtime, cells, levels
             ),
-            km=on_rows(km_ic[:, 1:], cells, above_surface),
-            kh=on_rows(kh_ic[:, 1:], cells, above_surface),
+            km=on_subdomain(km_ic[:, 1:], cells, above_surface),
+            kh=on_subdomain(kh_ic[:, 1:], cells, above_surface),
         )
 
     @stencil_tests.input_data_fixture
@@ -171,6 +168,7 @@ class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilT
             ),
             dissip_ke=output(),
             heating=output(),
+            new_tend_temperature=output(),
             new_temperature=output(),
             cptgz=output(),
             cptgz_vi=output(),

@@ -729,6 +729,31 @@ def test_factory_inv_ddqz_z_full_e(
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest
+@pytest.mark.uses_concat_where
+@_aes_physics_experiment
+def test_factory_inv_ddqz_z_half_e_and_v(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    init_savepoint = data_provider.from_savepoint_tmx_init()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field_e = factory.get(attrs.INV_DDQZ_Z_HALF_E)
+    field_v = factory.get(attrs.INV_DDQZ_Z_HALF_V)
+    assert test_helpers.dallclose(init_savepoint.inv_ddqz_z_half_e().asnumpy(), field_e.asnumpy())
+    assert test_helpers.dallclose(init_savepoint.inv_ddqz_z_half_v().asnumpy(), field_v.asnumpy())
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
 @_aes_physics_experiment
 def test_factory_wgtfacq1_c_and_e(
     data_provider: serialbox.IconSerialDataProvider,
