@@ -316,53 +316,54 @@ type NumpyIconVpArray1D = Annotated[
 ]
 
 
-@icon4py_export.export
-def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
-    rho_now: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
-    rho_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
-    exner_now: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
-    exner_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
-    w_now: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
-    w_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
-    theta_v_now: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
-    theta_v_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
-    vn_now: WpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
-    vn_new: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
-    w_concorr_c: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat]],
-    ddt_vn_apc_ntl1: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
-    ddt_vn_apc_ntl2: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
-    ddt_w_adv_ntl1: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat]],
-    ddt_w_adv_ntl2: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat]],
-    theta_v_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
-    rho_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
-    exner_pr: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
-    exner_dyn_incr: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat]],
-    ddt_exner_phy: VpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat]],
-    grf_tend_rho: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
-    grf_tend_thv: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
-    grf_tend_w: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
-    mass_fl_e: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
-    ddt_vn_phy: VpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
-    grf_tend_vn: WpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
-    vn_ie: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KHalfDim], ta.vpfloat]],
-    vt: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
-    vn_incr: VpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat] | None],
-    rho_incr: VpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat] | None],
-    exner_incr: VpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat] | None],
-    mass_flx_me: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
-    mass_flx_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
-    vol_flx_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
-    vn_traj: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+def _solve_nh_substeps(
+    substeps: range,
+    *,
+    rho_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    rho_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    exner_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    exner_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    w_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat],
+    w_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat],
+    theta_v_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    theta_v_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    vn_now: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat],
+    vn_new: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat],
+    w_concorr_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat],
+    ddt_vn_apc_ntl1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat],
+    ddt_vn_apc_ntl2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat],
+    ddt_w_adv_ntl1: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat],
+    ddt_w_adv_ntl2: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat],
+    theta_v_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat],
+    rho_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat],
+    exner_pr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    exner_dyn_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat],
+    ddt_exner_phy: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat],
+    grf_tend_rho: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    grf_tend_thv: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    grf_tend_w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat],
+    mass_fl_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat],
+    ddt_vn_phy: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat],
+    grf_tend_vn: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat],
+    vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KHalfDim], ta.vpfloat],
+    vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat],
+    vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat] | None,
+    rho_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat] | None,
+    exner_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat] | None,
+    mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat],
+    mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat],
+    vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat],
+    vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat],
     dtime: gtx.float64,
     max_vcfl_size1_array: NumpyIconVpArray1D,  # REAL(vp) in ICON, a single-element host array
     lprep_adv: bool,
     at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
     ndyn_substeps_var: gtx.int32,
-    idyn_timestep: gtx.int32,
     is_iau_active: bool,
     iau_wgt_dyn: gtx.float64,
-):
+) -> None:
+    """Run the 0-based `substeps` of one dynamics step, swapping time levels between them as ICON does."""
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 
@@ -433,26 +434,126 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
-    # adjust for Fortran indexes
-    idyn_timestep = idyn_timestep - 1
-
-    granule.solve_nh.time_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        prep_adv=prep_adv,
-        second_order_divdamp_factor=divdamp_fac_o2,
-        dtime=dtime,
-        ndyn_substeps_var=ndyn_substeps_var,
-        at_initial_timestep=at_initial_timestep,
-        prepare_fluxes_for_advection=lprep_adv,
-        at_first_substep=idyn_timestep == 0,
-        at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
-    )
+    for substep in substeps:
+        if substep != substeps.start:
+            # what ICON's `swap(nnow, nnew)` does between substeps: it indexes the prognostics and
+            # both advective-tendency pairs by nnow/nnew (mo_icon4py_interfaces.f90)
+            prognostic_states.swap()
+            diagnostic_state_nh.normal_wind_advective_tendency.swap()
+            diagnostic_state_nh.vertical_wind_advective_tendency.swap()
+        granule.solve_nh.time_step(
+            diagnostic_state_nh=diagnostic_state_nh,
+            prognostic_states=prognostic_states,
+            prep_adv=prep_adv,
+            second_order_divdamp_factor=divdamp_fac_o2,
+            dtime=dtime,
+            ndyn_substeps_var=ndyn_substeps_var,
+            # ICON resets linit_dyn after the first substep (mo_nh_stepping.f90, perform_dyn_substepping)
+            at_initial_timestep=at_initial_timestep and substep == substeps.start,
+            prepare_fluxes_for_advection=lprep_adv,
+            at_first_substep=substep == 0,
+            at_last_substep=substep == (ndyn_substeps_var - 1),
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
+        )
 
     # TODO(havogt): create separate bindings for writing the timers
     if gtx_config.COLLECT_METRICS_LEVEL > 0:
         gtx_metrics.dump_json("gt4py_timers.json")
 
     max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl[()]  # pass back to Fortran
+
+
+@icon4py_export.export
+def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
+    rho_now: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    rho_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    exner_now: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    exner_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    w_now: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    w_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    theta_v_now: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    theta_v_new: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    vn_now: WpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    vn_new: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    w_concorr_c: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat]],
+    ddt_vn_apc_ntl1: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
+    ddt_vn_apc_ntl2: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
+    ddt_w_adv_ntl1: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat]],
+    ddt_w_adv_ntl2: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.vpfloat]],
+    theta_v_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    rho_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    exner_pr: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    exner_dyn_incr: VpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat]],
+    ddt_exner_phy: VpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat]],
+    grf_tend_rho: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    grf_tend_thv: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat]],
+    grf_tend_w: WpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    mass_fl_e: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    ddt_vn_phy: VpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
+    grf_tend_vn: WpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    vn_ie: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KHalfDim], ta.vpfloat]],
+    vt: VpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat]],
+    vn_incr: VpIn[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.vpfloat] | None],
+    rho_incr: VpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat] | None],
+    exner_incr: VpIn[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.vpfloat] | None],
+    mass_flx_me: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    mass_flx_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    vol_flx_ic: WpInOut[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], ta.wpfloat]],
+    vn_traj: WpInOut[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], ta.wpfloat]],
+    dtime: gtx.float64,
+    max_vcfl_size1_array: NumpyIconVpArray1D,  # REAL(vp) in ICON, a single-element host array
+    lprep_adv: bool,
+    at_initial_timestep: bool,
+    divdamp_fac_o2: gtx.float64,
+    ndyn_substeps_var: gtx.int32,
+    idyn_timestep: gtx.int32,
+    is_iau_active: bool,
+    iau_wgt_dyn: gtx.float64,
+):
+    _solve_nh_substeps(
+        range(idyn_timestep - 1, idyn_timestep),  # ICON counts substeps from 1
+        rho_now=rho_now,
+        rho_new=rho_new,
+        exner_now=exner_now,
+        exner_new=exner_new,
+        w_now=w_now,
+        w_new=w_new,
+        theta_v_now=theta_v_now,
+        theta_v_new=theta_v_new,
+        vn_now=vn_now,
+        vn_new=vn_new,
+        w_concorr_c=w_concorr_c,
+        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+        ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+        ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+        theta_v_ic=theta_v_ic,
+        rho_ic=rho_ic,
+        exner_pr=exner_pr,
+        exner_dyn_incr=exner_dyn_incr,
+        ddt_exner_phy=ddt_exner_phy,
+        grf_tend_rho=grf_tend_rho,
+        grf_tend_thv=grf_tend_thv,
+        grf_tend_w=grf_tend_w,
+        mass_fl_e=mass_fl_e,
+        ddt_vn_phy=ddt_vn_phy,
+        grf_tend_vn=grf_tend_vn,
+        vn_ie=vn_ie,
+        vt=vt,
+        vn_incr=vn_incr,
+        rho_incr=rho_incr,
+        exner_incr=exner_incr,
+        mass_flx_me=mass_flx_me,
+        mass_flx_ic=mass_flx_ic,
+        vol_flx_ic=vol_flx_ic,
+        vn_traj=vn_traj,
+        dtime=dtime,
+        max_vcfl_size1_array=max_vcfl_size1_array,
+        lprep_adv=lprep_adv,
+        at_initial_timestep=at_initial_timestep,
+        divdamp_fac_o2=divdamp_fac_o2,
+        ndyn_substeps_var=ndyn_substeps_var,
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
+    )
