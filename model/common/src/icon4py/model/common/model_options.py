@@ -69,14 +69,14 @@ def _set_program_specific_dace_options(
 
 def _set_device_specific_dace_options(
     device: model_backends.DeviceType | None,
-    has_external_workspace: bool,
+    backend_config: backend_cfg.BackendConfig | None,
     optimization_args: dict[str, Any],
 ) -> None:
     if device == model_backends.DeviceType.ROCM:
-        if not has_external_workspace:
-            # Only needed when no external workspace is provided (i.e.
-            # ICON4PY_BACKEND_WORKSPACE_SIZE is not set); the external
-            # workspace already avoids the runtime allocation overhead.
+        if not (backend_config is not None and backend_config.workspace_size > 0):
+            # Only needed when no external workspace is configured (neither via
+            # the driver's 'backend_config' nor ICON4PY_BACKEND_WORKSPACE_SIZE);
+            # the external workspace already avoids the runtime allocation overhead.
             optimization_args["gpu_memory_pool"] = False
             optimization_args["make_persistent"] = True
         # AMD MI300A: (256,1,1) for 2D maps gives ~20% speedup on the solver.
@@ -123,7 +123,7 @@ def get_dace_options(
     )
     _set_device_specific_dace_options(
         device,
-        has_external_workspace=backend_config is not None,
+        backend_config=backend_config,
         optimization_args=optimization_args,
     )
 
