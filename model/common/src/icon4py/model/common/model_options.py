@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
-import os
 from collections.abc import Callable
 from typing import Any
 
@@ -30,10 +29,6 @@ _WORKSPACE_SIZE_WARNING = (
     "per-program persistent transients (no GPU memory pool), which increases memory usage "
     "and may be slower than a shared external workspace, since runtime allocations are "
     "expensive on AMD GPUs. Set ICON4PY_BACKEND_WORKSPACE_SIZE=<bytes> to enable it."
-)
-_CUPY_ACCELERATORS_WARNING = (
-    'CUPY_ACCELERATORS environment variable should be set to "cub" otherwise reductions '
-    "have degraded performance on AMD GPUs."
 )
 
 
@@ -106,12 +101,6 @@ def _set_device_specific_dace_options(
         optimization_args["blocking_dims"] = list(dimension.vertical_dims())
         optimization_args["blocking_size"] = 4
         optimization_args["blocking_only_if_independent_nodes"] = False
-        if (
-            "cub" not in os.getenv("CUPY_ACCELERATORS", "").split(",")
-            and _CUPY_ACCELERATORS_WARNING not in _emitted_warnings
-        ):
-            _emitted_warnings.add(_CUPY_ACCELERATORS_WARNING)
-            log.warning(_CUPY_ACCELERATORS_WARNING)
     elif device == model_backends.DeviceType.CUDA:
         optimization_args.setdefault("gpu_block_size_2d", (128, 2, 1))
         optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
