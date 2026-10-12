@@ -84,8 +84,9 @@ def _set_device_specific_dace_options(
             # Only needed when no external workspace is configured (neither via
             # the driver's 'backend_config' nor ICON4PY_BACKEND_WORKSPACE_SIZE);
             # the external workspace already avoids the runtime allocation overhead.
-            optimization_args["gpu_memory_pool"] = False
-            optimization_args["make_persistent"] = True
+            optimization_args["transient_memory_mode"] = (
+                gtx_transformations.TransientMemoryMode.PERSISTENT
+            )
             if _WORKSPACE_SIZE_WARNING not in _emitted_warnings:
                 _emitted_warnings.add(_WORKSPACE_SIZE_WARNING)
                 log.warning(_WORKSPACE_SIZE_WARNING)
