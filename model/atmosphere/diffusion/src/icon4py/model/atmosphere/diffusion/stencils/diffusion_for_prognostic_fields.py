@@ -18,14 +18,11 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
     _calculate_diagnostic_quantities_for_turbulence,
 )
-from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
-    _enhance_diffusion_coefficient_for_grid_point_cold_pools,
+from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
+    _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
 )
 from icon4py.model.atmosphere.diffusion.stencils.limit_smag_coefficients import (
     _limit_smag_coefficients,
-)
-from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_cold_pools_enhancement import (
-    _temporary_field_for_grid_point_cold_pools_enhancement,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -166,11 +163,12 @@ def _diffusion_for_prognostic_fields(
         _apply_diffusion_to_theta_and_exner(
             kh_smag_e=concat_where(
                 dims.KDim >= nlev - 2,
-                _enhance_diffusion_coefficient_for_grid_point_cold_pools(
-                    kh_smag_limited,
-                    _temporary_field_for_grid_point_cold_pools_enhancement(
-                        theta_v_in, theta_ref_mc, thresh_tdiff, smallest_vpfloat
-                    ),
+                _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
+                    theta_v=theta_v_in,
+                    theta_ref_mc=theta_ref_mc,
+                    thresh_tdiff=thresh_tdiff,
+                    smallest_vpfloat=smallest_vpfloat,
+                    kh_smag_e=kh_smag_limited,
                 ),
                 kh_smag_limited,
             ),
