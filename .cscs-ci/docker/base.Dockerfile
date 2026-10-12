@@ -1,4 +1,4 @@
-FROM ubuntu:25.10
+FROM ubuntu:26.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -24,8 +24,7 @@ RUN apt-get update && \
         libhwloc-dev \
         libjson-c-dev \
         liblzma-dev \
-        libncurses5-dev \
-        libncursesw5-dev \
+        libncurses-dev \
         libnl-3-dev \
         libnuma-dev \
         libreadline-dev \
@@ -36,9 +35,9 @@ RUN apt-get update && \
         libuv1-dev \
         libyaml-dev \
         llvm \
-        gfortran-13 \
-        gcc-13 \
-        g++-13 \
+        gfortran \
+        gcc \
+        g++ \
         pkg-config \
         python3 \
         strace \
@@ -49,9 +48,6 @@ RUN apt-get update && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 && \
-    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100 && \
-    update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-13 100
 
 ENV CC=gcc
 ENV CXX=g++
