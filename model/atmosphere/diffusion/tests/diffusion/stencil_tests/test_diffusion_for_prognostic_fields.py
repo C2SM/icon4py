@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.diffusion.stencils.diffusion_for_prognostic_fields
 )
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import stencil_tests, test_utils
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -41,11 +41,13 @@ from .test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
 from .test_update_theta_and_exner import update_theta_and_exner_numpy
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestDiffusionForPrognosticFields(stencil_tests.StencilTest):
     PROGRAM = diffusion_for_prognostic_fields
     OUTPUTS = ("vn", "w", "dwdx", "dwdy", "theta_v", "exner", "div_ic", "hdef_ic")
+    ABSOLUTE_TOLERANCE = 0.0 if test_utils.wp_is_dp else 3e-7
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
