@@ -12,7 +12,7 @@ from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _limit_smag_coefficients(
     kh_smag: fa.EdgeKField[vpfloat],
     smag_limit: fa.KField[vpfloat],
