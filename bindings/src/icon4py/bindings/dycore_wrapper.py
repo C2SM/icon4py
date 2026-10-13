@@ -18,7 +18,7 @@ Fortran granule interfaces:
 
 import dataclasses
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Annotated
 
 import gt4py.next as gtx
@@ -33,7 +33,7 @@ from icon4py.bindings import (
     icon4py_export,
 )
 from icon4py.bindings.icon4py_export import VpIn, VpInOut, WpIn, WpInOut
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
+from icon4py.model.atmosphere.dycore import dycore_states, iau, solve_nonhydro
 from icon4py.model.common import (
     dimension as dims,
     model_backends,
@@ -360,10 +360,13 @@ def _solve_nh_substeps(
     at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
     ndyn_substeps_var: gtx.int32,
-    is_iau_active: bool,
-    iau_wgt_dyn: gtx.float64,
+    iau_weights: Sequence[iau.IauWeight],
 ) -> None:
-    """Run the 0-based `substeps` of one dynamics step, swapping time levels between them as ICON does."""
+    """
+    Run the 0-based `substeps` of one dynamics step, swapping time levels between them as ICON does.
+
+    `iau_weights` holds one IAU weight per substep of the range, in order.
+    """
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 
@@ -434,7 +437,7 @@ def _solve_nh_substeps(
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
-    for substep in substeps:
+    for substep, iau_weight in zip(substeps, iau_weights, strict=True):
         if substep != substeps.start:
             # what ICON's `swap(nnow, nnew)` does between substeps: it indexes the prognostics and
             # both advective-tendency pairs by nnow/nnew (mo_icon4py_interfaces.f90)
@@ -453,8 +456,8 @@ def _solve_nh_substeps(
             prepare_fluxes_for_advection=lprep_adv,
             at_first_substep=substep == 0,
             at_last_substep=substep == (ndyn_substeps_var - 1),
-            is_iau_active=is_iau_active,
-            iau_wgt_dyn=iau_wgt_dyn,
+            is_iau_active=iau_weight.is_active,
+            iau_wgt_dyn=iau_weight.dynamics,
         )
 
     # TODO(havogt): create separate bindings for writing the timers
@@ -554,8 +557,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=divdamp_fac_o2,
         ndyn_substeps_var=ndyn_substeps_var,
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
+        iau_weights=[iau.IauWeight(is_active=is_iau_active, dynamics=iau_wgt_dyn)],
     )
 
 
@@ -602,8 +604,10 @@ def solve_nh_substeps_run(  # noqa: PLR0917 [too-many-positional-arguments]
     at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
     ndyn_substeps_var: gtx.int32,
-    is_iau_active: bool,
-    iau_wgt_dyn: gtx.float64,
+    is_iau_mode: bool,
+    iau_time_at_end_of_step: gtx.float64,
+    iau_window: gtx.float64,
+    iau_window_function: gtx.int32,
 ):
     """
     All `ndyn_substeps_var` dynamics substeps of one time step in one call, in place of ICON's
@@ -612,11 +616,27 @@ def solve_nh_substeps_run(  # noqa: PLR0917 [too-many-positional-arguments]
     ICON passes the arrays of its first substep. Between substeps the time levels swap here as
     ICON's `swap(nnow, nnew)` would, so the `*_now` arrays are written too. ICON afterwards swaps
     its own nnow/nnew `ndyn_substeps_var - 1` times to find the result where it is left.
+
+    IAU (`is_iau_mode`, ICON's `init_mode = MODE_IAU`): ICON passes the time it computes the
+    substep times from, `(now - experiment start) - time shift` (mo_nh_stepping.f90:3201-3204),
+    the IAU window (halved in the first cycle of `iterate_iau`) and `type_iau_wgt`. The weights
+    are then those ICON's `compute_iau_wgt` gives, as long as ICON's `wp` is double; with ICON in
+    single, ICON computes them in single and these may differ in the last bit.
     """
-    if is_iau_active:
-        raise NotImplementedError(
-            "IAU weights change from substep to substep; pass them per substep or call 'solve_nh_run'."
+    # ICON computes these per substep (compute_iau_wgt, mo_iau.f90:332-389) before each call of
+    # solve_nh_run; here they come from the same formula and the same substep times, in ICON's
+    # operation order, from the time ICON passes for the end of the step.
+    iau_weights = (
+        iau.compute_iau_weights_for_substeps(
+            time_at_end_of_step=iau_time_at_end_of_step,
+            dtime=dtime,
+            ndyn_substeps=ndyn_substeps_var,
+            window=iau_window,
+            window_function=iau.IauWindowFunction(iau_window_function),
         )
+        if is_iau_mode
+        else [iau.IauWeight(is_active=False, dynamics=0.0)] * ndyn_substeps_var
+    )
     _solve_nh_substeps(
         range(ndyn_substeps_var),
         rho_now=rho_now,
@@ -659,7 +679,6 @@ def solve_nh_substeps_run(  # noqa: PLR0917 [too-many-positional-arguments]
         lprep_adv=lprep_adv,
         at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=divdamp_fac_o2,
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
+        iau_weights=iau_weights,
         ndyn_substeps_var=ndyn_substeps_var,
     )
