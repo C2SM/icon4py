@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+from gt4py.next import astype, maximum, minimum
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
@@ -21,11 +22,21 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities
 from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
 )
-from icon4py.model.atmosphere.diffusion.stencils.limit_smag_coefficients import (
-    _limit_smag_coefficients,
-)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+@gtx.field_operator
+def _limit_smag_coefficients(
+    kh_smag: fa.EdgeKField[vpfloat],
+    smag_limit: fa.KField[vpfloat],
+    smag_offset: vpfloat,
+) -> fa.EdgeKField[vpfloat]:
+    """Limit the raw Smagorinsky diffusion coefficient to the interval [0, smag_limit]."""
+    kh_smag_wp, smag_offset_wp = astype((kh_smag, smag_offset), wpfloat)
+    kh_smag_limited = maximum(vpfloat("0.0"), astype(kh_smag_wp - smag_offset_wp, vpfloat))
+    kh_smag_limited = minimum(kh_smag_limited, smag_limit)
+    return kh_smag_limited
 
 
 @gtx.field_operator
