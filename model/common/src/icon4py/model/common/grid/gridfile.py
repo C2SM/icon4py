@@ -8,6 +8,7 @@
 
 import enum
 import logging
+from types import TracebackType
 from typing import Any, Protocol, Self
 
 import numpy as np
@@ -186,7 +187,7 @@ class FixedSizeDimension(DimensionName):
     def __hash__(self) -> int:
         return hash((self.name, self.size))
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality based on zone name and level."""
         if not isinstance(other, FixedSizeDimension):
             return False
@@ -402,7 +403,12 @@ class GridFile:
         self.open()
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         self.close()
 
     def close(self) -> None:

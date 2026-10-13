@@ -38,7 +38,7 @@ import dataclasses
 import enum
 import functools
 from collections.abc import Callable, Iterator
-from typing import Any, Final
+from typing import Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -256,7 +256,7 @@ class Zone(enum.Enum):
         """Generate a hash based on the zone name and level."""
         return hash((self.name, self.level))
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality based on zone name and level."""
         if not isinstance(other, Zone):
             return False
@@ -339,7 +339,7 @@ class Domain:
     dim: gtx.Dimension
     zone: Zone
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, Domain):
             return self.dim == other.dim and self.zone == other.zone
         return False
