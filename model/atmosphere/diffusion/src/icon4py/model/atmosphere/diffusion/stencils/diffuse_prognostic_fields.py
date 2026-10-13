@@ -29,7 +29,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _diffusion_for_prognostic_fields(
+def _diffuse_prognostic_fields(
     kh_smag: fa.EdgeKField[vpfloat],
     smag_limit: fa.KField[vpfloat],
     smag_offset: vpfloat,
@@ -193,7 +193,7 @@ def _diffusion_for_prognostic_fields(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def diffusion_for_prognostic_fields(
+def diffuse_prognostic_fields(
     kh_smag: fa.EdgeKField[vpfloat],
     smag_limit: fa.KField[vpfloat],
     smag_offset: vpfloat,
@@ -259,7 +259,7 @@ def diffusion_for_prognostic_fields(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _diffusion_for_prognostic_fields(
+    _diffuse_prognostic_fields(
         kh_smag=kh_smag,
         smag_limit=smag_limit,
         smag_offset=smag_offset,
