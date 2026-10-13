@@ -1656,8 +1656,8 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-source = { git = "https://github.com/GridTools/gt4py?branch=dace_noview_nested_sdfg#17e2ad9717af241e94ecd315f639f5173c63f42e" }
-version = "1.2.3.post31+17e2ad97"
+source = { git = "https://github.com/GridTools/gt4py?branch=dace_noview_nested_sdfg#6d6bad18e33ae86b07a229a9060e8a1c6f526a84" }
+version = "1.2.3.post32+6d6bad18"
 
 [package.optional-dependencies]
 cuda12 = [
