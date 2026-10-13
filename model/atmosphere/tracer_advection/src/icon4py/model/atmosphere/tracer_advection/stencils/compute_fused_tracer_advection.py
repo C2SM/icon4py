@@ -112,21 +112,31 @@ def _compute_ppm4gpu_flux(
         ),
         z_cfl,
     )
-    z_slope_raw = _compute_ppm_slope(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, elev=elev)
+    z_slope_raw = concat_where(
+        (dims.KDim > 0) & (dims.KDim <= elev),
+        _compute_ppm_slope(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, elev=elev),
+        broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim)),
+    )
     z_slope = (
         _limit_vertical_slope_semi_monotonically(p_cc=p_cc, z_slope=z_slope_raw, elev=elev)
         if (itype_vlimit == VerticalAdvectionType.FIRST_ORDER_UPWIND)
         else z_slope_raw
     )
     p_face = concat_where(
-        (dims.KHalfDim > 1) & (dims.KHalfDim < elev),
-        _compute_ppm_quartic_face_values(
-            p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, z_slope=z_slope
+        dims.KHalfDim == 0,
+        p_cc(dims.KHalfDim + 0.5),
+        concat_where(
+            dims.KHalfDim < elev + 1,
+            concat_where(
+                (dims.KHalfDim > 1) & (dims.KHalfDim < elev),
+                _compute_ppm_quartic_face_values(
+                    p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, z_slope=z_slope
+                ),
+                _compute_ppm_quadratic_face_values(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now),
+            ),
+            p_cc(dims.KHalfDim - 0.5),
         ),
-        _compute_ppm_quadratic_face_values(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now),
     )
-    p_face = concat_where(dims.KHalfDim > 0, p_face, p_cc(dims.KHalfDim + 0.5))
-    p_face = concat_where(dims.KHalfDim < elev + 1, p_face, p_cc(dims.KHalfDim - 0.5))
     l_limit = _compute_vertical_parabola_limiter_condition(p_face=p_face, p_cc=p_cc)
     z_face_up, z_face_low = _limit_vertical_parabola_semi_monotonically(
         l_limit=l_limit, p_face=p_face, p_cc=p_cc
