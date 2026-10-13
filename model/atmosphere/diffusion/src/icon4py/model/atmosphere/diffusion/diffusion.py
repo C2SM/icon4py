@@ -29,8 +29,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.atmosphere.diffusion.stencils.diffusion_for_prognostic_fields import (
-    diffusion_for_prognostic_fields,
+from icon4py.model.atmosphere.diffusion.stencils.diffuse_prognostic_fields import (
+    diffuse_prognostic_fields,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.config import config_io, options as common_conf_opt
@@ -546,9 +546,9 @@ class Diffusion:
             or self.config.loutshs
             or self.config.a_hshr > 0.0
         )
-        self.diffusion_for_prognostic_fields = setup_program(
+        self.diffuse_prognostic_fields = setup_program(
             backend=backend,
-            program=diffusion_for_prognostic_fields,
+            program=diffuse_prognostic_fields,
             constant_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
                 "geofac_div": self._interpolation_state.geofac_div,
@@ -866,8 +866,8 @@ class Diffusion:
         self.copy_field_on_cell_k(field=prognostic_state.theta_v, output_field=self.theta_v_tmp)
         log.debug("copying prognostic fields vn, w, theta_v: end")
 
-        log.debug("running fused diffusion program (diffusion_for_prognostic_fields): start")
-        self.diffusion_for_prognostic_fields(
+        log.debug("running fused diffusion program (diffuse_prognostic_fields): start")
+        self.diffuse_prognostic_fields(
             kh_smag=self.kh_smag_e,
             smag_limit=smag_limit,
             smag_offset=smag_offset,
@@ -891,7 +891,7 @@ class Diffusion:
             compute_diagnostic_quantities=self._compute_diagnostic_quantities,
             apply_to_temperature=self.config.apply_to_temperature,
         )
-        log.debug("running fused diffusion program (diffusion_for_prognostic_fields): end")
+        log.debug("running fused diffusion program (diffuse_prognostic_fields): end")
 
         log.debug("communication of prognostic.vn : start")
         self._exchange.exchange(
