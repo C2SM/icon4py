@@ -14,6 +14,10 @@ repos:
     hooks:
       - id: pretty-format-toml
         args: [--autofix, --indent, "2"]
+        # language-formatters-pre-commit-hooks does not pin or upper-bound toml-sort, and
+        # newer versions can change formatting.
+        # https://github.com/macisamuele/language-formatters-pre-commit-hooks/issues/351
+        additional_dependencies: ['toml-sort==0.25.0']
         exclude: tach.toml
       - id: pretty-format-yaml
         args: [--autofix, --preserve-quotes, --indent, "2", --offset, "2"]
@@ -113,3 +117,10 @@ repos:
         entry: uv run --group dev --frozen --isolated validate-pyproject pyproject.toml
         files: ^pyproject\.toml$
         pass_filenames: false
+
+      - <<: *uv-managed-hook
+        id: check-versions
+        name: check package version consistency
+        entry: ./scripts/run check-versions
+        pass_filenames: false
+        always_run: true

@@ -71,12 +71,13 @@ _REQUIRED_MEMBERS: Final = (
     ("input_data", _INPUT_DATA_FIXTURE_MARKER, "input_data_fixture"),
 )
 
-# TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 1e-6 to
+# TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 3e-6 to
 # cover floating point discrepancies observed in CI tests. Failing CI can be found in
 # https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/5125340235196978/2255149825504673/-/pipelines/2184694383
 # from PR#861. Reason is probably derivatives of random data. Investigate and lower the
 # tolerance back to 1e-7 if possible.
-_RELATIVE_TOLERANCE: Final = 3e-6
+DEFAULT_RELATIVE_TOLERANCE: Final = test_utils.scale_tol(3e-6)
+DEFAULT_ABSOLUTE_TOLERANCE: Final = 0.0
 
 
 def _validate_signature(
@@ -248,8 +249,10 @@ else:
 @dataclasses.dataclass(frozen=True)
 class DataAllocationWrapper:
     """
-    The `icon4py.model.common.utils.data_allocation` constructors with `grid` and
-    `allocator` already bound.
+    Field constructors with `grid` and `allocator` already bound.
+
+    Mostly the `icon4py.model.common.utils.data_allocation` ones; `as_field` and
+    `connectivity_field` go straight to gt4py, having no grid-shaped counterpart there.
 
     A `StencilTest` suite receives one as the `data_alloc` argument of its `input_data`
     fixture. See the wrapped module for the meaning of the remaining arguments.
@@ -270,14 +273,19 @@ class DataAllocationWrapper:
             domain=connectivity.domain, data=connectivity.ndarray, allocator=self.allocator
         )
 
-    def field_from_array(
+    def as_field(
         self,
         data: npt.NDArray,
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike | None = None,
     ) -> gtx.Field:
-        """A field over `dims` holding `data`, for inputs built with NumPy first."""
-        return data_allocation.field_from_array(data, *dims, dtype=dtype, allocator=self.allocator)
+        """
+        A field over `dims` holding `data`, for inputs built with NumPy first.
+
+        Writing into an already allocated field instead only works while its buffer is
+        host memory, which it is not under a GPU backend.
+        """
+        return gtx.as_field(dims, data, dtype=dtype, allocator=self.allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any]"; expected "NDArrayObject"
 
     def constant_field(
         self,
@@ -553,6 +561,8 @@ class StencilTest:
     PROGRAM: ClassVar[gtx_typing.Program | gtx_typing.FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
+    ABSOLUTE_TOLERANCE: ClassVar[float] = DEFAULT_ABSOLUTE_TOLERANCE
+    RELATIVE_TOLERANCE: ClassVar[float] = DEFAULT_RELATIVE_TOLERANCE
 
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
     input_data: ClassVar[Callable[..., dict[str, Any]]]
@@ -612,7 +622,8 @@ class StencilTest:
                     reference[out.refslice],
                     equal_nan=True,
                     err_msg=f"Verification failed for '{label}'",
-                    rtol=_RELATIVE_TOLERANCE,
+                    rtol=self.RELATIVE_TOLERANCE,
+                    atol=self.ABSOLUTE_TOLERANCE,
                 )
 
     @staticmethod

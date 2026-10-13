@@ -25,18 +25,6 @@ from icon4py.model.common.physics.thermodynamics import (
 from icon4py.model.common.type_alias import wpfloat
 
 
-__all__ = [
-    # Re-exports of the AES thermodynamics helpers that moved to icon4py.model.common
-    "T_from_internal_energy",
-    "T_from_internal_energy_scalar",
-    "_T_from_internal_energy",
-    "_T_from_internal_energy_scalar",
-    "_internal_energy",
-    "_internal_energy_scalar",
-    "internal_energy",
-]
-
-
 @gtx.field_operator
 def _qsat_ice_rho(
     t: fa.CellKField[ta.wpfloat],

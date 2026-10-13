@@ -25,7 +25,7 @@ import pytest
 import xarray as xr
 
 from icon4py.model.common import model_backends, time
-from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.io import io as common_io, netcdf_writers, writers
 from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 from icon4py.model.testing import (
@@ -42,9 +42,6 @@ from icon4py.model.testing.fixtures.datatest import (
     process_props,
 )
 
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 _log = logging.getLogger(__file__)
 
@@ -76,7 +73,7 @@ def _run_driver_with_output(
     allocator = model_backends.get_allocator(backend)
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
 
-    config = driver_config.read_experiment_config_from_fortran(config_file_path)
+    config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={
             "output_path": output_path,

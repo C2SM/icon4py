@@ -70,6 +70,7 @@ MCH_OPR_R04B07_EDGE_BOUNDS: dict[h_grid.Zone, tuple[int, int]] = {
     h_grid.Zone.END: (16209, 16209),
     h_grid.Zone.HALO: (16209, 16209),
     h_grid.Zone.HALO_LEVEL_2: (16209, 16209),
+    h_grid.Zone.HALO_LEVEL_3: (16209, 16209),
 }
 MCH_OPR_R04B07_VERTEX_BOUNDS: dict[h_grid.Zone, tuple[int, int]] = {
     h_grid.Zone.LATERAL_BOUNDARY: (0, 318),
@@ -113,6 +114,7 @@ MCH_CH_R04B09_EDGE_BOUNDS: dict[h_grid.Zone, tuple[int, int]] = {
     h_grid.Zone.END: (31558, 31558),
     h_grid.Zone.HALO: (31558, 31558),
     h_grid.Zone.HALO_LEVEL_2: (31558, 31558),
+    h_grid.Zone.HALO_LEVEL_3: (31558, 31558),
 }
 MCH_CH_R04B09_VERTEX_BOUNDS: dict[h_grid.Zone, tuple[int, int]] = {
     h_grid.Zone.LATERAL_BOUNDARY: (0, 428),

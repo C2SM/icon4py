@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
@@ -23,51 +23,128 @@ from icon4py.model.common.components.components import Component
 
 
 if TYPE_CHECKING:
-    from icon4py.model.common.states import prognostic_state, tracer_states
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.common.states import factory, prognostic_state, tracer_states
+
+
+class PhysicsComponent(Component[Any, Any], Protocol):
+    """A ``Component`` that can adopt diagnostic output buffers owned by its caller.
+
+    The generic ``Component`` protocol is deliberately left untouched: writing
+    results into memory the caller owns is a physics-coupling concern, not a
+    property every model component should have to satisfy. Declaring the
+    extension here keeps that decision while still letting the driver call
+    ``bind_output_buffers`` under type checking rather than by duck typing.
+    """
+
+    def bind_output_buffers(self, buffers: dict[str, Any]) -> None:
+        """Adopt caller-owned buffers for this component's diagnostic outputs.
+
+        Implementations keep their own allocations as the default and replace
+        them with these, so the results are written in place, without a copy.
+        """
+        ...
 
 
 @dataclasses.dataclass
 class PhysicsProcess:
-    """A registered physics process: a component, its state adapter, and its time control.
+    """One physics process: its component, its state adapter and its time control.
 
-    The component is the per-process adapter (e.g. ``MuphysComponent``); it
-    implements the generic ``Component`` protocol, which is how the driver types it.
-    The state adapter is process-specific (it maps the frozen entry state to *this*
-    component's contract), so it is bundled per process rather than shared.
+    The state adapter belongs to the process rather than being shared, because it
+    maps the entry state to the input names of this one component. The process also
+    decides whether it runs on a given step and keeps its last computed outputs, so
+    a step between two firings can reuse them.
     """
 
     name: str
-    component: Component
+    component: PhysicsComponent
     state: ComponentState
     time_control: ProcessTimeControl
+    _cached_output: dict[str, Any] | None = dataclasses.field(default=None, init=False, repr=False)
+
+    def run(
+        self,
+        entry_state: physics_state.EntryState,
+        step_start_datetime: datetime.datetime,
+        dtime: datetime.timedelta,
+    ) -> dict[str, Any]:
+        """This step's outputs: freshly computed, recycled, or empty if it does not run.
+
+        Takes the entry state rather than the component's input mapping: building
+        that mapping may derive inputs of its own, which must not happen on a step
+        where the component does not compute.
+        """
+        tc = self.time_control
+        tc.validate_interval(dtime)
+        # Outside its window the process contributes nothing -- and must not reach the
+        # recycling branch below, which would compute once on the first step.
+        if not tc.is_in_window(step_start_datetime):
+            return {}
+        # Compute on a firing (active) step, and also on the first in-window step -- when
+        # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
+        if tc.is_active(step_start_datetime) or self._cached_output is None:
+            self._cached_output = self.component(
+                self.state.as_component_input(entry_state), step_start_datetime
+            )
+        return self._cached_output
 
 
 class PhysicsDriver:
     """Runs the physics processes under parallel coupling.
 
-    One timestep (``run``): the ``EntryState`` facade binds the model state and
-    diagnoses the physics fields once (dyn2phy); every enabled process reads that
-    same frozen state and computes; each output is routed by its ``kind`` metadata
-    (tendencies -> the accumulators, the rest -> the per-process ``diagnostics``
-    store); the accumulated tendencies are applied to the model state exactly once
-    at the end (phy2dyn). Processes never see the raw PrognosticState/TracerState
-    and never write — the PhysicsState layer owns both conversion boundaries.
+    In one timestep (``run``) the entry state is diagnosed once from the model
+    state, and every enabled process reads that same frozen state. Tendency
+    outputs are summed over the processes; diagnostic outputs are written by the
+    components into the buffers bound at construction. The summed tendencies are
+    applied to the model state once, at the end.
+
+    The processes never read or write the prognostic and tracer states directly.
     """
 
     def __init__(
         self,
         processes: list[PhysicsProcess],
         entry_state: physics_state.EntryState,
-        accumulators: physics_state.TendencyAccumulators,
-        apply_to_prognostic: physics_state.ApplyToPrognostic,
+        tendencies: physics_state.Tendencies,
+        diagnostics: physics_state.DiagnosticsStore,
     ) -> None:
         self._processes = processes
         self._entry = entry_state
-        self._accumulators = accumulators
-        self._apply = apply_to_prognostic
-        self._recycle_cache: dict[str, dict[str, Any]] = {}
-        #: non-applied outputs of the last run, keyed by process name (ICON field% spirit)
-        self.diagnostics: dict[str, dict[str, Any]] = {}
+        self._tendencies = tendencies
+        self.diagnostics = diagnostics
+        for process in processes:
+            process.component.bind_output_buffers(
+                diagnostics.allocate(process.name, process.component.outputs_properties)
+            )
+
+    @classmethod
+    def from_sources(
+        cls,
+        processes: list[PhysicsProcess],
+        *,
+        grid: base_grid.Grid,
+        geometry: factory.FieldSource,
+        interpolation: factory.FieldSource,
+        metrics: factory.FieldSource,
+        backend: gtx_typing.Backend | None = None,
+    ) -> PhysicsDriver:
+        """Build the driver together with the coupling pieces it owns.
+
+        The pieces stay constructor arguments so a caller -- a test, above all --
+        can substitute them; this is the assembly every real caller wants.
+        """
+        return cls(
+            processes,
+            entry_state=physics_state.EntryState(
+                grid=grid, interpolation=interpolation, metrics=metrics, backend=backend
+            ),
+            tendencies=physics_state.Tendencies(
+                grid=grid, geometry=geometry, interpolation=interpolation, backend=backend
+            ),
+            diagnostics=physics_state.DiagnosticsStore(grid=grid, backend=backend),
+        )
 
     def run(
         self,
@@ -76,28 +153,11 @@ class PhysicsDriver:
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
     ) -> None:
-        # 'simulation_current_datetime' is the end of the step being integrated (ICON's 'datetime_new');
-        # processes are scheduled on the step-start date, per 'datetime = datetime_new - dt'
-        # in mo_interface_iconam_aes.f90.
         step_start_datetime = simulation_current_datetime - dtime
-        self._entry.diagnose_from(prognostic, tracers)
-        self._accumulators.zero()
+        self._entry.compute_diagnostics(prognostic, tracers)
+        self._tendencies.zero()
         dt_seconds = dtime.total_seconds()
         for process in self._processes:
-            tc = process.time_control
-            tc.validate_interval(dtime)
-            if not tc.enable_process or not tc.is_in_window(step_start_datetime):
-                continue
-            process.state.collect_inputs(self._entry)
-            # Compute on a firing (active) step, and also on the first in-window step -- when
-            # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
-            if tc.is_active(step_start_datetime) or process.name not in self._recycle_cache:
-                outputs = process.component(process.state.as_component_input(), step_start_datetime)
-                self._recycle_cache[process.name] = outputs
-            else:
-                outputs = self._recycle_cache[process.name]
-            self._accumulators.accumulate(outputs, process.component.outputs_properties)
-            self.diagnostics[process.name] = physics_state.diagnostics_of(
-                outputs, process.component.outputs_properties
-            )
-        self._apply(self._entry, self._accumulators, dt_seconds)
+            outputs = process.run(self._entry, step_start_datetime, dtime)
+            self._tendencies.accumulate(outputs, process.component.outputs_properties)
+        self._tendencies.apply(self._entry, dt_seconds)

@@ -49,9 +49,9 @@ class TestCalculateNabla2ForW(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
-        w = data_alloc.constant_field(1.0, dims.CellDim, dims.KDim)
+        w = data_alloc.constant_field(1.0, dims.CellDim, dims.KHalfDim)
         geofac_n2s = data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)
-        z_nabla2_c = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_nabla2_c = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
 
         return dict(
             w=w,
@@ -60,5 +60,5 @@ class TestCalculateNabla2ForW(stencil_tests.StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

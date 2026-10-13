@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
@@ -14,24 +15,14 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
+    _compute_tangential_wind_on_half_levels,
     compute_tangential_wind,
-    compute_tangential_wind_wp,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import stencil_tests
-
-
-def compute_tangential_wind_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray], vn: np.ndarray, rbf_vec_coeff_e: np.ndarray
-) -> np.ndarray:
-    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-    e2c2e = connectivities[dims.E2C2EDim]
-    vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
-    return vt
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 def tangential_wind_reference(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    grid: base.Grid,
     *,
     vn: np.ndarray,
     rbf_vec_coeff_e: np.ndarray,
@@ -41,7 +32,8 @@ def tangential_wind_reference(
     vertical_end: int,
     **kwargs: Any,
 ) -> dict:
-    e2c2e = connectivities[dims.E2C2EDim]  # (n_edges, 4)
+    connectivities = stencil_tests.connectivities_asnumpy(grid)
+    e2c2e = connectivities[dims.E2C2E]  # (n_edges, 4)
 
     # (n_edges, 4, nlev[+1]) gather of the normal velocity at the neighbor edges
     vn_e = vn[e2c2e]
@@ -55,14 +47,14 @@ def tangential_wind_reference(
     return dict(vt=vt_out)
 
 
-def tangential_wind_input_data(grid: base.Grid, on_half_levels: bool) -> dict[str, Any]:
-    extend = {dims.KDim: 1} if on_half_levels else {}
-    vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, extend=extend, dtype=ta.wpfloat)
-    rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=ta.wpfloat)
-    vt = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend=extend, dtype=ta.wpfloat)
+def tangential_wind_input_data(
+    data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid, on_half_levels: bool
+) -> dict[str, Any]:
+    vertical_dim = dims.KHalfDim if on_half_levels else dims.KDim
+    vn = data_alloc.random_field(dims.EdgeDim, vertical_dim, dtype=ta.wpfloat)
+    rbf_vec_coeff_e = data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim, dtype=ta.wpfloat)
+    vt = data_alloc.zero_field(dims.EdgeDim, vertical_dim, dtype=ta.wpfloat)
 
-    # Fortran: rbf_vec_interpol_edge is called in tmx with
-    # opt_rlstart = 3, opt_rlend = min_rledge_int - 2.
     edge_domain = h_grid.domain(dims.EdgeDim)
     horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
     horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
@@ -81,64 +73,62 @@ def tangential_wind_input_data(grid: base.Grid, on_half_levels: bool) -> dict[st
     )
 
 
-class TestComputeTangentialWindWpHalfLevels(stencil_tests.StencilTest):
-    """Half-level input (nlev + 1 rows), e.g. vt_ie from vn_ie in tmx Stage A."""
+class TestComputeTangentialWindOnHalfLevels(stencil_tests.StencilTest):
+    """Half-level input (nlev + 1 rows)."""
 
-    PROGRAM = compute_tangential_wind_wp
-    OUTPUTS = ("vt",)
+    PROGRAM = _compute_tangential_wind_on_half_levels
+    OUTPUTS = ("out",)
 
-    reference = staticmethod(tangential_wind_reference)
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        vn_ie: np.ndarray,
+        rbf_vec_coeff_e: np.ndarray,
+        domain: dict[gtx.Dimension, tuple[int, int]],
+        **kwargs: Any,
+    ) -> dict:
+        (horizontal_start, horizontal_end) = domain[dims.EdgeDim]
+        (vertical_start, vertical_end) = domain[dims.KHalfDim]
+        vt = tangential_wind_reference(
+            grid,
+            vn=vn_ie,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=vertical_start,
+            vertical_end=vertical_end,
+        )["vt"]
+        return dict(out=vt)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        return tangential_wind_input_data(grid, on_half_levels=True)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        data = tangential_wind_input_data(data_alloc, grid, on_half_levels=True)
+        return dict(
+            vn_ie=data["vn"],
+            rbf_vec_coeff_e=data["rbf_vec_coeff_e"],
+            domain={
+                dims.EdgeDim: (data["horizontal_start"], data["horizontal_end"]),
+                dims.KHalfDim: (data["vertical_start"], data["vertical_end"]),
+            },
+            out=data["vt"],
+        )
 
 
-class TestComputeTangentialWindWpFullLevels(stencil_tests.StencilTest):
-    """Full-level input (nlev rows), e.g. vt from vn in tmx Stage E1."""
-
-    PROGRAM = compute_tangential_wind_wp
-    OUTPUTS = ("vt",)
-
-    reference = staticmethod(tangential_wind_reference)
-
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        return tangential_wind_input_data(grid, on_half_levels=False)
-
-
-@pytest.mark.embedded_remap_error
-class TestComputeTangentialWind(stencil_tests.StencilTest):
-    """Variable-precision variant used by the dycore velocity advection."""
+class TestComputeTangentialWindFullLevels(stencil_tests.StencilTest):
+    """Full-level input (nlev rows)."""
 
     PROGRAM = compute_tangential_wind
     OUTPUTS = ("vt",)
 
-    @staticmethod
-    def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
-        *,
-        vn: np.ndarray,
-        rbf_vec_coeff_e: np.ndarray,
-        **kwargs: Any,
-    ) -> dict:
-        vt = compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e)
-        return dict(vt=vt)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return tangential_wind_reference(grid, **kwargs)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        rbf_vec_coeff_e = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2EDim, dtype=ta.wpfloat
-        )
-        vt = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-
-        return dict(
-            vn=vn,
-            rbf_vec_coeff_e=rbf_vec_coeff_e,
-            vt=vt,
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_edges),
-            vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
-        )
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        return tangential_wind_input_data(data_alloc, grid, on_half_levels=False)

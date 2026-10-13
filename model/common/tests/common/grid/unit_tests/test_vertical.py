@@ -14,7 +14,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -50,8 +50,8 @@ if TYPE_CHECKING:
 def test_damping_layer_calculation(
     max_h: float, damping_height: float, delta: float, flat_height: float
 ) -> None:
-    vct_a = np.arange(0, max_h, delta)
-    vct_a_field = gtx.as_field((dims.KDim,), data=vct_a[::-1])  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+    vct_a = np.arange(0.0, max_h, delta)
+    vct_a_field = gtx.as_field((dims.KHalfDim,), data=vct_a[::-1])  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=1000,
         flat_height=flat_height,
@@ -371,7 +371,7 @@ def test_compute_vertical_coordinate(  # noqa: PLR0917 [too-many-positional-argu
         topography = topography_savepoint.topo_c()
     elif experiment.description == test_defs.Experiments.EXCLAIM_APE:
         topography = data_alloc.zero_field(
-            icon_grid, dims.CellDim, allocator=backend, dtype=ta.wpfloat
+            icon_grid, dims.CellDim, allocator=backend, dtype=gtx.float64
         )
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()
@@ -395,7 +395,7 @@ def test_compute_vertical_coordinate(  # noqa: PLR0917 [too-many-positional-argu
         SLEVE_minimum_layer_thickness_2=vertical_config._SLEVE_minimum_layer_thickness_2,
         SLEVE_minimum_relative_layer_thickness_2=vertical_config._SLEVE_minimum_relative_layer_thickness_2,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     assert test_utils.dallclose(

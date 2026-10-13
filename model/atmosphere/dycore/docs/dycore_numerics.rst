@@ -9,5 +9,4 @@ described in detail.
    :maxdepth: 2
    :caption: Dycore subcomponents:
 
-   dycore_numerics_advection
    dycore_numerics_nonhydro

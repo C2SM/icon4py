@@ -11,8 +11,9 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import initial_condition, model_backends
+from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.states import data, prognostic_state as prognostics, tracer_states
 from icon4py.model.driver import driver, driver_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
@@ -120,14 +121,14 @@ def test_initial_conditions(
         allocator=allocator,
         tracer_config=icon4py_driver.config.tracer_config,
     )
-    initial_condition.create(
-        config=icon4py_driver.config.initial_condition,
-        vertical_config=icon4py_driver.config.vertical_grid,
+    ic_apply(
+        config=driver_utils.make_ic_config_ctx(icon4py_driver.config),
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
         tracer_state_now=tracer_state_now,
         solve_nonhydro_diagnostic_state=None,
+        tracer_prep_adv_state=None,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,

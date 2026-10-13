@@ -1,0 +1,227 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""Integration tests of the tmx scalar diffusion component.
+
+Both stages are seeded from the tmx-diagnostics-exit savepoint (`kh_ic`, `km_ie`) and the
+temperature stage also from the tmx-hydro-exit savepoint (the new qv, qc, qi), so that failures
+do not cascade between them.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+from typing import TYPE_CHECKING
+
+import pytest
+
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import scalar_diffusion, tmx_states
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import TmxConfig
+from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.testing import definitions, test_utils
+
+from ..fixtures import *  # noqa: F403
+from .utils import (
+    construct_input_state,
+    construct_interpolation_state,
+    construct_metric_state,
+    construct_surface_flux_state,
+)
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import icon as icon_grid_
+    from icon4py.model.testing import serialbox as sb
+
+
+@dataclasses.dataclass
+class _Setup:
+    component: scalar_diffusion.ScalarDiffusion
+    input_state: tmx_states.TmxInputState
+    surface_flux_state: tmx_states.TmxSurfaceFluxState
+    diagnostic_state: tmx_states.TmxDiagnosticState
+    tendency_state: tmx_states.TmxTendencyState
+    new_state: tmx_states.TmxNewState
+
+
+def _setup(
+    *,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: icon_grid_.IconGrid,
+    backend: gtx_typing.Backend | None,
+    date: str,
+    config: TmxConfig,
+) -> _Setup:
+    allocator = model_backends.get_allocator(backend)
+    diagnostics_exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
+    component = scalar_diffusion.ScalarDiffusion(
+        grid=icon_grid,
+        metric_state=construct_metric_state(
+            metrics_savepoint=metrics_savepoint,
+            init_savepoint=data_provider.from_savepoint_tmx_init(),
+            allocator=allocator,
+        ),
+        interpolation_state=construct_interpolation_state(interpolation_savepoint),
+        edge_params=grid_savepoint.construct_edge_geometry(),
+        backend=backend,
+        exchange=decomposition.SingleNodeExchange(),
+        turb_prandtl=config.turb_prandtl,
+        use_scale_turb_energy_flux=config.use_scale_turb_energy_flux,
+        scale_turb_energy_flux=config.scale_turb_energy_flux,
+    )
+    return _Setup(
+        component=component,
+        input_state=construct_input_state(data_provider.from_savepoint_tmx_entry(date=date)),
+        surface_flux_state=construct_surface_flux_state(
+            data_provider.from_savepoint_tmx_surface_fluxes(date=date)
+        ),
+        diagnostic_state=dataclasses.replace(
+            tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),
+            kh_ic=diagnostics_exit_savepoint.kh_ic(),
+            km_ie=diagnostics_exit_savepoint.km_ie(),
+        ),
+        tendency_state=tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator),
+        new_state=tmx_states.TmxNewState.allocate(icon_grid, allocator=allocator),
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment_description, date",
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
+)
+def test_tmx_run_hydrometeor_diffusion_single_step(
+    *,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: icon_grid_.IconGrid,
+    backend: gtx_typing.Backend | None,
+    date: str,
+    experiment: definitions.Experiment,
+) -> None:
+    tmx_config = experiment.config.tmx
+    assert tmx_config is not None
+    setup = _setup(
+        data_provider=data_provider,
+        grid_savepoint=grid_savepoint,
+        metrics_savepoint=metrics_savepoint,
+        interpolation_savepoint=interpolation_savepoint,
+        icon_grid=icon_grid,
+        backend=backend,
+        date=date,
+        config=tmx_config,
+    )
+    exit_savepoint = data_provider.from_savepoint_tmx_hydro_exit(date=date)
+
+    setup.component.run_hydrometeor_diffusion(
+        input_state=setup.input_state,
+        surface_flux_state=setup.surface_flux_state,
+        diagnostic_state=setup.diagnostic_state,
+        tendency_state=setup.tendency_state,
+        new_state=setup.new_state,
+        # ICON runs tmx with the model time step (`init_tmx`), `dt_vdf` only sets how
+        # often tmx is computed
+        dtime=experiment.config.driver.dtime.total_seconds(),
+    )
+
+    # (computed, reference, name, atol, rtol), chosen as described in
+    # `assert_tmx_exit_fields`
+    fields = (
+        # measured atol=3.5e-20, rtol=inf
+        (setup.tendency_state.tend_qv, exit_savepoint.tend_qv(), "tend_qv", 4.0e-20, 0.0),
+        # measured atol=3.6e-21, rtol=3.2e-5
+        (setup.tendency_state.tend_qc, exit_savepoint.tend_qc(), "tend_qc", 4.0e-21, 0.0),
+        # measured atol=1.8e-22, rtol=6.1e-11
+        (setup.tendency_state.tend_qi, exit_savepoint.tend_qi(), "tend_qi", 0.0, 7.0e-11),
+        # measured atol=1.0e-17, rtol=6.6e-16
+        (setup.new_state.qv, exit_savepoint.qv_new(), "qv_new", 0.0, 8.0e-16),
+        # measured atol=1.1e-18, rtol=5.4e-13
+        (setup.new_state.qc, exit_savepoint.qc_new(), "qc_new", 0.0, 6.0e-13),
+        # measured atol=5.4e-20, rtol=1.7e-15
+        (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new", 0.0, 2.0e-15),
+    )
+    for actual, desired, name, atol, rtol in fields:
+        test_utils.assert_dallclose(
+            actual.asnumpy(), desired.asnumpy(), atol=atol, rtol=rtol, err_msg=name
+        )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment_description, date",
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
+)
+def test_tmx_run_temperature_diffusion_single_step(
+    *,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: icon_grid_.IconGrid,
+    backend: gtx_typing.Backend | None,
+    date: str,
+    experiment: definitions.Experiment,
+) -> None:
+    tmx_config = experiment.config.tmx
+    assert tmx_config is not None
+    setup = _setup(
+        data_provider=data_provider,
+        grid_savepoint=grid_savepoint,
+        metrics_savepoint=metrics_savepoint,
+        interpolation_savepoint=interpolation_savepoint,
+        icon_grid=icon_grid,
+        backend=backend,
+        date=date,
+        config=tmx_config,
+    )
+    hydro_exit_savepoint = data_provider.from_savepoint_tmx_hydro_exit(date=date)
+    exit_savepoint = data_provider.from_savepoint_tmx_temperature_exit(date=date)
+    new_state = dataclasses.replace(
+        setup.new_state,
+        qv=hydro_exit_savepoint.qv_new(),
+        qc=hydro_exit_savepoint.qc_new(),
+        qi=hydro_exit_savepoint.qi_new(),
+    )
+
+    setup.component.run_temperature_diffusion(
+        input_state=setup.input_state,
+        surface_flux_state=setup.surface_flux_state,
+        diagnostic_state=setup.diagnostic_state,
+        tendency_state=setup.tendency_state,
+        new_state=new_state,
+        dtime=experiment.config.driver.dtime.total_seconds(),
+    )
+
+    # (computed, reference, name, atol, rtol), chosen as described in
+    # `assert_tmx_exit_fields`
+    fields = (
+        # measured atol=8.7e-11, rtol=4.7e-16
+        (setup.component.energy, exit_savepoint.energy(), "energy", 0.0, 6.0e-16),
+        # measured atol=2.8e-13, rtol=1.1e-15
+        (new_state.temperature, exit_savepoint.ta_new(), "ta_new", 0.0, 2.0e-15),
+        # measured atol=9.5e-16, rtol=inf
+        (setup.tendency_state.tend_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15, 0.0),
+    )
+    for actual, desired, name, atol, rtol in fields:
+        test_utils.assert_dallclose(
+            actual.asnumpy(), desired.asnumpy(), atol=atol, rtol=rtol, err_msg=name
+        )

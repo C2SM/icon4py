@@ -8,8 +8,10 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import pathlib
+import typing
 import urllib.parse
 
 import gt4py.next.typing as gtx_typing
@@ -72,12 +74,6 @@ def get_grid_archive_url(root_url: str, grid: test_defs.GridDescription) -> str:
     return f"{root_url}/{urllib.parse.quote(filepath)}"
 
 
-def get_muphys_archive_url(root_url: str, experiment_type: str, experiment_name: str) -> str:
-    """Build a download URL for a muphys archive from root URL."""
-    filepath = f"{test_defs.MUPHYS_DATA_DIR}/{experiment_type}/{experiment_name}.tar.gz"
-    return f"{root_url}/{urllib.parse.quote(filepath)}"
-
-
 def get_path_for_experiment(
     experiment_description: test_defs.ExperimentDescription,
     process_props: decomposition.ProcessProperties,
@@ -102,6 +98,18 @@ def get_datapath_for_experiment(
         process_props,
     )
     return experiment_path.joinpath(test_defs.SERIALIZED_DATA_SUBDIR)
+
+
+def load_fortran_dict(
+    *,
+    experiment_description: test_defs.ExperimentDescription,
+    process_props: decomposition.ProcessProperties,
+    fname: str,
+) -> dict[str, typing.Any]:
+    """Load one of the converted namelist dicts of an experiment."""
+    experiment_path = get_path_for_experiment(experiment_description, process_props)
+    with (experiment_path / fname).open() as f:
+        return json.load(f)
 
 
 def create_icon_serial_data_provider(
@@ -137,4 +145,4 @@ def create_experiment_configuration(
     processor_props: decomposition.ProcessProperties,
 ) -> driver_config.ExperimentConfig:
     experiment_path = get_path_for_experiment(experiment_description, processor_props)
-    return driver_config.read_experiment_config_from_fortran(experiment_path)
+    return driver_config.read_experiment_config_from_yaml(experiment_path / "config.yml")

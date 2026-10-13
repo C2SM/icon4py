@@ -15,9 +15,7 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx as tmx_module
-from icon4py.model.common import model_backends
-from icon4py.model.common.config import config_io
+from icon4py.model.common import model_backends, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import (
@@ -43,18 +41,18 @@ def test_tmx_plumbing() -> None:
 # Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends
 _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
     test_defs.Experiments.JW: {
-        "vn": (5.3e-7, 0.0),
-        "w": (8e-9, 0.0),
-        "exner": (4.5e-11, 5.5e-11),
-        "theta_v": (5.5e-8, 1.3e-10),
-        "rho": (1.5e-10, 2.2e-10),
+        "vn": (5.3e-7 if test_utils.wp_is_dp else 0.00015, 0.0),
+        "w": (8e-9 if test_utils.wp_is_dp else 4e-5, 0.0),
+        "exner": (4.5e-11, 5.5e-11 if test_utils.wp_is_dp else 5e-7),
+        "theta_v": (5.5e-8, 1.3e-10 if test_utils.wp_is_dp else 2e-6),
+        "rho": (1.5e-10, 2.2e-10 if test_utils.wp_is_dp else 2e-6),
     },
     test_defs.Experiments.GAUSS3D: {
-        "vn": (4.1e-13, 0.0),
-        "w": (8.1e-14, 0.0),
-        "exner": (1.3e-10, 1.3e-10),
-        "theta_v": (9.3e-8, 3.1e-10),
-        "rho": (1.8e-15, 3.7e-15),
+        "vn": (4.1e-13 if test_utils.wp_is_dp else 0.0007, 0.0),
+        "w": (8.1e-14 if test_utils.wp_is_dp else 8e-5, 0.0),
+        "exner": (1.3e-10, 1.3e-10 if test_utils.wp_is_dp else 2e-6),
+        "theta_v": (9.3e-8, 3.1e-10 if test_utils.wp_is_dp else 1.2e-6),
+        "rho": (1.8e-15, 3.7e-15 if test_utils.wp_is_dp else 4e-6),
     },
     test_defs.Experiments.MCH_CH_R04B09: {
         "vn": (3.5e-3, 0.0),
@@ -68,16 +66,16 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
     # (vn 5.5e-7, w 8.4e-9, exner 5.5e-4, theta_v rel 1.4e-3, qv 5.2e-5, qc 5.0e-5,
     # qi 2.9e-5, qr 1.5e-13, rho 1.6e-10, qs/qg bitwise exact).
     test_defs.Experiments.EXCLAIM_APE_AES: {
-        "vn": (1.2e-6, 0.0),
-        "w": (2e-8, 0.0),
-        "rho": (9e-10, 0.0),
-        "exner": (1.2e-3, 0.0),
-        "theta_v": (0.0, 3e-3),
-        "qv": (1.2e-4, 0.0),
-        "qc": (1.2e-4, 0.0),
-        "qr": (5e-13, 0.0),
+        "vn": (6e-7 if test_utils.wp_is_dp else 2e-4, 0.0),
+        "w": (1e-8 if test_utils.wp_is_dp else 4e-5, 0.0),
+        "rho": (9e-10 if test_utils.wp_is_dp else 2e-06, 0.0),
+        "exner": (1e-8 if test_utils.wp_is_dp else 4e-7, 0.0),
+        "theta_v": (0.0, 3e-8 if test_utils.wp_is_dp else 2e-6),
+        "qv": (1e-8 if test_utils.wp_is_dp else 2e-7, 0.0),
+        "qc": (1e-10 if test_utils.wp_is_dp else 8e-8, 0.0),
+        "qr": (1e-10 if test_utils.wp_is_dp else 5e-8, 0.0),
         "qs": (1e-10, 0.0),
-        "qi": (6e-5, 0.0),
+        "qi": (1e-10 if test_utils.wp_is_dp else 8e-9, 0.0),
         "qg": (1e-10, 0.0),
     },
 }
@@ -104,6 +102,7 @@ def timeloop_diffusion_linit_exit() -> bool:
 @pytest.mark.datatest
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "experiment_description, timeloop_date_init, timeloop_date_exit, step_date_exit",
     [
@@ -160,17 +159,10 @@ def test_driver(
     physics + limited-area nudging after the dynamics, which the driver does not (see
     the comment in the body). Per-field tolerances live in ``_TOLERANCES``.
 
-    EXCLAIM_APE_AES, as of the **v08** reference, runs graupel AND vdf/tmx — vn and w
-    are now actively written by the physics (tmx momentum coupling), unlike the
-    muphys-only v06 era. Tolerances measured 2026-08-20 on v08 under the parallel
-    two-layer coupling (see ``_TOLERANCES``); the residuals bundle the remaining
-    zero-surface-flux seam, the parallel-vs-sequential splitting difference vs the
-    ICON reference, and the clipping / vertical-extent items below — together they
-    stay at the 1e-3-relative level (theta_v) or far below.
-
-    muphys: runs ``MuphysScheme.AES_GRAUPEL`` -- the port of the exact ICON
-    formulation that generated the reference. The tracer comparison carries
-    residuals from gaps not yet ported:
+    muphys (EXCLAIM_APE_AES): runs the aes-graupel scheme -- the port of the exact
+    ICON formulation that generated the reference. Graupel is the only *physics*
+    parameterization active, so vn/w/rho/exner/theta_v compare tightly; the tracer
+    comparison carries residuals from gaps not yet ported:
 
     - exner / theta_v: recomputed via the exact EOS in ``scatter_to_prognostic``, mirroring
       ICON's phy2dyn coupling (mo_interface_iconam_aes.f90). Measured on v6: exner ~3e-9
@@ -184,19 +176,22 @@ def test_driver(
     - vertical extent: ICON runs graupel on jks_cloudy..nlev; muphys runs the full column.
 
     The muphys granule itself is validated in isolation against the aes-graupel savepoints
-    in test_muphys_datatest.py.
+    in test_muphys_datatest.py. EXCLAIM_APE_AES is currently xfailed, see the body.
     """
+    if experiment_description == test_defs.Experiments.EXCLAIM_APE_AES:
+        # TODO(jcanton): the v08 archive was generated with turbulent mixing switched on
+        # (aes_vdf_config(1)%use_tmx = .TRUE.), unlike v07, so its trajectory diverges
+        # from a driver run that has no turbulence at all: vn drifts by ~1e-1 over the
+        # time step. This branch only ports the tmx granule; PR #1360 plugs it into the
+        # driver, at which point this case validates again.
+        pytest.xfail("Driver does not run tmx yet, which the v08 reference includes (PR #1360)")
+
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_experiment_config_from_fortran(config_file_path)
-    if experiment_description is test_defs.Experiments.EXCLAIM_APE_AES:
-        # the production enablement path: the Fortran namelist reader itself switches
-        # the physics on — muphys from aes_phy_nml, tmx from aes_vdf_nml
-        assert config.muphys is not None, "muphys must be auto-enabled for APE_aes"
-        assert config.tmx is not None, "tmx must be auto-enabled from aes_vdf_nml for APE_aes"
+    config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "ci_driver_output",
