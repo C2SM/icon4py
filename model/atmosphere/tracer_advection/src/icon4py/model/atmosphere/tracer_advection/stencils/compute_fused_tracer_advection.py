@@ -202,6 +202,88 @@ def compute_ppm4gpu_flux(
 
 
 @gtx.field_operator
+def _compute_vertical_tracer_flux(
+    p_cc: fa.CellKField[ta.wpfloat],
+    p_cellmass_now: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
+    k: fa.KHalfField[gtx.int32],
+    slev: gtx.int32,
+    slevp1_ti: gtx.int32,
+    elev: gtx.int32,
+    wp_eps: ta.wpfloat,
+    p_dtime: ta.wpfloat,
+    itype_vlimit: gtx.int32,
+    ivadv_tracer: gtx.int32,
+) -> fa.CellKHalfField[ta.wpfloat]:
+    return (
+        _compute_vertical_tracer_flux_upwind(
+            p_cc=p_cc,
+            p_mflx_contra_v=p_mflx_contra_v,
+        )
+        if (ivadv_tracer == VerticalAdvectionType.FIRST_ORDER_UPWIND)
+        else (
+            _compute_ppm4gpu_flux(
+                p_cc=p_cc,
+                p_cellmass_now=p_cellmass_now,
+                p_mflx_contra_v=p_mflx_contra_v,
+                p_cellhgt_mc_now=p_cellhgt_mc_now,
+                k=k,
+                slev=slev,
+                slevp1_ti=slevp1_ti,
+                elev=elev,
+                wp_eps=wp_eps,
+                p_dtime=p_dtime,
+                itype_vlimit=itype_vlimit,
+            )
+            if (ivadv_tracer == VerticalAdvectionType.THIRD_ORDER_PPM)
+            else broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim))
+        )
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_vertical_tracer_flux(
+    p_upflux: fa.CellKHalfField[ta.wpfloat],
+    p_cc: fa.CellKField[ta.wpfloat],
+    p_cellmass_now: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
+    k: fa.KHalfField[gtx.int32],
+    slev: gtx.int32,
+    slevp1_ti: gtx.int32,
+    elev: gtx.int32,
+    wp_eps: ta.wpfloat,
+    p_dtime: ta.wpfloat,
+    itype_vlimit: gtx.int32,
+    ivadv_tracer: gtx.int32,
+    start_cell: gtx.int32,
+    end_cell: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _compute_vertical_tracer_flux(
+        p_cc=p_cc,
+        p_cellmass_now=p_cellmass_now,
+        p_mflx_contra_v=p_mflx_contra_v,
+        p_cellhgt_mc_now=p_cellhgt_mc_now,
+        k=k,
+        slev=slev,
+        slevp1_ti=slevp1_ti,
+        elev=elev,
+        wp_eps=wp_eps,
+        p_dtime=p_dtime,
+        itype_vlimit=itype_vlimit,
+        ivadv_tracer=ivadv_tracer,
+        out=p_upflux,
+        domain={
+            dims.CellDim: (start_cell, end_cell),
+            dims.KHalfDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
 def _compute_2nd_order_miura_horizontal_flux(
     p_cc: fa.CellKField[ta.wpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
@@ -278,12 +360,11 @@ def _compute_tracer_advection_before_horizontal_limiter(
     fa.EdgeKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    # p_mflx_tracer_v is pre-computed by the caller via compute_ppm4gpu_flux
-    # (zeros for ivadv_tracer != 3 or odd timestep; PPM flux otherwise).
-    # It is NOT re-computed here to avoid fusing the large _compute_ppm4gpu_flux
-    # kernel (which uses concat_where on KHalfDim with fractional K-shifts) into
-    # this already-large field_operator, which causes CUDA shared-memory overflow
-    # on aarch64/Santis.
+    # p_mflx_tracer_v is pre-computed by the caller via compute_vertical_tracer_flux
+    # (zeros for no advection or odd timesteps; upwind or PPM flux otherwise).
+    # It is NOT re-computed here to avoid fusing the large PPM kernel (which uses
+    # concat_where on KHalfDim with fractional K-shifts) into this already-large
+    # field_operator, which causes CUDA shared-memory overflow on aarch64/Santis.
 
     rhodz_ast2 = _apply_density_increment(
         rhodz_in=rhodz_now if do_vertical_first else rhodz_new,

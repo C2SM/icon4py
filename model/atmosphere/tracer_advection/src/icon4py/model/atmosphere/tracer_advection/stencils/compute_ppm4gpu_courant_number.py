@@ -8,6 +8,7 @@
 
 import gt4py.next as gtx
 from gt4py.next import abs, where  # noqa: A004
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import wpfloat
@@ -33,44 +34,52 @@ def _compute_courant_number_below(
     in_bounds_p2 = k_half <= nlev - 3
     in_bounds_p3 = k_half <= nlev - 4
 
-    mass_gt_cellmass_p0 = where(
-        z_mass_pos & in_bounds_p0, z_mass >= p_cellmass_now(dims.KHalfDim + 0.5), False
+    p_cellmass_p0 = concat_where(
+        dims.KHalfDim <= nlev - 1, p_cellmass_now(dims.KHalfDim + 0.5), wpfloat(0.0)
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p0, p_cellmass_now(dims.KHalfDim + 0.5), wpfloat(0.0))
+    p_cellmass_p1 = concat_where(
+        dims.KHalfDim <= nlev - 2, p_cellmass_now(dims.KHalfDim + 1.5), wpfloat(0.0)
+    )
+    p_cellmass_p2 = concat_where(
+        dims.KHalfDim <= nlev - 3, p_cellmass_now(dims.KHalfDim + 2.5), wpfloat(0.0)
+    )
+    p_cellmass_p3 = concat_where(
+        dims.KHalfDim <= nlev - 4, p_cellmass_now(dims.KHalfDim + 3.5), wpfloat(0.0)
+    )
+    p_cellmass_p4 = concat_where(
+        dims.KHalfDim <= nlev - 4, p_cellmass_now(dims.KHalfDim + 4.5), wpfloat(0.0)
+    )
+
+    mass_gt_cellmass_p0 = where(z_mass_pos & in_bounds_p0, z_mass >= p_cellmass_p0, False)
+    z_mass = z_mass - where(mass_gt_cellmass_p0, p_cellmass_p0, wpfloat(0.0))
 
     mass_gt_cellmass_p1 = mass_gt_cellmass_p0 & where(
-        z_mass_pos & in_bounds_p1, z_mass >= p_cellmass_now(dims.KHalfDim + 1.5), False
+        z_mass_pos & in_bounds_p1, z_mass >= p_cellmass_p1, False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p1, p_cellmass_now(dims.KHalfDim + 1.5), wpfloat(0.0))
+    z_mass = z_mass - where(mass_gt_cellmass_p1, p_cellmass_p1, wpfloat(0.0))
 
     mass_gt_cellmass_p2 = mass_gt_cellmass_p1 & where(
-        z_mass_pos & in_bounds_p2, z_mass >= p_cellmass_now(dims.KHalfDim + 2.5), False
+        z_mass_pos & in_bounds_p2, z_mass >= p_cellmass_p2, False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p2, p_cellmass_now(dims.KHalfDim + 2.5), wpfloat(0.0))
+    z_mass = z_mass - where(mass_gt_cellmass_p2, p_cellmass_p2, wpfloat(0.0))
 
     mass_gt_cellmass_p3 = mass_gt_cellmass_p2 & where(
-        z_mass_pos & in_bounds_p3, z_mass >= p_cellmass_now(dims.KHalfDim + 3.5), False
+        z_mass_pos & in_bounds_p3, z_mass >= p_cellmass_p3, False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p3, p_cellmass_now(dims.KHalfDim + 3.5), wpfloat(0.0))
+    z_mass = z_mass - where(mass_gt_cellmass_p3, p_cellmass_p3, wpfloat(0.0))
 
     z_cfl = z_cfl + where(mass_gt_cellmass_p0, wpfloat(1.0), wpfloat(0.0))
     z_cfl = z_cfl + where(mass_gt_cellmass_p1, wpfloat(1.0), wpfloat(0.0))
     z_cfl = z_cfl + where(mass_gt_cellmass_p2, wpfloat(1.0), wpfloat(0.0))
     z_cfl = z_cfl + where(mass_gt_cellmass_p3, wpfloat(1.0), wpfloat(0.0))
 
-    p_cellmass_now_jks = p_cellmass_now(dims.KHalfDim + 0.5)
-    p_cellmass_now_jks = where(
-        mass_gt_cellmass_p0, p_cellmass_now(dims.KHalfDim + 1.5), p_cellmass_now_jks
+    p_cellmass_now_jks = concat_where(
+        dims.KHalfDim < nlev + 1, p_cellmass_now(dims.KHalfDim + 0.5), wpfloat(0.0)
     )
-    p_cellmass_now_jks = where(
-        mass_gt_cellmass_p1, p_cellmass_now(dims.KHalfDim + 2.5), p_cellmass_now_jks
-    )
-    p_cellmass_now_jks = where(
-        mass_gt_cellmass_p2, p_cellmass_now(dims.KHalfDim + 3.5), p_cellmass_now_jks
-    )
-    p_cellmass_now_jks = where(
-        mass_gt_cellmass_p3, p_cellmass_now(dims.KHalfDim + 4.5), p_cellmass_now_jks
-    )
+    p_cellmass_now_jks = where(mass_gt_cellmass_p0, p_cellmass_p1, p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_p1, p_cellmass_p2, p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_p2, p_cellmass_p3, p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_p3, p_cellmass_p4, p_cellmass_now_jks)
 
     z_cflfrac = where(z_mass_pos, z_mass / p_cellmass_now_jks, wpfloat(0.0))
     z_cfl = z_cfl + where(z_cflfrac < wpfloat(1.0), z_cflfrac, wpfloat(1.0) - wp_eps)
@@ -94,39 +103,47 @@ def _compute_courant_number_above(
     in_bounds_m2 = k_half >= slevp1_ti + 3
     in_bounds_m3 = k_half >= slevp1_ti + 4
 
-    mass_gt_cellmass_m0 = where(
-        z_mass_neg & in_bounds_m0, abs(z_mass) >= p_cellmass_now(dims.KHalfDim - 0.5), False
+    p_cellmass_m0 = concat_where(
+        dims.KHalfDim >= slevp1_ti + 1, p_cellmass_now(dims.KHalfDim - 0.5), wpfloat(0.0)
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m0, p_cellmass_now(dims.KHalfDim - 0.5), wpfloat(0.0))
+    p_cellmass_m1 = concat_where(
+        dims.KHalfDim >= slevp1_ti + 2, p_cellmass_now(dims.KHalfDim - 1.5), wpfloat(0.0)
+    )
+    p_cellmass_m2 = concat_where(
+        dims.KHalfDim >= slevp1_ti + 3, p_cellmass_now(dims.KHalfDim - 2.5), wpfloat(0.0)
+    )
+    p_cellmass_m3 = concat_where(
+        dims.KHalfDim >= slevp1_ti + 4, p_cellmass_now(dims.KHalfDim - 3.5), wpfloat(0.0)
+    )
+    p_cellmass_m4 = concat_where(
+        dims.KHalfDim >= slevp1_ti + 4, p_cellmass_now(dims.KHalfDim - 4.5), wpfloat(0.0)
+    )
+
+    mass_gt_cellmass_m0 = where(z_mass_neg & in_bounds_m0, abs(z_mass) >= p_cellmass_m0, False)
+    z_mass = z_mass + where(mass_gt_cellmass_m0, p_cellmass_m0, wpfloat(0.0))
 
     mass_gt_cellmass_m1 = mass_gt_cellmass_m0 & where(
-        z_mass_neg & in_bounds_m1, abs(z_mass) >= p_cellmass_now(dims.KHalfDim - 1.5), False
+        z_mass_neg & in_bounds_m1, abs(z_mass) >= p_cellmass_m1, False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m1, p_cellmass_now(dims.KHalfDim - 1.5), wpfloat(0.0))
+    z_mass = z_mass + where(mass_gt_cellmass_m1, p_cellmass_m1, wpfloat(0.0))
 
     mass_gt_cellmass_m2 = mass_gt_cellmass_m1 & where(
-        z_mass_neg & in_bounds_m2, abs(z_mass) >= p_cellmass_now(dims.KHalfDim - 2.5), False
+        z_mass_neg & in_bounds_m2, abs(z_mass) >= p_cellmass_m2, False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m2, p_cellmass_now(dims.KHalfDim - 2.5), wpfloat(0.0))
+    z_mass = z_mass + where(mass_gt_cellmass_m2, p_cellmass_m2, wpfloat(0.0))
 
     mass_gt_cellmass_m3 = mass_gt_cellmass_m2 & where(
-        z_mass_neg & in_bounds_m3, abs(z_mass) >= p_cellmass_now(dims.KHalfDim - 3.5), False
+        z_mass_neg & in_bounds_m3, abs(z_mass) >= p_cellmass_m3, False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m3, p_cellmass_now(dims.KHalfDim - 3.5), wpfloat(0.0))
+    z_mass = z_mass + where(mass_gt_cellmass_m3, p_cellmass_m3, wpfloat(0.0))
 
-    p_cellmass_now_jks = p_cellmass_now(dims.KHalfDim - 0.5)
-    p_cellmass_now_jks = where(
-        mass_gt_cellmass_m0, p_cellmass_now(dims.KHalfDim - 1.5), p_cellmass_now_jks
+    p_cellmass_now_jks = concat_where(
+        dims.KHalfDim > 0, p_cellmass_now(dims.KHalfDim - 0.5), wpfloat(0.0)
     )
-    p_cellmass_now_jks = where(
-        mass_gt_cellmass_m1, p_cellmass_now(dims.KHalfDim - 2.5), p_cellmass_now_jks
-    )
-    p_cellmass_now_jks = where(
-        mass_gt_cellmass_m2, p_cellmass_now(dims.KHalfDim - 3.5), p_cellmass_now_jks
-    )
-    p_cellmass_now_jks = where(
-        mass_gt_cellmass_m3, p_cellmass_now(dims.KHalfDim - 4.5), p_cellmass_now_jks
-    )
+    p_cellmass_now_jks = where(mass_gt_cellmass_m0, p_cellmass_m1, p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_m1, p_cellmass_m2, p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_m2, p_cellmass_m3, p_cellmass_now_jks)
+    p_cellmass_now_jks = where(mass_gt_cellmass_m3, p_cellmass_m4, p_cellmass_now_jks)
 
     z_cfl = z_cfl - where(mass_gt_cellmass_m0, wpfloat(1.0), wpfloat(0.0))
     z_cfl = z_cfl - where(mass_gt_cellmass_m1, wpfloat(1.0), wpfloat(0.0))
