@@ -12,7 +12,6 @@ import dataclasses
 import functools
 import logging
 import math
-from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -23,7 +22,6 @@ from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
-    type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
@@ -35,7 +33,10 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.interpolation.stencils import interpolate_cell_field_to_edge
+from icon4py.model.common.interpolation.stencils import (
+    interpolate_cell_field_to_edge,
+    interpolate_cell_field_to_vertex,
+)
 from icon4py.model.common.math import utils as math_utils, vertical_operations as vertical_ops
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
@@ -47,7 +48,7 @@ from icon4py.model.common.metrics import (
     reference_atmosphere as ra,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -123,23 +124,6 @@ class MetricsConfig:
                 f"Only rayleigh_type = KLEMP is implemented, got {self.rayleigh_type}."
             )
 
-    @classmethod
-    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> MetricsConfig:
-        nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
-        return cls(
-            exner_expol=nonhydrostatic_nml["exner_expol"],
-            vwind_offctr=nonhydrostatic_nml["vwind_offctr"],
-            thslp_zdiffu=nonhydrostatic_nml["thslp_zdiffu"],
-            thhgtd_zdiffu=nonhydrostatic_nml["thhgtd_zdiffu"],
-            rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
-            rayleigh_coeff=fortran_config.list_to_value(nonhydrostatic_nml["rayleigh_coeff"]),
-            divdamp_trans_start=nonhydrostatic_nml["divdamp_trans_start"],
-            divdamp_trans_end=nonhydrostatic_nml["divdamp_trans_end"],
-            divdamp_type=nonhydrostatic_nml["divdamp_type"],
-            igradp_method=nonhydrostatic_nml["igradp_method"],
-            **overrides,
-        )
-
 
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
@@ -149,7 +133,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_grid: v_grid.VerticalGrid,
         decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        topography: fa.CellField[ta.wpfloat],
+        topography: fa.CellField[gtx.float64],
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
@@ -173,8 +157,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         log.debug(f"using array_ns {self._xp} ")
         self._config = config
-        self._vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0].item()
-        self._damping_height = vertical_grid.config.rayleigh_damping_height
+        self._vct_a_1 = self._vertical_grid.vct_a.ndarray[0].item()
+        self._damping_height = gtx.float64(vertical_grid.config.rayleigh_damping_height)
 
         k_index = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=self._allocator
@@ -193,11 +177,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
 
         e_refin_ctrl = self._grid.refinement_control[dims.EdgeDim]
+
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 fields={
                     "topography": topography,
-                    "vct_a": self._vertical_grid.interface_physical_height,
+                    "vct_a": self._vertical_grid.vct_a,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
@@ -312,7 +297,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(ddqz_z_full_and_inverse)
 
         ddqz_full_on_edges = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(
                 self._backend
             ),
             deps={"in_field": attrs.DDQZ_Z_FULL, "coeff": interpolation_attributes.C_LIN_E},
@@ -414,14 +399,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "rho_ref_mc": attrs.RHO_REF_MC,
             },
             params={
-                "p0ref": constants.REFERENCE_PRESSURE,
-                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
-                "grav": constants.GRAV,
-                "cpd": constants.CPD,
-                "rd": constants.RD,
-                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
-                "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
-                "del_t_bg": constants.DELTA_TEMPERATURE,
+                "p0ref": gtx.float64(constants.REFERENCE_PRESSURE),
+                "p0sl_bg": gtx.float64(constants.SEA_LEVEL_PRESSURE),
+                "grav": gtx.float64(constants.GRAV),
+                "cpd": gtx.float64(constants.CPD),
+                "rd": gtx.float64(constants.RD),
+                "h_scal_bg": gtx.float64(constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE),
+                "t0sl_bg": gtx.float64(constants.SEA_LEVEL_TEMPERATURE),
+                "del_t_bg": gtx.float64(constants.DELTA_TEMPERATURE),
             },
             do_exchange=False,
         )
@@ -445,14 +430,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "theta_ref_me": attrs.THETA_REF_ME,
             },
             params={
-                "p0ref": constants.REFERENCE_PRESSURE,
-                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
-                "grav": constants.GRAV,
-                "cpd": constants.CPD,
-                "rd": constants.RD,
-                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
-                "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
-                "del_t_bg": constants.DELTA_TEMPERATURE,
+                "p0ref": gtx.float64(constants.REFERENCE_PRESSURE),
+                "p0sl_bg": gtx.float64(constants.SEA_LEVEL_PRESSURE),
+                "grav": gtx.float64(constants.GRAV),
+                "cpd": gtx.float64(constants.CPD),
+                "rd": gtx.float64(constants.RD),
+                "h_scal_bg": gtx.float64(constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE),
+                "t0sl_bg": gtx.float64(constants.SEA_LEVEL_TEMPERATURE),
+                "del_t_bg": gtx.float64(constants.DELTA_TEMPERATURE),
             },
             do_exchange=True,
         )
@@ -478,15 +463,15 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "d_exner_dz_ref_ic": attrs.D_EXNER_DZ_REF_IC,
             },
             params={
-                "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
-                "del_t_bg": constants.DELTA_TEMPERATURE,
-                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
-                "grav": constants.GRAV,
-                "rd": constants.RD,
-                "cpd": constants.CPD,
-                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
-                "rd_o_cpd": constants.RD_O_CPD,
-                "p0ref": constants.REFERENCE_PRESSURE,
+                "t0sl_bg": gtx.float64(constants.SEA_LEVEL_TEMPERATURE),
+                "del_t_bg": gtx.float64(constants.DELTA_TEMPERATURE),
+                "h_scal_bg": gtx.float64(constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE),
+                "grav": gtx.float64(constants.GRAV),
+                "rd": gtx.float64(constants.RD),
+                "cpd": gtx.float64(constants.CPD),
+                "p0sl_bg": gtx.float64(constants.SEA_LEVEL_PRESSURE),
+                "rd_o_cpd": gtx.float64(constants.RD_O_CPD),
+                "p0ref": gtx.float64(constants.REFERENCE_PRESSURE),
             },
             do_exchange=False,
         )
@@ -515,10 +500,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 attrs.D2DEXDZ2_FAC2_MC: attrs.D2DEXDZ2_FAC2_MC,
             },
             params={
-                "cpd": constants.CPD,
-                "grav": constants.GRAV,
-                "del_t_bg": constants.DEL_T_BG,
-                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
+                "cpd": gtx.float64(constants.CPD),
+                "grav": gtx.float64(constants.GRAV),
+                "del_t_bg": gtx.float64(constants.DEL_T_BG),
+                "h_scal_bg": gtx.float64(constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE),
             },
             do_exchange=False,
         )
@@ -894,7 +879,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_c)
 
         compute_wgtfacq_e = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(
                 self._backend
             ),
             deps={
@@ -929,7 +914,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq1_c)
 
         compute_wgtfacq1_e = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge.with_backend(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(
                 self._backend
             ),
             deps={
@@ -983,6 +968,43 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             do_exchange=False,
         )
         self.register_provider(inv_ddqz_z_full_e)
+
+        inv_ddqz_z_half_e = factory.ProgramFieldProvider(
+            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_on_half_levels_f64.with_backend(
+                self._backend
+            ),
+            deps={"in_field": attrs.INV_DDQZ_Z_HALF, "coeff": interpolation_attributes.C_LIN_E},
+            domain={
+                dims.EdgeDim: (edge_domain(h_grid.Zone.LOCAL), edge_domain(h_grid.Zone.END)),
+                dims.KHalfDim: (
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"out_field": attrs.INV_DDQZ_Z_HALF_E},
+            do_exchange=True,
+        )
+        self.register_provider(inv_ddqz_z_half_e)
+
+        inv_ddqz_z_half_v = factory.ProgramFieldProvider(
+            func=interpolate_cell_field_to_vertex.interpolate_cell_field_to_vertex_on_half_levels_f64.with_backend(
+                self._backend
+            ),
+            deps={
+                "cell_in": attrs.INV_DDQZ_Z_HALF,
+                "c_int": interpolation_attributes.CELL_AW_VERTS,
+            },
+            domain={
+                dims.VertexDim: (vertex_domain(h_grid.Zone.LOCAL), vertex_domain(h_grid.Zone.END)),
+                dims.KHalfDim: (
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"vert_out": attrs.INV_DDQZ_Z_HALF_V},
+            do_exchange=True,
+        )
+        self.register_provider(inv_ddqz_z_half_v)
 
         geopot_agl_ifc = factory.NumpyDataProvider(
             func=mf.compute_geopotential_above_ground_on_half_levels,
@@ -1100,9 +1122,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
 
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
-
-    def get_int32(self, name: str) -> gtx.int32:
-        return gtx.int32(self.get(name, factory.RetrievalType.SCALAR))
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:

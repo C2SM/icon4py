@@ -74,12 +74,6 @@ def get_grid_archive_url(root_url: str, grid: test_defs.GridDescription) -> str:
     return f"{root_url}/{urllib.parse.quote(filepath)}"
 
 
-def get_muphys_archive_url(root_url: str, experiment_type: str, experiment_name: str) -> str:
-    """Build a download URL for a muphys archive from root URL."""
-    filepath = f"{test_defs.MUPHYS_DATA_DIR}/{experiment_type}/{experiment_name}.tar.gz"
-    return f"{root_url}/{urllib.parse.quote(filepath)}"
-
-
 def get_path_for_experiment(
     experiment_description: test_defs.ExperimentDescription,
     process_props: decomposition.ProcessProperties,
@@ -151,4 +145,4 @@ def create_experiment_configuration(
     processor_props: decomposition.ProcessProperties,
 ) -> driver_config.ExperimentConfig:
     experiment_path = get_path_for_experiment(experiment_description, processor_props)
-    return driver_config.read_experiment_config_from_fortran(experiment_path)
+    return driver_config.read_experiment_config_from_yaml(experiment_path / "config.yml")

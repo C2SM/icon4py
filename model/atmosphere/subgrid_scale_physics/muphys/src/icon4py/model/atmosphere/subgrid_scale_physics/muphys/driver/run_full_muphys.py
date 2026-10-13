@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -15,11 +14,8 @@ from collections.abc import Callable
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core import saturation_adjustment
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import (
-    common,
-    run_graupel_only,
-    utils,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_graupel_only, utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import muphys
 from icon4py.model.common import (
     field_type_aliases as fa,
@@ -37,8 +33,8 @@ def _muphys_step_separate(
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
-    q_in: common.Q,
-    q_out: common.Q,
+    q_in: Q,
+    q_out: Q,
     t_out: fa.CellKField[ta.wpfloat],  # Revised temperature
     pflx: fa.CellKField[ta.wpfloat],  # Total precipitation flux
     pr: fa.CellKField[ta.wpfloat],  # Precipitation of rain
@@ -85,7 +81,8 @@ def _muphys_step_separate(
 
 
 def setup_muphys(
-    inp: common.GraupelInput,
+    ncells: int,
+    nlev: int,
     dt: float,
     qnc: float,
     backend: model_backends.BackendLike,
@@ -104,11 +101,11 @@ def setup_muphys(
                 },
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(0),
-                    "horizontal_end": inp.ncells,
+                    "horizontal_end": ncells,
                 },
                 vertical_sizes={
                     "vertical_start": gtx.int32(0),
-                    "vertical_end": gtx.int32(inp.nlev),
+                    "vertical_end": gtx.int32(nlev),
                 },
                 offset_provider={},
             )
@@ -120,9 +117,9 @@ def setup_muphys(
             qnc=qnc,
             backend=backend,
             horizontal_start=0,
-            horizontal_end=inp.ncells,
+            horizontal_end=ncells,
             vertical_start=0,
-            vertical_end=inp.nlev,
+            vertical_end=nlev,
             enable_masking=True,
         )
         with utils.recursion_limit(10**5):  # TODO(havogt): make an option in gt4py?
@@ -131,11 +128,11 @@ def setup_muphys(
                 program=saturation_adjustment.saturation_adjustment,
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(0),
-                    "horizontal_end": inp.ncells,
+                    "horizontal_end": ncells,
                 },
                 vertical_sizes={
                     "vertical_start": gtx.int32(0),
-                    "vertical_end": gtx.int32(inp.nlev),
+                    "vertical_end": gtx.int32(nlev),
                 },
             )
             gtx.wait_for_compilation()

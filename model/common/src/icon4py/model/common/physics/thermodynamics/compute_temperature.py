@@ -27,7 +27,9 @@ def _compute_virtual_temperature_and_temperature(  # noqa: PLR0917 [too-many-pos
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     qsum = qc + qi + qr + qs + qg
     virtual_temperature = theta_v * exner
-    temperature = virtual_temperature / (1.0 + PhysicsConstants.rv_o_rd_minus_1 * qv - qsum)
+    temperature = virtual_temperature / (
+        wpfloat(1.0) + PhysicsConstants.rv_o_rd_minus_1 * qv - qsum
+    )
     return virtual_temperature, temperature
 
 

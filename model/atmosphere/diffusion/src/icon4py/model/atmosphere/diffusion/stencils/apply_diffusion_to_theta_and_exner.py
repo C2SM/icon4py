@@ -48,7 +48,7 @@ def _apply_diffusion_to_theta_and_exner(
         # Only where `zd_diffcoef` is not 0 to avoid loading the other fields.
         # Eventually the toolchain could consider extracting a mask `zd_diffcoef != 0` if we tell gt4py that `zd_diffcoef` is static.
         z_temp = where(
-            zd_diffcoef != 0.0,
+            zd_diffcoef != wpfloat(0.0),
             _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
                 zd_vertoffset,
                 zd_diffcoef,

@@ -123,18 +123,17 @@ def _solve_implicit_vertical_diffusion_on_cells(
     b: fa.CellKField[wpfloat],
     c: fa.CellKField[wpfloat],
     rhs: fa.CellKField[wpfloat],
-    tend: fa.CellKField[wpfloat],
     dtime: wpfloat,
 ) -> fa.CellKField[wpfloat]:
     """
-    tend plus the tendency of one implicit step of the vertical diffusion with matrix (a, b, c).
+    The tendency of one implicit step of the vertical diffusion with matrix (a, b, c).
 
     The system spans the call's vertical domain; a on its first row and c on its last row
     have no effect.
     """
     inv_dtime = wpfloat("1.0") / dtime
     x = _solve_tridiagonal_matrix_on_cells(a, inv_dtime + b, c, var * inv_dtime + rhs)
-    return tend + (x - var) * inv_dtime
+    return (x - var) * inv_dtime
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -144,18 +143,17 @@ def _solve_implicit_vertical_diffusion_on_cell_half_levels(
     b: fa.CellKHalfField[wpfloat],
     c: fa.CellKHalfField[wpfloat],
     rhs: fa.CellKHalfField[wpfloat],
-    tend: fa.CellKHalfField[wpfloat],
     dtime: wpfloat,
 ) -> fa.CellKHalfField[wpfloat]:
     """
-    tend plus the tendency of one implicit step of the vertical diffusion with matrix (a, b, c).
+    The tendency of one implicit step of the vertical diffusion with matrix (a, b, c).
 
     The system spans the call's vertical domain; a on its first row and c on its last row
     have no effect.
     """
     inv_dtime = wpfloat("1.0") / dtime
     x = _solve_tridiagonal_matrix_on_cell_half_levels(a, inv_dtime + b, c, var * inv_dtime + rhs)
-    return tend + (x - var) * inv_dtime
+    return (x - var) * inv_dtime
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -165,15 +163,14 @@ def _solve_implicit_vertical_diffusion_on_edges(
     b: fa.EdgeKField[wpfloat],
     c: fa.EdgeKField[wpfloat],
     rhs: fa.EdgeKField[wpfloat],
-    tend: fa.EdgeKField[wpfloat],
     dtime: wpfloat,
 ) -> fa.EdgeKField[wpfloat]:
     """
-    tend plus the tendency of one implicit step of the vertical diffusion with matrix (a, b, c).
+    The tendency of one implicit step of the vertical diffusion with matrix (a, b, c).
 
     The system spans the call's vertical domain; a on its first row and c on its last row
     have no effect.
     """
     inv_dtime = wpfloat("1.0") / dtime
     x = _solve_tridiagonal_matrix_on_edges(a, inv_dtime + b, c, var * inv_dtime + rhs)
-    return tend + (x - var) * inv_dtime
+    return (x - var) * inv_dtime

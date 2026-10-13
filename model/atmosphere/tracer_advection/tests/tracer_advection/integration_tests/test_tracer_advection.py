@@ -9,7 +9,7 @@
 import pytest
 
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
@@ -55,6 +55,7 @@ from ..utils import (
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
@@ -125,10 +126,10 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
     geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     least_squares_coeffs = compute_lsq_coeffs(
-        cell_center_x=geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy(),
-        cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy(),
-        cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
-        cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
+        cell_center_x=geometry.get_full_precision(geometry_attrs.CELL_CENTER_X).asnumpy(),
+        cell_center_y=geometry.get_full_precision(geometry_attrs.CELL_CENTER_Y).asnumpy(),
+        cell_lat=geometry.get_full_precision(geometry_attrs.CELL_LAT).asnumpy(),
+        cell_lon=geometry.get_full_precision(geometry_attrs.CELL_LON).asnumpy(),
         c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
         cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
         domain_length=geometry.grid.grid_params.domain_length,
@@ -145,7 +146,9 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
         exchange=decomposition.SingleNodeExchange(),
     )
 
-    least_squares_state = construct_least_squares_state(least_squares_coeffs, backend=backend)
+    least_squares_state = construct_least_squares_state(
+        least_squares_coeffs.astype(ta.wpfloat), backend=backend
+    )
 
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
     edge_geometry = grid_savepoint.construct_edge_geometry()
@@ -170,7 +173,7 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
     prep_adv = construct_prep_adv(advection_init_savepoint)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
     p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
-    dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = advection_init_savepoint.dtime()
 
     log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
 

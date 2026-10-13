@@ -40,6 +40,10 @@ class TmxMetricState:
     """Inverse vertical distance between full levels, at cell centers on half levels [1/m]."""
     inv_ddqz_z_full_e: fa.EdgeKField[ta.wpfloat]
     """Inverse layer thickness at edge midpoints on full levels [1/m]."""
+    inv_ddqz_z_half_e: fa.EdgeKHalfField[ta.wpfloat]
+    """Inverse vertical distance between full levels, at edge midpoints on half levels [1/m]."""
+    inv_ddqz_z_half_v: fa.VertexKHalfField[ta.wpfloat]
+    """Inverse vertical distance between full levels, at vertices on half levels [1/m]."""
     wgtfac_c: fa.CellKHalfField[ta.wpfloat]
     """Weighting factor for interpolation from full to half levels at cell centers (half levels)."""
     wgtfac_e: fa.EdgeKHalfField[ta.wpfloat]
@@ -83,6 +87,22 @@ class TmxInterpolationState:
 
 
 @dataclasses.dataclass(frozen=True)
+class TmxSurfaceFluxState:
+    """Surface fluxes provided by the surface scheme (inputs to the atmospheric diffusion)."""
+
+    evapotranspiration: fa.CellField[ta.wpfloat]
+    """Surface evapotranspiration flux (`evspsbl`) [kg/(m^2 s)]."""
+    sensible_heat_flux: fa.CellField[ta.wpfloat]
+    """Surface sensible heat flux (`hfss`) [W/m^2]."""
+    u_stress: fa.CellField[ta.wpfloat]
+    """Zonal surface wind stress (`tauu`) [N/m^2]."""
+    v_stress: fa.CellField[ta.wpfloat]
+    """Meridional surface wind stress (`tauv`) [N/m^2]."""
+    q_snocpymlt: fa.CellField[ta.wpfloat]
+    """Heat used to melt snow on the canopy (`q_snocpymlt`), zero off land [W/m^2]."""
+
+
+@dataclasses.dataclass(frozen=True)
 class TmxInputState:
     """Atmospheric input fields of tmx (``t_vdf_atmo_inputs`` in mo_vdf_atmo_memory.f90)."""
 
@@ -98,8 +118,24 @@ class TmxInputState:
     """Meridional wind (``va``) on full levels [m/s]."""
     w: fa.CellKHalfField[ta.wpfloat]
     """Vertical wind (``wa``) on half levels [m/s]."""
+    qv: fa.CellKField[ta.wpfloat]
+    """Specific humidity on full levels [kg/kg]."""
+    qc: fa.CellKField[ta.wpfloat]
+    """Cloud water mixing ratio on full levels [kg/kg]."""
+    qi: fa.CellKField[ta.wpfloat]
+    """Cloud ice mixing ratio on full levels [kg/kg]."""
+    qr: fa.CellKField[ta.wpfloat]
+    """Rain mixing ratio on full levels [kg/kg]."""
+    qs: fa.CellKField[ta.wpfloat]
+    """Snow mixing ratio on full levels [kg/kg]."""
+    qg: fa.CellKField[ta.wpfloat]
+    """Graupel mixing ratio on full levels [kg/kg]."""
     rho: fa.CellKField[ta.wpfloat]
     """Air density on full levels [kg/m^3]."""
+    air_mass: fa.CellKField[ta.wpfloat]
+    """Air mass per unit area (`mair`) on full levels [kg/m^2]."""
+    cv_air: fa.CellKField[ta.wpfloat]
+    """Isochoric heat capacity of the air per unit area (`cvair`) on full levels [J/(K m^2)]."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -115,6 +151,31 @@ class TmxDiagnosticState:
     """Horizontal wind divergence at cell centers on full levels [1/s]."""
     km_c: fa.CellKField[ta.wpfloat]
     """Turbulent viscosity at cell centers on full levels [kg/(m s)]."""
+    km: fa.CellKField[ta.wpfloat]
+    """
+    Above the lowest level: turbulent viscosity from the half level below [kg/(m s)].
+    At the lowest level: the surface exchange coefficient `km_sfc` [dimensionless], or
+    `km_const` [m^2/s] when `use_km_const=True`.
+    """
+    kh: fa.CellKField[ta.wpfloat]
+    """
+    Above the lowest level: turbulent diffusivity from the half level below [kg/(m s)].
+    At the lowest level: the surface exchange coefficient `kh_sfc` [dimensionless], or
+    `km_const / turb_prandtl` [m^2/s] when `use_km_const=True`.
+    """
+    dissip_ke: fa.CellKField[ta.wpfloat]
+    """Kinetic energy dissipated by the wind diffusion, per layer [W/m^2]."""
+    heating: fa.CellKField[ta.wpfloat]
+    """Turbulent heating, per layer [W/m^2]."""
+    # cell, vertically integrated
+    cptgz_vi: fa.CellField[ta.wpfloat]
+    """Vertical integral of the dry static energy of the updated state [J/m^2]."""
+    dissip_ke_vi: fa.CellField[ta.wpfloat]
+    """Vertical integral of the dissipated kinetic energy [W/m^2]."""
+    int_energy_vi: fa.CellField[ta.wpfloat]
+    """Vertical integral of the internal energy of the updated state [J/m^2]."""
+    tend_int_energy_vi: fa.CellField[ta.wpfloat]
+    """Tendency of the vertically integrated internal energy [W/m^2]."""
     # cell, half levels
     rho_ic: fa.CellKHalfField[ta.wpfloat]
     """Air density at cell centers on half levels [kg/m^3]."""
@@ -166,6 +227,14 @@ class TmxDiagnosticState:
             cptgz=zero_field(dims.CellDim, dims.KDim),
             div_c=zero_field(dims.CellDim, dims.KDim),
             km_c=zero_field(dims.CellDim, dims.KDim),
+            km=zero_field(dims.CellDim, dims.KDim),
+            kh=zero_field(dims.CellDim, dims.KDim),
+            dissip_ke=zero_field(dims.CellDim, dims.KDim),
+            heating=zero_field(dims.CellDim, dims.KDim),
+            cptgz_vi=zero_field(dims.CellDim),
+            dissip_ke_vi=zero_field(dims.CellDim),
+            int_energy_vi=zero_field(dims.CellDim),
+            tend_int_energy_vi=zero_field(dims.CellDim),
             rho_ic=zero_field(dims.CellDim, dims.KHalfDim),
             bruvais=zero_field(dims.CellDim, dims.KHalfDim),
             mech_prod=zero_field(dims.CellDim, dims.KHalfDim),
@@ -182,4 +251,80 @@ class TmxDiagnosticState:
             v_vert=zero_field(dims.VertexDim, dims.KDim),
             w_vert=zero_field(dims.VertexDim, dims.KHalfDim),
             km_iv=zero_field(dims.VertexDim, dims.KHalfDim),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class TmxNewState:
+    """Fields updated by tmx: `new = state + tend * dtime`."""
+
+    temperature: fa.CellKField[ta.wpfloat]
+    """Updated air temperature on full levels [K]."""
+    qv: fa.CellKField[ta.wpfloat]
+    """Updated specific humidity on full levels [kg/kg]."""
+    qc: fa.CellKField[ta.wpfloat]
+    """Updated cloud water mixing ratio on full levels [kg/kg]."""
+    qi: fa.CellKField[ta.wpfloat]
+    """Updated cloud ice mixing ratio on full levels [kg/kg]."""
+    u: fa.CellKField[ta.wpfloat]
+    """Updated zonal wind on full levels [m/s]."""
+    v: fa.CellKField[ta.wpfloat]
+    """Updated meridional wind on full levels [m/s]."""
+    w: fa.CellKHalfField[ta.wpfloat]
+    """Updated vertical wind on half levels [m/s]."""
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
+    ) -> TmxNewState:
+        """Allocate a new state with all fields initialized to zero."""
+        zero_field = functools.partial(
+            data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
+        )
+        return cls(
+            temperature=zero_field(dims.CellDim, dims.KDim),
+            qv=zero_field(dims.CellDim, dims.KDim),
+            qc=zero_field(dims.CellDim, dims.KDim),
+            qi=zero_field(dims.CellDim, dims.KDim),
+            u=zero_field(dims.CellDim, dims.KDim),
+            v=zero_field(dims.CellDim, dims.KDim),
+            w=zero_field(dims.CellDim, dims.KHalfDim),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class TmxTendencyState:
+    """Tendencies computed by tmx."""
+
+    tend_temperature: fa.CellKField[ta.wpfloat]
+    """Air temperature tendency on full levels [K/s]."""
+    tend_qv: fa.CellKField[ta.wpfloat]
+    """Specific humidity tendency on full levels [kg/(kg s)]."""
+    tend_qc: fa.CellKField[ta.wpfloat]
+    """Cloud water mixing ratio tendency on full levels [kg/(kg s)]."""
+    tend_qi: fa.CellKField[ta.wpfloat]
+    """Cloud ice mixing ratio tendency on full levels [kg/(kg s)]."""
+    tend_u: fa.CellKField[ta.wpfloat]
+    """Zonal wind tendency on full levels [m/s^2]."""
+    tend_v: fa.CellKField[ta.wpfloat]
+    """Meridional wind tendency on full levels [m/s^2]."""
+    tend_w: fa.CellKHalfField[ta.wpfloat]
+    """Vertical wind tendency on half levels [m/s^2]."""
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
+    ) -> TmxTendencyState:
+        """Allocate a tendency state with all fields initialized to zero."""
+        zero_field = functools.partial(
+            data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
+        )
+        return cls(
+            tend_temperature=zero_field(dims.CellDim, dims.KDim),
+            tend_qv=zero_field(dims.CellDim, dims.KDim),
+            tend_qc=zero_field(dims.CellDim, dims.KDim),
+            tend_qi=zero_field(dims.CellDim, dims.KDim),
+            tend_u=zero_field(dims.CellDim, dims.KDim),
+            tend_v=zero_field(dims.CellDim, dims.KDim),
+            tend_w=zero_field(dims.CellDim, dims.KHalfDim),
         )
