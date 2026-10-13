@@ -358,8 +358,9 @@ def test_every_field_argument_is_a_view_or_a_converted_copy(monkeypatch, transpo
         np.testing.assert_array_equal(fortran_array, -1 if written else original, where)
         copied.append(where)
 
-    # 115 float fields and 12 integer or bool fields; guards against checking nothing
-    assert len(viewed) + len(copied) == 127
+    # 150 float fields (35 of them solve_nh_substeps_run's) and 12 integer or bool fields; guards
+    # against checking nothing
+    assert len(viewed) + len(copied) == 162
     assert set(copied) == _expected_copies()
 
 
@@ -453,8 +454,9 @@ def test_every_raw_float_array_declares_its_icon_kind():
                 assert hints[name] in icon_kind_aliases, f"{fun.__name__}.{name}: {hints[name]}"
                 raw_float_arrays.append(f"{fun.__name__}.{name}")
 
-    # rbf_vec_coeff_{e,v}, pg_exdist, max_vcfl_size1_array, rbf_vec_coeff_v, zd_{intcoef,diffcoef}
-    assert len(raw_float_arrays) == 7
+    # rbf_vec_coeff_{e,v}, pg_exdist, max_vcfl_size1_array (solve_nh_run and solve_nh_substeps_run),
+    # rbf_vec_coeff_v, zd_{intcoef,diffcoef}
+    assert len(raw_float_arrays) == 8
 
 
 @pytest.mark.single_precision_ready
