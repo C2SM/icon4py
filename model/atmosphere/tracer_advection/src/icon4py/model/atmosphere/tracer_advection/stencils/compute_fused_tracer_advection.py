@@ -14,7 +14,7 @@ that boundary.
 """
 
 import gt4py.next as gtx
-from gt4py.next import broadcast
+from gt4py.next import broadcast, where
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_density_increment import (
@@ -216,6 +216,11 @@ def _compute_vertical_tracer_flux(
     itype_vlimit: gtx.int32,
     ivadv_tracer: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
+    zero_flux = where(
+        k < 0,
+        p_cc(dims.KHalfDim + 0.5),
+        broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim)),
+    )
     return (
         _compute_vertical_tracer_flux_upwind(
             p_cc=p_cc,
@@ -237,7 +242,7 @@ def _compute_vertical_tracer_flux(
                 itype_vlimit=itype_vlimit,
             )
             if (ivadv_tracer == VerticalAdvectionType.THIRD_ORDER_PPM)
-            else broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim))
+            else zero_flux
         )
     )
 
