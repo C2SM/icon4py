@@ -23,6 +23,8 @@ DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on
 INV_DDQZ_Z_FULL: Final[str] = f"inverse_of_{DDQZ_Z_FULL}"
 INV_DDQZ_Z_HALF: Final[str] = f"inverse_of_{DDQZ_Z_HALF}"
 INV_DDQZ_Z_FULL_E: Final[str] = f"inverse_of_{DDQZ_Z_FULL_E}"
+INV_DDQZ_Z_HALF_E: Final[str] = f"{INV_DDQZ_Z_HALF}_on_edges"
+INV_DDQZ_Z_HALF_V: Final[str] = f"{INV_DDQZ_Z_HALF}_on_vertices"
 GEOPOT_AGL_IFC: Final[str] = "geopotential_above_ground_on_interface_levels"
 HEIGHT_ABOVE_GROUND: Final[str] = "height_above_ground"
 SCALING_FACTOR_FOR_3D_DIVDAMP: Final[str] = "scaling_factor_for_3d_divergence_damping"
@@ -75,14 +77,14 @@ CELL_HEIGHT_ON_HALF_LEVEL: Final[str] = "vertical_coordinates_on_half_levels"
 
 
 attrs: dict[str, model.FieldMetaData] = {
-    NFLAT_GRADP: dict(
+    NFLAT_GRADP: model.FieldMetaData(
         standard_name=NFLAT_GRADP,
         long_name="number of flat edges for gradp calculation",
         units="",
         icon_var_name="nflat_gradp",
         dtype=gtx.int32,
     ),
-    Z_MC: dict(
+    Z_MC: model.FieldMetaData(
         standard_name=Z_MC,
         long_name="height",
         units="",
@@ -90,7 +92,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="z_mc",
         dtype=ta.wpfloat,
     ),
-    DDQZ_Z_HALF: dict(
+    DDQZ_Z_HALF: model.FieldMetaData(
         standard_name=DDQZ_Z_HALF,
         long_name="functional_determinant_of_metrics_on_interface_levels",
         units="",
@@ -98,7 +100,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ddqz_z_half",
         dtype=ta.wpfloat,
     ),
-    DDQZ_Z_FULL: dict(
+    DDQZ_Z_FULL: model.FieldMetaData(
         standard_name=DDQZ_Z_FULL,
         long_name="functional determinant of the metrics (is positive), full levels",
         units="",
@@ -106,7 +108,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ddqz_z_full",
         dtype=ta.wpfloat,
     ),
-    DDQZ_Z_FULL_E: dict(
+    DDQZ_Z_FULL_E: model.FieldMetaData(
         standard_name=DDQZ_Z_FULL,
         long_name="functional determinant at full level on edges",
         units="",
@@ -114,7 +116,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ddqz_z_full_e",
         dtype=ta.wpfloat,
     ),
-    INV_DDQZ_Z_FULL: dict(
+    INV_DDQZ_Z_FULL: model.FieldMetaData(
         standard_name=INV_DDQZ_Z_FULL,
         long_name="inv_ddqz_z_full",
         units="",
@@ -122,7 +124,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="inv_ddqz_z_full",
         dtype=ta.wpfloat,
     ),
-    SCALING_FACTOR_FOR_3D_DIVDAMP: dict(
+    SCALING_FACTOR_FOR_3D_DIVDAMP: model.FieldMetaData(
         standard_name=SCALING_FACTOR_FOR_3D_DIVDAMP,
         long_name="Scaling factor for 3D divergence damping",
         units="",
@@ -130,7 +132,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="scalfac_dd3d",
         dtype=ta.wpfloat,
     ),
-    RAYLEIGH_W: dict(
+    RAYLEIGH_W: model.FieldMetaData(
         standard_name=RAYLEIGH_W,
         long_name="rayleigh_w",
         units="",
@@ -138,7 +140,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rayleigh_w",
         dtype=ta.wpfloat,
     ),
-    COEFF1_DWDZ: dict(
+    COEFF1_DWDZ: model.FieldMetaData(
         standard_name=COEFF1_DWDZ,
         long_name="coeff1_dwdz",
         units="",
@@ -146,7 +148,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="coeff1_dwdz",
         dtype=ta.wpfloat,
     ),
-    COEFF2_DWDZ: dict(
+    COEFF2_DWDZ: model.FieldMetaData(
         standard_name=COEFF2_DWDZ,
         long_name="coeff2_dwdz",
         units="",
@@ -154,7 +156,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="coeff2_dwdz",
         dtype=ta.wpfloat,
     ),
-    EXNER_REF_MC: dict(
+    EXNER_REF_MC: model.FieldMetaData(
         standard_name=EXNER_REF_MC,
         long_name="exner_ref_mc",
         units="",
@@ -162,7 +164,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="exner_ref_mc",
         dtype=ta.wpfloat,
     ),
-    THETA_REF_MC: dict(
+    THETA_REF_MC: model.FieldMetaData(
         standard_name=THETA_REF_MC,
         long_name="theta_ref_mc",
         units="",
@@ -170,7 +172,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="theta_ref_mc",
         dtype=ta.wpfloat,
     ),
-    RHO_REF_MC: dict(
+    RHO_REF_MC: model.FieldMetaData(
         standard_name=RHO_REF_MC,
         long_name="rho_ref_mc",
         units="",
@@ -178,7 +180,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rho_ref_mc",
         dtype=ta.wpfloat,
     ),
-    THETA_REF_IC: dict(
+    THETA_REF_IC: model.FieldMetaData(
         standard_name=THETA_REF_IC,
         long_name="theta_ref_ic",
         units="",
@@ -186,7 +188,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="theta_ref_ic",
         dtype=ta.wpfloat,
     ),
-    D_EXNER_DZ_REF_IC: dict(
+    D_EXNER_DZ_REF_IC: model.FieldMetaData(
         standard_name=D_EXNER_DZ_REF_IC,
         long_name="d_exner_dz_ref_ic",
         units="",
@@ -194,7 +196,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="d_exner_dz_ref_ic",
         dtype=ta.wpfloat,
     ),
-    THETA_REF_ME: dict(
+    THETA_REF_ME: model.FieldMetaData(
         standard_name=THETA_REF_ME,
         long_name="theta_ref_me",
         units="",
@@ -202,7 +204,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="theta_ref_me",
         dtype=ta.wpfloat,
     ),
-    RHO_REF_ME: dict(
+    RHO_REF_ME: model.FieldMetaData(
         standard_name=RHO_REF_ME,
         long_name="rho_ref_me",
         units="",
@@ -210,23 +212,23 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rho_ref_me",
         dtype=ta.wpfloat,
     ),
-    D2DEXDZ2_FAC1_MC: dict(
+    D2DEXDZ2_FAC1_MC: model.FieldMetaData(
         standard_name=D2DEXDZ2_FAC1_MC,
         long_name="d2dexdz2_fac1_mc",
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="d2dexdz2_fac1_mc",
-        dtype=ta.wpfloat,
+        dtype=ta.vpfloat,
     ),
-    D2DEXDZ2_FAC2_MC: dict(
+    D2DEXDZ2_FAC2_MC: model.FieldMetaData(
         standard_name=D2DEXDZ2_FAC2_MC,
         long_name="d2dexdz2_fac2_mc",
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="d2dexdz2_fac2_mc",
-        dtype=ta.wpfloat,
+        dtype=ta.vpfloat,
     ),
-    DDXT_Z_HALF_E: dict(
+    DDXT_Z_HALF_E: model.FieldMetaData(
         standard_name=DDXT_Z_HALF_E,
         long_name="ddxt_z_half_e",
         units="",
@@ -234,7 +236,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ddxt_z_half_e",
         dtype=ta.wpfloat,
     ),
-    DDXN_Z_HALF_E: dict(
+    DDXN_Z_HALF_E: model.FieldMetaData(
         standard_name=DDXN_Z_HALF_E,
         long_name="ddxn_z_half_e",
         units="",
@@ -242,7 +244,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ddxn_z_half_e",
         dtype=ta.wpfloat,
     ),
-    DDXN_Z_FULL: dict(
+    DDXN_Z_FULL: model.FieldMetaData(
         standard_name=DDXN_Z_FULL,
         long_name="normal_direction_of_slope",
         units="",
@@ -250,7 +252,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ddxn_z_full",
         dtype=ta.wpfloat,
     ),
-    DDXT_Z_FULL: dict(
+    DDXT_Z_FULL: model.FieldMetaData(
         standard_name="tangential_direction_of_slope",
         long_name="slope of the terrain (tangential direction)",
         units="",
@@ -258,7 +260,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ddxt_z_full",
         dtype=ta.wpfloat,
     ),
-    EXNER_W_IMPLICIT_WEIGHT_PARAMETER: dict(
+    EXNER_W_IMPLICIT_WEIGHT_PARAMETER: model.FieldMetaData(
         standard_name="exner_w_implicit_weight_parameter",
         long_name="implicitness_weight_for_exner_and_w_in_vertical_dycore_solver",
         units="",
@@ -266,7 +268,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="vwind_impl_wgt",
         dtype=ta.wpfloat,
     ),
-    EXNER_W_EXPLICIT_WEIGHT_PARAMETER: dict(
+    EXNER_W_EXPLICIT_WEIGHT_PARAMETER: model.FieldMetaData(
         standard_name="exner_w_explicit_weight_parameter",
         long_name="explicitness_weight_for_exner_and_w_in_vertical_dycore_solver",
         units="",
@@ -274,7 +276,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="vwind_expl_wgt",
         dtype=ta.wpfloat,
     ),
-    EXNER_EXFAC: dict(
+    EXNER_EXFAC: model.FieldMetaData(
         standard_name=EXNER_EXFAC,
         long_name="exner_exfac",
         units="",
@@ -282,7 +284,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="exner_exfac",
         dtype=ta.wpfloat,
     ),
-    WGTFAC_C: dict(
+    WGTFAC_C: model.FieldMetaData(
         standard_name=WGTFAC_C,
         long_name="wgtfac_c",
         units="",
@@ -290,7 +292,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="wgtfac_c",
         dtype=ta.wpfloat,
     ),
-    WGTFAC_E: dict(
+    WGTFAC_E: model.FieldMetaData(
         standard_name=WGTFAC_E,
         long_name="wgtfac_e",
         units="",
@@ -298,15 +300,15 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="wgtfac_e",
         dtype=ta.wpfloat,
     ),
-    FLAT_IDX_MAX: dict(
+    FLAT_IDX_MAX: model.FieldMetaData(
         standard_name=FLAT_IDX_MAX,
         long_name="flat_idx_max",
         units="",
         dims=(dims.EdgeDim,),
         icon_var_name="flat_idx_max",
-        dtype=ta.wpfloat,
+        dtype=gtx.int32,
     ),
-    PG_EXDIST_DSL: dict(
+    PG_EXDIST_DSL: model.FieldMetaData(
         standard_name=PG_EXDIST_DSL,
         long_name="extrapolation distance for pressure gradient downward extrapolation",
         units="",
@@ -314,7 +316,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="pg_exdist_dsl",
         dtype=ta.wpfloat,
     ),
-    MASK_PROG_HALO_C: dict(
+    MASK_PROG_HALO_C: model.FieldMetaData(
         standard_name=MASK_PROG_HALO_C,
         long_name="mask_prog_halo_c",
         units="",
@@ -322,7 +324,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="mask_prog_halo_c",
         dtype=bool,
     ),
-    HORIZONTAL_MASK_FOR_3D_DIVDAMP: dict(
+    HORIZONTAL_MASK_FOR_3D_DIVDAMP: model.FieldMetaData(
         standard_name=HORIZONTAL_MASK_FOR_3D_DIVDAMP,
         long_name="horizontal mask for 3D divergence damping",
         units="",
@@ -330,7 +332,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="hmask_dd3d",
         dtype=ta.wpfloat,
     ),
-    ZDIFF_GRADP: dict(
+    ZDIFF_GRADP: model.FieldMetaData(
         standard_name=ZDIFF_GRADP,
         long_name="zdiff_gradp",
         units="",
@@ -338,7 +340,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="zdiff_gradp",
         dtype=ta.wpfloat,
     ),
-    VERTOFFSET_GRADP: dict(
+    VERTOFFSET_GRADP: model.FieldMetaData(
         standard_name=VERTOFFSET_GRADP,
         long_name="vertoffset_gradp",
         units="",
@@ -346,7 +348,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="vertoffset_gradp",
         dtype=gtx.int32,
     ),
-    COEFF_GRADEKIN: dict(
+    COEFF_GRADEKIN: model.FieldMetaData(
         standard_name=COEFF_GRADEKIN,
         long_name="coeff_gradekin",
         units="",
@@ -354,7 +356,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="coeff_gradekin",
         dtype=ta.wpfloat,
     ),
-    WGTFACQ_C: dict(
+    WGTFACQ_C: model.FieldMetaData(
         standard_name=WGTFACQ_C,
         long_name="weighting_factor_for_quadratic_interpolation_to_cell_surface",
         units="",
@@ -362,7 +364,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="weighting_factor_for_quadratic_interpolation_to_cell_surface",
         dtype=ta.wpfloat,
     ),
-    WGTFACQ_E: dict(
+    WGTFACQ_E: model.FieldMetaData(
         standard_name=WGTFACQ_E,
         long_name="weighting_factor_for_quadratic_interpolation_to_edge_center",
         units="",
@@ -370,7 +372,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="weighting_factor_for_quadratic_interpolation_to_edge_center",
         dtype=ta.wpfloat,
     ),
-    INV_DDQZ_Z_HALF: dict(
+    INV_DDQZ_Z_HALF: model.FieldMetaData(
         standard_name=INV_DDQZ_Z_HALF,
         long_name="inverse functional determinant at half level",
         units="m-1",
@@ -378,7 +380,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="inv_ddqz_z_half",
         dtype=ta.wpfloat,
     ),
-    INV_DDQZ_Z_FULL_E: dict(
+    INV_DDQZ_Z_FULL_E: model.FieldMetaData(
         standard_name=INV_DDQZ_Z_FULL_E,
         long_name="inverse functional determinant at full level on edges",
         units="m-1",
@@ -386,7 +388,23 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="inv_ddqz_z_full_e",
         dtype=ta.wpfloat,
     ),
-    WGTFACQ1_C: dict(
+    INV_DDQZ_Z_HALF_E: model.FieldMetaData(
+        standard_name=INV_DDQZ_Z_HALF_E,
+        long_name="inverse functional determinant at half level on edges",
+        units="m-1",
+        dims=(dims.EdgeDim, dims.KHalfDim),
+        icon_var_name="inv_ddqz_z_half_e",
+        dtype=ta.wpfloat,
+    ),
+    INV_DDQZ_Z_HALF_V: model.FieldMetaData(
+        standard_name=INV_DDQZ_Z_HALF_V,
+        long_name="inverse functional determinant at half level on vertices",
+        units="m-1",
+        dims=(dims.VertexDim, dims.KHalfDim),
+        icon_var_name="inv_ddqz_z_half_v",
+        dtype=ta.wpfloat,
+    ),
+    WGTFACQ1_C: model.FieldMetaData(
         standard_name=WGTFACQ1_C,
         long_name="weighting_factor_for_quadratic_extrapolation_to_cell_top",
         units="",
@@ -394,7 +412,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="wgtfacq1_c",
         dtype=ta.wpfloat,
     ),
-    WGTFACQ1_E: dict(
+    WGTFACQ1_E: model.FieldMetaData(
         standard_name=WGTFACQ1_E,
         long_name="weighting_factor_for_quadratic_extrapolation_to_edge_top",
         units="",
@@ -402,7 +420,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="wgtfacq1_e",
         dtype=ta.wpfloat,
     ),
-    GEOPOT_AGL_IFC: dict(
+    GEOPOT_AGL_IFC: model.FieldMetaData(
         standard_name=GEOPOT_AGL_IFC,
         long_name="geopotential above ground level on interface levels",
         units="m2 s-2",
@@ -410,7 +428,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geopot_agl_ifc",
         dtype=ta.wpfloat,
     ),
-    HEIGHT_ABOVE_GROUND: dict(
+    HEIGHT_ABOVE_GROUND: model.FieldMetaData(
         standard_name=HEIGHT_ABOVE_GROUND,
         long_name="geometric height of the full levels above the surface",
         units="m",
@@ -418,7 +436,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ghf",
         dtype=ta.wpfloat,
     ),
-    MAXSLP: dict(
+    MAXSLP: model.FieldMetaData(
         standard_name=MAXSLP,
         long_name="maxslp",
         units="",
@@ -426,7 +444,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="z_maxslp",
         dtype=ta.wpfloat,
     ),
-    MAXHGTD: dict(
+    MAXHGTD: model.FieldMetaData(
         standard_name=MAXHGTD,
         long_name="maxhgtd",
         units="",
@@ -434,7 +452,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="z_maxhgtd",
         dtype=ta.wpfloat,
     ),
-    MAXSLP_AVG: dict(
+    MAXSLP_AVG: model.FieldMetaData(
         standard_name=MAXSLP_AVG,
         long_name="maxslp_avg",
         units="",
@@ -442,7 +460,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="z_maxslp_avg",
         dtype=ta.wpfloat,
     ),
-    MAXHGTD_AVG: dict(
+    MAXHGTD_AVG: model.FieldMetaData(
         standard_name=MAXHGTD_AVG,
         long_name="maxhgtd_avg",
         units="",
@@ -450,7 +468,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="z_maxhgtd_avg",
         dtype=ta.wpfloat,
     ),
-    MAX_NBHGT: dict(
+    MAX_NBHGT: model.FieldMetaData(
         standard_name=MAX_NBHGT,
         long_name="max_nbhgt",
         units="",
@@ -458,7 +476,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="max_nbhgt",
         dtype=ta.wpfloat,
     ),
-    ZD_DIFFCOEF: dict(
+    ZD_DIFFCOEF: model.FieldMetaData(
         standard_name=ZD_DIFFCOEF,
         long_name="zd_diffcoef",
         units="",
@@ -466,7 +484,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="zd_diffcoef",
         dtype=ta.wpfloat,
     ),
-    ZD_INTCOEF: dict(
+    ZD_INTCOEF: model.FieldMetaData(
         standard_name=ZD_INTCOEF,
         long_name="zd_intcoef",
         units="",
@@ -474,7 +492,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="zd_intcoef",
         dtype=ta.wpfloat,
     ),
-    ZD_VERTOFFSET: dict(
+    ZD_VERTOFFSET: model.FieldMetaData(
         standard_name=ZD_VERTOFFSET,
         long_name="zd_vertoffset",
         units="",
@@ -482,7 +500,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="zd_vertoffset",
         dtype=gtx.int32,
     ),
-    CELL_HEIGHT_ON_HALF_LEVEL: dict(
+    CELL_HEIGHT_ON_HALF_LEVEL: model.FieldMetaData(
         standard_name=CELL_HEIGHT_ON_HALF_LEVEL,
         long_name="vertical_coordinates_on_half_levels",
         units="m",

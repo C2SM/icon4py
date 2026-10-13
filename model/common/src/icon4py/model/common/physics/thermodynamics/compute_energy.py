@@ -76,3 +76,23 @@ def compute_internal_energy_per_area_scalar(  # noqa: PLR0917 [too-many-position
     )
 
     return rho * dz * (cv * t - qliq * PhysicsConstants.lvc - qice * PhysicsConstants.lsc)
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def _compute_dry_static_energy(
+    temperature: fa.CellKField[wpfloat],
+    height_above_ground: fa.CellKField[wpfloat],
+    grav: wpfloat,
+) -> fa.CellKField[wpfloat]:
+    """
+    Compute the dry static energy at full-level cell centers.
+
+    Args:
+        temperature: air temperature at full levels [K]
+        height_above_ground: height of the full levels above the surface [m]
+        grav: gravitational acceleration [m/s2]
+
+    Returns:
+        static energy at full levels [J/kg]
+    """
+    return PhysicsConstants.cpd * temperature + grav * height_above_ground

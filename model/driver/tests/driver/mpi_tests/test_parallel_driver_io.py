@@ -73,7 +73,7 @@ def _run_driver_with_output(
     allocator = model_backends.get_allocator(backend)
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
 
-    config = driver_config.read_experiment_config_from_fortran(config_file_path)
+    config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={
             "output_path": output_path,

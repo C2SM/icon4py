@@ -31,7 +31,14 @@ from typing import ClassVar, Final
 import gt4py.next as gtx
 from gt4py.next.program_processors.runners.dace.workflow import common as gtx_wfdcommon
 
- 
+from icon4py.model.common.config import options as common_conf_opt
+from icon4py.model.common.utils import data_allocation
+
+
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class BackendConfig:
+    """External DaCe workspace sizing, configurable per experiment."""
+
     workspace_size: typing.Annotated[
         int,
         common_conf_opt.ConfigOption(
@@ -42,7 +49,6 @@ from gt4py.next.program_processors.runners.dace.workflow import common as gtx_wf
                 "call. Note that the memory buffer is allocated once and shared "
                 "across all compiled programs."
             ),
-            icon_equivalent=None,
         ),
     ] = 256 * 1024 * 1024  # 256 MiB
 
@@ -53,7 +59,8 @@ from gt4py.next.program_processors.runners.dace.workflow import common as gtx_wf
 
 def backend_config_from_env() -> BackendConfig | None:
     """Build a :class:`BackendConfig` from environment variables.
-
+    Reads ``ICON4PY_BACKEND_WORKSPACE_SIZE`` and returns ``None`` when it is
+    not set.
     """
     size = os.environ.get("ICON4PY_BACKEND_WORKSPACE_SIZE")
     if size is None:

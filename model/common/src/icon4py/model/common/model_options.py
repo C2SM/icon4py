@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
-import os
 from collections.abc import Callable
 from typing import Any
 import os
@@ -22,6 +21,16 @@ from icon4py.model.common import backend_configuration as backend_cfg, dimension
 
 
 log = logging.getLogger(__name__)
+
+# Warnings that are logged once per process instead of once per compiled program.
+_emitted_warnings: set[str] = set()
+
+_WORKSPACE_SIZE_WARNING = (
+    "ICON4PY_BACKEND_WORKSPACE_SIZE is not set: DaCe programs on AMD GPUs fall back to "
+    "per-program persistent transients (no GPU memory pool), which increases memory usage "
+    "and may be slower than a shared external workspace, since runtime allocations are "
+    "expensive on AMD GPUs. Set ICON4PY_BACKEND_WORKSPACE_SIZE=<bytes> to enable it."
+)
 
 
 def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
@@ -64,22 +73,24 @@ def _set_program_specific_dace_options(
         if device != model_backends.DeviceType.ROCM:
             optimization_args["gpu_maxnreg"] = 80
             optimization_args["gpu_block_size_2d"] = (64, 6)
-        optimization_args["gpu_memory_pool"] = False
-        optimization_args["make_persistent"] = True
 
 
 def _set_device_specific_dace_options(
     device: model_backends.DeviceType | None,
-    has_external_workspace: bool,
+    backend_config: backend_cfg.BackendConfig | None,
     optimization_args: dict[str, Any],
 ) -> None:
     if device == model_backends.DeviceType.ROCM:
-        if not has_external_workspace:
-            # Only needed when no external workspace is provided (i.e.
-            # ICON4PY_BACKEND_WORKSPACE_SIZE is not set); the external
-            # workspace already avoids the runtime allocation overhead.
-            optimization_args["gpu_memory_pool"] = False
-            optimization_args["make_persistent"] = True
+        if not (backend_config is not None and backend_config.workspace_size > 0):
+            # Only needed when no external workspace is configured (neither via
+            # the driver's 'backend_config' nor ICON4PY_BACKEND_WORKSPACE_SIZE);
+            # the external workspace already avoids the runtime allocation overhead.
+            optimization_args["transient_memory_mode"] = (
+                gtx_transformations.TransientMemoryMode.PERSISTENT
+            )
+            if _WORKSPACE_SIZE_WARNING not in _emitted_warnings:
+                _emitted_warnings.add(_WORKSPACE_SIZE_WARNING)
+                log.warning(_WORKSPACE_SIZE_WARNING)
         # AMD MI300A: (256,1,1) for 2D maps gives ~20% speedup on the solver.
         # All threads on Cell dimension maximizes coalescing on MI300A.
         optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
@@ -90,13 +101,9 @@ def _set_device_specific_dace_options(
         optimization_args["blocking_dims"] = list(dimension.vertical_dims())
         optimization_args["blocking_size"] = 4
         optimization_args["blocking_only_if_independent_nodes"] = False
-        if os.getenv("CUPY_ACCELERATORS") == "":
-            log.warning(
-                'CUPY_ACCELERATORS environment variable should be set to "cub" otherwise reductions have degraded performance on AMD GPUs.'
-            )
     elif device == model_backends.DeviceType.CUDA:
         optimization_args.setdefault("gpu_block_size_2d", (128, 2, 1))
-        optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
+        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
 
 
 def get_dace_options(
@@ -124,7 +131,7 @@ def get_dace_options(
     )
     _set_device_specific_dace_options(
         device,
-        has_external_workspace=backend_config is not None,
+        backend_config=backend_config,
         optimization_args=optimization_args,
     )
 

@@ -9,14 +9,12 @@
 from __future__ import annotations
 
 import functools
-import os
 from typing import TYPE_CHECKING, Any
 import os
 
 import gt4py.next as gtx
 from gt4py.next.instrumentation import metrics as gtx_metrics
 import pytest
-from gt4py.next.instrumentation import metrics as gtx_metrics
 
 
 if TYPE_CHECKING:
@@ -82,7 +80,7 @@ def solve_nonhydro(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        mean_cell_area=geometry_field_source.get(geometry_meta.MEAN_CELL_AREA),  # type: ignore[arg-type]
+        mean_cell_area=geometry_field_source.get_scalar(geometry_meta.MEAN_CELL_AREA),
     )
     edge_geometry = grid_states.EdgeParams(
         tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
@@ -185,7 +183,7 @@ def solve_nonhydro(
         ddxn_z_full=metrics_field_source.get(metrics_attributes.DDXN_Z_FULL),
         zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
         vertoffset_gradp=metrics_field_source.get(metrics_attributes.VERTOFFSET_GRADP),
-        nflat_gradp=metrics_field_source.get_int32(metrics_attributes.NFLAT_GRADP),
+        nflat_gradp=metrics_field_source.get_scalar(metrics_attributes.NFLAT_GRADP),  # type: ignore[arg-type]
         pg_exdist=metrics_field_source.get(metrics_attributes.PG_EXDIST_DSL),
         ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),
         ddxt_z_full=metrics_field_source.get(metrics_attributes.DDXT_Z_FULL),
@@ -214,7 +212,7 @@ def solve_nonhydro(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=geometry_field_source.get("cell_owner_mask"),
+        owner_mask=geometry_field_source.get(geometry_meta.CELL_OWNER_MASK),
         exchange=decomposition.SingleNodeExchange(),
         backend=backend_like,
         max_nudging_coefficient=0.375,
@@ -344,6 +342,3 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
     )
-
-    if gtx_metrics.sources:
-        gtx_metrics.dump_json(os.getenv("GT4PY_METRICS_OUTPUT_PATH", "gt4py_metrics.json"))

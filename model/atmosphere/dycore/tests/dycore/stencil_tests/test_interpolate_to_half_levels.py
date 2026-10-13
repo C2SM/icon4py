@@ -33,12 +33,12 @@ class TestInterpolateToHalfLevels(stencil_tests.StencilTest):
 
     @stencil_tests.static_reference
     def reference(grid: base.Grid, *, wgtfac_e: np.ndarray, x: np.ndarray, **kwargs: Any) -> dict:
-        return dict(out=interpolate_vn_to_half_levels_numpy(wgtfac_e, x))
+        return dict(out=interpolate_vn_to_half_levels_numpy(x, wgtfac_e))
 
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         return dict(
             wgtfac_e=data_alloc.random_field(
                 dims.EdgeDim, dims.KHalfDim, low=0.0, high=1.0, dtype=ta.vpfloat

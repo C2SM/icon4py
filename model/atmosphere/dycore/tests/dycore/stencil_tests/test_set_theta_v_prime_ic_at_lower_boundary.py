@@ -31,8 +31,8 @@ def set_theta_v_prime_ic_at_lower_boundary_numpy(
     theta_v_ic: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
     z_theta_v_pr_ic = extrapolate_quadratically_to_surface_numpy(
-        wgtfacq_c=wgtfacq_c,
         interpolant=z_rth_pr,
+        wgtfacq_c=wgtfacq_c,
         interpolation_to_surface=z_theta_v_pr_ic,
     )
     nlev = z_rth_pr.shape[1]
