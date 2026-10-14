@@ -350,7 +350,7 @@ class Tendencies:
         """Reset all sums; called by the driver at the start of every run."""
         for buffer in self._acc.values():
             buffer.ndarray[...] = 0.0  # type: ignore[index] # NDArrayObject Protocol doesn't support this
-        
+
     def advance(
         self,
         state: PhysicsState,
