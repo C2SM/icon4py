@@ -205,6 +205,10 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     lvc = LATENT_HEAT_FOR_VAPORISATION_INVARIANT
     lsc = LATENT_HEAT_FOR_SUBLIMATION_INVARIANT
     von_karman = VON_KARMAN_CONSTANT
+    rd_o_rv = RD_O_RV
+    tetens_p0 = TETENS_P0
+    tetens_a_water = TETENS_A_WATER
+    tetens_b_water = TETENS_B_WATER
     eps = WP_EPS
 
 

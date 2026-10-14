@@ -20,6 +20,8 @@ PLACES = {
     "OnCellKHalf": (dims.CellDim, dims.KHalfDim),
     "OnEdgeK": (dims.EdgeDim, dims.KDim),
     "OnEdgeKHalf": (dims.EdgeDim, dims.KHalfDim),
+    "OnVertexK": (dims.VertexDim, dims.KDim),
+    "OnVertexKHalf": (dims.VertexDim, dims.KHalfDim),
 }
 
 
@@ -45,6 +47,8 @@ def test_tendencies_are_marked() -> None:
     assert issubclass(qty.TendencyOfTemperatureOnCellK, fw.Tendency)
     assert issubclass(qty.TendencyOfVnOnEdgeK, fw.Tendency)
     assert not issubclass(qty.TemperatureOnCellK, fw.Tendency)
+    # a diagnostic of tmx: the physics driver must not accumulate it
+    assert not issubclass(qty.RateOfChangeOfVerticallyIntegratedInternalEnergyOnCell, fw.Tendency)
 
 
 def test_the_dycore_precisions_follow_the_diagnostic_state() -> None:

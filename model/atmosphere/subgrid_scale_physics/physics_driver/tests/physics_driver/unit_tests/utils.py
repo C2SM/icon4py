@@ -12,7 +12,8 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -45,12 +46,13 @@ def driver(
     grid: base_grid.Grid, processes: Sequence[physics_driver.PhysicsProcess] = ()
 ) -> physics_driver.PhysicsDriver:
     # neutral geometry: primal_normal_cell_x = 1, primal_normal_cell_y = 0, c_lin_e = 0.5, so
-    # the two-neighbour projection of a uniform u-tendency onto the edges is the identity
+    # the two-neighbour projection of a uniform u-tendency onto the edges is the identity;
+    # the RBF reconstruction gives u = the sum of the nine neighbouring vn, v = 0
     return physics_driver.PhysicsDriver(
         processes,
         grid=grid,
         ddqz_z_full=data_alloc.constant_field(grid, 100.0, dims.CellDim, dims.KDim),
-        rbf_vec_coeff_c1=data_alloc.zero_field(grid, dims.CellDim, dims.C2E2C2EDim),
+        rbf_vec_coeff_c1=data_alloc.constant_field(grid, 1.0, dims.CellDim, dims.C2E2C2EDim),
         rbf_vec_coeff_c2=data_alloc.zero_field(grid, dims.CellDim, dims.C2E2C2EDim),
         primal_normal_cell_x=data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.E2CDim),
         primal_normal_cell_y=data_alloc.zero_field(grid, dims.EdgeDim, dims.E2CDim),
@@ -60,10 +62,16 @@ def driver(
 
 
 def prognostics(
-    grid: base_grid.Grid, *, rho: float = 1.2, exner: float = 0.95, theta_v: float = 300.0
+    grid: base_grid.Grid,
+    *,
+    rho: float = 1.2,
+    exner: float = 0.95,
+    theta_v: float = 300.0,
+    vn: float = 0.0,
+    w: float = 0.0,
 ) -> states.PrognosticState:
-    """Uniform prognostics, zero winds."""
-    values = {"rho": rho, "exner": exner, "theta_v": theta_v}
+    """Uniform prognostics."""
+    values = {"rho": rho, "exner": exner, "theta_v": theta_v, "vn": vn, "w": w}
     return fw.allocate(
         states.PrognosticState, grid, None, fill=lambda name, _: values.get(name, 0.0)
     )
@@ -121,16 +129,26 @@ def filled[S: fw.State](cls: type[S], grid: base_grid.Grid, **values: float) -> 
     return fw.allocate(cls, grid, None, fill=lambda name, _: values.get(name, 0.0))
 
 
+def _copies(fields: Mapping[str, fw.Field[Any]]) -> dict[str, np.ndarray]:
+    return {name: field.data.asnumpy().copy() for name, field in fields.items()}
+
+
 @dataclasses.dataclass
 class RecordingStep:
-    """A process step returning a fixed output and recording the entry states it was given,
-    with a copy of the qv each one read."""
+    """
+    A process step returning a fixed output and recording, on each call, the physics state it
+    was given, a copy of every leaf of that state (`read`) and a copy of each `watch` field
+    (`watched`), e.g. a prognostic the driver must not have updated yet.
+    """
 
     output: fw.State
-    entries: list[physics_state.EntryState] = dataclasses.field(default_factory=list)
-    qv_read: list[np.ndarray] = dataclasses.field(default_factory=list)
+    watch: Mapping[str, fw.Field[Any]] = dataclasses.field(default_factory=dict)
+    states: list[physics_state.PhysicsState] = dataclasses.field(default_factory=list)
+    read: list[dict[str, np.ndarray]] = dataclasses.field(default_factory=list)
+    watched: list[dict[str, np.ndarray]] = dataclasses.field(default_factory=list)
 
-    def __call__(self, entry: physics_state.EntryState) -> fw.State:
-        self.entries.append(entry)
-        self.qv_read.append(entry.qv.data.asnumpy().copy())
+    def __call__(self, state: physics_state.PhysicsState) -> fw.State:
+        self.states.append(state)
+        self.read.append(_copies({d.name: field for d, field in state.leaves()}))
+        self.watched.append(_copies(self.watch))
         return self.output

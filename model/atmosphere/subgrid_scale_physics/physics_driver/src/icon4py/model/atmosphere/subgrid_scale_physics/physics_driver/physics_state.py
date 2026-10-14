@@ -11,14 +11,18 @@
 from icon4py.model.common.components import framework as fw, quantities as qty
 
 
-class EntryState(fw.State):
+class PhysicsState(fw.State):
     """
-    The prognostics the physics driver received and the diagnostics it derived from them.
+    What the physics processes read: the prognostics, the diagnostics derived from them
+    (ICON's dyn2phy) and the provisional updates of the processes run so far.
 
-    ICON's dyn2phy: every leaf is a view onto the driver's input or onto its `diagnostics`, no
-    copies. Diagnosed once per step and never updated between the processes, which all read the
-    same entry state (parallel coupling). Each process picks its input from here by hand
-    (`collect_input` next to its component).
+    The processes are coupled sequentially, as ICON AES with forcing control fc = 1: after each
+    process the driver advances `temperature`, the tracers, `u`, `v` and `w` by dt times the
+    process's tendencies, so the next process reads them updated (mo_interface_cloud_mig.f90:
+    "update physics state for input to the next physics process"). Those leaves are the
+    driver's own buffers, reset to the entry values each step; the others are views onto the
+    driver's input or its `diagnostics`, never advanced. Each process picks its input from here
+    by hand (`collect_input` next to its component).
     """
 
     vn: fw.Field[qty.VnOnEdgeK]

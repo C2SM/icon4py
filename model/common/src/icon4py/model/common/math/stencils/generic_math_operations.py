@@ -39,6 +39,35 @@ def compute_difference_on_cell_k(
     )
 
 
+@gtx.field_operator
+def _compute_product_on_cell_k(
+    field_a: fa.CellKField[ta.wpfloat],
+    field_b: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    return field_a * field_b
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_product_on_cell_k(
+    field_a: fa.CellKField[ta.wpfloat],
+    field_b: fa.CellKField[ta.wpfloat],
+    output_field: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _compute_product_on_cell_k(
+        field_a,
+        field_b,
+        out=output_field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
 @gtx.program
 def compute_field_a_plus_coeff_times_field_b_on_cell_k(
     field_a: fa.CellKField[ta.wpfloat],

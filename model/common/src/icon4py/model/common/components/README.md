@@ -10,8 +10,10 @@ fields. The design and its trade-offs are in C2SM/icon4py-knowledge `mwe/compone
 - `Quantity`: a type-level tag, one subclass per quantity at one place on the grid, never
   instantiated. The metadata is on the class: `dims`, `units`, the CF `standard_name`,
   `long_name` and `precision` (`"wp"` or `"vp"`, resolved through `type_alias` when a field
-  is allocated). Tendencies derive from the `Tendency` marker base: the physics driver
-  accumulates exactly those.
+  is allocated). Tendencies derive from the `Tendency` marker base: the physics driver sums
+  exactly those and advances its physics state by them, so a process output leaf
+  `tend_<name>` needs a leaf `<name>` the driver advances (the temperature, the tracers, `u`,
+  `v`, `w`).
 - `Field[Q]`: a gt4py field tagged by its quantity, `Field(qty.VnOnEdgeK, data)`. The tag is
   a phantom, invariant type parameter: `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` are
   different types to the checkers and the same array to gt4py. Stencils read `.data`.
@@ -58,7 +60,7 @@ diffusion and the physics driver continue in place, the dycore needs distinct no
 Static fields (metrics, interpolation coefficients) stay constructor arguments.
 
 The components today: `SolveNonhydro` (dycore), `Diffusion`, `Advection` (tracer advection),
-`PhysicsDriver` with `MuphysComponent` as its process, and the driver's
+`PhysicsDriver` with `MuphysComponent` and `TmxComponent` as its processes, and the driver's
 `IOMonitor` (`driver_io.py`).
 
 ## Composing
@@ -72,7 +74,7 @@ Optional leaves carry the tracers: `TracerState`, `Advection.Input`/`Output` and
 `PhysicsDriver.Input`/`Output` declare `qv`...`qg` as `Field[Q] | None`, and the driver's
 `TracerConfig` decides which are present. Since `Component.output` would allocate every
 optional leaf, the composer always passes `out=` to these components. The physics processes
-pick their `Input` from the physics driver's `EntryState` with a `collect_input`; `bind`
+pick their `Input` from the physics driver's `PhysicsState` with a `collect_input`; `bind`
 pairs it with the component's `run`, so pairing one process's `collect_input` with another's
 `run` is a type error.
 
@@ -95,8 +97,9 @@ The framework, the physics components and the driver with its `IOMonitor` are ch
 strictly by both mypy and pyright (1.1.414, run through `npx` by pre-commit;
 `reportUnnecessaryTypeIgnoreComment` on). The strict mypy override and the pyright `include`
 in `pyproject.toml` cover `icon4py.model.common.components.*`, `physics_driver.*`,
-`muphys.component` and `icon4py.model.driver.*`, and of the tests the components, physics
-driver and muphys unit tests and the driver's `test_driver_io` and `test_driver_io_output`. `SolveNonhydro`, `Diffusion` and `Advection`
+`muphys.component`, `tmx.component` and `icon4py.model.driver.*`, and of the tests the
+components, physics driver and muphys unit tests, tmx's `test_component` and the driver's
+`test_driver_io` and `test_driver_io_output`. `SolveNonhydro`, `Diffusion` and `Advection`
 are not strict: mypy checks them with the project's default flags and pyright not at all; the
 driver's calls to them are strict. The Fortran bindings, which build `SolveNonhydro` and
 `Diffusion` views too, are not type-checked (mypy `ignore_errors`, no pyright), so a swapped

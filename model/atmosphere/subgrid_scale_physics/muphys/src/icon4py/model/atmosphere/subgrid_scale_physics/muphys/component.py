@@ -188,16 +188,16 @@ class MuphysComponent(fw.Component):
         return out
 
 
-def collect_input(entry: physics_state.EntryState) -> MuphysComponent.Input:
-    """The muphys input from the physics entry state (no copies)."""
+def collect_input(state: physics_state.PhysicsState) -> MuphysComponent.Input:
+    """The muphys input from the physics state (no copies)."""
     return MuphysComponent.Input(
-        te=entry.temperature,
-        p=entry.pressure,
-        rho=entry.rho,
-        qv=entry.qv,
-        qc=entry.qc,
-        qi=entry.qi,
-        qr=entry.qr,
-        qs=entry.qs,
-        qg=entry.qg,
+        te=state.temperature,
+        p=state.pressure,
+        rho=state.rho,
+        qv=state.qv,
+        qc=state.qc,
+        qi=state.qi,
+        qr=state.qr,
+        qs=state.qs,
+        qg=state.qg,
     )

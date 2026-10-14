@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests of the entry state the physics driver diagnoses and hands to its processes."""
+"""Tests of the physics state the physics driver diagnoses and hands to its processes."""
 
 import numpy as np
 import pytest
@@ -14,10 +14,25 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_driver import (
     PhysicsProcess,
 )
-from icon4py.model.common.components import framework as fw, states
+from icon4py.model.common.components import framework as fw, quantities as qty, states
 from icon4py.model.common.grid import base as base_grid, simple
 
-from .utils import RecordingStep, driver, inputs, output, prognostics, time_control, tracers
+from .utils import (
+    DT,
+    T0,
+    RecordingStep,
+    driver,
+    filled,
+    inputs,
+    output,
+    prognostics,
+    time_control,
+    tracers,
+)
+
+
+class QvTendencyOutput(fw.State):
+    tend_qv: fw.Field[qty.TendencyOfQvOnCellK]
 
 
 @pytest.fixture
@@ -25,7 +40,9 @@ def grid() -> base_grid.Grid:
     return simple.simple_grid()
 
 
-def test_entry_state_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Grid) -> None:
+def test_physics_state_views_the_leaves_the_driver_does_not_advance(
+    grid: base_grid.Grid,
+) -> None:
     step = RecordingStep(fw.Empty())
     physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
@@ -33,13 +50,77 @@ def test_entry_state_views_the_inputs_and_the_driver_diagnostics(grid: base_grid
 
     physics.run(driver_inputs, out=output(prognostic, tracer_state))
 
-    (entry,) = step.entries
+    (state,) = step.states
     assert isinstance(physics.diagnostics, states.Diagnostics)
-    # no copies: the prognostics and tracers as given, the diagnostics in the driver's buffers
-    for name in ("vn", "w", "exner", "theta_v", "rho", *states.TRACERS):
-        assert getattr(entry, name) is getattr(driver_inputs, name), name
-    for declaration, field in physics.diagnostics.leaves():
-        assert getattr(entry, declaration.name) is field, declaration.name
+    # no copies: the prognostics as given, the diagnostics in the driver's buffers
+    for name in ("vn", "exner", "theta_v", "rho"):
+        assert getattr(state, name) is getattr(driver_inputs, name), name
+    for name in ("virtual_temperature", "pressure", "pressure_ifc"):
+        assert getattr(state, name) is getattr(physics.diagnostics, name), name
+
+
+def test_physics_state_starts_the_advanced_leaves_from_the_entry_values_in_own_buffers(
+    grid: base_grid.Grid,
+) -> None:
+    step = RecordingStep(fw.Empty())
+    physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
+    # vn = 1 so that the reconstructed u is not the zero of a fresh buffer
+    prognostic, tracer_state = prognostics(grid, vn=1.0, w=0.5), tracers(grid, qv=1e-3)
+    first_inputs = inputs(prognostic, tracer_state)
+
+    physics.run(first_inputs, out=output(prognostic, tracer_state))
+    physics.run(
+        inputs(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
+        out=output(prognostic, tracer_state),
+    )
+
+    first, second = step.states
+    assert step.read[0]["u"].any()
+    # the driver advances copies: of the prognostics and tracers as given ...
+    for name in ("w", *states.TRACERS):
+        assert getattr(first, name) is not getattr(first_inputs, name), name
+        np.testing.assert_array_equal(
+            step.read[0][name], getattr(first_inputs, name).data.asnumpy(), err_msg=name
+        )
+    # ... and of the diagnosed temperature and (u, v)
+    for name in ("temperature", "u", "v"):
+        assert getattr(first, name) is not getattr(physics.diagnostics, name), name
+        np.testing.assert_array_equal(
+            step.read[0][name], getattr(physics.diagnostics, name).data.asnumpy(), err_msg=name
+        )
+    # allocated once, not per step
+    for name in ("temperature", "u", "v", "w", *states.TRACERS):
+        assert getattr(second, name) is getattr(first, name), name
+
+
+def test_physics_state_restarts_the_advanced_leaves_from_each_step_s_entry_values(
+    grid: base_grid.Grid,
+) -> None:
+    # A process advances qv on step 1; the dynamics (here: by hand) then change the
+    # prognostics, and on step 2 the process must read those, not the stale buffers.
+    step = RecordingStep(filled(QvTendencyOutput, grid, tend_qv=1e-7))
+    physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
+    prognostic, tracer_state = prognostics(grid, vn=1.0, w=0.5), tracers(grid, qv=1e-3)
+    assert tracer_state.qv is not None
+
+    physics.run(inputs(prognostic, tracer_state), out=output(prognostic, tracer_state))
+    changed = {"qv": 5e-4, "w": -0.25, "vn": 2.0, "theta_v": 290.0}
+    for name, value in changed.items():
+        leaf = getattr(tracer_state if name == "qv" else prognostic, name)
+        leaf.data.ndarray[...] = value
+    physics.run(
+        inputs(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
+        out=output(prognostic, tracer_state),
+    )
+
+    first, second = step.read
+    np.testing.assert_array_equal(second["qv"], 5e-4)
+    np.testing.assert_array_equal(second["w"], -0.25)
+    for name in ("temperature", "u"):
+        assert not np.array_equal(second[name], first[name]), name
+        np.testing.assert_array_equal(
+            second[name], getattr(physics.diagnostics, name).data.asnumpy(), err_msg=name
+        )
 
 
 def test_diagnose_fills_the_diagnostics_and_leaves_the_inputs_untouched(
@@ -48,8 +129,9 @@ def test_diagnose_fills_the_diagnostics_and_leaves_the_inputs_untouched(
     """
     The diagnosis fills plausible fields and is strictly read only.
 
-    Read-only-ness is the load-bearing invariant of parallel coupling: the prognostics and
-    tracers stay bitwise identical until the driver's single apply step.
+    Read-only-ness is what the final update relies on: it starts from the entry values (ICON's
+    phy2dyn), so the prognostics and tracers stay bitwise identical until the driver's single
+    apply step.
     """
     step = RecordingStep(fw.Empty())
     physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])

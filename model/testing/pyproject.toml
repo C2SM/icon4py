@@ -28,6 +28,8 @@ dependencies = [
   'icon4py-common[io]~=0.4.1',
   'icon4py-driver~=0.4.1',
   # external dependencies
+  # reading an experiment archive's input namelist
+  "f90nml>=1.5",
   # TODO(msimberg): https://github.com/tox-dev/filelock/pull/408 added in 3.20.4
   # and 3.21.0 seems to lead to hangs in CI. Investigate if other lock types are
   # safe or if this is a bug in filelock.

@@ -66,16 +66,16 @@ def _inputs(grid: base_grid.Grid) -> muphys_component.MuphysComponent.Input:
     )
 
 
-def test_collect_input_views_the_entry_state(grid: base_grid.Grid) -> None:
-    entry = fw.allocate(physics_state.EntryState, grid, None)
+def test_collect_input_views_the_physics_state(grid: base_grid.Grid) -> None:
+    state = fw.allocate(physics_state.PhysicsState, grid, None)
 
-    inputs = muphys_component.collect_input(entry)
+    inputs = muphys_component.collect_input(state)
 
-    assert inputs.te is entry.temperature
-    assert inputs.p is entry.pressure
-    assert inputs.rho is entry.rho
+    assert inputs.te is state.temperature
+    assert inputs.p is state.pressure
+    assert inputs.rho is state.rho
     for name in ("qv", "qc", "qi", "qr", "qs", "qg"):
-        assert getattr(inputs, name) is getattr(entry, name), name
+        assert getattr(inputs, name) is getattr(state, name), name
 
 
 def test_run_reports_tendencies_and_leaves_the_inputs_untouched(grid: base_grid.Grid) -> None:

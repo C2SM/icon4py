@@ -504,6 +504,65 @@ WK_INITIAL_CONDITION = ConfigMapping(
 )
 
 
+# The surface boundary of tmx is read from `nh_testcase_nml` too.
+TMX_SURFACE = ConfigMapping(
+    tmx_config.TmxSurfaceConfig,
+    [
+        _testcase_option("kinematic_sensible_heat_flux", ("shflx",)),
+        _testcase_option("kinematic_latent_heat_flux", ("lhflx",)),
+    ],
+)
+
+#: the test cases whose (only, water) surface temperature is the aquaplanet SST
+#: (`mo_aes_phy_init.f90`: `ts_tile(:,:,iwtr) = ape_sst(ape_sst_case, lat)`)
+_APE_SST_TESTCASES: typing.Final = (
+    "APE",
+    "APE_aes",
+    "RCEhydro",
+    "RCE_glb",
+    "RCE_Tconst",
+    "RCE_Tprescr",
+    "aes_bubble",
+    "aes_cbl",
+    "CBL_flxconst",
+    "RCEMIP_analytical",
+    "dcmip_tc_52",
+)
+
+
+def _aquaplanet_sea_surface_temperature(testcase_nml: dict[str, Any]) -> float:
+    """The SST of `ape_sst` in `mo_ape_params.f90`; only its constant case is ported."""
+    sst_case = testcase_nml.get("ape_sst_case", "sst1")
+    if sst_case != "sst_const":
+        raise NotImplementedError(
+            f"Only the constant aquaplanet SST ('sst_const') is implemented, got '{sst_case}'."
+        )
+    # a plain float: a numpy scalar is dumped as a python tag the YAML reader rejects
+    return float(constants.MELTING_TEMPERATURE) + float(testcase_nml.get("ape_sst_val", 29.0))
+
+
+def make_tmx_surface_config(
+    *,
+    atm_dict: dict[str, Any],
+    input_dict: dict[str, Any],
+) -> tmx_config.TmxSurfaceConfig:
+    testcase_nml = input_dict.get("nh_testcase_nml", {})
+    if (
+        not atm_dict["run_nml"]["ltestcase"]
+        or testcase_nml.get("nh_test_name") not in _APE_SST_TESTCASES
+    ):
+        raise NotImplementedError(
+            "The tmx surface is implemented for the aquaplanet test cases only: "
+            "a real-data surface needs the surface models."
+        )
+    return TMX_SURFACE.build(
+        testcase_nml,
+        # ICON's default (0) is its surface models, which TmxSurfaceConfig rejects
+        surface_flux_type=testcase_nml.get("isrfc_type", 0),
+        sea_surface_temperature=_aquaplanet_sea_surface_temperature(testcase_nml),
+    )
+
+
 def make_topography_config(
     *,
     atm_dict: dict[str, Any],
@@ -689,9 +748,14 @@ def convert_experiment(
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
-    # tmx is configured by the AES vertical-diffusion namelist; the driver does not run
-    # the granule yet (icon4py#1360), but the config travels with the experiment.
+    # tmx is configured by the AES vertical-diffusion namelist, its surface boundary by the
+    # test case
     tmx_cfg = TMX.build(atm_dict) if tmx_is_active(atm_dict) else None
+    tmx_surface_cfg = (
+        make_tmx_surface_config(atm_dict=atm_dict, input_dict=input_dict)
+        if tmx_cfg is not None
+        else None
+    )
 
     return driver_config.ExperimentConfig(
         geometry=geometry_cfg,
@@ -705,6 +769,7 @@ def convert_experiment(
         graupel=graupel_cfg,
         muphys=muphys_cfg,
         tmx=tmx_cfg,
+        tmx_surface=tmx_surface_cfg,
         topography=topography_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=make_prescribed_tendencies_config(atm_dict),
