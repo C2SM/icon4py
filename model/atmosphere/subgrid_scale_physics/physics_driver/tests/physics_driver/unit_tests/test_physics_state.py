@@ -65,7 +65,7 @@ def _uniform_prognostic(
     """PrognosticState filled with uniform constant values on the simple grid."""
     return prognostics.PrognosticState(
         rho=data_alloc.constant_field(grid, rho, dims.CellDim, dims.KDim),
-        w=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
+        w=data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim),
         vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
         exner=data_alloc.constant_field(grid, exner, dims.CellDim, dims.KDim),
         theta_v=data_alloc.constant_field(grid, theta_v, dims.CellDim, dims.KDim),
@@ -232,10 +232,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
     exner_before = prognostic.exner.asnumpy().copy()
     theta_v_before = prognostic.theta_v.asnumpy().copy()
 
-    # ddt_w spans KDim+1 half-levels; constant_field does not support 'extend',
-    # so we use zero_field (which does) and fill the backing array.
-    tend_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-    tend_w.ndarray[...] = 1e-4
+    tend_w = data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KHalfDim)
     dt = 300.0
     acc = _accumulated(
         grid,

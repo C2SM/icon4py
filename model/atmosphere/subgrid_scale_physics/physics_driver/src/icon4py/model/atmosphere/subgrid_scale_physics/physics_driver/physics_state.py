@@ -286,9 +286,8 @@ class Tendencies:
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        # w has KDim+1 half-levels — same stencil, but domain extends to nlev+1
         self._apply_tendency_w = model_options.setup_program(
-            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_khalf,
             backend=backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes={
@@ -438,7 +437,7 @@ class Tendencies:
                 output_field=state.vn,
             )
 
-        # 4. w (KDim+1 half-levels)
+        # 4. w (half levels)
         if "tend_w" in acc:
             self._apply_tendency_w(
                 field_a=state.w,
