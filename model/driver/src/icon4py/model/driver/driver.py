@@ -368,6 +368,12 @@ class Icon4pyDriver:
                 tracers=tracers.next,
                 dtime=self.config.driver.dtime,
                 simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
+                # TODO (Yilu): pass in airmass
+                perturbed_exner=(
+                    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels
+                    if solve_nonhydro_diagnostic_state is not None
+                    else None
+                ),
             )
 
         prognostic_states.swap()

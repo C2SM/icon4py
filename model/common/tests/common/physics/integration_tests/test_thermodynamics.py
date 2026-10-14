@@ -19,6 +19,7 @@ from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import simple, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.physics.thermodynamics import (
+    compute_energy,
     compute_pressure,
     compute_temperature,
     compute_tendencies,
@@ -100,6 +101,45 @@ def test_compute_virtual_temperature_and_temperature(
         virtual_temperature.asnumpy(),
         virtual_temperature_ref,
     )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment_description, date",
+    [
+        (test_defs.Experiments.EXCLAIM_APE_AES, date)
+        for date in test_defs.Experiments.EXCLAIM_APE_AES.dates[1:]
+    ],
+)
+def test_compute_isochoric_heat_capacity_of_moist_air(
+    data_provider: sb.IconSerialDataProvider,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+    date: str,
+) -> None:
+    # ICON computes cvair with get_cvair right before tmx, from the same air mass and tracers
+    tmx_entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
+    heat_capacity = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
+    )
+
+    compute_energy.compute_isochoric_heat_capacity_of_moist_air.with_backend(backend)(
+        air_mass=tmx_entry_savepoint.mair(),
+        qv=tmx_entry_savepoint.qv(),
+        qc=tmx_entry_savepoint.qc(),
+        qi=tmx_entry_savepoint.qi(),
+        qr=tmx_entry_savepoint.qr(),
+        qs=tmx_entry_savepoint.qs(),
+        qg=tmx_entry_savepoint.qg(),
+        heat_capacity=heat_capacity,
+        horizontal_start=0,
+        horizontal_end=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.END)),
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
+        offset_provider={},
+    )
+
+    assert test_utils.dallclose(heat_capacity.asnumpy(), tmx_entry_savepoint.cvair().asnumpy())
 
 
 @pytest.mark.datatest

@@ -43,7 +43,7 @@ OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     "tend_temperature": data.TENDENCY_CF_ATTRIBUTES["temperature"],
     **{f"tend_q{s}": data.TENDENCY_CF_ATTRIBUTES[f"q{s}"] for s in SPECIES},
     # Dimensions are added where the field is used, keeping the shared registry
-    # dimension-agnostic. DiagnosticsStore uses them to allocate output buffers.
+    # dimension-agnostic. PhysicsState uses them to allocate output buffers.
     **{
         port: dataclasses.replace(
             data.PRECIPITATION_CF_ATTRIBUTES[key], dims=(dims.CellDim, dims.KDim)
