@@ -39,7 +39,7 @@ def compute_internal_energy_per_area(  # noqa: PLR0917 [too-many-positional-argu
         PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
         + PhysicsConstants.cvv * qv
         + PhysicsConstants.cpl * qliq
-        + PhysicsConstants.cpi * qice
+        + PhysicsConstants.ci_thermo * qice
     )
 
     return rho * dz * (cv * t - qliq * PhysicsConstants.lvc - qice * PhysicsConstants.lsc)
@@ -72,7 +72,7 @@ def compute_internal_energy_per_area_scalar(  # noqa: PLR0917 [too-many-position
         PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
         + PhysicsConstants.cvv * qv
         + PhysicsConstants.cpl * qliq
-        + PhysicsConstants.cpi * qice
+        + PhysicsConstants.ci_thermo * qice
     )
 
     return rho * dz * (cv * t - qliq * PhysicsConstants.lvc - qice * PhysicsConstants.lsc)
@@ -112,7 +112,7 @@ def _compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positi
     Heat capacity at constant volume of the moist air per unit area [J/K/m2].
 
     get_cvair in mo_aes_phy_diag.f90: the specific heat of the mixture times the air mass
-    per unit area, with the AES heat capacity of ice.
+    per unit area, with the physical constant ci (2106), not the thermodynamics' 2108.
 
     Args:
         qv:        Specific mass of vapor
@@ -129,7 +129,7 @@ def _compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positi
         PhysicsConstants.cvd * (wpfloat(1.0) - (qv + qliq + qice))
         + PhysicsConstants.cvv * qv
         + PhysicsConstants.cpl * qliq
-        + PhysicsConstants.ci_aes * qice
+        + PhysicsConstants.ci * qice
     )
     return cv * air_mass
 

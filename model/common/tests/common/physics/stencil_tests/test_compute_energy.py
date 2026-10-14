@@ -116,14 +116,14 @@ class TestComputeMoistAirHeatCapacityPerArea(stencil_tests.StencilTest):
         air_mass: np.ndarray,
         **kwargs,
     ) -> dict:
-        # get_cvair, mo_aes_phy_diag.f90: the ice heat capacity is the AES one (ci = 2106)
+        # get_cvair, mo_aes_phy_diag.f90: the physical constant ci (2106), not the thermodynamics' 2108
         qliq = qc + qr
         qice = qi + qs + qg
         cv = (
             constants.CVD * (1.0 - (qv + qliq + qice))
             + constants.CVV * qv
             + constants.CPL * qliq
-            + constants.SPECIFIC_HEAT_CAPACITY_ICE_AES * qice
+            + constants.SPECIFIC_HEAT_CAPACITY_ICE * qice
         )
         return dict(heat_capacity=cv * air_mass)
 
