@@ -228,7 +228,7 @@ class PhysicsState:
 class Tendencies:
     """The tendency sums of one timestep, and their application to the state.
 
-    One timestep is ``zero``, then ``accumulate`` and ``advance`` once per process,
+    One timestep is ``zero``, then ``advance`` once per process,
     then ``apply``.
 
     Sums are keyed by output name (``tend_*``) and their buffers allocated lazily
@@ -368,9 +368,10 @@ class Tendencies:
                 buffer = self._acc[name] = gtx.zeros(
                     field.domain, dtype=field.dtype, allocator=self._backend
                 )
+            # TODO (Yilu): why use numpy/cupy array to accumulate? It is possibly slow
             buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
-        if self._coupling is not physics_config.CouplingType.SEQUENTIAL or not outputs:
+        if self._coupling is not physics_config.CouplingType.SEQUENTIAL:
             return
         tracers = state.tracers
         assert tracers is not None, "compute_diagnostics must run before advance"

@@ -175,7 +175,6 @@ class PhysicsDriver:
         # TODO (Yilu): I think ICON has a bug that tmx does not contribute at all if tmx is not active at a given time step. Be careful. Although tmx should be run with muphy as a fast process.
         for process in self._processes:
             outputs = process.run(self._state, step_start_datetime, dtime)
-            self._tendencies.accumulate(outputs, process.component.outputs_properties)
             self._tendencies.advance(
                 self._state, outputs, process.component.outputs_properties, dt_seconds
             )

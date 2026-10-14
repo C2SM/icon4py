@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests of the PhysicsState layer (PhysicsState facade, process outputs, accumulators, apply-once)."""
+"""Tests of the PhysicsState layer (PhysicsState facade, process outputs, tendency sums, single update)."""
 
 import gt4py.next as gtx
 import numpy as np
@@ -41,6 +41,7 @@ def _meta(*field_dims: gtx.Dimension, kind: model.FieldKind | None = None) -> mo
 
 
 _TENDENCY = model.FieldKind.TENDENCY
+_DT_SECONDS = 300.0
 
 
 # ---------------------------------------------------------------------------
@@ -119,7 +120,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 
     Read-only-ness is the load-bearing invariant of parallel coupling: the
     prognostic state and tracers must stay bitwise identical until the driver's
-    single apply step.
+    single update step.
     """
     grid = simple.simple_grid()
     ws = _physics_state(grid)
@@ -152,12 +153,13 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 
 
 # ---------------------------------------------------------------------------
-# Accumulating the tendencies
+# Summing the tendencies
 # ---------------------------------------------------------------------------
 
 
-def test_accumulate_sums_tendencies_and_skips_diagnostics():
+def test_advance_sums_tendencies_and_skips_diagnostics():
     grid = simple.simple_grid()
+    ws = _physics_state(grid)
     acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY), "km": _meta()}
     out = {
@@ -166,8 +168,8 @@ def test_accumulate_sums_tendencies_and_skips_diagnostics():
     }
 
     acc.zero()
-    acc.accumulate(out, props)
-    acc.accumulate(out, props)  # a second process contributing the same tendency
+    acc.advance(ws, out, props, _DT_SECONDS)
+    acc.advance(ws, out, props, _DT_SECONDS)  # a second process contributing the same tendency
 
     np.testing.assert_allclose(acc.acc["tend_qv"].asnumpy(), 2e-7, rtol=1e-12)
     assert "km" not in acc.acc
@@ -175,20 +177,21 @@ def test_accumulate_sums_tendencies_and_skips_diagnostics():
 
 def test_zero_resets_between_steps():
     grid = simple.simple_grid()
+    ws = _physics_state(grid)
     acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY)}
     out = {"tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
     acc.zero()
-    acc.accumulate(out, props)
+    acc.advance(ws, out, props, _DT_SECONDS)
     acc.zero()
-    acc.accumulate(out, props)
+    acc.advance(ws, out, props, _DT_SECONDS)
 
     np.testing.assert_allclose(acc.acc["tend_qv"].asnumpy(), 1e-7, rtol=1e-12)
 
 
 # ---------------------------------------------------------------------------
-# Applying the tendencies
+# Updating the state with the tendencies
 # ---------------------------------------------------------------------------
 
 
@@ -219,16 +222,16 @@ def _tendencies(
     )
 
 
-def _accumulated(grid, **tendencies) -> physics_state.Tendencies:
-    """Tendencies pre-filled with the given constant tendencies (single process)."""
+def _accumulated(grid, state, **tendencies) -> physics_state.Tendencies:
+    """Tendencies pre-filled with the given constant tendencies (one parallel-coupled process)."""
     acc = _tendencies(grid)
     props = {name: _meta(kind=_TENDENCY) for name in tendencies}
     acc.zero()
-    acc.accumulate(tendencies, props)
+    acc.advance(state, tendencies, props, _DT_SECONDS)
     return acc
 
 
-def test_apply_updates_tracers_w_and_thermodynamics_once():
+def test_update_applies_tracers_w_and_thermodynamics_once():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
@@ -241,12 +244,13 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
     dt = 300.0
     acc = _accumulated(
         grid,
+        ws,
         tend_qv=data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim),
         tend_temperature=data_alloc.constant_field(grid, 1e-3, dims.CellDim, dims.KDim),
         tend_w=tend_w,
     )
 
-    acc.apply(ws, dt_seconds=dt)
+    acc.update(ws, dt_seconds=dt)
 
     np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)
     np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
@@ -257,7 +261,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
     assert not np.array_equal(prognostic.theta_v.asnumpy(), theta_v_before)
 
 
-def test_apply_projects_accumulated_wind_tendency_to_vn():
+def test_update_projects_accumulated_wind_tendency_to_vn():
     # uniform ddt_u = 1e-4, ddt_v = 0; primal_normal_cell_x = 1, c_lin_e = 0.5 (two neighbors)
     # => ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on all edges of the periodic simple grid
     grid = simple.simple_grid()
@@ -268,16 +272,17 @@ def test_apply_projects_accumulated_wind_tendency_to_vn():
     dt = 300.0
     acc = _accumulated(
         grid,
+        ws,
         tend_u=data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KDim),
         tend_v=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
 
-    acc.apply(ws, dt_seconds=dt)
+    acc.update(ws, dt_seconds=dt)
 
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
 
 
-def test_apply_rejects_a_lone_horizontal_wind_tendency():
+def test_update_rejects_a_lone_horizontal_wind_tendency():
     # vn is ONE projection of (u, v), so a process declaring only one of the two would
     # silently lose the other half of the momentum: an error, not a no-op.
     grid = simple.simple_grid()
@@ -285,10 +290,12 @@ def test_apply_rejects_a_lone_horizontal_wind_tendency():
     ws.compute_diagnostics(
         _uniform_prognostic(grid, exner=0.95, theta_v=300.0), _tracer_state(grid)
     )
-    acc = _accumulated(grid, tend_u=data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KDim))
+    acc = _accumulated(
+        grid, ws, tend_u=data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KDim)
+    )
 
     with pytest.raises(ValueError, match="applied as a pair"):
-        acc.apply(ws, dt_seconds=300.0)
+        acc.update(ws, dt_seconds=300.0)
 
 
 def test_physics_state_groups_diagnostics_in_common_container():
