@@ -6,12 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Configuration of the physics driver.
-
-Kept apart from the driver itself so that reading or building a configuration does
-not import the stencils.
-"""
-
 from __future__ import annotations
 
 import enum
