@@ -136,11 +136,8 @@ def _update_exner_theta_v_and_perturbed_exner(  # noqa: PLR0917 [too-many-positi
     perturbed_exner: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
-    """Update exner and theta_v as `_update_exner_and_theta_v`, and add the exner change to the perturbation.
-
-    Adding the physics change of exner to the exner perturbation keeps the dynamical
-    core from turning it into unphysical sound waves (``exner_pr`` in ICON
-    mo_interface_iconam_aes; the summation order is the Fortran one)::
+    """
+        Update exner and theta_v as `_update_exner_and_theta_v`, and add the exner change to the perturbation.
 
         exner_pr_new = exner_pr + exner_new - exner
 
