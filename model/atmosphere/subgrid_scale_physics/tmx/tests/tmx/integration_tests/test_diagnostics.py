@@ -198,3 +198,12 @@ def test_tmx_init_and_run_diagnostics_single_step(
             rtol=rtol if test_utils.wp_is_dp else single_precision_rtol,
             err_msg=name,
         )
+    # cvair is an input of tmx in ICON, computed by get_cvair in the driver and serialized at
+    # tmx entry; measured atol=1.2e-10, rtol=4.4e-16 (double), atol=9.4e-2, rtol=3.1e-7 (single)
+    test_utils.assert_dallclose(
+        diagnostic_state.cv_air.asnumpy(),
+        entry_savepoint.cvair().asnumpy(),
+        atol=0.0 if test_utils.wp_is_dp else 0.1,
+        rtol=5.0e-16 if test_utils.wp_is_dp else single_precision_rtol,
+        err_msg="cv_air",
+    )
