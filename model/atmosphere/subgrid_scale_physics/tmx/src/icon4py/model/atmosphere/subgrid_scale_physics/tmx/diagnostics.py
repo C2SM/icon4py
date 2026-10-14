@@ -199,9 +199,9 @@ class Diagnostics:
     ) -> None:
         """Bind the diagnostics step programs (``Compute_diagnostics`` l. 343-482 in
         mo_vdf_atmo.f90)."""
-        self.compute_moist_air_heat_capacity_per_area = setup_program(
+        self.compute_moist_air_isochoric_heat_capacity_per_area = setup_program(
             backend=backend,
-            program=compute_energy.compute_moist_air_heat_capacity_per_area,
+            program=compute_energy.compute_moist_air_isochoric_heat_capacity_per_area,
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -373,7 +373,7 @@ class Diagnostics:
 
         # ICON computes cvair in the driver (get_cvair, mo_aes_phy_diag.f90) on the prognostic
         # cells and passes it to tmx; here it is the first diagnostic of tmx.
-        self.compute_moist_air_heat_capacity_per_area(
+        self.compute_moist_air_isochoric_heat_capacity_per_area(
             qv=input_state.qv,
             qc=input_state.qc,
             qi=input_state.qi,

@@ -15,7 +15,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.physics.thermodynamics.compute_energy import (
     _compute_dry_static_energy,
     compute_internal_energy_per_area,
-    compute_moist_air_heat_capacity_per_area,
+    compute_moist_air_isochoric_heat_capacity_per_area,
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
@@ -100,7 +100,7 @@ class TestComputeDryStaticEnergy(stencil_tests.StencilTest):
 
 
 class TestComputeMoistAirHeatCapacityPerArea(stencil_tests.StencilTest):
-    PROGRAM = compute_moist_air_heat_capacity_per_area
+    PROGRAM = compute_moist_air_isochoric_heat_capacity_per_area
     OUTPUTS = ("heat_capacity_per_area",)
 
     @stencil_tests.static_reference

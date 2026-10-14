@@ -99,7 +99,7 @@ def _compute_dry_static_energy(
 
 
 @gtx.field_operator
-def _compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
+def _compute_moist_air_isochoric_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
     qi: fa.CellKField[ta.wpfloat],
@@ -126,7 +126,7 @@ def _compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positi
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_moist_air_isochoric_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
     qi: fa.CellKField[ta.wpfloat],
@@ -140,7 +140,7 @@ def compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positio
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_moist_air_heat_capacity_per_area(
+    _compute_moist_air_isochoric_heat_capacity_per_area(
         qv=qv,
         qc=qc,
         qi=qi,
