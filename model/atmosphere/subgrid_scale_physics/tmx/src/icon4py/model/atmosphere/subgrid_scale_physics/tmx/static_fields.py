@@ -6,8 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""The static states of the tmx component, assembled from the field factories."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

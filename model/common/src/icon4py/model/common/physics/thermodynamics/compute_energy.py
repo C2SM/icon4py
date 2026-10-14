@@ -111,17 +111,8 @@ def _compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positi
     """
     Heat capacity at constant volume of the moist air per unit area [J/K/m2].
 
-    get_cvair in mo_aes_phy_diag.f90: the specific heat of the mixture times the air mass
-    per unit area, with the physical constant ci (2106), not the thermodynamics' 2108.
-
-    Args:
-        qv:        Specific mass of vapor
-        qc:        Specific mass of cloud water
-        qi:        Specific mass of cloud ice
-        qr:        Specific mass of rain
-        qs:        Specific mass of snow
-        qg:        Specific mass of graupel
-        air_mass:  Air mass per unit area
+    get_cvair in mo_aes_phy_diag.f90, with the physical constant ci (2106), not the
+    thermodynamics' 2108.
     """
     qliq = qc + qr
     qice = qi + qs + qg
@@ -142,8 +133,8 @@ def compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positio
     qr: fa.CellKField[ta.wpfloat],
     qs: fa.CellKField[ta.wpfloat],
     qg: fa.CellKField[ta.wpfloat],
-    air_mass: fa.CellKField[ta.wpfloat],
-    heat_capacity: fa.CellKField[ta.wpfloat],
+    air_mass_per_area: fa.CellKField[ta.wpfloat],
+    heat_capacity_per_area: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -156,8 +147,8 @@ def compute_moist_air_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positio
         qr=qr,
         qs=qs,
         qg=qg,
-        air_mass=air_mass,
-        out=heat_capacity,
+        air_mass=air_mass_per_area,
+        out=heat_capacity_per_area,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

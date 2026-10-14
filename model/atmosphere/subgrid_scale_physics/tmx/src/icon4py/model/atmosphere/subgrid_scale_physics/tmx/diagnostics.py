@@ -31,6 +31,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_vector_to_edge
     interpolate_cell_vector_to_edge_normal,
 )
 from icon4py.model.common.model_options import customize_backend, setup_program
+from icon4py.model.common.physics.thermodynamics import compute_energy
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -198,6 +199,19 @@ class Diagnostics:
     ) -> None:
         """Bind the diagnostics step programs (``Compute_diagnostics`` l. 343-482 in
         mo_vdf_atmo.f90)."""
+        self.compute_moist_air_heat_capacity_per_area = setup_program(
+            backend=backend,
+            program=compute_energy.compute_moist_air_heat_capacity_per_area,
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
         self.compute_thermodynamic_diagnostics = setup_program(
             backend=backend,
             program=diag_stencils.compute_thermodynamic_diagnostics,
@@ -356,6 +370,19 @@ class Diagnostics:
 
         log.debug("communication of input u, v (cells): start")
         u_v_exchange = self._exchange.start(dims.CellDim, input_state.u, input_state.v)
+
+        # ICON computes cvair in the driver (get_cvair, mo_aes_phy_diag.f90) on the prognostic
+        # cells and passes it to tmx; here it is the first diagnostic of tmx.
+        self.compute_moist_air_heat_capacity_per_area(
+            qv=input_state.qv,
+            qc=input_state.qc,
+            qi=input_state.qi,
+            qr=input_state.qr,
+            qs=input_state.qs,
+            qg=input_state.qg,
+            air_mass_per_area=input_state.air_mass,
+            heat_capacity_per_area=diagnostic_state.cv_air,
+        )
 
         self.compute_thermodynamic_diagnostics(
             temperature=input_state.temperature,

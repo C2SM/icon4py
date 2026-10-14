@@ -101,7 +101,7 @@ class TestComputeDryStaticEnergy(stencil_tests.StencilTest):
 
 class TestComputeMoistAirHeatCapacityPerArea(stencil_tests.StencilTest):
     PROGRAM = compute_moist_air_heat_capacity_per_area
-    OUTPUTS = ("heat_capacity",)
+    OUTPUTS = ("heat_capacity_per_area",)
 
     @stencil_tests.static_reference
     def reference(
@@ -113,7 +113,7 @@ class TestComputeMoistAirHeatCapacityPerArea(stencil_tests.StencilTest):
         qr: np.ndarray,
         qs: np.ndarray,
         qg: np.ndarray,
-        air_mass: np.ndarray,
+        air_mass_per_area: np.ndarray,
         **kwargs,
     ) -> dict:
         # get_cvair, mo_aes_phy_diag.f90: the physical constant ci (2106), not the thermodynamics' 2108
@@ -125,7 +125,7 @@ class TestComputeMoistAirHeatCapacityPerArea(stencil_tests.StencilTest):
             + constants.CPL * qliq
             + constants.SPECIFIC_HEAT_CAPACITY_ICE * qice
         )
-        return dict(heat_capacity=cv * air_mass)
+        return dict(heat_capacity_per_area=cv * air_mass_per_area)
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
@@ -148,10 +148,10 @@ class TestComputeMoistAirHeatCapacityPerArea(stencil_tests.StencilTest):
             qg=data_alloc.random_field(
                 dims.CellDim, dims.KDim, low=0.0, high=1.0e-3, dtype=wpfloat
             ),
-            air_mass=data_alloc.random_field(
+            air_mass_per_area=data_alloc.random_field(
                 dims.CellDim, dims.KDim, low=1.0, high=1.0e3, dtype=wpfloat
             ),
-            heat_capacity=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            heat_capacity_per_area=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
