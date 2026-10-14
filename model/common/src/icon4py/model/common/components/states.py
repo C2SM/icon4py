@@ -136,6 +136,9 @@ class TracerConfig:
 class PrepAdvection(fw.State):
     """The fluxes the dycore accumulates over the substeps for the tracer advection."""
 
+    # TODO(jcanton): part 02 fix this. If vn_traj keeps sharing VnOnEdgeK with vn, `collect`
+    # either raises AmbiguousSource or quietly picks the wrong buffer. Discuss whether we should
+    # define a new quantity.
     vn_traj: fw.Field[qty.VnOnEdgeK]
     mass_flx_me: fw.Field[qty.MassFluxOnEdgeK]
     dynamical_vertical_mass_flux_at_cells_on_half_levels: fw.Field[qty.MassFluxOnCellKHalf]
