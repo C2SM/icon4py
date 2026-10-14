@@ -23,7 +23,10 @@ from gt4py.next import backend as gtx_backend
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as muphys_component
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    physics_driver,
+    static_fields as physics_driver_static_fields,
+)
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
     constants,
@@ -513,12 +516,14 @@ def initialize_granules(
         if getattr(config, name) is not None
     ]
     if physics_processes:
-        physics_granule = physics_driver.PhysicsDriver.from_sources(
+        physics_granule = physics_driver.PhysicsDriver(
             physics_processes,
             grid=grid,
-            geometry=geometry_field_source,
-            interpolation=interpolation_field_source,
-            metrics=metrics_field_source,
+            static_state=physics_driver_static_fields.build_static_state(
+                geometry_source=geometry_field_source,
+                interpolation_source=interpolation_field_source,
+                metrics_source=metrics_field_source,
+            ),
             backend=backend,
         )
 

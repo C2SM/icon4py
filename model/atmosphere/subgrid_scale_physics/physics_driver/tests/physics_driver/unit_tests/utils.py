@@ -19,6 +19,7 @@ import numpy as np
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_driver,
     physics_state,
+    static_fields,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
@@ -49,12 +50,14 @@ def driver(
     return physics_driver.PhysicsDriver(
         processes,
         grid=grid,
-        ddqz_z_full=data_alloc.constant_field(grid, 100.0, dims.CellDim, dims.KDim),
-        rbf_vec_coeff_c1=data_alloc.zero_field(grid, dims.CellDim, dims.C2E2C2EDim),
-        rbf_vec_coeff_c2=data_alloc.zero_field(grid, dims.CellDim, dims.C2E2C2EDim),
-        primal_normal_cell_x=data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.E2CDim),
-        primal_normal_cell_y=data_alloc.zero_field(grid, dims.EdgeDim, dims.E2CDim),
-        c_lin_e=data_alloc.constant_field(grid, 0.5, dims.EdgeDim, dims.E2CDim),
+        static_state=static_fields.PhysicsDriverStaticState(
+            ddqz_z_full=data_alloc.constant_field(grid, 100.0, dims.CellDim, dims.KDim),
+            rbf_vec_coeff_c1=data_alloc.zero_field(grid, dims.CellDim, dims.C2E2C2EDim),
+            rbf_vec_coeff_c2=data_alloc.zero_field(grid, dims.CellDim, dims.C2E2C2EDim),
+            primal_normal_cell_x=data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.E2CDim),
+            primal_normal_cell_y=data_alloc.zero_field(grid, dims.EdgeDim, dims.E2CDim),
+            c_lin_e=data_alloc.constant_field(grid, 0.5, dims.EdgeDim, dims.E2CDim),
+        ),
         backend=None,
     )
 

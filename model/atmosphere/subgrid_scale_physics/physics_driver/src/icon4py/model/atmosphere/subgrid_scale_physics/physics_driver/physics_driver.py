@@ -17,26 +17,20 @@ from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    physics_state,
+    static_fields,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
-from icon4py.model.common import (
-    dimension as dims,
-    field_type_aliases as fa,
-    model_backends,
-    model_options,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, model_backends, model_options
 from icon4py.model.common.components import framework as fw, quantities as qty, states
-from icon4py.model.common.grid import geometry_attributes
-from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
 from icon4py.model.common.math.stencils import generic_math_operations
-from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.physics.thermodynamics import (
     compute_pressure,
     compute_temperature,
@@ -47,7 +41,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import factory
 
 
 __all__ = ["PhysicsDriver", "PhysicsProcess", "ProcessTimeControl", "Step", "bind"]
@@ -136,12 +129,7 @@ class PhysicsDriver(fw.Component):
         processes: Sequence[PhysicsProcess],
         *,
         grid: base_grid.Grid,
-        ddqz_z_full: fa.CellKField[ta.wpfloat],
-        rbf_vec_coeff_c1: gtx.Field[Any, ta.wpfloat],
-        rbf_vec_coeff_c2: gtx.Field[Any, ta.wpfloat],
-        primal_normal_cell_x: gtx.Field[Any, ta.wpfloat],
-        primal_normal_cell_y: gtx.Field[Any, ta.wpfloat],
-        c_lin_e: gtx.Field[Any, ta.wpfloat],
+        static_state: static_fields.PhysicsDriverStaticState,
         backend: model_backends.BackendLike = None,
     ) -> None:
         super().__init__(grid, model_backends.get_allocator(backend))
@@ -161,7 +149,7 @@ class PhysicsDriver(fw.Component):
             "vertical_end": gtx.int32(grid.num_levels + 1),
         }
 
-        self._ddqz_z_full = ddqz_z_full
+        self._ddqz_z_full = static_state.ddqz_z_full
         self._diagnose_temperature = model_options.setup_program(
             program=compute_temperature.compute_virtual_temperature_and_temperature,
             backend=backend,
@@ -180,7 +168,10 @@ class PhysicsDriver(fw.Component):
         self._rbf_interpolation = model_options.setup_program(
             program=edge_2_cell_vector_rbf_interpolation,
             backend=backend,
-            constant_args={"ptr_coeff_1": rbf_vec_coeff_c1, "ptr_coeff_2": rbf_vec_coeff_c2},
+            constant_args={
+                "ptr_coeff_1": static_state.rbf_vec_coeff_c1,
+                "ptr_coeff_2": static_state.rbf_vec_coeff_c2,
+            },
             horizontal_sizes=cells,
             vertical_sizes=levels,
             offset_provider=grid.connectivities,
@@ -224,9 +215,9 @@ class PhysicsDriver(fw.Component):
             program=compute_vn_from_uv,
             backend=backend,
             constant_args={
-                "primal_normal_cell_x": primal_normal_cell_x,
-                "primal_normal_cell_y": primal_normal_cell_y,
-                "c_lin_e": c_lin_e,
+                "primal_normal_cell_x": static_state.primal_normal_cell_x,
+                "primal_normal_cell_y": static_state.primal_normal_cell_y,
+                "c_lin_e": static_state.c_lin_e,
             },
             horizontal_sizes=edges,
             vertical_sizes=levels,
@@ -246,30 +237,6 @@ class PhysicsDriver(fw.Component):
         )
         self._vn_tendency = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, allocator=self.allocator
-        )
-
-    @classmethod
-    def from_sources(
-        cls,
-        processes: Sequence[PhysicsProcess],
-        *,
-        grid: base_grid.Grid,
-        geometry: factory.FieldSource,
-        interpolation: factory.FieldSource,
-        metrics: factory.FieldSource,
-        backend: model_backends.BackendLike = None,
-    ) -> PhysicsDriver:
-        """The driver with its static fields read from the factories."""
-        return cls(
-            processes,
-            grid=grid,
-            ddqz_z_full=metrics.get(metrics_attributes.DDQZ_Z_FULL),
-            rbf_vec_coeff_c1=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C1),
-            rbf_vec_coeff_c2=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2),
-            primal_normal_cell_x=geometry.get(geometry_attributes.EDGE_NORMAL_CELL_U),
-            primal_normal_cell_y=geometry.get(geometry_attributes.EDGE_NORMAL_CELL_V),
-            c_lin_e=interpolation.get(interpolation_attributes.C_LIN_E),
-            backend=backend,
         )
 
     def run(self, inputs: Input, out: Output | None = None) -> Output:
