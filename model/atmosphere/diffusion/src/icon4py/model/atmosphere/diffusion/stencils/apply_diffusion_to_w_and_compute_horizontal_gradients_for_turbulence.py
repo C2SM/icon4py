@@ -29,7 +29,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     w_old: fa.CellKHalfField[wpfloat],
-    type_shear: gtx.int32,
+    compute_hgrad_w: bool,
     dwdx: fa.CellKHalfField[vpfloat],
     dwdy: fa.CellKHalfField[vpfloat],
     diff_multfac_w: wpfloat,
@@ -44,7 +44,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 ]:
     dwdx, dwdy = (
         _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y)
-        if type_shear == 2
+        if compute_hgrad_w
         else (dwdx, dwdy)
     )
 

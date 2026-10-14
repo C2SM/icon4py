@@ -18,7 +18,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _calculate_diagnostic_quantities_for_turbulence(
+def _compute_flow_deformation_for_turbulence(
     kh_smag: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],

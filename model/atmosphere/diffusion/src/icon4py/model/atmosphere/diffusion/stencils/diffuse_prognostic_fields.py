@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
     _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
-    _calculate_diagnostic_quantities_for_turbulence,
+    _compute_flow_deformation_for_turbulence,
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
@@ -40,7 +40,7 @@ def _limit_smag_coefficients(
 
 
 @gtx.field_operator
-def _diffuse_prognostic_fields(
+def _apply_diffusion_to_prognostic_fields(
     kh_smag: fa.EdgeKField[vpfloat],
     smag_limit: fa.KField[vpfloat],
     smag_offset: vpfloat,
@@ -51,7 +51,7 @@ def _diffuse_prognostic_fields(
     wgtfac_c: fa.CellKHalfField[vpfloat],
     div_ic: fa.CellKHalfField[vpfloat],
     hdef_ic: fa.CellKHalfField[vpfloat],
-    compute_diagnostic_quantities: bool,
+    compute_flow_deformation: bool,
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
     primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
@@ -71,7 +71,7 @@ def _diffuse_prognostic_fields(
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     w_old: fa.CellKHalfField[wpfloat],
-    type_shear: gtx.int32,
+    compute_hgrad_w: bool,
     dwdx: fa.CellKHalfField[vpfloat],
     dwdy: fa.CellKHalfField[vpfloat],
     diff_multfac_w: wpfloat,
@@ -105,7 +105,7 @@ def _diffuse_prognostic_fields(
     fa.CellKHalfField[vpfloat],
     fa.CellKHalfField[vpfloat],
 ]:
-    """Fused diffusion of the prognostic fields vn, w, theta_v and exner.
+    """Numerical diffusion of the prognostic fields vn, w, theta_v and exner.
 
     Composes the Smagorinsky limiter, the turbulence diagnostics (from pre-diffusion
     vn), the diffusion of the normal wind, the diffusion of the vertical wind with the
@@ -113,14 +113,16 @@ def _diffuse_prognostic_fields(
     with the grid-point cold-pool enhancement of the diffusion coefficient inlined.
 
     Note:
-        The cold-pool enhancement is no longer published through `kh_smag_e`. If ICON's
-        moisture diffusion (`lhdiff_q`, which consumes the enhanced coefficient) is ever
-        ported, the enhanced coefficient must be published again.
+        The enhanced diffusion coefficient is now an intermediate variable internal
+        to this program (it equals ``kh_smag_limited`` when diffusion on temperature
+        is disabled) and is no longer accessible from outside. If ICON's moisture
+        diffusion (``lhdiff_q``, which consumes the enhanced coefficient) is ever
+        ported, the enhanced coefficient must be exposed as an output again.
     """
     kh_smag_limited = _limit_smag_coefficients(kh_smag, smag_limit, smag_offset)
 
     div_ic, hdef_ic = (
-        _calculate_diagnostic_quantities_for_turbulence(
+        _compute_flow_deformation_for_turbulence(
             kh_smag=kh_smag,
             vn=vn_in,
             e_bln_c_s=e_bln_c_s,
@@ -128,7 +130,7 @@ def _diffuse_prognostic_fields(
             diff_multfac_smag=diff_multfac_smag,
             wgtfac_c=wgtfac_c,
         )
-        if compute_diagnostic_quantities
+        if compute_flow_deformation
         else (div_ic, hdef_ic)
     )
 
@@ -157,7 +159,7 @@ def _diffuse_prognostic_fields(
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
         w_old=w_old,
-        type_shear=type_shear,
+        compute_hgrad_w=compute_hgrad_w,
         dwdx=dwdx,
         dwdy=dwdy,
         diff_multfac_w=diff_multfac_w,
@@ -204,7 +206,7 @@ def _diffuse_prognostic_fields(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def diffuse_prognostic_fields(
+def apply_diffusion_to_prognostic_fields(
     kh_smag: fa.EdgeKField[vpfloat],
     smag_limit: fa.KField[vpfloat],
     smag_offset: vpfloat,
@@ -230,7 +232,7 @@ def diffuse_prognostic_fields(
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     w_old: fa.CellKHalfField[wpfloat],
-    type_shear: gtx.int32,
+    compute_hgrad_w: bool,
     dwdx: fa.CellKHalfField[vpfloat],
     dwdy: fa.CellKHalfField[vpfloat],
     diff_multfac_w: wpfloat,
@@ -249,7 +251,7 @@ def diffuse_prognostic_fields(
     smallest_vpfloat: vpfloat,
     rd_o_cvd: vpfloat,
     apply_zdiffusion_t: bool,
-    compute_diagnostic_quantities: bool,
+    compute_flow_deformation: bool,
     apply_to_temperature: bool,
     limited_area: bool,
     vn: fa.EdgeKField[wpfloat],
@@ -270,7 +272,7 @@ def diffuse_prognostic_fields(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _diffuse_prognostic_fields(
+    _apply_diffusion_to_prognostic_fields(
         kh_smag=kh_smag,
         smag_limit=smag_limit,
         smag_offset=smag_offset,
@@ -281,7 +283,7 @@ def diffuse_prognostic_fields(
         wgtfac_c=wgtfac_c,
         div_ic=div_ic,
         hdef_ic=hdef_ic,
-        compute_diagnostic_quantities=compute_diagnostic_quantities,
+        compute_flow_deformation=compute_flow_deformation,
         u_vert=u_vert,
         v_vert=v_vert,
         primal_normal_vert_v1=primal_normal_vert_v1,
@@ -301,7 +303,7 @@ def diffuse_prognostic_fields(
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
         w_old=w_old,
-        type_shear=type_shear,
+        compute_hgrad_w=compute_hgrad_w,
         dwdx=dwdx,
         dwdy=dwdy,
         diff_multfac_w=diff_multfac_w,
