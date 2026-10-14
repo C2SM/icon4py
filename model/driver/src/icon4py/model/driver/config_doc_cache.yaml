@@ -1702,7 +1702,7 @@ children:
         is_union: false
       - display_name: 'type: FromFileConfig'
         type_name: <class 'icon4py.model.common.initial_condition.from_file.FromFileConfig'>
-        description: ??
+        description: Parameters for the file-based initial condition.
         default: No default value.
         optional: false
         examples:
@@ -1888,7 +1888,7 @@ children:
         is_union: false
       - display_name: 'type: FromFileConfig'
         type_name: <class 'icon4py.model.common.topography.from_file.FromFileConfig'>
-        description: ??
+        description: Parameters for the file-based topography.
         default: No default value.
         optional: false
         examples:
@@ -2467,7 +2467,11 @@ children:
     children:
       - display_name: 'type: NonHydrostaticConfig'
         type_name: <class 'icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig'>
-        description: ??
+        description: "\n    Contains necessary parameter to configure a nonhydro run.\n\
+          \n    Encapsulates namelist parameters and derived parameters.\n    TODO:\
+          \ (magdalena) values should be read from a configuration file.\n    Default\
+          \ values are taken from the defaults in the corresponding ICON Fortran namelist\
+          \ files.\n    "
         default: None
         optional: true
         examples:
@@ -2897,7 +2901,11 @@ children:
     children:
       - display_name: 'type: DiffusionConfig'
         type_name: <class 'icon4py.model.atmosphere.diffusion.diffusion.DiffusionConfig'>
-        description: ??
+        description: "\n    Contains necessary parameter to configure a diffusion\
+          \ run.\n\n    Encapsulates namelist parameters and derived parameters.\n\
+          \    Values should be read from configuration.\n    Default values are taken\
+          \ from the defaults in the corresponding ICON Fortran namelist files.\n\
+          \    "
         default: None
         optional: true
         examples:
@@ -3399,7 +3407,10 @@ children:
     children:
       - display_name: 'type: TracerConfig'
         type_name: <class 'icon4py.model.common.states.tracer_states.TracerConfig'>
-        description: ??
+        description: "Which tracers are active in the model configuration.\n\n   \
+          \ Each boolean field indicates whether the corresponding tracer is active.\n\
+          \    Used instead of a raw ``ntracer: int`` to provide type-safe tracer\
+          \ selection.\n    "
         default: None
         optional: true
         examples:
@@ -3542,7 +3553,8 @@ children:
     children:
       - display_name: 'type: AdvectionConfig'
         type_name: <class 'icon4py.model.atmosphere.tracer_advection.tracer_advection.AdvectionConfig'>
-        description: ??
+        description: "\n    Contains necessary parameters to configure an tracer advection\
+          \ run.\n    "
         default: None
         optional: true
         examples:
@@ -3678,7 +3690,25 @@ children:
     children:
       - display_name: 'type: SingleMomentSixClassIconGraupelConfig'
         type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.microphysics.single_moment_six_class_gscp_graupel.SingleMomentSixClassIconGraupelConfig'>
-        description: ??
+        description: "\n    Contains necessary parameters to configure icon graupel\
+          \ microphysics scheme.\n\n    Encapsulates namelist parameters.\n    Values\
+          \ should be read from configuration.\n    Default values are taken from\
+          \ the defaults in the corresponding ICON Fortran namelist files.\n\n   \
+          \ lsedi_ice (option for whether ice sedimendation is performed), lstickeff\
+          \ (option for different empirical formulae of sticking efficiency), and\
+          \ lred_depgrow (option for reduced depositional growth) are removed because\
+          \ they are set to True in the original code gscp_graupel.f90.\n\n    lpres_pri\
+          \ is removed because it is a duplicated option for lsedi_ice.\n\n    ldiag_ttend,\
+          \ and ldiag_qtend are removed because default outputs in icon4py physics\
+          \ granules include tendencies.\n\n    l_cv is removed. This option is to\
+          \ swtich between whether the microphysical processes are isochoric or isobaric.\
+          \ Originally defined as  as input to the graupel in ICON. It is hardcoded\
+          \ to True in ICON.\n    The reason for its existence and isobaric may have\
+          \ a positive effect on reducing sound waves. In case it needs to be restored,\
+          \ is_isochoric is a better name.\n\n    The COSMO microphysics documentation\
+          \ \"A Description of the Nonhydrostatic Regional COSMO-Model Part II Physical\
+          \ Parameterizations\" can be downloaded via this link: https://www.cosmo-model.org/content/model/cosmo/coreDocumentation/cosmo_physics_6.00.pdf\n\
+          \    "
         default: None
         optional: true
         examples:
@@ -3910,7 +3940,7 @@ children:
     children:
       - display_name: 'type: MuphysConfig'
         type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.muphys.config.MuphysConfig'>
-        description: ??
+        description: Configuration for the muphys microphysics component.
         default: None
         optional: true
         examples:
@@ -3974,7 +4004,9 @@ children:
     children:
       - display_name: 'type: TmxConfig'
         type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.tmx.config.TmxConfig'>
-        description: ??
+        description: "\n    Default values are taken from ``vdiff_config_init`` in\
+          \ the corresponding ICON\n    Fortran module ``mo_turb_vdiff_config.f90``\
+          \ (namelist ``aes_vdf_nml``).\n    "
         default: None
         optional: true
         examples:

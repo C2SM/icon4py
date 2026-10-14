@@ -124,6 +124,34 @@ def resolve_type(type_hint: HINT) -> RESOLVED:
     return actual_type
 
 
+@dataclasses.dataclass(frozen=True)
+class OptionMeta:
+    """Read the ConfigOption from an annotated type."""
+
+    type_hint: HINT
+
+    def get(self: typing.Self) -> config_options.ConfigOption:
+        return config_options.ConfigOption.from_type_hint(self.type_hint)
+
+    def or_default_from(
+        self: typing.Self, other_type_hint: HINT
+    ) -> typing.Self | DefaultOptionMeta:
+        if hasattr(self.type_hint, "__metadata__"):
+            return self
+        else:
+            return DefaultOptionMeta(other_type_hint)
+
+
+@dataclasses.dataclass(frozen=True)
+class DefaultOptionMeta(OptionMeta):
+    """Create a ConfigOption with the description read from the resolved type's docstring if possible."""
+
+    def get(self: typing.Self) -> config_options.ConfigOption:
+        return config_options.ConfigOption(
+            description=description_from_type(resolve_type(self.type_hint))
+        )
+
+
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class Record:
     qualified_name: tuple[str, ...]
@@ -140,15 +168,10 @@ class Record:
         cls: type[typing.Self], type_hint: RESOLVED, ctx: TraversalContext
     ) -> typing.Self:
         actual_type = resolve_type(type_hint)
-        option_meta = (
-            config_options.ConfigOption.from_type_hint(ctx.current_typehint)
-            if hasattr(ctx.current_typehint, "__metadata__")
-            else config_options.ConfigOption(description=description_from_type(actual_type))
-        )
         return cls(
             qualified_name=ctx.name_path,
             allowed_type=actual_type,
-            option_meta=option_meta,
+            option_meta=OptionMeta(ctx.current_typehint).or_default_from(actual_type).get(),
             default=ctx.default,
         )
 
@@ -196,14 +219,18 @@ def node_from_dataclass(type_hint: RESOLVED, ctx: TraversalContext) -> ConfigCla
 
 def node_from_union(type_hint: types.UnionType, ctx: TraversalContext) -> UnionContainer:
     return UnionContainer(
-        record=(rec := Record.from_type(type_hint, ctx=ctx)),
+        record=Record.from_type(type_hint, ctx=ctx),
         alternatives=tuple(
             node_from_type(
                 resolve_type(t),
                 ctx=ctx.append_path(
                     name=f"type: {resolve_type(t).__name__}",
                     field=ctx.current_field,
-                    type_hint=typing.Annotated[t, rec.option_meta],
+                    type_hint=t
+                    if hasattr(t, "__meta__")
+                    else typing.Annotated[
+                        t, OptionMeta(ctx.current_typehint).or_default_from(t).get()
+                    ],
                 ),
             )
             for t in type_hint.__args__
@@ -222,15 +249,10 @@ def description_from_type(type_hint: RESOLVED) -> str:
 
 
 def node_from_other_type(type_hint: HINT, ctx: TraversalContext) -> Record:
-    option_meta = (
-        config_options.ConfigOption.from_type_hint(ctx.current_typehint)
-        if hasattr(ctx.current_typehint, "__metadata__")
-        else config_options.ConfigOption(description=description_from_type(resolve_type(type_hint)))
-    )
     return Record(
         qualified_name=ctx.name_path,
         allowed_type=resolve_type(type_hint),
-        option_meta=option_meta,
+        option_meta=OptionMeta(ctx.current_typehint).or_default_from(type_hint).get(),
         default=ctx.default,
     )
 
