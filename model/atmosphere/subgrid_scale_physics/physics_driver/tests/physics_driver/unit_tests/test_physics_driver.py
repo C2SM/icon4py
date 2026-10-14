@@ -171,15 +171,31 @@ class RecordingComponentState(ComponentState):
 class RecordingCoupling:
     """Stub for the whole PhysicsState layer, recording the driver's coupling calls.
 
-    Plays entry state, accumulators, and apply at once — the driver only cares
-    about the call sequence, which `events` captures in order.
+    Plays PhysicsState and Tendencies at once — the driver only cares about the
+    call sequence, which `events` captures in order.
     """
 
     events: list = dataclasses.field(default_factory=list)
 
-    # EntryState surface
+    # PhysicsState surface
     def compute_diagnostics(self, prognostic, tracers) -> None:
         self.events.append(("compute_diagnostics", prognostic))
+
+    _process_outputs: dict = dataclasses.field(default_factory=dict)
+
+    @property
+    def process_outputs(self) -> dict:
+        return self._process_outputs
+
+    def allocate_process_outputs(self, process_name, outputs_properties):
+        self.events.append(("allocate", process_name))
+        buffers = {
+            name: f"BUF_{name}"
+            for name, props in outputs_properties.items()
+            if props.kind != model.FieldKind.TENDENCY
+        }
+        self._process_outputs[process_name] = buffers
+        return buffers
 
     # Tendencies surface
     def zero(self) -> None:
@@ -188,33 +204,16 @@ class RecordingCoupling:
     def accumulate(self, outputs, outputs_properties) -> None:
         self.events.append(("accumulate", dict(outputs)))
 
-    def apply(self, entry_state, dt_seconds) -> None:
+    def apply(self, state, dt_seconds) -> None:
         self.events.append(("apply", dt_seconds))
-
-    # DiagnosticsStore surface
-    store: dict = dataclasses.field(default_factory=dict)
-
-    def allocate(self, process_name, outputs_properties):
-        self.events.append(("allocate", process_name))
-        buffers = {
-            name: f"BUF_{name}"
-            for name, props in outputs_properties.items()
-            if props.kind != model.FieldKind.TENDENCY
-        }
-        self.store[process_name] = buffers
-        return buffers
-
-    def __getitem__(self, process_name):
-        return self.store[process_name]
 
 
 def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
     coupling = RecordingCoupling()
     driver = PhysicsDriver(
         processes=processes,
-        entry_state=coupling,
+        state=coupling,
         tendencies=coupling,
-        diagnostics=coupling,
     )
     return driver, coupling
 
@@ -256,11 +255,11 @@ def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
         ("accumulate", {"tend_temperature": "B", "kh": "KH"}),
         ("apply", 300.0),
     ]
-    # both processes translated the same (frozen) entry state
+    # both processes translated the same PhysicsState (same step-entry diagnostics)
     assert state.input_calls == [coupling, coupling]
-    # the store holds the layer-allocated buffers the granule writes into, by process
-    assert driver.diagnostics["B"] == {"kh": "BUF_kh"}
-    assert driver.diagnostics["A"] == {}
+    # the state holds the layer-allocated buffers the granule writes into, by process
+    assert driver.process_outputs["B"] == {"kh": "BUF_kh"}
+    assert driver.process_outputs["A"] == {}
 
 
 def test_run_raises_for_non_multiple_interval() -> None:
@@ -387,4 +386,4 @@ def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:
     )
     # before any run: the layer allocated, the component adopted the buffer
     assert comp.bound == {"kh": "BUF_kh"}
-    assert driver.diagnostics["tmx"] == {"kh": "BUF_kh"}
+    assert driver.process_outputs["tmx"] == {"kh": "BUF_kh"}

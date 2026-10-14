@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests of the PhysicsState layer (EntryState facade, accumulators, apply-once)."""
+"""Tests of the PhysicsState layer (PhysicsState facade, process outputs, accumulators, apply-once)."""
 
 import gt4py.next as gtx
 import numpy as np
@@ -80,7 +80,7 @@ def _tracer_state(grid, *, qv: float = 0.0) -> tracer_states.TracerState:
     )
 
 
-def _entry_state(grid) -> physics_state.EntryState:
+def _physics_state(grid) -> physics_state.PhysicsState:
     metrics = _StubFieldSource(
         {
             metrics_attributes.DDQZ_Z_FULL: data_alloc.constant_field(
@@ -98,7 +98,7 @@ def _entry_state(grid) -> physics_state.EntryState:
             ),
         }
     )
-    return physics_state.EntryState(
+    return physics_state.PhysicsState(
         grid=grid,
         interpolation=interpolation,
         metrics=metrics,
@@ -107,7 +107,7 @@ def _entry_state(grid) -> physics_state.EntryState:
 
 
 # ---------------------------------------------------------------------------
-# EntryState
+# PhysicsState
 # ---------------------------------------------------------------------------
 
 
@@ -119,7 +119,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     single apply step.
     """
     grid = simple.simple_grid()
-    ws = _entry_state(grid)
+    ws = _physics_state(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
     exner_before = prognostic.exner.asnumpy().copy()
@@ -225,7 +225,7 @@ def _accumulated(grid, **tendencies) -> physics_state.Tendencies:
 
 def test_apply_updates_tracers_w_and_thermodynamics_once():
     grid = simple.simple_grid()
-    ws = _entry_state(grid)
+    ws = _physics_state(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
     ws.compute_diagnostics(prognostic, tracers)
@@ -259,7 +259,7 @@ def test_apply_projects_accumulated_wind_tendency_to_vn():
     # uniform ddt_u = 1e-4, ddt_v = 0; primal_normal_cell_x = 1, c_lin_e = 0.5 (two neighbors)
     # => ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on all edges of the periodic simple grid
     grid = simple.simple_grid()
-    ws = _entry_state(grid)
+    ws = _physics_state(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
     ws.compute_diagnostics(prognostic, tracers)
@@ -279,7 +279,7 @@ def test_apply_rejects_a_lone_horizontal_wind_tendency():
     # vn is ONE projection of (u, v), so a process declaring only one of the two would
     # silently lose the other half of the momentum: an error, not a no-op.
     grid = simple.simple_grid()
-    ws = _entry_state(grid)
+    ws = _physics_state(grid)
     ws.compute_diagnostics(
         _uniform_prognostic(grid, exner=0.95, theta_v=300.0), _tracer_state(grid)
     )
@@ -289,9 +289,9 @@ def test_apply_rejects_a_lone_horizontal_wind_tendency():
         acc.apply(ws, dt_seconds=300.0)
 
 
-def test_entry_state_groups_diagnostics_in_common_container():
+def test_physics_state_groups_diagnostics_in_common_container():
     grid = simple.simple_grid()
-    ws = _entry_state(grid)
+    ws = _physics_state(grid)
     assert isinstance(ws.diagnostics, diagnostic_state.DiagnosticState)
     # the flat shorthand is gone -- pointers and diagnostics are structurally distinct
     assert not hasattr(ws, "ta")
@@ -299,33 +299,77 @@ def test_entry_state_groups_diagnostics_in_common_container():
 
 
 # ---------------------------------------------------------------------------
-# DiagnosticsStore
+# Process outputs
 # ---------------------------------------------------------------------------
 
 
-def test_diagnostics_store_allocates_from_metadata():
+def test_allocate_process_outputs_from_metadata():
     grid = simple.simple_grid()
-    store = physics_state.DiagnosticsStore(grid=grid)
+    ws = _physics_state(grid)
     props = {
         "tend_temperature": _meta(dims.CellDim, dims.KDim, kind=_TENDENCY),
         "kh": _meta(dims.CellDim, dims.KDim),
         "cptgz_vi": _meta(dims.CellDim),
     }
-    buffers = store.allocate("tmx", props)
+    buffers = ws.allocate_process_outputs("tmx", props)
     # tendencies are never layer-allocated; diagnostics get their declared shape
     assert set(buffers) == {"kh", "cptgz_vi"}
     assert buffers["kh"].domain.dims == (dims.CellDim, dims.KDim)
     assert buffers["cptgz_vi"].domain.dims == (dims.CellDim,)
-    assert store["tmx"] is buffers
+    assert ws.process_outputs["tmx"] is buffers
 
 
-def test_diagnostics_store_allocates_a_half_level_output_from_khalfdim():
+def test_allocate_process_outputs_of_a_half_level_output_from_khalfdim():
     # Half levels are stated by the dimension alone, so a KHalfDim output must get
     # one level more than a full-level one.
     grid = simple.simple_grid()
-    store = physics_state.DiagnosticsStore(grid=grid)
+    ws = _physics_state(grid)
 
-    buffers = store.allocate("tmx", {"kh": _meta(dims.CellDim, dims.KHalfDim)})
+    buffers = ws.allocate_process_outputs("tmx", {"kh": _meta(dims.CellDim, dims.KHalfDim)})
 
     assert buffers["kh"].domain.dims == (dims.CellDim, dims.KHalfDim)
     assert buffers["kh"].ndarray.shape == (grid.num_cells, grid.num_levels + 1)
+
+
+def test_allocate_process_outputs_keeps_processes_apart():
+    # Keyed per process: two processes may declare the same output name.
+    # TODO(Chia Rui): Maybe this is not always the case.
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+    props = {"kh": _meta(dims.CellDim, dims.KDim)}
+
+    ws.allocate_process_outputs("muphys", props)
+    ws.allocate_process_outputs("tmx", props)
+
+    assert ws.process_outputs["muphys"]["kh"] is not ws.process_outputs["tmx"]["kh"]
+
+
+def test_allocate_process_outputs_rejects_a_duplicate_process_name():
+    # A second allocation under the same name would silently orphan the buffers
+    # already bound to the first process's component.
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+    props = {"kh": _meta(dims.CellDim, dims.KDim)}
+    ws.allocate_process_outputs("tmx", props)
+
+    with pytest.raises(ValueError, match="already has output buffers"):
+        ws.allocate_process_outputs("tmx", props)
+
+
+def test_allocate_process_outputs_rejects_a_diagnostic_without_dims():
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+
+    with pytest.raises(ValueError, match="declares no 'dims'"):
+        ws.allocate_process_outputs("tmx", {"kh": _meta()})
+
+
+def test_process_outputs_are_not_set_as_attributes():
+    # The outputs stay behind 'process_outputs', so an output name can never shadow
+    # a model-state pointer or the diagnostics.
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+
+    ws.allocate_process_outputs("tmx", {"kh": _meta(dims.CellDim, dims.KDim)})
+
+    assert not hasattr(ws, "kh")

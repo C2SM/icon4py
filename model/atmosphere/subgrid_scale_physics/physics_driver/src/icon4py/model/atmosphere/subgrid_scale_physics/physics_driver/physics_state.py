@@ -6,11 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""The two-layer coupling pieces of the PhysicsDriver.
+"""The two coupling pieces of the PhysicsDriver: the PhysicsState and the Tendencies.
 
 All physics processes are coupled in PARALLEL: every process computes its
 tendencies from the same frozen step-entry state, and the summed tendencies
-are applied to the prognostic state exactly once, after all processes.
+are applied to the prognostic state exactly once, after all processes. The
+diagnostic outputs of the processes live in per-process buffers owned by the
+PhysicsState.
 
 Deliberately NOT implemented here: ICON AES couples microphyscs and turbulence sequentially
 (each process sees the previous one's provisional update). Reintroducing that
@@ -54,13 +56,21 @@ if TYPE_CHECKING:
 MOISTURE_SPECIES: Final = ("qv", "qc", "qi", "qr", "qs", "qg")
 
 
-class EntryState:
-    """The PhysicsState facade: model-state pointers + diagnosed fields (ICON dyn2phy, ``field%ta`` / ``diag%``).
+class PhysicsState:
+    """What the processes see in one step (ICON dyn2phy, ``field%ta`` / ``diag%``), in three parts.
 
-    Diagnosed once at ``PhysicsDriver.run`` entry; NEVER updated between processes —
-    all processes are parallel-coupled and see the same step-entry state. The
-    diagnostics gathered here used to be duplicated in each process's state adapter.
-    Pressure is step-start by construction, as in ICON.
+    1. Pointers into the model state (``exner``, ``theta_v``, ``rho``, ``vn``,
+       ``w``, ``tracers``), rebound by every ``compute_diagnostics`` call. Only
+       ``Tendencies.apply`` writes their values.
+    2. ``diagnostics``, a ``DiagnosticState`` diagnosed once at ``PhysicsDriver.run``
+       entry and not updated between processes: all processes are parallel-coupled
+       and see the same step-entry state, which is also the base ``Tendencies.apply``
+       starts from. Pressure is step-start by construction, as in ICON.
+    3. ``process_outputs``, the diagnostic (non-tendency) output buffers of each
+       process. They are allocated once, when the driver is built, and written in
+       place by their component. They persist across steps, holding the values of
+       the last computed step (zeros before the process has first run).
+       ``compute_diagnostics`` never touches them.
     """
 
     def __init__(
@@ -71,6 +81,8 @@ class EntryState:
         metrics: factory.FieldSource,
         backend: gtx_typing.Backend | None = None,
     ) -> None:
+        self._grid = grid
+        self._backend = backend
         num_cells = grid.num_cells
         num_levels = grid.num_levels
 
@@ -128,6 +140,41 @@ class EntryState:
         self.w: gtx.Field | None = None
         self.tracers: tracer_states.TracerState | None = None
 
+        # Diagnostic output buffers, keyed by process name, then by output name
+        self._process_outputs: dict[str, dict[str, gtx.Field]] = {}
+
+    @property
+    def process_outputs(self) -> Mapping[str, Mapping[str, gtx.Field]]:
+        """The diagnostic output buffers of every process, keyed by process name.
+
+        Keyed per process, so two processes may declare the same output name.
+        """
+        return self._process_outputs
+
+    def allocate_process_outputs(
+        self, process_name: str, outputs_properties: Mapping[str, model.FieldMetaData]
+    ) -> dict[str, gtx.Field]:
+        """Allocate the process's diagnostic output buffers from their metadata and keep them.
+
+        Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
+        is a diagnostic. Tendencies stay component-owned: ``Tendencies`` sums
+        them across processes, and recycling needs each process's last tendency.
+        """
+        if process_name in self._process_outputs:
+            raise ValueError(f"Process '{process_name}' already has output buffers.")
+        buffers: dict[str, gtx.Field] = {}
+        for name, props in outputs_properties.items():
+            if props.kind == model.FieldKind.TENDENCY:
+                continue
+            if props.dims is None:
+                raise ValueError(
+                    f"Diagnostic output '{name}' of process '{process_name}' declares no 'dims', "
+                    "which are needed to allocate its buffer."
+                )
+            buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
+        self._process_outputs[process_name] = buffers
+        return buffers
+
     def compute_diagnostics(
         self,
         prognostic: prognostics.PrognosticState,
@@ -136,17 +183,19 @@ class EntryState:
         """Bind the model-state pointers and diagnose the physics fields (dyn2phy).
 
         After this call the facade is complete: every model-state field the physics
-        may touch is reachable as ``entry_state.<name>`` — the raw PrognosticState
-        and TracerState never appear below the PhysicsState layer. Strictly
-        read-only for the processes: only the driver's single apply step writes,
-        through the pointers bound here.
+        may touch is reachable as ``state.<name>`` — the raw PrognosticState and
+        TracerState never appear below the PhysicsState layer. The processes do
+        not write the model state: only the driver's single apply step does,
+        through the pointers bound here. The process output buffers are left as
+        they are.
         """
         # Physics needs all six moisture species; TracerState fields are optional (a
         # tracer may be inactive per TracerConfig), so fail loudly once here rather
         # than feed None into the physics.
         if missing := [name for name in MOISTURE_SPECIES if getattr(tracers, name) is None]:
             raise ValueError(
-                f"physics requires all moisture species active in the TracerState; missing: {missing}"
+                "Physics requires all moisture species to be active in the 'TracerState', "
+                f"missing: {missing}."
             )
 
         # Pointers into the model state — same memory, physics names (no copies)
@@ -197,7 +246,7 @@ class Tendencies:
     Sums are keyed by output name (``tend_*``) and their buffers allocated lazily
     on first contribution. Only outputs whose metadata carries ``kind``
     ``TENDENCY`` accumulate; the rest are diagnostics, written by the components
-    directly into the buffers of the ``DiagnosticsStore``.
+    directly into the ``PhysicsState.process_outputs`` buffers.
 
     In ``apply`` the order matters: the tracers are updated first, because the
     exner/theta_v update uses the final moisture, then the temperature, then the
@@ -321,10 +370,10 @@ class Tendencies:
                 )
             buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
-    def apply(self, entry_state: EntryState, dt_seconds: float) -> None:
+    def apply(self, state: PhysicsState, dt_seconds: float) -> None:
         """Write the accumulated tendencies to the model state — through the facade's pointers."""
         acc = self._acc
-        tracers = entry_state.tracers
+        tracers = state.tracers
         assert tracers is not None, "compute_diagnostics must run before apply"
 
         # 1. Tracers: q += dt * sum of tendencies (mo_interface_iconam_aes:513)
@@ -343,7 +392,7 @@ class Tendencies:
         #    plus the summed tendency, with the final (post step 1) moisture.
         if "tend_temperature" in acc:
             self._apply_tendency(
-                field_a=entry_state.diagnostics.temperature,
+                field_a=state.diagnostics.temperature,
                 coeff=dt_seconds,
                 field_b=acc["tend_temperature"],
                 output_field=self._new_te,
@@ -357,16 +406,16 @@ class Tendencies:
                 qs=tracers.qs,
                 qg=tracers.qg,
                 temperature=self._new_te,
-                virtual_temperature=entry_state.diagnostics.virtual_temperature,
+                virtual_temperature=state.diagnostics.virtual_temperature,
                 virtual_temperature_tendency=self._tv_tendency,
             )
             self._update_exner_and_theta_v(
-                rho=entry_state.rho,
-                virtual_temperature=entry_state.diagnostics.virtual_temperature,
+                rho=state.rho,
+                virtual_temperature=state.diagnostics.virtual_temperature,
                 virtual_temperature_tendency=self._tv_tendency,
                 dtime=dt_seconds,
-                exner=entry_state.exner,
-                theta_v=entry_state.theta_v,
+                exner=state.exner,
+                theta_v=state.theta_v,
             )
 
         # 3. Winds: ONE projection of the summed (u, v) tendencies onto edge normals
@@ -374,7 +423,7 @@ class Tendencies:
         if len(wind_tendencies) == 1:
             (declared,) = wind_tendencies
             raise ValueError(
-                f"the horizontal wind tendencies are applied as a pair; got only {declared}"
+                f"The horizontal wind tendencies are applied as a pair, got only '{declared}'."
             )
         if wind_tendencies:
             self._compute_vn_from_uv(
@@ -383,58 +432,17 @@ class Tendencies:
                 vn=self._ddt_vn,
             )
             self._apply_tendency_vn(
-                field_a=entry_state.vn,
+                field_a=state.vn,
                 coeff=dt_seconds,
                 field_b=self._ddt_vn,
-                output_field=entry_state.vn,
+                output_field=state.vn,
             )
 
         # 4. w (KDim+1 half-levels)
         if "tend_w" in acc:
             self._apply_tendency_w(
-                field_a=entry_state.w,
+                field_a=state.w,
                 coeff=dt_seconds,
                 field_b=acc["tend_w"],
-                output_field=entry_state.w,
+                output_field=state.w,
             )
-
-
-class DiagnosticsStore:
-    """Storage for the diagnostic (non-tendency) outputs of the processes.
-
-    Allocates one buffer per output from its declared metadata at driver
-    construction and hands it to the component, which writes into it directly.
-    The buffers are keyed per process, so two processes may declare the same
-    output name. A buffer holds the values of the last computed step, and zeros
-    before its process has run.
-    """
-
-    def __init__(self, *, grid: base_grid.Grid, backend: gtx_typing.Backend | None = None) -> None:
-        self._grid = grid
-        self._backend = backend
-        self._store: dict[str, dict[str, gtx.Field]] = {}
-
-    def allocate(
-        self, process_name: str, outputs_properties: dict[str, model.FieldMetaData]
-    ) -> dict[str, gtx.Field]:
-        """Allocate the process's diagnostic buffers from their metadata and keep them.
-
-        Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
-        is a diagnostic — tendencies stay component-owned (the accumulators sum
-        across processes and recycling needs each process's last tendency).
-        """
-        buffers: dict[str, gtx.Field] = {}
-        for name, props in outputs_properties.items():
-            if props.kind == model.FieldKind.TENDENCY:
-                continue
-            if props.dims is None:
-                raise ValueError(
-                    f"diagnostic output '{name}' of process '{process_name}' declares no dims; "
-                    "the store allocates its buffer from that metadata"
-                )
-            buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
-        self._store[process_name] = buffers
-        return buffers
-
-    def __getitem__(self, process_name: str) -> dict[str, gtx.Field]:
-        return self._store[process_name]

@@ -57,8 +57,14 @@ CPL = SPECIFIC_HEAT_CAPACITY_LIQUID_WATER
 #: density of liquid water. Originally expressed as rhow in ICON. [kg/m3]
 WATER_DENSITY: Final[ta.wpfloat] = ta.wpfloat(1.000e3)
 
-#: specific heat capacity of ice. Originally expressed as ci in ICON. [J/K/kg]
+#: specific heat capacity of ice used by the microphysics. Originally expressed as ci in
+#: mo_aes_graupel.f90, mo_aes_thermo.f90 and mo_thdyn_functions.f90 in ICON. [J/K/kg]
 SPECIFIC_HEAT_CAPACITY_ICE: Final[ta.wpfloat] = ta.wpfloat(2108.0)
+
+#: specific heat capacity of ice as defined in ICON's shared physical constants. Originally
+#: expressed as ci in mo_physical_constants.f90; used by get_cvair and the dycore moist
+#: thermodynamics. Differs from SPECIFIC_HEAT_CAPACITY_ICE. [J/K/kg]
+SPECIFIC_HEAT_CAPACITY_ICE_REFERENCE: Final[ta.wpfloat] = ta.wpfloat(2106.0)
 
 #: Melting temperature of ice/snow [K]. Originally expressed as tmelt in ICON.
 MELTING_TEMPERATURE: Final[ta.wpfloat] = ta.wpfloat(273.15)
@@ -182,6 +188,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     cvv = SPECIFIC_HEAT_CAPACITY_VOLUME_WATER_VAPOR
     cpl = SPECIFIC_HEAT_CAPACITY_LIQUID_WATER
     cpi = SPECIFIC_HEAT_CAPACITY_ICE
+    cpi_ref = SPECIFIC_HEAT_CAPACITY_ICE_REFERENCE
     water_density = WATER_DENSITY
     tmelt = MELTING_TEMPERATURE
     water_triple_point_temperature = WATER_TRIPLE_POINT_TEMPERATURE

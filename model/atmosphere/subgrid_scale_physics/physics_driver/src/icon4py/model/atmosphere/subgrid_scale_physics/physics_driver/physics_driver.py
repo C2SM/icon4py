@@ -23,6 +23,9 @@ from icon4py.model.common.components.components import Component
 
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    import gt4py.next as gtx
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import base as base_grid
@@ -53,7 +56,7 @@ class PhysicsProcess:
     """One physics process: its component, its state adapter and its time control.
 
     The state adapter belongs to the process rather than being shared, because it
-    maps the entry state to the input names of this one component. The process also
+    maps the PhysicsState to the input names of this one component. The process also
     decides whether it runs on a given step and keeps its last computed outputs, so
     a step between two firings can reuse them.
     """
@@ -66,13 +69,13 @@ class PhysicsProcess:
 
     def run(
         self,
-        entry_state: physics_state.EntryState,
+        state: physics_state.PhysicsState,
         step_start_datetime: datetime.datetime,
         dtime: datetime.timedelta,
     ) -> dict[str, Any]:
         """This step's outputs: freshly computed, recycled, or empty if it does not run.
 
-        Takes the entry state rather than the component's input mapping: building
+        Takes the PhysicsState rather than the component's input mapping: building
         that mapping may derive inputs of its own, which must not happen on a step
         where the component does not compute.
         """
@@ -86,7 +89,7 @@ class PhysicsProcess:
         # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
         if tc.is_active(step_start_datetime) or self._cached_output is None:
             self._cached_output = self.component(
-                self.state.as_component_input(entry_state), step_start_datetime
+                self.state.as_component_input(state), step_start_datetime
             )
         return self._cached_output
 
@@ -94,10 +97,11 @@ class PhysicsProcess:
 class PhysicsDriver:
     """Runs the physics processes under parallel coupling.
 
-    In one timestep (``run``) the entry state is diagnosed once from the model
-    state, and every enabled process reads that same frozen state. Tendency
-    outputs are summed over the processes; diagnostic outputs are written by the
-    components into the buffers bound at construction. The summed tendencies are
+    In one timestep (``run``) the PhysicsState is diagnosed once from the model
+    state, and every enabled process reads the same step-entry diagnostics.
+    Tendency outputs are summed over the processes; diagnostic outputs are
+    written by the components into per-process buffers that the PhysicsState
+    allocates and the driver binds at construction. The summed tendencies are
     applied to the model state once, at the end.
 
     The processes never read or write the prognostic and tracer states directly.
@@ -106,18 +110,21 @@ class PhysicsDriver:
     def __init__(
         self,
         processes: list[PhysicsProcess],
-        entry_state: physics_state.EntryState,
+        state: physics_state.PhysicsState,
         tendencies: physics_state.Tendencies,
-        diagnostics: physics_state.DiagnosticsStore,
     ) -> None:
         self._processes = processes
-        self._entry = entry_state
+        self._state = state
         self._tendencies = tendencies
-        self.diagnostics = diagnostics
         for process in processes:
             process.component.bind_output_buffers(
-                diagnostics.allocate(process.name, process.component.outputs_properties)
+                state.allocate_process_outputs(process.name, process.component.outputs_properties)
             )
+
+    @property
+    def process_outputs(self) -> Mapping[str, Mapping[str, gtx.Field]]:
+        """The diagnostic output buffers of every process, keyed by process name."""
+        return self._state.process_outputs
 
     @classmethod
     def from_sources(
@@ -137,13 +144,12 @@ class PhysicsDriver:
         """
         return cls(
             processes,
-            entry_state=physics_state.EntryState(
+            state=physics_state.PhysicsState(
                 grid=grid, interpolation=interpolation, metrics=metrics, backend=backend
             ),
             tendencies=physics_state.Tendencies(
                 grid=grid, geometry=geometry, interpolation=interpolation, backend=backend
             ),
-            diagnostics=physics_state.DiagnosticsStore(grid=grid, backend=backend),
         )
 
     def run(
@@ -154,10 +160,10 @@ class PhysicsDriver:
         simulation_current_datetime: datetime.datetime,
     ) -> None:
         step_start_datetime = simulation_current_datetime - dtime
-        self._entry.compute_diagnostics(prognostic, tracers)
+        self._state.compute_diagnostics(prognostic, tracers)
         self._tendencies.zero()
         dt_seconds = dtime.total_seconds()
         for process in self._processes:
-            outputs = process.run(self._entry, step_start_datetime, dtime)
+            outputs = process.run(self._state, step_start_datetime, dtime)
             self._tendencies.accumulate(outputs, process.component.outputs_properties)
-        self._tendencies.apply(self._entry, dt_seconds)
+        self._tendencies.apply(self._state, dt_seconds)
