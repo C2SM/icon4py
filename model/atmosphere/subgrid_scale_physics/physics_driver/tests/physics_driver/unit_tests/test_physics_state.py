@@ -12,7 +12,10 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    config as physics_config,
+    physics_state,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import geometry_attributes, simple
 from icon4py.model.common.interpolation import interpolation_attributes
@@ -189,7 +192,9 @@ def test_zero_resets_between_steps():
 # ---------------------------------------------------------------------------
 
 
-def _tendencies(grid) -> physics_state.Tendencies:
+def _tendencies(
+    grid, coupling: physics_config.CouplingType = physics_config.CouplingType.PARALLEL
+) -> physics_state.Tendencies:
     # neutral geometry: primal_normal_x = 1, primal_normal_y = 0, c_lin_e = 0.5
     # => two-neighbor projection of a uniform u-tendency is the identity
     geometry = _StubFieldSource(
@@ -210,7 +215,7 @@ def _tendencies(grid) -> physics_state.Tendencies:
         }
     )
     return physics_state.Tendencies(
-        grid=grid, geometry=geometry, interpolation=interpolation, backend=None
+        grid=grid, geometry=geometry, interpolation=interpolation, backend=None, coupling=coupling
     )
 
 

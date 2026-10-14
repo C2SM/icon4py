@@ -14,7 +14,10 @@ import dataclasses
 import datetime
 from typing import TYPE_CHECKING, Any, Protocol
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    config as physics_config,
+    physics_state,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
@@ -28,6 +31,7 @@ if TYPE_CHECKING:
     import gt4py.next as gtx
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.common import field_type_aliases as fa, type_alias as ta
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.common.states import factory, prognostic_state, tracer_states
 
@@ -95,16 +99,14 @@ class PhysicsProcess:
 
 
 class PhysicsDriver:
-    """Runs the physics processes under parallel coupling.
-
+    """
     In one timestep (``run``) the PhysicsState is diagnosed once from the model
-    state, and every enabled process reads the same step-entry diagnostics.
-    Tendency outputs are summed over the processes; diagnostic outputs are
-    written by the components into per-process buffers that the PhysicsState
-    allocates and the driver binds at construction. The summed tendencies are
-    applied to the model state once, at the end.
+    state, then the processes run in list order. Under parallel coupling every
+    process reads the same entry prognostic/ basic diagnostic state; under sequential
+    coupling each process's tendencies are added to some variables in place before
+    the next one runs (see ``Tendencies.advance``). Tendency outputs are summed
+    over the processes.
 
-    The processes never read or write the prognostic and tracer states directly.
     """
 
     def __init__(
@@ -136,6 +138,7 @@ class PhysicsDriver:
         interpolation: factory.FieldSource,
         metrics: factory.FieldSource,
         backend: gtx_typing.Backend | None = None,
+        coupling: physics_config.CouplingType = physics_config.CouplingType.PARALLEL,
     ) -> PhysicsDriver:
         """Build the driver together with the coupling pieces it owns.
 
@@ -148,7 +151,11 @@ class PhysicsDriver:
                 grid=grid, interpolation=interpolation, metrics=metrics, backend=backend
             ),
             tendencies=physics_state.Tendencies(
-                grid=grid, geometry=geometry, interpolation=interpolation, backend=backend
+                grid=grid,
+                geometry=geometry,
+                interpolation=interpolation,
+                backend=backend,
+                coupling=coupling,
             ),
         )
 
@@ -158,12 +165,19 @@ class PhysicsDriver:
         tracers: tracer_states.TracerState,
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
+        perturbed_exner: fa.CellKField[ta.wpfloat] | None = None,
     ) -> None:
         step_start_datetime = simulation_current_datetime - dtime
         self._state.compute_diagnostics(prognostic, tracers)
         self._tendencies.zero()
         dt_seconds = dtime.total_seconds()
+        # TODO (Yilu): compute the heat capacity after muphy
+        # TODO (Yilu): I think ICON has a bug that tmx does not contribute at all if tmx is not active at a given time step. Be careful. Although tmx should be run with muphy as a fast process.
         for process in self._processes:
             outputs = process.run(self._state, step_start_datetime, dtime)
             self._tendencies.accumulate(outputs, process.component.outputs_properties)
-        self._tendencies.apply(self._state, dt_seconds)
+            self._tendencies.advance(
+                self._state, outputs, process.component.outputs_properties, dt_seconds
+            )
+        self._tendencies.update(self._state, dt_seconds, perturbed_exner)
+        # TODO (Yilu): halo exchange

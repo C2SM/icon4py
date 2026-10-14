@@ -86,3 +86,49 @@ def test_update_exner_and_theta_v(backend: gtx_typing.Backend) -> None:
         theta_v.asnumpy() * exner.asnumpy(),
         np.full_like(theta_v.asnumpy(), new_virtual_temperature),
     )
+
+
+def test_update_exner_theta_v_and_perturbed_exner(backend: gtx_typing.Backend) -> None:
+    """Same exner/theta_v update as above, plus exner_pr += exner_new - exner_old."""
+    grid = simple.simple_grid()
+    rho_value, tv_value, tv_tendency_value, dtime = 1.1, 280.0, 0.05, 20.0
+    exner_value, perturbed_exner_value = 0.9, 1e-3
+
+    def cell_k(value: float) -> gtx.Field:
+        return data_alloc.constant_field(
+            grid, value, dims.CellDim, dims.KDim, dtype=float, allocator=backend
+        )
+
+    rho = cell_k(rho_value)
+    virtual_temperature = cell_k(tv_value)
+    virtual_temperature_tendency = cell_k(tv_tendency_value)
+    exner = cell_k(exner_value)
+    theta_v = cell_k(0.0)
+    perturbed_exner = cell_k(perturbed_exner_value)
+
+    compute_temperature.update_exner_theta_v_and_perturbed_exner.with_backend(backend)(
+        rho=rho,
+        virtual_temperature=virtual_temperature,
+        virtual_temperature_tendency=virtual_temperature_tendency,
+        dtime=dtime,
+        exner=exner,
+        theta_v=theta_v,
+        perturbed_exner=perturbed_exner,
+        horizontal_start=0,
+        horizontal_end=grid.num_cells,
+        vertical_start=0,
+        vertical_end=grid.num_levels,
+        offset_provider={},
+    )
+
+    new_virtual_temperature = tv_value + tv_tendency_value * dtime
+    expected_exner = np.exp(
+        PhysicsConstants.rd_o_cpd
+        * np.log(PhysicsConstants.rd_o_p0ref * rho_value * new_virtual_temperature)
+    )
+    expected_theta_v = new_virtual_temperature / expected_exner
+    expected_perturbed_exner = perturbed_exner_value + expected_exner - exner_value
+
+    assert test_utils.dallclose(exner.asnumpy(), expected_exner)
+    assert test_utils.dallclose(theta_v.asnumpy(), expected_theta_v)
+    assert test_utils.dallclose(perturbed_exner.asnumpy(), expected_perturbed_exner)

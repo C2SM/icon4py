@@ -201,11 +201,11 @@ class RecordingCoupling:
     def zero(self) -> None:
         self.events.append(("zero",))
 
-    def accumulate(self, outputs, outputs_properties) -> None:
-        self.events.append(("accumulate", dict(outputs)))
+    def advance(self, state, outputs, outputs_properties, dt_seconds) -> None:
+        self.events.append(("advance", dict(outputs), dt_seconds))
 
-    def apply(self, state, dt_seconds) -> None:
-        self.events.append(("apply", dt_seconds))
+    def update(self, state, dt_seconds, perturbed_exner=None) -> None:
+        self.events.append(("apply", dt_seconds, perturbed_exner))
 
 
 def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
@@ -244,16 +244,17 @@ def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
 
     assert comp_a.call_count == 1
     assert comp_b.call_count == 1
-    # parallel coupling: buffers allocated at construction, compute_diagnostics + zero once at
-    # entry, one accumulate per process, exactly one apply at the very end
+    # buffers allocated at construction, compute_diagnostics + zero once at entry, one
+    # advance per process (before the next process runs), exactly one apply
+    # at the very end
     assert coupling.events == [
         ("allocate", "A"),
         ("allocate", "B"),
         ("compute_diagnostics", "prog"),
         ("zero",),
-        ("accumulate", {"tend_temperature": "A"}),
-        ("accumulate", {"tend_temperature": "B", "kh": "KH"}),
-        ("apply", 300.0),
+        ("advance", {"tend_temperature": "A"}, 300.0),
+        ("advance", {"tend_temperature": "B", "kh": "KH"}, 300.0),
+        ("apply", 300.0, None),
     ]
     # both processes translated the same PhysicsState (same step-entry diagnostics)
     assert state.input_calls == [coupling, coupling]
@@ -313,8 +314,8 @@ def test_out_of_window_process_does_nothing() -> None:
         ("allocate", "future"),
         ("compute_diagnostics", "prog"),
         ("zero",),
-        ("accumulate", {}),
-        ("apply", 300.0),
+        ("advance", {}, 300.0),
+        ("apply", 300.0, None),
     ]
 
 
@@ -344,11 +345,8 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
     # The state is translated only on the firing step: a process that derives its own
     # inputs must not compute them for the step that reuses the cached outputs.
     assert state.input_calls == [coupling]
-    accumulates = [e for e in coupling.events if e[0] == "accumulate"]
-    assert accumulates == [
-        ("accumulate", {"tend_temperature": "FRESH"}),
-        ("accumulate", {"tend_temperature": "FRESH"}),  # recycled
-    ]
+    advances = [e for e in coupling.events if e[0] == "advance"]
+    assert advances == [("advance", {"tend_temperature": "FRESH"}, 300.0)] * 2
     applies = [e for e in coupling.events if e[0] == "apply"]
     assert len(applies) == 2  # one per run
 
