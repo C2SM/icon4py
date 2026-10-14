@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.diffuse_prognostic_fields import (
-    diffuse_prognostic_fields,
+    apply_diffusion_to_prognostic_fields,
 )
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -45,16 +45,16 @@ from .test_update_theta_and_exner import update_theta_and_exner_numpy
 @pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestDiffusePrognosticFields(stencil_tests.StencilTest):
-    PROGRAM = diffuse_prognostic_fields
+    PROGRAM = apply_diffusion_to_prognostic_fields
     OUTPUTS = ("vn", "w", "dwdx", "dwdy", "theta_v", "exner", "div_ic", "hdef_ic")
     ABSOLUTE_TOLERANCE = 0.0 if test_utils.wp_is_dp else 5e-7
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            "compute_diagnostic_quantities",
+            "compute_flow_deformation",
             "apply_to_temperature",
             "limited_area",
-            "type_shear",
+            "compute_hgrad_w",
             "start_2nd_nudge_line_idx_e",
             "nrdmax",
             "nlev",
@@ -70,9 +70,9 @@ class TestDiffusePrognosticFields(stencil_tests.StencilTest):
             "vertical_end",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            "compute_diagnostic_quantities",
+            "compute_flow_deformation",
             "apply_to_temperature",
-            "type_shear",
+            "compute_hgrad_w",
             "vertical_start",
             "vertical_end",
             "nrdmax",
@@ -111,7 +111,7 @@ class TestDiffusePrognosticFields(stencil_tests.StencilTest):
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
         w_old: np.ndarray,
-        type_shear: int,
+        compute_hgrad_w: bool,
         dwdx: np.ndarray,
         dwdy: np.ndarray,
         diff_multfac_w: float,
@@ -131,7 +131,7 @@ class TestDiffusePrognosticFields(stencil_tests.StencilTest):
         smallest_vpfloat: float,
         rd_o_cvd: float,
         apply_zdiffusion_t: bool,
-        compute_diagnostic_quantities: bool,
+        compute_flow_deformation: bool,
         apply_to_temperature: bool,
         limited_area: bool,
         start_2nd_nudge_line_idx_e: int,
@@ -164,7 +164,7 @@ class TestDiffusePrognosticFields(stencil_tests.StencilTest):
         # Turbulence diagnostics from pre-diffusion vn
         out_div_ic = div_ic.copy()
         out_hdef_ic = hdef_ic.copy()
-        if compute_diagnostic_quantities:
+        if compute_flow_deformation:
             e_bln_c_s_e = np.expand_dims(e_bln_c_s, axis=-1)
             geofac_div_e = np.expand_dims(geofac_div, axis=-1)
             diff_multfac_smag_e = np.expand_dims(diff_multfac_smag, axis=0)
@@ -233,7 +233,7 @@ class TestDiffusePrognosticFields(stencil_tests.StencilTest):
         out_w = w_old.copy()
         out_dwdx = dwdx.copy()
         out_dwdy = dwdy.copy()
-        if type_shear == 2:
+        if compute_hgrad_w:
             grad_dwdx, grad_dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
                 connectivities, w_old, geofac_grg_x, geofac_grg_y
             )
@@ -344,11 +344,11 @@ class TestDiffusePrognosticFields(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture(
         params=[
-            {"compute_diagnostic_quantities": flag[0], "apply_to_temperature": flag[1]}
+            {"compute_flow_deformation": flag[0], "apply_to_temperature": flag[1]}
             for flag in [(True, True), (False, True), (True, False), (False, False)]
         ],
         ids=lambda param: (
-            f"compute_diagnostic_quantities[{param['compute_diagnostic_quantities']}]"
+            f"compute_flow_deformation[{param['compute_flow_deformation']}]"
             f"-apply_to_temperature[{param['apply_to_temperature']}]"
         ),
     )
@@ -357,7 +357,8 @@ class TestDiffusePrognosticFields(stencil_tests.StencilTest):
         grid: base.Grid,
         request: pytest.FixtureRequest,
     ) -> dict:
-        compute_diagnostic_quantities = request.param["compute_diagnostic_quantities"]
+        compute_flow_deformation = request.param["compute_flow_deformation"]
+        compute_hgrad_w = compute_flow_deformation
         apply_to_temperature = request.param["apply_to_temperature"]
 
         edge_domain = h_grid.domain(dims.EdgeDim)
@@ -416,7 +417,6 @@ class TestDiffusePrognosticFields(stencil_tests.StencilTest):
         dwdy = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         diff_multfac_w = ta.wpfloat(5.0)
         diff_multfac_n2w = data_alloc.random_field(dims.KHalfDim, dtype=ta.wpfloat)
-        type_shear = 2
         nrdmax = 13
 
         # theta_v and exner diffusion
@@ -477,7 +477,7 @@ class TestDiffusePrognosticFields(stencil_tests.StencilTest):
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
             w_old=w_old,
-            type_shear=type_shear,
+            compute_hgrad_w=compute_hgrad_w,
             dwdx=dwdx,
             dwdy=dwdy,
             diff_multfac_w=diff_multfac_w,
@@ -496,7 +496,7 @@ class TestDiffusePrognosticFields(stencil_tests.StencilTest):
             smallest_vpfloat=smallest_vpfloat,
             rd_o_cvd=rd_o_cvd,
             apply_zdiffusion_t=apply_zdiffusion_t,
-            compute_diagnostic_quantities=compute_diagnostic_quantities,
+            compute_flow_deformation=compute_flow_deformation,
             apply_to_temperature=apply_to_temperature,
             limited_area=limited_area,
             vn=vn,

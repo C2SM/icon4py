@@ -30,7 +30,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.model.atmosphere.diffusion.stencils.diffuse_prognostic_fields import (
-    diffuse_prognostic_fields,
+    apply_diffusion_to_prognostic_fields,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.config import config_io, options as common_conf_opt
@@ -540,15 +540,16 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_diagnostic_quantities = (
+        compute_flow_deformation = (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
             or self.config.loutshs
             or self.config.a_hshr > 0.0
         )
-        self.diffuse_prognostic_fields = setup_program(
+        compute_hgrad_w = self.config.shear_type == 2
+        self.apply_diffusion_to_prognostic_fields = setup_program(
             backend=backend,
-            program=diffuse_prognostic_fields,
+            program=apply_diffusion_to_prognostic_fields,
             constant_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
                 "geofac_div": self._interpolation_state.geofac_div,
@@ -567,7 +568,7 @@ class Diffusion:
                 "geofac_grg_y": self._interpolation_state.geofac_grg_y,
                 "area": self._cell_params.area,
                 "diff_multfac_w": self.diff_multfac_w,
-                "type_shear": self.config.shear_type,
+                "compute_hgrad_w": compute_hgrad_w,
                 "theta_ref_mc": self._metric_state.theta_ref_mc,
                 "thresh_tdiff": self.thresh_tdiff,
                 "smallest_vpfloat": constants.VP_NEG_HUGE,
@@ -579,10 +580,8 @@ class Diffusion:
                 "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
                 "apply_zdiffusion_t": self.config.apply_zdiffusion_t,
                 "rd_o_cvd": self.rd_o_cvd,
-            },
-            variants={
-                "compute_diagnostic_quantities": [self._compute_diagnostic_quantities],
-                "apply_to_temperature": [self.config.apply_to_temperature],
+                "compute_flow_deformation": compute_flow_deformation,
+                "apply_to_temperature": self.config.apply_to_temperature,
             },
             horizontal_sizes={
                 "edge_horizontal_start": self._edge_start_lateral_boundary_level_5,
@@ -857,7 +856,7 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
-        # The fused program reads neighbour values of the very prognostic fields it
+        # The numerical diffusion operation reads neighboring values of the prognostic fields it
         # updates (through C2E, E2C, C2E2C and C2E2CO gathers), so the pre-diffusion
         # state is frozen into temporary copies first.
         log.debug("copying prognostic fields vn, w, theta_v: start")
@@ -866,8 +865,8 @@ class Diffusion:
         self.copy_field_on_cell_k(field=prognostic_state.theta_v, output_field=self.theta_v_tmp)
         log.debug("copying prognostic fields vn, w, theta_v: end")
 
-        log.debug("running fused diffusion program (diffuse_prognostic_fields): start")
-        self.diffuse_prognostic_fields(
+        log.debug("running diffusion program (diffuse_prognostic_fields): start")
+        self.apply_diffusion_to_prognostic_fields(
             kh_smag=self.kh_smag_e,
             smag_limit=smag_limit,
             smag_offset=smag_offset,
@@ -888,10 +887,8 @@ class Diffusion:
             exner=prognostic_state.exner,
             div_ic=diagnostic_state.div_ic,
             hdef_ic=diagnostic_state.hdef_ic,
-            compute_diagnostic_quantities=self._compute_diagnostic_quantities,
-            apply_to_temperature=self.config.apply_to_temperature,
         )
-        log.debug("running fused diffusion program (diffuse_prognostic_fields): end")
+        log.debug("running diffusion program (diffuse_prognostic_fields): end")
 
         log.debug("communication of prognostic.vn : start")
         self._exchange.exchange(
