@@ -13,11 +13,11 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
     _apply_diffusion_to_theta_and_exner,
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import _apply_diffusion_to_vn
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
-    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w import (
+    _apply_diffusion_to_w,
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
-    _compute_flow_deformation_for_turbulence,
+    _compute_diagnostic_quantities_for_turbulence,
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
@@ -107,9 +107,9 @@ def _apply_diffusion_to_prognostic_fields(
 ]:
     """Numerical diffusion of the prognostic fields vn, w, theta_v and exner.
 
-    Composes the Smagorinsky limiter, the turbulence diagnostics (from pre-diffusion
-    vn), the diffusion of the normal wind, the diffusion of the vertical wind with the
-    horizontal wind gradients for turbulence, and the diffusion of theta_v and exner
+    Composes the Smagorinsky limiter, the turbulence diagnostics (flow deformation
+    and, when enabled, the horizontal wind gradients), the diffusion of the normal
+    wind, the diffusion of the vertical wind, and the diffusion of theta_v and exner
     with the grid-point cold-pool enhancement of the diffusion coefficient inlined.
 
     Note:
@@ -121,17 +121,23 @@ def _apply_diffusion_to_prognostic_fields(
     """
     kh_smag_limited = _limit_smag_coefficients(kh_smag, smag_limit, smag_offset)
 
-    div_ic, hdef_ic = (
-        _compute_flow_deformation_for_turbulence(
+    div_ic, hdef_ic, dwdx, dwdy = (
+        _compute_diagnostic_quantities_for_turbulence(
             kh_smag=kh_smag,
             vn=vn_in,
             e_bln_c_s=e_bln_c_s,
             geofac_div=geofac_div,
             diff_multfac_smag=diff_multfac_smag,
             wgtfac_c=wgtfac_c,
+            w_old=w_old,
+            geofac_grg_x=geofac_grg_x,
+            geofac_grg_y=geofac_grg_y,
+            compute_hgrad_w=compute_hgrad_w,
+            dwdx=dwdx,
+            dwdy=dwdy,
         )
         if compute_flow_deformation
-        else (div_ic, hdef_ic)
+        else (div_ic, hdef_ic, dwdx, dwdy)
     )
 
     vn = _apply_diffusion_to_vn(
@@ -153,15 +159,10 @@ def _apply_diffusion_to_prognostic_fields(
         limited_area=limited_area,
     )
 
-    w, dwdx, dwdy = _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
+    w = _apply_diffusion_to_w(
         area=area,
         geofac_n2s=geofac_n2s,
-        geofac_grg_x=geofac_grg_x,
-        geofac_grg_y=geofac_grg_y,
         w_old=w_old,
-        compute_hgrad_w=compute_hgrad_w,
-        dwdx=dwdx,
-        dwdy=dwdy,
         diff_multfac_w=diff_multfac_w,
         diff_multfac_n2w=diff_multfac_n2w,
         nrdmax=nrdmax,
