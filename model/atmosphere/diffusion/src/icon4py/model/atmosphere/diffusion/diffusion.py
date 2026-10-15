@@ -26,11 +26,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     scale_k,
     setup_fields_for_initial_step,
 )
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_prognostic_fields import (
+    apply_diffusion_to_prognostic_fields,
+)
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
-)
-from icon4py.model.atmosphere.diffusion.stencils.diffuse_prognostic_fields import (
-    apply_diffusion_to_prognostic_fields,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.config import config_io, options as common_conf_opt
