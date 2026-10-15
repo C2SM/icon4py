@@ -253,7 +253,7 @@ module = [
   "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.*",
   "icon4py.model.atmosphere.subgrid_scale_physics.muphys.component",
   "icon4py.model.driver.*",
-  "*.components.unit_tests.*",
+  "*.framework.unit_tests.*",
   "*.physics_driver.unit_tests.*",
   "*.muphys.unit_tests.*",
   "driver.unit_tests.test_driver_io",
