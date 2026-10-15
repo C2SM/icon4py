@@ -22,17 +22,52 @@ from icon4py.model.testing import stencil_tests, test_utils
 from .test_apply_nabla2_to_vn_in_lateral_boundary import (
     apply_nabla2_to_vn_in_lateral_boundary_numpy,
 )
-from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
-from .test_apply_nabla2_to_w_in_upper_damping_layer import (
-    apply_nabla2_to_w_in_upper_damping_layer_numpy,
-)
-from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
 from .test_calculate_nabla2_of_theta import calculate_nabla2_of_theta_numpy
 from .test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy,
 )
 from .test_update_theta_and_exner import update_theta_and_exner_numpy
+
+
+def apply_nabla2_to_w_numpy(
+    *,
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    area: np.ndarray,
+    z_nabla2_c: np.ndarray,
+    geofac_n2s: np.ndarray,
+    w: np.ndarray,
+    diff_multfac_w: float,
+) -> np.ndarray:
+    c2e2cO = connectivities[dims.C2E2CO]
+    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
+    area = np.expand_dims(area, axis=-1)
+    w = w - diff_multfac_w * area * area * np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], z_nabla2_c[c2e2cO] * geofac_n2s, 0.0), axis=1
+    )
+    return w
+
+
+def apply_nabla2_to_w_in_upper_damping_layer_numpy(
+    w: np.ndarray,
+    diff_multfac_n2w: np.ndarray,
+    cell_area: np.ndarray,
+    z_nabla2_c: np.ndarray,
+) -> np.ndarray:
+    cell_area = np.expand_dims(cell_area, axis=-1)
+    w = w + diff_multfac_n2w * cell_area * z_nabla2_c
+    return w
+
+
+def calculate_nabla2_for_w_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray], w: np.ndarray, geofac_n2s: np.ndarray
+) -> np.ndarray:
+    c2e2cO = connectivities[dims.C2E2CO]
+    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
+    z_nabla2_c = np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], w[c2e2cO] * geofac_n2s, 0), axis=1
+    )
+    return z_nabla2_c
 
 
 def apply_nabla2_and_nabla4_global_to_vn_numpy(
