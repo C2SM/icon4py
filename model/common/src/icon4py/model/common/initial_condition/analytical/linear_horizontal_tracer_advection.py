@@ -14,8 +14,8 @@ import math
 import typing
 from typing import TYPE_CHECKING
 
-from icon4py.model.common.components import states
 from icon4py.model.common.config import config_io, options as common_conf_opt
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta

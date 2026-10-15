@@ -8,7 +8,8 @@
 
 """What the physics driver offers its processes each step."""
 
-from icon4py.model.common.components import framework as fw, quantities as qty
+from icon4py.model.common import framework as fw
+from icon4py.model.common.framework import quantities as qty
 
 
 class EntryState(fw.State):

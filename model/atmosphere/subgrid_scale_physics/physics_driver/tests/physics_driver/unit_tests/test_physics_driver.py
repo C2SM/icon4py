@@ -17,7 +17,8 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_driver import (
     PhysicsProcess,
 )
-from icon4py.model.common.components import framework as fw, quantities as qty, states
+from icon4py.model.common import framework as fw
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base as base_grid, simple
 
 from .utils import (

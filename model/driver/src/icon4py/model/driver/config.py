@@ -33,8 +33,8 @@ from icon4py.model.common import (
     topography,
     type_alias as ta,
 )
-from icon4py.model.common.components import states
 from icon4py.model.common.config import config_io, options as common_conf_opt
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory

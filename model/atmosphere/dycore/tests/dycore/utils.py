@@ -14,8 +14,13 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
-from icon4py.model.common.components import framework as fw, quantities as qty, states
+from icon4py.model.common import (
+    dimension as dims,
+    framework as fw,
+    type_alias as ta,
+    utils as common_utils,
+)
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb

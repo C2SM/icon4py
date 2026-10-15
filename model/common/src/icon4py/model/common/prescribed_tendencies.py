@@ -34,7 +34,7 @@ import gt4py.next as gtx
 import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common import model_backends, time
-from icon4py.model.common.components import states
+from icon4py.model.common.framework import states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 

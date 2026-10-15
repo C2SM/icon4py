@@ -13,7 +13,7 @@ import typing
 import numpy as np
 from gt4py.next.embedded.nd_array_field import NdArrayField
 
-from icon4py.model.common.components import framework as fw
+from icon4py.model.common import framework as fw
 
 
 try:

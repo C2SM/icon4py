@@ -5,7 +5,7 @@ and what it writes as typed states; mypy and pyright check that the driver passe
 fields. The design and its trade-offs are in C2SM/icon4py-knowledge `mwe/components`
 (`DESIGN.md`, section "01 Typed states and components"); this README is the short version.
 
-## The pieces (`framework.py`)
+## The pieces (`framework`)
 
 - `Quantity`: a type-level tag, one subclass per quantity at one place on the grid, never
   instantiated. The metadata is on the class: `dims`, `units`, the CF `standard_name`,
@@ -94,7 +94,7 @@ keep their historical file names, `driver_io._FILE_NAMES`).
 The framework, the physics components and the driver with its `IOMonitor` are checked
 strictly by both mypy and pyright (1.1.414, run through `npx` by pre-commit;
 `reportUnnecessaryTypeIgnoreComment` on). The strict mypy override and the pyright `include`
-in `pyproject.toml` cover `icon4py.model.common.components.*`, `physics_driver.*`,
+in `pyproject.toml` cover `icon4py.model.common.framework.*`, `physics_driver.*`,
 `muphys.component` and `icon4py.model.driver.*`, and of the tests the components, physics
 driver and muphys unit tests and the driver's `test_driver_io` and `test_driver_io_output`. `SolveNonhydro`, `Diffusion` and `Advection`
 are not strict: mypy checks them with the project's default flags and pyright not at all; the

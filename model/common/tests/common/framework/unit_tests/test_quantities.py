@@ -10,8 +10,8 @@ import inspect
 
 import pytest
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.components import framework as fw, quantities as qty
+from icon4py.model.common import dimension as dims, framework as fw
+from icon4py.model.common.framework import quantities as qty
 
 
 PLACES = {

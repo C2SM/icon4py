@@ -24,8 +24,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.components import framework as fw, states
+from icon4py.model.common import dimension as dims, framework as fw
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 

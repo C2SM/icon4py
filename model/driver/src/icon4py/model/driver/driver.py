@@ -27,6 +27,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physic
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
     dimension as dims,
+    framework as fw,
     model_backends,
     model_options,
     prescribed_tendencies,
@@ -34,8 +35,8 @@ from icon4py.model.common import (
     topography,
     type_alias as ta,
 )
-from icon4py.model.common.components import framework as fw, states
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
     grid_manager as gm,

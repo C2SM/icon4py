@@ -24,12 +24,13 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.run_full_muphy
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
+    framework as fw,
     model_backends,
     model_options,
     time,
     type_alias as ta,
 )
-from icon4py.model.common.components import framework as fw, quantities as qty
+from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.physics.thermodynamics import compute_tendencies

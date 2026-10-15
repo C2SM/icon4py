@@ -9,7 +9,8 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.components import framework as fw, states
+from icon4py.model.common import framework as fw
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base as base_grid, simple
 
 

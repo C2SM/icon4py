@@ -22,9 +22,9 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
-from icon4py.model.common.components import states
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,

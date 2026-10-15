@@ -22,8 +22,9 @@ import pytest
 import xarray as xr
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common.components import framework as fw, quantities as qty, states
+from icon4py.model.common import framework as fw
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.io import io as common_io, writers
 from icon4py.model.driver import driver_io

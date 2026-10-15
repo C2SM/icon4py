@@ -14,9 +14,9 @@ import typing
 from typing import TYPE_CHECKING
 
 from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
-from icon4py.model.common.components import states
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,

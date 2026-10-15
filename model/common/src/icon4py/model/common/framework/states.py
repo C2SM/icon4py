@@ -15,7 +15,8 @@ import datetime
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Final
 
-from icon4py.model.common.components import framework as fw, quantities as qty
+from icon4py.model.common import framework as fw
+from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.utils import PredictorCorrectorPair
 
 

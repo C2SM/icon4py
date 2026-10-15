@@ -18,9 +18,9 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 import devtools
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.common import dimension as dims, time, type_alias as ta
-from icon4py.model.common.components import framework as fw, states
+from icon4py.model.common import dimension as dims, framework as fw, time, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation

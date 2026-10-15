@@ -31,12 +31,13 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_trace
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
+    framework as fw,
     model_backends,
     type_alias as ta,
 )
-from icon4py.model.common.components import framework as fw, quantities as qty, states
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program

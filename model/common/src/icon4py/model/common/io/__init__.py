@@ -25,7 +25,7 @@ in the datafiles. This grid file has the same name as the original grid file wit
 The model state is a dictionary of `xarray.DataArrays` containing the ICON4Py fields as data buffers and
 CF conventional metadata. In the model it is built by the driver's `IOMonitor` component
 (`icon4py.model.driver.driver_io`) from the leaves of its `Input`, with the CF attributes of each
-leaf's quantity tag (`icon4py.model.common.components.quantities`).
+leaf's quantity tag (`icon4py.model.common.framework.quantities`).
 
 #### Adding fields
 

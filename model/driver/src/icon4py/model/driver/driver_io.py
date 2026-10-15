@@ -22,9 +22,9 @@ from typing import Any, Final
 
 import xarray as xr
 
-from icon4py.model.common import time
-from icon4py.model.common.components import framework as fw, quantities as qty
+from icon4py.model.common import framework as fw, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
 from icon4py.model.common.io import io as common_io, utils as io_utils
 

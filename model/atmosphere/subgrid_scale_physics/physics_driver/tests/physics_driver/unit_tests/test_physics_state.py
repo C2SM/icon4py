@@ -14,7 +14,8 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_driver import (
     PhysicsProcess,
 )
-from icon4py.model.common.components import framework as fw, states
+from icon4py.model.common import framework as fw
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base as base_grid, simple
 
 from .utils import RecordingStep, driver, inputs, output, prognostics, time_control, tracers

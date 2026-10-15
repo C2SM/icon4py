@@ -13,8 +13,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.components import framework as fw
+from icon4py.model.common import dimension as dims, framework as fw, type_alias as ta
 from icon4py.model.common.grid import base as base_grid, simple
 
 

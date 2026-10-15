@@ -44,8 +44,13 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
-from icon4py.model.common.components import framework as fw, quantities as qty
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    framework as fw,
+    model_backends,
+)
+from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.type_alias import wpfloat
 
 

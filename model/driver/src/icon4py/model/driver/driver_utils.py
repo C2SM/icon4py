@@ -36,11 +36,11 @@ from icon4py.model.common import (
     time,
     type_alias as ta,
 )
-from icon4py.model.common.components import states
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition_defs,
 )
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,

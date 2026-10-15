@@ -181,11 +181,11 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/io/unit_tests/test_io.py',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/components',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/framework',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/config',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/framework',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/topography',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
@@ -249,7 +249,7 @@ disallow_untyped_calls = true
 disallow_untyped_decorators = true
 extra_checks = true
 module = [
-  "icon4py.model.common.components.*",
+  "icon4py.model.common.framework.*",
   "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.*",
   "icon4py.model.atmosphere.subgrid_scale_physics.muphys.component",
   "icon4py.model.driver.*",
@@ -281,8 +281,8 @@ module = [
 
 [tool.pyright]
 include = [
-  "model/common/src/icon4py/model/common/components",
-  "model/common/tests/common/components",
+  "model/common/src/icon4py/model/common/framework",
+  "model/common/tests/common/framework",
   "model/atmosphere/subgrid_scale_physics/physics_driver/src/icon4py/model/atmosphere/subgrid_scale_physics/physics_driver",
   "model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests",
   "model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py",

@@ -20,8 +20,13 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES, Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_full_muphys
-from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
-from icon4py.model.common.components import framework as fw, quantities as qty
+from icon4py.model.common import (
+    dimension as dims,
+    framework as fw,
+    model_backends,
+    type_alias as ta,
+)
+from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.testing import definitions, test_utils

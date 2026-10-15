@@ -24,8 +24,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
-from icon4py.model.common import dimension as dims, model_backends, model_options
-from icon4py.model.common.components import framework as fw, quantities as qty, states
+from icon4py.model.common import dimension as dims, framework as fw, model_backends, model_options
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,

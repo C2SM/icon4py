@@ -54,12 +54,13 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
+    framework as fw,
     model_backends,
     type_alias as ta,
 )
-from icon4py.model.common.components import framework as fw, quantities as qty
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import (
     base as grid_def,
     horizontal as h_grid,

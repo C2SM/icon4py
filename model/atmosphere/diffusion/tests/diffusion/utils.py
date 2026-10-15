@@ -9,7 +9,8 @@
 import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.common.components import framework as fw, quantities as qty, states
+from icon4py.model.common import framework as fw
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.testing import serialbox as sb, test_utils
 
 

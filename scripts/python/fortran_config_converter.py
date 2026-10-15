@@ -37,7 +37,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muph
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, prescribed_tendencies, time
-from icon4py.model.common.components import states
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file as from_file_ic

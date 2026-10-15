@@ -19,9 +19,9 @@ from typing import TYPE_CHECKING
 import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common import model_backends, time
-from icon4py.model.common.components import states
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 

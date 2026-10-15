@@ -16,8 +16,8 @@ import pytest
 
 from icon4py.bindings import common as wrapper_common, dycore_wrapper
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.components import framework as fw, quantities as qty
+from icon4py.model.common import dimension as dims, framework as fw
+from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.utils import data_allocation as data_alloc
