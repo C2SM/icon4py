@@ -1657,7 +1657,7 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-source = { git = "https://github.com/edopao/gt4py?branch=test%2Fcopy-chain-remover-war#3ecedbfebb01fe44eafaa16079e8abe3047b581e" }
+source = { git = "https://github.com/edopao/gt4py?branch=test%2Fcopy-chain-remover-war#4064ba2c3db7a826d7c182b52accbeaa1899b5ef" }
 version = "1.2.3+unknown.version.details"
 
 [package.optional-dependencies]
