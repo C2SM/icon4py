@@ -216,7 +216,7 @@ variables:
     - if: $MODEL_SUBPACKAGE == 'driver'
       variables:
         SLURM_TIMELIMIT: '00:50:00'
-    - if: $MODEL_SUBPACKAGE == 'dycore' || $MODEL_SUBPACKAGE == 'muphys' || MODEL_SUBPACKAGE == 'tracer_advection'
+    - if: $MODEL_SUBPACKAGE == 'dycore' || $MODEL_SUBPACKAGE == 'muphys' || $MODEL_SUBPACKAGE == 'tracer_advection'
       variables:
         SLURM_TIMELIMIT: '00:30:00'
     - when: on_success
