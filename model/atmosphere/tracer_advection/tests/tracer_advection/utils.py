@@ -103,12 +103,12 @@ def construct_prep_adv(
 ) -> states.PrepAdvection:
     return states.PrepAdvection(
         vn_traj=fw.Field(qty.VnOnEdgeK, savepoint.vn_traj()),
-        mass_flx_me=fw.Field(qty.MassFluxOnEdgeK, savepoint.mass_flx_me()),
+        mass_flx_me=fw.Field(qty.HorizontalMassFluxOnEdgeK, savepoint.mass_flx_me()),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=fw.Field(
-            qty.MassFluxOnCellKHalf, savepoint.mass_flx_ic()
+            qty.VerticalMassFluxOnCellKHalf, savepoint.mass_flx_ic()
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.zeros(
-            qty.VolumetricFluxOnCellKHalf, icon_grid, backend
+            qty.VerticalVolumetricFluxOnCellKHalf, icon_grid, backend
         ),
     )
 

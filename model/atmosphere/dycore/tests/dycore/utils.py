@@ -139,7 +139,7 @@ def construct_diagnostics(
         ),
         rho_at_cells_on_half_levels=fw.Field(qty.RhoOnCellKHalf, init_savepoint.rho_ic()),
         mass_flux_at_edges_on_model_levels=fw.Field(
-            qty.MassFluxOnEdgeK, init_savepoint.mass_fl_e()
+            qty.HorizontalMassFluxOnEdgeK, init_savepoint.mass_fl_e()
         ),
     )
 
@@ -181,12 +181,12 @@ def construct_prep_advection(
 ) -> states.PrepAdvection:
     return states.PrepAdvection(
         vn_traj=fw.Field(qty.VnOnEdgeK, init_savepoint.vn_traj()),
-        mass_flx_me=fw.Field(qty.MassFluxOnEdgeK, init_savepoint.mass_flx_me()),
+        mass_flx_me=fw.Field(qty.HorizontalMassFluxOnEdgeK, init_savepoint.mass_flx_me()),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=fw.Field(
-            qty.MassFluxOnCellKHalf, init_savepoint.mass_flx_ic()
+            qty.VerticalMassFluxOnCellKHalf, init_savepoint.mass_flx_ic()
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.Field(
-            qty.VolumetricFluxOnCellKHalf,
+            qty.VerticalVolumetricFluxOnCellKHalf,
             data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim, allocator=backend),
         ),
     )

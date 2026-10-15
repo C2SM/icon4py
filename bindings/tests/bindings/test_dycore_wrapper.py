@@ -489,7 +489,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         ),
         theta_v_at_cells_on_half_levels=fw.Field(qty.ThetaVOnCellKHalf, sp.theta_v_ic()),
         rho_at_cells_on_half_levels=fw.Field(qty.RhoOnCellKHalf, sp.rho_ic()),
-        mass_flux_at_edges_on_model_levels=fw.Field(qty.MassFluxOnEdgeK, sp.mass_fl_e()),
+        mass_flux_at_edges_on_model_levels=fw.Field(qty.HorizontalMassFluxOnEdgeK, sp.mass_fl_e()),
     )
     expected_inputs = solve_nh.SolveNonhydro.Input(
         rho=fw.Field(qty.RhoOnCellK, sp.rho_now()),
@@ -527,12 +527,12 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         exner=fw.Field(qty.ExnerOnCellK, sp.exner_new()),
         theta_v=fw.Field(qty.ThetaVOnCellK, sp.theta_v_new()),
         vn_traj=fw.Field(qty.VnOnEdgeK, sp.vn_traj()),
-        mass_flx_me=fw.Field(qty.MassFluxOnEdgeK, sp.mass_flx_me()),
+        mass_flx_me=fw.Field(qty.HorizontalMassFluxOnEdgeK, sp.mass_flx_me()),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=fw.Field(
-            qty.MassFluxOnCellKHalf, sp.mass_flx_ic()
+            qty.VerticalMassFluxOnCellKHalf, sp.mass_flx_ic()
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.Field(
-            qty.VolumetricFluxOnCellKHalf,
+            qty.VerticalVolumetricFluxOnCellKHalf,
             data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),  # TODO(): sp.vol_flx_ic(),
         ),
         perturbed_exner_at_cells_on_model_levels=fw.Field(qty.PerturbedExnerOnCellK, sp.exner_pr()),

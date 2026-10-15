@@ -375,7 +375,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         ),
         theta_v_at_cells_on_half_levels=fw.Field(qty.ThetaVOnCellKHalf, theta_v_ic),
         rho_at_cells_on_half_levels=fw.Field(qty.RhoOnCellKHalf, rho_ic),
-        mass_flux_at_edges_on_model_levels=fw.Field(qty.MassFluxOnEdgeK, mass_fl_e),
+        mass_flux_at_edges_on_model_levels=fw.Field(qty.HorizontalMassFluxOnEdgeK, mass_fl_e),
     )
     # Make `max_vcfl` a 0-d array to avoid cupy synchronization, see `_update_max_vertical_cfl`.
     # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
@@ -420,12 +420,12 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         exner=fw.Field(qty.ExnerOnCellK, exner_new),
         theta_v=fw.Field(qty.ThetaVOnCellK, theta_v_new),
         vn_traj=fw.Field(qty.VnOnEdgeK, vn_traj),
-        mass_flx_me=fw.Field(qty.MassFluxOnEdgeK, mass_flx_me),
+        mass_flx_me=fw.Field(qty.HorizontalMassFluxOnEdgeK, mass_flx_me),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=fw.Field(
-            qty.MassFluxOnCellKHalf, mass_flx_ic
+            qty.VerticalMassFluxOnCellKHalf, mass_flx_ic
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.Field(
-            qty.VolumetricFluxOnCellKHalf, vol_flx_ic
+            qty.VerticalVolumetricFluxOnCellKHalf, vol_flx_ic
         ),
         perturbed_exner_at_cells_on_model_levels=fw.Field(qty.PerturbedExnerOnCellK, exner_pr),
         exner_dynamical_increment=fw.Field(qty.ExnerDynamicalIncrementOnCellK, exner_dyn_incr),

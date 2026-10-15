@@ -454,10 +454,12 @@ class SolveNonhydro(fw.Component):
         exner: fw.Field[qty.ExnerOnCellK]
         theta_v: fw.Field[qty.ThetaVOnCellK]
         vn_traj: fw.Field[qty.VnOnEdgeK]
-        mass_flx_me: fw.Field[qty.MassFluxOnEdgeK]
-        dynamical_vertical_mass_flux_at_cells_on_half_levels: fw.Field[qty.MassFluxOnCellKHalf]
+        mass_flx_me: fw.Field[qty.HorizontalMassFluxOnEdgeK]
+        dynamical_vertical_mass_flux_at_cells_on_half_levels: fw.Field[
+            qty.VerticalMassFluxOnCellKHalf
+        ]
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fw.Field[
-            qty.VolumetricFluxOnCellKHalf
+            qty.VerticalVolumetricFluxOnCellKHalf
         ]
         perturbed_exner_at_cells_on_model_levels: fw.Field[qty.PerturbedExnerOnCellK]
         exner_dynamical_increment: fw.Field[qty.ExnerDynamicalIncrementOnCellK]
@@ -478,7 +480,7 @@ class SolveNonhydro(fw.Component):
         ]
         theta_v_at_cells_on_half_levels: fw.Field[qty.ThetaVOnCellKHalf]
         rho_at_cells_on_half_levels: fw.Field[qty.RhoOnCellKHalf]
-        mass_flux_at_edges_on_model_levels: fw.Field[qty.MassFluxOnEdgeK]
+        mass_flux_at_edges_on_model_levels: fw.Field[qty.HorizontalMassFluxOnEdgeK]
 
     def __init__(
         self,

@@ -140,10 +140,10 @@ class PrepAdvection(fw.State):
     # either raises AmbiguousSource or quietly picks the wrong buffer. Discuss whether we should
     # define a new quantity.
     vn_traj: fw.Field[qty.VnOnEdgeK]
-    mass_flx_me: fw.Field[qty.MassFluxOnEdgeK]
-    dynamical_vertical_mass_flux_at_cells_on_half_levels: fw.Field[qty.MassFluxOnCellKHalf]
+    mass_flx_me: fw.Field[qty.HorizontalMassFluxOnEdgeK]
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fw.Field[qty.VerticalMassFluxOnCellKHalf]
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fw.Field[
-        qty.VolumetricFluxOnCellKHalf
+        qty.VerticalVolumetricFluxOnCellKHalf
     ]
 
 

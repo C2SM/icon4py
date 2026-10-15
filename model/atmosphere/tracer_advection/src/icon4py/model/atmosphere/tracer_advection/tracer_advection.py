@@ -143,8 +143,8 @@ class Advection(fw.Component, ABC):
         grf_tend_tracer: fw.Field[qty.GrfTendencyOfTracerOnCellK]
         #: the fluxes the dycore accumulated over its substeps
         vn_traj: fw.Field[qty.VnOnEdgeK]
-        mass_flx_me: fw.Field[qty.MassFluxOnEdgeK]
-        mass_flx_ic: fw.Field[qty.MassFluxOnCellKHalf]
+        mass_flx_me: fw.Field[qty.HorizontalMassFluxOnEdgeK]
+        mass_flx_ic: fw.Field[qty.VerticalMassFluxOnCellKHalf]
         dtime: float
 
     class Output(fw.State):
