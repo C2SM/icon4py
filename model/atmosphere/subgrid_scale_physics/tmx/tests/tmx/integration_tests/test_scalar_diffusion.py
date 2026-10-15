@@ -84,7 +84,9 @@ def _setup(
         component=component,
         input_state=construct_input_state(data_provider.from_savepoint_tmx_entry(date=date)),
         surface_flux_state=construct_surface_flux_state(
-            data_provider.from_savepoint_tmx_surface_fluxes(date=date)
+            data_provider.from_savepoint_tmx_surface_fluxes(date=date),
+            data_provider.from_savepoint_tmx_entry(date=date),
+            allocator=allocator,
         ),
         diagnostic_state=dataclasses.replace(
             tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),

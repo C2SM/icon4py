@@ -102,7 +102,9 @@ def test_tmx_run_wind_diffusion_single_step(
     component.run(
         input_state=construct_input_state(data_provider.from_savepoint_tmx_entry(date=date)),
         surface_flux_state=construct_surface_flux_state(
-            data_provider.from_savepoint_tmx_surface_fluxes(date=date)
+            data_provider.from_savepoint_tmx_surface_fluxes(date=date),
+            data_provider.from_savepoint_tmx_entry(date=date),
+            allocator=allocator,
         ),
         diagnostic_state=diagnostic_state,
         tendency_state=tendency_state,

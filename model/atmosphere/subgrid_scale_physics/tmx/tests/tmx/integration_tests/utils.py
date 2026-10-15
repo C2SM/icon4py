@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.metrics import metric_fields
 from icon4py.model.testing import test_utils
 
@@ -103,13 +103,29 @@ def construct_input_state(entry_savepoint: sb.TmxEntrySavepoint) -> tmx_states.T
 
 def construct_surface_flux_state(
     surface_fluxes_savepoint: sb.TmxSurfaceFluxesSavepoint,
+    entry_savepoint: sb.TmxEntrySavepoint,
+    allocator: gtx_typing.Allocator | None = None,
 ) -> tmx_states.TmxSurfaceFluxState:
+    """
+    The surface fluxes of the savepoint, plus the surface fluxes of internal energy that ICON
+    does not serialize, as `compute_energy_fluxes` (mo_tmx_surface.f90) forms them:
+    `ufts = hfss` and `ufvs = ta * evspsbl * (cvv - cvd)` with the lowest-level temperature.
+    """
+    evapotranspiration = surface_fluxes_savepoint.evspsbl()
+    sensible_heat_flux = surface_fluxes_savepoint.hfss()
+    vapor_energy_flux = (
+        entry_savepoint.ta().asnumpy()[:, -1]
+        * evapotranspiration.asnumpy()
+        * (constants.CVV - constants.CVD)
+    )
     return tmx_states.TmxSurfaceFluxState(
-        evapotranspiration=surface_fluxes_savepoint.evspsbl(),
-        sensible_heat_flux=surface_fluxes_savepoint.hfss(),
+        evapotranspiration=evapotranspiration,
+        sensible_heat_flux=sensible_heat_flux,
         u_stress=surface_fluxes_savepoint.tauu(),
         v_stress=surface_fluxes_savepoint.tauv(),
         q_snocpymlt=surface_fluxes_savepoint.q_snocpymlt(),
+        thermal_energy_flux=sensible_heat_flux,
+        vapor_energy_flux=gtx.as_field((dims.CellDim,), vapor_energy_flux, allocator=allocator),
     )
 
 
