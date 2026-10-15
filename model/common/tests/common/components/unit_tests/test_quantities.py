@@ -20,6 +20,7 @@ PLACES = {
     "OnCellKHalf": (dims.CellDim, dims.KHalfDim),
     "OnEdgeK": (dims.EdgeDim, dims.KDim),
     "OnEdgeKHalf": (dims.EdgeDim, dims.KHalfDim),
+    "Scalar": (),
 }
 
 

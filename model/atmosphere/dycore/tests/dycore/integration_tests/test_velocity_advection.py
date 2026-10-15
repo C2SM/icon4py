@@ -225,7 +225,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
             "V2E": icon_grid.get_connectivity("V2E"),
         },
     )
-    max_vertical_cfl = solve_nonhydro._update_max_vertical_cfl(
+    solve_nonhydro._update_max_vertical_cfl(
         max_vertical_cfl, vertical_cfl, start_cell_lateral_boundary_level_4, end_cell_halo
     )
 
@@ -424,7 +424,7 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
             "V2E": icon_grid.get_connectivity("V2E"),
         },
     )
-    max_vertical_cfl = solve_nonhydro._update_max_vertical_cfl(
+    solve_nonhydro._update_max_vertical_cfl(
         max_vertical_cfl, vertical_cfl, start_cell_lateral_boundary_level_4, end_cell_halo
     )
 

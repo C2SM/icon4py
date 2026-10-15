@@ -175,8 +175,9 @@ class DycoreDiagnostics(fw.State):
 
     The advective tendencies are predictor/corrector pairs the composer swaps between the
     substeps (`_update_time_levels_for_velocity_tendencies` in the driver); the initial
-    condition fills the perturbed exner function and, on a restart, the pairs. Built by
-    `allocate`, not by `framework.allocate`, because of the pairs.
+    condition fills the perturbed exner function and, on a restart, the pairs. The dycore raises
+    `max_vertical_cfl` over the substeps; the composer reads and resets it. Built by `allocate`,
+    not by `framework.allocate`, because of the pairs.
     """
 
     perturbed_exner_at_cells_on_model_levels: fw.Field[qty.PerturbedExnerOnCellK]
@@ -187,6 +188,7 @@ class DycoreDiagnostics(fw.State):
     vertical_wind_advective_tendency: PredictorCorrectorPair[
         fw.Field[qty.VerticalWindAdvectiveTendencyOnCellKHalf]
     ]
+    max_vertical_cfl: fw.Field[qty.MaxVerticalCflNumberScalar]
 
     @classmethod
     def allocate(
@@ -205,6 +207,7 @@ class DycoreDiagnostics(fw.State):
                 fw.zeros(qty.VerticalWindAdvectiveTendencyOnCellKHalf, grid, allocator),
                 fw.zeros(qty.VerticalWindAdvectiveTendencyOnCellKHalf, grid, allocator),
             ),
+            max_vertical_cfl=fw.zeros(qty.MaxVerticalCflNumberScalar, grid, allocator),
         )
 
 

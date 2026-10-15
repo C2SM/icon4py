@@ -300,6 +300,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         normal_wind_advective_tendency_corrector=dycore_diagnostics.normal_wind_advective_tendency.corrector,
         vertical_wind_advective_tendency_predictor=dycore_diagnostics.vertical_wind_advective_tendency.predictor,
         vertical_wind_advective_tendency_corrector=dycore_diagnostics.vertical_wind_advective_tendency.corrector,
+        max_vertical_cfl=dycore_diagnostics.max_vertical_cfl,
     )
 
     benchmark(

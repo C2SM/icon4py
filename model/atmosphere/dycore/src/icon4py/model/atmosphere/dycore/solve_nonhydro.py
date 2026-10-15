@@ -391,8 +391,8 @@ def _update_max_vertical_cfl(
     vertical_cfl: fa.CellKHalfField[ta.anyfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-) -> data_alloc.ScalarLikeArray[ta.wpfloat]:  # type: ignore[type-var]
-    """The maximum of `max_vertical_cfl` and the vertical CFL number over the cells, as a 0-d array."""
+) -> None:
+    """Raise `max_vertical_cfl`, a 0-d array, to the vertical CFL number over the cells, in place."""
     # Reductions should be performed on flat, contiguous arrays for best cupy performance
     # as otherwise cupy won't use cub optimized kernels.
     local_max = vertical_cfl.array_ns.max(  # type: ignore[attr-defined]
@@ -400,7 +400,7 @@ def _update_max_vertical_cfl(
             vertical_cfl.ndarray[horizontal_start:horizontal_end, :].ravel(order="K")  # type: ignore[attr-defined]
         )
     )
-    return vertical_cfl.array_ns.maximum(local_max, max_vertical_cfl)  # type: ignore[attr-defined]
+    max_vertical_cfl[...] = vertical_cfl.array_ns.maximum(local_max, max_vertical_cfl)  # type: ignore[attr-defined]
 
 
 class SolveNonhydro(fw.Component):
@@ -412,7 +412,7 @@ class SolveNonhydro(fw.Component):
     increment and the advective tendencies, whose predictor/corrector time levels the composer
     swaps. `Diagnostics` is the dycore's own scratch, read and written only here; it is an
     attribute so that tests can fill it and the Fortran bindings can point it at ICON's buffers.
-    `max_vertical_cfl` is the maximum vertical CFL number over the substeps so far, a 0-d array
+    `max_vertical_cfl` is the maximum vertical CFL number over the substeps so far, a 0-d field
     to avoid device synchronization; the composer reads and resets it.
     """
 
@@ -471,6 +471,7 @@ class SolveNonhydro(fw.Component):
         vertical_wind_advective_tendency_corrector: fw.Field[
             qty.VerticalWindAdvectiveTendencyOnCellKHalf
         ]
+        max_vertical_cfl: fw.Field[qty.MaxVerticalCflNumberScalar]
 
     class Diagnostics(fw.State):
         tangential_wind: fw.Field[qty.TangentialWindOnEdgeK]
@@ -503,7 +504,6 @@ class SolveNonhydro(fw.Component):
     ):
         super().__init__(grid, model_backends.get_allocator(backend))
         self.diagnostics = fw.allocate(SolveNonhydro.Diagnostics, grid, self.allocator)
-        self.max_vertical_cfl = data_alloc.scalar_like_array(0.0, self.allocator)
         self._exchange = exchange
 
         self._grid = grid
@@ -1255,8 +1255,8 @@ class SolveNonhydro(fw.Component):
                 apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
             )
 
-            self.max_vertical_cfl = _update_max_vertical_cfl(
-                self.max_vertical_cfl,
+            _update_max_vertical_cfl(
+                out.max_vertical_cfl.data.ndarray,
                 self._vertical_cfl,
                 self._start_cell_lateral_boundary_level_4,
                 self._end_cell_halo,
@@ -1449,8 +1449,8 @@ class SolveNonhydro(fw.Component):
             apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
         )
 
-        self.max_vertical_cfl = _update_max_vertical_cfl(
-            self.max_vertical_cfl,
+        _update_max_vertical_cfl(
+            out.max_vertical_cfl.data.ndarray,
             self._vertical_cfl,
             self._start_cell_lateral_boundary_level_4,
             self._end_cell_halo,

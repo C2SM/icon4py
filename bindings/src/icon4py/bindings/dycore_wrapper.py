@@ -377,9 +377,12 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         rho_at_cells_on_half_levels=fw.Field(qty.RhoOnCellKHalf, rho_ic),
         mass_flux_at_edges_on_model_levels=fw.Field(qty.HorizontalMassFluxOnEdgeK, mass_fl_e),
     )
-    # Make `max_vcfl` a 0-d array to avoid cupy synchronization, see `_update_max_vertical_cfl`.
+    # Make `max_vcfl` a 0-d field to avoid cupy synchronization, see `_update_max_vertical_cfl`.
     # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
-    granule.solve_nh.max_vertical_cfl = data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)
+    max_vertical_cfl = fw.Field(
+        qty.MaxVerticalCflNumberScalar,
+        gtx.as_field((), data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)),
+    )
 
     # adjust for Fortran indexes
     idyn_timestep = idyn_timestep - 1
@@ -441,6 +444,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         vertical_wind_advective_tendency_corrector=fw.Field(
             qty.VerticalWindAdvectiveTendencyOnCellKHalf, ddt_w_adv_ntl2
         ),
+        max_vertical_cfl=max_vertical_cfl,
     )
 
     granule.solve_nh.run(inputs=inputs, out=out)
@@ -449,4 +453,4 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     if gtx_config.COLLECT_METRICS_LEVEL > 0:
         gtx_metrics.dump_json("gt4py_timers.json")
 
-    max_vcfl_size1_array[0] = granule.solve_nh.max_vertical_cfl[()]  # pass back to Fortran
+    max_vcfl_size1_array[0] = max_vertical_cfl.data.ndarray[()]  # pass back to Fortran

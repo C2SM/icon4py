@@ -14,7 +14,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
 from icon4py.model.common.components import framework as fw, quantities as qty, states
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -171,6 +171,10 @@ def construct_dycore_diagnostics(
                 init_savepoint.ddt_w_adv_pc(next_index),
             ),
         ),
+        max_vertical_cfl=fw.Field(
+            qty.MaxVerticalCflNumberScalar,
+            gtx.zeros((), dtype=ta.wpfloat, allocator=init_savepoint.backend),
+        ),
     )
 
 
@@ -262,4 +266,5 @@ def dycore_output(
         normal_wind_advective_tendency_corrector=dycore_diagnostics.normal_wind_advective_tendency.corrector,
         vertical_wind_advective_tendency_predictor=dycore_diagnostics.vertical_wind_advective_tendency.predictor,
         vertical_wind_advective_tendency_corrector=dycore_diagnostics.vertical_wind_advective_tendency.corrector,
+        max_vertical_cfl=dycore_diagnostics.max_vertical_cfl,
     )

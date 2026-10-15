@@ -330,7 +330,8 @@ class Icon4pyDriver:
                 self.model_time_variables.is_first_step_in_simulation = False
 
                 if self.config.nonhydrostatic is not None:
-                    self._adjust_ndyn_substeps_var()
+                    assert dycore_diagnostics is not None
+                    self._adjust_ndyn_substeps_var(dycore_diagnostics)
 
                 if self.io_monitor is not None:
                     self._store_output(
@@ -531,6 +532,7 @@ class Icon4pyDriver:
             normal_wind_advective_tendency_corrector=dycore_diagnostics.normal_wind_advective_tendency.corrector,
             vertical_wind_advective_tendency_predictor=dycore_diagnostics.vertical_wind_advective_tendency.predictor,
             vertical_wind_advective_tendency_corrector=dycore_diagnostics.vertical_wind_advective_tendency.corrector,
+            max_vertical_cfl=dycore_diagnostics.max_vertical_cfl,
         )
 
     def _do_dyn_substepping(
@@ -577,10 +579,11 @@ class Icon4pyDriver:
     # watch_mode is true if step is <= 1 or cfl already near or exceeding threshold.
     # omit spinup feature and the option that if the model starts from IFS or COSMO data
     # horizontal cfl is not ported
-    def _adjust_ndyn_substeps_var(self) -> None:
-        assert self.granules.solve_nonhydro is not None
+    def _adjust_ndyn_substeps_var(self, dycore_diagnostics: states.DycoreDiagnostics) -> None:
+        # NDArrayObject declares no __setitem__
+        max_vertical_cfl: Any = dycore_diagnostics.max_vertical_cfl.data.ndarray
         global_max_vertical_cfl = self.global_reductions.max(
-            self._xp.asarray(self.granules.solve_nonhydro.max_vertical_cfl[()], dtype=ta.wpfloat),
+            self._xp.asarray(max_vertical_cfl[()], dtype=ta.wpfloat),
         )
         if (
             global_max_vertical_cfl
@@ -663,9 +666,7 @@ class Icon4pyDriver:
                     self.model_time_variables.update_cfl_watch_mode(False)
 
         # reset max_vertical_cfl to zero
-        self.granules.solve_nonhydro.max_vertical_cfl = data_alloc.scalar_like_array(
-            ta.wpfloat(0.0), self._allocator
-        )
+        max_vertical_cfl[...] = 0.0
 
     def _advection_views(
         self,

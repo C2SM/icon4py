@@ -10,7 +10,7 @@
 The quantities of the model, one type-level tag per quantity at one place on the grid.
 
 The tags are named `<Quantity>On<Place>`, as icon4py names its fields
-(`theta_v_at_cells_on_half_levels`). The CF attributes of the fields icon4py already had
+(`theta_v_at_cells_on_half_levels`); a quantity with no place (`dims=()`) is `<Quantity>Scalar`. The CF attributes of the fields icon4py already had
 attribute tables for are those tables' values, kept so the output files do not change; some of
 their standard names are not in the CF standard name table (`normal_velocity`,
 `specific_cloud_content`, `virtual_potential_temperature`, ...). Any other quantity has a
@@ -78,6 +78,9 @@ class RhoIauIncrementOnCellK(Quantity, dims=CELL_K, long_name="moist density inc
 class NormalWindIauIncrementOnEdgeK(Quantity, dims=EDGE_K, long_name="normal wind increment of the incremental analysis update (vn_incr)", units="m s-1", precision="vp"): ...
 class ExnerIauIncrementOnCellK(Quantity, dims=CELL_K, long_name="exner function increment of the incremental analysis update (exner_incr)", units="1", precision="vp"): ...
 class ExnerDynamicalIncrementOnCellK(Quantity, dims=CELL_K, long_name="exner function increment by the dynamics (exner_dyn_incr)", units="1", precision="vp"): ...
+# a running maximum over the substeps, kept on the device as a 0-d field rather than a float so
+# that updating it needs no host synchronization
+class MaxVerticalCflNumberScalar(Quantity, dims=(), long_name="maximum vertical CFL number over the dynamics substeps (max_vcfl_dyn)", units="1"): ...
 
 # --- fluxes prepared for the tracer advection ---
 
