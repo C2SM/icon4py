@@ -427,7 +427,6 @@ url = 'https://gridtools.github.io/pypi/'
 # dace = {index = "gridtools"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
-gt4py = { git = "https://github.com/iomaganaris/gt4py", branch = "daniels_changes_clean" }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
 icon4py-atmosphere-microphysics = { workspace = true }

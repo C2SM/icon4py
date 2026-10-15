@@ -63,21 +63,11 @@ def _set_program_specific_dace_options(
         )
         optimization_args.setdefault("scan_loop_unrolling", True)
         optimization_args.setdefault("scan_loop_unrolling_factor", 0)
-        # Fuse the producers of the scan inputs into the vertical solver scan
-        optimization_args.setdefault("fuse_scan_inputs", True)
-        optimization_args.setdefault("scan_fusion_scope", "field_operator")
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
-        # Allow splitting the producer of the shared theta output along K, so that its
-        # vertical bands can be fused with their consumers
-        optimization_args.setdefault("vertical_split_allow_shared_data", True)
-        optimization_args.setdefault(
-            "vertical_split_shared_data", ("theta_v_at_edges_on_model_levels",)
-        )
-        optimization_args.setdefault("vertical_split_shared_data_dimension", dimension.KDim)
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
         if device != model_backends.DeviceType.ROCM:
@@ -122,9 +112,8 @@ def get_dace_options(
     **backend_descriptor: Any,
 ) -> model_backends.BackendDescriptor:
     device = backend_descriptor.get("device") or model_backends.CPU
-    # Backend descriptors may be reused for other programs or configurations.
-    optimization_args = dict(backend_descriptor.get("optimization_args", {}))
-    optimization_hooks = dict(optimization_args.get("optimization_hooks", {}))
+    optimization_args = backend_descriptor.get("optimization_args", {})
+    optimization_hooks = optimization_args.get("optimization_hooks", {})
 
     if backend_config is not None:
         # The workspace memory allows to avoid the overhead of runtime allocations,
