@@ -6,16 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""
-Typed states and components.
-
-A `Quantity` is a type-level tag of one quantity at one place on the grid, a `Field` a gt4py
-field tagged by its quantity, a `State` a frozen dataclass of typed leaves and a `Component`
-a `run(inputs, outputs=None) -> Output` over nested `Input` and `Output` states. Stencils read
-`Field.data`; mypy and pyright see `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` as
-different types.
-"""
-
 from __future__ import annotations
 
 import dataclasses
@@ -53,13 +43,15 @@ __all__ = [
 ]
 
 
+# ------------------------------------------------------------------------------
+# Quantity: a type-level tag, never instantiated
+# ------------------------------------------------------------------------------
 class Quantity:
     """
     A type-level tag, one subclass per quantity at one place on the grid, never instantiated.
 
     The metadata sits on the class; a keyword not given is inherited from the base (a marker
-    base like `Tendency` gives none). `precision` names the floating point type the field is
-    allocated with, resolved through `type_alias` when the field is allocated.
+    base like `Tendency` gives none).
     """
 
     dims: ClassVar[tuple[gtx.Dimension, ...]]
@@ -94,16 +86,11 @@ class Quantity:
 
 
 class Tendency(Quantity):
-    """Marker base of the tendencies: what the physics driver accumulates."""
+    """Marker base of the tendencies."""
 
 
 class Field[Q: Quantity]:
-    """
-    A gt4py field tagged by its quantity.
-
-    The tag is a phantom type parameter, invariant: `Field[VnOnEdgeK]` is not a
-    `Field[Quantity]`, so a signature `(Field[Q], Field[Q])` means the same quantity twice.
-    """
+    """A gt4py field tagged by its quantity."""
 
     __slots__ = ("data", "quantity")
 
@@ -131,6 +118,9 @@ def zeros[Q: Quantity](
     )
 
 
+# ------------------------------------------------------------------------------
+# State: a frozen dataclass of typed leaves
+# ------------------------------------------------------------------------------
 @dataclasses.dataclass(frozen=True)
 class Decl:
     """One `Field` leaf of a `State` class: its name, its quantity and whether it may be None."""
@@ -156,7 +146,7 @@ class State:
 
     @classmethod
     def declarations(cls) -> tuple[Decl, ...]:
-        """The `Field` leaves of the class, in declaration order; needs no values."""
+        """The `Field` leaves of the class, in declaration order."""
         return _declarations(cls)
 
     def leaves(self) -> Iterator[tuple[Decl, Field[Any]]]:
@@ -171,6 +161,13 @@ _DECLARATIONS: dict[type[State], tuple[Decl, ...]] = {}
 
 
 def _declarations(cls: type[State]) -> tuple[Decl, ...]:
+    """
+    The `Field` leaves of a `State` class, read from its annotations once and cached.
+
+    Behind `State.declarations()`. Code that handles any state walks it instead of a per-state
+    list of fields: `allocate`, `leaves()` (and through it `copy`), the physics driver and the
+    IO. Cached because `typing.get_type_hints` evaluates the annotations, which are strings here.
+    """
     if cls not in _DECLARATIONS:
         hints = typing.get_type_hints(cls)
         found = []
@@ -184,7 +181,11 @@ def _declarations(cls: type[State]) -> tuple[Decl, ...]:
 
 
 def _without_none(hint: Any) -> tuple[Any, bool]:
-    """`X | None` as `(X, True)`, any other hint as `(hint, False)`."""
+    """
+    `X | None` as `(X, True)`, any other hint as `(hint, False)`.
+
+    `_declarations` uses it to tell an optional leaf (`Field[Q] | None`) from a required one.
+    """
     if typing.get_origin(hint) in (types.UnionType, typing.Union):
         others = [arg for arg in typing.get_args(hint) if arg is not type(None)]
         if len(others) == 1:
@@ -235,6 +236,9 @@ def copy[S: State](state: S, allocator: gtx_typing.Allocator | None) -> S:
     return copied
 
 
+# ------------------------------------------------------------------------------
+# Component: Input, Output, run
+# ------------------------------------------------------------------------------
 class Component:
     """
     `run(inputs, outputs=None) -> Output`, the only method a component implements.
@@ -265,5 +269,8 @@ class Component:
         """The caller's buffers when given, else this component's own."""
         return self.cached_output if outputs is None else outputs
 
+    # `Any`: each component narrows `inputs` and `outputs` to its own `Input` and `Output`.
+    # Typed `State` here, every override would be incompatible (parameters are contravariant);
+    # the class attributes `Input` and `Output` are not valid in a type expression.
     def run(self, inputs: Any, outputs: Any = None) -> Any:
         raise NotImplementedError
