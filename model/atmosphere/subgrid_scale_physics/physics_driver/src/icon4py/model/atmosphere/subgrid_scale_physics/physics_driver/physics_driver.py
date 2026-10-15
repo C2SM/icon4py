@@ -139,6 +139,8 @@ class PhysicsDriver(fw.Component):
         # one sum per tendency the processes emit, by output name, made when first seen
         self.accumulators: dict[str, fw.Field[Any]] = {}
         # the last output of each process, reused on the steps it is not active
+        # TODO(jcanton): part 02 fix this. Key by the process's component (identity), once the
+        # process holds it, and drop `PhysicsProcess.name`, which exists only for this key.
         self.outputs: dict[str, fw.State] = {}
 
         cells = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_cells)}
