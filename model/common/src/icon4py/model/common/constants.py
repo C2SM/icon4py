@@ -57,8 +57,14 @@ CPL = SPECIFIC_HEAT_CAPACITY_LIQUID_WATER
 #: density of liquid water. Originally expressed as rhow in ICON. [kg/m3]
 WATER_DENSITY: Final[ta.wpfloat] = ta.wpfloat(1.000e3)
 
-#: specific heat capacity of ice. Originally expressed as ci in ICON. [J/K/kg]
-SPECIFIC_HEAT_CAPACITY_ICE: Final[ta.wpfloat] = ta.wpfloat(2108.0)
+#: specific heat capacity of ice [J/K/kg], the physical constant ci of mo_physical_constants.f90
+#: (get_cvair in mo_aes_phy_diag.f90, the tmx surface scheme, sea ice).
+SPECIFIC_HEAT_CAPACITY_ICE: Final[ta.wpfloat] = ta.wpfloat(2106.0)
+
+#: specific heat capacity of ice [J/K/kg] of the moist thermodynamics (internal energy, lsc,
+#: graupel): the module-local ci of mo_aes_thermo.f90 and mo_aes_graupel.f90, which overrides
+#: the physical constant SPECIFIC_HEAT_CAPACITY_ICE.
+SPECIFIC_HEAT_CAPACITY_ICE_THERMO: Final[ta.wpfloat] = ta.wpfloat(2108.0)
 
 #: Melting temperature of ice/snow [K]. Originally expressed as tmelt in ICON.
 MELTING_TEMPERATURE: Final[ta.wpfloat] = ta.wpfloat(273.15)
@@ -109,7 +115,7 @@ LATENT_HEAT_FOR_VAPORISATION_INVARIANT: Final[ta.wpfloat] = (
 # Invariant part of the sublimation enthalpy [J/kg], 'lsc' in mo_aes_thermo.f90:
 # als - (cpv - ci) * tmelt.
 LATENT_HEAT_FOR_SUBLIMATION_INVARIANT: Final[ta.wpfloat] = (
-    LATENT_HEAT_FOR_SUBLIMATION - (CPV - SPECIFIC_HEAT_CAPACITY_ICE) * MELTING_TEMPERATURE
+    LATENT_HEAT_FOR_SUBLIMATION - (CPV - SPECIFIC_HEAT_CAPACITY_ICE_THERMO) * MELTING_TEMPERATURE
 )
 
 #: von Karman constant, ckap in ICON.
@@ -181,7 +187,8 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     cpv = SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR
     cvv = SPECIFIC_HEAT_CAPACITY_VOLUME_WATER_VAPOR
     cpl = SPECIFIC_HEAT_CAPACITY_LIQUID_WATER
-    cpi = SPECIFIC_HEAT_CAPACITY_ICE
+    ci = SPECIFIC_HEAT_CAPACITY_ICE
+    ci_thermo = SPECIFIC_HEAT_CAPACITY_ICE_THERMO
     water_density = WATER_DENSITY
     tmelt = MELTING_TEMPERATURE
     water_triple_point_temperature = WATER_TRIPLE_POINT_TEMPERATURE
