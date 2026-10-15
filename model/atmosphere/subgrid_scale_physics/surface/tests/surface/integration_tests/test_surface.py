@@ -15,8 +15,8 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
     config as surface_config,
-    states,
     surface,
+    surface_states,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.testing import datatest_utils as dt_utils, definitions, test_utils
@@ -65,12 +65,12 @@ def test_surface_run_single_step(
     component = surface.Surface(grid=icon_grid, config=config, backend=backend)
 
     entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
-    input_state = states.SurfaceInputState(
+    input_state = surface_states.SurfaceInputState(
         # views of the surface half level and the lowest full level
         surface_pressure=entry_savepoint.pres_ifc()[dims.KHalfDim(icon_grid.num_levels)],
         temperature=entry_savepoint.ta()[dims.KDim(icon_grid.num_levels - 1)],
     )
-    out = states.SurfaceFluxState.allocate(
+    out = surface_states.SurfaceFluxState.allocate(
         icon_grid, allocator=model_backends.get_allocator(backend)
     )
     component.run(input_state=input_state, out=out)

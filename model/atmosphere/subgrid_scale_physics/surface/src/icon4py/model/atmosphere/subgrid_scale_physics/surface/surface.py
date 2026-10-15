@@ -13,7 +13,10 @@ from __future__ import annotations
 import logging
 import typing
 
-from icon4py.model.atmosphere.subgrid_scale_physics.surface import config as surface_config, states
+from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
+    config as surface_config,
+    surface_states,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.surface.stencils import prescribed_flux_stencils
 from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid
@@ -73,7 +76,9 @@ class Surface:
             offset_provider={},
         )
 
-    def run(self, *, input_state: states.SurfaceInputState, out: states.SurfaceFluxState) -> None:
+    def run(
+        self, *, input_state: surface_states.SurfaceInputState, out: surface_states.SurfaceFluxState
+    ) -> None:
         """
         Compute the surface fluxes of the step into `out`.
 

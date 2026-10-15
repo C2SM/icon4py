@@ -36,7 +36,10 @@ class SurfaceInputState:
 
 @dataclasses.dataclass(frozen=True)
 class SurfaceFluxState:
-    """Surface fluxes computed by the surface scheme (inputs to the atmospheric diffusion)."""
+    """
+    Surface fluxes of the surface scheme: what tmx applies at the bottom boundary of its
+    vertical diffusion.
+    """
 
     evapotranspiration: fa.CellField[ta.wpfloat]
     """Surface evapotranspiration flux (``evspsbl``) [kg/(m^2 s)]."""

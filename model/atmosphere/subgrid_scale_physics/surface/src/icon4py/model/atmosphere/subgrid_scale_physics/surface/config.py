@@ -21,6 +21,8 @@ from icon4py.model.common.config import config_io, options as common_conf_opt
 class SurfaceFluxType(int, enum.Enum):
     """How the surface fluxes are obtained (``isrfc_type`` in ``nh_testcase_nml``)."""
 
+    INTERACTIVE = 0
+    """The ocean, sea-ice and land tiles of ``mo_vdf_sfc.f90``; not ported."""
     FIXED_HEAT_FLUXES = 1
     """Fixed kinematic heat fluxes over a fixed surface temperature."""
 
@@ -45,14 +47,16 @@ class SurfaceConfig:
     kinematic_sensible_heat_flux: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="Kinematic sensible heat flux at the surface (`shflx`) [K m/s].",
+            description="Kinematic sensible heat flux at the surface (`shflx` in `nh_testcase_nml`) "
+            "[K m/s]; the default is the one of mo_nh_testcases_nml.f90.",
         ),
     ] = 0.1
 
     kinematic_latent_heat_flux: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="Kinematic latent heat flux at the surface (`lhflx`) [m/s].",
+            description="Kinematic latent heat flux at the surface (`lhflx` in `nh_testcase_nml`) "
+            "[m/s]; the default is the one of mo_nh_testcases_nml.f90.",
         ),
     ] = 0.0
 
@@ -69,7 +73,12 @@ class SurfaceConfig:
             self.surface_flux_type = SurfaceFluxType(self.surface_flux_type)
         except ValueError:
             raise ValueError(
+                f"Invalid argument 'surface_flux_type': got {self.surface_flux_type}, expected "
+                f"one of {[member.value for member in SurfaceFluxType]}."
+            ) from None
+        if self.surface_flux_type is not SurfaceFluxType.FIXED_HEAT_FLUXES:
+            raise ValueError(
                 f"Invalid argument 'surface_flux_type': only fixed kinematic heat fluxes "
                 f"({SurfaceFluxType.FIXED_HEAT_FLUXES.value}) are implemented, "
-                f"got {self.surface_flux_type}."
-            ) from None
+                f"got {self.surface_flux_type.value}."
+            )
