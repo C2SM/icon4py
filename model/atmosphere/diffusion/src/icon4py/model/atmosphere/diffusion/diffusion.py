@@ -826,14 +826,14 @@ class Diffusion(fw.Component):
 
     @staticmethod
     def _continue_in_place(inputs: Input, out: Output) -> None:
-        """The prognostics are diffused in place: `out` continues what `inputs` holds."""
+        """The prognostics are diffused in place: `outputs` continues what `inputs` holds."""
         for name in ("vn", "w", "exner", "theta_v"):
             source, target = getattr(inputs, name), getattr(out, name)
             if target.data is not source.data:
                 target.data.ndarray[...] = source.data.ndarray
 
     def run(  # noqa: PLR0915 [too-many-statements]
-        self, inputs: Input, out: Output | None = None
+        self, inputs: Input, outputs: Output | None = None
     ) -> Output:
         """
         Do one diffusion step.
@@ -845,7 +845,7 @@ class Diffusion(fw.Component):
 
         The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
         """
-        out = self.buffers(out)
+        out = self.buffers(outputs)
         self._continue_in_place(inputs, out)
         dtime = wpfloat(inputs.dtime)
         initial_run = inputs.initial_run

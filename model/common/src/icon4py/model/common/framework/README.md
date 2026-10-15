@@ -21,7 +21,7 @@ fields. The design and its trade-offs are in C2SM/icon4py-knowledge `mwe/compone
 - `allocate(State, grid, allocator, only=...)` makes a zero field per declaration (`only`
   names the optional leaves to allocate, the others stay None); `zeros(Q, grid, allocator)`
   makes one field; `copy(state, allocator)` copies the present leaves.
-- `Component`: `Input`, `Output` and `run(inputs, out=None) -> Output`, the only method a
+- `Component`: `Input`, `Output` and `run(inputs, outputs=None) -> Output`, the only method a
   component implements. A component that writes nothing declares `Output = fw.Empty`.
 - `TimeStepPair` / `PredictorCorrectorPair`: icon4py's pairs (`common.utils`), re-exported.
 
@@ -51,9 +51,9 @@ class Diffusion(fw.Component):
         return out
 ```
 
-`component.run(inputs)` writes into the component's own buffers (`Component.output`,
-allocated once on first use); `component.run(inputs, out=view)` writes where the caller says,
-numpy `out=` style. Whether `out` may alias the input is the component's business: the
+`component.run(inputs)` writes into the component's own buffers (`Component.cached_output`,
+allocated once on first use); `component.run(inputs, outputs=view)` writes where the caller
+says, numpy `out=` style. Whether `outputs` may alias `inputs` is the component's business: the
 diffusion and the physics driver continue in place, the dycore needs distinct now/next.
 Static fields (metrics, interpolation coefficients) stay constructor arguments.
 
@@ -70,8 +70,8 @@ prognostics are input and output); for the dycore it passes `now` in and `next` 
 
 Optional leaves carry the tracers: `TracerState`, `Advection.Input`/`Output` and
 `PhysicsDriver.Input`/`Output` declare `qv`...`qg` as `Field[Q] | None`, and the driver's
-`TracerConfig` decides which are present. Since `Component.output` would allocate every
-optional leaf, the composer always passes `out=` to these components. The physics processes
+`TracerConfig` decides which are present. Since `Component.cached_output` would allocate every
+optional leaf, the composer always passes `outputs=` to these components. The physics processes
 pick their `Input` from the physics driver's `EntryState` with a `collect_input`; `bind`
 pairs it with the component's `run`, so pairing one process's `collect_input` with another's
 `run` is a type error.

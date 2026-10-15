@@ -142,7 +142,7 @@ def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
     )
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
-    physics.run(inputs(prognostic, tracer_state), out=output(prognostic, tracer_state))
+    physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
 
     # parallel coupling: one entry state, diagnosed once, read by both processes
     assert len(step_a.entries) == 1
@@ -155,7 +155,7 @@ def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + DT.total_seconds() * 3e-7, rtol=1e-12)
     assert set(physics.accumulators) == {"tend_qv"}
     # the driver keeps each process's last output
-    assert physics.outputs == {"a": step_a.output, "b": step_b.output}
+    assert physics.process_outputs == {"a": step_a.output, "b": step_b.output}
 
 
 def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:
@@ -163,10 +163,10 @@ def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:
     physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
-    physics.run(inputs(prognostic, tracer_state), out=output(prognostic, tracer_state))
+    physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
     physics.run(
         inputs(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        out=output(prognostic, tracer_state),
+        outputs=output(prognostic, tracer_state),
     )
 
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 2 * DT.total_seconds() * 1e-7, rtol=1e-12)
@@ -183,7 +183,7 @@ def test_run_raises_for_non_multiple_interval(grid: base_grid.Grid) -> None:
     with pytest.raises(ValueError, match="integer multiple"):
         physics.run(
             inputs(prognostic, tracer_state, simulation_current_datetime=T0),
-            out=output(prognostic, tracer_state),
+            outputs=output(prognostic, tracer_state),
         )
     assert step.entries == []
 
@@ -198,11 +198,11 @@ def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
 
     physics.run(
         inputs(prognostic, tracer_state, simulation_current_datetime=T0),
-        out=output(prognostic, tracer_state),
+        outputs=output(prognostic, tracer_state),
     )
 
     assert step.entries == []
-    assert physics.outputs == {}
+    assert physics.process_outputs == {}
     np.testing.assert_array_equal(_qv(tracer_state), 1e-3)
 
 
@@ -218,12 +218,12 @@ def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> No
     # step 1: active (step start == T0), computes
     physics.run(
         inputs(prognostic, tracer_state, simulation_current_datetime=T0 + DT),
-        out=output(prognostic, tracer_state),
+        outputs=output(prognostic, tracer_state),
     )
     # step 2: in the window but not active (step start == T0 + DT), reuses the last output
     physics.run(
         inputs(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        out=output(prognostic, tracer_state),
+        outputs=output(prognostic, tracer_state),
     )
 
     # the entry state reaches the process only on the step it computes
@@ -243,7 +243,7 @@ def test_first_in_window_step_inactive_computes(grid: base_grid.Grid) -> None:
 
     physics.run(
         inputs(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        out=output(prognostic, tracer_state),
+        outputs=output(prognostic, tracer_state),
     )
 
     assert len(step.entries) == 1
@@ -256,7 +256,7 @@ def test_run_requires_every_moisture_species(grid: base_grid.Grid) -> None:
     without_qc = dataclasses.replace(tracer_state, qc=None)
 
     with pytest.raises(ValueError, match="qc"):
-        physics.run(inputs(prognostic, without_qc), out=output(prognostic, without_qc))
+        physics.run(inputs(prognostic, without_qc), outputs=output(prognostic, without_qc))
 
 
 def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
@@ -265,7 +265,7 @@ def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
     new_prognostic, new_tracers = prognostics(grid, theta_v=0.0), tracers(grid, qv=0.0)
 
-    physics.run(inputs(prognostic, tracer_state), out=output(new_prognostic, new_tracers))
+    physics.run(inputs(prognostic, tracer_state), outputs=output(new_prognostic, new_tracers))
 
     # the inputs are read only; out continues them, with the tendencies applied
     np.testing.assert_array_equal(_qv(tracer_state), 1e-3)
@@ -282,7 +282,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -
     exner_before = prognostic.exner.data.asnumpy().copy()
     theta_v_before = prognostic.theta_v.data.asnumpy().copy()
 
-    physics.run(inputs(prognostic, tracer_state), out=output(prognostic, tracer_state))
+    physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
 
     dt = DT.total_seconds()
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 1e-7 * dt, rtol=1e-12)
@@ -300,7 +300,7 @@ def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> Non
     physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
-    physics.run(inputs(prognostic, tracer_state), out=output(prognostic, tracer_state))
+    physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
 
     np.testing.assert_allclose(prognostic.vn.data.asnumpy(), 1e-4 * DT.total_seconds(), rtol=1e-12)
 
@@ -313,4 +313,4 @@ def test_apply_rejects_a_lone_horizontal_wind_tendency(grid: base_grid.Grid) -> 
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
     with pytest.raises(ValueError, match="applied as a pair"):
-        physics.run(inputs(prognostic, tracer_state), out=output(prognostic, tracer_state))
+        physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))

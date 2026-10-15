@@ -570,7 +570,9 @@ class Icon4pyDriver:
                         at_first_substep=self._is_first_substep(dyn_substep),
                         at_last_substep=self._is_last_substep(dyn_substep),
                     ),
-                    out=self._dycore_output(prognostic_states.next, prep_adv, dycore_diagnostics),
+                    outputs=self._dycore_output(
+                        prognostic_states.next, prep_adv, dycore_diagnostics
+                    ),
                 )
 
             if not self._is_last_substep(dyn_substep):

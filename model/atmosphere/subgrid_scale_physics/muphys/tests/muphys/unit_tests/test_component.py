@@ -103,7 +103,7 @@ def test_run_writes_where_the_caller_says(grid: base_grid.Grid) -> None:
     component, _ = _component(grid, GranuleStandIn())
     view = fw.allocate(muphys_component.MuphysComponent.Output, grid, None)
 
-    out = component.run(_inputs(grid), out=view)
+    out = component.run(_inputs(grid), outputs=view)
 
     assert out is view
     np.testing.assert_array_equal(view.pflx.data.asnumpy(), 3.0)

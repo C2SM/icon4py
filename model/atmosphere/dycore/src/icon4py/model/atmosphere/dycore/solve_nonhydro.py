@@ -1167,14 +1167,14 @@ class SolveNonhydro(fw.Component):
             self._dtime_previous_substep = dtime
         return self.rayleigh_damping_factor
 
-    def run(self, inputs: Input, out: Output | None = None) -> Output:
+    def run(self, inputs: Input, outputs: Output | None = None) -> Output:
         """
-        Update the prognostic variables (`out`) after the dynamical process over one substep.
+        Update the prognostic variables (`outputs`) after the dynamical process over one substep.
 
-        `out` may not alias `inputs`: the step reads the prognostics at the current time level
+        `outputs` may not alias `inputs`: the step reads the prognostics at the current time level
         while writing the next one.
         """
-        out = self.buffers(out)
+        out = self.buffers(outputs)
         dtime = ta.wpfloat(inputs.dtime)
         at_initial_timestep = inputs.at_initial_timestep
         at_first_substep = inputs.at_first_substep

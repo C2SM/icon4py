@@ -447,7 +447,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         max_vertical_cfl=max_vertical_cfl,
     )
 
-    granule.solve_nh.run(inputs=inputs, out=out)
+    granule.solve_nh.run(inputs=inputs, outputs=out)
 
     # TODO(havogt): create separate bindings for writing the timers
     if gtx_config.COLLECT_METRICS_LEVEL > 0:

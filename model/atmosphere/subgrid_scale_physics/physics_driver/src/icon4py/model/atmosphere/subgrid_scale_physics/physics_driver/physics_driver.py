@@ -93,7 +93,7 @@ class PhysicsDriver(fw.Component):
     sees the previous one's provisional update), which would need per-process state advances.
 
     In place like the diffusion: the composer passes the same buffers as input and output, `run`
-    copies the input into `out` first where they differ. `rho` is read only.
+    copies the input into `outputs` first where they differ. `rho` is read only.
     """
 
     class Input(fw.State):
@@ -141,7 +141,7 @@ class PhysicsDriver(fw.Component):
         # the last output of each process, reused on the steps it is not active
         # TODO(jcanton): part 02 fix this. Key by the process's component (identity), once the
         # process holds it, and drop `PhysicsProcess.name`, which exists only for this key.
-        self.outputs: dict[str, fw.State] = {}
+        self.process_outputs: dict[str, fw.State] = {}
 
         cells = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_cells)}
         edges = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_edges)}
@@ -241,8 +241,8 @@ class PhysicsDriver(fw.Component):
             grid, dims.EdgeDim, dims.KDim, allocator=self.allocator
         )
 
-    def run(self, inputs: Input, out: Output | None = None) -> Output:
-        out = self.buffers(out)
+    def run(self, inputs: Input, outputs: Output | None = None) -> Output:
+        out = self.buffers(outputs)
         entry = self._diagnose(inputs)
         self._zero_accumulators()
         # the time control reads the start of the step being integrated
@@ -255,9 +255,9 @@ class PhysicsDriver(fw.Component):
                 continue
             # a process computes when it fires, and on its first step in the window when there
             # is no output to reuse yet; otherwise its last output is accumulated again
-            if time_control.is_active(step_start) or process.name not in self.outputs:
-                self.outputs[process.name] = process.step(entry)
-            self._accumulate(self.outputs[process.name])
+            if time_control.is_active(step_start) or process.name not in self.process_outputs:
+                self.process_outputs[process.name] = process.step(entry)
+            self._accumulate(self.process_outputs[process.name])
         self._apply(entry, inputs.dtime.total_seconds(), out)
         return out
 

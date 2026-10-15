@@ -158,8 +158,8 @@ class Advection(fw.Component, ABC):
         hfl_tracer: fw.Field[qty.HorizontalTracerFluxOnEdgeK]
         vfl_tracer: fw.Field[qty.VerticalTracerFluxOnCellKHalf]
 
-    def run(self, inputs: Input, out: Output | None = None) -> Output:
-        out = self.buffers(out)
+    def run(self, inputs: Input, outputs: Output | None = None) -> Output:
+        out = self.buffers(outputs)
         self._prepare(inputs)
         for name in states.TRACERS:
             tracer_now = getattr(inputs, name)

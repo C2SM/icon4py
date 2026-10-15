@@ -262,7 +262,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
         _, captured_kwargs = mock_run.call_args
         result, error_message = utils.compare_objects(captured_kwargs["inputs"], expected_inputs)
         assert result, f"Input comparison failed: {error_message}"
-        result, error_message = utils.compare_objects(captured_kwargs["out"], expected_out)
+        result, error_message = utils.compare_objects(captured_kwargs["outputs"], expected_out)
         assert result, f"Output comparison failed: {error_message}"
 
 

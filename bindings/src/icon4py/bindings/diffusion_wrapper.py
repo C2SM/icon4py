@@ -310,4 +310,4 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dwdx=fw.Field(qty.ZonalGradientOfWOnCellKHalf, dwdx),
         dwdy=fw.Field(qty.MeridionalGradientOfWOnCellKHalf, dwdy),
     )
-    granule.diffusion.run(inputs=inputs, out=out)
+    granule.diffusion.run(inputs=inputs, outputs=out)

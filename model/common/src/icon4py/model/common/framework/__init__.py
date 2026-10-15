@@ -11,7 +11,7 @@ Typed states and components.
 
 A `Quantity` is a type-level tag of one quantity at one place on the grid, a `Field` a gt4py
 field tagged by its quantity, a `State` a frozen dataclass of typed leaves and a `Component`
-a `run(inputs, out=None) -> Output` over nested `Input` and `Output` states. Stencils read
+a `run(inputs, outputs=None) -> Output` over nested `Input` and `Output` states. Stencils read
 `Field.data`; mypy and pyright see `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` as
 different types.
 """
@@ -237,16 +237,16 @@ def copy[S: State](state: S, allocator: gtx_typing.Allocator | None) -> S:
 
 class Component:
     """
-    `run(inputs, out=None) -> Output`, the only method a component implements.
+    `run(inputs, outputs=None) -> Output`, the only method a component implements.
 
     `out = component.run(inputs)` writes into the component's own buffers, allocated once on
-    first use; `component.run(inputs, out=view)` writes where the caller says, numpy `out=`
-    style. Either way `run` returns the output. Whether `out` may alias the input is the
+    first use; `component.run(inputs, outputs=view)` writes where the caller says, numpy `out=`
+    style. Either way `run` returns the output. Whether `outputs` may alias `inputs` is the
     component's business; nothing checks it here.
 
-    The own buffers (`output`) hold every leaf of `Output`, the optional ones included: a
-    component with optional leaves (`Advection`, `PhysicsDriver`: the tracers) would allocate
-    all of them, so its composer always passes `out=`, views over the active ones only.
+    The own buffers (`cached_output`) hold every leaf of `Output`, the optional ones included:
+    a component with optional leaves (`Advection`, `PhysicsDriver`: the tracers) would allocate
+    all of them, so its composer always passes `outputs=`, views over the active ones only.
     """
 
     Input: type[State]
@@ -257,12 +257,13 @@ class Component:
         self.allocator = allocator
 
     @functools.cached_property
-    def output(self) -> Any:
+    def cached_output(self) -> Any:
+        """The buffers a component writes when no `outputs=` is passed."""
         return allocate(type(self).Output, self.grid, self.allocator)
 
-    def buffers[S: State](self, out: S | None) -> S:
+    def buffers[S: State](self, outputs: S | None) -> S:
         """The caller's buffers when given, else this component's own."""
-        return self.output if out is None else out
+        return self.cached_output if outputs is None else outputs
 
-    def run(self, inputs: Any, out: Any = None) -> Any:
+    def run(self, inputs: Any, outputs: Any = None) -> Any:
         raise NotImplementedError

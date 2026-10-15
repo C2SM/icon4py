@@ -32,7 +32,7 @@ def test_entry_state_views_the_inputs_and_the_driver_diagnostics(grid: base_grid
     prognostic, tracer_state = prognostics(grid), tracers(grid)
     driver_inputs = inputs(prognostic, tracer_state)
 
-    physics.run(driver_inputs, out=output(prognostic, tracer_state))
+    physics.run(driver_inputs, outputs=output(prognostic, tracer_state))
 
     (entry,) = step.entries
     assert isinstance(physics.diagnostics, states.Diagnostics)
@@ -57,7 +57,7 @@ def test_diagnose_fills_the_diagnostics_and_leaves_the_inputs_untouched(
     prognostic, tracer_state = prognostics(grid, exner=0.95, theta_v=300.0), tracers(grid)
     before = {d.name: field.data.asnumpy().copy() for d, field in prognostic.leaves()}
 
-    physics.run(inputs(prognostic, tracer_state), out=output(prognostic, tracer_state))
+    physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
 
     diagnostics = physics.diagnostics
     assert 200.0 < diagnostics.temperature.data.asnumpy().mean() < 320.0

@@ -114,7 +114,7 @@ class IOMonitor(fw.Component):
         # output variable name -> Input leaf name
         self.selected = {name: leaves[name] for name in variables}
 
-    def run(self, inputs: Input, out: fw.Empty | None = None) -> fw.Empty:
+    def run(self, inputs: Input, outputs: fw.Empty | None = None) -> fw.Empty:
         state: dict[str, xr.DataArray] = {}
         if self.writer.at_capture_time():
             for name, leaf in self.selected.items():
@@ -123,7 +123,7 @@ class IOMonitor(fw.Component):
                     field.data, _attributes(field.quantity), to_host=True
                 )
         self.writer.store(state, inputs.simulation_time)
-        return self.buffers(out)
+        return self.buffers(outputs)
 
 
 def create_io_monitor(
