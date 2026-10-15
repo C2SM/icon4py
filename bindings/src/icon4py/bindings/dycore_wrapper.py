@@ -377,10 +377,8 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         rho_at_cells_on_half_levels=fw.Field(qty.RhoOnCellKHalf, rho_ic),
         mass_flux_at_edges_on_model_levels=fw.Field(qty.HorizontalMassFluxOnEdgeK, mass_fl_e),
     )
-    # Make `max_vcfl` a 0-d field to avoid cupy synchronization, see `_update_max_vertical_cfl`.
-    # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
     max_vertical_cfl = fw.Field(
-        qty.MaxVerticalCflNumberScalar,
+        qty.MaxVerticalCflNumber,
         gtx.as_field((), data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)),
     )
 

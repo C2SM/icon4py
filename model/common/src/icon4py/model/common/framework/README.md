@@ -45,8 +45,8 @@ class Diffusion(fw.Component):
         vn: fw.Field[qty.VnOnEdgeK]
         theta_v: fw.Field[qty.ThetaVOnCellK]
 
-    def run(self, inputs: Input, out: Output | None = None) -> Output:
-        out = self.buffers(out)
+    def run(self, inputs: Input, outputs: Output | None = None) -> Output:
+        out = self.buffers(outputs)
         ...  # stencils read inputs.vn.data and write out.vn.data
         return out
 ```
@@ -79,7 +79,8 @@ pairs it with the component's `run`, so pairing one process's `collect_input` wi
 ## Adding a quantity
 
 One tag per quantity at one place on the grid, named `<Quantity>On<Place>` (`ThetaVOnCellK`,
-`ThetaVOnCellKHalf`), in `quantities.py`. Give a new tag a `standard_name` only where the
+`ThetaVOnCellKHalf`), in `quantities.py`; a 0-d quantity (`dims=()`) is at no place and has
+no suffix (`MaxVerticalCflNumber`). Give a new tag a `standard_name` only where the
 [CF standard name table](https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html)
 has one, otherwise leave it out and say in `long_name` what the field is (with the ICON
 variable name in parentheses). Some existing tags keep names that are not in the CF table

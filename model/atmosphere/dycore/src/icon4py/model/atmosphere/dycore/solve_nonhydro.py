@@ -472,7 +472,7 @@ class SolveNonhydro(fw.Component):
         vertical_wind_advective_tendency_corrector: fw.Field[
             qty.VerticalWindAdvectiveTendencyOnCellKHalf
         ]
-        max_vertical_cfl: fw.Field[qty.MaxVerticalCflNumberScalar]
+        max_vertical_cfl: fw.Field[qty.MaxVerticalCflNumber]
 
     class Diagnostics(fw.State):
         tangential_wind: fw.Field[qty.TangentialWindOnEdgeK]

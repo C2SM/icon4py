@@ -550,7 +550,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
             qty.VerticalWindAdvectiveTendencyOnCellKHalf, sp.ddt_w_adv_pc(1)
         ),
         max_vertical_cfl=fw.Field(
-            qty.MaxVerticalCflNumberScalar,
+            qty.MaxVerticalCflNumber,
             gtx.as_field((), data_alloc.scalar_like_array(max_vertical_cfl, backend)),
         ),
     )

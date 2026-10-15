@@ -189,7 +189,7 @@ class DycoreDiagnostics(fw.State):
     vertical_wind_advective_tendency: PredictorCorrectorPair[
         fw.Field[qty.VerticalWindAdvectiveTendencyOnCellKHalf]
     ]
-    max_vertical_cfl: fw.Field[qty.MaxVerticalCflNumberScalar]
+    max_vertical_cfl: fw.Field[qty.MaxVerticalCflNumber]
 
     @classmethod
     def allocate(
@@ -208,7 +208,7 @@ class DycoreDiagnostics(fw.State):
                 fw.zeros(qty.VerticalWindAdvectiveTendencyOnCellKHalf, grid, allocator),
                 fw.zeros(qty.VerticalWindAdvectiveTendencyOnCellKHalf, grid, allocator),
             ),
-            max_vertical_cfl=fw.zeros(qty.MaxVerticalCflNumberScalar, grid, allocator),
+            max_vertical_cfl=fw.zeros(qty.MaxVerticalCflNumber, grid, allocator),
         )
 
 

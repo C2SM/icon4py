@@ -239,10 +239,10 @@ class Component:
     """
     `run(inputs, outputs=None) -> Output`, the only method a component implements.
 
-    `out = component.run(inputs)` writes into the component's own buffers, allocated once on
-    first use; `component.run(inputs, outputs=view)` writes where the caller says, numpy `out=`
-    style. Either way `run` returns the output. Whether `outputs` may alias `inputs` is the
-    component's business; nothing checks it here.
+    `output = component.run(inputs)` writes into the component's own buffers, allocated once
+    on first use; `component.run(inputs, outputs=view)` writes where the caller says, numpy
+    `out=` style. Either way `run` returns the output. Whether `outputs` may alias `inputs` is
+    the component's business; nothing checks it here.
 
     The own buffers (`cached_output`) hold every leaf of `Output`, the optional ones included:
     a component with optional leaves (`Advection`, `PhysicsDriver`: the tracers) would allocate

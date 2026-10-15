@@ -177,7 +177,7 @@ def construct_dycore_diagnostics(
             ),
         ),
         max_vertical_cfl=fw.Field(
-            qty.MaxVerticalCflNumberScalar,
+            qty.MaxVerticalCflNumber,
             gtx.zeros((), dtype=ta.wpfloat, allocator=init_savepoint.backend),
         ),
     )

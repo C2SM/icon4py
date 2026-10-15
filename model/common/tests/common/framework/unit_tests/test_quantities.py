@@ -20,7 +20,6 @@ PLACES = {
     "OnCellKHalf": (dims.CellDim, dims.KHalfDim),
     "OnEdgeK": (dims.EdgeDim, dims.KDim),
     "OnEdgeKHalf": (dims.EdgeDim, dims.KHalfDim),
-    "Scalar": (),
 }
 
 
@@ -36,8 +35,9 @@ def _quantities() -> list[type[fw.Quantity]]:
 
 @pytest.mark.parametrize("quantity", _quantities(), ids=lambda q: q.__name__)
 def test_quantity_is_named_after_its_place(quantity: type[fw.Quantity]) -> None:
-    place = next(suffix for suffix in PLACES if quantity.__name__.endswith(suffix))
-    assert quantity.dims == PLACES[place]
+    # a 0-d quantity (`dims=()`) is at no place on the grid and has no suffix
+    place = next((suffix for suffix in PLACES if quantity.__name__.endswith(suffix)), None)
+    assert quantity.dims == (PLACES[place] if place is not None else ())
     assert isinstance(quantity.units, str)
     assert quantity.precision in ("wp", "vp")
 
