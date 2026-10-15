@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import math
+from collections.abc import Mapping
 
 import gt4py.next as gtx
 import numpy as np
@@ -18,8 +19,6 @@ from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing import stencil_tests, test_utils
 
-from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
-from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
 from .test_apply_nabla2_to_vn_in_lateral_boundary import (
     apply_nabla2_to_vn_in_lateral_boundary_numpy,
 )
@@ -27,18 +26,119 @@ from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
 from .test_apply_nabla2_to_w_in_upper_damping_layer import (
     apply_nabla2_to_w_in_upper_damping_layer_numpy,
 )
-from .test_calculate_diagnostics_for_turbulence import calculate_diagnostics_for_turbulence_numpy
-from .test_calculate_horizontal_gradients_for_turbulence import (
-    calculate_horizontal_gradients_for_turbulence_numpy,
-)
 from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
 from .test_calculate_nabla2_of_theta import calculate_nabla2_of_theta_numpy
-from .test_calculate_nabla4 import calculate_nabla4_numpy
 from .test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy,
 )
 from .test_update_theta_and_exner import update_theta_and_exner_numpy
+
+
+def apply_nabla2_and_nabla4_global_to_vn_numpy(
+    *,
+    area_edge: np.ndarray,
+    kh_smag_e: np.ndarray,
+    z_nabla2_e: np.ndarray,
+    z_nabla4_e2: np.ndarray,
+    diff_multfac_vn: np.ndarray,
+    vn: np.ndarray,
+) -> np.ndarray:
+    area_edge = np.expand_dims(area_edge, axis=-1)
+    diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
+    vn = vn + area_edge * (kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge)
+    return vn
+
+
+def apply_nabla2_and_nabla4_to_vn_numpy(
+    *,
+    area_edge: np.ndarray,
+    kh_smag_e: np.ndarray,
+    z_nabla2_e: np.ndarray,
+    z_nabla4_e2: np.ndarray,
+    diff_multfac_vn: np.ndarray,
+    nudgecoeff_e: np.ndarray,
+    vn: np.ndarray,
+    nudgezone_diff: float,
+) -> np.ndarray:
+    area_edge = np.expand_dims(area_edge, axis=-1)
+    diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
+    nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
+    vn = vn + area_edge * (
+        np.maximum(nudgezone_diff * nudgecoeff_e, kh_smag_e) * z_nabla2_e
+        - diff_multfac_vn * z_nabla4_e2 * area_edge
+    )
+    return vn
+
+
+def calculate_diagnostics_for_turbulence_numpy(
+    wgtfac_c: np.ndarray,
+    div: np.ndarray,
+    kh_c: np.ndarray,
+    div_ic: np.ndarray,
+    hdef_ic: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    nlev = div.shape[1]
+    w = wgtfac_c[:, 1:nlev]
+    div_ic[:, 1:nlev] = w * div[:, 1:nlev] + (1.0 - w) * div[:, 0 : nlev - 1]
+    hdef_ic[:, 1:nlev] = (w * kh_c[:, 1:nlev] + (1.0 - w) * kh_c[:, 0 : nlev - 1]) ** 2
+    return div_ic, hdef_ic
+
+
+def calculate_horizontal_gradients_for_turbulence_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    w: np.ndarray,
+    geofac_grg_x: np.ndarray,
+    geofac_grg_y: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    c2e2cO = connectivities[dims.C2E2CO]
+    geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
+    dwdx = np.sum(np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * w[c2e2cO], 0.0), axis=1)
+
+    geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
+    dwdy = np.sum(np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * w[c2e2cO], 0.0), axis=1)
+    return dwdx, dwdy
+
+
+def calculate_nabla4_numpy(
+    *,
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    u_vert: np.ndarray,
+    v_vert: np.ndarray,
+    primal_normal_vert_v1: np.ndarray,
+    primal_normal_vert_v2: np.ndarray,
+    z_nabla2_e: np.ndarray,
+    inv_vert_vert_length: np.ndarray,
+    inv_primal_edge_length: np.ndarray,
+) -> np.ndarray:
+    e2c2v = connectivities[dims.E2C2V]
+    u_vert_e2c2v = u_vert[e2c2v]
+    v_vert_e2c2v = v_vert[e2c2v]
+
+    primal_normal_vert_v1 = np.expand_dims(primal_normal_vert_v1, axis=-1)
+    primal_normal_vert_v2 = np.expand_dims(primal_normal_vert_v2, axis=-1)
+    inv_vert_vert_length = np.expand_dims(inv_vert_vert_length, axis=-1)
+    inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
+
+    nabv_tang = (
+        u_vert_e2c2v[:, 0] * primal_normal_vert_v1[:, 0]
+        + v_vert_e2c2v[:, 0] * primal_normal_vert_v2[:, 0]
+    ) + (
+        u_vert_e2c2v[:, 1] * primal_normal_vert_v1[:, 1]
+        + v_vert_e2c2v[:, 1] * primal_normal_vert_v2[:, 1]
+    )
+    nabv_norm = (
+        u_vert_e2c2v[:, 2] * primal_normal_vert_v1[:, 2]
+        + v_vert_e2c2v[:, 2] * primal_normal_vert_v2[:, 2]
+    ) + (
+        u_vert_e2c2v[:, 3] * primal_normal_vert_v1[:, 3]
+        + v_vert_e2c2v[:, 3] * primal_normal_vert_v2[:, 3]
+    )
+    z_nabla4_e2 = 4.0 * (
+        (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2
+        + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2
+    )
+    return z_nabla4_e2
 
 
 @pytest.mark.single_precision_ready
