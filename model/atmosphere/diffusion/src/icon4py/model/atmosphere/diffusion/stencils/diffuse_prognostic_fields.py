@@ -13,9 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
     _apply_diffusion_to_theta_and_exner,
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import _apply_diffusion_to_vn
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w import (
-    _apply_diffusion_to_w,
-)
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w import _apply_diffusion_to_w
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
     _compute_diagnostic_quantities_for_turbulence,
 )
