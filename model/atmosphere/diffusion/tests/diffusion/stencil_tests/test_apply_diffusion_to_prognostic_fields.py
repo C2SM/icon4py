@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.diffuse_prognostic_fields import (
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_prognostic_fields import (
     apply_diffusion_to_prognostic_fields,
 )
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
@@ -44,7 +44,7 @@ from .test_update_theta_and_exner import update_theta_and_exner_numpy
 @pytest.mark.single_precision_ready
 @pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
-class TestDiffusePrognosticFields(stencil_tests.StencilTest):
+class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
     PROGRAM = apply_diffusion_to_prognostic_fields
     OUTPUTS = ("vn", "w", "dwdx", "dwdy", "theta_v", "exner", "div_ic", "hdef_ic")
     ABSOLUTE_TOLERANCE = 0.0 if test_utils.wp_is_dp else 5e-7
