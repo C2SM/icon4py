@@ -42,6 +42,13 @@ class Surface:
     tile holds it without a mixed-layer ocean (mo_vdf_sfc.f90 zeroes its tendency). The scheme
     runs on the prognostic cells (``grf_bdywidth_c + 1`` to ``min_rlcell_int`` in
     mo_tmx_field_class.f90), the range tmx consumes the fluxes on.
+
+    ICON's interactive surface (``isrfc_type = 0``) is tiled: each of the ocean, sea-ice and
+    land tiles has its own surface temperature and saturation humidity and computes its own
+    fluxes, which are aggregated with the tile fractions into the fields tmx receives. Porting
+    it means a loop over the tiles around the flux computation and the aggregation after it,
+    with a surface state holding the per-tile temperatures; the prescribed scheme is the
+    one-tile case with fraction one.
     """
 
     def __init__(
