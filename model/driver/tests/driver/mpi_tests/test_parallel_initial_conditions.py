@@ -140,6 +140,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         global_reductions=single_rank_icon4py_driver.global_reductions,
         solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
         tracer_prep_adv_state=single_rank_tracer_prep_adv_state,
+        decomposition_info=single_rank_icon4py_driver.decomposition_info,
     )
     single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
@@ -200,6 +201,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         global_reductions=multi_rank_icon4py_driver.global_reductions,
         solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
         tracer_prep_adv_state=multi_rank_tracer_prep_adv_state,
+        decomposition_info=multi_rank_icon4py_driver.decomposition_info,
     )
     multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=multi_rank_icon4py_driver.grid, allocator=allocator

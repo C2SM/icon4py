@@ -255,6 +255,14 @@ class GridManager:
             apply_offset=False,
             indices=my_vertex_indices,
         )
+        vertex_to_edge = self._get_index_field(
+            gridfile.ConnectivityName.V2E, indices=my_vertex_indices
+        )
+        vertex_edge_orientation = np.where(
+            vertex_to_edge != gridfile.GridFile.INVALID_INDEX,
+            vertex_edge_orientation,
+            0,
+        )
 
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
