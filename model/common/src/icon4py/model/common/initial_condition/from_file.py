@@ -59,18 +59,19 @@ def _savepoint_formatted_date(date: time.AbsoluteTime) -> str:
 def _define_field_readers(
     serializer: serialbox.Serializer,
     savepoint: serialbox.Savepoint,
-    grid: icon_grid.IconGrid,
+    num_cells: int,
+    num_edges: int,
     array_ns: types.ModuleType,
 ) -> tuple[Callable[[str], data_alloc.NDArray], Callable[[str], data_alloc.NDArray]]:
     """Readers of cell and edge fields. The serialized fields are padded to nproma."""
 
     def read_cell_k(name: str) -> data_alloc.NDArray:
         buffer = array_ns.squeeze(serializer.read(name, savepoint).astype(float))
-        return array_ns.asarray(buffer[: grid.num_cells, :])
+        return array_ns.asarray(buffer[:num_cells, :])
 
     def read_edge_k(name: str) -> data_alloc.NDArray:
         buffer = array_ns.squeeze(serializer.read(name, savepoint).astype(float))
-        return array_ns.asarray(buffer[: grid.num_edges, :])
+        return array_ns.asarray(buffer[:num_edges, :])
 
     return read_cell_k, read_edge_k
 
@@ -131,7 +132,13 @@ def read_initial_condition_from_file(
         f"icon_pydycore_rank{exchange.my_rank()}",
     )
     savepoint = serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
-    read_cell_k, read_edge_k = _define_field_readers(serializer, savepoint, grid, array_ns)
+    read_cell_k, read_edge_k = _define_field_readers(
+        serializer,
+        savepoint,
+        num_cells=prognostic_state_now.rho.ndarray.shape[0],
+        num_edges=prognostic_state_now.vn.ndarray.shape[0],
+        array_ns=array_ns,
+    )
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
@@ -139,7 +146,9 @@ def read_initial_condition_from_file(
     if ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
         for i, tracer in enumerate(tracer_state_now.active_fields()):
-            tracer.field.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
+            tracer.field.ndarray[:, :] = array_ns.asarray(
+                tracers[: tracer.field.ndarray.shape[0], :, i]
+            )
 
 
 def read_restart_from_file(
@@ -200,7 +209,13 @@ def read_restart_from_file(
             f"of this experiment covers: {_available_nonhydro_init_dates(serializer)}."
         ) from err
 
-    read_cell_k, read_edge_k = _define_field_readers(serializer, nonhydro_savepoint, grid, array_ns)
+    read_cell_k, read_edge_k = _define_field_readers(
+        serializer,
+        nonhydro_savepoint,
+        num_cells=prognostic_state_now.rho.ndarray.shape[0],
+        num_edges=prognostic_state_now.vn.ndarray.shape[0],
+        array_ns=array_ns,
+    )
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
@@ -209,10 +224,18 @@ def read_restart_from_file(
     )
 
     normal_wind_tendency = _read_predictor_corrector_fields(
-        serializer, velocity_savepoint, "ddt_vn_apc_pc", grid.num_edges, array_ns
+        serializer,
+        velocity_savepoint,
+        "ddt_vn_apc_pc",
+        prognostic_state_now.vn.ndarray.shape[0],
+        array_ns,
     )
     vertical_wind_tendency = _read_predictor_corrector_fields(
-        serializer, velocity_savepoint, "ddt_w_adv_pc", grid.num_cells, array_ns
+        serializer,
+        velocity_savepoint,
+        "ddt_w_adv_pc",
+        prognostic_state_now.rho.ndarray.shape[0],
+        array_ns,
     )
     solve_nonhydro_diagnostic_state.normal_wind_advective_tendency.predictor.ndarray[:, :] = (
         normal_wind_tendency[0]
