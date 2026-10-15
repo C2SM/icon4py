@@ -13,7 +13,7 @@ import pathlib
 import types
 import typing
 import warnings
-from typing import Self
+from typing import Self, TypeAlias
 
 import numpy as np
 import xarray as xr
@@ -27,6 +27,20 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
+
+
+#: One pending array write of a time slice: (array, index, data).
+_VariableWrite: TypeAlias = tuple[zarr.Array, tuple[int | slice, ...], np.ndarray]  # noqa: UP040 [non-pep695-type-alias]
+
+
+def _write_variables(writes: list[_VariableWrite]) -> None:
+    """Perform the data writes of one appended time slice.
+
+    The task an asynchronous append queues: pure chunk writes on arrays resolved by
+    the submitter, so it touches no store metadata and performs no communication.
+    """
+    for variable, index, data in writes:
+        variable[index] = data
 
 
 class ZarrWriter:
@@ -57,6 +71,21 @@ class ZarrWriter:
     ``horizontal_shard_size`` groups whole chunks into one storage file each (see
     ``FieldGroupIOConfig``). In rank-block mode the block size must be a multiple of
     the chunk/shard size (see ``distributed.check_chunks_align_with_blocks``).
+
+    Asynchronous mode (``async_queue`` given): ``append`` performs the store-metadata
+    operations and their broadcast (``_root_step``) synchronously as before, then
+    queues the data writes instead of performing them, overlapping the writing with
+    the caller's following work. Only local chunk writes run on the background thread -- all communication
+    stays on the calling thread -- and the target arrays are resolved before queueing,
+    so the thread reads no store metadata either (a concurrent time-axis resize of a
+    later append only grows an array's shape and never touches the chunks of earlier
+    slices). The caller must not mutate the appended data afterwards: the data of an
+    asynchronous group must be decoupled from the model state (see
+    ``FieldGroupMonitor.store``). ``close`` drains the queue, so the store is complete
+    once it returns. A failed write surfaces on the failing rank at the next append or
+    close; in rank-block mode the surviving ranks then block in the next
+    ``_root_step`` broadcast -- the same failure envelope as a synchronous rank-local
+    write error.
     """
 
     def __init__(
@@ -69,6 +98,7 @@ class ZarrWriter:
         global_attrs: writers.GlobalFileAttributes,
         rank_blocks: dict[str, distributed.RankBlock] | None,
         process_props: decomposition.ProcessProperties,
+        async_queue: writers.AsyncWriteQueue | None,
         horizontal_chunk_size: int | None = None,
         horizontal_shard_size: int | None = None,
     ):
@@ -95,6 +125,7 @@ class ZarrWriter:
                 label = "shard" if horizontal_shard_size is not None else "chunk"
                 distributed.check_chunks_align_with_blocks(rank_blocks, alignment, label)
         self._process_props = process_props
+        self._async_queue = async_queue
         self._group: zarr.Group | None = None
         # The append count doubles as the time index of the next slice. It is kept
         # locally (identical on all ranks: in rank-block mode append is called once per
@@ -267,7 +298,9 @@ class ZarrWriter:
 
         Appends a time slice of the fields in the state_to_append dictionary to the store
         for the `model_time`, expanding the time coordinate by the `model_time`. In
-        rank-block mode only this rank's horizontal block is written.
+        rank-block mode only this rank's horizontal block is written. In asynchronous
+        mode the data writes are queued instead of performed (see the class docstring)
+        and the data must not be mutated after this call.
 
         Args:
             state_to_append: fields to append
@@ -295,12 +328,17 @@ class ZarrWriter:
                 variable.resize((time_pos + 1, *variable.shape[1:]))
 
         self._root_step(_extend_time_axis, "Extending the time axis of")
+        writes: list[_VariableWrite] = []
         for var_name, canonical_slice in canonical_slices.items():
             variable = self._data_array(var_name)
             horizontal_range = self._horizontal_write_range(str(canonical_slice.dims[-1]))
             middle = (slice(None),) * (len(canonical_slice.dims) - 1)
             index: tuple[int | slice, ...] = (time_pos, *middle, horizontal_range)
-            variable[index] = host_data[var_name]
+            writes.append((variable, index, host_data[var_name]))
+        if self._async_queue is None:
+            _write_variables(writes)
+        else:
+            self._async_queue.submit(functools.partial(_write_variables, writes))
         self._append_count += 1
 
     def _create_variable(self, var_name: str, canonical_slice: xr.DataArray) -> None:
@@ -331,6 +369,10 @@ class ZarrWriter:
     def close(self) -> None:
         if self._group is None:
             return
+        if self._async_queue is not None:
+            # the queued writes of this store must be on disk before its metadata is
+            # consolidated
+            self._async_queue.drain()
         if self._is_root():
             with warnings.catch_warnings():
                 # consolidated metadata speeds up opening the store (single metadata
