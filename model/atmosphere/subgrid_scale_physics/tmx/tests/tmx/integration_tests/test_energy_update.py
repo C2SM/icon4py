@@ -63,6 +63,7 @@ def test_tmx_run_energy_update_single_step(
     temperature_savepoint = data_provider.from_savepoint_tmx_temperature_exit(date=date)
     hor_wind_savepoint = data_provider.from_savepoint_tmx_hor_wind_exit(date=date)
     exit_savepoint = data_provider.from_savepoint_tmx_exit(date=date)
+    entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
 
     component = energy_update.EnergyUpdate(
         grid=icon_grid,
@@ -80,6 +81,7 @@ def test_tmx_run_energy_update_single_step(
     )
     diagnostic_state = dataclasses.replace(
         tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),
+        cv_air=entry_savepoint.cvair(),
         km_ic=diagnostics_savepoint.km_ic(),
         kh_ic=diagnostics_savepoint.kh_ic(),
     )
@@ -94,7 +96,7 @@ def test_tmx_run_energy_update_single_step(
     )
 
     component.run(
-        input_state=construct_input_state(data_provider.from_savepoint_tmx_entry(date=date)),
+        input_state=construct_input_state(entry_savepoint),
         surface_flux_state=construct_surface_flux_state(
             data_provider.from_savepoint_tmx_surface_fluxes(date=date)
         ),
