@@ -16,6 +16,7 @@ from icon4py.tools.py2fgen._definitions import (
     ArrayInfo,
     ArrayParamDescriptor,
     MemorySpace,
+    Metadata,
     ParamDescriptor,
     ScalarParamDescriptor,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "ArrayInfo",
     "ArrayParamDescriptor",
     "MemorySpace",
+    "Metadata",
     "ParamDescriptor",
     "RenderedSources",
     "ScalarParamDescriptor",
