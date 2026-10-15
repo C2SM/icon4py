@@ -30,6 +30,10 @@ from icon4py.model.common import time, type_alias as ta
 from icon4py.model.common.config import config_io, options as config_options
 
 
+if typing.TYPE_CHECKING:
+    pass
+
+
 type HINT = (
     type
     | typing.TypeAliasType
@@ -598,6 +602,11 @@ class ConfigDocApp(textual.app.App):
     regen_cache: bool
     cache_path: Traversable | None
 
+    BINDINGS: typing.ClassVar = [
+        ("?", "show_help_panel", "Show Keymap"),
+        ("ctrl+q", "quit", "Quit"),
+    ]
+
     def __init__(
         self,
         root_class: type | str | None = None,
@@ -613,6 +622,7 @@ class ConfigDocApp(textual.app.App):
         self.cache_path = cache_path
 
     def compose(self) -> textual.app.ComposeResult:
+        self.title = "ICON4Py docs: config"
         config_widget = ConfigDocWidget()
         config_widget.root_class = self.root_class
         config_widget.try_cache = self.try_cache
