@@ -172,45 +172,6 @@ def _compute_ppm4gpu_flux(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_ppm4gpu_flux(
-    p_upflux: fa.CellKHalfField[ta.wpfloat],
-    p_cc: fa.CellKField[ta.wpfloat],
-    p_cellmass_now: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
-    p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
-    slev: gtx.int32,
-    slevp1_ti: gtx.int32,
-    elev: gtx.int32,
-    wp_eps: ta.wpfloat,
-    p_dtime: ta.wpfloat,
-    itype_vlimit: gtx.int32,
-    start_cell: gtx.int32,
-    end_cell: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _compute_ppm4gpu_flux(
-        p_cc=p_cc,
-        p_cellmass_now=p_cellmass_now,
-        p_mflx_contra_v=p_mflx_contra_v,
-        p_cellhgt_mc_now=p_cellhgt_mc_now,
-        k=k,
-        slev=slev,
-        slevp1_ti=slevp1_ti,
-        elev=elev,
-        wp_eps=wp_eps,
-        p_dtime=p_dtime,
-        itype_vlimit=itype_vlimit,
-        out=p_upflux,
-        domain={
-            dims.CellDim: (start_cell, end_cell),
-            dims.KHalfDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 @gtx.field_operator
 def _compute_vertical_tracer_flux(
     p_cc: fa.CellKField[ta.wpfloat],
