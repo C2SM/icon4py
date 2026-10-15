@@ -14,11 +14,11 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import _apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w import _apply_diffusion_to_w
-from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
-    _compute_diagnostic_quantities_for_turbulence,
-)
 from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+)
+from icon4py.model.atmosphere.diffusion.stencils.compute_diagnostic_quantities_for_turbulence import (
+    _compute_diagnostic_quantities_for_turbulence,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
