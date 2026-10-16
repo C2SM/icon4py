@@ -19,6 +19,27 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
+def limit_vertical_parabola_semi_monotonically_numpy(
+    l_limit: np.ndarray,
+    p_face: np.ndarray,
+    p_cc: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    q_face_up, q_face_low = np.where(
+        l_limit != 0,
+        np.where(
+            (p_cc < np.minimum(p_face[:, :-1], p_face[:, 1:])),
+            (p_cc, p_cc),
+            np.where(
+                p_face[:, :-1] > p_face[:, 1:],
+                (3.0 * p_cc - 2.0 * p_face[:, 1:], p_face[:, 1:]),
+                (p_face[:, :-1], 3.0 * p_cc - 2.0 * p_face[:, :-1]),
+            ),
+        ),
+        (p_face[:, :-1], p_face[:, 1:]),
+    )
+    return q_face_up, q_face_low
+
+
 class TestLimitVerticalParabolaSemiMonotonically(stencil_tests.StencilTest):
     PROGRAM = limit_vertical_parabola_semi_monotonically
     OUTPUTS = ("p_face_up", "p_face_low")
@@ -32,18 +53,8 @@ class TestLimitVerticalParabolaSemiMonotonically(stencil_tests.StencilTest):
         p_cc: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        q_face_up, q_face_low = np.where(
-            l_limit != 0,
-            np.where(
-                (p_cc < np.minimum(p_face[:, :-1], p_face[:, 1:])),
-                (p_cc, p_cc),
-                np.where(
-                    p_face[:, :-1] > p_face[:, 1:],
-                    (3.0 * p_cc - 2.0 * p_face[:, 1:], p_face[:, 1:]),
-                    (p_face[:, :-1], 3.0 * p_cc - 2.0 * p_face[:, :-1]),
-                ),
-            ),
-            (p_face[:, :-1], p_face[:, 1:]),
+        q_face_up, q_face_low = limit_vertical_parabola_semi_monotonically_numpy(
+            l_limit, p_face, p_cc
         )
         return dict(p_face_up=q_face_up, p_face_low=q_face_low)
 
