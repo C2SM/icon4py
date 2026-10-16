@@ -24,7 +24,7 @@ from icon4py.model.common import (
     type_alias as ta,
     utils as common_utils,
 )
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -80,7 +80,11 @@ def create_vertical_params(
         (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
-def test_extra_diffusion_constants_match_icon(experiment, step_date_init, savepoint_velocity_init):
+def test_extra_diffusion_constants_match_icon(
+    experiment: test_defs.Experiment,
+    step_date_init: str,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+) -> None:
     # ICON serializes both constants per second, divided by dtime.
     dtime = savepoint_velocity_init.dtime()
     assert VerticalCflConstants.W_LIMIT / dtime == savepoint_velocity_init.cfl_w_limit()
@@ -108,18 +112,18 @@ def test_extra_diffusion_constants_match_icon(experiment, step_date_init, savepo
     ],
 )
 def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    grid_savepoint,
-    savepoint_velocity_init,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_velocity_exit,
-    backend,
-    caplog,
-):
+    experiment: test_defs.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: base.Grid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    savepoint_velocity_exit: serialbox.IconVelocityExitSavepoint,
+    backend: gtx_typing.Backend,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
@@ -130,33 +134,33 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        theta_v_at_cells_on_half_levels=None,
-        perturbed_exner_at_cells_on_model_levels=None,
-        rho_at_cells_on_half_levels=None,
-        exner_tendency_due_to_slow_physics=None,
-        grf_tend_rho=None,
-        grf_tend_thv=None,
-        grf_tend_w=None,
-        mass_flux_at_edges_on_model_levels=None,
-        normal_wind_tendency_due_to_slow_physics_process=None,
-        grf_tend_vn=None,
+        theta_v_at_cells_on_half_levels=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        perturbed_exner_at_cells_on_model_levels=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        rho_at_cells_on_half_levels=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        exner_tendency_due_to_slow_physics=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        grf_tend_rho=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        grf_tend_thv=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        grf_tend_w=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        mass_flux_at_edges_on_model_levels=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        normal_wind_tendency_due_to_slow_physics_process=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        grf_tend_vn=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_iau_increment=None,
-        normal_wind_iau_increment=None,
-        exner_iau_increment=None,
-        exner_dynamical_increment=None,
+        rho_iau_increment=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        normal_wind_iau_increment=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        exner_iau_increment=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        exner_dynamical_increment=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),
         vn=init_savepoint.vn(),
-        theta_v=None,
-        rho=None,
-        exner=None,
+        theta_v=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        rho=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        exner=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
@@ -278,7 +282,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
     assert test_utils.dallclose(
-        diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy()[
+        diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy()[  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
             start_cell_nudging:, :
         ],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
@@ -287,7 +291,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
     assert test_utils.dallclose(
-        diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),
+        diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
         icon_result_ddt_vn_apc_pc,
         atol=1.0e-15,
     )
@@ -350,19 +354,19 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     ],
 )
 def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    istep_exit,
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    grid_savepoint,
-    savepoint_velocity_init,
-    savepoint_velocity_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
-    backend,
-):
+    istep_init: int,
+    istep_exit: int,
+    experiment: test_defs.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: base.Grid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+    savepoint_velocity_exit: serialbox.IconVelocityExitSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
     dtime = init_savepoint.dtime()
@@ -374,33 +378,33 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        theta_v_at_cells_on_half_levels=None,
-        perturbed_exner_at_cells_on_model_levels=None,
-        rho_at_cells_on_half_levels=None,
-        exner_tendency_due_to_slow_physics=None,
-        grf_tend_rho=None,
-        grf_tend_thv=None,
-        grf_tend_w=None,
-        mass_flux_at_edges_on_model_levels=None,
-        normal_wind_tendency_due_to_slow_physics_process=None,
-        grf_tend_vn=None,
+        theta_v_at_cells_on_half_levels=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        perturbed_exner_at_cells_on_model_levels=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        rho_at_cells_on_half_levels=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        exner_tendency_due_to_slow_physics=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        grf_tend_rho=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        grf_tend_thv=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        grf_tend_w=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        mass_flux_at_edges_on_model_levels=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        normal_wind_tendency_due_to_slow_physics_process=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        grf_tend_vn=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_iau_increment=None,
-        normal_wind_iau_increment=None,
-        exner_iau_increment=None,  # sp.exner_incr(),
-        exner_dynamical_increment=None,
+        rho_iau_increment=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        normal_wind_iau_increment=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        exner_iau_increment=None,  # type: ignore[arg-type]  # sp.exner_incr() disabled; GT4Py NDArrayObject protocol limitation
+        exner_dynamical_increment=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
     prognostic_state = prognostics.PrognosticState(
         w=init_savepoint.w(),
         vn=init_savepoint.vn(),
-        theta_v=None,
-        rho=None,
-        exner=None,
+        theta_v=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        rho=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        exner=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
@@ -483,14 +487,14 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert test_utils.dallclose(
-        diagnostic_state.vertical_wind_advective_tendency.corrector.asnumpy()[
+        diagnostic_state.vertical_wind_advective_tendency.corrector.asnumpy()[  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
             start_cell_nudging:, :
         ],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
     )
     assert test_utils.dallclose(
-        diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),
+        diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
     )

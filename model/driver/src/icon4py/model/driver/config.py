@@ -34,6 +34,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.config import config_io, options as common_conf_opt
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory
@@ -262,7 +263,7 @@ def read_experiment_config_from_yaml(config_file_path: pathlib.Path) -> Experime
 def prepare_output_directory(
     config_output_path: pathlib.Path,
     cli_output_path: pathlib.Path | None,
-    process_props: Any | None = None,
+    process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> pathlib.Path:
     output_path = cli_output_path if cli_output_path is not None else config_output_path
 

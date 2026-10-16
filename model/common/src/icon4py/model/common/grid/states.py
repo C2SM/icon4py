@@ -69,8 +69,8 @@ class EdgeParams:
     """
 
     primal_normal_vert: tuple[
-        gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
-        gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
+        gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], float],
+        gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], float],
     ]
     """
     Normal of the triangle edge, projected onto the location of the
@@ -81,8 +81,8 @@ class EdgeParams:
     """
 
     dual_normal_vert: tuple[
-        gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
-        gtx.Field[[dims.EdgeDim, dims.E2C2VDim], float],
+        gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], float],
+        gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], float],
     ]
     """
     zonal (x) and meridional (y) components of vector tangent to the triangle edge,
@@ -93,8 +93,8 @@ class EdgeParams:
     """
 
     primal_normal_cell: tuple[
-        gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
-        gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
+        gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+        gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
     ]
     """
     zonal (x) and meridional (y) components of vector normal to the cell edge
@@ -105,8 +105,8 @@ class EdgeParams:
     """
 
     dual_normal_cell: tuple[
-        gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
-        gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
+        gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+        gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
     ]
     """
     zonal (x) and meridional (y) components of vector normal to the dual edge
@@ -138,8 +138,8 @@ class EdgeParams:
     """
 
     primal_normal: tuple[
-        gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
-        gtx.Field[[dims.EdgeDim, dims.E2CDim], float],
+        gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+        gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
     ]
     """
     zonal (x) and meridional (y) components of vector normal to the cell edge
@@ -164,7 +164,7 @@ class EdgeParams:
     defined in ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
     """
 
-    edge_cell_distances: gtx.Field[[dims.EdgeDim, dims.E2CDim], float] | None = None
+    edge_cell_distances: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float] | None = None
     """
     Distance between the edge midpoint and the circumcenters of the two adjacent cells.
 

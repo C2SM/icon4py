@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from collections.abc import Mapping
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -87,7 +88,7 @@ class TestCalculateNabla4(stencil_tests.StencilTest):
         z_nabla2_e: np.ndarray,
         inv_vert_vert_length: np.ndarray,
         inv_primal_edge_length: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_nabla4_e2 = calculate_nabla4_numpy(

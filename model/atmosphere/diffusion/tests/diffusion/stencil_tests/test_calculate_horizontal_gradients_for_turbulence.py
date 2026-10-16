@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from collections.abc import Mapping
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -47,7 +48,7 @@ class TestCalculateHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
         w: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         dwdx, dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
@@ -56,7 +57,9 @@ class TestCalculateHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
         return dict(dwdx=dwdx, dwdy=dwdy)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
         geofac_grg_x = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
         geofac_grg_y = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)

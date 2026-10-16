@@ -57,13 +57,17 @@ def _compute_surface_pressure(
     return surface_pressure
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=False, init=(wpfloat(0.0), wpfloat(0.0), True))
+@gtx.scan_operator(
+    axis=dims.KDim,
+    forward=False,
+    init=(wpfloat(0.0), wpfloat(0.0), True),  # type: ignore[call-overload]  # GT4Py scan_operator typing does not accept tuple init for multi-element scan state
+)
 def _scan_pressure(
     state: tuple[ta.wpfloat, ta.wpfloat, bool],
     ddqz_z_full: ta.wpfloat,
     virtual_temperature: ta.wpfloat,
     surface_pressure: ta.wpfloat,
-):
+) -> tuple[ta.wpfloat, ta.wpfloat, bool]:
     pressure_interface = (
         surface_pressure * exp(-PhysicsConstants.grav_o_rd * ddqz_z_full / virtual_temperature)
         if state[2]

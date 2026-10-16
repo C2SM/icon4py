@@ -169,21 +169,21 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     geometry = static_fields.geometry
     metrics = static_fields.metrics
-    primal_normal_x = geometry.get_full_precision(geometry_meta.EDGE_NORMAL_U).ndarray
-    inv_dual_edge_length = geometry.get_full_precision(
+    primal_normal_x = geometry.get_full_precision(geometry_meta.EDGE_NORMAL_U).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    inv_dual_edge_length = geometry.get_full_precision(  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
         f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
     ).ndarray
-    edge_cell_distance = geometry.get_full_precision(geometry_meta.EDGE_CELL_DISTANCE).ndarray
-    primal_edge_length = geometry.get_full_precision(geometry_meta.EDGE_LENGTH).ndarray
-    cell_area = geometry.get_full_precision(geometry_meta.CELL_AREA).ndarray
-    z_mc = metrics.get_full_precision(metrics_attributes.Z_MC).ndarray
-    z_ifc = metrics.get_full_precision(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
-    exner_ref_mc = metrics.get_full_precision(metrics_attributes.EXNER_REF_MC).ndarray
-    d_exner_dz_ref_ic = metrics.get_full_precision(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
-    theta_ref_mc = metrics.get_full_precision(metrics_attributes.THETA_REF_MC).ndarray
-    theta_ref_ic = metrics.get_full_precision(metrics_attributes.THETA_REF_IC).ndarray
-    wgtfac_c = metrics.get_full_precision(metrics_attributes.WGTFAC_C).ndarray
-    ddqz_z_half = metrics.get_full_precision(metrics_attributes.DDQZ_Z_HALF).ndarray
+    edge_cell_distance = geometry.get_full_precision(geometry_meta.EDGE_CELL_DISTANCE).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    primal_edge_length = geometry.get_full_precision(geometry_meta.EDGE_LENGTH).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    cell_area = geometry.get_full_precision(geometry_meta.CELL_AREA).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    z_mc = metrics.get_full_precision(metrics_attributes.Z_MC).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    z_ifc = metrics.get_full_precision(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    exner_ref_mc = metrics.get_full_precision(metrics_attributes.EXNER_REF_MC).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    d_exner_dz_ref_ic = metrics.get_full_precision(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    theta_ref_mc = metrics.get_full_precision(metrics_attributes.THETA_REF_MC).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    theta_ref_ic = metrics.get_full_precision(metrics_attributes.THETA_REF_IC).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    wgtfac_c = metrics.get_full_precision(metrics_attributes.WGTFAC_C).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    ddqz_z_half = metrics.get_full_precision(metrics_attributes.DDQZ_Z_HALF).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
     zone_idx = testcases_utils.zone_indices(grid)
 
     num_levels = grid.num_levels
@@ -307,12 +307,12 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         _integrate_layer(k, exner[k - 1], theta_v[k - 1], qv_extrapolated)
 
     # Broadcast the column profiles onto all cells.
-    exner_ndarray[:, :] = exner[array_ns.newaxis, :]
-    theta_v_ndarray[:, :] = theta_v[array_ns.newaxis, :]
-    rho_ndarray[:, :] = (
+    exner_ndarray[:, :] = exner[array_ns.newaxis, :]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    theta_v_ndarray[:, :] = theta_v[array_ns.newaxis, :]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    rho_ndarray[:, :] = (  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
         exner_ndarray**phy_const.CVD_O_RD * phy_const.P0REF / phy_const.RD / theta_v_ndarray
     )
-    tracer_state_now.qv.ndarray[:, :] = qv[array_ns.newaxis, :]
+    tracer_state_now.qv.ndarray[:, :] = qv[array_ns.newaxis, :]  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
     log.info("Weisman-Klemp base-state profile completed.")
 
     # Sheared horizontal wind, projected onto the edge-normal direction.
@@ -321,13 +321,13 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         - 0.45
     )
     boundary_lvl2 = zone_idx["end_edge_lateral_boundary_level_2"]
-    prognostic_state_now.vn.ndarray[:boundary_lvl2, :] = 0.0
-    prognostic_state_now.vn.ndarray[boundary_lvl2:, :] = (
+    prognostic_state_now.vn.ndarray[:boundary_lvl2, :] = 0.0  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    prognostic_state_now.vn.ndarray[boundary_lvl2:, :] = (  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
         wind_speed[array_ns.newaxis, :] * primal_normal_x[boundary_lvl2:, array_ns.newaxis]
     )
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
-    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
         grid=grid,
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,

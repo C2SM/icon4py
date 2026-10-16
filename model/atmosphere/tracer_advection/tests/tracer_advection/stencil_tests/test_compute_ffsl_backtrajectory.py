@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -56,7 +58,7 @@ class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
         dual_normal_cell_y: np.ndarray,
         lvn_sys_pos: np.ndarray,
         p_dt: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         lvn_pos = p_vn >= 0.0
         cell_idx = np.expand_dims(cell_idx, axis=-1)

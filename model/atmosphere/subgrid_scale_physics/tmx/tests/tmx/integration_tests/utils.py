@@ -59,7 +59,7 @@ def construct_metric_state(
         geopot_agl_ifc=init_savepoint.geopot_agl_ifc(),
         height_above_ground=gtx.as_field(
             (dims.CellDim, dims.KDim),
-            metric_fields.compute_height_above_surface(z=z_mc.asnumpy(), z_ifc=z_ifc.asnumpy()),
+            metric_fields.compute_height_above_surface(z=z_mc.asnumpy(), z_ifc=z_ifc.asnumpy()),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             allocator=allocator,
         ),
     )
@@ -161,23 +161,23 @@ def assert_tmx_exit_fields(
         # measured atol=7.0e-13, rtol=1.1e-3
         "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 8.0e-13, 0.0),
         # measured atol=1.9e-6, rtol=6.8e-16
-        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 0.0, 8.0e-16),
+        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 0.0, 8.0e-16),  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
         # measured atol=2.0e-12, rtol=1.2e-8
-        "dissip_ke_vi": (
+        "dissip_ke_vi": (  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
             diagnostic_state.dissip_ke_vi,
             exit_savepoint.dissip_ke_vi(),
             3.0e-12,
             0.0,
         ),
         # measured atol=1.2e-6, rtol=6.5e-16
-        "int_energy_vi": (
+        "int_energy_vi": (  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
             diagnostic_state.int_energy_vi,
             exit_savepoint.int_energy_vi(),
             0.0,
             8.0e-16,
         ),
         # measured atol=4.8e-9, rtol=5.7e-11
-        "tend_int_energy_vi": (
+        "tend_int_energy_vi": (  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
             diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
             0.0,

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -31,7 +33,7 @@ class TestComputeBruntVaisalaFrequency(stencil_tests.StencilTest):
         wgtfac_c: np.ndarray,
         inv_ddqz_z_half: np.ndarray,
         grav: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         bruvais = reference_funcs.compute_brunt_vaisala_frequency_numpy(
             theta_v, wgtfac_c, inv_ddqz_z_half, grav=grav
@@ -61,7 +63,7 @@ class TestComputeBruntVaisalaFrequency(stencil_tests.StencilTest):
             inv_ddqz_z_half=inv_ddqz_z_half,
             grav=constants.GRAV,
             # Fortran jk = 2..nlev (1-based) -> k = 1..nlev-1 (0-based half levels)
-            domain={
+            domain={  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
                 dims.KHalfDim: (1, gtx.int32(grid.num_levels)),
             },

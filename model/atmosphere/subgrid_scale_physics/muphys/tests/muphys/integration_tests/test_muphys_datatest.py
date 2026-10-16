@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pytest
@@ -21,7 +21,12 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES, Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_full_muphys
-from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    model_backends,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.testing import definitions, test_utils
@@ -136,6 +141,9 @@ def test_muphys_granule(
         step=muphys_program if single_program else None,
     )
     outputs = component(state, datetime.datetime.fromisoformat(date))
+    fields_out = cast(
+        "dict[str, fa.CellKField[ta.wpfloat]]", outputs
+    )  # component returns gt4py fields at runtime; public signature widens them to DataField
     assert outputs.keys() == component.outputs_properties.keys()
     for name, field in state.items():
         np.testing.assert_array_equal(field.asnumpy(), initial_state[name], err_msg=name)
@@ -171,21 +179,22 @@ def test_muphys_granule(
     cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
     cells = slice(cell_start, cell_end)
     # Check all seven tendency conversions, including zero boundary/halo rows.
-    for name, updated in (
+    tendencies: list[tuple[str, fa.CellKField[ta.wpfloat]]] = [
         ("temperature", direct_t),
         *((f"q{species}", getattr(direct_q, species)) for species in SPECIES),
-    ):
+    ]
+    for name, updated in tendencies:
         old = initial_state["te" if name == "temperature" else name]
         expected = np.zeros_like(old)
         expected[cells, :] = (updated.asnumpy()[cells, :] - old[cells, :]) / dtime
-        np.testing.assert_array_equal(outputs[f"tend_{name}"].asnumpy(), expected, err_msg=name)
+        np.testing.assert_array_equal(fields_out[f"tend_{name}"].asnumpy(), expected, err_msg=name)
 
     # ICON saves only aggregate surface diagnostics. Verify the full pflx
     # profile and each surface diagnostic against the direct muphys call.
-    np.testing.assert_array_equal(outputs["pflx"].asnumpy(), direct_precip["pflx"].asnumpy())
+    np.testing.assert_array_equal(fields_out["pflx"].asnumpy(), direct_precip["pflx"].asnumpy())
     for name in ("pr", "ps", "pi", "pg", "pre"):
         np.testing.assert_array_equal(
-            outputs[name].asnumpy()[:, -1],
+            fields_out[name].asnumpy()[:, -1],
             direct_precip[name].asnumpy()[:, -1],
         )
 
@@ -203,7 +212,7 @@ def test_muphys_granule(
             atol=tracer_atol,
             err_msg=f"{name.removeprefix('tend_')} in cloud",
         )
-        actual = outputs[name].asnumpy()
+        actual = fields_out[name].asnumpy()
         # above the cloudy region ICON does not run the scheme; the full-column
         # granule must produce (near-)zero tendencies there
         test_utils.assert_dallclose(
@@ -216,7 +225,7 @@ def test_muphys_granule(
         atol=temperature_atol,
         err_msg="temperature in cloud",
     )
-    tend_ta_actual = outputs["tend_temperature"].asnumpy()
+    tend_ta_actual = fields_out["tend_temperature"].asnumpy()
     test_utils.assert_dallclose(
         tend_ta_actual[cells, :jks],
         0.0,
@@ -227,11 +236,11 @@ def test_muphys_granule(
     # surface precip: the granule keeps the surface value in the last level; ICON
     # only stores the aggregated prm_field diagnostics (rsfl = rain,
     # ssfl = ice + snow + graupel, pr = total, ufcs = energy flux)
-    rain = outputs["pr"].asnumpy()[:, -1]
-    ice = outputs["pi"].asnumpy()[:, -1]
-    snow = outputs["ps"].asnumpy()[:, -1]
-    graupel = outputs["pg"].asnumpy()[:, -1]
-    energy_flux = outputs["pre"].asnumpy()[:, -1]
+    rain = fields_out["pr"].asnumpy()[:, -1]
+    ice = fields_out["pi"].asnumpy()[:, -1]
+    snow = fields_out["ps"].asnumpy()[:, -1]
+    graupel = fields_out["pg"].asnumpy()[:, -1]
+    energy_flux = fields_out["pre"].asnumpy()[:, -1]
 
     test_utils.assert_dallclose(
         rain,

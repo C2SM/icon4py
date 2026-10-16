@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from collections.abc import Mapping
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -30,7 +31,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     vcoef: np.ndarray,
     theta_v: np.ndarray,
     z_temp: np.ndarray,
-    **kwargs,
+    **kwargs: Any,
 ) -> np.ndarray:
     c2e2c = connectivities[dims.C2E2C]
     full_shape = vcoef.shape
@@ -76,7 +77,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(stencil_tests.Sten
         vcoef: np.ndarray,
         theta_v: np.ndarray,
         z_temp: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
@@ -92,7 +93,9 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(stencil_tests.Sten
         return dict(z_temp=z_temp)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         zd_vertoffset_buffer = np.zeros(
             (grid.size[dims.CellDim], grid.size[dims.C2E2CDim], grid.size[dims.KDim]),
             dtype=gtx.int32,
@@ -107,7 +110,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(stencil_tests.Sten
             )
         # Non-steep points carry a zero offset and a zero coefficient, as the metric produces them;
         # cell 0 is non-steep on every level, the bottom one included.
-        is_steep = rng.random((grid.num_cells, grid.num_levels)) < 0.5
+        is_steep = rng.random((grid.num_cells, grid.num_levels)) < 0.5  # type: ignore[operator]  # GT4Py NDArrayObject protocol limitation
         is_steep[0, :] = False
         zd_vertoffset_buffer = np.where(is_steep[:, np.newaxis, :], zd_vertoffset_buffer, 0)
         zd_vertoffset = data_alloc.as_field(

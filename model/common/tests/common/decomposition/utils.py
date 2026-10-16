@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
-from typing import Any
 
 import numpy as np
 from gt4py import next as gtx
@@ -142,8 +141,16 @@ _VERTEX_HALO = {
     2: _VERTEX_FIRST_HALO_LINE[2] + _VERTEX_SECOND_HALO_LINE[2],
     3: _VERTEX_FIRST_HALO_LINE[3] + _VERTEX_SECOND_HALO_LINE[3],
 }
-OWNED = {dims.CellDim: _CELL_OWN, dims.EdgeDim: _EDGE_OWN, dims.VertexDim: _VERTEX_OWN}
-HALO = {dims.CellDim: _CELL_HALO, dims.EdgeDim: _EDGE_HALO, dims.VertexDim: _VERTEX_HALO}
+OWNED: dict[gtx.Dimension, dict[int, list[int]]] = {
+    dims.CellDim: _CELL_OWN,
+    dims.EdgeDim: _EDGE_OWN,
+    dims.VertexDim: _VERTEX_OWN,
+}
+HALO: dict[gtx.Dimension, dict[int, list[int]]] = {
+    dims.CellDim: _CELL_HALO,
+    dims.EdgeDim: _EDGE_HALO,
+    dims.VertexDim: _VERTEX_HALO,
+}
 FIRST_HALO_LINE = {
     dims.CellDim: _CELL_FIRST_HALO_LINE,
     dims.VertexDim: _VERTEX_FIRST_HALO_LINE,
@@ -154,7 +161,7 @@ SECOND_HALO_LINE = {
     dims.VertexDim: _VERTEX_SECOND_HALO_LINE,
     dims.EdgeDim: _EDGE_SECOND_HALO_LINE,
 }
-THIRD_HALO_LINE = {
+THIRD_HALO_LINE: dict[gtx.Dimension, dict[int, list[int]]] = {
     dims.CellDim: {0: [], 1: [], 2: [], 3: []},
     dims.VertexDim: {0: [], 1: [], 2: [], 3: []},
     dims.EdgeDim: _EDGE_THIRD_HALO_LINE,
@@ -162,7 +169,10 @@ THIRD_HALO_LINE = {
 
 
 def assert_same_entries(
-    dim: gtx.Dimension, my_owned: np.ndarray, reference: dict[gtx.Dimension, dict], rank: int
+    dim: gtx.Dimension,
+    my_owned: np.ndarray,
+    reference: dict[gtx.Dimension, dict[int, list[int]]],
+    rank: int,
 ) -> None:
     print(f"myowned {my_owned}")
     print(reference[dim][rank])
@@ -174,7 +184,7 @@ def assert_same_entries(
 
 @dataclasses.dataclass(frozen=True, init=False)
 class DummyProps(definitions.ProcessProperties):
-    comm: Any
+    comm: None
     comm_name: str
     comm_size: int
     rank: int

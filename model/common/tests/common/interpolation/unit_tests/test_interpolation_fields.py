@@ -58,7 +58,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 def test_compute_c_lin_e(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     func = compute_c_lin_e
@@ -93,7 +93,7 @@ def test_compute_geofac_div(
     experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
 ) -> None:
     mesh = icon_grid
     primal_edge_length = grid_savepoint.primal_edge_length()
@@ -118,7 +118,7 @@ def test_compute_geofac_rot(
     experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     mesh = icon_grid
@@ -149,7 +149,7 @@ def test_compute_geofac_rot(
 def test_compute_geofac_n2s(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     dual_edge_length = grid_savepoint.dual_edge_length()
@@ -175,7 +175,7 @@ def test_compute_geofac_n2s(
 def test_compute_geofac_grg(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     primal_normal_cell_x = grid_savepoint.primal_normal_cell_x().ndarray
@@ -221,7 +221,7 @@ def test_compute_geofac_grg(
 def test_compute_geofac_grdiv(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     geofac_div = interpolation_savepoint.geofac_div()
@@ -249,7 +249,7 @@ def test_compute_geofac_grdiv(
 def test_compute_c_bln_avg(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     cell_areas = grid_savepoint.cell_areas().ndarray
@@ -297,7 +297,7 @@ def test_compute_c_bln_avg(
 def test_compute_e_flx_avg(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
@@ -336,7 +336,7 @@ def test_compute_e_flx_avg(
 def test_compute_cells_aw_verts(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
@@ -369,7 +369,7 @@ def test_compute_cells_aw_verts(
 def test_compute_e_bln_c_s(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     e_bln_c_s_ref = interpolation_savepoint.e_bln_c_s()
@@ -400,7 +400,7 @@ def test_compute_e_bln_c_s(
 def test_compute_pos_on_tplane_e(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     pos_on_tplane_e_x_ref = interpolation_savepoint.pos_on_tplane_e_x().asnumpy()
@@ -450,7 +450,7 @@ def test_compute_lsq_coeffs(
     interpolation_savepoint: sb.InterpolationSavepoint,
     experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
-    icon_grid: base_grid.Grid,
+    icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
     lsq_pseudoinv = compute_lsq_coeffs(
@@ -472,7 +472,7 @@ def test_compute_lsq_coeffs(
         lsq_wgt_exp=experiment.config.interpolation.lsq_wgt_exp,
         start_idx=icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         min_rlcell_int=icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
-        geometry_type=icon_grid.grid_params.geometry_type,
+        geometry_type=icon_grid.grid_params.geometry_type,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         exchange=decomposition.SingleNodeExchange(),
     )
 

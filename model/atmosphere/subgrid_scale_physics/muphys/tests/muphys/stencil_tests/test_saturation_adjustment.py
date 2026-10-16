@@ -5,9 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -35,7 +36,7 @@ class TestSaturationAdjustment(stencil_tests.StencilTest):
         grid: base_grid.Grid,
         *,
         te: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(
             te_out=np.full(te.shape, 273.91226488486984),

@@ -14,6 +14,7 @@ from gt4py import next as gtx
 from gt4py.next import where
 
 import icon4py.model.common.field_type_aliases as fa
+import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, V2E
@@ -38,11 +39,11 @@ def compute_c_lin_e(
     Compute E2C average inverse distance.
 
     Args:
-        edge_cell_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.float64]
-        inv_dual_edge_length: ndarray, inverse dual edge length, numpy array representing a gtx.Field[gtx.Dims[EdgeDim], gtx.float64]
+        edge_cell_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+        inv_dual_edge_length: ndarray, inverse dual edge length, numpy array representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         edge_owner_mask: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index from the field is computed: c_lin_e is not calculated for the first boundary layer
-    Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.float64]
+    Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
     """
     array_ns = data_alloc.array_namespace(edge_cell_length)
@@ -56,10 +57,10 @@ def compute_c_lin_e(
 
 @gtx.field_operator
 def compute_geofac_div(
-    primal_edge_length: fa.EdgeField[gtx.float64],
-    edge_orientation: gtx.Field[[dims.CellDim, dims.C2EDim], gtx.float64],
-    area: fa.CellField[gtx.float64],
-) -> gtx.Field[[dims.CellDim, dims.C2EDim], gtx.float64]:
+    primal_edge_length: fa.EdgeField[ta.wpfloat],
+    edge_orientation: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
+    area: fa.CellField[ta.wpfloat],
+) -> gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat]:
     """
     Compute geometrical factor for divergence.
 
@@ -76,11 +77,11 @@ def compute_geofac_div(
 
 @gtx.field_operator
 def compute_geofac_rot(
-    dual_edge_length: fa.EdgeField[gtx.float64],
-    edge_orientation: gtx.Field[[dims.VertexDim, dims.V2EDim], gtx.float64],
-    dual_area: fa.VertexField[gtx.float64],
+    dual_edge_length: fa.EdgeField[ta.wpfloat],
+    edge_orientation: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat],
+    dual_area: fa.VertexField[ta.wpfloat],
     owner_mask: fa.VertexField[bool],
-) -> gtx.Field[[dims.VertexDim, dims.V2EDim], gtx.float64]:
+) -> gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat]:
     """
     Compute geometrical factor for curl.
 
@@ -109,8 +110,8 @@ def compute_geofac_n2s(
     Compute geometric factor for nabla2-scalar.
 
     Args:
-        dual_edge_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], gtx.float64]
-        geofac_div: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.float64]
+        dual_edge_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        geofac_div: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
         c2e: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         c2e2c: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
@@ -218,8 +219,8 @@ def compute_geofac_grdiv(
     Compute geometrical factor for gradient of divergence (triangles only).
 
     Args:
-        geofac_div:  ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.float64]
-        inv_dual_edge_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], gtx.float64]
+        geofac_div:  ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        inv_dual_edge_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         owner_mask:  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
         c2e:  ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
@@ -227,7 +228,7 @@ def compute_geofac_grdiv(
         horizontal_start:
 
     Returns:
-        geofac_grdiv:  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], gtx.float64]
+        geofac_grdiv:  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
     array_ns = data_alloc.array_namespace(geofac_div)
     num_edges = e2c.shape[0]
@@ -310,7 +311,7 @@ def _weighting_factors(
     xtemp: data_alloc.NDArray,
     yloc: data_alloc.NDArray,
     xloc: data_alloc.NDArray,
-    wgt_loc: gtx.float64,
+    wgt_loc: ta.wpfloat,
 ) -> data_alloc.NDArray:
     """
         Compute weighting factors.
@@ -325,14 +326,14 @@ def _weighting_factors(
     # Fortran is organised differently with code duplication
 
         Args:
-            ytemp:  \\   numpy array of size [[3, flexible], gtx.float64]
+            ytemp:  \\   numpy array of size [[3, flexible], ta.wpfloat]
             xtemp:  //
-            yloc:   \\   numpy array of size [[flexible], gtx.float64]
+            yloc:   \\   numpy array of size [[flexible], ta.wpfloat]
             xloc:   //
             wgt_loc:
 
         Returns:
-            wgt: numpy array of size [[3, flexible], gtx.float64]
+            wgt: numpy array of size [[3, flexible], ta.wpfloat]
     """
     array_ns = data_alloc.array_namespace(ytemp)
     rotate = functools.partial(_rotate_latlon)
@@ -380,7 +381,7 @@ def _compute_c_bln_avg(
     c2e2c: data_alloc.NDArray,
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
-    divergence_averaging_central_cell_weight: gtx.float64,
+    divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
 ) -> data_alloc.NDArray:
     """
@@ -390,12 +391,12 @@ def _compute_c_bln_avg(
         divergence_averaging_central_cell_weight:
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
         c2e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, C2E2CDim], gtx.int32]
-        lat: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], gtx.float64]
+        lat: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         lon: //
         horizontal_start:
 
     Returns:
-        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.float64]
+        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
     array_ns = data_alloc.array_namespace(c2e2c)
     num_cells = c2e2c.shape[0]
@@ -427,7 +428,7 @@ def _force_mass_conservation_to_c_bln_avg(
     c_bln_avg: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
-    divergence_averaging_central_cell_weight: gtx.float64,
+    divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     exchange: decomposition.ExchangeRuntime,
     niter: int = 1000,
@@ -457,7 +458,10 @@ def _force_mass_conservation_to_c_bln_avg(
     array_ns = data_alloc.array_namespace(c2e2c0)
 
     def _compute_local_weights(
-        c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx
+        c_bln_avg: data_alloc.NDArray,
+        cell_areas: data_alloc.NDArray,
+        c2e2c0: data_alloc.NDArray,
+        inverse_neighbor_idx: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
         """
         Compute the total weight which each local point contributes to the sum.
@@ -570,7 +574,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
 def _compute_uniform_c_bln_avg(
     c2e2c: data_alloc.NDArray,
-    divergence_averaging_central_cell_weight: gtx.float64,
+    divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
 ) -> data_alloc.NDArray:
     """
@@ -605,7 +609,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     lon: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
-    divergence_averaging_central_cell_weight: gtx.float64,
+    divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
     exchange: decomposition.ExchangeRuntime,
@@ -636,7 +640,7 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     c2e2c0: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
-    divergence_averaging_central_cell_weight: gtx.float64,
+    divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
     exchange: decomposition.ExchangeRuntime,
@@ -733,10 +737,10 @@ def compute_e_flx_avg(
     FIXME (@halungge) the correctness of this function depends on the local order of the e2c2e connectivity fields
 
     Args:
-        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.float64]
-        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.float64]
+        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
-        primal_cart_normal: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], gtx.float64]
+        primal_cart_normal: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
         c2e2c: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
@@ -745,7 +749,7 @@ def compute_e_flx_avg(
         horizontal_start_p4:
 
     Returns:
-        e_flx_avg: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], gtx.float64]
+        e_flx_avg: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
     array_ns = data_alloc.array_namespace(c_bln_avg)
     primal_cart_normal = compute_primal_cart_normal(
@@ -901,8 +905,8 @@ def compute_cells_aw_verts(
         d(i,k) is the distance between the vertex i and center of edge k.
 
     Args:
-        dual_area: ndarray, representing a gtx.Field[gtx.Dims[VertexDim], gtx.float64]
-        edge_vert_length: \\  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], gtx.float64]
+        dual_area: ndarray, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
+        edge_vert_length: \\  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat]
         edge_cell_length: //
         owner_mask: ndarray, representing a gtx.Field[gtx.Dims[VertexDim], bool]
         v2e: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, V2EDim], gtx.int32]
@@ -912,7 +916,7 @@ def compute_cells_aw_verts(
         horizontal_start: int32, representing the start index of the horizontal dimension
 
     Returns:
-        aw_verts: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, 6], gtx.float64]
+        aw_verts: ndarray, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
     array_ns = data_alloc.array_namespace(dual_area)
     cells_aw_verts = array_ns.zeros(v2e.shape)
@@ -985,13 +989,13 @@ def compute_e_bln_c_s(
     Args:
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
         c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
-        cells_lat: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], gtx.float64]
+        cells_lat: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         cells_lon: //
-        edges_lat: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], gtx.float64]
+        edges_lat: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         edges_lon: //
 
     Returns:
-        e_bln_c_s: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.float64]
+        e_bln_c_s: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
     array_ns = data_alloc.array_namespace(c2e)
     llb = 0
@@ -1036,12 +1040,12 @@ def compute_e_bln_c_s_torus(
         e_bln_c_s
     """
     array_ns = data_alloc.array_namespace(c2e)
-    return array_ns.full(c2e.shape, 1.0 / 3.0)
+    return array_ns.full_like(c2e, 1.0 / 3.0, dtype=ta.wpfloat)
 
 
 def compute_pos_on_tplane_e_x_y(
     *,
-    grid_sphere_radius: gtx.float64,
+    grid_sphere_radius: ta.wpfloat,
     primal_normal_v1: data_alloc.NDArray,
     primal_normal_v2: data_alloc.NDArray,
     dual_normal_v1: data_alloc.NDArray,
@@ -1066,19 +1070,19 @@ def compute_pos_on_tplane_e_x_y(
     Args:
         grid_sphere_radius:
         primal_normal_v1: \\
-        primal_normal_v2:  \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], gtx.float64]
+        primal_normal_v2:  \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         dual_normal_v1:    //
         dual_normal_v2:   //
-        cells_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], gtx.float64]
+        cells_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         cells_lat: //
-        edges_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], gtx.float64]
+        edges_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         edges_lat: //
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
         e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        pos_on_tplane_e_x: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.float64]
+        pos_on_tplane_e_x: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         pos_on_tplane_e_y: //
     """
     array_ns = data_alloc.array_namespace(primal_normal_v1)
@@ -1214,7 +1218,7 @@ def compute_lsq_pseudoinv(
     valid_cell_mask = (
         cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
     )
-    lsq_pseudoinv = array_ns.zeros((cell_size, lsq_dim_unk, lsq_dim_c))
+    lsq_pseudoinv = array_ns.zeros((cell_size, lsq_dim_unk, lsq_dim_c), dtype=ta.wpfloat)
     u_matrix, s_matrix, v_t_matrix = array_ns.linalg.svd(z_lsq_mat_c[valid_cell_mask, :, :])
     v_t_over_s = (
         v_t_matrix[:, :lsq_dim_unk, :lsq_dim_unk] / s_matrix[:, :lsq_dim_unk, array_ns.newaxis]
@@ -1254,7 +1258,7 @@ def compute_z_lsq_mat_c(
     cell_size = cell_owner_mask.shape[0]
     cell_sequence = array_ns.arange(cell_size)
     min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
-    z_lsq_mat_c = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c))
+    z_lsq_mat_c = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c), dtype=ta.wpfloat)
 
     valid_cell_mask = (
         cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
@@ -1277,8 +1281,8 @@ def compute_lsq_coeffs(
     cell_lon: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
-    domain_length: float,
-    domain_height: float,
+    domain_length: float | None,
+    domain_height: float | None,
     grid_sphere_radius: float,
     lsq_dim_unk: int,
     lsq_dim_c: int,
@@ -1313,6 +1317,7 @@ def compute_lsq_coeffs(
         case icon_grid.GeometryType.TORUS:
             # On the torus a neighbour may sit across a periodic boundary, so take the
             # periodic image of each neighbour closest to the cell centre.
+            assert domain_length is not None and domain_height is not None
             cells = slice(start_idx, min_rlcell_int)
             neighbors = c2e2c[cells, :lsq_dim_c]
             center_x = cell_center_x[cells, array_ns.newaxis]

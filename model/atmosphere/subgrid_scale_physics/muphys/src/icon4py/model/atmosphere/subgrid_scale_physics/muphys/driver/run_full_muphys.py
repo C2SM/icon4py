@@ -42,7 +42,7 @@ def _muphys_step_separate(
     pi: fa.CellKField[ta.wpfloat],  # Precipitation of ice
     pg: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
     pre: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
-):
+) -> None:
     # In-place update ok since saturation_adjustment is fully point-wise,
     # but not recommended. TODO
     saturation_adjustment_program(
@@ -88,7 +88,7 @@ def setup_muphys(
     backend: model_backends.BackendLike,
     *,
     single_program: bool = False,
-):
+) -> Callable[..., None]:
     if single_program:
         # TODO(havogt): make an option in gt4py for thread-safety?
         with utils.recursion_limit(10**5):

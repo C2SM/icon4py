@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from collections.abc import Mapping
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -26,7 +27,7 @@ def calculate_nabla2_for_z_numpy(
     inv_dual_edge_length: np.ndarray,
     theta_v: np.ndarray,
     z_nabla2_e: np.ndarray,
-    **kwargs,
+    **kwargs: Any,
 ) -> np.ndarray:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
@@ -50,7 +51,7 @@ class TestCalculateNabla2ForZ(stencil_tests.StencilTest):
         inv_dual_edge_length: np.ndarray,
         theta_v: np.ndarray,
         z_nabla2_e: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_nabla2_e = calculate_nabla2_for_z_numpy(
@@ -59,7 +60,9 @@ class TestCalculateNabla2ForZ(stencil_tests.StencilTest):
         return dict(z_nabla2_e=z_nabla2_e)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         kh_smag_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
         theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
