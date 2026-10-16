@@ -62,7 +62,7 @@ def test_driver_writes_output(
     backend: gtx_backend.Backend[Any],
 ) -> None:
     allocator = model_backends.get_allocator(backend)
-    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)  # pyright: ignore[reportPrivateUsage]
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")

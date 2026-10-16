@@ -500,9 +500,8 @@ class Icon4pyDriver:
             rho_iau_increment=forcing.rho_iau_increment,
             normal_wind_iau_increment=forcing.normal_wind_iau_increment,
             exner_iau_increment=forcing.exner_iau_increment,
-            # pyright resolves wpfloat to float32, which is not a float
-            second_order_divdamp_factor=second_order_divdamp_factor,  # pyright: ignore[reportArgumentType]
-            dtime=self.model_time_variables.substep_timestep,  # pyright: ignore[reportArgumentType]
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            dtime=self.model_time_variables.substep_timestep,
             ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
             at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
             prepare_fluxes_for_advection=self.granules.tracer_advection is not None,
@@ -692,8 +691,7 @@ class Icon4pyDriver:
             vn_traj=prep_adv.vn_traj,
             mass_flx_me=prep_adv.mass_flx_me,
             mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
-            # pyright resolves wpfloat to float32, which is not a float
-            dtime=self.model_time_variables.dtime_in_seconds,  # pyright: ignore[reportArgumentType]
+            dtime=self.model_time_variables.dtime_in_seconds,
         )
         out = tracer_advection.Advection.Output(
             qv=next_.qv,
@@ -755,12 +753,11 @@ class Icon4pyDriver:
             prognostic_state.theta_v,
         )
         inputs = diffusion.Diffusion.Input(
-            # pyright resolves wpfloat to float32, which is not a float
             vn=vn,
             w=w,
             exner=exner,
             theta_v=theta_v,
-            dtime=dtime,  # pyright: ignore[reportArgumentType]
+            dtime=dtime,
             initial_run=initial_run,
         )
         out = diffusion.Diffusion.Output(

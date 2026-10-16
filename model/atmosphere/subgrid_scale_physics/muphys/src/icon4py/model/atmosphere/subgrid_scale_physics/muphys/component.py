@@ -13,11 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 
-# core/ is a namespace package, which pyright does not see as covered by muphys' py.typed
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import (  # pyright: ignore[reportMissingTypeStubs]
-    SPECIES,
-    Q,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES, Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.run_full_muphys import (
     setup_muphys,
 )
@@ -127,8 +123,7 @@ class MuphysComponent(fw.Component):
             step = setup_muphys(
                 ncells=grid.num_cells,
                 nlev=grid.num_levels,
-                # wpfloat may be float32; the granule takes the model's precision as it is
-                dt=self._dt_seconds,  # pyright: ignore[reportArgumentType]
+                dt=self._dt_seconds,
                 qnc=qnc,
                 backend=backend,
                 single_program=False,

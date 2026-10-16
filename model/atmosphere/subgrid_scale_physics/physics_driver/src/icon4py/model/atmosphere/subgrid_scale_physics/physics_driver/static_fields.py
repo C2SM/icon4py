@@ -31,15 +31,15 @@ class PhysicsDriverStaticState:
 
     ddqz_z_full: fa.CellKField[ta.wpfloat]
     """Layer thickness at cell centers on full levels [m]."""
-    rbf_vec_coeff_c1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]  # pyright: ignore[reportInvalidTypeForm]
+    rbf_vec_coeff_c1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
     """RBF coefficients for the zonal wind component at cell centers."""
-    rbf_vec_coeff_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]  # pyright: ignore[reportInvalidTypeForm]
+    rbf_vec_coeff_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
     """RBF coefficients for the meridional wind component at cell centers."""
-    primal_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]  # pyright: ignore[reportInvalidTypeForm]
+    primal_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
     """Zonal component of the edge normal at the neighbouring cell centers."""
-    primal_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]  # pyright: ignore[reportInvalidTypeForm]
+    primal_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
     """Meridional component of the edge normal at the neighbouring cell centers."""
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]  # pyright: ignore[reportInvalidTypeForm]
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
     """Coefficients for linear interpolation from cell centers to edge midpoints."""
 
 

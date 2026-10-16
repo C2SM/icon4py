@@ -183,7 +183,7 @@ def test_pairs_swap(grid: base_grid.Grid) -> None:
     assert pair.current is b and pair.next is a
 
 
-# What mypy and pyright check: a quantity mismatch is a type error. Each ignore below is
+# What mypy checks: a quantity mismatch is a type error. Each ignore below is
 # required (an unused one is reported), so type-checking this module is the test.
 def static_checks(pressure: fw.Field[Pressure], salt: fw.Field[Salt]) -> None:
     wrong: fw.Field[Pressure] = salt  # type: ignore[assignment]

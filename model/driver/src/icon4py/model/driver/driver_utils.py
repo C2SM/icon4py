@@ -63,7 +63,7 @@ log = logging.getLogger(__name__)
 
 DRIVER_LOGGING_LEVEL: str = os.environ.get("ICON4PY_DRIVER_LOGGING_LEVEL", "debug")
 
-LOGGING_LEVELS: dict[str, int] = {
+_LOGGING_LEVELS: dict[str, int] = {
     "notset": logging.NOTSET,
     "debug": logging.DEBUG,
     "info": logging.INFO,
@@ -237,8 +237,7 @@ def create_static_field_factories(
         vertical_grid=vertical_grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        # pyright resolves wpfloat to float32
-        topography=cell_topography,  # pyright: ignore[reportArgumentType]
+        topography=cell_topography,
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
@@ -271,8 +270,7 @@ def initialize_granules(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        # get_scalar returns gt4py's ScalarType
-        mean_cell_area=geometry_field_source.get_scalar(geometry_meta.MEAN_CELL_AREA),  # pyright: ignore[reportArgumentType]
+        mean_cell_area=geometry_field_source.get_scalar(geometry_meta.MEAN_CELL_AREA),
     )
 
     log.info("creating edge geometry")
@@ -732,9 +730,9 @@ def configure_logging(
         process_props: ProcessProperties
 
     """
-    if logging_level.lower() not in LOGGING_LEVELS:
+    if logging_level.lower() not in _LOGGING_LEVELS:
         raise ValueError(
-            f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([*LOGGING_LEVELS.keys()])}"
+            f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([*_LOGGING_LEVELS.keys()])}"
         )
 
     logging.Formatter.converter = time.localtime  # set to local time instead of utc
@@ -761,9 +759,9 @@ def configure_logging(
         ],
     )
     driver_module_name = __name__[: __name__.rindex(".")]
-    logging.getLogger("icon4py.model").setLevel(LOGGING_LEVELS[logging_level])
+    logging.getLogger("icon4py.model").setLevel(_LOGGING_LEVELS[logging_level])
     logging.getLogger(driver_module_name).setLevel(
-        LOGGING_LEVELS.get(DRIVER_LOGGING_LEVEL, logging.DEBUG)
+        _LOGGING_LEVELS.get(DRIVER_LOGGING_LEVEL, logging.DEBUG)
     )
     logging.getLogger("filelock").setLevel(logging.WARNING)
     logging.getLogger("factory.generate").setLevel(logging.WARNING)
