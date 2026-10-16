@@ -619,10 +619,15 @@ def solve_nh_substeps_run(  # noqa: PLR0917 [too-many-positional-arguments]
 
     IAU (`is_iau_mode`, ICON's `init_mode = MODE_IAU`): ICON passes the time it computes the
     substep times from, `(now - experiment start) - time shift` (mo_nh_stepping.f90:3201-3204),
-    the IAU window (halved in the first cycle of `iterate_iau`) and `type_iau_wgt`. The weights
-    are then those ICON's `compute_iau_wgt` gives, as long as ICON's `wp` is double; with ICON in
-    single, ICON computes them in single and these may differ in the last bit.
+    the IAU window (halved in the first cycle of `iterate_iau`) and `type_iau_wgt`. Only the
+    top-hat window (`type_iau_wgt = 1`) is supported; the others raise, use the per-call path
+    (`icon4py_substep_loop = .FALSE.`) for them. The weights are then those ICON's
+    `compute_iau_wgt` gives, as long as ICON's `wp` is double; with ICON in single, ICON computes
+    them in single and these may differ in the last bit.
     """
+    if is_iau_mode:
+        # the other windows run through the per-call path (icon4py_substep_loop = .FALSE.)
+        iau.check_window_function(iau_window_function)
     # ICON computes these per substep (compute_iau_wgt, mo_iau.f90:332-389) before each call of
     # solve_nh_run; here they come from the same formula and the same substep times, in ICON's
     # operation order, from the time ICON passes for the end of the step.
@@ -632,7 +637,6 @@ def solve_nh_substeps_run(  # noqa: PLR0917 [too-many-positional-arguments]
             dtime=dtime,
             ndyn_substeps=ndyn_substeps_var,
             window=iau_window,
-            window_function=iau.IauWindowFunction(iau_window_function),
         )
         if is_iau_mode
         else [iau.IauWeight(is_active=False, dynamics=0.0)] * ndyn_substeps_var
