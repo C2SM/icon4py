@@ -26,18 +26,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     scale_k,
     setup_fields_for_initial_step,
 )
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
-    apply_diffusion_to_theta_and_exner,
-)
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
-)
-from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
-    calculate_diagnostic_quantities_for_turbulence,
-)
-from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
-    calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_prognostic_fields import (
+    apply_diffusion_to_prognostic_fields,
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
@@ -488,9 +478,6 @@ class Diffusion:
 
         assert self._cell_params.area is not None
 
-        self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
-            self._exchange,
-        )  # wait on a communication handle
         self.rd_o_cvd: vpfloat = gtx.astype(
             constants.GAS_CONSTANT_DRY_AIR / (constants.CPD - constants.GAS_CONSTANT_DRY_AIR),
             vpfloat,
@@ -553,25 +540,23 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
 
-        self.calculate_diagnostic_quantities_for_turbulence = setup_program(
+        compute_flow_deformation = (
+            self.config.shear_type
+            >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
+            or self.config.loutshs
+            or self.config.a_hshr > 0.0
+        )
+        compute_hgrad_w = (
+            self.config.shear_type
+            == TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
+        )
+        self.apply_diffusion_to_prognostic_fields = setup_program(
             backend=backend,
-            program=calculate_diagnostic_quantities_for_turbulence,
+            program=apply_diffusion_to_prognostic_fields,
             constant_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
                 "geofac_div": self._interpolation_state.geofac_div,
                 "wgtfac_c": self._metric_state.wgtfac_c,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
-            offset_provider=self._grid.connectivities,
-        )
-        self.apply_diffusion_to_vn = setup_program(
-            backend=backend,
-            program=apply_diffusion_to_vn,
-            constant_args={
                 "primal_normal_vert_v1": self._edge_params.primal_normal_vert[0],
                 "primal_normal_vert_v2": self._edge_params.primal_normal_vert[1],
                 "inv_vert_vert_length": self._edge_params.inverse_vertex_vertex_lengths,
@@ -581,31 +566,36 @@ class Diffusion:
                 "nudgezone_diff": self.nudgezone_diff,
                 "fac_bdydiff_v": self.fac_bdydiff_v,
                 "limited_area": self._grid.limited_area,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_lateral_boundary_level_5,
-                "horizontal_end": self._edge_end_local,
-                "start_2nd_nudge_line_idx_e": self._edge_start_nudging_level_2,
-            },
-            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
-            offset_provider=self._grid.connectivities,
-        )
-        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = setup_program(
-            backend=backend,
-            program=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
-            constant_args={
                 "geofac_n2s": self._interpolation_state.geofac_n2s,
                 "geofac_grg_x": self._interpolation_state.geofac_grg_x,
                 "geofac_grg_y": self._interpolation_state.geofac_grg_y,
                 "area": self._cell_params.area,
                 "diff_multfac_w": self.diff_multfac_w,
-                "type_shear": self.config.shear_type,
+                "compute_hgrad_w": compute_hgrad_w,
+                "theta_ref_mc": self._metric_state.theta_ref_mc,
+                "thresh_tdiff": self.thresh_tdiff,
+                "smallest_vpfloat": constants.VP_NEG_HUGE,
+                "zd_vertoffset": self._metric_state.zd_vertoffset,
+                "zd_diffcoef": self._metric_state.zd_diffcoef,
+                "vcoef": self._metric_state.zd_intcoef,
+                "geofac_n2s_c": self._interpolation_state.geofac_n2s_c,
+                "geofac_n2s_nbh": self._interpolation_state.geofac_n2s_nbh,
+                "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
+                "apply_zdiffusion_t": self.config.apply_zdiffusion_t,
+                "rd_o_cvd": self.rd_o_cvd,
+                "compute_flow_deformation": compute_flow_deformation,
+                "apply_to_temperature": self.config.apply_to_temperature,
             },
             horizontal_sizes={
-                "horizontal_start": self._horizontal_start_index_w_diffusion,
-                "horizontal_end": self._cell_end_halo,
-                "halo_idx": self._cell_end_local,
+                "edge_horizontal_start": self._edge_start_lateral_boundary_level_5,
+                "edge_horizontal_end": self._edge_end_local,
+                "start_2nd_nudge_line_idx_e": self._edge_start_nudging_level_2,
+                "w_horizontal_start": self._horizontal_start_index_w_diffusion,
+                "w_horizontal_end": self._cell_end_halo,
+                "cell_horizontal_start": self._cell_start_nudging,
+                "cell_horizontal_end": self._cell_end_local,
                 "interior_idx": self._cell_start_interior,
+                "halo_idx": self._cell_end_local,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
@@ -613,49 +603,7 @@ class Diffusion:
                 "nrdmax": gtx.int32(
                     self._vertical_grid.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
-            },
-            offset_provider=self._grid.connectivities,
-        )
-        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = setup_program(
-            backend=backend,
-            program=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
-            constant_args={
-                "theta_ref_mc": self._metric_state.theta_ref_mc,
-                "thresh_tdiff": self.thresh_tdiff,
-                "smallest_vpfloat": constants.VP_NEG_HUGE,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_nudging,
-                "horizontal_end": self._edge_end_halo,
-            },
-            vertical_sizes={
-                "vertical_start": self._grid.num_levels - 2,
-                "vertical_end": self._grid.num_levels,
-            },
-            offset_provider=self._grid.connectivities,
-        )
-        self.apply_diffusion_to_theta_and_exner = setup_program(
-            backend=backend,
-            program=apply_diffusion_to_theta_and_exner,
-            constant_args={
-                "geofac_div": self._interpolation_state.geofac_div,
-                "zd_vertoffset": self._metric_state.zd_vertoffset,
-                "zd_diffcoef": self._metric_state.zd_diffcoef,
-                "vcoef": self._metric_state.zd_intcoef,
-                "geofac_n2s_c": self._interpolation_state.geofac_n2s_c,
-                "geofac_n2s_nbh": self._interpolation_state.geofac_n2s_nbh,
-                "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
-                "area": self._cell_params.area,
-                "apply_zdiffusion_t": self.config.apply_zdiffusion_t,
-                "rd_o_cvd": self.rd_o_cvd,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": 0,
-                "vertical_end": self._grid.num_levels,
+                "nlev": gtx.int32(self._grid.num_levels),
             },
             offset_provider=self._grid.connectivities,
         )
@@ -670,6 +618,12 @@ class Diffusion:
             program=generic_math_operations.copy_field_on_cell_khalf,
             horizontal_sizes={"horizontal_start": 0, "horizontal_end": self._grid.num_cells},
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels + 1},
+        )
+        self.copy_field_on_edge_k = setup_program(
+            backend=backend,
+            program=generic_math_operations.copy_field_on_edge_k,
+            horizontal_sizes={"horizontal_start": 0, "horizontal_end": self._grid.num_edges},
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
         )
         self.scale_k = setup_program(backend=backend, program=scale_k)
         self.setup_fields_for_initial_step = setup_program(
@@ -738,9 +692,6 @@ class Diffusion:
         self.kh_smag_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
-        self.kh_smag_ec = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
-        )
         self.z_nabla2_e = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
@@ -759,6 +710,9 @@ class Diffusion:
         )
         self.theta_v_tmp = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+        )
+        self.vn_tmp = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
 
     def _determine_horizontal_domains(self) -> None:
@@ -781,12 +735,10 @@ class Diffusion:
         self._edge_start_lateral_boundary_level_5 = self._grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
-        self._edge_start_nudging = self._grid.start_index(edge_domain(h_grid.Zone.NUDGING))
         self._edge_start_nudging_level_2 = self._grid.start_index(
             edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
         )
         self._edge_end_local = self._grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-        self._edge_end_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
         self._edge_end_halo_level_2 = self._grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
         self._vertex_start_lateral_boundary_level_2 = self._grid.start_index(
@@ -796,22 +748,16 @@ class Diffusion:
 
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
 
-    def run(
-        self,
-        diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        prognostic_state: prognostics.PrognosticState,
-        dtime: wpfloat,
-        initial_run: bool = False,
-    ) -> None:
-        """
-        Do one diffusion step.
+    def _smag_values_for_run(
+        self, initial_run: bool
+    ) -> tuple[
+        gtx.Field[gtx.Dims[dims.KDim], wpfloat],
+        gtx.Field[gtx.Dims[dims.KDim], wpfloat],
+        vpfloat,
+    ]:
+        """Return the (diff_multfac_vn, smag_limit, smag_offset) values for a run.
 
-        In ICON at the start of the simulation diffusion is run with linit=True:
-
-        'For real-data runs, perform an extra diffusion call before the first time
-        step because no other filtering of the interpolated velocity field is done'
-
-        The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
+        The initial run uses special values, see `run`.
         """
         if initial_run:
             diff_multfac_vn = data_alloc.zero_field(
@@ -831,6 +777,26 @@ class Diffusion:
             diff_multfac_vn = self.diff_multfac_vn
             smag_limit = self.smag_limit
             smag_offset = self.smag_offset
+        return diff_multfac_vn, smag_limit, smag_offset
+
+    def run(
+        self,
+        diagnostic_state: diffusion_states.DiffusionDiagnosticState,
+        prognostic_state: prognostics.PrognosticState,
+        dtime: wpfloat,
+        initial_run: bool = False,
+    ) -> None:
+        """
+        Do one diffusion step.
+
+        In ICON at the start of the simulation diffusion is run with linit=True:
+
+        'For real-data runs, perform an extra diffusion call before the first time
+        step because no other filtering of the interpolated velocity field is done'
+
+        The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
+        """
+        diff_multfac_vn, smag_limit, smag_offset = self._smag_values_for_run(initial_run)
 
         self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
 
@@ -860,33 +826,10 @@ class Diffusion:
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             vn=prognostic_state.vn,
-            smag_limit=smag_limit,
             kh_smag_e=self.kh_smag_e,
-            kh_smag_ec=self.kh_smag_ec,
             z_nabla2_e=self.z_nabla2_e,
-            smag_offset=smag_offset,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
-
-        if (
-            self.config.shear_type
-            >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
-            or self.config.loutshs
-            or self.config.a_hshr > 0.0
-        ):
-            log.debug(
-                "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
-            )
-            self.calculate_diagnostic_quantities_for_turbulence(
-                kh_smag_ec=self.kh_smag_ec,
-                vn=prognostic_state.vn,
-                diff_multfac_smag=self.diff_multfac_smag,
-                div_ic=diagnostic_state.div_ic,
-                hdef_ic=diagnostic_state.hdef_ic,
-            )
-            log.debug(
-                "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
-            )
 
         # 5.  HALO EXCHANGE -- CALL sync_patch_array(SYNC_E, z_nabla2_e)
         # ICON: mo_nh_diffusion.f90:853. Fill halo edges before second RBF.
@@ -916,75 +859,53 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
-        self.apply_diffusion_to_vn(
+        # The numerical diffusion operation reads neighboring values of the prognostic fields it
+        # updates (through C2E, E2C, C2E2C and C2E2CO gathers), so the pre-diffusion
+        # state is frozen into temporary copies first.
+        log.debug("copying prognostic fields vn, w, theta_v: start")
+        self.copy_field_on_edge_k(field=prognostic_state.vn, output_field=self.vn_tmp)
+        self.copy_field_on_cell_khalf(field=prognostic_state.w, output_field=self.w_tmp)
+        self.copy_field_on_cell_k(field=prognostic_state.theta_v, output_field=self.theta_v_tmp)
+        log.debug("copying prognostic fields vn, w, theta_v: end")
+
+        log.debug("running diffusion program (diffuse_prognostic_fields): start")
+        self.apply_diffusion_to_prognostic_fields(
+            kh_smag=self.kh_smag_e,
+            smag_limit=smag_limit,
+            smag_offset=smag_offset,
+            vn_in=self.vn_tmp,
+            diff_multfac_smag=self.diff_multfac_smag,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             z_nabla2_e=self.z_nabla2_e,
-            kh_smag_e=self.kh_smag_e,
             diff_multfac_vn=diff_multfac_vn,
-            vn=prognostic_state.vn,
-        )
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
-
-        log.debug("communication of prognostic.vn : start")
-        handle_edge_comm = self._exchange(
-            prognostic_state.vn,
-            dim=dims.EdgeDim,
-            full_exchange=False,
-            stream=decomposition.DEFAULT_STREAM,
-        )
-
-        log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
-        )
-        # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
-        self.copy_field_on_cell_khalf(field=prognostic_state.w, output_field=self.w_tmp)
-
-        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             w_old=self.w_tmp,
+            diff_multfac_n2w=self.diff_multfac_n2w,
+            theta_v_in=self.theta_v_tmp,
+            vn=prognostic_state.vn,
             w=prognostic_state.w,
             dwdx=diagnostic_state.dwdx,
             dwdy=diagnostic_state.dwdy,
-            diff_multfac_w=self.diff_multfac_w,
-            diff_multfac_n2w=self.diff_multfac_n2w,
+            theta_v=prognostic_state.theta_v,
+            exner=prognostic_state.exner,
+            div_ic=diagnostic_state.div_ic,
+            hdef_ic=diagnostic_state.hdef_ic,
         )
-        log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
-        )
+        log.debug("running diffusion program (diffuse_prognostic_fields): end")
 
-        self.halo_exchange_wait(
-            handle_edge_comm,
+        log.debug("communication of prognostic.vn : start")
+        self._exchange.exchange(
+            dims.EdgeDim,
+            prognostic_state.vn,
             stream=decomposition.DEFAULT_STREAM,
-        )  # need to do this here, since we currently only use 1 communication object.
+        )
         log.debug("communication of prognostic.vn - end")
 
-        if self.config.apply_to_temperature:
-            log.debug(
-                "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
-            )
-            self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-                theta_v=prognostic_state.theta_v,
-                kh_smag_e=self.kh_smag_e,
-            )
-            log.debug(
-                "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
-            )
-            log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
-            self.copy_field_on_cell_k(
-                field=prognostic_state.theta_v, output_field=self.theta_v_tmp
-            )  # TODO(): write in a way that we can avoid the copy
-            self.apply_diffusion_to_theta_and_exner(
-                kh_smag_e=self.kh_smag_e,
-                theta_v_in=self.theta_v_tmp,
-                theta_v=prognostic_state.theta_v,
-                exner=prognostic_state.exner,
-            )
-            # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
-            # computations, which happen right after diffusion, do not require the halo lines to be correct and there
-            # is another halo exchange after the physics are applied.
-            log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
-            if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+        # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
+        # computations, which happen right after diffusion, do not require the halo lines to be correct and there
+        # is another halo exchange after the physics are applied.
+        if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+            if self.config.apply_to_temperature:
                 log.debug("communication of prognostic cell fields: theta and exner - start")
                 self._exchange.exchange(
                     dims.CellDim,
@@ -994,10 +915,6 @@ class Diffusion:
                 )
                 log.debug("communication of prognostic cell fields: theta and exner - done")
 
-        # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
-        # computations, which happen right after diffusion, do not require the halo lines to be correct and there
-        # is another halo exchange after the physics are applied.
-        if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
             log.debug("communication of prognostic cell field: w - start")
             self._exchange.exchange(
                 dims.CellDim,
