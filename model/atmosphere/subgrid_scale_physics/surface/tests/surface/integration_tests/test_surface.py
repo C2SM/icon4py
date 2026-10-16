@@ -18,8 +18,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
     surface,
     surface_states,
 )
-from icon4py.model.common import constants, dimension as dims, model_backends
-from icon4py.model.testing import datatest_utils as dt_utils, definitions, test_utils
+from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -27,7 +27,6 @@ from ..fixtures import *  # noqa: F403
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.common.grid import icon as icon_grid_
     from icon4py.model.testing import serialbox as sb
 
@@ -44,23 +43,14 @@ def test_surface_run_single_step(
     *,
     data_provider: sb.IconSerialDataProvider,
     icon_grid: icon_grid_.IconGrid,
-    experiment_description: definitions.ExperimentDescription,
-    process_props: decomposition.ProcessProperties,
+    experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     date: str,
 ) -> None:
     """Against the `tmx-surface-fluxes` savepoint: the fluxes ICON's surface scheme hands to tmx."""
-    testcase = dt_utils.read_input_namelist(experiment_description, process_props)[
-        "nh_testcase_nml"
-    ]
-    assert testcase["ape_sst_case"] == "sst_const"
-    config = surface_config.SurfaceConfig(
-        surface_flux_type=testcase["isrfc_type"],
-        # the defaults of mo_nh_testcases_nml.f90 for the members the namelist leaves out
-        kinematic_sensible_heat_flux=testcase.get("shflx", 0.1),
-        kinematic_latent_heat_flux=testcase.get("lhflx", 0.0),
-        sea_surface_temperature=constants.MELTING_TEMPERATURE + testcase["ape_sst_val"],
-    )
+    config = experiment.config.surface
+    assert config is not None
+    assert config.surface_flux_type is surface_config.SurfaceFluxType.FIXED_HEAT_FLUXES
     component = surface.Surface(grid=icon_grid, config=config, backend=backend)
 
     entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)

@@ -14,7 +14,6 @@ import pathlib
 import typing
 import urllib.parse
 
-import f90nml  # type: ignore[import-untyped]
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -99,23 +98,6 @@ def get_datapath_for_experiment(
         process_props,
     )
     return experiment_path.joinpath(test_defs.SERIALIZED_DATA_SUBDIR)
-
-
-def read_input_namelist(
-    experiment_description: test_defs.ExperimentDescription,
-    process_props: decomposition.ProcessProperties,
-) -> dict[str, typing.Any]:
-    """The input namelist shipped with an experiment's archive, as nested dicts."""
-    experiment_path = get_path_for_experiment(experiment_description, process_props)
-    candidates = [
-        path
-        for path in experiment_path.glob("NAMELIST_*")
-        if path.name != "NAMELIST_ICON_output_atm"
-    ]
-    assert len(candidates) == 1, (
-        f"expected one input namelist in {experiment_path}, got {candidates}"
-    )
-    return f90nml.read(candidates[0]).todict()
 
 
 def load_fortran_dict(
