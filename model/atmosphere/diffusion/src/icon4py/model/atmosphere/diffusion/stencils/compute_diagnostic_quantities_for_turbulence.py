@@ -26,32 +26,28 @@ def _temporary_fields_for_turbulence_diagnostics(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     kh_smag_wp, diff_multfac_smag_wp = astype((kh_smag, diff_multfac_smag), wpfloat)
 
     kh_c_wp = _interpolate_to_cell_center(kh_smag_wp, e_bln_c_s) / diff_multfac_smag_wp
     div_wp = divergence(vn, geofac_div)
-    return astype((kh_c_wp, div_wp), vpfloat)
+    return kh_c_wp, div_wp
 
 
 @gtx.field_operator
 def _flow_deformation(
-    div: fa.CellKField[vpfloat],
-    kh_c: fa.CellKField[vpfloat],
+    div: fa.CellKField[wpfloat],
+    kh_c: fa.CellKField[wpfloat],
     wgtfac_c: fa.CellKHalfField[vpfloat],
 ) -> tuple[fa.CellKHalfField[vpfloat], fa.CellKHalfField[vpfloat]]:
-    # TODO(havogt): the wp-vp roundtrips are here to be faithful to ICON's mixed precision.
-    # We assume it was not a deliberate decision in ICON and plan to drop the extra conversions
-    # in a separate PR.
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
-    div_wp, kh_c_wp = astype((div, kh_c), wpfloat)
 
     div_ic_wp = astype(wgtfac_c * div(dims.KHalfDim + 0.5), wpfloat) + (
         wpfloat("1.0") - wgtfac_c_wp
-    ) * div_wp(dims.KHalfDim - 0.5)
+    ) * div(dims.KHalfDim - 0.5)
     hdef_ic_wp = astype(wgtfac_c * kh_c(dims.KHalfDim + 0.5), wpfloat) + (
         wpfloat("1.0") - wgtfac_c_wp
-    ) * kh_c_wp(dims.KHalfDim - 0.5)
+    ) * kh_c(dims.KHalfDim - 0.5)
     hdef_ic_wp = hdef_ic_wp * hdef_ic_wp
 
     return astype((div_ic_wp, hdef_ic_wp), vpfloat)
