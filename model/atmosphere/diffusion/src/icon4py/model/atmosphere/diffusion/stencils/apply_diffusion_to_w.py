@@ -6,21 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import astype, broadcast, neighbor_sum
+from gt4py.next import astype, broadcast
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2CO
+from icon4py.model.common.math.differential_operators import laplacian_on_cell_khalf
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-@gtx.field_operator
-def _calculate_nabla2_for_w(
-    w: fa.CellKHalfField[wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
-) -> fa.CellKHalfField[vpfloat]:
-    z_nabla2_c_wp = neighbor_sum(w(C2E2CO) * geofac_n2s, axis=dims.C2E2CODim)
-    return astype(z_nabla2_c_wp, vpfloat)
 
 
 @gtx.field_operator
@@ -33,9 +24,7 @@ def _apply_nabla2_to_w(
 ) -> fa.CellKHalfField[wpfloat]:
     z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
 
-    w_wp = w - diff_multfac_w * (area * area) * neighbor_sum(
-        z_nabla2_c_wp(C2E2CO) * geofac_n2s, axis=dims.C2E2CODim
-    )
+    w_wp = w - diff_multfac_w * (area * area) * laplacian_on_cell_khalf(z_nabla2_c_wp, geofac_n2s)
     return w_wp
 
 
@@ -64,7 +53,7 @@ def _apply_diffusion_to_w(
     interior_idx: gtx.int32,
     halo_idx: gtx.int32,
 ) -> fa.CellKHalfField[wpfloat]:
-    z_nabla2_c = _calculate_nabla2_for_w(w_old, geofac_n2s)
+    z_nabla2_c = astype(laplacian_on_cell_khalf(w_old, geofac_n2s), vpfloat)
 
     w = _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w)
 
