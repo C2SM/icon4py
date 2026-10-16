@@ -43,7 +43,7 @@ class DriverStates(NamedTuple):
     Attributes:
         prep_advection_prognostic: Fields collecting data for advection during the solve nonhydro timestep.
         dycore_forcing: The tendencies and increments the dycore reads.
-        dycore_diagnostics: The diagnostics the dycore carries between the substeps.
+        dycore_diagnostics: The diagnostics the dycore keeps between the substeps.
         diffusion_diagnostic: Initial state for diffusion diagnostic variables.
         tracer_advection_diagnostic: Initial state for tracer advection diagnostic variables.
         prognostics: Initial state for prognostic variables (double buffered, swapped

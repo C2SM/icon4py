@@ -10,12 +10,12 @@
 The quantities of the model, one type-level tag per quantity at one place on the grid.
 
 The tags are named `<Quantity>On<Place>`, as icon4py names its fields
-(`theta_v_at_cells_on_half_levels`); a quantity with no place (`dims=()`) is `<Quantity>Scalar`. The CF attributes of the fields icon4py already had
-attribute tables for are those tables' values, kept so the output files do not change; some of
-their standard names are not in the CF standard name table (`normal_velocity`,
-`specific_cloud_content`, `virtual_potential_temperature`, ...). Any other quantity has a
-`standard_name` only where the CF table has one, otherwise `standard_name=None` and a
-`long_name` from the docstring of the field it replaces.
+(`theta_v_at_cells_on_half_levels`); a 0-d quantity (`dims=()`) has no place suffix. A tag has
+a `standard_name` only where the CF standard name table has one, otherwise
+`standard_name=None` and a `long_name` that says what the field is, with the ICON variable name
+in parentheses. Some standard names are not in the CF table (`normal_velocity`,
+`specific_cloud_content`, `virtual_potential_temperature`, ...): the output files name their
+variables after them.
 """
 
 from icon4py.model.common import dimension as dims

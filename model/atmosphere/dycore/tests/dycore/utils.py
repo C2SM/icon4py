@@ -153,7 +153,7 @@ def construct_dycore_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     swap_vertical_wind_advective_tendency: bool = False,
 ) -> states.DycoreDiagnostics:
-    """What the composer carries between the substeps, from the savepoint."""
+    """The dycore diagnostics kept between the substeps, from the savepoint."""
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return states.DycoreDiagnostics(
         perturbed_exner_at_cells_on_model_levels=fw.Field(
@@ -254,7 +254,7 @@ def dycore_output(
     prep_adv: states.PrepAdvection,
     dycore_diagnostics: states.DycoreDiagnostics,
 ) -> solve_nonhydro.SolveNonhydro.Output:
-    """The dycore's output view over the prognostics at `next`, the fluxes and the carried diagnostics."""
+    """The dycore's output view over the prognostics at `next`, the fluxes and the dycore diagnostics."""
     return solve_nonhydro.SolveNonhydro.Output(
         rho=prognostics.rho,
         w=prognostics.w,

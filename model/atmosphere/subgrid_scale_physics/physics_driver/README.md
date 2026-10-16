@@ -2,4 +2,4 @@
 
 The physics driver (`PhysicsDriver`) and its processes (`PhysicsProcess`, `ProcessTimeControl`) for ICON4Py, modelled on ICON-MPIM's AES physics interface (`aes_phy_main`).
 
-`PhysicsDriver` and its processes (`MuphysComponent`) are typed components; see `icon4py/model/common/framework/README.md` in `icon4py-common`.
+`PhysicsDriver` and its processes (`MuphysComponent`) are typed components; see [ADR 0004](../../../../docs/development/ADRs/0004_typed_states_and_components.md).

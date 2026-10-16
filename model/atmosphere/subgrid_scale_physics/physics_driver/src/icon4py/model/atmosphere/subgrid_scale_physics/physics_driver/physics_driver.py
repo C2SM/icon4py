@@ -62,7 +62,7 @@ def bind[I: fw.State, O: fw.State](
 
 @dataclasses.dataclass(frozen=True)
 class PhysicsProcess:
-    """One physics process: its step and its time control, which belongs to the composer."""
+    """One physics process: its step and its time control."""
 
     name: str
     step: Step
@@ -92,7 +92,7 @@ class PhysicsDriver(fw.Component):
     Not implemented: ICON AES couples microphysics and turbulence sequentially (each process
     sees the previous one's provisional update), which would need per-process state advances.
 
-    In place like the diffusion: the composer passes the same buffers as input and output, `run`
+    In place like the diffusion: the caller passes the same buffers as input and output; `run`
     copies the input into `outputs` first where they differ. `rho` is read only.
     """
 

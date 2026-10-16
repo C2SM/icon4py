@@ -408,13 +408,14 @@ class SolveNonhydro(fw.Component):
     """
     The nonhydrostatic dynamical core: one substep from the prognostics at `current` to `next`.
 
-    `Output` holds what the composer carries between the substeps besides the prognostics: the
-    fluxes prepared for the tracer advection, the perturbed exner function, the dynamical exner
-    increment and the advective tendencies, whose predictor/corrector time levels the composer
-    swaps. `Diagnostics` is the dycore's own scratch, read and written only here; it is an
-    attribute so that tests can fill it and the Fortran bindings can point it at ICON's buffers.
-    `max_vertical_cfl` is the maximum vertical CFL number over the substeps so far, a 0-d field
-    to avoid device synchronization; the composer reads and resets it.
+    Besides the prognostics, `Output` holds what the next substep and the tracer advection read:
+    the fluxes prepared for the tracer advection, the perturbed exner function, the dynamical
+    exner increment and the advective tendencies, whose predictor/corrector time levels the
+    caller swaps between the substeps. `Diagnostics` is the dycore's own scratch, read and
+    written only here; it is an attribute so that tests can fill it and the Fortran bindings can
+    point it at ICON's buffers. `max_vertical_cfl` is the maximum vertical CFL number over the
+    substeps so far, a 0-d field so that updating it needs no device synchronization; the caller
+    reads and resets it.
     """
 
     class Input(fw.State):

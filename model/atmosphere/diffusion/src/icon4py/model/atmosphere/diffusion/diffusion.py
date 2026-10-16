@@ -459,8 +459,8 @@ class DiffusionParams:
 
 class Diffusion(fw.Component):
     """
-    Horizontal diffusion of the prognostics, in place: the composer passes the same buffers
-    on both sides, `run` copies the input first when it does not.
+    Horizontal diffusion of the prognostics, in place: the caller passes the same buffers as
+    input and output; `run` copies the input into the output first when they differ.
     """
 
     class Input(fw.State):

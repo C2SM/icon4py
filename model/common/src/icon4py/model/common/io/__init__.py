@@ -29,10 +29,10 @@ leaf's quantity tag (`icon4py.model.common.framework.quantities`).
 
 #### Adding fields
 
-A new output field is a new leaf on the driver's `IOMonitor.Input`. Its quantity tag carries the
+A new output field is a new leaf on the driver's `IOMonitor.Input`. Its quantity tag holds the
 CF attributes: the `standard_name` from the
 [CF standard name table](https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html)
-where the table has one (see the components README, "Adding a quantity").
+where the table has one (see ADR 0004, "Adding a quantity").
 
 ### Usage
 

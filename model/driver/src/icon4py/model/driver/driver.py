@@ -463,7 +463,7 @@ class Icon4pyDriver:
         No other time stepping schemes are currently supported.
 
         Args:
-            dycore_diagnostics: the advective tendency pairs the driver carries for the dycore
+            dycore_diagnostics: the dycore diagnostics, whose advective tendency pairs are set
             at_first_substep: Flag indicating if this is the first substep of the time step.
             at_initial_timestep: Flag indicating if this is the first time step.
 
@@ -515,7 +515,7 @@ class Icon4pyDriver:
         prep_adv: states.PrepAdvection,
         dycore_diagnostics: states.DycoreDiagnostics,
     ) -> solve_nh.SolveNonhydro.Output:
-        """The dycore's output view: the prognostics at `next`, the fluxes and the carried diagnostics."""
+        """The dycore's output view: the prognostics at `next`, the fluxes and the dycore diagnostics."""
         return solve_nh.SolveNonhydro.Output(
             rho=prognostics_next.rho,
             w=prognostics_next.w,

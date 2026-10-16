@@ -172,13 +172,13 @@ class DycoreForcing(fw.State):
 
 class DycoreDiagnostics(fw.State):
     """
-    The diagnostics the dycore carries from one substep to the next, owned by the composer.
+    The diagnostics the dycore keeps from one substep to the next, owned by the driver.
 
-    The advective tendencies are predictor/corrector pairs the composer swaps between the
-    substeps (`_update_time_levels_for_velocity_tendencies` in the driver); the initial
-    condition fills the perturbed exner function and, on a restart, the pairs. The dycore raises
-    `max_vertical_cfl` over the substeps; the composer reads and resets it. Built by `allocate`,
-    not by `framework.allocate`, because of the pairs.
+    The advective tendencies are predictor/corrector pairs the driver swaps between the
+    substeps (`_update_time_levels_for_velocity_tendencies`); the initial condition fills the
+    perturbed exner function and, on a restart, the pairs. The dycore raises `max_vertical_cfl`
+    over the substeps; the driver reads and resets it. Built by `allocate`, not by
+    `framework.allocate`, because of the pairs.
     """
 
     perturbed_exner_at_cells_on_model_levels: fw.Field[qty.PerturbedExnerOnCellK]
@@ -213,7 +213,7 @@ class DycoreDiagnostics(fw.State):
 
 
 class DiffusionDiagnostics(fw.State):
-    """The diagnostics of the diffusion (turbulence fields of ICON's t_nh_diag), owned by the composer."""
+    """The diagnostics of the diffusion (turbulence fields of ICON's t_nh_diag), owned by the driver."""
 
     hdef_ic: fw.Field[qty.HorizontalWindDeformationOnCellKHalf]
     div_ic: fw.Field[qty.DivergenceOnCellKHalf]
@@ -222,7 +222,7 @@ class DiffusionDiagnostics(fw.State):
 
 
 class AdvectionDiagnostics(fw.State):
-    """The diagnostics of the tracer advection, owned by the composer."""
+    """The diagnostics of the tracer advection, owned by the driver."""
 
     #: mass of air in the layer at the beginning and the end of the time step
     airmass_now: fw.Field[qty.AirMassOnCellK]

@@ -250,7 +250,7 @@ class Component:
 
     The own buffers (`cached_output`) hold every leaf of `Output`, the optional ones included:
     a component with optional leaves (`Advection`, `PhysicsDriver`: the tracers) would allocate
-    all of them, so its composer always passes `outputs=`, views over the active ones only.
+    all of them, so its caller always passes `outputs=`, views over the active ones only.
     """
 
     Input: type[State]
