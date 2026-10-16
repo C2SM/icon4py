@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 from gt4py.next import typing as gtx_typing
 
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
+from icon4py.model.atmosphere.dycore import solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import (
@@ -22,7 +22,6 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox, test_utils
 
 from .. import utils
@@ -103,16 +102,9 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = savepoint_nonhydro_init.dtime()
     prepare_fluxes_for_advection = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=savepoint_nonhydro_init.vn_traj(),
-        mass_flx_me=savepoint_nonhydro_init.mass_flx_me(),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=savepoint_nonhydro_init.mass_flx_ic(),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
-        ),
-    )
-
-    diagnostic_state_nh = utils.construct_diagnostics(savepoint_nonhydro_init, icon_grid, backend)
+    prep_adv = utils.construct_prep_advection(savepoint_nonhydro_init, icon_grid, backend)
+    forcing = utils.construct_forcing(savepoint_nonhydro_init, icon_grid, backend)
+    dycore_diagnostics = utils.construct_dycore_diagnostics(savepoint_nonhydro_init)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
@@ -144,75 +136,78 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         f"rank={process_props.rank}/{process_props.comm_size}:  entering : solve_nonhydro.time_step"
     )
 
-    solve_nonhydro.time_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        prep_adv=prep_adv,
-        second_order_divdamp_factor=second_order_divdamp_factor,
-        dtime=dtime,
-        ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
-        at_initial_timestep=at_initial_timestep,
-        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
-        at_first_substep=(substep_init == 1),
-        at_last_substep=(substep_init == experiment.config.driver.ndyn_substeps),
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
+    solve_nonhydro.diagnostics = utils.construct_diagnostics(savepoint_nonhydro_init)
+    solve_nonhydro.run(
+        utils.dycore_inputs(
+            prognostic_states.current,
+            forcing,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            dtime=dtime,
+            ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
+            at_initial_timestep=at_initial_timestep,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
+            at_first_substep=(substep_init == 1),
+            at_last_substep=(substep_init == experiment.config.driver.ndyn_substeps),
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
+        ),
+        utils.dycore_output(prognostic_states.next, prep_adv, dycore_diagnostics),
     )
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: dycore step run ")
 
     expected_theta_v = savepoint_nonhydro_step_final.theta_v_new().asnumpy()
-    calculated_theta_v = prognostic_states.next.theta_v.asnumpy()
+    calculated_theta_v = prognostic_states.next.theta_v.data.asnumpy()
     assert test_utils.dallclose(
         expected_theta_v,
         calculated_theta_v,
     )
     expected_exner = savepoint_nonhydro_step_final.exner_new().asnumpy()
-    calculated_exner = prognostic_states.next.exner.asnumpy()
+    calculated_exner = prognostic_states.next.exner.data.asnumpy()
     assert test_utils.dallclose(
         expected_exner,
         calculated_exner,
     )
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        prognostic_states.next.vn.asnumpy(),
+        prognostic_states.next.vn.data.asnumpy(),
         atol=1e-14,
         rtol=1e-10,
     )
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        prognostic_states.next.w.asnumpy(),
+        prognostic_states.next.w.data.asnumpy(),
         atol=1e-14,
     )
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_new().asnumpy(),
-        prognostic_states.next.rho.asnumpy(),
+        prognostic_states.next.rho.data.asnumpy(),
     )
 
     # `rho_ic` is only computed on locally owned cells, the reference contains ICON's halo values.
     end_cell_local = icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL))
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_ic().asnumpy()[:end_cell_local, :],
-        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy()[:end_cell_local, :],
+        solve_nonhydro.diagnostics.rho_at_cells_on_half_levels.data.asnumpy()[:end_cell_local, :],
     )
 
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
-        diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
+        solve_nonhydro.diagnostics.theta_v_at_cells_on_half_levels.data.asnumpy(),
     )
 
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
+        solve_nonhydro.diagnostics.mass_flux_at_edges_on_model_levels.data.asnumpy(),
         rtol=1e-10,
     )
 
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        prep_adv.mass_flx_me.asnumpy(),
+        prep_adv.mass_flx_me.data.asnumpy(),
         rtol=1e-10,
     )
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        prep_adv.vn_traj.asnumpy(),
+        prep_adv.vn_traj.data.asnumpy(),
         rtol=1e-10,
     )

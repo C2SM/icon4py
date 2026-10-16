@@ -167,9 +167,9 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/state.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/data.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/unit_tests',
   # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
@@ -181,10 +181,11 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/io/unit_tests/test_io.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/framework',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/config',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/framework',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/topography',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
@@ -239,6 +240,29 @@ module = [
 [[tool.mypy.overrides]]
 disallow_untyped_defs = false
 module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
+
+[[tool.mypy.overrides]]  # the components and their tests are checked as `mypy --strict` would
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+extra_checks = true
+module = [
+  "icon4py.model.common.framework.*",
+  "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.*",
+  "icon4py.model.atmosphere.subgrid_scale_physics.muphys.component",
+  "icon4py.model.driver.*",
+  "*.framework.unit_tests.*",
+  "*.physics_driver.unit_tests.*",
+  "*.muphys.unit_tests.*",
+  "driver.unit_tests.test_driver_io",
+  "driver.integration_tests.test_driver_io_output"
+]
+no_implicit_reexport = true
+strict_equality = true
+warn_return_any = true
+warn_unused_ignores = true
 
 [[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
 disable_error_code = ["index", "misc"]
