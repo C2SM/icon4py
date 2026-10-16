@@ -14,6 +14,7 @@ import pathlib
 import typing
 from typing import TYPE_CHECKING
 
+import numpy as np
 import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common import dimension as dims, model_backends, time
@@ -100,22 +101,22 @@ def read_initial_condition_from_file(
     )
     savepoint = serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
 
-    cell_indices = decomposition_info.global_index(dims.CellDim)
-    edge_indices = decomposition_info.global_index(dims.EdgeDim)
+    cell_indices = np.asarray(decomposition_info.global_index(dims.CellDim))
+    edge_indices = np.asarray(decomposition_info.global_index(dims.EdgeDim))
 
     def read_cell_k(name: str) -> data_alloc.NDArray:
-        buffer = array_ns.squeeze(serializer.read(name, savepoint).astype(float))
+        buffer = np.squeeze(serializer.read(name, savepoint).astype(float))
         return array_ns.asarray(buffer[cell_indices, :])
 
     def read_edge_k(name: str) -> data_alloc.NDArray:
-        buffer = array_ns.squeeze(serializer.read(name, savepoint).astype(float))
+        buffer = np.squeeze(serializer.read(name, savepoint).astype(float))
         return array_ns.asarray(buffer[edge_indices, :])
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
     ntracer = config.ntracer
     if ntracer > 0:
-        tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
+        tracers = np.squeeze(serializer.read("tracers_now", savepoint).astype(float))
         for i, tracer in enumerate(tracer_state_now.active_fields()):
             tracer.field.ndarray[:, :] = array_ns.asarray(tracers[cell_indices, :, i])
 
@@ -179,21 +180,21 @@ def read_restart_from_file(
             f"of this experiment covers: {_available_nonhydro_init_dates(serializer)}."
         ) from err
 
-    cell_indices = decomposition_info.global_index(dims.CellDim)
-    edge_indices = decomposition_info.global_index(dims.EdgeDim)
+    cell_indices = np.asarray(decomposition_info.global_index(dims.CellDim))
+    edge_indices = np.asarray(decomposition_info.global_index(dims.EdgeDim))
 
     def read_cell_k(name: str) -> data_alloc.NDArray:
-        buffer = array_ns.squeeze(serializer.read(name, nonhydro_savepoint).astype(float))
+        buffer = np.squeeze(serializer.read(name, nonhydro_savepoint).astype(float))
         return array_ns.asarray(buffer[cell_indices, :])
 
     def read_edge_k(name: str) -> data_alloc.NDArray:
-        buffer = array_ns.squeeze(serializer.read(name, nonhydro_savepoint).astype(float))
+        buffer = np.squeeze(serializer.read(name, nonhydro_savepoint).astype(float))
         return array_ns.asarray(buffer[edge_indices, :])
 
     def read_predictor_corrector(
-        name: str, indices: data_alloc.NDArray
+        name: str, indices: np.ndarray
     ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-        buffer = array_ns.squeeze(serializer.read(name, velocity_savepoint).astype(float))
+        buffer = np.squeeze(serializer.read(name, velocity_savepoint).astype(float))
         return array_ns.asarray(buffer[indices, :, 0]), array_ns.asarray(buffer[indices, :, 1])
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)

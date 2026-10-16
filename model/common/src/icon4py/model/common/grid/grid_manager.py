@@ -255,11 +255,11 @@ class GridManager:
             apply_offset=False,
             indices=my_vertex_indices,
         )
-        vertex_to_edge = self._get_index_field(
-            gridfile.ConnectivityName.V2E, indices=my_vertex_indices
-        )
+
+        global_v2e = self._get_index_field(gridfile.ConnectivityName.V2E)
+        local_v2e = global_v2e[my_vertex_indices, :]
         vertex_edge_orientation = np.where(
-            vertex_to_edge != gridfile.GridFile.INVALID_INDEX,
+            local_v2e != gridfile.GridFile.INVALID_INDEX,
             vertex_edge_orientation,
             0,
         )
