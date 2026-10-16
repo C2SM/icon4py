@@ -11,14 +11,13 @@ from __future__ import annotations
 import dataclasses
 import logging
 import pathlib
-import types
 import typing
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+import numpy as np
 import serialbox  # type: ignore[import-untyped]
 
-from icon4py.model.common import model_backends, time
+from icon4py.model.common import dimension as dims, model_backends, time
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid
@@ -56,37 +55,6 @@ def _savepoint_formatted_date(date: time.AbsoluteTime) -> str:
     return date.replace(tzinfo=None).isoformat(timespec="milliseconds")
 
 
-def _define_field_readers(
-    serializer: serialbox.Serializer,
-    savepoint: serialbox.Savepoint,
-    grid: icon_grid.IconGrid,
-    array_ns: types.ModuleType,
-) -> tuple[Callable[[str], data_alloc.NDArray], Callable[[str], data_alloc.NDArray]]:
-    """Readers of cell and edge fields. The serialized fields are padded to nproma."""
-
-    def read_cell_k(name: str) -> data_alloc.NDArray:
-        buffer = array_ns.squeeze(serializer.read(name, savepoint).astype(float))
-        return array_ns.asarray(buffer[: grid.num_cells, :])
-
-    def read_edge_k(name: str) -> data_alloc.NDArray:
-        buffer = array_ns.squeeze(serializer.read(name, savepoint).astype(float))
-        return array_ns.asarray(buffer[: grid.num_edges, :])
-
-    return read_cell_k, read_edge_k
-
-
-def _read_predictor_corrector_fields(
-    serializer: serialbox.Serializer,
-    savepoint: serialbox.Savepoint,
-    name: str,
-    size: int,
-    array_ns: types.ModuleType,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    """Read both time levels of a predictor-corrector field."""
-    buffer = array_ns.squeeze(serializer.read(name, savepoint).astype(float))
-    return array_ns.asarray(buffer[:size, :, 0]), array_ns.asarray(buffer[:size, :, 1])
-
-
 def _available_nonhydro_init_dates(serializer: serialbox.Serializer) -> str:
     dates = sorted(
         {
@@ -100,8 +68,8 @@ def _available_nonhydro_init_dates(serializer: serialbox.Serializer) -> str:
 
 def _read_prognostic_state(
     prognostic_state: prognostics.PrognosticState,
-    read_cell_k: Callable[[str], data_alloc.NDArray],
-    read_edge_k: Callable[[str], data_alloc.NDArray],
+    read_cell_k,
+    read_edge_k,
 ):
     prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")
     prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")
@@ -118,6 +86,7 @@ def read_initial_condition_from_file(
     tracer_state_now: tracer_states.TracerState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
+    decomposition_info: decomposition_defs.DecompositionInfo,
 ) -> None:
     """Initialise the prognostic and tracer states from the serialized ICON initial state."""
     ic_config = config.initial_condition
@@ -128,18 +97,28 @@ def read_initial_condition_from_file(
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
         str(ic_config.data_path),
-        f"icon_pydycore_rank{exchange.my_rank()}",
+        "icon_pydycore_rank0",  # always read the single-rank (global) data
     )
     savepoint = serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
-    read_cell_k, read_edge_k = _define_field_readers(serializer, savepoint, grid, array_ns)
+
+    cell_indices = np.asarray(decomposition_info.global_index(dims.CellDim))
+    edge_indices = np.asarray(decomposition_info.global_index(dims.EdgeDim))
+
+    def read_cell_k(name: str) -> data_alloc.NDArray:
+        buffer = np.squeeze(serializer.read(name, savepoint).astype(float))
+        return array_ns.asarray(buffer[cell_indices, :])
+
+    def read_edge_k(name: str) -> data_alloc.NDArray:
+        buffer = np.squeeze(serializer.read(name, savepoint).astype(float))
+        return array_ns.asarray(buffer[edge_indices, :])
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
     ntracer = config.ntracer
     if ntracer > 0:
-        tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
+        tracers = np.squeeze(serializer.read("tracers_now", savepoint).astype(float))
         for i, tracer in enumerate(tracer_state_now.active_fields()):
-            tracer.field.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
+            tracer.field.ndarray[:, :] = array_ns.asarray(tracers[cell_indices, :, i])
 
 
 def read_restart_from_file(
@@ -150,6 +129,7 @@ def read_restart_from_file(
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
+    decomposition_info: decomposition_defs.DecompositionInfo,
 ) -> None:
     """
     Initialise the prognostic state from the serialized state of a later time step.
@@ -177,7 +157,7 @@ def read_restart_from_file(
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
         str(ic_config.data_path),
-        f"icon_pydycore_rank{exchange.my_rank()}",
+        "icon_pydycore_rank0",  # always read the single-rank (global) data
     )
     try:
         nonhydro_savepoint = (
@@ -200,7 +180,22 @@ def read_restart_from_file(
             f"of this experiment covers: {_available_nonhydro_init_dates(serializer)}."
         ) from err
 
-    read_cell_k, read_edge_k = _define_field_readers(serializer, nonhydro_savepoint, grid, array_ns)
+    cell_indices = np.asarray(decomposition_info.global_index(dims.CellDim))
+    edge_indices = np.asarray(decomposition_info.global_index(dims.EdgeDim))
+
+    def read_cell_k(name: str) -> data_alloc.NDArray:
+        buffer = np.squeeze(serializer.read(name, nonhydro_savepoint).astype(float))
+        return array_ns.asarray(buffer[cell_indices, :])
+
+    def read_edge_k(name: str) -> data_alloc.NDArray:
+        buffer = np.squeeze(serializer.read(name, nonhydro_savepoint).astype(float))
+        return array_ns.asarray(buffer[edge_indices, :])
+
+    def read_predictor_corrector(
+        name: str, indices: np.ndarray
+    ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+        buffer = np.squeeze(serializer.read(name, velocity_savepoint).astype(float))
+        return array_ns.asarray(buffer[indices, :, 0]), array_ns.asarray(buffer[indices, :, 1])
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
@@ -208,12 +203,9 @@ def read_restart_from_file(
         read_cell_k("exner_pr")
     )
 
-    normal_wind_tendency = _read_predictor_corrector_fields(
-        serializer, velocity_savepoint, "ddt_vn_apc_pc", grid.num_edges, array_ns
-    )
-    vertical_wind_tendency = _read_predictor_corrector_fields(
-        serializer, velocity_savepoint, "ddt_w_adv_pc", grid.num_cells, array_ns
-    )
+    normal_wind_tendency = read_predictor_corrector("ddt_vn_apc_pc", edge_indices)
+    vertical_wind_tendency = read_predictor_corrector("ddt_w_adv_pc", cell_indices)
+
     solve_nonhydro_diagnostic_state.normal_wind_advective_tendency.predictor.ndarray[:, :] = (
         normal_wind_tendency[0]
     )
