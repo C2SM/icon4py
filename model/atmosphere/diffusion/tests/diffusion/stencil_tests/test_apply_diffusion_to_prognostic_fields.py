@@ -23,10 +23,60 @@ from icon4py.model.testing import stencil_tests, test_utils
 from .test_apply_nabla2_to_vn_in_lateral_boundary import (
     apply_nabla2_to_vn_in_lateral_boundary_numpy,
 )
-from .test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
-    truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy,
-)
-from .test_update_theta_and_exner import update_theta_and_exner_numpy
+
+
+def update_theta_and_exner_numpy(
+    z_temp: np.ndarray,
+    area: np.ndarray,
+    theta_v: np.ndarray,
+    exner: np.ndarray,
+    rd_o_cvd: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    area = np.expand_dims(area, axis=-1)
+    z_theta = theta_v
+    theta_v = theta_v + (area * z_temp)
+    exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
+    return theta_v, exner
+
+
+def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
+    *,
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    zd_vertoffset: np.ndarray,
+    zd_diffcoef: np.ndarray,
+    geofac_n2s_c: np.ndarray,
+    geofac_n2s_nbh: np.ndarray,
+    vcoef: np.ndarray,
+    theta_v: np.ndarray,
+    z_temp: np.ndarray,
+    **kwargs,
+) -> np.ndarray:
+    c2e2c = connectivities[dims.C2E2C]
+    full_shape = vcoef.shape
+
+    geofac_n2s_nbh = np.expand_dims(geofac_n2s_nbh, axis=2)
+
+    theta_v_at_zd_vertidx = np.zeros_like(vcoef)
+    theta_v_at_zd_vertidx_p1 = np.zeros_like(vcoef)
+    for ic in range(full_shape[0]):
+        for isparse in range(full_shape[1]):
+            for ik in range(full_shape[2]):
+                if zd_diffcoef[ic, ik] == 0.0:
+                    continue
+                theta_v_at_zd_vertidx[ic, isparse, ik] = theta_v[
+                    c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik]
+                ]
+                theta_v_at_zd_vertidx_p1[ic, isparse, ik] = theta_v[
+                    c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik] + 1
+                ]
+
+    sum_over = np.sum(
+        geofac_n2s_nbh * (vcoef * theta_v_at_zd_vertidx + (1.0 - vcoef) * theta_v_at_zd_vertidx_p1),
+        axis=1,
+    )
+
+    geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)
+    return z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over)
 
 
 def apply_nabla2_to_w_numpy(
