@@ -124,7 +124,8 @@ class EnergyUpdate:
         `diagnostic_state`.
 
         Runs after the scalar and the wind diffusion: needs their new states, the heat-diffusion
-        tendency, and `km_ic` and `kh_ic` of `diagnostic_state`. Above the lowest model level,
+        tendency, and `cv_air`, `km_ic` and `kh_ic` of `diagnostic_state`. Above the lowest model
+        level,
         `km` and `kh` are copied from the half level below. At the lowest level,
         `use_km_const=True` sets `km = km_const` and `kh = km_const / turb_prandtl`; otherwise
         the caller must fill that level with the surface exchange coefficient.
@@ -137,7 +138,7 @@ class EnergyUpdate:
             new_u=new_state.u,
             new_v=new_state.v,
             air_mass=input_state.air_mass,
-            cv_air=input_state.cv_air,
+            cv_air=diagnostic_state.cv_air,
             temperature=input_state.temperature,
             tend_temperature=heat_diffusion_tendency,
             q_snocpymlt=surface_flux_state.q_snocpymlt,
