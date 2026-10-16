@@ -8,7 +8,7 @@ tags:
 # Typed states and components
 
 - **Status**: valid
-- **Authors**: Jacopo Canton (@jcanton)
+- **Authors**: Mikael Simberg (@msimberg), Jacopo Canton (@jcanton)
 - **Created**: 2026-10-16
 - **Updated**: 2026-10-16
 
