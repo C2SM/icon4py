@@ -331,7 +331,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         err_msg="z_w_concorr_me",
     )
 
-    assert diagnostic_state.max_vertical_cfl == pytest.approx(
+    assert float(diagnostic_state.max_vertical_cfl) == pytest.approx(
         icon_result_max_vcfl_dyn, rel=MAX_CFL_RTOL, abs=0.0
     )
 
@@ -514,7 +514,7 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         err_msg="ddt_vn_apc_pc corrector",
     )
 
-    assert diagnostic_state.max_vertical_cfl == pytest.approx(
+    assert float(diagnostic_state.max_vertical_cfl) == pytest.approx(
         icon_result_max_vcfl_dyn, rel=MAX_CFL_RTOL, abs=0.0
     )
 
