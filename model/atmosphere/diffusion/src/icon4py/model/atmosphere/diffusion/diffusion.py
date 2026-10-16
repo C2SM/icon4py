@@ -546,7 +546,10 @@ class Diffusion:
             or self.config.loutshs
             or self.config.a_hshr > 0.0
         )
-        compute_hgrad_w = self.config.shear_type == 2
+        compute_hgrad_w = (
+            self.config.shear_type
+            == TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
+        )
         self.apply_diffusion_to_prognostic_fields = setup_program(
             backend=backend,
             program=apply_diffusion_to_prognostic_fields,

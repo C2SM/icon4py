@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import itertools
 import math
 from collections.abc import Mapping
 
@@ -22,8 +23,6 @@ from icon4py.model.testing import stencil_tests, test_utils
 from .test_apply_nabla2_to_vn_in_lateral_boundary import (
     apply_nabla2_to_vn_in_lateral_boundary_numpy,
 )
-from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
-from .test_calculate_nabla2_of_theta import calculate_nabla2_of_theta_numpy
 from .test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy,
 )
@@ -433,14 +432,12 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
                 ),
                 kh_smag_limited,
             )
-            z_nabla2_e_theta = calculate_nabla2_for_z_numpy(
-                connectivities,
-                kh_smag_enhanced,
-                inv_dual_edge_length,
-                theta_v_in,
-                np.zeros_like(kh_smag_enhanced),
+            z_nabla2_e_theta = (
+                kh_smag_enhanced
+                * inv_dual_edge_length[:, np.newaxis]
+                * (theta_v_in[e2c[:, 1]] - theta_v_in[e2c[:, 0]])
             )
-            z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e_theta, geofac_div)
+            z_temp = np.sum(z_nabla2_e_theta[c2e] * geofac_div[:, :, np.newaxis], axis=1)
             if apply_zdiffusion_t:
                 z_temp = np.where(
                     zd_diffcoef != 0.0,
@@ -479,11 +476,19 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture(
         params=[
-            {"compute_flow_deformation": flag[0], "apply_to_temperature": flag[1]}
-            for flag in [(True, True), (False, True), (True, False), (False, False)]
+            {
+                "compute_flow_deformation": cfd,
+                "compute_hgrad_w": chw,
+                "apply_to_temperature": att,
+            }
+            for cfd, chw, att in itertools.product([True, False], repeat=3)
+            # the horizontal w-gradients are only computed as part of the flow-deformation block
+            # exclude the case (compute_hgrad_w, compute_flow_deformation) == (True, False)
+            if cfd or not chw
         ],
         ids=lambda param: (
             f"compute_flow_deformation[{param['compute_flow_deformation']}]"
+            f"-compute_hgrad_w[{param['compute_hgrad_w']}]"
             f"-apply_to_temperature[{param['apply_to_temperature']}]"
         ),
     )
@@ -493,7 +498,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         request: pytest.FixtureRequest,
     ) -> dict:
         compute_flow_deformation = request.param["compute_flow_deformation"]
-        compute_hgrad_w = compute_flow_deformation
+        compute_hgrad_w = request.param["compute_hgrad_w"]
         apply_to_temperature = request.param["apply_to_temperature"]
 
         edge_domain = h_grid.domain(dims.EdgeDim)

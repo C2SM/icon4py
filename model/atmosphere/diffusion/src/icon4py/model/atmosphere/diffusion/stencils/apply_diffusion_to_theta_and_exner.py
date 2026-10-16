@@ -7,14 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next import where
+from gt4py.next import astype, where
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
-    _calculate_nabla2_for_z,
-)
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta import (
-    _calculate_nabla2_of_theta,
-)
 from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
     _truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
@@ -22,6 +16,7 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     _update_theta_and_exner,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.math.differential_operators import divergence, normal_gradient
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -41,8 +36,8 @@ def _apply_diffusion_to_theta_and_exner(
     rd_o_cvd: vpfloat,
     apply_zdiffusion_t: bool,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
-    z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
+    grad_temp = astype(kh_smag_e, wpfloat) * normal_gradient(theta_v, inv_dual_edge_length)
+    z_temp = astype(divergence(grad_temp, geofac_div), vpfloat)
 
     if apply_zdiffusion_t:
         # Only where `zd_diffcoef` is not 0 to avoid loading the other fields.

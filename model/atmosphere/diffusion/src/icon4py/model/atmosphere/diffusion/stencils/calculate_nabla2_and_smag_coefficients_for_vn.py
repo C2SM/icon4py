@@ -10,6 +10,7 @@ from gt4py.next import astype, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2V
+from icon4py.model.common.math.differential_operators import laplacian_on_edge
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -36,14 +37,15 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
 
     v_n = u_vert_wp(E2C2V) * primal_normal_vert_x + v_vert_wp(E2C2V) * primal_normal_vert_y
 
-    nabla2_of_vn = (v_n[dims.E2C2VDim(0)] + v_n[dims.E2C2VDim(1)] - wpfloat("2.0") * vn) * (
-        inv_primal_edge_length * inv_primal_edge_length
-    ) + (v_n[dims.E2C2VDim(2)] + v_n[dims.E2C2VDim(3)] - wpfloat("2.0") * vn) * (
-        inv_vert_vert_length * inv_vert_vert_length
+    nabla2_of_vn = laplacian_on_edge(
+        vn,
+        u_vert_wp,
+        v_vert_wp,
+        primal_normal_vert_x,
+        primal_normal_vert_y,
+        inv_primal_edge_length,
+        inv_vert_vert_length,
     )
-    # The factor of 4 comes from the lengths in the denominator being twice those needed
-    # for the diffusion stencil (https://doi.org/10.1002%2Fqj.2378).
-    nabla2_of_vn = wpfloat("4.0") * nabla2_of_vn
 
     v_t = u_vert_wp(E2C2V) * dual_normal_vert_x + v_vert_wp(E2C2V) * dual_normal_vert_y
     l_p = tangent_orientation * inv_primal_edge_length
