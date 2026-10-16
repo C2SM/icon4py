@@ -53,7 +53,7 @@ from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc, roctx
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 """
@@ -845,7 +845,7 @@ class Diffusion:
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of vn - start")
-        with roctx.roctx_range("halo_exchange_rbf_extrapolation_vn"):
+        with profiling.annotate("halo_exchange_rbf_extrapolation_vn"):
             self._exchange(
                 self.u_vert,
                 self.v_vert,
@@ -892,7 +892,7 @@ class Diffusion:
         # 5.  HALO EXCHANGE -- CALL sync_patch_array(SYNC_E, z_nabla2_e)
         # ICON: mo_nh_diffusion.f90:853. Fill halo edges before second RBF.
         log.debug("communication of z_nabla2_e - start")
-        with roctx.roctx_range("halo_exchange_z_nabla2_e"):
+        with profiling.annotate("halo_exchange_z_nabla2_e"):
             self._exchange.exchange(
                 dims.EdgeDim,
                 self.z_nabla2_e,
@@ -909,7 +909,7 @@ class Diffusion:
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of z_nable2_e - start")
-        with roctx.roctx_range("halo_exchange_rbf_extrapolation_z_nabla2_e"):
+        with profiling.annotate("halo_exchange_rbf_extrapolation_z_nabla2_e"):
             self._exchange(
                 self.u_vert,
                 self.v_vert,
@@ -931,7 +931,7 @@ class Diffusion:
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
         log.debug("communication of prognostic.vn : start")
-        with roctx.roctx_range("halo_exchange_vn"):
+        with profiling.annotate("halo_exchange_vn"):
             handle_edge_comm = self._exchange(
                 prognostic_state.vn,
                 dim=dims.EdgeDim,
@@ -990,7 +990,7 @@ class Diffusion:
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
             if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
                 log.debug("communication of prognostic cell fields: theta and exner - start")
-                with roctx.roctx_range("halo_exchange_theta_exner"):
+                with profiling.annotate("halo_exchange_theta_exner"):
                     self._exchange.exchange(
                         dims.CellDim,
                         prognostic_state.theta_v,
@@ -1004,7 +1004,7 @@ class Diffusion:
         # is another halo exchange after the physics are applied.
         if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
             log.debug("communication of prognostic cell field: w - start")
-            with roctx.roctx_range("halo_exchange_w"):
+            with profiling.annotate("halo_exchange_w"):
                 self._exchange.exchange(
                     dims.CellDim,
                     prognostic_state.w,

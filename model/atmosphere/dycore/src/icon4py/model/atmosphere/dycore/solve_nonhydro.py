@@ -73,7 +73,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
     utils as state_utils,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc, roctx
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 log = logging.getLogger(__name__)
@@ -1278,7 +1278,7 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
-        with roctx.roctx_range("halo_exchange_vn_rho_at_edges_predictor"):
+        with profiling.annotate("halo_exchange_vn_rho_at_edges_predictor"):
             self._exchange.exchange(
                 dims.EdgeDim,
                 prognostic_states.next.vn,
@@ -1356,7 +1356,7 @@ class SolveNonhydro:
             log.debug(
                 "exchanging prognostic field 'w' and local field 'dwdz_at_cells_on_model_levels'"
             )
-            with roctx.roctx_range("halo_exchange_w_dwdz_predictor"):
+            with profiling.annotate("halo_exchange_w_dwdz_predictor"):
                 self._exchange.exchange(
                     dims.CellDim,
                     prognostic_states.next.w,
@@ -1365,7 +1365,7 @@ class SolveNonhydro:
                 )
         else:
             log.debug("exchanging prognostic field 'w'")
-            with roctx.roctx_range("halo_exchange_w_predictor"):
+            with profiling.annotate("halo_exchange_w_predictor"):
                 self._exchange.exchange(
                     dims.CellDim,
                     prognostic_states.next.w,
@@ -1488,7 +1488,7 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn'")
-        with roctx.roctx_range("halo_exchange_vn_corrector"):
+        with profiling.annotate("halo_exchange_vn_corrector"):
             self._exchange.exchange(
                 dims.EdgeDim,
                 prognostic_states.next.vn,
@@ -1566,7 +1566,7 @@ class SolveNonhydro:
                 )
 
         log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
-        with roctx.roctx_range("halo_exchange_rho_exner_w_corrector"):
+        with profiling.annotate("halo_exchange_rho_exner_w_corrector"):
             self._exchange.exchange(
                 dims.CellDim,
                 prognostic_states.next.rho,
