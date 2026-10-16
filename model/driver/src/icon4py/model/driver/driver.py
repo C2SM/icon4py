@@ -100,7 +100,7 @@ class Icon4pyDriver:
         driver_utils.display_driver_setup_in_log_file(
             config=self.config.driver,
             model_time_variables=self.model_time_variables,
-            vertical_params=self.static_field_factories.metrics.vertical_grid,
+            vertical_params=self.static_field_factories.metrics._vertical_grid,
             tracer_config=self.config.tracer_config,
         )
 

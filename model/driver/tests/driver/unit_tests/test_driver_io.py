@@ -28,8 +28,7 @@ from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.io import io as common_io, writers
 from icon4py.model.driver import driver_io
-
-from ..fixtures import *  # noqa: F403
+from icon4py.model.testing.fixtures import backend
 
 
 START = datetime.datetime(2000, 1, 1)
