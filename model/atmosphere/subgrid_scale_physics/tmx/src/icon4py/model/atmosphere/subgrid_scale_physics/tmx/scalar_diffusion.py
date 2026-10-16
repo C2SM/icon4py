@@ -228,8 +228,8 @@ class ScalarDiffusion:
         self.diffuse_energy_and_update_temperature(
             energy=self.energy,
             diffusivity=diagnostic_state.kh_ic,
-            sensible_heat_flux=surface_flux_state.sensible_heat_flux,
-            evapotranspiration=surface_flux_state.evapotranspiration,
+            thermal_energy_flux=surface_flux_state.thermal_energy_flux,
+            vapor_energy_flux=surface_flux_state.vapor_energy_flux,
             temperature=input_state.temperature,
             new_qv=new_state.qv,
             new_qc=new_state.qc,

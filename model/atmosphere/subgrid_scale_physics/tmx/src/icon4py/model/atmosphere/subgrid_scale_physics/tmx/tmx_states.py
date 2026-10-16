@@ -100,6 +100,10 @@ class TmxSurfaceFluxState:
     """Meridional surface wind stress (`tauv`) [N/m^2]."""
     q_snocpymlt: fa.CellField[ta.wpfloat]
     """Heat used to melt snow on the canopy (`q_snocpymlt`), zero off land [W/m^2]."""
+    thermal_energy_flux: fa.CellField[ta.wpfloat]
+    """Surface flux of internal energy from thermal exchange (`ufts`) [W/m^2]."""
+    vapor_energy_flux: fa.CellField[ta.wpfloat]
+    """Surface flux of internal energy from vapor exchange (`ufvs`) [W/m^2]."""
 
 
 @dataclasses.dataclass(frozen=True)
