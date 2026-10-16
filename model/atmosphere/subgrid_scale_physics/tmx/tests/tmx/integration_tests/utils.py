@@ -145,10 +145,11 @@ def assert_tmx_exit_fields(
     unsynced.
     """
     num_levels = diagnostic_state.km.ndarray.shape[1]
-    # the surface level of km and kh is the surface exchange coefficient, written only with
-    # `use_km_const`
-    # TODO(jcanton): drop this slicing once the tmx surface scheme, which computes km_sfc and
-    # kh_sfc, is ported.
+    # the lowest level of km and kh is the surface exchange coefficient (km_sfc, kh_sfc of
+    # ICON's surface Compute_diagnostics), which tmx only writes with `use_km_const`
+    # TODO(yilu): drop this slicing once the surface component computes the exchange
+    # coefficients (follow-up of #1516) and tmx writes them into the lowest level, as
+    # Update_diagnostics in mo_vdf.f90 does.
     exchange_coefficient_levels = slice(None, None if use_km_const else num_levels - 1)
     synced_fields = {"tend_ta", "tend_ua", "tend_va"}
     # Tolerances of the tmx datatests, per field. The comment above each field gives the worst

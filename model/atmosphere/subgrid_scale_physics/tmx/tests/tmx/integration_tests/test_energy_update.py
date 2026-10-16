@@ -111,8 +111,8 @@ def test_tmx_run_energy_update_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
-    # the surface level of km and kh is the surface exchange coefficient, written only with
-    # `use_km_const`
+    # the lowest level of km and kh is the surface exchange coefficient, which tmx only writes
+    # with `use_km_const`; see the TODO in `assert_tmx_exit_fields`
     exchange_coefficient_levels = slice(
         None, None if tmx_config.use_km_const else icon_grid.num_levels - 1
     )

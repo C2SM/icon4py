@@ -32,14 +32,13 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-# the first date of the experiment has no tmx savepoints
-SURFACE_DATES = definitions.Experiments.EXCLAIM_APE_AES.dates[1:]
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, date",
-    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in SURFACE_DATES],
+    [
+        (definitions.Experiments.EXCLAIM_APE_AES, date)
+        for date in definitions.Experiments.EXCLAIM_APE_AES.dates
+    ],
 )
 def test_surface_run_single_step(
     *,
