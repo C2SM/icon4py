@@ -181,8 +181,12 @@ def eigen_divergence(
     eigen_vector = np.zeros((3, 3), dtype=float)
     eigen_vector_cartesian = np.zeros((3, 2), dtype=float)
 
-    a = 0.25 * 3.0 * grid_space * 2.0 * math.pi * div_wave.x_wavenumber_factor * 1.0e-5
-    b = 0.25 * math.sqrt(3.0) * grid_space * 2.0 * math.pi * div_wave.y_wavenumber_factor * 1.0e-5
+    if order == 1:
+        a = 0.25 * grid_space * 2.0 * math.pi * div_wave.x_wavenumber_factor * 1.0e-5
+        b = 0.25 * math.sqrt(3.0) * grid_space * 2.0 * math.pi * div_wave.y_wavenumber_factor * 1.0e-5
+    elif order == 2:
+        a = 0.25 * 3.0 * grid_space * 2.0 * math.pi * div_wave.x_wavenumber_factor * 1.0e-5
+        b = 0.25 * math.sqrt(3.0) * grid_space * 2.0 * math.pi * div_wave.y_wavenumber_factor * 1.0e-5
     if debug:
         print("a, b: ", a, b)
         print("cos(a+b), cos(a-b), cos(2a): ", math.cos(a + b), math.cos(a - b), math.cos(2.0 * a))
@@ -197,14 +201,15 @@ def eigen_divergence(
         sol1 = sol1 - 1.0
         sol2 = sol2 - 1.0
         sol3 = sol3 - 1.0
+        eigen_value[0] = 0.0
+        eigen_value[1] = -1.0 + 0.5 * ( -1.0 + math.sqrt(1.0 + 4.0 * math.cos(2.0 * a) * (math.cos(2.0 * a) + math.cos(2.0 * b))) )
+        eigen_value[2] = -1.0 + 0.5 * ( -1.0 - math.sqrt(1.0 + 4.0 * math.cos(2.0 * a) * (math.cos(2.0 * a) + math.cos(2.0 * b))) )
         if debug:
             print("eigen solutions: ", sol1, sol2, sol3)
-        # eigen_value[0] = -1.0
-        # eigen_value[1] = -1.0 + math.sqrt(1.0 + math.cos(2.0 * a) * (math.cos(2.0 * a) + math.cos(2.0 * b)))
-        # eigen_value[2] = -1.0 - math.sqrt(1.0 + math.cos(2.0 * a) * (math.cos(2.0 * a) + math.cos(2.0 * b)))
-        eigen_value[0] = sol1
-        eigen_value[1] = sol2
-        eigen_value[2] = sol3
+            print("eigen solutions: ", eigen_value)
+        # eigen_value[0] = sol1
+        # eigen_value[1] = sol2
+        # eigen_value[2] = sol3
     elif order == 2:
         if b == 0.0:
             eigen_value[0] = 0.0
@@ -387,6 +392,39 @@ def eigen_divergence(
             np.dot(eigen_vector[0], eigen_vector[2]),
             np.dot(eigen_vector[1], eigen_vector[2]),
         )
+        print()
+        list1 = [-1.0, math.cos(a + b), math.cos(a - b)]
+        list2 = [math.cos(a + b), -1.0, -math.cos(2.0 * a)]
+        list3 = [math.cos(a - b), -math.cos(2.0 * a), -1.0]
+        matrix = np.zeros((3, 3), dtype=float)
+        matrix[0] = np.array(list1, dtype=float, copy=True)
+        matrix[1] = np.array(list2, dtype=float, copy=True)
+        matrix[2] = np.array(list3, dtype=float, copy=True)
+        eigenvalues, eigenvectors = scipy.linalg.eig(matrix)
+        T2, Z2 = scipy.linalg.schur(matrix)
+        eigenvectors_schur = np.zeros((3,3), dtype=float)
+        eigenvectors_schur[0] = Z2[:, 0]
+        eigenvectors_schur[1] = Z2[:, 1]
+        eigenvectors_schur[2] = Z2[:, 2]
+
+        print("checking against library: ")
+        print(eigenvalues[:])
+        print(T2[0, 0], T2[1, 1], T2[2, 2])
+        print(eigen_value[:])
+        print()
+        print(eigenvectors[0])
+        print(eigenvectors_schur[0])
+        print(eigen_vector[0])
+        print()
+        print(eigenvectors[1])
+        print(eigenvectors_schur[1])
+        print(eigen_vector[1])
+        print()
+        print(eigenvectors[2])
+        print(eigenvectors_schur[2])
+        print(eigen_vector[2])
+        print("finished checking against library")
+        print()
 
     return eigen_value, eigen_vector, eigen_vector_cartesian
 
@@ -509,7 +547,7 @@ def eigen_3d_divergence(order: int, grid_space: float, div_wave: DivWave, full_r
 
     k = 2.0 * math.pi * div_wave.x_wavenumber_factor * 1.0e-5
     l = 2.0 * math.pi * div_wave.y_wavenumber_factor * 1.0e-5
-    a = 0.25 * 3.0 * grid_space * k
+    a = 0.25 * grid_space * k
     b = 0.25 * math.sqrt(3.0) * grid_space * l
     nn = 0.5 * grid_space * math.pi * div_wave.z_wavenumber_factor * 1.0e-5 * 2.0 # n detla_z / 2, the extra factor of 2 at the end may be needed for complete Fourier space
 
@@ -521,7 +559,7 @@ def eigen_3d_divergence(order: int, grid_space: float, div_wave: DivWave, full_r
     if order == 1:
         constant_2d = 1.0 # 8.0 * KD / h**2
         constant_hw = -math.sqrt(3) / 2.0 * h / delta_z # - 4.0 * math.sqrt(3.0) * KD / h / delta_z
-        constant_w = 1.j / math.sqrt(3.0) * h / delta_z # 8.0 / math.sqrt(3.0) * 1.j * KD / h / delta_z
+        constant_w = 1.j / math.sqrt(3.0) * h / delta_z # 8.j * KD / math.sqrt(3.0) h / delta_z, A_tri = sqrt(3) h^2 / 4
 
         diagonal_element = -1.0
         h_2d_11 = constant_2d * diagonal_element
@@ -547,14 +585,14 @@ def eigen_3d_divergence(order: int, grid_space: float, div_wave: DivWave, full_r
         constant_w = -18.0 / math.sqrt(3.0) * h / delta_z # -8.0 / math.sqrt(3.0) * KD / h / delta_z
 
         h_2d_11 = constant_2d * (math.cos(4.0*b) - 1.0)
-        h_2d_12 = constant_2d * (math.cos(a - 3.0*b) - math.cos(a + b))
-        h_2d_13 = constant_2d * (math.cos(a + 3.0*b) - math.cos(a - b))
+        h_2d_12 = constant_2d * (math.cos(3.0*a - 3.0*b) - math.cos(3.0*a + b))
+        h_2d_13 = constant_2d * (math.cos(3.0*a + 3.0*b) - math.cos(3.0*a - b))
         h_2d_21 = h_2d_12
-        h_2d_22 = constant_2d * (math.cos(2.0*a - 2.0*b) - 1.0)
-        h_2d_23 = constant_2d * (math.cos(2.0*b) - math.cos(2.0*a))
+        h_2d_22 = constant_2d * (math.cos(6.0*a - 2.0*b) - 1.0)
+        h_2d_23 = constant_2d * (math.cos(2.0*b) - math.cos(6.0*a))
         h_2d_31 = h_2d_13
         h_2d_32 = h_2d_23
-        h_2d_33 = constant_2d * (math.cos(2.0*a + 2.0*b) - 1.0)
+        h_2d_33 = constant_2d * (math.cos(6.0*a + 2.0*b) - 1.0)
 
         hw_1 = math.sin(0.5 * math.sqrt(3.0) * grid_space * l) * math.sin(nn)
         hw_2 = math.sin(-0.25 * 3.0 * grid_space * k + 0.25 * math.sqrt(3.0) * grid_space * l) * math.sin(nn)
@@ -638,7 +676,9 @@ def eigen_3d_divergence(order: int, grid_space: float, div_wave: DivWave, full_r
 def compute_wave_vector_component(
     eigen_vector_list: list[np.ndarray],
     div_wave: DivWave,
+    revert: bool = False,
     threeD: bool = False,
+    debug: bool = False,
 ) -> np.ndarray:
     """
                  /\
@@ -650,8 +690,12 @@ def compute_wave_vector_component(
     """
     if threeD:
         u1 = np.array([0.0, 1.0, 0.0], dtype=float)
-        u2 = np.array([0.5*math.sqrt(3.0), 0.5, 0.0], dtype=float)
-        u3 = np.array([-0.5*math.sqrt(3.0), 0.5, 0.0], dtype=float)
+        if revert:
+            u3 = np.array([0.5*math.sqrt(3.0), 0.5, 0.0], dtype=float)
+            u2 = np.array([-0.5*math.sqrt(3.0), 0.5, 0.0], dtype=float)
+        else:
+            u2 = np.array([0.5*math.sqrt(3.0), 0.5, 0.0], dtype=float)
+            u3 = np.array([-0.5*math.sqrt(3.0), 0.5, 0.0], dtype=float)
         u4 = np.array([0.0, 0.0, 1.0], dtype=float)
         wave_vector = np.array([div_wave.x_wavenumber_factor, div_wave.y_wavenumber_factor, div_wave.z_wavenumber_factor], dtype=float)
         wave_vector = wave_vector / math.sqrt(div_wave.x_wavenumber_factor**2 + div_wave.y_wavenumber_factor**2 + div_wave.z_wavenumber_factor**2)
@@ -669,8 +713,12 @@ def compute_wave_vector_component(
             eigen_vector_component[i] = np.abs(np.dot(wave_vector_component, eigen_vector_list[i]))
     else:
         u1 = np.array([0.0, 1.0], dtype=float)
-        u2 = np.array([0.5*math.sqrt(3.0), 0.5], dtype=float)
-        u3 = np.array([-0.5*math.sqrt(3.0), 0.5], dtype=float)
+        if revert:
+            u3 = np.array([0.5*math.sqrt(3.0), 0.5], dtype=float)
+            u2 = np.array([-0.5*math.sqrt(3.0), 0.5], dtype=float)
+        else:
+            u2 = np.array([0.5*math.sqrt(3.0), 0.5], dtype=float)
+            u3 = np.array([-0.5*math.sqrt(3.0), 0.5], dtype=float)
         wave_vector = np.array([div_wave.x_wavenumber_factor, div_wave.y_wavenumber_factor], dtype=float)
         wave_vector = wave_vector / math.sqrt(div_wave.x_wavenumber_factor**2 + div_wave.y_wavenumber_factor**2)
         wave_vector_component = np.array(
@@ -681,6 +729,10 @@ def compute_wave_vector_component(
             ],
             dtype=float,
         )
+        if debug:
+            assert len(eigen_vector_list) == 2
+            cross_product = np.cross(eigen_vector_list[0], eigen_vector_list[1])
+            print("wave_vector component: ", wave_vector_component, np.abs(np.dot(wave_vector_component, cross_product)))
         eigen_vector_component = np.zeros(len(eigen_vector_list), dtype=float)
         for i in range(len(eigen_vector_list)):
             eigen_vector_component[i] = np.abs(np.dot(wave_vector_component, eigen_vector_list[i]))
@@ -1049,7 +1101,7 @@ def plot_triedgedata(
     plot_data = np.where(normal_y < 1.0e-10, -plot_data, plot_data)
     plot_data_min = plot_data.min()
     plot_data_max = plot_data.max()
-    ax.plot(x_elat, plot_data, linestyle="solid", color="red", label="$u_1$")
+    ax.plot(x_elat, plot_data, linestyle="solid", color="red", label="$u_m$")
     if plot_analytic:
         v_scale = 180.0 / 7.5
         v_edge = (
@@ -1073,7 +1125,7 @@ def plot_triedgedata(
     plot_data = np.where(normal_y < 1.0e-10, -plot_data, plot_data)
     plot_data_min = min(plot_data_min, plot_data.min())
     plot_data_max = max(plot_data_max, plot_data.max())
-    ax.plot(x_elat, plot_data, linestyle="solid", color="blue", label="$u_2$")
+    ax.plot(x_elat, plot_data, linestyle="solid", color="blue", label="$u_r$")
     if plot_analytic:
         v_scale = 180.0 / 7.5
         v_edge = (

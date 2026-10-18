@@ -2829,8 +2829,8 @@ class SolveNonhydro:
                         graddiv_normal=input_z_fields.z_graddiv_normal,
                         graddiv_vertical=input_z_fields.z_graddiv_vertical,
                         vn=input_prognostic_state.vn,
-                        # w=input_prognostic_state.w,
-                        z_w_divdamp=input_z_fields.z_w_divdamp,
+                        z_w_divdamp=input_prognostic_state.w,
+                        # z_w_divdamp=input_z_fields.z_w_divdamp,
                         edge_horizontal_start=start_edge_nudging_plus1,
                         edge_horizontal_end=end_edge_local,
                         cell_horizontal_start=int32(0),
@@ -2847,8 +2847,8 @@ class SolveNonhydro:
                             graddiv_normal=self.z_graddiv2_normal,
                             graddiv_vertical=self.z_graddiv2_vertical,
                             vn=input_prognostic_state.vn,
-                            # w=input_prognostic_state.w,
-                            z_w_divdamp=input_z_fields.z_w_divdamp,
+                            z_w_divdamp=input_prognostic_state.w,
+                            # z_w_divdamp=input_z_fields.z_w_divdamp,
                             edge_horizontal_start=start_edge_nudging_plus1,
                             edge_horizontal_end=end_edge_local,
                             cell_horizontal_start=int32(0),
@@ -2863,8 +2863,8 @@ class SolveNonhydro:
                             graddiv_normal=self.z_graddiv2_normal_residual,
                             graddiv_vertical=self.z_graddiv2_vertical_residual,
                             vn=input_prognostic_state.vn,
-                            # w=input_prognostic_state.w,
-                            z_w_divdamp=input_z_fields.z_w_divdamp,
+                            z_w_divdamp=input_prognostic_state.w,
+                            # z_w_divdamp=input_z_fields.z_w_divdamp,
                             edge_horizontal_start=start_edge_nudging_plus1,
                             edge_horizontal_end=end_edge_local,
                             cell_horizontal_start=int32(0),
@@ -2880,8 +2880,8 @@ class SolveNonhydro:
                             graddiv_normal=self.z_graddiv2_normal,
                             graddiv_vertical=self.z_graddiv2_vertical,
                             vn=input_prognostic_state.vn,
-                            # w=input_prognostic_state.w,
-                            z_w_divdamp=input_z_fields.z_w_divdamp,
+                            z_w_divdamp=input_prognostic_state.w,
+                            # z_w_divdamp=input_z_fields.z_w_divdamp,
                             edge_horizontal_start=start_edge_nudging_plus1,
                             edge_horizontal_end=end_edge_local,
                             cell_horizontal_start=int32(0),
@@ -2981,7 +2981,7 @@ class SolveNonhydro:
         )
 
         aux_func_compute_divergence_damping(
-            prognostic_state[nnew],
+            prognostic_state[nnow],
             diagnostic_state_nh,
             z_fields,
             order=self.config.divergence_order,
@@ -3003,15 +3003,15 @@ class SolveNonhydro:
             do_3d_divergence_damping=self.config.do_3d_divergence_damping,
             order=self.config.divergence_order,
         )
-        apply_3d_divergence_damping_only_to_w(
-            prognostic_state[nnew].w,
-            z_fields.z_w_divdamp,
-            horizontal_start=int32(0),
-            horizontal_end=end_cell_local,
-            vertical_start=int32(1),
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
+        # apply_3d_divergence_damping_only_to_w(
+        #     prognostic_state[nnew].w,
+        #     z_fields.z_w_divdamp,
+        #     horizontal_start=int32(0),
+        #     horizontal_end=end_cell_local,
+        #     vertical_start=int32(1),
+        #     vertical_end=self.grid.num_levels,
+        #     offset_provider=self.grid.offset_providers,
+        # )
         aux_func_compute_divergence_damping(
             prognostic_state[nnew],
             diagnostic_state_nh,

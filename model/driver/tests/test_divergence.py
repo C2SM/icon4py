@@ -19,6 +19,7 @@ from cmath import sqrt as c_sqrt
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 from matplotlib import colors
 
@@ -269,7 +270,7 @@ def test_divergence_multiple_time_step():
     run_path = "./"
     experiment_type = ExperimentType.DIVCONVERGE
     serialization_type = SerializationType.SB
-    div_wave = DivWave(wave_type=WAVETYPE.X_WAVE, x_wavenumber_factor=17.0, y_wavenumber_factor=0.0)
+    div_wave = DivWave(wave_type=WAVETYPE.X_WAVE, x_wavenumber_factor=17.1, y_wavenumber_factor=0.0)
     log.critical(f"Experiment: {ExperimentType.DIVCONVERGE}")
     div_utils.print_config(div_wave)
 
@@ -893,8 +894,8 @@ def test_eigen_divergence():
     primal_normal_x = edge_geometry.primal_normal[0].ndarray
     primal_normal_y = edge_geometry.primal_normal[1].ndarray
 
-    for y in range(80):
-        for x in range(1):
+    for y in range(0, 1):
+        for x in range(0, 80):
             print("WAVE NUMBERS (X Y):", x, y)
             if x == 0 and y == 0:
                 continue
@@ -928,16 +929,16 @@ def test_eigen_divergence():
                 divergence_factor=0.0, order=1, grid_space=1000.0, div_wave=div_wave, debug=True
             )
             print()
-            eigen_vector = xp.asarray(eigen_vector)
-            # print("DOT BETWEEN VN AND EIGENVECTOR1: ", xp.dot(vn_ndarray[eoc[random_number]], eigen_vector[0]))
-            # print("DOT BETWEEN VN AND EIGENVECTOR2: ", xp.dot(vn_ndarray[eoc[random_number]], eigen_vector[1]))
-            # print("DOT BETWEEN VN AND EIGENVECTOR3: ", xp.dot(vn_ndarray[eoc[random_number]], eigen_vector[2]))
-            print("DIFF EIGENVECTOR1: ", np.abs(eigen_vector[0, 0] - 0.5 * np.sum(eigen_vector[0, 1:])), np.abs(eigen_vector[0, 1] + eigen_vector[0, 2]))
-            print("DIFF EIGENVECTOR2: ", np.abs(eigen_vector[1, 0] - 0.5 * np.sum(eigen_vector[1, 1:])), np.abs(eigen_vector[1, 1] + eigen_vector[1, 2]))
-            print("DIFF EIGENVECTOR3: ", np.abs(eigen_vector[2, 0] - 0.5 * np.sum(eigen_vector[2, 1:])), np.abs(eigen_vector[2, 1] + eigen_vector[2, 2]))
-            print()
-            print()
-            print()
+            # eigen_vector = xp.asarray(eigen_vector)
+            # # print("DOT BETWEEN VN AND EIGENVECTOR1: ", xp.dot(vn_ndarray[eoc[random_number]], eigen_vector[0]))
+            # # print("DOT BETWEEN VN AND EIGENVECTOR2: ", xp.dot(vn_ndarray[eoc[random_number]], eigen_vector[1]))
+            # # print("DOT BETWEEN VN AND EIGENVECTOR3: ", xp.dot(vn_ndarray[eoc[random_number]], eigen_vector[2]))
+            # print("DIFF EIGENVECTOR1: ", np.abs(eigen_vector[0, 0] - 0.5 * np.sum(eigen_vector[0, 1:])), np.abs(eigen_vector[0, 1] + eigen_vector[0, 2]))
+            # print("DIFF EIGENVECTOR2: ", np.abs(eigen_vector[1, 0] - 0.5 * np.sum(eigen_vector[1, 1:])), np.abs(eigen_vector[1, 1] + eigen_vector[1, 2]))
+            # print("DIFF EIGENVECTOR3: ", np.abs(eigen_vector[2, 0] - 0.5 * np.sum(eigen_vector[2, 1:])), np.abs(eigen_vector[2, 1] + eigen_vector[2, 2]))
+            # print()
+            # print()
+            # print()
 
             # eigen_value, eigen_vector, eigen_vector_cartesian = div_utils.eigen_divergence(
             #     divergence_factor=0.0, order=2, grid_space=1000.0, div_wave=div_wave, debug=True
@@ -947,7 +948,20 @@ def test_eigen_divergence():
             # print("DOT BETWEEN VN AND EIGENVECTOR1: ", xp.dot(vn_ndarray[eoc[random_number]], eigen_vector[0]))
             # print("DOT BETWEEN VN AND EIGENVECTOR2: ", xp.dot(vn_ndarray[eoc[random_number]], eigen_vector[1]))
             # print("DOT BETWEEN VN AND EIGENVECTOR3: ", xp.dot(vn_ndarray[eoc[random_number]], eigen_vector[2]))
-            # print()
+
+            # non_zero_eigen_vector, non_zero_eigen_value = [], []
+            # for eigen in range(3):
+            #     if np.abs(eigen_value[eigen]) > 1.e-10:
+            #         non_zero_eigen_vector.append(eigen_vector[eigen])
+            #         non_zero_eigen_value.append(eigen_value[eigen])
+            # assert len(non_zero_eigen_vector) == 2
+            # eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave, threeD=False, debug=True)
+            # print("eigenvalue component: ", eigen_vector_wave_component)
+            # if eigen_vector_wave_component[0] > eigen_vector_wave_component[1]:
+            #     import sys
+            #     print("irregular eigen value spotted!!!: ")
+            #     # sys.exit(0)
+            print()
             # print()
             # print()
 
@@ -955,10 +969,10 @@ def test_eigen_divergence():
 
 
 def plot_eigen_divergence():
-    x_grid = np.arange(0.1, 50.1, 0.1)
-    y_grid = np.arange(0.1, 50.1, 0.1)
-    x_wave = 2.0 * math.pi / 10000.0 * x_grid * 100.0
-    y_wave = 2.0 * math.pi / 10000.0 * y_grid * 100.0
+    x_grid = np.arange(0.5, 100.0, 0.5)
+    y_grid = np.arange(0.5, 100.0, 0.5)
+    x_wave = 2.0 * math.pi / 100000.0 * x_grid * 1000.0
+    y_wave = 2.0 * math.pi / 100000.0 * y_grid * 1000.0
     xy_xwave, xy_ywave = np.meshgrid(x_wave, y_wave, indexing="ij")
 
     xdamp1_max = np.zeros(x_grid.shape, dtype=float)
@@ -971,11 +985,22 @@ def plot_eigen_divergence():
     xydamp1_actual = np.zeros(xy_xwave.shape, dtype=float)
     xydamp2 = np.zeros(xy_xwave.shape, dtype=float)
 
+    proj_xdamp1_max = np.zeros(x_grid.shape, dtype=float)
+    proj_xdamp1_actual = np.zeros(x_grid.shape, dtype=float)
+    proj_xdamp2 = np.zeros(x_grid.shape, dtype=float)
+    proj_ydamp1_max = np.zeros(y_grid.shape, dtype=float)
+    proj_ydamp1_actual = np.zeros(y_grid.shape, dtype=float)
+    proj_ydamp2 = np.zeros(y_grid.shape, dtype=float)
+    proj_xydamp1_max = np.zeros(xy_xwave.shape, dtype=float)
+    proj_xydamp1_actual = np.zeros(xy_xwave.shape, dtype=float)
+    proj_xydamp2 = np.zeros(xy_xwave.shape, dtype=float)
+
     for i, x_wavenumber in enumerate(x_grid):
         if x_wavenumber == 0.0:
             continue
         div_wave = DivWave(
-            wave_type=WAVETYPE.X_WAVE, x_wavenumber_factor=x_wavenumber, y_wavenumber_factor=0.0
+            # wave_type=WAVETYPE.X_WAVE, x_wavenumber_factor=x_wavenumber, y_wavenumber_factor=0.0
+            wave_type=WAVETYPE.X_WAVE, x_wavenumber_factor=x_wavenumber, y_wavenumber_factor=0.0,
         )
         eigen_value1, eigen_vector1, eigen_vector_cartesian1 = div_utils.eigen_divergence(
             divergence_factor=0.0, order=1, grid_space=1000.0, div_wave=div_wave
@@ -984,36 +1009,43 @@ def plot_eigen_divergence():
             divergence_factor=0.0, order=2, grid_space=1000.0, div_wave=div_wave
         )
         non_zero_eigen_vector, non_zero_eigen_value = [], []
-        for eigen in range(3):
-            if np.abs(eigen_value1[eigen]) > 1.e-10:
-                non_zero_eigen_vector.append(eigen_vector1[eigen])
-                non_zero_eigen_value.append(eigen_value1[eigen])
-        assert len(non_zero_eigen_vector) == 2
-        eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave)
-        if np.abs(eigen_vector_wave_component[0]) > np.abs(eigen_vector_wave_component[1]):
-            xdamp1_actual[i] = non_zero_eigen_value[0]
-            xdamp1_max[i] = non_zero_eigen_value[1]
-        else:
-            xdamp1_max[i] = non_zero_eigen_value[0]
-            xdamp1_actual[i] = non_zero_eigen_value[1]
+        # for eigen in range(3):
+        #     if np.abs(eigen_value1[eigen]) > 1.e-10:
+        #         non_zero_eigen_vector.append(eigen_vector1[eigen])
+        #         non_zero_eigen_value.append(eigen_value1[eigen])
+        # assert len(non_zero_eigen_vector) == 2
+        # eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave)
+        # if np.abs(eigen_vector_wave_component[0]) > np.abs(eigen_vector_wave_component[1]):
+        #     xdamp1_actual[i] = non_zero_eigen_value[0]
+        #     xdamp1_max[i] = non_zero_eigen_value[1]
+        #     proj_xdamp1_actual[i] = eigen_vector_wave_component[0]
+        #     proj_xdamp1_max[i] = eigen_vector_wave_component[1]
+        # else:
+        #     xdamp1_max[i] = non_zero_eigen_value[0]
+        #     xdamp1_actual[i] = non_zero_eigen_value[1]
+        #     proj_xdamp1_max[i] = eigen_vector_wave_component[0]
+        #     proj_xdamp1_actual[i] = eigen_vector_wave_component[1]
+        # non_zero_eigen_vector.append(eigen_vector1[np.argmax(np.abs(eigen_value1))])
         # xdamp1_max[i] = eigen_value1[np.argmax(np.abs(eigen_value1))]
-        # eigen_value1 = np.sort(eigen_value1)
+        # # eigen_value1 = np.sort(eigen_value1)
+        # argsort = eigen_value1.argsort()
+        # eigen_value1 = eigen_value1[argsort]
+        # eigen_vector1 = eigen_vector1[argsort]
+        # non_zero_eigen_vector.append(eigen_vector1[1])
         # xdamp1_actual[i] = eigen_value1[1]
+        # eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave)
+        # proj_xdamp1_max[i] = eigen_vector_wave_component[0]
+        # proj_xdamp1_actual[i] = eigen_vector_wave_component[1]
+        xdamp1_actual[i] = eigen_value1[1]
+        xdamp1_max[i] = eigen_value1[2]
+        non_zero_eigen_vector.append(eigen_vector1[1])
+        non_zero_eigen_vector.append(eigen_vector1[2])
+        eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave)
+        proj_xdamp1_actual[i] = eigen_vector_wave_component[0]
+        proj_xdamp1_max[i] = eigen_vector_wave_component[1]
+
         xdamp2[i] = eigen_value2[np.argmax(np.abs(eigen_value2))]
-        # is_found1, is_found2 = False, False
-        # threshold = 1.e-6
-        # for k in range(3):
-        #     if np.abs(np.abs(eigen_vector_cartesian1[k, 0]) - 1.0) < threshold:
-        #         assert np.abs(np.abs(eigen_vector_cartesian1[k, 1]) - 0.0) < threshold, f"{x_wavenumber} -- {eigen_vector_cartesian1[k, 1]}"
-        #         assert is_found1 == True, f"Two overlapped eigen vectors 1 for x!!"
-        #         xdamp1[i] = eigen_value1[k]
-        #         is_found1 = True
-        #     if np.abs(np.abs(eigen_vector_cartesian2[k, 0]) - 1.0) < threshold:
-        #         assert np.abs(np.abs(eigen_vector_cartesian2[k, 1]) - 0.0) < threshold, f"{x_wavenumber} -- {eigen_vector_cartesian2[k, 1]}"
-        #         assert is_found2 == True, f"Two overlapped eigen vectors 2 for x!!"
-        #         xdamp2[i] = eigen_value2[k]
-        #         is_found2 = True
-    is_found1, is_found2 = False, False
+        
     for i, y_wavenumber in enumerate(y_grid):
         if y_wavenumber == 0.0:
             continue
@@ -1027,69 +1059,133 @@ def plot_eigen_divergence():
             divergence_factor=0.0, order=2, grid_space=1000.0, div_wave=div_wave
         )
         non_zero_eigen_vector, non_zero_eigen_value = [], []
-        for eigen in range(3):
-            if np.abs(eigen_value1[eigen]) > 1.e-10:
-                non_zero_eigen_vector.append(eigen_vector1[eigen])
-                non_zero_eigen_value.append(eigen_value1[eigen])
-        assert len(non_zero_eigen_vector) == 2
+        ydamp1_actual[i] = eigen_value1[1]
+        ydamp1_max[i] = eigen_value1[2]
+        non_zero_eigen_vector.append(eigen_vector1[1])
+        non_zero_eigen_vector.append(eigen_vector1[2])
         eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave)
-        # print(y_wavenumber, ": ", wave_vector_component_1, " == ", non_zero_eigen_vector[0])
-        # print(y_wavenumber, ": ", wave_vector_component_2, " == ", non_zero_eigen_vector[1])
-        if np.abs(eigen_vector_wave_component[0]) > np.abs(eigen_vector_wave_component[1]):
-            ydamp1_actual[i] = non_zero_eigen_value[0]
-            ydamp1_max[i] = non_zero_eigen_value[1]
-        else:
-            ydamp1_max[i] = non_zero_eigen_value[0]
-            ydamp1_actual[i] = non_zero_eigen_value[1]
+        proj_ydamp1_actual[i] = eigen_vector_wave_component[0]
+        proj_ydamp1_max[i] = eigen_vector_wave_component[1]
+
         ydamp2[i] = eigen_value2[np.argmax(np.abs(eigen_value2))]
+
+
+    # xtick = [0, math.pi / 4.0, math.pi / 2.0, math.pi * 3.0 / 4.0, math.pi]
+    # xtick_label = (
+    #     "$2\\pi/8\\Delta x$",
+    #     "$2\\pi/4\\Delta x$",
+    #     "$3\\pi/4\\Delta x$",
+    #     "$2\\pi/2\\Delta x$",
+    # )
+    xtick = [0, math.pi / 2.0, math.pi, math.pi * 3.0 / 2.0, 2.0 * math.pi]
+    xtick_label = (
+        "0",
+        "$\\pi/2h$",
+        "$2\\pi/2h$",
+        "$3\\pi/2h$",
+        "$2\\pi/h$",
+    )
+
+    scale_to_wavenumber = 2.0 * math.pi / 100000.0 * 1000.0
+    hexagon_min_x_wavelength = scale_to_wavenumber * 100.0 / 3.0 # 3h
+    triangle_min_x_wavelength = scale_to_wavenumber * 100.0 # h
+    hexagon_min_y_wavelength = scale_to_wavenumber * 100.0 / (2.0 * math.sqrt(3.0)) # 2sqrt(3)h 
+    triangle_min_y_wavelength = scale_to_wavenumber * 100.0 / math.sqrt(3.0) # sqrt(3)h
+
+    def force_aspect(ax,aspect=1):
+        # im = ax.get_images()
+        # extent =  im.get_extent()
+        # extent = ax.get_window_extent()
+        # ax.set_aspect(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect)
+        x_limits = ax.get_xlim()
+        y_limits = ax.get_ylim()
+        ax.set_aspect(abs((x_limits[1]-x_limits[0])/(y_limits[1]-y_limits[0]))/aspect)
+        # ax.set_aspect('equal')
 
     plt.close()
 
-    f, ax = plt.subplots()
+    f, ax = plt.subplots(nrows=1, ncols=2)
+    # for i, item in enumerate(xdamp1_max):
+    #     print("DE: ", f"{x_grid[i]:.5f}, {item:.5f}, {xdamp2[i]:.5f}")
+    ax[0].plot(x_wave, xdamp1_max, label="order 1 ($\\lambda_1$)")
+    ax[0].plot(x_wave, xdamp1_actual, label="order 1 ($\\lambda_2$)")
+    ax[0].plot(x_wave, xdamp2, label="order 2")
+    ax[0].plot(np.full(11, fill_value=hexagon_min_x_wavelength), np.linspace(-6.0, 0.0, 11), c='black', linestyle='dashed')
+    ax[0].plot(np.full(11, fill_value=triangle_min_x_wavelength), np.linspace(-6.0, 0.0, 11), c='black', linestyle='solid')
+    ax[0].set_ylabel("eigenvalue")
+    ax[0].set_xlabel("x wavenumber")
+    ax[0].set_xticks(xtick)
+    ax[0].set_ylim(-6.0, 0.0)
+    ax[0].set_title("(a) Eigenvalue in x-axis")
+    labels = [item.get_text() for item in ax[0].get_xticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[0].set_xticklabels(labels)
 
-    for i, item in enumerate(xdamp1_max):
-        print("DE: ", f"{x_grid[i]:.5f}, {item:.5f}, {xdamp2[i]:.5f}")
-    ax.plot(x_wave, xdamp1_max, label="order 1 (eigen-1)")
-    ax.plot(x_wave, xdamp1_actual, label="order 1 (eigen-2)")
-    ax.plot(x_wave, xdamp2, label="order 2")
-    # ax.set_xscale("log")
-    # ax.set_yscale("log")
-    ax.set_ylabel("eigenvalue")
-    ax.set_xlabel("x wavenumber")
-    xtick = [0, math.pi / 4.0, math.pi / 2.0, math.pi * 3.0 / 4.0, math.pi]
-    ax.set_xticks(xtick)
-    # ax.set_title("Mean error in divergence")
-    labels = [item.get_text() for item in ax.get_xticklabels()]
-    labels[1] = "$2\\pi/8\\Delta x$"
-    labels[2] = "$2\\pi/4\\Delta x$"
-    labels[3] = "$3\\pi/4\\Delta x$"
-    labels[4] = "$2\\pi/2\\Delta x$"
-    ax.set_xticklabels(labels)
-    plt.legend()
-    plt.savefig("plot_xdamp.pdf", format="pdf", dpi=500)
+    ax[1].plot(y_wave, ydamp1_max, label="order 1 ($\\lambda_1$)")
+    ax[1].plot(y_wave, ydamp1_actual, label="order 1 ($\\lambda_2$)")
+    ax[1].plot(y_wave, ydamp2, label="order 2")
+    ax[1].plot(np.full(11, fill_value=hexagon_min_y_wavelength), np.linspace(-6.0, 0.0, 11), c='black', linestyle='dashed')
+    ax[1].plot(np.full(11, fill_value=triangle_min_y_wavelength), np.linspace(-6.0, 0.0, 11), c='black', linestyle='solid')
+    ax[1].set_ylabel("eigenvalue")
+    ax[1].set_xlabel("y wavenumber")
+    ax[1].set_xticks(xtick)
+    ax[1].set_title("(b) Eigenvalue in y-axis")
+    ax[1].set_ylim(-6.0, 0.0)
+    labels = [item.get_text() for item in ax[1].get_xticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[1].set_xticklabels(labels)
+
+    ax[0].legend(prop={'size': 7.1}, loc='lower left', bbox_to_anchor=(0.46,0.0))
+    ax[1].legend(prop={'size': 7.1}, loc='lower left', bbox_to_anchor=(0.57,0.0))
+    force_aspect(ax[0], aspect=1)
+    force_aspect(ax[1], aspect=1)
+    f.tight_layout(w_pad=2)
+    plt.savefig("figure_damp_in_x_and_y_axis.pdf", format="pdf", dpi=500)
 
     plt.clf()
+    f, ax = plt.subplots(nrows=1, ncols=2)
+    ax[0].plot(x_wave, proj_xdamp1_max, label="order 1 ($\\lambda_1$)")
+    ax[0].plot(x_wave, proj_xdamp1_actual, label="order 1 ($\\lambda_2$)")
+    ax[0].set_ylabel("Projection")
+    ax[0].set_xlabel("x wavenumber")
+    ax[0].set_xticks(xtick)
+    ax[0].set_title("(a) Projection in x-axis")
+    labels = [item.get_text() for item in ax[0].get_xticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[0].set_xticklabels(labels)
 
-    f, ax = plt.subplots()
-
-    ax.plot(y_wave, ydamp1_max, label="order 1 (eigen-1)")
-    ax.plot(y_wave, ydamp1_actual, label="order 1 (eigen-2)")
-    ax.plot(y_wave, ydamp2, label="order 2")
-    # ax.set_xscale("log")
-    # ax.set_yscale("log")
-    ax.set_ylabel("eigenvalue")
-    ax.set_xlabel("y wavenumber")
-    xtick = [0, math.pi / 4.0, math.pi / 2.0, math.pi * 3.0 / 4.0, math.pi]
-    ax.set_xticks(xtick)
-    # ax.set_title("Mean error in divergence")
-    labels = [item.get_text() for item in ax.get_xticklabels()]
-    labels[1] = "$2\\pi/8\\Delta x$"
-    labels[2] = "$2\\pi/4\\Delta x$"
-    labels[3] = "$3\\pi/4\\Delta x$"
-    labels[4] = "$2\\pi/2\\Delta x$"
-    ax.set_xticklabels(labels)
-    plt.legend()
-    plt.savefig("plot_ydamp.pdf", format="pdf", dpi=500)
+    ax[1].plot(y_wave, proj_ydamp1_max, label="order 1 ($\\lambda_1$)")
+    ax[1].plot(y_wave, proj_ydamp1_actual, label="order 1 ($\\lambda_2$)")
+    ax[1].set_ylabel("Projection")
+    ax[1].set_xlabel("y wavenumber")
+    ax[1].set_xticks(xtick)
+    ax[1].set_title("(b) Projection in y-axis")
+    labels = [item.get_text() for item in ax[1].get_xticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[1].set_xticklabels(labels)
+    
+    ax[0].legend(prop={'size': 8})
+    ax[1].legend(prop={'size': 8})
+    force_aspect(ax[0], aspect=1)
+    force_aspect(ax[1], aspect=1)
+    f.tight_layout(w_pad=2)
+    plt.savefig("figure_proj_in_x_and_y_axis.pdf", format="pdf", dpi=500)
 
     for i, x_wavenumber in enumerate(x_grid):
         for j, y_wavenumber in enumerate(y_grid):
@@ -1106,121 +1202,258 @@ def plot_eigen_divergence():
             eigen_value2, eigen_vector2, eigen_vector_cartesian2 = div_utils.eigen_divergence(
                 divergence_factor=0.0, order=2, grid_space=1000.0, div_wave=div_wave
             )
-            # total_diff = np.full(3, fill_value=-100.0, dtype=float)
+
+            non_zero_eigen_vector, non_zero_eigen_value = [], []
             # for eigen in range(3):
             #     if np.abs(eigen_value1[eigen]) > 1.e-10:
-            #         total_diff[eigen] = np.abs(eigen_vector1[eigen, 0] - 0.5 * np.sum(eigen_vector1[eigen, 1:])) + np.abs(eigen_vector1[eigen, 1] + eigen_vector1[eigen, 2])
-
-            # diff_max_arg = np.argmax(total_diff)
-            # diff_min_arg = np.argmin(total_diff)
-            # xydamp1_max[i, j] = eigen_value1[diff_max_arg]
-            # for eigen in range(3):
-            #     if eigen != diff_min_arg and eigen != diff_max_arg:
-            #         xydamp1_actual[i, j] = eigen_value1[eigen]
-            #         break
-            non_zero_eigen_vector, non_zero_eigen_value = [], []
-            for eigen in range(3):
-                if np.abs(eigen_value1[eigen]) > 1.e-10:
-                    non_zero_eigen_vector.append(eigen_vector1[eigen])
-                    non_zero_eigen_value.append(eigen_value1[eigen])
-            assert len(non_zero_eigen_vector) == 2
+            #         non_zero_eigen_vector.append(eigen_vector1[eigen])
+            #         non_zero_eigen_value.append(eigen_value1[eigen])
+            # assert len(non_zero_eigen_vector) == 2
+            # eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave)
+            # if np.abs(eigen_vector_wave_component[0]) > np.abs(eigen_vector_wave_component[1]):
+            #     xydamp1_actual[i, j] = non_zero_eigen_value[0]
+            #     xydamp1_max[i, j] = non_zero_eigen_value[1]
+            # else:
+            #     xydamp1_max[i, j] = non_zero_eigen_value[0]
+            #     xydamp1_actual[i, j] = non_zero_eigen_value[1]
+            # non_zero_eigen_vector.append(eigen_vector1[np.argmax(np.abs(eigen_value1))])
+            # xydamp1_max[i, j] = eigen_value1[np.argmax(np.abs(eigen_value1))]
+            # # eigen_value1 = np.sort(eigen_value1)
+            # argsort = eigen_value1.argsort()
+            # eigen_value1 = eigen_value1[argsort]
+            # eigen_vector1 = eigen_vector1[argsort]
+            # non_zero_eigen_vector.append(eigen_vector1[1])
+            # xydamp1_actual[i, j] = eigen_value1[1]
+            # eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave)
+            # proj_xydamp1_max[i, j] = eigen_vector_wave_component[0]
+            # proj_xydamp1_actual[i, j] = eigen_vector_wave_component[1]
+            xydamp1_actual[i, j] = eigen_value1[1]
+            xydamp1_max[i, j] = eigen_value1[2]
+            non_zero_eigen_vector.append(eigen_vector1[1])
+            non_zero_eigen_vector.append(eigen_vector1[2])
             eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave)
-            if np.abs(eigen_vector_wave_component[0]) > np.abs(eigen_vector_wave_component[1]):
-                xydamp1_actual[i, j] = non_zero_eigen_value[0]
-                xydamp1_max[i, j] = non_zero_eigen_value[1]
-            else:
-                xydamp1_max[i, j] = non_zero_eigen_value[0]
-                xydamp1_actual[i, j] = non_zero_eigen_value[1]
-    
+            proj_xydamp1_actual[i, j] = eigen_vector_wave_component[0]
+            proj_xydamp1_max[i, j] = eigen_vector_wave_component[1]
+
             xydamp2[i, j] = eigen_value2[np.argmax(np.abs(eigen_value2))]
 
     xydamp1_max_ind = np.unravel_index(np.argmax(xydamp1_max, axis=None), xydamp1_max.shape)
     print("MAX MAX: ", xydamp1_max[xydamp1_max_ind], xydamp1_max_ind)
+
+
     plt.clf()
-    f, ax = plt.subplots()
+    f, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 6.66666))
     # cmap = plt.get_cmap('plasma')
     cmap = plt.get_cmap("gist_rainbow")
     cmap = cmap.reversed()
     boundaries = np.linspace(-5.0, 0.0, 101)
     lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
-    cp = ax.contourf(xy_xwave, xy_ywave, xydamp1_max, cmap=cmap, levels=boundaries, norm=lnorm)
-    cb1 = f.colorbar(cp, location="right")
+    cp = ax[0].contourf(xy_xwave, xy_ywave, xydamp1_max, cmap=cmap, levels=boundaries, norm=lnorm)
+    # cax = f.add_axes([ax[0].get_position().x1+0.01,ax[0].get_position().y0,0.02,ax[0].get_position().height])
+    # cb1 = plt.colorbar(cp, ax=cax) #, location="right"
+    divider = make_axes_locatable(ax[0])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+    
 
-    ax.set_xlabel("x wavenumber")
-    ax.set_ylabel("y wavenumber")
-    tick = [0, math.pi / 4.0, math.pi / 2.0, math.pi * 3.0 / 4.0, math.pi]
-    ax.set_xticks(tick)
-    ax.set_yticks(tick)
-    labels = [item.get_text() for item in ax.get_xticklabels()]
-    labels[1] = "$2\\pi/8\\Delta x$"
-    labels[2] = "$2\\pi/4\\Delta x$"
-    labels[3] = "$3\\pi/4\\Delta x$"
-    labels[4] = "$2\\pi/2\\Delta x$"
-    ax.set_xticklabels(labels)
-    labels = [item.get_text() for item in ax.get_yticklabels()]
-    labels[1] = "$2\\pi/8\\Delta x$"
-    labels[2] = "$2\\pi/4\\Delta x$"
-    labels[3] = "$3\\pi/4\\Delta x$"
-    labels[4] = "$2\\pi/2\\Delta x$"
-    ax.set_yticklabels(labels)
-    plt.savefig("fig_xydamp1_max.pdf", format="pdf", dpi=400)
+    ax[0].set_xlabel("x wavenumber")
+    ax[0].set_ylabel("y wavenumber")
+    ax[0].set_xticks(xtick)
+    ax[0].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[0].get_xticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[0].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[0].get_yticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[0].set_yticklabels(labels)
 
-    plt.clf()
-    f, ax = plt.subplots()
     boundaries = np.linspace(-5.0, 0.0, 101)
     lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
-    cp = ax.contourf(xy_xwave, xy_ywave, xydamp1_actual, cmap=cmap, levels=boundaries, norm=lnorm)
-    cb1 = f.colorbar(cp, location="right")
+    cp = ax[1].contourf(xy_xwave, xy_ywave, xydamp1_actual, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[1])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+    # cb1 = plt.colorbar(cp, ax=ax[1], location="right")
 
-    ax.set_xlabel("x wavenumber")
-    ax.set_ylabel("y wavenumber")
-    tick = [0, math.pi / 4.0, math.pi / 2.0, math.pi * 3.0 / 4.0, math.pi]
-    ax.set_xticks(tick)
-    ax.set_yticks(tick)
-    labels = [item.get_text() for item in ax.get_xticklabels()]
-    labels[1] = "$2\\pi/8\\Delta x$"
-    labels[2] = "$2\\pi/4\\Delta x$"
-    labels[3] = "$3\\pi/4\\Delta x$"
-    labels[4] = "$2\\pi/2\\Delta x$"
-    ax.set_xticklabels(labels)
-    labels = [item.get_text() for item in ax.get_yticklabels()]
-    labels[1] = "$2\\pi/8\\Delta x$"
-    labels[2] = "$2\\pi/4\\Delta x$"
-    labels[3] = "$3\\pi/4\\Delta x$"
-    labels[4] = "$2\\pi/2\\Delta x$"
-    ax.set_yticklabels(labels)
-    plt.savefig("fig_xydamp1_actual.pdf", format="pdf", dpi=400)
+    ax[1].set_xlabel("x wavenumber")
+    ax[1].set_ylabel("y wavenumber")
+    ax[1].set_xticks(xtick)
+    ax[1].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[1].get_xticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[1].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[1].get_yticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[1].set_yticklabels(labels)
+
+    ax[0].set_title("(a) First eigenvalue")
+    ax[1].set_title("(b) Second eigenvalue")
+    force_aspect(ax[0], aspect=1)
+    force_aspect(ax[1], aspect=1)
+    f.tight_layout(w_pad=2)
+    plt.savefig("figure_order1_2D_damp.pdf", format="pdf", dpi=400)
+
+    plt.clf()
+    f, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 6.66666))
+    cmap = plt.get_cmap("gist_rainbow")
+    cmap = cmap.reversed()
+    boundaries = np.linspace(0.0, 1.5, 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[0].contourf(xy_xwave, xy_ywave, proj_xydamp1_max, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[0])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+    # cb1 = plt.colorbar(cp, ax=ax[0], location="right")
+
+    ax[0].set_xlabel("x wavenumber")
+    ax[0].set_ylabel("y wavenumber")
+    ax[0].set_xticks(xtick)
+    ax[0].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[0].get_xticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[0].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[0].get_yticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[0].set_yticklabels(labels)
+
+    boundaries = np.linspace(0.0, 1.5, 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[1].contourf(xy_xwave, xy_ywave, proj_xydamp1_actual, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[1])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+    # cb1 = plt.colorbar(cp, ax=ax[1], location="right")
+
+    ax[1].set_xlabel("x wavenumber")
+    ax[1].set_ylabel("y wavenumber")
+    ax[1].set_xticks(xtick)
+    ax[1].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[1].get_xticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[1].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[1].get_yticklabels()]
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
+    ax[1].set_yticklabels(labels)
+
+    ax[0].set_title("(a) First projection coefficient")
+    ax[1].set_title("(b) Second projection coefficient")
+    force_aspect(ax[0], aspect=1)
+    force_aspect(ax[1], aspect=1)
+    f.tight_layout(w_pad=2)
+    plt.savefig("figure_order1_2D_proj.pdf", format="pdf", dpi=400)
+
 
     plt.clf()
     f, ax = plt.subplots()
     boundaries = np.linspace(-5.0, 0.0, 101)
     lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
     cp = ax.contourf(xy_xwave, xy_ywave, xydamp2, cmap=cmap, levels=boundaries, norm=lnorm)
-    cb1 = f.colorbar(cp, location="right")
+    cb1 = plt.colorbar(cp, location="right", format='%.2f')
 
     ax.set_xlabel("x wavenumber")
     ax.set_ylabel("y wavenumber")
-    tick = [0, math.pi / 4.0, math.pi / 2.0, math.pi * 3.0 / 4.0, math.pi]
-    ax.set_xticks(tick)
-    ax.set_yticks(tick)
+    ax.set_xticks(xtick)
+    ax.set_yticks(xtick)
     labels = [item.get_text() for item in ax.get_xticklabels()]
-    labels[1] = "$2\\pi/8\\Delta x$"
-    labels[2] = "$2\\pi/4\\Delta x$"
-    labels[3] = "$3\\pi/4\\Delta x$"
-    labels[4] = "$2\\pi/2\\Delta x$"
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
     ax.set_xticklabels(labels)
     labels = [item.get_text() for item in ax.get_yticklabels()]
-    labels[1] = "$2\\pi/8\\Delta x$"
-    labels[2] = "$2\\pi/4\\Delta x$"
-    labels[3] = "$3\\pi/4\\Delta x$"
-    labels[4] = "$2\\pi/2\\Delta x$"
+    labels[0] = xtick_label[0]
+    labels[1] = xtick_label[1]
+    labels[2] = xtick_label[2]
+    labels[3] = xtick_label[3]
+    labels[4] = xtick_label[4]
     ax.set_yticklabels(labels)
-    plt.savefig("fig_xydamp2.pdf", format="pdf", dpi=400)
+
+    ax.set_title("Eigenvalue")
+    plt.savefig("figure_order2_2D_damp.pdf", format="pdf", dpi=400)
 
     print("MEAN VALUE OF DIV1: ", np.mean(xydamp1_max), np.mean(xydamp1_actual))
     print("MEAN VALUE OF DIV2: ", np.mean(xydamp2))
 
 
+def test_debug():
+    x_grid = np.arange(1.0, 51.0, 1.0)
+    y_grid = math.sqrt(3.0) * x_grid
+    x_wave = 2.0 * math.pi / 100000.0 * x_grid * 1000.0
+    y_wave = math.sqrt(3.0) * x_wave
+
+    x_grid = np.arange(1.0, 51.0, 1.0)
+    y_grid = math.sqrt(3.0) * x_grid
+    x_wave = 2.0 * math.pi / 100000.0 * x_grid * 1000.0
+    y_wave = math.sqrt(3.0) * x_wave
+
+    # for i, x_wavenumber in enumerate(x_grid):
+    #     if x_wavenumber == 0.0:
+    #         continue
+    #     div_wave = DivWave(
+    #         wave_type=WAVETYPE.X_WAVE, x_wavenumber_factor=x_wavenumber, y_wavenumber_factor=0.0
+    #     )
+    #     eigen_value1, eigen_vector1, eigen_vector_cartesian1 = div_utils.eigen_divergence(
+    #         divergence_factor=0.0, order=1, grid_space=1000.0, div_wave=div_wave
+    #     )
+    #     non_zero_eigen_vector, non_zero_eigen_value = [], []
+    #     non_zero_eigen_vector.append(eigen_vector1[1])
+    #     non_zero_eigen_vector.append(eigen_vector1[2])
+    #     eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave)
+    #     print(x_wavenumber, ' === ', non_zero_eigen_vector, '  -----  ', eigen_vector_wave_component)
+
+    print('')
+    print('////////////////////////////////////////////////')
+    print('')
+
+    for i, x_wavenumber in enumerate(x_grid):
+        if x_wavenumber == 0.0:
+            continue
+        div_wave = DivWave(
+            wave_type=WAVETYPE.X_AND_Y_WAVE, x_wavenumber_factor=x_wavenumber, y_wavenumber_factor=y_grid[i]
+        )
+        eigen_value1, eigen_vector1, eigen_vector_cartesian1 = div_utils.eigen_divergence(
+            divergence_factor=0.0, order=1, grid_space=1000.0, div_wave=div_wave
+        )
+        non_zero_eigen_vector, non_zero_eigen_value = [], []
+        non_zero_eigen_vector.append(eigen_vector1[1])
+        non_zero_eigen_vector.append(eigen_vector1[2])
+        eigen_vector_wave_component = div_utils.compute_wave_vector_component([non_zero_eigen_vector[0], non_zero_eigen_vector[1]], div_wave)
+        print(x_wavenumber, ' === ', non_zero_eigen_vector, '  -----  ', eigen_vector_wave_component)
+
+    
 if __name__ == "__main__":
     # test_divergence_single_time_step()
     # test_divergence_multiple_time_step()
@@ -1228,5 +1461,7 @@ if __name__ == "__main__":
     # test_divergence_single_time_step_on_globe()
     # test_divergence_multiple_time_step_on_globe()
 
-    # test_eigen_divergence()
-    plot_eigen_divergence()
+    test_eigen_divergence()
+    # plot_eigen_divergence()
+
+    # test_debug()

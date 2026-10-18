@@ -6,6 +6,7 @@ from cmath import sqrt as c_sqrt, exp as c_exp
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import scipy.linalg
 import xarray as xr
@@ -233,9 +234,12 @@ def test_plot_3d_divergence():
     # x_grid = np.arange(0.1, 99.9, 0.1)
     # y_grid = np.arange(0.1, 99.9, 0.1)
     # z_grid = np.arange(0.1, 99.9, 0.1)
-    x_grid = np.arange(0.1, 50.1, 0.1)
-    y_grid = np.arange(0.1, 50.1, 0.1)
-    z_grid = np.arange(0.1, 50.1, 0.1)
+    x_grid = np.arange(0.2, 50.2, 0.2)
+    y_grid = np.arange(0.2, 50.2, 0.2)
+    z_grid = np.arange(0.2, 50.2, 0.2)
+    # x_grid = np.arange(2.0, 52.0, 2.0)
+    # y_grid = np.arange(2.0, 52.0, 2.0)
+    # z_grid = np.arange(2.0, 52.0, 2.0)
     x_wave = 2.0 * math.pi / 10000.0 * x_grid * 100.0
     y_wave = 2.0 * math.pi / 10000.0 * y_grid * 100.0
     z_wave = 2.0 * math.pi / 10000.0 * z_grid * 100.0
@@ -264,6 +268,20 @@ def test_plot_3d_divergence():
     order2_yzdamp1 = np.zeros(yz_ywave.shape, dtype=float)
     order2_yzdamp2 = np.zeros(yz_ywave.shape, dtype=float)
 
+    order1_proj_xzdamp1 = np.zeros(xz_xwave.shape, dtype=float)
+    order1_proj_xzdamp2 = np.zeros(xz_xwave.shape, dtype=float)
+    order1_proj_xzdamp3 = np.zeros(xz_xwave.shape, dtype=float)
+    order1_proj_xzdamp4 = np.zeros(xz_xwave.shape, dtype=float)
+    order1_proj_yzdamp1 = np.zeros(yz_ywave.shape, dtype=float)
+    order1_proj_yzdamp2 = np.zeros(yz_ywave.shape, dtype=float)
+    order1_proj_yzdamp3 = np.zeros(yz_ywave.shape, dtype=float)
+    order1_proj_yzdamp4 = np.zeros(yz_ywave.shape, dtype=float)
+
+    order2_proj_xzdamp1 = np.zeros(xz_xwave.shape, dtype=float)
+    order2_proj_xzdamp2 = np.zeros(xz_xwave.shape, dtype=float)
+    order2_proj_yzdamp1 = np.zeros(yz_ywave.shape, dtype=float)
+    order2_proj_yzdamp2 = np.zeros(yz_ywave.shape, dtype=float)
+
     for j, z_wavenumber in enumerate(z_grid):
         print("PROGRESS: ", j, z_wavenumber)
         for i, x_wavenumber in enumerate(x_grid):
@@ -282,44 +300,49 @@ def test_plot_3d_divergence():
 
             non_zero_eigen_vector, non_zero_eigen_value = [], []
             for eigen in range(4):
-                if np.abs(eigen_value1[eigen]) > 1.e-12:
-                    non_zero_eigen_vector.append(eigen_vector1[eigen])
-                    non_zero_eigen_value.append(eigen_value1[eigen])
+                non_zero_eigen_vector.append(eigen_vector1[eigen])
+                non_zero_eigen_value.append(eigen_value1[eigen])
             # assert len(non_zero_eigen_vector) == 3, f"Len of non zero: {z_wavenumber} {x_wavenumber} {len(non_zero_eigen_vector)} {eigen_value1}"
-            if len(non_zero_eigen_vector) == 3:
-                eigen_vector_wave_component = div_utils.compute_wave_vector_component(
-                    [non_zero_eigen_vector[0], non_zero_eigen_vector[1], non_zero_eigen_vector[2]],
-                    div_wave,
-                    threeD=True,
-                )
-                argsort = np.abs(eigen_vector_wave_component).argsort()
-                eigen_vector_wave_component = eigen_vector_wave_component[argsort[::-1]]
-                non_zero_eigen_value = np.array(non_zero_eigen_value, dtype=complex)
-                non_zero_eigen_value = non_zero_eigen_value[argsort[::-1]]
-                order1_xzdamp1_real[i, j] = non_zero_eigen_value[0].real
-                order1_xzdamp1_imag[i, j] = non_zero_eigen_value[0].imag
-                order1_xzdamp2_real[i, j] = non_zero_eigen_value[1].real
-                order1_xzdamp2_imag[i, j] = non_zero_eigen_value[1].imag
-                order1_xzdamp3_real[i, j] = non_zero_eigen_value[2].real
-                order1_xzdamp3_imag[i, j] = non_zero_eigen_value[2].imag
-            else:
-                eigen_vector_wave_component = div_utils.compute_wave_vector_component(
-                    [non_zero_eigen_vector[0], non_zero_eigen_vector[1]],
-                    div_wave,
-                    threeD=True,
-                )
-                argsort = np.abs(eigen_vector_wave_component).argsort()
-                eigen_vector_wave_component = eigen_vector_wave_component[argsort[::-1]]
-                non_zero_eigen_value = np.array(non_zero_eigen_value, dtype=complex)
-                non_zero_eigen_value = non_zero_eigen_value[argsort[::-1]]
-                order1_xzdamp1_real[i, j] = non_zero_eigen_value[0].real
-                order1_xzdamp1_imag[i, j] = non_zero_eigen_value[0].imag
-                order1_xzdamp2_real[i, j] = non_zero_eigen_value[1].real
-                order1_xzdamp2_imag[i, j] = non_zero_eigen_value[1].imag
+            eigen_vector_wave_component = div_utils.compute_wave_vector_component(
+                [non_zero_eigen_vector[0], non_zero_eigen_vector[1], non_zero_eigen_vector[2], non_zero_eigen_vector[3]],
+                div_wave,
+                threeD=True,
+            )
+            argsort = np.abs(eigen_vector_wave_component).argsort()
+            eigen_vector_wave_component = eigen_vector_wave_component[argsort[::-1]]
+            non_zero_eigen_value = np.array(non_zero_eigen_value, dtype=complex)
+            non_zero_eigen_value = non_zero_eigen_value[argsort[::-1]]
+            order1_xzdamp1_real[i, j] = non_zero_eigen_value[0].real
+            order1_xzdamp1_imag[i, j] = non_zero_eigen_value[0].imag
+            order1_xzdamp2_real[i, j] = non_zero_eigen_value[1].real
+            order1_xzdamp2_imag[i, j] = non_zero_eigen_value[1].imag
+            order1_xzdamp3_real[i, j] = non_zero_eigen_value[2].real
+            order1_xzdamp3_imag[i, j] = non_zero_eigen_value[2].imag
+            order1_xzdamp4_real[i, j] = non_zero_eigen_value[3].real
+            order1_xzdamp4_imag[i, j] = non_zero_eigen_value[3].imag
 
+            order1_proj_xzdamp1[i, j] = eigen_vector_wave_component[0]
+            order1_proj_xzdamp2[i, j] = eigen_vector_wave_component[1]
+            order1_proj_xzdamp3[i, j] = eigen_vector_wave_component[2]
+            order1_proj_xzdamp4[i, j] = eigen_vector_wave_component[3]
+
+            non_zero_eigen_vector, non_zero_eigen_value = [], []
             order2_xzdamp1[i, j] = eigen_value2[np.argmax(np.abs(eigen_value2))]
-            eigen_value2 = np.sort(eigen_value2)
+            non_zero_eigen_vector.append(eigen_vector2[np.argmax(np.abs(eigen_value2))])
+            argsort = eigen_value2.argsort()
+            eigen_vector2 = eigen_vector2[argsort]
+            eigen_value2 = eigen_value2[argsort]
+            non_zero_eigen_vector.append(eigen_vector2[2])
             order2_xzdamp2[i, j] = eigen_value2[2] # minus, zero, plus
+            eigen_vector_wave_component = div_utils.compute_wave_vector_component(
+                [non_zero_eigen_vector[0], non_zero_eigen_vector[1]],
+                div_wave,
+                threeD=True,
+                revert=True,
+            )
+            order2_proj_xzdamp1[i, j] = eigen_vector_wave_component[0]
+            order2_proj_xzdamp2[i, j] = eigen_vector_wave_component[1]
+
 
         for i, y_wavenumber in enumerate(y_grid):
             div_wave = DivWave(
@@ -357,30 +380,86 @@ def test_plot_3d_divergence():
             order1_yzdamp3_real[i, j] = non_zero_eigen_value[2].real
             order1_yzdamp3_imag[i, j] = non_zero_eigen_value[2].imag
 
+            order1_proj_yzdamp1[i, j] = eigen_vector_wave_component[0]
+            order1_proj_yzdamp2[i, j] = eigen_vector_wave_component[1]
+            order1_proj_yzdamp3[i, j] = eigen_vector_wave_component[2]
+
+            non_zero_eigen_vector, non_zero_eigen_value = [], []
             order2_yzdamp1[i, j] = eigen_value2[np.argmax(np.abs(eigen_value2))]
-            eigen_value2 = np.sort(eigen_value2)
+            non_zero_eigen_vector.append(eigen_vector2[np.argmax(np.abs(eigen_value2))])
+            argsort = eigen_value2.argsort()
+            eigen_vector2 = eigen_vector2[argsort]
+            eigen_value2 = eigen_value2[argsort]
+            non_zero_eigen_vector.append(eigen_vector2[2])
             order2_yzdamp2[i, j] = eigen_value2[2] # minus, zero, plus
-            # print(i, eigen_value2)
+            eigen_vector_wave_component = div_utils.compute_wave_vector_component(
+                [non_zero_eigen_vector[0], non_zero_eigen_vector[1]],
+                div_wave,
+                threeD=True,
+                revert=True,
+            )
+            order2_proj_yzdamp1[i, j] = eigen_vector_wave_component[0]
+            order2_proj_yzdamp2[i, j] = eigen_vector_wave_component[1]
 
     # post processing:
-    for j in range(1, z_grid.shape[0]):
-        for i in range(1, x_grid.shape[0]):
-            if j > z_grid.shape[0] / 2 and np.abs(order1_xzdamp1_real[i-1, j] - order1_xzdamp2_real[i, j]) < np.abs(order1_xzdamp1_real[i-1, j] - order1_xzdamp1_real[i, j]):
-            # if np.abs(
-            #     0.25 * (
-            #         order1_xzdamp1_real[i-1, j] + order1_xzdamp1_real[i+1, j] + order1_xzdamp1_real[i, j-1] + order1_xzdamp1_real[i, j+1]
-            #     ) - order1_xzdamp2_real[i, j]
-            # ) < np.abs(
-            #     0.25 * (
-            #         order1_xzdamp1_real[i-1, j] + order1_xzdamp1_real[i+1, j] + order1_xzdamp1_real[i, j-1] + order1_xzdamp1_real[i, j+1]
-            #     ) - order1_xzdamp1_real[i, j]
-            # ):
+    for j in range(0, z_grid.shape[0]):
+        for i in range(0, x_grid.shape[0]):
+            if np.abs(order1_xzdamp4_real[i, j]) < 1.e-2:
+                temp = order1_xzdamp3_real[i, j]
+                order1_xzdamp3_real[i, j] = order1_xzdamp4_real[i, j]
+                order1_xzdamp4_real[i, j] = temp
+                temp = order1_xzdamp3_imag[i, j]
+                order1_xzdamp3_imag[i, j] = order1_xzdamp4_imag[i, j]
+                order1_xzdamp4_imag[i, j] = temp
+
+                temp = order1_proj_xzdamp3[i, j]
+                order1_proj_xzdamp3[i, j] = order1_proj_xzdamp4[i, j]
+                order1_proj_xzdamp4[i, j] = temp
+
+    for j in range(5, z_grid.shape[0]):
+        for i in range(5, x_grid.shape[0]):
+            if np.abs(order1_xzdamp1_real[i, j]) < 1.e-4:
+                # print(x_grid[i], z_grid[j], order1_xzdamp1_real[i, j], order1_xzdamp2_real[i, j], order1_xzdamp3_real[i, j])
                 temp = order1_xzdamp2_real[i, j]
                 order1_xzdamp2_real[i, j] = order1_xzdamp1_real[i, j]
                 order1_xzdamp1_real[i, j] = temp
                 temp = order1_xzdamp2_imag[i, j]
                 order1_xzdamp2_imag[i, j] = order1_xzdamp1_imag[i, j]
                 order1_xzdamp1_imag[i, j] = temp
+
+                temp = order1_proj_xzdamp2[i, j]
+                order1_proj_xzdamp2[i, j] = order1_proj_xzdamp1[i, j]
+                order1_proj_xzdamp1[i, j] = temp
+
+    for j in range(0, z_grid.shape[0]):
+        for i in range(0, x_grid.shape[0]):
+            if np.abs(order1_xzdamp2_real[i, j]) > 1.e-2:
+                temp = order1_xzdamp4_real[i, j]
+                order1_xzdamp4_real[i, j] = order1_xzdamp2_real[i, j]
+                order1_xzdamp2_real[i, j] = temp
+                temp = order1_xzdamp4_imag[i, j]
+                order1_xzdamp4_imag[i, j] = order1_xzdamp4_imag[i, j]
+                order1_xzdamp4_imag[i, j] = temp
+
+                temp = order1_proj_xzdamp4[i, j]
+                order1_proj_xzdamp4[i, j] = order1_proj_xzdamp2[i, j]
+                order1_proj_xzdamp2[i, j] = temp
+
+    for j in range(1, z_grid.shape[0]):
+        for i in range(1, x_grid.shape[0]):
+            # if j > z_grid.shape[0] / 2 and np.abs(order1_xzdamp1_real[i-1, j] - order1_xzdamp2_real[i, j]) < np.abs(order1_xzdamp1_real[i-1, j] - order1_xzdamp1_real[i, j]):
+            #     temp = order1_xzdamp2_real[i, j]
+            #     order1_xzdamp2_real[i, j] = order1_xzdamp1_real[i, j]
+            #     order1_xzdamp1_real[i, j] = temp
+            #     temp = order1_xzdamp2_imag[i, j]
+            #     order1_xzdamp2_imag[i, j] = order1_xzdamp1_imag[i, j]
+            #     order1_xzdamp1_imag[i, j] = temp
+
+            #     temp = order1_proj_xzdamp2[i, j]
+            #     order1_proj_xzdamp2[i, j] = order1_proj_xzdamp1[i, j]
+            #     order1_proj_xzdamp1[i, j] = temp
+
+
             if np.abs(order1_yzdamp1_real[i-1, j] - order1_yzdamp2_real[i, j]) < np.abs(order1_yzdamp1_real[i-1, j] - order1_yzdamp1_real[i, j]):
             # if np.abs(
             #     0.25 * (
@@ -397,6 +476,11 @@ def test_plot_3d_divergence():
                 temp = order1_yzdamp2_imag[i, j]
                 order1_yzdamp2_imag[i, j] = order1_yzdamp1_imag[i, j]
                 order1_yzdamp1_imag[i, j] = temp
+
+                temp = order1_proj_yzdamp2[i, j]
+                order1_proj_yzdamp2[i, j] = order1_proj_yzdamp1[i, j]
+                order1_proj_yzdamp1[i, j] = temp
+
             if np.abs(order1_yzdamp2_real[i-1, j] - order1_yzdamp3_real[i, j]) < np.abs(order1_yzdamp2_real[i-1, j] - order1_yzdamp2_real[i, j]):
                 temp = order1_yzdamp3_real[i, j]
                 order1_yzdamp3_real[i, j] = order1_yzdamp2_real[i, j]
@@ -404,6 +488,11 @@ def test_plot_3d_divergence():
                 temp = order1_yzdamp3_imag[i, j]
                 order1_yzdamp3_imag[i, j] = order1_yzdamp2_imag[i, j]
                 order1_yzdamp2_imag[i, j] = temp
+
+                temp = order1_proj_yzdamp3[i, j]
+                order1_proj_yzdamp3[i, j] = order1_proj_yzdamp2[i, j]
+                order1_proj_yzdamp2[i, j] = temp
+
         for i in range(x_grid.shape[0] - 2, 1, -1):
             if np.abs(order1_yzdamp1_real[i+1, j] - order1_yzdamp2_real[i, j]) < np.abs(order1_yzdamp1_real[i+1, j] - order1_yzdamp1_real[i, j]):
                 temp = order1_yzdamp2_real[i, j]
@@ -412,6 +501,11 @@ def test_plot_3d_divergence():
                 temp = order1_yzdamp2_imag[i, j]
                 order1_yzdamp2_imag[i, j] = order1_yzdamp1_imag[i, j]
                 order1_yzdamp1_imag[i, j] = temp
+
+                temp = order1_proj_yzdamp2[i, j]
+                order1_proj_yzdamp2[i, j] = order1_proj_yzdamp1[i, j]
+                order1_proj_yzdamp1[i, j] = temp
+
     for i in range(1, x_grid.shape[0]):
         if np.abs(order1_yzdamp2_real[i-1, 0] - order1_yzdamp3_real[i, 0]) < np.abs(order1_yzdamp2_real[i-1, 0] - order1_yzdamp2_real[i, 0]):
             temp = order1_yzdamp3_real[i, 0]
@@ -420,6 +514,11 @@ def test_plot_3d_divergence():
             temp = order1_yzdamp3_imag[i, 0]
             order1_yzdamp3_imag[i, 0] = order1_yzdamp2_imag[i, 0]
             order1_yzdamp2_imag[i, 0] = temp
+
+            temp = order1_proj_yzdamp3[i, 0]
+            order1_proj_yzdamp3[i, 0] = order1_proj_yzdamp2[i, 0]
+            order1_proj_yzdamp2[i, 0] = temp
+
         last_ind = z_grid.shape[0] - 1
         if np.abs(order1_yzdamp2_real[i-1, last_ind] - order1_yzdamp3_real[i, last_ind]) < np.abs(order1_yzdamp2_real[i-1, last_ind] - order1_yzdamp2_real[i, last_ind]):
             temp = order1_yzdamp3_real[i, last_ind]
@@ -429,20 +528,39 @@ def test_plot_3d_divergence():
             order1_yzdamp3_imag[i, last_ind] = order1_yzdamp2_imag[i, last_ind]
             order1_yzdamp2_imag[i, last_ind] = temp
 
-    order1_xzdamp1_real = np.sqrt(order1_xzdamp1_real**2 + order1_xzdamp1_imag**2)
-    order1_xzdamp2_real = np.sqrt(order1_xzdamp2_real**2 + order1_xzdamp2_imag**2)
-    order1_xzdamp3_real = np.sqrt(order1_xzdamp3_real**2 + order1_xzdamp3_imag**2)
-    order1_yzdamp1_real = np.sqrt(order1_yzdamp1_real**2 + order1_yzdamp1_imag**2)
-    order1_yzdamp2_real = np.sqrt(order1_yzdamp2_real**2 + order1_yzdamp2_imag**2)
-    order1_yzdamp3_real = np.sqrt(order1_yzdamp3_real**2 + order1_yzdamp3_imag**2)
+            temp = order1_proj_yzdamp3[i, last_ind]
+            order1_proj_yzdamp3[i, last_ind] = order1_proj_yzdamp2[i, last_ind]
+            order1_proj_yzdamp2[i, last_ind] = temp
+
+    for j in range(0, z_grid.shape[0]):
+        for i in range(0, y_grid.shape[0]):
+            if order1_yzdamp1_real[i, j] > 0.0:
+                temp = order1_yzdamp2_real[i, j]
+                order1_yzdamp2_real[i, j] = order1_yzdamp1_real[i, j]
+                order1_yzdamp1_real[i, j] = temp
+                temp = order1_yzdamp2_imag[i, j]
+                order1_yzdamp2_imag[i, j] = order1_yzdamp1_imag[i, j]
+                order1_yzdamp1_imag[i, j] = temp
+
+                temp = order1_proj_yzdamp2[i, j]
+                order1_proj_yzdamp2[i, j] = order1_proj_yzdamp1[i, j]
+                order1_proj_yzdamp1[i, j] = temp
+    
+    # order1_xzdamp1_real = np.sqrt(order1_xzdamp1_real**2 + order1_xzdamp1_imag**2)
+    # order1_xzdamp2_real = np.sqrt(order1_xzdamp2_real**2 + order1_xzdamp2_imag**2)
+    # order1_xzdamp3_real = np.sqrt(order1_xzdamp3_real**2 + order1_xzdamp3_imag**2)
+    # order1_yzdamp1_real = np.sqrt(order1_yzdamp1_real**2 + order1_yzdamp1_imag**2)
+    # order1_yzdamp2_real = np.sqrt(order1_yzdamp2_real**2 + order1_yzdamp2_imag**2)
+    # order1_yzdamp3_real = np.sqrt(order1_yzdamp3_real**2 + order1_yzdamp3_imag**2)
 
     def _plot_damp(x_or_y, damping, title: str):
+        font_size = 12
         plt.close()
         f, ax = plt.subplots(constrained_layout=True)
         # cmap = plt.get_cmap('plasma')
         cmap = plt.get_cmap("gist_rainbow")
         cmap = cmap.reversed() 
-        boundaries = np.linspace(damping.min(), damping.max(), 101)
+        boundaries = np.linspace(damping.min()-1.e-15, max(0.0, damping.max()), 101)
         print(title, ' --- ', damping.min(), damping.max())
         lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
         if x_or_y == 1:
@@ -453,7 +571,7 @@ def test_plot_3d_divergence():
             ax.set_xlabel("y wavenumber")
         else:
             NotImplementedError()
-        cb1 = f.colorbar(cp, location="right")
+        cb1 = f.colorbar(cp, location="right", format='%.2f')
         ax.set_ylabel("z wavenumber")
         tick = [0, math.pi / 4.0, math.pi / 2.0, math.pi * 3.0 / 4.0, math.pi]
         ax.set_xticks(tick)
@@ -463,37 +581,369 @@ def test_plot_3d_divergence():
         labels[2] = "$2\\pi/4\\Delta x$"
         labels[3] = "$3\\pi/4\\Delta x$"
         labels[4] = "$2\\pi/2\\Delta x$"
-        ax.set_xticklabels(labels)
+        ax.set_xticklabels(labels, fontsize=font_size)
         labels = [item.get_text() for item in ax.get_yticklabels()]
         labels[1] = "$2\\pi/8\\Delta x$"
         labels[2] = "$2\\pi/4\\Delta x$"
         labels[3] = "$3\\pi/4\\Delta x$"
         labels[4] = "$2\\pi/2\\Delta x$"
-        ax.set_yticklabels(labels)
+        ax.set_yticklabels(labels, fontsize=font_size)
+        cb1.ax.tick_params(labelsize=font_size)
+        ax.tick_params(axis='both', which='major', labelsize=font_size)
         plt.savefig(title+".pdf", format="pdf", dpi=400)
 
-    _plot_damp(1, order2_xzdamp1, "fig_order2_xzdamp1")
-    _plot_damp(1, order2_xzdamp2, "fig_order2_xzdamp2")
-    _plot_damp(2, order2_yzdamp1, "fig_order2_yzdamp1")
-    _plot_damp(2, order2_yzdamp2, "fig_order2_yzdamp2")
+    _plot_damp(1, order1_proj_xzdamp1, "fig_order1_xzproj1")
+    _plot_damp(1, order1_proj_xzdamp2, "fig_order1_xzproj2")
+    _plot_damp(1, order1_proj_xzdamp3, "fig_order1_xzproj3")
+    _plot_damp(1, order1_proj_xzdamp4, "fig_order1_xzproj4")
+    _plot_damp(2, order1_proj_yzdamp1, "fig_order1_yzproj1")
+    _plot_damp(2, order1_proj_yzdamp2, "fig_order1_yzproj2")
+    _plot_damp(2, order1_proj_yzdamp3, "fig_order1_yzproj3")
 
-    _plot_damp(1, order1_xzdamp1_real, "fig_order1_xzdamp1_real")
-    _plot_damp(1, order1_xzdamp2_real, "fig_order1_xzdamp2_real")
-    _plot_damp(1, order1_xzdamp3_real, "fig_order1_xzdamp3_real")
+    _plot_damp(1, order2_proj_xzdamp1, "fig_order2_xzproj1")
+    _plot_damp(1, order2_proj_xzdamp2, "fig_order2_xzproj2")
+    _plot_damp(2, order2_proj_yzdamp1, "fig_order2_yzproj1")
+    _plot_damp(2, order2_proj_yzdamp2, "fig_order2_yzproj2")
+
+    _plot_damp(1, order1_xzdamp1_real, "figure_order1_3D_xzdamp_real")
+
+
+    def force_aspect(ax,aspect=1):
+        # im = ax.get_images()
+        # extent =  im.get_extent()
+        # extent = ax.get_window_extent()
+        # ax.set_aspect(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect)
+        x_limits = ax.get_xlim()
+        y_limits = ax.get_ylim()
+        ax.set_aspect(abs((x_limits[1]-x_limits[0])/(y_limits[1]-y_limits[0]))/aspect)
+        # ax.set_aspect('equal')
+
+    # xtick = [0, math.pi / 2.0, math.pi, math.pi * 3.0 / 2.0, 2.0 * math.pi]
+    xtick = [0, math.pi / 4.0, math.pi / 2.0, math.pi * 3.0 / 4.0, math.pi]
+    xtick_label = (
+        "$2\\pi/8h$",
+        "$2\\pi/4h$",
+        "$3\\pi/4h$",
+        "$2\\pi/2h$",
+    )
+
+    plt.close()
+    # f, ax = plt.subplots(nrows=1, ncols=3, figsize=(13.3333, 6.6666))
+    f, ax = plt.subplots(nrows=2, ncols=3, figsize=(13.3333, 8.0))
+    cmap = plt.get_cmap("gist_rainbow")
+    cmap = cmap.reversed()
+    boundaries = np.linspace(order1_yzdamp1_real.min()-1.e-15, max(0.0, order1_yzdamp1_real.max()), 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[0,0].contourf(yz_ywave, yz_zwave, order1_yzdamp1_real, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[0,0])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+
+    ax[0,0].set_xlabel("y wavenumber")
+    ax[0,0].set_ylabel("z wavenumber")
+    ax[0,0].set_xticks(xtick)
+    ax[0,0].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[0,0].get_xticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[0,0].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[0,0].get_yticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[0,0].set_yticklabels(labels)
+
+    boundaries = np.linspace(order1_yzdamp2_real.min()-1.e-15, max(0.0, order1_yzdamp2_real.max()), 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[0,1].contourf(yz_ywave, yz_zwave, order1_yzdamp2_real, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[0,1])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+
+    ax[0,1].set_xlabel("y wavenumber")
+    ax[0,1].set_ylabel("z wavenumber")
+    ax[0,1].set_xticks(xtick)
+    ax[0,1].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[0,1].get_xticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[0,1].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[0,1].get_yticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[0,1].set_yticklabels(labels)
+
+    boundaries = np.linspace(order1_yzdamp3_real.min()-1.e-15, max(0.0, order1_yzdamp3_real.max()), 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[0,2].contourf(yz_ywave, yz_zwave, order1_yzdamp3_real, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[0,2])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+
+    ax[0,2].set_xlabel("y wavenumber")
+    ax[0,2].set_ylabel("z wavenumber")
+    ax[0,2].set_xticks(xtick)
+    ax[0,2].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[0,2].get_xticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[0,2].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[0,2].get_yticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[0,2].set_yticklabels(labels)
+
+    title_size = 10
+    ax[0,0].set_title("(a) Real part of the first eigenvalue", fontsize=title_size)
+    ax[0,1].set_title("(b) Real part of the second eigenvalue", fontsize=title_size)
+    ax[0,2].set_title("(c) Real part of the third eigenvalue", fontsize=title_size)
+    force_aspect(ax[0,0], aspect=1)
+    force_aspect(ax[0,1], aspect=1)
+    force_aspect(ax[0,2], aspect=1)
+    # f.tight_layout(w_pad=2)
+    # plt.savefig("figure_order1_3D_yzdamp_real.pdf", format="pdf", dpi=400)
+
+    # plt.close()
+    # f, ax = plt.subplots(nrows=1, ncols=3, figsize=(13.3333, 6.6666))
+    cmap = plt.get_cmap("gist_rainbow")
+    cmap = cmap.reversed()
+    boundaries = np.linspace(order1_yzdamp1_imag.min()-1.e-15, max(0.0, order1_yzdamp1_imag.max()), 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[1,0].contourf(yz_ywave, yz_zwave, order1_yzdamp1_imag, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[1,0])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+
+    ax[1,0].set_xlabel("y wavenumber")
+    ax[1,0].set_ylabel("z wavenumber")
+    ax[1,0].set_xticks(xtick)
+    ax[1,0].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[1,0].get_xticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[1,0].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[1,0].get_yticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[1,0].set_yticklabels(labels)
+
+    boundaries = np.linspace(order1_yzdamp2_imag.min()-1.e-15, max(0.0, order1_yzdamp2_imag.max()), 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[1,1].contourf(yz_ywave, yz_zwave, order1_yzdamp2_imag, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[1,1])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+
+    ax[1,1].set_xlabel("y wavenumber")
+    ax[1,1].set_ylabel("z wavenumber")
+    ax[1,1].set_xticks(xtick)
+    ax[1,1].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[1,1].get_xticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[1,1].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[1,1].get_yticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[1,1].set_yticklabels(labels)
+
+    boundaries = np.linspace(order1_yzdamp3_imag.min()-1.e-15, max(0.0, order1_yzdamp3_imag.max()), 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[1,2].contourf(yz_ywave, yz_zwave, order1_yzdamp3_imag, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[1,2])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+
+    ax[1,2].set_xlabel("y wavenumber")
+    ax[1,2].set_ylabel("z wavenumber")
+    ax[1,2].set_xticks(xtick)
+    ax[1,2].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[1,2].get_xticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[1,2].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[1,2].get_yticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[1,2].set_yticklabels(labels)
+
+    ax[1,0].set_title("(d) Imaginary part of the first eigenvalue", fontsize=title_size)
+    ax[1,1].set_title("(e) Imaginary part of the second eigenvalue", fontsize=title_size)
+    ax[1,2].set_title("(f) Imaginary part of the third eigenvalue", fontsize=title_size)
+    force_aspect(ax[1,0], aspect=1)
+    force_aspect(ax[1,1], aspect=1)
+    force_aspect(ax[1,2], aspect=1)
+    f.tight_layout(w_pad=2, h_pad=0.1)
+    plt.savefig("figure_order1_3D_yzdamp.pdf", format="pdf", dpi=400)
+
+
+    plt.close()
+    f, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 6.6666))
+    cmap = plt.get_cmap("gist_rainbow")
+    cmap = cmap.reversed()
+    boundaries = np.linspace(order2_xzdamp1.min()-1.e-15, max(0.0, order2_xzdamp1.max()), 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[0].contourf(xz_xwave, xz_zwave, order2_xzdamp1, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[0])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+
+    ax[0].set_xlabel("y wavenumber")
+    ax[0].set_ylabel("z wavenumber")
+    ax[0].set_xticks(xtick)
+    ax[0].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[0].get_xticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[0].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[0].get_yticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[0].set_yticklabels(labels)
+
+    boundaries = np.linspace(order2_xzdamp2.min()-1.e-15, max(0.0, order2_xzdamp2.max()), 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[1].contourf(xz_xwave, xz_zwave, order2_xzdamp2, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[1])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+
+    ax[1].set_xlabel("y wavenumber")
+    ax[1].set_ylabel("z wavenumber")
+    ax[1].set_xticks(xtick)
+    ax[1].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[1].get_xticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[1].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[1].get_yticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[1].set_yticklabels(labels)
+
+    ax[0].set_title("(a) First eigenvalue in x-z plane")
+    ax[1].set_title("(b) Second eigenvalue in x-z plane")
+    force_aspect(ax[0], aspect=1)
+    force_aspect(ax[1], aspect=1)
+    f.tight_layout(w_pad=2)
+    plt.savefig("figure_order2_3D_xzdamp.pdf", format="pdf", dpi=400)
+
+
+    plt.close()
+    f, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 6.6666))
+    cmap = plt.get_cmap("gist_rainbow")
+    cmap = cmap.reversed()
+    boundaries = np.linspace(order2_yzdamp1.min()-1.e-15, max(0.0, order2_yzdamp1.max()), 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[0].contourf(yz_ywave, yz_zwave, order2_yzdamp1, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[0])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+
+    ax[0].set_xlabel("y wavenumber")
+    ax[0].set_ylabel("z wavenumber")
+    ax[0].set_xticks(xtick)
+    ax[0].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[0].get_xticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[0].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[0].get_yticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[0].set_yticklabels(labels)
+
+    boundaries = np.linspace(order2_yzdamp2.min()-1.e-15, max(0.0, order2_yzdamp2.max()), 101)
+    lnorm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+    cp = ax[1].contourf(yz_ywave, yz_zwave, order2_yzdamp2, cmap=cmap, levels=boundaries, norm=lnorm)
+    divider = make_axes_locatable(ax[1])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb1 = plt.colorbar(cp, cax=cax, format='%.2f')
+
+    ax[1].set_xlabel("y wavenumber")
+    ax[1].set_ylabel("z wavenumber")
+    ax[1].set_xticks(xtick)
+    ax[1].set_yticks(xtick)
+    labels = [item.get_text() for item in ax[1].get_xticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[1].set_xticklabels(labels)
+    labels = [item.get_text() for item in ax[1].get_yticklabels()]
+    labels[1] = xtick_label[0]
+    labels[2] = xtick_label[1]
+    labels[3] = xtick_label[2]
+    labels[4] = xtick_label[3]
+    ax[1].set_yticklabels(labels)
+
+    ax[0].set_title("(a) First eigenvalue in y-z plane")
+    ax[1].set_title("(b) Second eigenvalue in y-z plane")
+    force_aspect(ax[0], aspect=1)
+    force_aspect(ax[1], aspect=1)
+    f.tight_layout(w_pad=2)
+    plt.savefig("figure_order2_3D_yzdamp.pdf", format="pdf", dpi=400)
+
+    # _plot_damp(1, order2_xzdamp1, "fig_order2_xzdamp1")
+    # _plot_damp(1, order2_xzdamp2, "fig_order2_xzdamp2")
+    # _plot_damp(2, order2_yzdamp1, "fig_order2_yzdamp1")
+    # _plot_damp(2, order2_yzdamp2, "fig_order2_yzdamp2")
+
+    # _plot_damp(1, order1_xzdamp1_real, "fig_order1_xzdamp1_real")
+    # _plot_damp(1, order1_xzdamp2_real, "fig_order1_xzdamp2_real")
+    # _plot_damp(1, order1_xzdamp3_real, "fig_order1_xzdamp3_real")
     # _plot_damp(1, order1_xzdamp4_real, "fig_order1_xzdamp4_real")
-    _plot_damp(1, order1_xzdamp1_imag, "fig_order1_xzdamp1_imag")
-    _plot_damp(1, order1_xzdamp2_imag, "fig_order1_xzdamp2_imag")
-    _plot_damp(1, order1_xzdamp3_imag, "fig_order1_xzdamp3_imag")
+    # _plot_damp(1, order1_xzdamp1_imag, "fig_order1_xzdamp1_imag")
+    # _plot_damp(1, order1_xzdamp2_imag, "fig_order1_xzdamp2_imag")
+    # _plot_damp(1, order1_xzdamp3_imag, "fig_order1_xzdamp3_imag")
     # _plot_damp(1, order1_xzdamp4_imag, "fig_order1_xzdamp4_imag")
-    _plot_damp(1, order1_yzdamp1_real, "fig_order1_yzdamp1_real")
-    _plot_damp(1, order1_yzdamp2_real, "fig_order1_yzdamp2_real")
-    _plot_damp(1, order1_yzdamp3_real, "fig_order1_yzdamp3_real")
-    # _plot_damp(1, order1_yzdamp4_real, "fig_order1_yzdamp4_real")
-    _plot_damp(1, order1_yzdamp1_imag, "fig_order1_yzdamp1_imag")
-    _plot_damp(1, order1_yzdamp2_imag, "fig_order1_yzdamp2_imag")
-    _plot_damp(1, order1_yzdamp3_imag, "fig_order1_yzdamp3_imag")
-    # _plot_damp(1, order1_yzdamp4_imag, "fig_order1_yzdamp4_imag")
 
+    # # _plot_damp(2, order1_xzdamp4_imag, "fig_order1_xzdamp4_imag")
+    # _plot_damp(2, order1_yzdamp1_real, "fig_order1_yzdamp1_real")
+    # _plot_damp(2, order1_yzdamp2_real, "fig_order1_yzdamp2_real")
+    # _plot_damp(2, order1_yzdamp3_real, "fig_order1_yzdamp3_real")
+    # # _plot_damp(2, order1_yzdamp4_real, "fig_order1_yzdamp4_real")
+    # _plot_damp(2, order1_yzdamp1_imag, "fig_order1_yzdamp1_imag")
+    # _plot_damp(2, order1_yzdamp2_imag, "fig_order1_yzdamp2_imag")
+    # _plot_damp(2, order1_yzdamp3_imag, "fig_order1_yzdamp3_imag")
+    # # _plot_damp(2, order1_yzdamp4_imag, "fig_order1_yzdamp4_imag")
+
+    
     # diff = 0.0
     # _plot_damp(1, order1_yzdamp2_real[1:,:] - order1_yzdamp2_real[:-1,:], "fig_order1_yzdamp2_real_diff")
     # _plot_damp(1, order1_yzdamp3_real[1:,:] - order1_yzdamp3_real[:-1,:], "fig_order1_yzdamp3_real_diff")
@@ -501,8 +951,9 @@ def test_plot_3d_divergence():
 
 def test_3d_eigenvalue():
     x_grid = np.arange(1.0, 99.0, 1.0)
-    y_grid = np.arange(5.0, 55.0, 5.0)
-    z_grid = np.array([10.0, 30.0, 50.0])#np.arange(1.0, 99.0, 1.0)
+    y_grid = np.arange(0.5, 50.5, 0.5)
+    # z_grid = np.array([10.0, 30.0, 50.0])#np.arange(1.0, 99.0, 1.0)
+    z_grid = np.array([30.0, 40.0])#np.arange(1.0, 99.0, 1.0)
 
     print("########################################################")
     print("########################################################")
@@ -510,67 +961,75 @@ def test_3d_eigenvalue():
     order1_yzdamp1_real = np.zeros((z_grid.shape[0], y_grid.shape[0]), dtype=float)
     order1_yzdamp2_real = np.zeros((z_grid.shape[0], y_grid.shape[0]), dtype=float)
     order1_yzdamp3_real = np.zeros((z_grid.shape[0], y_grid.shape[0]), dtype=float)
+    order1_yzdamp4_real = np.zeros((z_grid.shape[0], y_grid.shape[0]), dtype=float)
     for j, z_wavenumber in enumerate(z_grid):
         print()
         print("PROGRESS: ", j, z_wavenumber)
         print()
         for i, y_wavenumber in enumerate(y_grid):
             div_wave = DivWave(
-                wave_type=WAVETYPE.X_AND_Z_WAVE,
-                y_wavenumber_factor=0.0,
-                x_wavenumber_factor=y_wavenumber,
+                wave_type=WAVETYPE.Y_AND_Z_WAVE,
+                y_wavenumber_factor=y_wavenumber,
+                x_wavenumber_factor=0.0,
                 z_wavenumber_factor=z_wavenumber,
             )
             eigen_value1, eigen_vector1, eigen_vector_cartesian1 = div_utils.eigen_3d_divergence(
                 order=1, grid_space=1000.0, div_wave=div_wave, full_return=True, method=1
             )
             eigen_value2, eigen_vector2, eigen_vector_cartesian2 = div_utils.eigen_3d_divergence(
-                order=2, grid_space=1000.0, div_wave=div_wave, full_return=False, method=1
+                order=2, grid_space=1000.0, div_wave=div_wave, full_return=True, method=1
             )
             non_zero_eigen_vector, non_zero_eigen_value = [], []
             for eigen in range(4):
-                if np.abs(eigen_value1[eigen]) > 1.e-10:
-                    non_zero_eigen_vector.append(eigen_vector1[eigen])
-                    non_zero_eigen_value.append(eigen_value1[eigen])
+                # if np.abs(eigen_value1[eigen]) > 1.e-10:
+                non_zero_eigen_vector.append(eigen_vector2[eigen])
+                non_zero_eigen_value.append(eigen_value2[eigen])
             # assert len(non_zero_eigen_vector) == 3, f"Len of non zero: {z_wavenumber} {y_wavenumber} {len(non_zero_eigen_vector)}"
-            if len(non_zero_eigen_vector) == 3:
-                eigen_vector_wave_component = div_utils.compute_wave_vector_component(
-                    [non_zero_eigen_vector[0], non_zero_eigen_vector[1], non_zero_eigen_vector[2]],
-                    div_wave,
-                    threeD=True,
-                )
-                _non_zero_eigen_vector = np.zeros((3, 4))
-                argsort = np.abs(eigen_vector_wave_component).argsort()
-                eigen_vector_wave_component = eigen_vector_wave_component[argsort[::-1]]
-                non_zero_eigen_value = np.array(non_zero_eigen_value)
-                non_zero_eigen_value = non_zero_eigen_value[argsort[::-1]]
-                # print(eigen_vector_wave_component)
-                for eigen in range(3):
-                    _non_zero_eigen_vector[eigen] = non_zero_eigen_vector[eigen]
-                non_zero_eigen_vector = _non_zero_eigen_vector[argsort[::-1]]
-                non_zero_eigen_vector = non_zero_eigen_vector[argsort[::-1]]
-                order1_yzdamp1_real[j, i] = non_zero_eigen_value[0].imag
-                order1_yzdamp2_real[j, i] = non_zero_eigen_value[1].imag
-                order1_yzdamp3_real[j, i] = non_zero_eigen_value[2].imag
-            else:
-                eigen_vector_wave_component = div_utils.compute_wave_vector_component(
-                    [non_zero_eigen_vector[0], non_zero_eigen_vector[1]],
-                    div_wave,
-                    threeD=True,
-                )
-                _non_zero_eigen_vector = np.zeros((2, 4))
-                argsort = np.abs(eigen_vector_wave_component).argsort()
-                eigen_vector_wave_component = eigen_vector_wave_component[argsort[::-1]]
-                non_zero_eigen_value = np.array(non_zero_eigen_value)
-                non_zero_eigen_value = non_zero_eigen_value[argsort[::-1]]
-                # print(eigen_vector_wave_component)
-                for eigen in range(2):
-                    _non_zero_eigen_vector[eigen] = non_zero_eigen_vector[eigen]
-                non_zero_eigen_vector = _non_zero_eigen_vector[argsort[::-1]]
-                non_zero_eigen_vector = non_zero_eigen_vector[argsort[::-1]]
-                order1_yzdamp1_real[j, i] = non_zero_eigen_value[0].imag
-                order1_yzdamp2_real[j, i] = non_zero_eigen_value[1].imag
-            print("DEBUG", f"{order1_yzdamp1_real[j, i]:.5e}, {order1_yzdamp2_real[j, i]:.5e}, {order1_yzdamp3_real[j, i]:.5e}")
+            # if len(non_zero_eigen_vector) == 3 or len(non_zero_eigen_vector) == 4:
+            eigen_vector_wave_component = div_utils.compute_wave_vector_component(
+                [non_zero_eigen_vector[0], non_zero_eigen_vector[1], non_zero_eigen_vector[2], non_zero_eigen_vector[3]],
+                div_wave,
+                threeD=True,
+                revert=True,
+            )
+            _non_zero_eigen_vector = np.zeros((4, 4))
+            argsort = np.abs(eigen_vector_wave_component).argsort()
+            eigen_vector_wave_component = eigen_vector_wave_component[argsort[::-1]]
+            non_zero_eigen_value = np.array(non_zero_eigen_value)
+            non_zero_eigen_value = non_zero_eigen_value[argsort[::-1]]
+            # print(eigen_vector_wave_component)
+            for eigen in range(4):
+                _non_zero_eigen_vector[eigen] = non_zero_eigen_vector[eigen]
+            non_zero_eigen_vector = _non_zero_eigen_vector[argsort[::-1]]
+            order1_yzdamp1_real[j, i] = non_zero_eigen_value[0].real
+            order1_yzdamp2_real[j, i] = non_zero_eigen_value[1].real
+            order1_yzdamp3_real[j, i] = non_zero_eigen_value[2].real
+            order1_yzdamp4_real[j, i] = non_zero_eigen_value[3].real
+            # else:
+            #     eigen_vector_wave_component = div_utils.compute_wave_vector_component(
+            #         [non_zero_eigen_vector[0], non_zero_eigen_vector[1]],
+            #         div_wave,
+            #         threeD=True,
+            #     )
+            #     _non_zero_eigen_vector = np.zeros((2, 4))
+            #     argsort = np.abs(eigen_vector_wave_component).argsort()
+            #     eigen_vector_wave_component = eigen_vector_wave_component[argsort[::-1]]
+            #     non_zero_eigen_value = np.array(non_zero_eigen_value)
+            #     non_zero_eigen_value = non_zero_eigen_value[argsort[::-1]]
+            #     # print(eigen_vector_wave_component)
+            #     for eigen in range(2):
+            #         _non_zero_eigen_vector[eigen] = non_zero_eigen_vector[eigen]
+            #     non_zero_eigen_vector = _non_zero_eigen_vector[argsort[::-1]]
+            #     non_zero_eigen_vector = non_zero_eigen_vector[argsort[::-1]]
+            #     order1_yzdamp1_real[j, i] = non_zero_eigen_value[0].real
+            #     order1_yzdamp2_real[j, i] = non_zero_eigen_value[1].real
+            if order1_yzdamp1_real[j, i] > 0.0 or order1_yzdamp2_real[j, i] > 0.0 or order1_yzdamp3_real[j, i] > 0.0 or order1_yzdamp4_real[j, i] > 0.0:
+                print("DEBUG", f"{z_wavenumber} {y_wavenumber} :: {non_zero_eigen_value[0]:.5e}, {non_zero_eigen_value[1]:.5e}, {non_zero_eigen_value[2]:.5e}, {non_zero_eigen_value[3]:.5e}")
+                print("DEBUG", f"-------------------------- {eigen_vector_wave_component[0]:.5e}, {eigen_vector_wave_component[1]:.5e}, {eigen_vector_wave_component[2]:.5e} {eigen_vector_wave_component[3]:.5e}")
+                for eigen in range(4):
+                    print("DEBUG", f"{non_zero_eigen_vector[eigen, 0]:.5e} {non_zero_eigen_vector[eigen, 1]:.5e} {non_zero_eigen_vector[eigen, 2]:.5e} {non_zero_eigen_vector[eigen, 3]:.5e}")
+                print()
+            # print("DEBUG", f"{order1_yzdamp1_real[j, i]:.5e}, {order1_yzdamp2_real[j, i]:.5e}, {order1_yzdamp3_real[j, i]:.5e} {order1_yzdamp4_real[j, i]:.5e} {np.abs(eigen_value1[3])} {eigen_value1[3]}")
             # if np.abs(eigen_vector_wave_component[0]) > np.abs(eigen_vector_wave_component[1]):
             # print(y_wavenumber, ": ", eigen_vector_wave_component[0], " == ", non_zero_eigen_vector[0].real, " == ", non_zero_eigen_value[0])
             # print(y_wavenumber, ": ", eigen_vector_wave_component[1], " == ", non_zero_eigen_vector[1].real, " == ", non_zero_eigen_value[1])
@@ -579,10 +1038,10 @@ def test_3d_eigenvalue():
             # for item in range(4):
             #     print("eigen value ", item, f"{eigen_vector1[item, 0]} {eigen_vector1[item, 1]} {eigen_vector1[item, 2]} {eigen_vector1[item, 3]}")
 
-    for j, z_wavenumber in enumerate(z_grid):
-        print()
-        for i, y_wavenumber in enumerate(y_grid):
-            print(j, i, f"{order1_yzdamp1_real[j, i]:.5e} {order1_yzdamp2_real[j, i]:.5e} {order1_yzdamp3_real[j, i]:.5e}")
+    # for j, z_wavenumber in enumerate(z_grid):
+    #     print()
+    #     for i, y_wavenumber in enumerate(y_grid):
+    #         print(j, i, f"{order1_yzdamp1_real[j, i]:.5e} {order1_yzdamp2_real[j, i]:.5e} {order1_yzdamp3_real[j, i]:.5e} {order1_yzdamp4_real[j, i]:.5e}")
     
 
 def test_debug():
@@ -731,8 +1190,8 @@ def test_debug():
 
 
 if __name__ == "__main__":
-    test_divergence_multiple_time_step()
-    # test_plot_3d_divergence()
+    # test_divergence_multiple_time_step()
+    test_plot_3d_divergence()
     # test_3d_eigenvalue()
     # test_debug()
     

@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, abs, astype, broadcast, int32, neighbor_sum, where
 
 from icon4py.model.common.dimension import (
+    Koff,
     C2CE,
     C2E,
     C2V,
@@ -97,6 +98,46 @@ def compute_2nd_order_divergence_of_flux(
             KDim: (vertical_start, vertical_end),
         },
     )
+
+
+@field_operator
+def compute_order1_divergence_of_flux(
+    geofac_div: Field[[CEDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    w: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    dwdz = inv_ddqz_z_full * (
+        (w - w(Koff[1])) - astype(w_concorr_c - w_concorr_c(Koff[1]), wpfloat)
+    )
+    first_order_divergence_at_cell = neighbor_sum(geofac_div(C2CE) * vn(C2E), axis=C2EDim)
+    first_order_divergence_at_cell = first_order_divergence_at_cell + astype(dwdz, wpfloat)
+
+    return astype(first_order_divergence_at_cell, vpfloat)
+
+
+@field_operator
+def compute_order2_divergence_of_flux(
+    geofac_div: Field[[CEDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    w: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    area: Field[[CellDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    dwdz = inv_ddqz_z_full * (
+        (w - w(Koff[1])) - astype(w_concorr_c - w_concorr_c(Koff[1]), wpfloat)
+    )
+    first_order_divergence_at_cell = neighbor_sum(geofac_div(C2CE) * vn(C2E), axis=C2EDim)
+    first_order_divergence_at_cell = first_order_divergence_at_cell + astype(dwdz, wpfloat)
+
+    hexagon_area = neighbor_sum(area(V2C), axis=V2CDim)
+    divergence_area = first_order_divergence_at_cell * area
+    divergence_at_vertex = neighbor_sum(divergence_area(V2C) / hexagon_area, axis=V2CDim)
+    second_order_divergence_at_cell = neighbor_sum(divergence_at_vertex(C2V), axis=C2VDim) / 3.0
+
+    return astype(second_order_divergence_at_cell, vpfloat)
 
 
 @field_operator

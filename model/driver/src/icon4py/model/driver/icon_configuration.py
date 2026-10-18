@@ -948,14 +948,14 @@ def read_config(
             n_substeps=n_substeps,
             type_t_diffu=2,
             type_vn_diffu=1,
-            # hdiff_efdt_ratio=10.0,
-            # hdiff_w_efdt_ratio=15.0,
+            hdiff_efdt_ratio=10.0,
+            hdiff_w_efdt_ratio=15.0,
             # hdiff_efdt_ratio=36.0,
             # hdiff_w_efdt_ratio=15.0,
             # hdiff_efdt_ratio=1.e15,
             # hdiff_w_efdt_ratio=1.e15,
-            hdiff_efdt_ratio=1000.0,
-            hdiff_w_efdt_ratio=1000.0,
+            # hdiff_efdt_ratio=1000.0,
+            # hdiff_w_efdt_ratio=1000.0,
             # smagorinski_scaling_factor=0.025,
             smagorinski_scaling_factor=0.015,
             # smagorinski_scaling_factor=0.0,
@@ -975,22 +975,33 @@ def read_config(
             divdamp_fac=0.0025,
             # divdamp_fac=0.00025,
             # divdamp_fac=0.0,
-            scal_divsign=10.0,
-            do_o2_divdamp=False,
-            do_3d_divergence_damping=True,
-            divergence_order=3,
-            do_multiple_divdamp=False,
-            number_of_divdamp_step=50,
-            do_proper_diagnostics_divdamp=False,
-            do_only_divdamp=False,
-            do_proper_contravariant_divdamp=False,
-            suppress_vertical_in_3d_divdamp=True,
+            # scal_divsign=10.0,
+            # do_o2_divdamp=False,
+            # do_3d_divergence_damping=True,
+            # divergence_order=3,
+            # do_multiple_divdamp=False,
+            # number_of_divdamp_step=50,
+            # do_proper_diagnostics_divdamp=False,
+            # do_only_divdamp=False,
+            # do_proper_contravariant_divdamp=False,
+            # suppress_vertical_in_3d_divdamp=True,
             # do_o2_divdamp=False,
             # do_3d_divergence_damping=False,
             # divergence_order=1,
             # do_multiple_divdamp=True,
             # number_of_divdamp_step=50,
             # do_proper_diagnostics_divdamp=True,
+            scal_divsign=1.0,
+            first_order_div_threshold=0.0,
+            do_o2_divdamp=False,
+            do_3d_divergence_damping=False,
+            divergence_order=1,
+            do_multiple_divdamp=False,
+            number_of_divdamp_step=100,
+            do_proper_diagnostics_divdamp=False,
+            do_only_divdamp=False,
+            do_proper_contravariant_divdamp=False,
+            suppress_vertical_in_3d_divdamp=True,
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
@@ -1074,9 +1085,9 @@ def read_config(
             suppress_vertical_in_3d_divdamp=False,
         )
 
-    def _jablownoski_Williamson_config():
+    def _jablownoski_Williamson_config(**kwargs: Any):
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=600.0),  # 600
+            dtime=timedelta(seconds=kwargs["dtime_seconds"]),  # 600
             end_date=datetime(1, 1, 15, 0, 0, 0),
             # end_date=datetime(1, 1, 1, 2, 0, 0),
             damping_height=45000.0,
@@ -1166,7 +1177,7 @@ def read_config(
             output_config,
             diffusion_config,
             nonhydro_config,
-        ) = _jablownoski_Williamson_config()
+        ) = _jablownoski_Williamson_config(**kwargs)
     elif experiment_type == ExperimentType.GAUSS3D:
         (
             model_run_config,
