@@ -164,7 +164,7 @@ class AdvectionConfig:
     #: 2026, "WENO opt" / "WENO d_j = 1", see 'weno_least_squares.WenoLinearWeights'); the
     #: init-time WENO
     #: state must be built with the same set, 'weno_least_squares.linear_weights'
-    weno_linear_weights: WenoLinearWeights = WenoLinearWeights.OPTIMIZED
+    weno_linear_weights: WenoLinearWeights = WenoLinearWeights.OPTIMIZED2
     #: c_sel of the hybrid scheme (paper eq. 6): cells whose quadratic-fit residual exceeds
     #: this fraction of (q + 1e-10)^2 take the WENO blend; the Fortran literal is single
     #: precision, and the value is rounded to single precision before use

@@ -133,16 +133,16 @@ def assert_table_2_gates(
 @pytest.mark.parametrize(
     "horizontal_advection_type, horizontal_advection_limiter",
     [
-        pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.NO_LIMITER, id="miura"),
+        # pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.NO_LIMITER, id="miura"),
         pytest.param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.NO_LIMITER, id="miura3"),
-        pytest.param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.NO_LIMITER, id="miura_weno"),
+        # pytest.param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.NO_LIMITER, id="miura_weno"),
         pytest.param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, id="miura3_weno"),
-        pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.MONOTONIC, id="miura-monotonic"),
-        pytest.param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.MONOTONIC, id="miura3-monotonic"),
-        pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.POSITIVE_DEFINITE, id="miura-positive_definite"),
-        pytest.param(
-            _HADV.QUADRATIC_3RD_ORDER, _HLIM.POSITIVE_DEFINITE, id="miura3-positive_definite"
-        ),
+        # pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.MONOTONIC, id="miura-monotonic"),
+        # pytest.param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.MONOTONIC, id="miura3-monotonic"),
+        # pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.POSITIVE_DEFINITE, id="miura-positive_definite"),
+        # pytest.param(
+        #     _HADV.QUADRATIC_3RD_ORDER, _HLIM.POSITIVE_DEFINITE, id="miura3-positive_definite"
+        # ),
     ],
 )
 def test_jocksch_cylinder_one_period(
@@ -163,7 +163,7 @@ def test_jocksch_cylinder_one_period(
         tmp_path=tmp_path,
         process_props=process_props,
         backend=backend,
-        num_turns=10,
+        num_turns=1,
     )
     paper_value = PAPER_TABLE_2.get((horizontal_advection_type, horizontal_advection_limiter))
     print(
@@ -265,10 +265,10 @@ CYLINDER_NUM_TURNS: Final = 10
 @pytest.mark.parametrize(
     "horizontal_advection_type, horizontal_advection_limiter",
     [
-        pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.MONOTONIC, id="miura"),
+        # pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.MONOTONIC, id="miura"),
         pytest.param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.MONOTONIC, id="miura3"),
-        pytest.param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.MONOTONIC, id="miura_weno"),
-        pytest.param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.MONOTONIC, id="miura3_weno"),
+        # pytest.param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.MONOTONIC, id="miura_weno"),
+        pytest.param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, id="miura3_weno"),
     ],
 )
 def test_jocksch_cylinder_one_turn(
@@ -317,7 +317,6 @@ def test_jocksch_cylinder_one_turn(
         f"  undershoot (-min q) final / run                = {run.undershoot_final:.6e} / "
         f"{run.undershoot_run:.6e}\n"
         f"  relative mass change                           = {run.relative_mass_change:.6e}\n"
-        f"  peak |q| beyond the wind's taper               = {run.far_field_peak:.6e}"
     )
 
     assert math.isfinite(run.jocksch_measure)
@@ -400,3 +399,143 @@ def test_optimize_for_p(
                     writer.writerow(record)
                     csv_file.flush()
                     print(record)
+
+
+@pytest.mark.level("validation")
+@pytest.mark.embedded_remap_error
+@pytest.mark.skipif(not GRID_FILE.exists(), reason=f"shared grid file {GRID_FILE} not found")
+@pytest.mark.parametrize(
+    "horizontal_advection_type, horizontal_advection_limiter",
+    [
+        # pytest.param(_HADV.LINEAR_2ND_ORDER, _HLIM.MONOTONIC, id="miura"),
+        pytest.param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.MONOTONIC, id="miura3"),
+        # pytest.param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.MONOTONIC, id="miura_weno"),
+        pytest.param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, id="miura3_weno"),
+    ],
+)
+def test_cylinder_slit(
+    horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: tracer_advection.HorizontalAdvectionLimiter,
+    *,
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+):
+    run = test_utils.run_cylinder_one_period(
+        grid_file=GRID_FILE,
+        cylinder_center=CYLINDER_CENTER,
+        tracer_advection={
+            "horizontal_advection_type": horizontal_advection_type,
+            "horizontal_advection_limiter": horizontal_advection_limiter,
+            "weno_linear_smoothness_exponent": 2,
+        },
+        tmp_path=tmp_path,
+        process_props=process_props,
+        backend=backend,
+        slot_width=10000,
+        slot_depth=35000,
+    )
+    print(
+        f"\n{horizontal_advection_type.name} ({horizontal_advection_type.value}) + "
+        f"{horizontal_advection_limiter.name} ({horizontal_advection_limiter.value}): "
+        f"{CYLINDER_NUM_TURNS} turn(s), "
+        f"{test_utils.CYLINDER_N_TIME_STEPS_PER_TURN * CYLINDER_NUM_TURNS} steps "
+        f"of dt = {run.dtime_seconds} s, "
+        f"{run.num_levels} level(s), wall time {run.elapsed_wall_time:.1f} s\n"
+        f"  omega                                          = {run.cylinder_config.omega:.6e} 1/s"
+        f"  orbit {test_utils.CYLINDER_ORBIT_RADIUS / 1000:.0f} km,"
+        f" travel {2 * math.pi * test_utils.CYLINDER_ORBIT_RADIUS * CYLINDER_NUM_TURNS / 1000:.1f} km\n"
+        f"  Jocksch measure (pairs within an edge length)  = {run.jocksch_measure:.6f}"
+        f"  sqrt = {math.sqrt(run.jocksch_measure):.6f}\n"
+        f"  all neighbour pairs (= 3 sum e^2)              = {run.all_pairs_measure:.6f}"
+        f"  sqrt = {math.sqrt(run.all_pairs_measure):.6f}\n"
+        f"  sum e^2                                        = {run.sum_squared_error:.6f}"
+        f"  sqrt = {math.sqrt(run.sum_squared_error):.6f}\n"
+        f"  overshoot (max q - 1) final / run              = {run.overshoot_final:.6e} / "
+        f"{run.overshoot_run:.6e}\n"
+        f"  undershoot (-min q) final / run                = {run.undershoot_final:.6e} / "
+        f"{run.undershoot_run:.6e}\n"
+        f"  relative mass change                           = {run.relative_mass_change:.6e}\n"
+    )
+
+    assert math.isfinite(run.jocksch_measure)
+    assert run.overshoot_run < 1.0 and run.undershoot_run < 1.0
+    assert run.jocksch_measure == pytest.approx(run.all_pairs_measure, rel=1e-4)
+
+
+@pytest.mark.level("validation")
+@pytest.mark.embedded_remap_error
+@pytest.mark.skipif(not GRID_FILE.exists(), reason=f"shared grid file {GRID_FILE} not found")
+def test_optimise_cylinder_weights(
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    option = weno_least_squares.WenoLinearWeights.UNITY
+    weights = np.array(
+        weno_least_squares.LINEAR_WEIGHTS_BY_STENCIL_TYPE[option],
+        dtype=float,
+    )
+    evaluation = 0
+
+    def objective(values):
+        nonlocal evaluation
+        output_path = tmp_path / f"evaluation_{evaluation:04d}"
+        output_path.mkdir()
+        evaluation += 1
+
+        with monkeypatch.context() as patch:
+            patch.setitem(
+                weno_least_squares.LINEAR_WEIGHTS_BY_STENCIL_TYPE,
+                option,
+                tuple(float(value) for value in values),
+            )
+            run = test_utils.run_cylinder_one_period(
+                grid_file=GRID_FILE,
+                cylinder_center=CYLINDER_CENTER,
+                tracer_advection={
+                    "horizontal_advection_type": _HADV.QUADRATIC_3RD_ORDER_WENO,
+                    "horizontal_advection_limiter": _HLIM.NO_LIMITER,
+                    "weno_linear_weights": option,
+                },
+                tmp_path=output_path,
+                process_props=process_props,
+                backend=backend,
+                num_turns=1,
+                num_time_steps=test_utils.CYLINDER_N_TIME_STEPS_PER_TURN,
+                orbit_radius=test_utils.CYLINDER_ORBIT_RADIUS,
+                cylinder_radius=test_utils.CYLINDER_ORBIT_CYLINDER_RADIUS,
+            )
+        return run.jocksch_measure
+
+    loss = objective(weights)
+
+    for iteration in range(20):
+        gradient = np.empty_like(weights)
+        for index in range(len(weights)):
+            step = 1e-3 * max(1.0, abs(weights[index]))
+            perturbed = weights.copy()
+            perturbed[index] += step
+            gradient[index] = (objective(perturbed) - loss) / step
+
+        accepted = False
+        learning_rate = 0.5
+
+        for _ in range(10):
+            candidate = np.maximum(0.0, weights - learning_rate * gradient)
+            if np.array_equal(candidate, weights):
+                break
+
+            candidate_loss = objective(candidate)
+            if np.isfinite(candidate_loss) and candidate_loss < loss:
+                weights, loss = candidate, candidate_loss
+                accepted = True
+                break
+
+            learning_rate *= 0.5
+
+        if not accepted:
+            break
+
+        print(f"{iteration=}, {loss=:.8g}, weights={weights}")

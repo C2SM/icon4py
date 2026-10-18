@@ -83,8 +83,7 @@ CANDIDATE_ZERO_PATTERNS_QUADRATIC: Final[tuple[tuple[int, ...], ...]] = (
 class WenoLinearWeights(enum.Enum):
     """The linear weight sets d_j of the quadratic WENO blend (paper section 2.3, Table 2).
 
-    A set is one weight per stencil type I-V; the three type-VI candidates always get 1.
-    The weights enter twice: at run time as the candidate's d_j in the smoothness
+    A set is one weight per stencil type I-V; the three type-VI candidates always get 1. The weights enter twice: at run time as the candidate's d_j in the smoothness
     weighting (mo_advection_hflux.f90 3008) and at init time in the assembly of the
     type-VI candidates (f90 2647-2657), so a set is chosen once and used for both, see
     'linear_weights'.
@@ -102,6 +101,7 @@ class WenoLinearWeights(enum.Enum):
     #: 0, 0, 0, 0, 2.991549980478795 for types I-V (f90 2596-2600, the live assignment):
     #: the result of his gradient-descent optimisation on the moving cylinder,
     #: "WENO opt" in Table 2
+    OPTIMIZED2 = "optimized2"
     OPTIMIZED = "optimized"
     #: every d_j = 1: the paper's literal "d_j = 1", the hybrid's run-time weighting
     UNITY = "unity"
@@ -113,6 +113,7 @@ class WenoLinearWeights(enum.Enum):
 
 #: one weight per stencil type I-V (f90 2590-2600), see 'WenoLinearWeights'
 LINEAR_WEIGHTS_BY_STENCIL_TYPE: Final[dict[WenoLinearWeights, tuple[float, ...]]] = {
+    WenoLinearWeights.OPTIMIZED2: (0.0, 0.0, 1.59029146, 0.0, 1.99241026),
     WenoLinearWeights.OPTIMIZED: (0.0, 0.0, 0.0, 0.0, 2.991549980478795),
     WenoLinearWeights.UNITY: (1.0, 1.0, 1.0, 1.0, 1.0),
     WenoLinearWeights.HAND_TUNED: (1.0, 1.5, 1.0, 0.5, 1.0),

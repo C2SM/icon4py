@@ -181,6 +181,8 @@ def _cylinder_ic_config(
     edge_length: float,
     domain_length: float,
     domain_height: float,
+    slot_width: float,
+    slot_depth: float,
 ) -> moving_cylinder.MovingCylinderConfig:
     if orbit_radius is None:
         return moving_cylinder.MovingCylinderConfig(
@@ -189,6 +191,8 @@ def _cylinder_ic_config(
             radius=cylinder_radius,
             wind_speed=CYLINDER_WIND_SPEED,
             wind_angle=wind_angle,
+            slot_width=slot_width,
+            slot_depth=slot_depth,
         )
     assert cylinder_center == (None, None), (
         "'orbit_radius' puts the cylinder on the orbit itself: leave 'cylinder_center' unset."
@@ -202,6 +206,8 @@ def _cylinder_ic_config(
         clip_inner_radius=orbit_radius
         + cylinder_radius
         + CYLINDER_TAPER_MARGIN_EDGE_LENGTHS * edge_length,
+        slot_width=slot_width,
+        slot_depth=slot_depth,
     )
 
 
@@ -220,6 +226,8 @@ def run_cylinder_one_period(
     orbit_radius: float | None = None,
     cylinder_radius: float = CYLINDER_RADIUS,
     num_turns: int = 1,
+    slot_width: float = 0,
+    slot_depth: float = 0,
 ) -> CylinderRun:
     """Carry the cylinder once around the torus with the driver and measure the final error.
 
@@ -281,6 +289,8 @@ def run_cylinder_one_period(
         edge_length=edge_length,
         domain_length=domain_length,
         domain_height=domain_height,
+        slot_width=slot_width,
+        slot_depth=slot_depth,
     )
     num_time_steps *= num_turns
     experiment_config = experiment_config.with_overrides(
