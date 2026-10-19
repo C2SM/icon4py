@@ -237,9 +237,9 @@ def test_driver(
             "theta_v": savepoint_time_step_exit.theta_v(),
         }
 
-    for declaration, tracer in ds.tracers.current.leaves():
-        computed[declaration.name] = tracer.data
-        references[declaration.name] = getattr(savepoint_time_step_exit, declaration.name)()
+    for name, tracer in ds.tracers.current.items():
+        computed[name] = tracer.data
+        references[name] = getattr(savepoint_time_step_exit, name)()
 
     tolerances = _TOLERANCES[experiment_description]
 

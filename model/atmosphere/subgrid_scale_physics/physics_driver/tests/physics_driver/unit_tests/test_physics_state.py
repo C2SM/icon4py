@@ -39,8 +39,8 @@ def test_entry_state_views_the_inputs_and_the_driver_diagnostics(grid: base_grid
     # no copies: the prognostics and tracers as given, the diagnostics in the driver's buffers
     for name in ("vn", "w", "exner", "theta_v", "rho", *states.TRACERS):
         assert getattr(entry, name) is getattr(driver_inputs, name), name
-    for declaration, field in physics.diagnostics.leaves():
-        assert getattr(entry, declaration.name) is field, declaration.name
+    for name, field in physics.diagnostics.items():
+        assert getattr(entry, name) is field, name
 
 
 def test_diagnose_fills_the_diagnostics_and_leaves_the_inputs_untouched(
@@ -55,7 +55,7 @@ def test_diagnose_fills_the_diagnostics_and_leaves_the_inputs_untouched(
     step = RecordingStep(fw.Empty())
     physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
     prognostic, tracer_state = prognostics(grid, exner=0.95, theta_v=300.0), tracers(grid)
-    before = {d.name: field.data.asnumpy().copy() for d, field in prognostic.leaves()}
+    before = {name: field.data.asnumpy().copy() for name, field in prognostic.items()}
 
     physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
 
@@ -66,9 +66,7 @@ def test_diagnose_fills_the_diagnostics_and_leaves_the_inputs_untouched(
     assert (
         diagnostics.pressure_ifc.data.asnumpy()[:, -1] > diagnostics.pressure.data.asnumpy()[:, 0]
     ).all()
-    for declaration, field in prognostic.leaves():
-        np.testing.assert_array_equal(
-            field.data.asnumpy(), before[declaration.name], err_msg=declaration.name
-        )
+    for name, field in prognostic.items():
+        np.testing.assert_array_equal(field.data.asnumpy(), before[name], err_msg=name)
     assert tracer_state.qv is not None
     np.testing.assert_array_equal(tracer_state.qv.data.asnumpy(), 1e-3)

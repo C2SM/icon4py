@@ -12,7 +12,7 @@ import dataclasses
 import functools
 import types
 import typing
-from collections.abc import Callable, Collection, Iterator
+from collections.abc import Callable, Collection, Iterator, Mapping
 from typing import Any, ClassVar, Literal, dataclass_transform
 
 import gt4py.next as gtx
@@ -131,13 +131,17 @@ class Decl:
 
 
 @dataclass_transform(frozen_default=True, kw_only_default=True, eq_default=False)
-class State:
+class State(Mapping[str, Field[Any]]):
     """
     A frozen, keyword-only dataclass of typed leaves.
 
     `Field` leaves are read back from the annotations by `declarations()`; plain leaves
     (floats, ints, datetimes) are ordinary fields and are not listed. A leaf annotated
     `Field[Q] | None` is optional: `allocate` may leave it None and `leaves()` skips it.
+
+    A state is a read-only `Mapping` from leaf name to field: `state[name]`, `for name in
+    state`, `state.items()`. States compare by identity and stay hashable: the Mapping's
+    dict equality would compare fields by alias, so it is overridden.
     """
 
     def __init_subclass__(cls) -> None:
@@ -155,6 +159,28 @@ class State:
             field = getattr(self, declaration.name)
             if field is not None:
                 yield declaration, field
+
+    def __eq__(self, other: object) -> bool:
+        """Identity, the `eq=False` dataclass choice, kept over the Mapping's dict equality."""
+        return self is other
+
+    def __hash__(self) -> int:
+        return id(self)
+
+    def __getitem__(self, name: str) -> Field[Any]:
+        """The present leaf `name`; `KeyError` when it is absent or None."""
+        for declaration, field in self.leaves():
+            if declaration.name == name:
+                return field
+        raise KeyError(name)
+
+    def __iter__(self) -> Iterator[str]:
+        """The present leaf names, in declaration order."""
+        return (declaration.name for declaration, _ in self.leaves())
+
+    def __len__(self) -> int:
+        """The number of present leaves."""
+        return sum(1 for _ in self.leaves())
 
 
 _DECLARATIONS: dict[type[State], tuple[Decl, ...]] = {}

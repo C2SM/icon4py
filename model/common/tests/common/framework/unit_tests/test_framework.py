@@ -100,6 +100,21 @@ def test_state_declarations_list_the_field_leaves_only(grid: base_grid.Grid) -> 
         column.dtime = 2.0  # type: ignore[misc]
 
 
+def test_state_maps_present_leaf_names_to_fields(grid: base_grid.Grid) -> None:
+    tracers = fw.allocate(Tracers, grid, allocator=None, only=("vt",))
+    assert list(tracers) == ["pressure", "vt"]
+    assert tracers["vt"] is tracers.vt
+    # an optional leaf left None is absent from the mapping
+    assert "salt" not in tracers
+    assert tracers.get("salt") is None
+    # states compare by identity and stay hashable over the Mapping base
+    same, other = tracers, fw.allocate(Tracers, grid, allocator=None, only=("vt",))
+    assert tracers == same
+    assert tracers != other
+    assert hash(tracers) == hash(tracers)
+    assert {tracers: 1}[tracers] == 1
+
+
 def test_optional_leaves_are_declared_and_skipped_when_absent(grid: base_grid.Grid) -> None:
     assert [(d.name, d.optional) for d in Tracers.declarations()] == [
         ("pressure", False),

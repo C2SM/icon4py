@@ -134,7 +134,7 @@ def read_initial_condition_from_file(
     ntracer = config.ntracer
     if ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
-        for i, (_, tracer) in enumerate(tracer_state_now.leaves()):
+        for i, tracer in enumerate(tracer_state_now.values()):
             tracer.data.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
 
 
