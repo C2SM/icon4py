@@ -90,6 +90,9 @@ class AdvancedState:
 class PhysicsState:
     """What the processes see in one step (ICON dyn2phy, ``field%ta`` / ``diag%``), in four parts.
 
+    TODO (Yilu): The states in this module need to be vigorously improved when state and component is ready.
+    They are workaround so that the refactoring for sequential run is minimal and the advanced variables are clear to users/developers.
+
     1. Set pointers into the model state (``exner``, ``theta_v``, ``rho``, ``vn``,
        ``w``, ``tracers``).
     2. ``diagnostics``, the caller's ``DiagnosticState``, linked and diagnosed once at
@@ -197,6 +200,7 @@ class PhysicsState:
         """Allocate the process's diagnostic output buffers from their metadata and keep them.
 
         (TODO Yilu): I think these should also be linked back to some global variables.
+        And not all outputs should be allocated or linked here.
 
         Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
         is a diagnostic. Tendencies stay component-owned: ``Tendencies`` sums
