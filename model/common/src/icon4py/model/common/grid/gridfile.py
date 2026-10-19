@@ -232,6 +232,7 @@ class GeometryName(FieldName):
     CELL_NORMAL_ORIENTATION = "orientation_of_normal"
     TANGENT_ORIENTATION = "edge_system_orientation"
     EDGE_ORIENTATION_ON_VERTEX = "edge_orientation"
+    VERTEX_EDGE_VALIDITY = "vertex_edge_validity"
 
     # TODO(halungge): compute from coordinates
     CELL_AREA = "cell_area"

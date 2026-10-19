@@ -261,12 +261,7 @@ class GridManager:
         )
 
         global_v2e = self._get_index_field(gridfile.ConnectivityName.V2E)
-        local_v2e = global_v2e[my_vertex_indices, :]
-        vertex_edge_orientation = np.where(
-            local_v2e != gridfile.GridFile.INVALID_INDEX,
-            vertex_edge_orientation,
-            0,
-        )
+        vertex_edge_validity = global_v2e[my_vertex_indices, :] != gridfile.GridFile.INVALID_INDEX
 
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
@@ -332,6 +327,11 @@ class GridManager:
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
                 (dims.VertexDim, dims.V2EDim),
                 vertex_edge_orientation,
+                allocator=allocator,
+            ),
+            gridfile.GeometryName.VERTEX_EDGE_VALIDITY.value: gtx.as_field(
+                (dims.VertexDim, dims.V2EDim),
+                vertex_edge_validity,
                 allocator=allocator,
             ),
         }
