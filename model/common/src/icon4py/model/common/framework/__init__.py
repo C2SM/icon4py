@@ -137,7 +137,7 @@ class State(Mapping[str, Field[Any]]):
 
     `Field` leaves are read back from the annotations by `declarations()`; plain leaves
     (floats, ints, datetimes) are ordinary fields and are not listed. A leaf annotated
-    `Field[Q] | None` is optional: `allocate` may leave it None and `leaves()` skips it.
+    `Field[Q] | None` is optional: `allocate` may leave it None; the mapping skips it.
 
     A state is a read-only `Mapping` from leaf name to field: `state[name]`, `for name in
     state`, `state.items()`. States compare by identity and stay hashable: the Mapping's
@@ -153,13 +153,6 @@ class State(Mapping[str, Field[Any]]):
         """The `Field` leaves of the class, in declaration order."""
         return _declarations(cls)
 
-    def leaves(self) -> Iterator[tuple[Decl, Field[Any]]]:
-        """The declarations with their fields, skipping the optional leaves that are None."""
-        for declaration in self.declarations():
-            field = getattr(self, declaration.name)
-            if field is not None:
-                yield declaration, field
-
     def __eq__(self, other: object) -> bool:
         """Identity, the `eq=False` dataclass choice, kept over the Mapping's dict equality."""
         return self is other
@@ -169,21 +162,29 @@ class State(Mapping[str, Field[Any]]):
 
     def __getitem__(self, name: str) -> Field[Any]:
         """The present leaf `name`; `KeyError` when it is absent or None."""
-        for declaration, field in self.leaves():
+        for declaration, field in _leaves(self):
             if declaration.name == name:
                 return field
         raise KeyError(name)
 
     def __iter__(self) -> Iterator[str]:
         """The present leaf names, in declaration order."""
-        return (declaration.name for declaration, _ in self.leaves())
+        return (declaration.name for declaration, _ in _leaves(self))
 
     def __len__(self) -> int:
         """The number of present leaves."""
-        return sum(1 for _ in self.leaves())
+        return sum(1 for _ in _leaves(self))
 
 
 _DECLARATIONS: dict[type[State], tuple[Decl, ...]] = {}
+
+
+def _leaves(state: State) -> Iterator[tuple[Decl, Field[Any]]]:
+    """The declarations with their fields, skipping the optional leaves that are None."""
+    for declaration in state.declarations():
+        field = getattr(state, declaration.name)
+        if field is not None:
+            yield declaration, field
 
 
 def _declarations(cls: type[State]) -> tuple[Decl, ...]:
@@ -256,7 +257,7 @@ def copy[S: State](state: S, allocator: gtx_typing.Allocator | None) -> S:
         declaration.name: Field(
             declaration.quantity, data_allocation.reallocate(field.data, allocator=allocator)
         )
-        for declaration, field in state.leaves()
+        for declaration, field in _leaves(state)
     }
     copied: S = dataclasses.replace(typing.cast(Any, state), **copies)
     return copied

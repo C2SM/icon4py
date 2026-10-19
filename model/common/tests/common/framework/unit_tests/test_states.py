@@ -32,7 +32,7 @@ def test_prognostic_state_lists_its_five_leaves() -> None:
 def test_tracer_state_allocates_the_configured_tracers_only(grid: base_grid.Grid) -> None:
     config = states.TracerConfig.from_ntracer(2)
     tracers = fw.allocate(states.TracerState, grid, allocator=None, only=config.active_names)
-    assert [d.name for d, _ in tracers.leaves()] == ["qv", "qc"]
+    assert list(tracers) == ["qv", "qc"]
     assert tracers.qi is None
     assert all(d.optional for d in states.TracerState.declarations())
 

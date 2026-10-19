@@ -95,7 +95,7 @@ def test_state_declarations_list_the_field_leaves_only(grid: base_grid.Grid) -> 
         salt=fw.zeros(Salt, grid, allocator=None),
         dtime=1.0,
     )
-    assert [d.name for d, _ in column.leaves()] == ["pressure", "salt"]
+    assert list(column) == ["pressure", "salt"]
     with pytest.raises(dataclasses.FrozenInstanceError):
         column.dtime = 2.0  # type: ignore[misc]
 
@@ -124,8 +124,8 @@ def test_optional_leaves_are_declared_and_skipped_when_absent(grid: base_grid.Gr
     tracers = fw.allocate(Tracers, grid, allocator=None, only=("vt",))
     assert tracers.salt is None
     assert tracers.vt is not None
-    assert [d.name for d, _ in tracers.leaves()] == ["pressure", "vt"]
-    assert [d.name for d, _ in fw.allocate(Tracers, grid, allocator=None).leaves()] == [
+    assert list(tracers) == ["pressure", "vt"]
+    assert list(fw.allocate(Tracers, grid, allocator=None)) == [
         "pressure",
         "salt",
         "vt",
@@ -185,7 +185,7 @@ def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid
 
     sink = Sink(grid, allocator=None)
     assert fw.Empty.declarations() == ()
-    assert list(fw.Empty().leaves()) == []
+    assert list(fw.Empty()) == []
     own = sink.run(Halve.Input(pressure=fw.zeros(Pressure, grid, allocator=None)))
     assert isinstance(own, fw.Empty) and own is sink.cached_output
 
