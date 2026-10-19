@@ -227,7 +227,7 @@ class PhysicsState:
 
         After this call the facade is complete: every model-state field the physics
         may touch is reachable as ``state.<name>`` — the raw PrognosticState, DiagnosticState,
-        and TracerState never appear below the PhysicsState layer. 
+        and TracerState never appear below the PhysicsState layer.
         """
         # Physics needs all six moisture species; TracerState fields are optional (a
         # tracer may be inactive per TracerConfig), so fail loudly once here rather
