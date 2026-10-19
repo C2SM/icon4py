@@ -30,7 +30,12 @@ if TYPE_CHECKING:
 
     from icon4py.model.common import field_type_aliases as fa, type_alias as ta
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import factory, prognostic_state, tracer_states
+    from icon4py.model.common.states import (
+        diagnostic_state,
+        factory,
+        prognostic_state,
+        tracer_states,
+    )
 
 
 class PhysicsComponent(Component[Any, Any], Protocol):
@@ -152,14 +157,16 @@ class PhysicsDriver:
 
     def run(
         self,
+        *,
         prognostic: prognostic_state.PrognosticState,
         tracers: tracer_states.TracerState,
+        diagnostics: diagnostic_state.DiagnosticState,
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
         perturbed_exner: fa.CellKField[ta.wpfloat] | None = None,
     ) -> None:
         step_start_datetime = simulation_current_datetime - dtime
-        self._state.compute_diagnostics(prognostic, tracers)
+        self._state.compute_diagnostics(prognostic, tracers, diagnostics)
         self._tendencies.zero()
         dt_seconds = dtime.total_seconds()
         # TODO (Yilu): compute the heat capacity after muphy

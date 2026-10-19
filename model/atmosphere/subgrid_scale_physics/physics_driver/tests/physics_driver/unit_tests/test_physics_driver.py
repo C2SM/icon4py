@@ -178,8 +178,8 @@ class RecordingCoupling:
     events: list = dataclasses.field(default_factory=list)
 
     # PhysicsState surface
-    def compute_diagnostics(self, prognostic, tracers) -> None:
-        self.events.append(("compute_diagnostics", prognostic))
+    def compute_diagnostics(self, prognostic, tracers, diagnostics) -> None:
+        self.events.append(("compute_diagnostics", prognostic, diagnostics))
 
     _process_outputs: dict = dataclasses.field(default_factory=dict)
 
@@ -238,6 +238,7 @@ def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
     driver.run(
         prognostic="prog",
         tracers="tracers",
+        diagnostics="diag",
         dtime=_DT,
         simulation_current_datetime=_T0 + _DT,
     )
@@ -250,7 +251,7 @@ def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
     assert coupling.events == [
         ("allocate", "A"),
         ("allocate", "B"),
-        ("compute_diagnostics", "prog"),
+        ("compute_diagnostics", "prog", "diag"),
         ("zero",),
         ("advance", {"tend_temperature": "A"}, 300.0),
         ("advance", {"tend_temperature": "B", "kh": "KH"}, 300.0),
@@ -281,6 +282,7 @@ def test_run_raises_for_non_multiple_interval() -> None:
         driver.run(
             prognostic="prog",
             tracers="tracers",
+            diagnostics="diag",
             dtime=_DT,
             simulation_current_datetime=_T0,
         )
@@ -303,6 +305,7 @@ def test_out_of_window_process_does_nothing() -> None:
     driver.run(
         prognostic="prog",
         tracers="tracers",
+        diagnostics="diag",
         dtime=_DT,
         simulation_current_datetime=_T0,
     )
@@ -312,7 +315,7 @@ def test_out_of_window_process_does_nothing() -> None:
     # the advance call still happens, with nothing in it to add
     assert coupling.events == [
         ("allocate", "future"),
-        ("compute_diagnostics", "prog"),
+        ("compute_diagnostics", "prog", "diag"),
         ("zero",),
         ("advance", {}, 300.0),
         ("update", 300.0, None),
@@ -334,11 +337,19 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
 
     # Step 1: active (step start == _T0, elapsed == 0), compute + cache.
     driver.run(
-        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + _DT
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + _DT,
     )
     # Step 2: in window, but not active (elapsed == _DT) — recycle the cached outputs.
     driver.run(
-        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + 2 * _DT
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + 2 * _DT,
     )
 
     assert comp.call_count == 1
@@ -366,7 +377,11 @@ def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
 
     # First call lands in-window but off the firing tick (step start == _T0 + _DT).
     driver.run(
-        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + 2 * _DT
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + 2 * _DT,
     )
 
     assert comp.call_count == 1

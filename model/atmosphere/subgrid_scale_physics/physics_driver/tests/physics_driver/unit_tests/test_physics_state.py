@@ -8,6 +8,8 @@
 
 """Tests of the PhysicsState layer (PhysicsState facade, process outputs, tendency sums, single update)."""
 
+import dataclasses
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -81,6 +83,11 @@ def _tracer_state(grid, *, qv: float = 0.0) -> tracer_states.TracerState:
     )
 
 
+def _diagnostic_state(grid) -> diagnostic_state.DiagnosticState:
+    """The caller-owned DiagnosticState that compute_diagnostics links and fills."""
+    return diagnostic_state.initialize_diagnostic_state(grid, None)
+
+
 def _physics_state(grid) -> physics_state.PhysicsState:
     metrics = _StubFieldSource(
         {
@@ -125,7 +132,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     exner_before = prognostic.exner.asnumpy().copy()
     vn_before = prognostic.vn.asnumpy().copy()
 
-    ws.compute_diagnostics(prognostic, tracers)
+    ws.compute_diagnostics(prognostic, tracers, _diagnostic_state(grid))
 
     # wiring smoke test: physically plausible diagnostics
     assert 200.0 < ws.diagnostics.temperature.asnumpy().mean() < 320.0
@@ -146,6 +153,12 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     assert ws.w is prognostic.w
     assert ws.vn is prognostic.vn
     assert ws.tracers is tracers
+    assert ws.advanced.temperature is ws.diagnostics.temperature
+    assert ws.advanced.u is ws.diagnostics.u
+    assert ws.advanced.v is ws.diagnostics.v
+    assert ws.advanced.w is prognostic.w
+    for name in physics_state.MOISTURE_SPECIES:
+        assert getattr(ws.advanced, name) is getattr(tracers, name)
 
 
 # ---------------------------------------------------------------------------
@@ -156,7 +169,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 def test_advance_sums_tendencies_and_skips_diagnostics():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
-    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid))
+    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid), _diagnostic_state(grid))
     acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY), "km": _meta()}
     out = {
@@ -175,7 +188,7 @@ def test_advance_sums_tendencies_and_skips_diagnostics():
 def test_zero_resets_between_steps():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
-    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid))
+    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid), _diagnostic_state(grid))
     acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY)}
     out = {"tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
@@ -232,7 +245,7 @@ def test_advance_and_update_apply_tracers_w_and_thermodynamics_once():
     ws = _physics_state(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
-    ws.compute_diagnostics(prognostic, tracers)
+    ws.compute_diagnostics(prognostic, tracers, _diagnostic_state(grid))
     exner_before = prognostic.exner.asnumpy().copy()
     theta_v_before = prognostic.theta_v.asnumpy().copy()
 
@@ -264,7 +277,7 @@ def test_update_projects_accumulated_wind_tendency_to_vn():
     ws = _physics_state(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
-    ws.compute_diagnostics(prognostic, tracers)
+    ws.compute_diagnostics(prognostic, tracers, _diagnostic_state(grid))
     dt = 300.0
     acc = _accumulated(
         grid,
@@ -278,26 +291,44 @@ def test_update_projects_accumulated_wind_tendency_to_vn():
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
 
 
-def test_update_rejects_a_lone_horizontal_wind_tendency():
-    # vn is ONE projection of (u, v), so a process declaring only one of the two would
-    # silently lose the other half of the momentum: an error, not a no-op.
+def test_tendencies_start_with_a_zero_sum_per_advanced_field():
+    tendencies = _tendencies(simple.simple_grid())
+
+    assert set(tendencies.acc) == {
+        physics_state.tendency_name(field.name)
+        for field in dataclasses.fields(physics_state.AdvancedState)
+    }
+    for buffer in tendencies.acc.values():
+        np.testing.assert_array_equal(buffer.asnumpy(), 0.0)
+    # the dims come from the field annotations: w lives on half levels
+    assert tendencies.acc["tend_w"].domain.dims == (dims.CellDim, dims.KHalfDim)
+    assert tendencies.acc["tend_temperature"].domain.dims == (dims.CellDim, dims.KDim)
+
+
+def test_advance_rejects_a_tendency_of_no_advanced_field():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
-    ws.compute_diagnostics(
-        _uniform_prognostic(grid, exner=0.95, theta_v=300.0), _tracer_state(grid)
-    )
-    acc = _accumulated(
-        grid, ws, tend_u=data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KDim)
-    )
+    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid), _diagnostic_state(grid))
+    acc = _tendencies(grid)
+    out = {"tend_dummy": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
-    with pytest.raises(ValueError, match="applied as a pair"):
-        acc.update(ws, dt_seconds=300.0)
+    acc.zero()
+    with pytest.raises(ValueError, match="'tend_dummy' is not the tendency"):
+        acc.advance(ws, out, {"tend_dummy": _meta(kind=_TENDENCY)}, _DT_SECONDS)
 
 
-def test_physics_state_groups_diagnostics_in_common_container():
+def test_physics_state_links_the_callers_diagnostic_state():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
-    assert isinstance(ws.diagnostics, diagnostic_state.DiagnosticState)
+    diagnostics = _diagnostic_state(grid)
+    temperature = diagnostics.temperature
+
+    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid), diagnostics)
+
+    # linked, not copied: the caller's fields are the ones diagnosed and advanced
+    assert ws.diagnostics is diagnostics
+    assert ws.advanced.temperature is temperature
+    assert 200.0 < temperature.asnumpy().mean() < 320.0
     # the flat shorthand is gone -- pointers and diagnostics are structurally distinct
     assert not hasattr(ws, "ta")
     assert not hasattr(ws, "pressure")
