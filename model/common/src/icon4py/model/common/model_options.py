@@ -137,8 +137,17 @@ def customize_backend(
         "backend_factory", model_backends.make_custom_dace_backend
     )
     custom_backend = backend_factory(**backend_descriptor)
+    # Log the workspace size only: formatting the array itself would copy it to host.
+    logged_options = backend_descriptor
+    if (workspace := backend_descriptor.get("external_workspace")) is not None:
+        logged_options = {
+            **backend_descriptor,
+            "external_workspace": {
+                dev: f"{slab.nbytes / 2**30:.2f} GiB" for dev, slab in workspace.items()
+            },
+        }
     log.info(
-        f"Using custom backend '{custom_backend.name}' for '{program_name}' with options: {backend_descriptor}."
+        f"Using custom backend '{custom_backend.name}' for '{program_name}' with options: {logged_options}."
     )
     return custom_backend
 
