@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import types
 import typing
 
 import cattrs.gen
@@ -53,7 +54,6 @@ class SharedOptionSet:
 
 @CONV.register_structure_hook
 def structure_shared_set(data: dict, _: typing.Any) -> SharedOptionSet:
-    print(data)
     return SharedOptionSet(
         consumers=data["consumers"], options={k: v for k, v in data.items() if k != "consumers"}
     )
@@ -160,34 +160,56 @@ def unstructure_reltime(reltime: time.RelativeTime) -> str:
         return f"{int(seconds * 1_000_000)} microseconds"
 
 
-@CONV.register_structure_hook
-def structure_endtime(endtime_dict: dict, _: typing.Any) -> time.EndOfSimulation:
-    timeclass: type | None = None
-    match timetype := endtime_dict.pop("type"):
-        case "absolute":
-            timeclass = time.AbsoluteTime
-        case "relative":
-            timeclass = time.RelativeTime
-        case "numsteps":
-            timeclass = time.NumTimeSteps
-    if not timeclass:
-        raise TypeError(f"unsupported end of simulation time type: '{timetype}'")
-    return CONV.structure(endtime_dict["value"], timeclass)
+def register_time_union[T](
+    union_type: types.UnionType, mapping: typing.Mapping[str, type[T]]
+) -> None:
+    """Register the tagged YAML form ``{type: <tag>, value: <time>}`` for a union of time types.
+
+    Unlike ``register_config_union``, whose members are config classes with their fields
+    written next to the ``type`` key, the members here are scalars (a date, a time delta,
+    a number of steps) written under ``value`` and structured with their own hooks.
+    ``mapping`` names the tag of every member type of ``union_type``; the input mapping is
+    left untouched.
+    """
+    inverse_mapping: dict[type[T], str] = {member: tag for tag, member in mapping.items()}
+
+    def structure(spec: object, _: typing.Any) -> T:
+        if not isinstance(spec, dict) or set(spec) != {"type", "value"}:
+            raise TypeError(
+                f"Expected a tagged mapping with 'type' and 'value' entries for "
+                f"'{union_type}', got {spec!r}."
+            )
+        tag = spec["type"]
+        if tag not in mapping:
+            raise TypeError(
+                f"Unsupported time type '{tag}' for '{union_type}'; expected one of: "
+                f"{', '.join(mapping)}."
+            )
+        return CONV.structure(spec["value"], mapping[tag])
+
+    def unstructure(value: T) -> dict:
+        # bool is a subclass of int but no time type; an instance of a subclass of a
+        # member (a datetime subclass, say) is written like the member
+        tag = next(
+            (
+                tag
+                for member, tag in inverse_mapping.items()
+                if not isinstance(value, bool) and isinstance(value, member)
+            ),
+            None,
+        )
+        if tag is None:
+            raise TypeError(f"Unsupported time type '{type(value)}' for '{union_type}'.")
+        return {"type": tag, "value": CONV.unstructure(value)}
+
+    CONV.register_structure_hook(union_type, structure)
+    CONV.register_unstructure_hook(union_type, unstructure)
 
 
-@CONV.register_unstructure_hook
-def unstructure_endtime(endtime: time.EndOfSimulation) -> dict:
-    timetype: str = ""
-    match endtime:
-        case time.AbsoluteTime():
-            timetype = "absolute"
-        case time.RelativeTime():
-            timetype = "relative"
-        case time.NumTimeSteps():
-            timetype = "numsteps"
-        case _:
-            raise TypeError(f"Unsupported time type: '{type(endtime)}'.")
-    return {"type": timetype, "value": CONV.unstructure(endtime)}
+register_time_union(
+    time.EndOfSimulation,
+    {"absolute": time.AbsoluteTime, "relative": time.RelativeTime, "numsteps": time.NumTimeSteps},
+)
 
 
 def register_config_union[T](union_type: type[T], mapping: typing.Mapping[str, type[T]]) -> None:

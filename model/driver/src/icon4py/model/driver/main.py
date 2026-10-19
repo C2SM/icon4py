@@ -67,32 +67,30 @@ def main(
         ),
     ] = False,
     enable_output: Annotated[
-        bool,
+        bool | None,
         typer.Option(
             "--enable-output/--no-enable-output",
-            help="Write the prognostic and diagnostic fields to output.",
+            help="Override 'driver.enable_output'.",
         ),
-    ] = False,
+    ] = None,
     output_backend: Annotated[
-        common_io.OutputBackend,
-        typer.Option(help="Output file format."),
-    ] = common_io.OutputBackend.ZARR,
+        common_io.OutputBackend | None,
+        typer.Option(help="Override the file format of every output field group."),
+    ] = None,
     output_mode: Annotated[
-        common_io.OutputMode,
+        common_io.OutputMode | None,
         typer.Option(
-            help=(
-                "How ranks write output in distributed runs ('distributed' netCDF "
-                "needs an MPI-parallel netCDF4 installation)."
-            )
+            help="Override how the ranks of a distributed run write every output field group."
         ),
-    ] = common_io.OutputMode.DISTRIBUTED,
+    ] = None,
 ) -> None:
     """
     CLI entry point that runs the icon4py driver.
 
     The configuration is read from the YAML file at ``config_file_path``, the
     driver is initialized, an initial condition is generated, and the time
-    integration is run.
+    integration is run. The output options given on the command line override
+    the configuration file; the others keep their configured values.
     """
 
     process_props = decomposition_defs.get_process_properties(
@@ -104,15 +102,13 @@ def main(
         process_props=process_props,
     )
 
-    config = driver_config.read_experiment_config_from_yaml(config_file_path)
-    driver_overrides: dict[str, object] = {
-        "enable_output": enable_output,
-        "output_backend": output_backend,
-        "output_mode": output_mode,
-    }
-    if output_path is not None:
-        driver_overrides["output_path"] = output_path
-    config = config.with_overrides(driver=driver_overrides)
+    config = driver_config.apply_output_overrides(
+        driver_config.read_experiment_config_from_yaml(config_file_path),
+        enable_output=enable_output,
+        output_path=output_path,
+        output_backend=output_backend,
+        output_mode=output_mode,
+    )
 
     backend = model_options.customize_backend(
         program=None,

@@ -35,19 +35,21 @@ or, if not available there, built up according to [guidelines of CF standard nam
 
 #### Configuration
 
-The IO module is configurable and can be configured with:
+The IO module is configured with an `IOConfig` holding
 
-- `output_path`: path where all output files will be stored.
-- `field_groups`: list of field group configuration (see below).
-- `time_units` (optional, default is "seconds since 1970-01-01 00:00:00"): unit used with the time dimension in the data files.
-- `calendar` (optional, default is "proleptic_gregorian"). Caleandar used with the time dimension in the data files.
+- `field_groups`: list of field group configurations (see below); at least one, with unique `basename`s.
+- `time_units` (optional, default is "seconds since 1970-01-01 00:00:00"): unit of the time coordinate in the data files.
+- `calendar` (optional, default is "proleptic_gregorian"): calendar of the time coordinate in the data files.
 
-Field groups are stored in the same file and share a common setting of
+The output directory is not part of the configuration: the `IOMonitor` receives it from its
+caller (the run's output directory), and every field group writes below it.
 
-- `output_interval`: the output schedule, given as either a positive integer N (write every N model steps, i.e. every N calls to `store`) or a `datetime.timedelta` (a simulation-time delta, e.g. `timedelta(hours=2)`, must be a multiple of the model time step). A time delta is normalized to a number of steps using the model time step, so the schedule is always evaluated in steps. Defaults to every step.
-- `basename`: Base name of the datafiles, without an extension (the backend's extension and a roll-over counter are appended, see `timesteps_per_file`); it may contain a _relative_ path which is appended to the `output_path`.
-- `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
-- `variables`: List of variables names to be output. Variable names are the CF names used as keys in the model state (see [data.py](../states/data.py)).
+A field group is a set of variables written on the same schedule into the same file series; it is configured with
+
+- `output_interval`: the output schedule, given as either a positive integer N (write every N model steps, i.e. every N calls to `store`) or a `datetime.timedelta` (a simulation-time delta, e.g. `timedelta(hours=2)`, must be a multiple of the model time step). A time delta is normalized to a number of steps using the model time step, so the schedule is always evaluated in steps. Defaults to every step. In YAML the interval is tagged like the driver's `end_of_simulation`: `{type: numsteps, value: 10}` or `{type: relative, value: 30 minutes}`.
+- `basename`: Base name of the datafiles, without an extension (the backend's extension and a roll-over counter are appended, see `timesteps_per_file`); it may contain a _relative_ path which is appended to the output directory.
+- `timesteps_per_file` (default=10): Number of captured time steps recorded in one file before the next one is started; a value `<= 0` writes all captures of the run into the same file.
+- `variables`: List of variables names to be output. Variable names are the keys of the model state handed to `store` (the CF names of [data.py](../states/data.py), e.g. `exner_function`, `temperature`, or `qv` for a tracer).
 - `backend` (default="zarr"): File format of the group, `"netcdf"` or `"zarr"`.
 - `mode` (default="distributed"): Write strategy of distributed (MPI) runs; single-rank runs write the full state either way:
     - `"gather"`: the owned entries of all ranks are collected on the root rank, which writes them in global order.
@@ -57,10 +59,10 @@ Field groups are stored in the same file and share a common setting of
 - `nc_title` (optional): Title attribute of the generated files (netcdf and zarr).
 - `nc_comment` (optional): Comment attribute of the generated files (netcdf and zarr).
 
-The configuration is instantiated as Python dataclasses; `backend` and `mode` take enum
-members, their value strings are only converted at the config-file boundary
-(`common.config.config_io`, where the IO enums are registered). A valid configuration
-could look like this:
+The configuration is instantiated as Python dataclasses (keyword arguments only, validated
+on construction); `backend` and `mode` take enum members, their value strings are only
+converted at the config-file boundary (`common.config.config_io`, where the IO enums and the
+tagged interval are registered). A valid configuration could look like this:
 
 ```python
 import datetime
@@ -82,19 +84,42 @@ wind_group = FieldGroupIOConfig(
     nc_comment="Writing additional wind fields data from icon4py",
 )
 
-io_config = IOConfig(
-    output_path="simulation1/output",
-    field_groups=[prognostic_group, wind_group],
-)
+io_config = IOConfig(field_groups=[prognostic_group, wind_group])
 ```
 
-This configuration must then be passed to an instance of the `IOMonitor`, which will decide upon a
-call to `IOMonitor.store` what fields of the model state need to be written at that time:
+The same configuration in YAML, as the `io` section of the driver's experiment configuration:
+
+```yaml
+io:
+  field_groups:
+    - basename: icon4py_prognostics
+      variables: [air_density, exner_function, upward_air_velocity]
+      output_interval:
+        type: relative
+        value: 2 hours
+      timesteps_per_file: 12
+      nc_title: prognostics from my experiment
+      nc_comment: Writing prognostic fields data from icon4py
+    - basename: icon4py_diagnostics
+      variables: [eastward_wind, northward_wind]
+      output_interval:
+        type: numsteps
+        value: 1
+      timesteps_per_file: 24
+      nc_comment: Writing additional wind fields data from icon4py
+```
+
+This configuration must then be passed to an instance of the `IOMonitor`, together with the
+output directory and the grid information. The monitor decides upon each call to
+`IOMonitor.store` what fields of the model state need to be written at that time;
+`IOMonitor.variables_at_capture_time` tells the caller beforehand which variables the
+capturing groups need, so it assembles only those (and nothing at steps nobody captures):
 
 ```
-io_monitor = IOMonitor(io_config)
+io_monitor = IOMonitor(config=io_config, output_path=pathlib.Path("simulation1/output"), ...)
 (...)
-monitor.store(model_state, time)
+model_state = assemble(io_monitor.variables_at_capture_time())
+io_monitor.store(model_state, time)
 ```
 
 ### Parallel netCDF

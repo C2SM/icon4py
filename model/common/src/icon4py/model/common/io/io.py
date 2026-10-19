@@ -6,21 +6,20 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import abc
 import dataclasses
 import datetime as dt
 import enum
 import logging
 import pathlib
+import posixpath
 import statistics
 import timeit
 import uuid
-from collections.abc import Sequence
-from typing import Any, Final, TypeAlias
+from typing import Annotated, Any, Final, TypeAlias
 
 from icon4py.model.common import exceptions, time
 from icon4py.model.common.components import monitor
-from icon4py.model.common.config import config_io
+from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGrid
@@ -42,6 +41,11 @@ log = logging.getLogger(__name__)
 #: A time delta is normalized to a number of steps internally (using the model time step),
 #: so the schedule is always evaluated in steps.
 OutputInterval: TypeAlias = time.RelativeTime | time.NumTimeSteps  # noqa: UP040
+# YAML form, tagged like ``time.EndOfSimulation``: ``{type: numsteps, value: 10}`` or
+# ``{type: relative, value: 30 minutes}``.
+config_io.register_time_union(
+    OutputInterval, {"relative": time.RelativeTime, "numsteps": time.NumTimeSteps}
+)
 
 
 @config_io.register_enum
@@ -77,6 +81,11 @@ PHASE_DISTRIBUTE: Final[str] = "distribute"
 PHASE_WRITE: Final[str] = "write"
 
 
+def normalized_basename(basename: str) -> str:
+    """The basename as a normalized relative path (``./sub/../winds`` becomes ``winds``)."""
+    return posixpath.normpath(basename)
+
+
 def _interval_in_steps(output_interval: OutputInterval, dtime: time.RelativeTime) -> int:
     """Normalize an output interval to a number of model steps."""
     if isinstance(output_interval, time.RelativeTime):
@@ -93,66 +102,101 @@ def _interval_in_steps(output_interval: OutputInterval, dtime: time.RelativeTime
     return output_interval
 
 
-class Config(abc.ABC):
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class FieldGroupIOConfig:
     """
-    Base class for all config classes.
+    Configuration of one output field group.
 
-    # TODO(halungge): Need to visit this, when we address configuration
-    """
-
-    def __str__(self) -> str:
-        return f"instance of {self.__class__}(Config)"
-
-    @abc.abstractmethod
-    def validate(self) -> None:
-        """
-        Validate the config.
-
-        Raises:
-            InvalidConfigError: if the config is invalid
-        """
-
-        pass
-
-
-@dataclasses.dataclass(frozen=True)
-class FieldGroupIOConfig(Config):
-    """
-    Structured config for IO of a field group.
-
-    Field group is a number of fields that are output at the same time intervals on the same grid
-    (can be any horizontal dimension) and vertical levels.
-
+    A field group is a set of variables written on the same schedule into the same file
+    series; the variables may live on any horizontal dimension and vertical level set.
+    Validated on construction; ``backend`` and ``mode`` take enum members (their value
+    strings are converted at the config-file boundary only, ``common.config.config_io``).
     """
 
-    #: Base name of the group's files, without an extension; may carry a relative
-    #: subdirectory prefix. The rollover counter and the backend's extension are
-    #: appended (``<basename>_0001.zarr`` / ``.nc``, see ``generate_name``), so the
-    #: name is independent of the configured backend.
-    basename: str
-    variables: list[str]
-    #: Output schedule: either a number of model steps (``int``) or a simulation-time
-    #: delta (``datetime.timedelta``, must be a multiple of the model time step).
-    #: Defaults to every step.
-    output_interval: OutputInterval = time.NumTimeSteps(1)
-    timesteps_per_file: int = 10
-    #: File format of the group's files. Value strings are converted at the
-    #: config-file boundary only (``common.config.config_io``).
-    backend: OutputBackend = OutputBackend.ZARR
-    #: Write strategy of distributed runs (see ``OutputMode``). Distributed netCDF
-    #: needs an MPI-parallel netCDF4 installation in multi-rank runs (checked when
-    #: the writer is created, see ``netcdf_writers.NETCDFWriter``).
-    mode: OutputMode = OutputMode.DISTRIBUTED
-    #: Entries per chunk along the horizontal (cell/edge/vertex) axes. Default (None):
-    #: one chunk per rank block in distributed mode; otherwise the whole axis (zarr)
-    #: or the library default (netCDF).
-    horizontal_chunk_size: int | None = None
-    #: Zarr only: entries per shard along the horizontal axes, grouping whole chunks
-    #: into one storage file each; must be a multiple of ``horizontal_chunk_size``.
-    #: Default (None): no sharding, one file per chunk.
-    horizontal_shard_size: int | None = None
-    nc_title: str = "ICON4Py Simulation"
-    nc_comment: str = "ICON inspired code in Python and GT4Py"
+    basename: Annotated[
+        str,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Base name of the group's files, without an extension; may carry a relative "
+                "subdirectory prefix below the output directory. The rollover counter and the "
+                "backend's extension are appended ('<basename>_0001.zarr' or '.nc'), so the "
+                "name is independent of the configured backend."
+            ),
+        ),
+    ]
+    variables: Annotated[
+        list[str],
+        common_conf_opt.ConfigOption(
+            description=(
+                "Names of the variables written by this group (the keys of the model state "
+                "handed to the monitor); callers validate them at setup against the "
+                "variables the run provides."
+            ),
+        ),
+    ]
+    output_interval: Annotated[
+        OutputInterval,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Output schedule, tagged: '{type: numsteps, value: N}' writes every N model "
+                "steps, '{type: relative, value: 30 minutes}' every simulation-time delta "
+                "(a multiple of the model time step). Default: every step."
+            ),
+        ),
+    ] = time.NumTimeSteps(1)
+    timesteps_per_file: Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Number of captured time steps per file; a new file is started when it is "
+                "reached. A value <= 0 writes all captures of the run into one file."
+            ),
+        ),
+    ] = 10
+    backend: Annotated[
+        OutputBackend,
+        common_conf_opt.ConfigOption(
+            description="File format of the group's files ('netcdf' or 'zarr').",
+        ),
+    ] = OutputBackend.ZARR
+    mode: Annotated[
+        OutputMode,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Write strategy of distributed runs ('gather' or 'distributed', see "
+                "'OutputMode'); 'distributed' netCDF needs an MPI-parallel netCDF4 "
+                "installation in multi-rank runs (checked when the writer is created)."
+            ),
+        ),
+    ] = OutputMode.DISTRIBUTED
+    horizontal_chunk_size: Annotated[
+        int | None,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Entries per chunk along the horizontal (cell/edge/vertex) axes. Default "
+                "(None): one chunk per rank block in distributed mode; otherwise the whole "
+                "axis (zarr) or the library default (netCDF)."
+            ),
+        ),
+    ] = None
+    horizontal_shard_size: Annotated[
+        int | None,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Zarr only: entries per shard along the horizontal axes, grouping whole "
+                "chunks into one storage file each; must be a multiple of "
+                "'horizontal_chunk_size'. Default (None): no sharding, one file per chunk."
+            ),
+        ),
+    ] = None
+    nc_title: Annotated[
+        str,
+        common_conf_opt.ConfigOption(description="Title attribute of the group's files."),
+    ] = "ICON4Py Simulation"
+    nc_comment: Annotated[
+        str,
+        common_conf_opt.ConfigOption(description="Comment attribute of the group's files."),
+    ] = "ICON inspired code in Python and GT4Py"
 
     def __post_init__(self) -> None:
         if not isinstance(self.backend, OutputBackend):
@@ -167,7 +211,7 @@ class FieldGroupIOConfig(Config):
                 f"member (strings are converted at the config-file boundary only, "
                 f"see 'common.config.config_io')."
             )
-        self.validate()
+        self._validate()
 
     @property
     def block_alignment(self) -> int:
@@ -211,6 +255,12 @@ class FieldGroupIOConfig(Config):
             raise exceptions.InvalidConfigError(
                 f"Basename may not be an absolute path: {self.basename}."
             )
+        normalized = normalized_basename(self.basename)
+        if normalized in {".", ".."} or normalized.startswith("../"):
+            raise exceptions.InvalidConfigError(
+                f"Invalid output 'basename': '{self.basename}' does not name a file below "
+                f"the output directory."
+            )
         # the file extension is derived from the backend (``generate_name``), so a
         # configured extension would silently end up inside the stem
         # (``a.nc_0001.zarr``); reject it to keep the basename backend-independent
@@ -221,7 +271,7 @@ class FieldGroupIOConfig(Config):
                 f"named '<basename>_0001{FILE_SUFFIXES[self.backend]}')."
             )
 
-    def validate(self) -> None:
+    def _validate(self) -> None:
         # bool is a subclass of int, but is not a valid interval
         if isinstance(self.output_interval, bool) or not isinstance(
             self.output_interval, OutputInterval
@@ -238,52 +288,87 @@ class FieldGroupIOConfig(Config):
             raise exceptions.InvalidConfigError(
                 f"Output interval must be positive: {self.output_interval!r}."
             )
+        if isinstance(self.timesteps_per_file, bool) or not isinstance(
+            self.timesteps_per_file, int
+        ):
+            raise exceptions.InvalidConfigError(
+                f"Invalid 'timesteps_per_file': must be an integer, got "
+                f"{self.timesteps_per_file!r}."
+            )
         if not self.variables:
             raise exceptions.InvalidConfigError("No variables provided for output.")
+        if duplicates := {name for name in self.variables if self.variables.count(name) > 1}:
+            raise exceptions.InvalidConfigError(
+                f"Invalid 'variables': duplicated names: {', '.join(sorted(duplicates))}."
+            )
         self._validate_horizontal_chunking()
         self._validate_basename()
 
 
-@dataclasses.dataclass(frozen=True)
-class IOConfig(Config):
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class IOConfig:
     """
-    Structured and hierarchical config for IO.
+    Configuration of the output: the field groups and the time coordinate of their files.
 
-    Holds some general configuration and a collection of configurations for each field group.
-
+    The output directory is not part of it; the ``IOMonitor`` receives it from its caller.
+    Validated on construction.
     """
 
-    output_path: str = "./output/"
-    field_groups: Sequence[FieldGroupIOConfig] = ()
-    #: Unit and calendar of the time coordinate in the data files.
-    time_units: str = cf_utils.DEFAULT_TIME_UNIT
-    calendar: str = cf_utils.DEFAULT_CALENDAR
+    field_groups: Annotated[
+        list[FieldGroupIOConfig],
+        common_conf_opt.ConfigOption(
+            description=(
+                "Output field groups; each group is written on its own schedule into its own "
+                "file series, so the basenames must be unique."
+            ),
+        ),
+    ]
+    time_units: Annotated[
+        str,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Unit of the time coordinate in the data files (the CF 'units' attribute of "
+                "the time variable)."
+            ),
+        ),
+    ] = cf_utils.DEFAULT_TIME_UNIT
+    calendar: Annotated[
+        str,
+        common_conf_opt.ConfigOption(
+            description="Calendar of the time coordinate in the data files.",
+        ),
+    ] = cf_utils.DEFAULT_CALENDAR
 
     def __post_init__(self) -> None:
-        self.validate()
-
-    def validate(self) -> None:
         if not self.field_groups:
-            log.warning("No field configurations provided for output")
-        else:
-            for field_config in self.field_groups:
-                field_config.validate()
+            raise exceptions.InvalidConfigError(
+                "Invalid 'field_groups': at least one output field group is required."
+            )
+        # compared as paths: './winds' and 'winds' name the same file series
+        basenames = [normalized_basename(group.basename) for group in self.field_groups]
+        if duplicates := {name for name in basenames if basenames.count(name) > 1}:
+            raise exceptions.InvalidConfigError(
+                f"Invalid 'field_groups': basenames must be unique, duplicated: "
+                f"{', '.join(sorted(duplicates))}."
+            )
 
 
 class IOMonitor(monitor.Monitor):
     """
     Composite Monitor for all IO groups.
 
-    In a distributed run (multi-rank ``process_props``) the decomposition info is
-    required: each field group writes through the output distribution of its configured
-    ``mode`` (see ``OutputMode``). ``store`` is then collective on the communicator in
-    ``process_props``.
+    Every field group writes its file series below ``output_path``, the run's output
+    directory. In a distributed run (multi-rank ``process_props``) the decomposition info
+    is required: each field group writes through the output distribution of its
+    configured ``mode`` (see ``OutputMode``). ``store`` is then collective on the
+    communicator in ``process_props``.
     """
 
     def __init__(
         self,
         *,
         config: IOConfig,
+        output_path: pathlib.Path,
         vertical_size: v_grid.VerticalGrid,
         horizontal_size: base.HorizontalGridSize,
         grid_file_name: pathlib.Path,
@@ -302,6 +387,7 @@ class IOMonitor(monitor.Monitor):
         self._process_props = process_props
         self._decomposition_info = decomposition_info
         self._horizontal_size = horizontal_size
+        self._output_path = output_path
         self._distributions: dict[tuple[OutputMode, int], distributed.OutputDistribution] = {}
         self._timings_logged = False
         self._initialize_output()
@@ -357,13 +443,11 @@ class IOMonitor(monitor.Monitor):
         self._write_ugrid()
 
     def _create_output_dir(self) -> None:
-        path = pathlib.Path(self.config.output_path)
         # The directory may already exist: in the driver it is created upfront by
         # ``prepare_output_directory`` (which timestamps it if it already existed). Existing
         # *files* are kept safe though -- ``FieldGroupMonitor._init_dataset`` refuses to
         # overwrite an existing data file, so a rerun into a populated dir fails loudly.
-        path.mkdir(parents=True, exist_ok=True)
-        self._output_path = path
+        self._output_path.mkdir(parents=True, exist_ok=True)
 
     def _write_ugrid(self) -> None:
         # the UGRID file is derived from the (global) grid file, identical on all ranks:
@@ -404,14 +488,17 @@ class IOMonitor(monitor.Monitor):
         for m in self._group_monitors:
             m.close()
 
-    def at_capture_time(self) -> bool:
-        """Whether any field group captures at the current ``store`` call.
+    def variables_at_capture_time(self) -> set[str]:
+        """The variables some field group captures at the current ``store`` call.
 
-        A pure predicate (no counter changes), identical on all ranks: callers may
-        skip assembling the output state for steps nobody captures -- ``store`` must
-        still be called every step (it advances the schedule counters).
+        Empty when no group captures. Pure (no counter changes) and identical on all
+        ranks: callers may assemble exactly these variables, and nothing for steps
+        nobody captures. ``store`` must still be called every step, since it advances
+        the schedule counters.
         """
-        return any(m.at_capture_time() for m in self._group_monitors)
+        return {
+            name for m in self._group_monitors if m.at_capture_time() for name in m.config.variables
+        }
 
     def report_timings(self) -> None:
         """Log the accumulated output overhead of this rank, per field group and phase.
@@ -463,9 +550,9 @@ class FieldGroupMonitor(monitor.Monitor):
         grid_id: uuid.UUID,
         dtime: time.RelativeTime,
         process_props: decomposition.ProcessProperties,
+        output_path: pathlib.Path,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
         calendar: str = cf_utils.DEFAULT_CALENDAR,
-        output_path: pathlib.Path = pathlib.Path(__file__).parent,
     ):
         self.config = config
         self._time_properties = writers.TimeProperties(time_units, calendar)

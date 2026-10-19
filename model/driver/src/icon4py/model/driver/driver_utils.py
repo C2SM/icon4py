@@ -50,6 +50,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.initial_condition import config as ic_config
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import static_fields, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -595,10 +596,25 @@ def display_icon4py_logo_in_log_file() -> None:
     log.info(icon4py_signature_str)
 
 
+def _describe_output_group(group: common_io.FieldGroupIOConfig) -> str:
+    interval = group.output_interval
+    schedule = f"every {interval} step(s)" if isinstance(interval, int) else f"every {interval}"
+    per_file = (
+        "all captures in one file"
+        if group.timesteps_per_file <= 0
+        else f"{group.timesteps_per_file} capture(s) per file"
+    )
+    return (
+        f"  output group '{group.basename}': {schedule}, {per_file}, "
+        f"{group.backend.value}/{group.mode.value}, variables: {', '.join(group.variables)}"
+    )
+
+
 def display_driver_setup_in_log_file(
     config: driver_config.DriverConfig,
     model_time_variables: driver_states.ModelTimeVariables,
     vertical_params: v_grid.VerticalGrid,
+    io_config: common_io.IOConfig | None,
     tracer_config: tracer_states.TracerConfig | None = None,
 ) -> None:
     if tracer_config is None:
@@ -622,6 +638,10 @@ def display_driver_setup_in_log_file(
     log.info(f"Initial diffusion      : {config.diffuse_before_time_loop}")
     log.info(f"Statistics enabled     : {config.enable_statistics_logging}")
     log.info(f"Active tracers         : {tracer_config}")
+    log.info(f"Output enabled         : {config.enable_output}")
+    if io_config is not None:
+        for group in io_config.field_groups:
+            log.info(_describe_output_group(group))
     log.info("")
 
     log.info("==== Vertical Grid Parameters ====")

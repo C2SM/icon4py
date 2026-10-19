@@ -85,6 +85,7 @@ driver:
   backend_config:
   output_backend: zarr
   output_mode: distributed
+io:
 nonhydrostatic:
 diffusion:
 tracer_config:

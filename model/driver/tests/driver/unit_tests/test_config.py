@@ -11,13 +11,16 @@
 import dataclasses
 import datetime
 import pathlib
-import textwrap
 
 import pytest
 
+import icon4py.model.common.exceptions as errors
 from icon4py.model.common.config import config_io
 from icon4py.model.common.io import io as common_io, netcdf_writers
 from icon4py.model.driver import config as driver_config, driver_states
+
+
+_DATA_DIR = pathlib.Path(__file__).parent / "data"
 
 
 def _driver_config(
@@ -85,29 +88,8 @@ def test_driver_config_accepts_distributed_netcdf_on_any_installation(
     assert config.output_mode is common_io.OutputMode.DISTRIBUTED
 
 
-EXPERIMENT_CONFIG_YAML = textwrap.dedent(
-    """
-    geometry: {}
-    metrics: {}
-    interpolation: {}
-    vertical_grid:
-        num_levels: 10
-    topography:
-        type: jablonowski_williamson
-    initial_condition:
-        type: jablonowski_williamson
-    prescribed_tendencies: {}
-    driver:
-        experiment_name: foo
-        profiling_options:
-        dtime: 10 seconds
-        start_of_simulation: 2020-01-01T00:00:00
-        start_of_timestepping: 2020-01-01T00:00:00
-        end_of_simulation:
-            type: numsteps
-            value: 5
-    """
-)
+#: The smallest experiment configuration: required sections only.
+EXPERIMENT_CONFIG_YAML = (_DATA_DIR / "minimal_config.yml").read_text()
 
 
 def test_read_experiment_config_from_yaml_resolves_relative_data_path(
@@ -146,8 +128,129 @@ def test_io_roundtrip_cls_cls() -> None:
 
 
 def test_io_roundtrip_str_str() -> None:
-    config_str = (pathlib.Path(__file__).parent / "data" / "test_config.yml").read_text()
+    config_str = (_DATA_DIR / "test_config.yml").read_text()
     roundtrip_str = config_io.write_yaml_str(
         config_io.read_yaml_str(config_str, driver_config.ExperimentConfig)
     )
     assert roundtrip_str == config_str
+
+
+def _config_with_io_section() -> str:
+    """The round-trip fixture with the 'io' section of 'io_section.yml' spliced in."""
+    base = (_DATA_DIR / "test_config.yml").read_text()
+    assert base.count("io:\n") == 1
+    return base.replace("io:\n", (_DATA_DIR / "io_section.yml").read_text(), 1)
+
+
+def test_io_section_defaults_to_none() -> None:
+    conf = config_io.read_yaml_str(EXPERIMENT_CONFIG_YAML, driver_config.ExperimentConfig)
+    assert conf.io is None
+
+
+def test_io_section_roundtrip_str_str() -> None:
+    """The YAML form of the 'io' section: a list of groups with tagged intervals."""
+    config_str = _config_with_io_section()
+    conf = config_io.read_yaml_str(config_str, driver_config.ExperimentConfig)
+    assert conf.io is not None
+    assert [group.basename for group in conf.io.field_groups] == ["winds", "precipitation"]
+    assert conf.io.field_groups[0].output_interval == 10
+    assert conf.io.field_groups[0].variables == ["eastward_wind", "northward_wind"]
+    assert conf.io.field_groups[1].backend is common_io.OutputBackend.NETCDF
+    assert conf.io.field_groups[1].mode is common_io.OutputMode.GATHER
+    assert config_io.write_yaml_str(conf) == config_str
+
+
+def test_io_section_roundtrip_cls_cls() -> None:
+    conf = config_io.read_yaml_str(_config_with_io_section(), driver_config.ExperimentConfig)
+    assert (
+        config_io.read_yaml_str(config_io.write_yaml_str(conf), driver_config.ExperimentConfig)
+        == conf
+    )
+
+
+def test_apply_output_overrides_none_keeps_configured_values() -> None:
+    conf = config_io.read_yaml_str(_config_with_io_section(), driver_config.ExperimentConfig)
+    overridden = driver_config.apply_output_overrides(
+        conf, enable_output=None, output_path=None, output_backend=None, output_mode=None
+    )
+    assert overridden == conf
+
+
+def test_apply_output_overrides_keep_the_io_section_when_only_the_switch_is_given() -> None:
+    conf = config_io.read_yaml_str(_config_with_io_section(), driver_config.ExperimentConfig)
+    overridden = driver_config.apply_output_overrides(
+        conf,
+        enable_output=False,
+        output_path=pathlib.Path("/scratch/out"),
+        output_backend=None,
+        output_mode=None,
+    )
+    assert overridden.io is conf.io
+    assert overridden.driver.enable_output is False
+    assert overridden.driver.output_path == pathlib.Path("/scratch/out")
+
+
+def test_apply_output_overrides_name_the_command_line_as_the_cause() -> None:
+    # sharding is zarr-only: switching such a group to netCDF from the command line fails
+    conf = config_io.read_yaml_str(
+        EXPERIMENT_CONFIG_YAML, driver_config.ExperimentConfig
+    ).with_overrides(
+        io=common_io.IOConfig(
+            field_groups=[
+                common_io.FieldGroupIOConfig(
+                    basename="sharded",
+                    variables=["air_density"],
+                    horizontal_chunk_size=4,
+                    horizontal_shard_size=8,
+                )
+            ]
+        )
+    )
+    with pytest.raises(errors.InvalidConfigError, match="command-line output options") as err:
+        driver_config.apply_output_overrides(
+            conf,
+            enable_output=None,
+            output_path=None,
+            output_backend=common_io.OutputBackend.NETCDF,
+            output_mode=None,
+        )
+    assert "'zarr' backend" in str(err.value)
+
+
+def test_apply_output_overrides_without_io_section_set_the_driver_defaults() -> None:
+    conf = config_io.read_yaml_str(EXPERIMENT_CONFIG_YAML, driver_config.ExperimentConfig)
+    overridden = driver_config.apply_output_overrides(
+        conf,
+        enable_output=True,
+        output_path=pathlib.Path("/scratch/out"),
+        output_backend=common_io.OutputBackend.NETCDF,
+        output_mode=common_io.OutputMode.GATHER,
+    )
+    assert overridden.io is None
+    assert overridden.driver.enable_output is True
+    assert overridden.driver.output_path == pathlib.Path("/scratch/out")
+    assert overridden.driver.output_backend is common_io.OutputBackend.NETCDF
+    assert overridden.driver.output_mode is common_io.OutputMode.GATHER
+
+
+def test_apply_output_overrides_apply_to_every_io_group() -> None:
+    conf = config_io.read_yaml_str(_config_with_io_section(), driver_config.ExperimentConfig)
+    overridden = driver_config.apply_output_overrides(
+        conf,
+        enable_output=False,
+        output_path=None,
+        output_backend=common_io.OutputBackend.NETCDF,
+        output_mode=common_io.OutputMode.GATHER,
+    )
+    assert overridden.io is not None
+    assert all(
+        group.backend is common_io.OutputBackend.NETCDF
+        and group.mode is common_io.OutputMode.GATHER
+        for group in overridden.io.field_groups
+    )
+    # the other group settings survive, and so do the driver's transitional defaults,
+    # which only matter without an 'io' section
+    assert [group.basename for group in overridden.io.field_groups] == ["winds", "precipitation"]
+    assert [group.output_interval for group in overridden.io.field_groups] == [10, 1]
+    assert overridden.driver.enable_output is False
+    assert overridden.driver.output_backend is common_io.OutputBackend.ZARR

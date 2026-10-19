@@ -27,6 +27,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_con
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
     backend_configuration as backend_cfg,
+    exceptions,
     initial_condition,
     prescribed_tendencies,
     time,
@@ -110,7 +111,10 @@ class DriverConfig:
     output_path: typing.Annotated[
         pathlib.Path,
         common_conf_opt.ConfigOption(
-            description="Output directory path, relative to the working directory.",
+            description=(
+                "Output directory, the root of all output field groups; relative to the "
+                "working directory."
+            ),
         ),
     ] = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: typing.Annotated[
@@ -154,8 +158,10 @@ class DriverConfig:
         bool,
         common_conf_opt.ConfigOption(
             description=(
-                "Enable output to file. For now this is only documented in "
-                "'icon4py.model.driver.driver_io'."
+                "Enable output to file. The field groups come from the top-level 'io' "
+                "section; without one, a single default group ('icon4py_output': all "
+                "prognostic and diagnostic variables, every step) is written using "
+                "'output_backend' and 'output_mode'."
             ),
         ),
     ] = False
@@ -169,20 +175,27 @@ class DriverConfig:
             ),
         ),
     ] = dataclasses.field(default_factory=backend_cfg.backend_config_from_env)
+    # TODO(kotsaloscv): remove 'output_backend' and 'output_mode' with the next test-data
+    # version bump; the archived experiment configurations still set them, and the 'io'
+    # field groups carry their own backend and mode.
     output_backend: typing.Annotated[
         common_io.OutputBackend,
         common_conf_opt.ConfigOption(
-            description="File format of the output field groups ('netcdf' or 'zarr').",
+            description=(
+                "File format ('netcdf' or 'zarr') of the built-in default output group used "
+                "when no 'io' section is configured; 'io' field groups set their own 'backend'."
+            ),
         ),
     ] = common_io.OutputBackend.ZARR
     output_mode: typing.Annotated[
         common_io.OutputMode,
         common_conf_opt.ConfigOption(
             description=(
-                "Write strategy of distributed runs ('gather' or 'distributed', see "
-                "'icon4py.model.common.io.OutputMode'); 'distributed' netCDF needs an "
-                "MPI-parallel netCDF4 installation in multi-rank runs (see 'Parallel "
-                "netCDF' in 'icon4py.model.common.io')."
+                "Write strategy ('gather' or 'distributed', see "
+                "'icon4py.model.common.io.OutputMode') of the built-in default output group "
+                "used when no 'io' section is configured; 'io' field groups set their own "
+                "'mode'. 'distributed' netCDF needs an MPI-parallel netCDF4 installation in "
+                "multi-rank runs."
             ),
         ),
     ] = common_io.OutputMode.DISTRIBUTED
@@ -216,6 +229,9 @@ class ExperimentConfig(config_io.ConfigWithShared):
     topography: topography.TOPO_CONFIG
     prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig
     driver: DriverConfig
+    #: Output field groups (see 'icon4py.model.common.io'); without this section an
+    #: enabled output writes the built-in default group (see ``DriverConfig.enable_output``).
+    io: common_io.IOConfig | None = None
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
     tracer_config: tracer_states.TracerConfig | None = None
@@ -257,6 +273,53 @@ def read_experiment_config_from_yaml(config_file_path: pathlib.Path) -> Experime
         if isinstance(data_path, pathlib.Path) and not data_path.is_absolute():
             overrides[field.name] = {"data_path": root / data_path}
     return config.with_overrides(**overrides)
+
+
+def apply_output_overrides(
+    config: ExperimentConfig,
+    *,
+    enable_output: bool | None,
+    output_path: pathlib.Path | None,
+    output_backend: common_io.OutputBackend | None,
+    output_mode: common_io.OutputMode | None,
+) -> ExperimentConfig:
+    """Apply the output options given on the command line; ``None`` keeps the configured value.
+
+    ``enable_output`` and ``output_path`` override the ``driver`` section. ``output_backend``
+    and ``output_mode`` apply to every field group of the ``io`` section or, without one,
+    to the driver's transitional defaults of the built-in output group.
+    """
+    driver_overrides: dict[str, Any] = {}
+    if enable_output is not None:
+        driver_overrides["enable_output"] = enable_output
+    if output_path is not None:
+        driver_overrides["output_path"] = output_path
+    group_overrides: dict[str, Any] = {}
+    if output_backend is not None:
+        group_overrides["backend"] = output_backend
+    if output_mode is not None:
+        group_overrides["mode"] = output_mode
+
+    overrides: dict[str, Any] = {}
+    if config.io is None:
+        if output_backend is not None:
+            driver_overrides["output_backend"] = output_backend
+        if output_mode is not None:
+            driver_overrides["output_mode"] = output_mode
+    elif group_overrides:
+        try:
+            field_groups = [
+                dataclasses.replace(group, **group_overrides) for group in config.io.field_groups
+            ]
+        except exceptions.InvalidConfigError as err:
+            raise exceptions.InvalidConfigError(
+                f"The command-line output options cannot be applied to the configured "
+                f"field groups: {err}"
+            ) from err
+        overrides["io"] = dataclasses.replace(config.io, field_groups=field_groups)
+    if driver_overrides:
+        overrides["driver"] = driver_overrides
+    return config.with_overrides(**overrides) if overrides else config
 
 
 def prepare_output_directory(
