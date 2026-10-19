@@ -135,7 +135,9 @@ class GridManager:
     ) -> CoordinateDict:
         my_cell_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
         my_edge_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
-        my_vertex_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.VertexDim))
+        my_vertex_indices = data_alloc.as_numpy(
+            self._decomposition_info.global_index(dims.VertexDim)
+        )
         coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -248,7 +250,9 @@ class GridManager:
     ) -> GeometryDict:
         my_cell_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
         my_edge_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
-        my_vertex_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.VertexDim))
+        my_vertex_indices = data_alloc.as_numpy(
+            self._decomposition_info.global_index(dims.VertexDim)
+        )
         vertex_edge_orientation = self._reader.int_variable(
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
             transpose=True,

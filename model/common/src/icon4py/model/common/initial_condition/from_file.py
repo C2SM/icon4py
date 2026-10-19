@@ -101,8 +101,8 @@ def read_initial_condition_from_file(
     )
     savepoint = serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
 
-    cell_indices = np.asarray(decomposition_info.global_index(dims.CellDim))
-    edge_indices = np.asarray(decomposition_info.global_index(dims.EdgeDim))
+    cell_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.CellDim))
+    edge_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.EdgeDim))
 
     def read_cell_k(name: str) -> data_alloc.NDArray:
         buffer = np.squeeze(serializer.read(name, savepoint).astype(float))
@@ -180,8 +180,8 @@ def read_restart_from_file(
             f"of this experiment covers: {_available_nonhydro_init_dates(serializer)}."
         ) from err
 
-    cell_indices = np.asarray(decomposition_info.global_index(dims.CellDim))
-    edge_indices = np.asarray(decomposition_info.global_index(dims.EdgeDim))
+    cell_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.CellDim))
+    edge_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.EdgeDim))
 
     def read_cell_k(name: str) -> data_alloc.NDArray:
         buffer = np.squeeze(serializer.read(name, nonhydro_savepoint).astype(float))
