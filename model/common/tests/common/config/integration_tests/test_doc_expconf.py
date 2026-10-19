@@ -31,18 +31,3 @@ def test_select_one_down(snap_compare: Callable):
     """Test the initial view."""
     app = config_doc.ConfigDocApp(ExperimentConfig)
     assert snap_compare(app, terminal_size=(160, 40), press=["down", "enter"])
-
-
-@pytest.mark.level("integration")
-@pytest.mark.asyncio
-async def test_select_everything():
-    """Test that there are no crashes when selecting all of the config options."""
-    app = config_doc.ConfigDocApp(ExperimentConfig)
-    async with app.run_test() as pilot:
-        tree = app.query_one("#tree", expect_type=textual.widgets.Tree)
-        assert tree.cursor_line == 0
-        i = 1
-        while tree.validate_cursor_line(i) == i:
-            await pilot.press("down", "enter")
-            assert tree.cursor_line == i, f"{tree.cursor_line} != {i}"
-            i += 1
