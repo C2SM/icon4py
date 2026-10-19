@@ -98,7 +98,7 @@ def test_read_experiment_config_from_yaml_resolves_relative_data_path(
     config_file = tmp_path / "config.yml"
     config_file.write_text(
         EXPERIMENT_CONFIG_YAML.replace(
-            "prescribed_tendencies: {}", "prescribed_tendencies:\n    data_path: ser_data"
+            "prescribed_tendencies: {}", "prescribed_tendencies:\n  data_path: ser_data"
         )
     )
     config = driver_config.read_experiment_config_from_yaml(config_file)
@@ -111,7 +111,7 @@ def test_read_experiment_config_from_yaml_keeps_absolute_data_path(
     config_file = tmp_path / "config.yml"
     config_file.write_text(
         EXPERIMENT_CONFIG_YAML.replace(
-            "prescribed_tendencies: {}", "prescribed_tendencies:\n    data_path: /abs/ser_data"
+            "prescribed_tendencies: {}", "prescribed_tendencies:\n  data_path: /abs/ser_data"
         )
     )
     config = driver_config.read_experiment_config_from_yaml(config_file)
