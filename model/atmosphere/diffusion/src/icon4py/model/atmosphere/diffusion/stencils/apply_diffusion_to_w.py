@@ -50,18 +50,13 @@ def _apply_diffusion_to_w(
     diff_multfac_w: wpfloat,
     diff_multfac_n2w: fa.KHalfField[wpfloat],
     nrdmax: gtx.int32,
-    interior_idx: gtx.int32,
-    halo_idx: gtx.int32,
 ) -> fa.CellKHalfField[wpfloat]:
     z_nabla2_c = astype(laplacian_on_cell_khalf(w_old, geofac_n2s), vpfloat)
 
     w = _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w)
 
     w = concat_where(
-        (0 < dims.KHalfDim)
-        & (dims.KHalfDim < nrdmax)
-        & (interior_idx <= dims.CellDim)
-        & (dims.CellDim < halo_idx),
+        (0 < dims.KHalfDim) & (dims.KHalfDim < nrdmax),
         _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )

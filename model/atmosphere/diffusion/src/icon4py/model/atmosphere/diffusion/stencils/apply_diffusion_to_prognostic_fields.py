@@ -75,8 +75,6 @@ def _apply_diffusion_to_prognostic_fields(
     diff_multfac_w: wpfloat,
     diff_multfac_n2w: fa.KHalfField[wpfloat],
     nrdmax: gtx.int32,
-    interior_idx: gtx.int32,
-    halo_idx: gtx.int32,
     theta_v_in: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
@@ -164,8 +162,6 @@ def _apply_diffusion_to_prognostic_fields(
         diff_multfac_w=diff_multfac_w,
         diff_multfac_n2w=diff_multfac_n2w,
         nrdmax=nrdmax,
-        interior_idx=interior_idx,
-        halo_idx=halo_idx,
     )
 
     # TODO(havogt): Note that `concat_where(dims.KDim == nlev-2, ...)` is currently broken
@@ -260,12 +256,12 @@ def apply_diffusion_to_prognostic_fields(
     start_2nd_nudge_line_idx_e: gtx.int32,
     nrdmax: gtx.int32,
     nlev: gtx.int32,
-    interior_idx: gtx.int32,
-    halo_idx: gtx.int32,
-    edge_horizontal_start: gtx.int32,
-    edge_horizontal_end: gtx.int32,
     w_horizontal_start: gtx.int32,
     w_horizontal_end: gtx.int32,
+    edge_horizontal_start: gtx.int32,
+    edge_horizontal_end: gtx.int32,
+    hgrad_w_horizontal_start: gtx.int32,
+    hgrad_w_horizontal_end: gtx.int32,
     cell_horizontal_start: gtx.int32,
     cell_horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -308,8 +304,6 @@ def apply_diffusion_to_prognostic_fields(
         diff_multfac_w=diff_multfac_w,
         diff_multfac_n2w=diff_multfac_n2w,
         nrdmax=nrdmax,
-        interior_idx=interior_idx,
-        halo_idx=halo_idx,
         theta_v_in=theta_v_in,
         inv_dual_edge_length=inv_dual_edge_length,
         zd_vertoffset=zd_vertoffset,
@@ -333,15 +327,15 @@ def apply_diffusion_to_prognostic_fields(
                 dims.KDim: (vertical_start, vertical_end),
             },
             {
-                dims.CellDim: (interior_idx, halo_idx),
+                dims.CellDim: (w_horizontal_start, w_horizontal_end),
                 dims.KHalfDim: (vertical_start, vertical_end),
             },
             {
-                dims.CellDim: (w_horizontal_start, w_horizontal_end),
+                dims.CellDim: (hgrad_w_horizontal_start, hgrad_w_horizontal_end),
                 dims.KHalfDim: (vertical_start + 1, vertical_end),
             },
             {
-                dims.CellDim: (w_horizontal_start, w_horizontal_end),
+                dims.CellDim: (hgrad_w_horizontal_start, hgrad_w_horizontal_end),
                 dims.KHalfDim: (vertical_start + 1, vertical_end),
             },
             {

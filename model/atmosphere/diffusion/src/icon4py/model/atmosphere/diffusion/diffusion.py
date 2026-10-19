@@ -484,7 +484,6 @@ class Diffusion:
         )
         #: threshold temperature deviation from neighboring grid points that activates extra diffusion against runaway cooling
         self.thresh_tdiff: wpfloat = wpfloat(-5.0)
-        self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
         self.nudgezone_diff: vpfloat = gtx.astype(
             wpfloat(0.04) / (max_nudging_coefficient + constants.WP_EPS), vpfloat
@@ -590,12 +589,12 @@ class Diffusion:
                 "edge_horizontal_start": self._edge_start_lateral_boundary_level_5,
                 "edge_horizontal_end": self._edge_end_local,
                 "start_2nd_nudge_line_idx_e": self._edge_start_nudging_level_2,
-                "w_horizontal_start": self._horizontal_start_index_w_diffusion,
-                "w_horizontal_end": self._cell_end_halo,
+                "hgrad_w_horizontal_start": gtx.int32(0),
+                "hgrad_w_horizontal_end": self._cell_end_halo,
                 "cell_horizontal_start": self._cell_start_nudging,
                 "cell_horizontal_end": self._cell_end_local,
-                "interior_idx": self._cell_start_interior,
-                "halo_idx": self._cell_end_local,
+                "w_horizontal_start": self._cell_start_interior,
+                "w_horizontal_end": self._cell_end_local,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
@@ -698,13 +697,6 @@ class Diffusion:
         self.diff_multfac_smag = data_alloc.zero_field(
             self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
-        self.vertical_index = data_alloc.index_field(self._grid, dims.KHalfDim, allocator=allocator)
-        self.horizontal_cell_index = data_alloc.index_field(
-            self._grid, dims.CellDim, allocator=allocator
-        )
-        self.horizontal_edge_index = data_alloc.index_field(
-            self._grid, dims.EdgeDim, allocator=allocator
-        )
         self.w_tmp = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat, allocator=allocator
         )
@@ -719,13 +711,6 @@ class Diffusion:
         cell_domain = h_grid.domain(dims.CellDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
         vertex_domain = h_grid.domain(dims.VertexDim)
-
-        def _get_start_index_for_w_diffusion() -> gtx.int32:
-            return (
-                self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-                if self._grid.limited_area
-                else self._grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
-            )
 
         self._cell_start_interior = self._grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
         self._cell_start_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
@@ -745,8 +730,6 @@ class Diffusion:
             vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
         self._vertex_end_local = self._grid.end_index(vertex_domain(h_grid.Zone.LOCAL))
-
-        self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
 
     def _smag_values_for_run(
         self, initial_run: bool

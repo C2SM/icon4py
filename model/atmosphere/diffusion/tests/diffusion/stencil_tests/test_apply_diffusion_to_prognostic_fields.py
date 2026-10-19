@@ -242,12 +242,12 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             "start_2nd_nudge_line_idx_e",
             "nrdmax",
             "nlev",
-            "interior_idx",
-            "halo_idx",
-            "edge_horizontal_start",
-            "edge_horizontal_end",
             "w_horizontal_start",
             "w_horizontal_end",
+            "edge_horizontal_start",
+            "edge_horizontal_end",
+            "hgrad_w_horizontal_start",
+            "hgrad_w_horizontal_end",
             "cell_horizontal_start",
             "cell_horizontal_end",
             "vertical_start",
@@ -321,12 +321,12 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         start_2nd_nudge_line_idx_e: int,
         nrdmax: int,
         nlev: int,
-        interior_idx: int,
-        halo_idx: int,
-        edge_horizontal_start: int,
-        edge_horizontal_end: int,
         w_horizontal_start: int,
         w_horizontal_end: int,
+        edge_horizontal_start: int,
+        edge_horizontal_end: int,
+        hgrad_w_horizontal_start: int,
+        hgrad_w_horizontal_end: int,
         cell_horizontal_start: int,
         cell_horizontal_end: int,
         vertical_start: int,
@@ -339,7 +339,6 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         e2c = connectivities[dims.E2C]
         edge = np.arange(area_edge.shape[0])
         reshaped_k = np.arange(w_old.shape[1])[np.newaxis, :]
-        reshaped_cell = np.arange(w_old.shape[0])[:, np.newaxis]
 
         # Smagorinsky limiter
         kh_smag_limited = np.maximum(0.0, kh_smag - smag_offset)
@@ -422,7 +421,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
                 connectivities, w_old, geofac_grg_x, geofac_grg_y
             )
             grad_slice = (
-                slice(w_horizontal_start, w_horizontal_end),
+                slice(hgrad_w_horizontal_start, hgrad_w_horizontal_end),
                 slice(vertical_start + 1, vertical_end),
             )
             out_dwdx[grad_slice] = grad_dwdx[grad_slice]
@@ -438,16 +437,13 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             diff_multfac_w=diff_multfac_w,
         )
         w_new = np.where(
-            (reshaped_k > 0)
-            & (reshaped_k < nrdmax)
-            & (interior_idx <= reshaped_cell)
-            & (reshaped_cell < halo_idx),
+            (reshaped_k > 0) & (reshaped_k < nrdmax),
             apply_nabla2_to_w_in_upper_damping_layer_numpy(
                 w_new, diff_multfac_n2w, area, z_nabla2_c
             ),
             w_new,
         )
-        w_slice = (slice(interior_idx, halo_idx), slice(vertical_start, vertical_end))
+        w_slice = (slice(w_horizontal_start, w_horizontal_end), slice(vertical_start, vertical_end))
         out_w[w_slice] = w_new[w_slice]
 
         # Diffusion of theta_v and exner with the cold-pool enhancement inlined
@@ -555,13 +551,6 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         cell_domain = h_grid.domain(dims.CellDim)
         limited_area = grid.limited_area if hasattr(grid, "limited_area") else True
         nlev = grid.num_levels
-
-        def _get_start_index_for_w_diffusion() -> gtx.int32:
-            return (
-                grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-                if grid.limited_area
-                else grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
-            )
 
         # vn diffusion
         u_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
@@ -694,14 +683,14 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             start_2nd_nudge_line_idx_e=grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2)),
             nrdmax=nrdmax,
             nlev=nlev,
-            interior_idx=grid.start_index(cell_domain(h_grid.Zone.INTERIOR)),
-            halo_idx=grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
+            w_horizontal_start=grid.start_index(cell_domain(h_grid.Zone.INTERIOR)),
+            w_horizontal_end=grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
             edge_horizontal_start=grid.start_index(
                 edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
             ),
             edge_horizontal_end=grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
-            w_horizontal_start=_get_start_index_for_w_diffusion(),
-            w_horizontal_end=grid.end_index(cell_domain(h_grid.Zone.HALO)),
+            hgrad_w_horizontal_start=0,
+            hgrad_w_horizontal_end=grid.end_index(cell_domain(h_grid.Zone.HALO)),
             cell_horizontal_start=grid.start_index(cell_domain(h_grid.Zone.NUDGING)),
             cell_horizontal_end=grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
             vertical_start=0,
