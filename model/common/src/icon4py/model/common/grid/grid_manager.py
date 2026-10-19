@@ -133,9 +133,9 @@ class GridManager:
         allocator: gtx_typing.Allocator,
         geometry_type: icon.GeometryType,
     ) -> CoordinateDict:
-        my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
-        my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
-        my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
+        my_cell_indices = np.asarray(self._decomposition_info.global_index(dims.CellDim))
+        my_edge_indices = np.asarray(self._decomposition_info.global_index(dims.EdgeDim))
+        my_vertex_indices = np.asarray(self._decomposition_info.global_index(dims.VertexDim))
         coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -246,9 +246,9 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
-        my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
-        my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
-        my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
+        my_cell_indices = np.asarray(self._decomposition_info.global_index(dims.CellDim))
+        my_edge_indices = np.asarray(self._decomposition_info.global_index(dims.EdgeDim))
+        my_vertex_indices = np.asarray(self._decomposition_info.global_index(dims.VertexDim))
         vertex_edge_orientation = self._reader.int_variable(
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
             transpose=True,
@@ -357,7 +357,7 @@ class GridManager:
                 (dim,),
                 self._reader.int_variable(
                     name,
-                    indices=self._decomposition_info.global_index(dim),
+                    indices=np.asarray(self._decomposition_info.global_index(dim)),
                     transpose=False,
                     apply_offset=False,
                 ),
