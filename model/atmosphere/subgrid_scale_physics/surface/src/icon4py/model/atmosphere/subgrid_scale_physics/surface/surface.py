@@ -27,6 +27,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if typing.TYPE_CHECKING:
     from icon4py.model.common import field_type_aliases as fa
     from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
 
 
 log = logging.getLogger(__name__)
@@ -83,9 +84,7 @@ class Surface:
             offset_provider={},
         )
 
-    def run(
-        self, *, input_state: surface_states.SurfaceInputState, out: surface_states.SurfaceFluxState
-    ) -> None:
+    def run(self, *, input_state: surface_states.SurfaceInputState, out: SurfaceFluxState) -> None:
         """
         Compute the surface fluxes of the step into `out`.
 

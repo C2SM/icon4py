@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
     surface_states,
 )
 from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
 from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
@@ -59,9 +60,7 @@ def test_surface_run_single_step(
         surface_pressure=entry_savepoint.pres_ifc()[dims.KHalfDim(icon_grid.num_levels)],
         temperature=entry_savepoint.ta()[dims.KDim(icon_grid.num_levels - 1)],
     )
-    out = surface_states.SurfaceFluxState.allocate(
-        icon_grid, allocator=model_backends.get_allocator(backend)
-    )
+    out = SurfaceFluxState.allocate(icon_grid, allocator=model_backends.get_allocator(backend))
     component.run(input_state=input_state, out=out)
 
     reference = data_provider.from_savepoint_tmx_surface_fluxes(date=date)
