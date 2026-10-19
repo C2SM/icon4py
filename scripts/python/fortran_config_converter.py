@@ -34,9 +34,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
-    config as physics_driver_config,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, prescribed_tendencies, time
@@ -223,7 +220,8 @@ NONHYDROSTATIC = ConfigMapping(
 
 
 def _convert_nudge_max_coeff(nudge_max_coeff: float) -> float:
-    return constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * nudge_max_coeff
+    # max_nudging_coefficient is a pure Python float, not numpy scalar, so we need to convert it to a float before multiplying with a wpfloat.
+    return float(constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO) * nudge_max_coeff
 
 
 INTERPOLATION = ConfigMapping(
@@ -748,12 +746,6 @@ def convert_experiment(
         graupel=graupel_cfg,
         muphys=muphys_cfg,
         tmx=tmx_cfg,
-        # ICON AES advances the physics state after every process (fc_xxx = 1)
-        physics_coupling=(
-            physics_driver_config.CouplingType.SEQUENTIAL
-            if aes_physics_on
-            else physics_driver_config.CouplingType.PARALLEL
-        ),
         topography=topography_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=make_prescribed_tendencies_config(atm_dict),

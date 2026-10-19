@@ -12,10 +12,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
-    config as physics_config,
-    physics_state,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import geometry_attributes, simple
 from icon4py.model.common.interpolation import interpolation_attributes
@@ -118,9 +115,8 @@ def _physics_state(grid) -> physics_state.PhysicsState:
 def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     """The dyn2phy diagnosis fills plausible fields and is strictly read-only.
 
-    Read-only-ness is the load-bearing invariant of parallel coupling: the
-    prognostic state and tracers must stay bitwise identical until the driver's
-    single update step.
+    The prognostic state and tracers must stay bitwise identical: only
+    ``Tendencies.advance`` and ``Tendencies.update`` change them.
     """
     grid = simple.simple_grid()
     ws = _physics_state(grid)
@@ -160,6 +156,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 def test_advance_sums_tendencies_and_skips_diagnostics():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
+    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid))
     acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY), "km": _meta()}
     out = {
@@ -178,6 +175,7 @@ def test_advance_sums_tendencies_and_skips_diagnostics():
 def test_zero_resets_between_steps():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
+    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid))
     acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY)}
     out = {"tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
@@ -195,9 +193,7 @@ def test_zero_resets_between_steps():
 # ---------------------------------------------------------------------------
 
 
-def _tendencies(
-    grid, coupling: physics_config.CouplingType = physics_config.CouplingType.PARALLEL
-) -> physics_state.Tendencies:
+def _tendencies(grid) -> physics_state.Tendencies:
     # neutral geometry: primal_normal_x = 1, primal_normal_y = 0, c_lin_e = 0.5
     # => two-neighbor projection of a uniform u-tendency is the identity
     geometry = _StubFieldSource(
@@ -218,12 +214,12 @@ def _tendencies(
         }
     )
     return physics_state.Tendencies(
-        grid=grid, geometry=geometry, interpolation=interpolation, backend=None, coupling=coupling
+        grid=grid, geometry=geometry, interpolation=interpolation, backend=None
     )
 
 
 def _accumulated(grid, state, **tendencies) -> physics_state.Tendencies:
-    """Tendencies pre-filled with the given constant tendencies (one parallel-coupled process)."""
+    """Tendencies of one process with the given constant tendencies, advanced into ``state``."""
     acc = _tendencies(grid)
     props = {name: _meta(kind=_TENDENCY) for name in tendencies}
     acc.zero()
@@ -231,7 +227,7 @@ def _accumulated(grid, state, **tendencies) -> physics_state.Tendencies:
     return acc
 
 
-def test_update_applies_tracers_w_and_thermodynamics_once():
+def test_advance_and_update_apply_tracers_w_and_thermodynamics_once():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)

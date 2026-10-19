@@ -256,7 +256,7 @@ def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
         ("advance", {"tend_temperature": "B", "kh": "KH"}, 300.0),
         ("update", 300.0, None),
     ]
-    # both processes translated the same PhysicsState (same step-entry diagnostics)
+    # both processes translated the same PhysicsState object, advanced in place in between
     assert state.input_calls == [coupling, coupling]
     # the state holds the layer-allocated buffers the granule writes into, by process
     assert driver.process_outputs["B"] == {"kh": "BUF_kh"}

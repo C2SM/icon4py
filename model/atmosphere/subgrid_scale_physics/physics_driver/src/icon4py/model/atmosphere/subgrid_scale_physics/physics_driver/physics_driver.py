@@ -14,10 +14,7 @@ import dataclasses
 import datetime
 from typing import TYPE_CHECKING, Any, Protocol
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
-    config as physics_config,
-    physics_state,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
@@ -101,11 +98,10 @@ class PhysicsProcess:
 class PhysicsDriver:
     """
     In one timestep (``run``) the PhysicsState is diagnosed once from the model
-    state, then the processes run in list order. Under parallel coupling every
-    process reads the same entry prognostic/ basic diagnostic state; under sequential
-    coupling each process's tendencies are added to some variables in place before
-    the next one runs (see ``Tendencies.advance``). Tendency outputs are summed
-    over the processes.
+    state, then the processes run in list order. The coupling is sequential: each
+    process's tendencies are added to some variables in place before the next one
+    runs (see ``Tendencies.advance``). Tendency outputs are summed over the
+    processes.
 
     """
 
@@ -138,7 +134,6 @@ class PhysicsDriver:
         interpolation: factory.FieldSource,
         metrics: factory.FieldSource,
         backend: gtx_typing.Backend | None = None,
-        coupling: physics_config.CouplingType = physics_config.CouplingType.PARALLEL,
     ) -> PhysicsDriver:
         """Build the driver together with the coupling pieces it owns.
 
@@ -151,11 +146,7 @@ class PhysicsDriver:
                 grid=grid, interpolation=interpolation, metrics=metrics, backend=backend
             ),
             tendencies=physics_state.Tendencies(
-                grid=grid,
-                geometry=geometry,
-                interpolation=interpolation,
-                backend=backend,
-                coupling=coupling,
+                grid=grid, geometry=geometry, interpolation=interpolation, backend=backend
             ),
         )
 

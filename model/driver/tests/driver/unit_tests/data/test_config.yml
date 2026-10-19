@@ -92,4 +92,3 @@ tracer_advection:
 graupel:
 muphys:
 tmx:
-physics_coupling: parallel

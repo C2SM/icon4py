@@ -23,9 +23,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
-    config as physics_driver_config,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
@@ -228,9 +225,6 @@ class ExperimentConfig(config_io.ConfigWithShared):
     #: Read from the AES vertical-diffusion namelist; the driver does not run the
     #: granule yet (icon4py#1360), so it is carried but unused.
     tmx: tmx_config.TmxConfig | None = None
-    physics_coupling: physics_driver_config.CouplingType = (
-        physics_driver_config.CouplingType.PARALLEL
-    )
 
     def __post_init__(self) -> None:
         if self.driver.diffuse_before_time_loop and not (

@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Final
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import config as physics_config
 from icon4py.model.common import dimension as dims, model_options
 from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
@@ -51,11 +50,9 @@ class PhysicsState:
     1. Set pointers into the model state (``exner``, ``theta_v``, ``rho``, ``vn``,
        ``w``, ``tracers``).
     2. ``diagnostics``, a ``DiagnosticState`` diagnosed once at ``PhysicsDriver.run``
-       entry. Under parallel coupling it is not updated between processes. Under
-       sequential coupling ``Tendencies.advance`` updates ``temperature``, ``u``,
-       ``v``, as well as ``w`` and ``tracers`` in the pointers above in place after
-       each process. The virtual temperature and the pressure always stay at step
-       start.
+       entry. ``Tendencies.advance`` updates ``temperature``, ``u``, ``v``, as well
+       as ``w`` and ``tracers`` in the pointers above in place after each process.
+       The virtual temperature and the pressure stay at step start.
     3. ``process_outputs``, the diagnostic (non-tendency) output buffers of each
        process. They are allocated once, when the driver is built, and written in
        place by their component. They persist across steps, holding the values of
@@ -229,18 +226,18 @@ class Tendencies:
     """The tendency sums of one timestep, and their application to the state.
 
     One timestep is ``zero``, then ``advance`` once per process,
-    then ``apply``.
+    then ``update``.
 
     Sums are keyed by output name (``tend_*``) and their buffers allocated lazily
     on first contribution. Only outputs whose metadata carries ``kind``
     ``TENDENCY`` accumulate; the rest are diagnostics, written by the components
     directly into the ``PhysicsState.process_outputs`` buffers.
 
-    The ``coupling`` decides where the tracers, temperature and u/v/w are updated.
-    Under parallel coupling ``advance`` does nothing and ``apply`` adds the summed
-    tendencies to the step-entry values. Under sequential coupling ``advance`` has
-    already added each process's tendencies in place, so ``apply`` does not add them
-    again.
+    The coupling is sequential, as ICON AES (``fc_xxx = 1``): ``advance`` adds each
+    process's tendencies to the tracers, temperature and u/v/w in place, so the next
+    process reads the advanced state. ``update`` does not add them again: it only
+    recomputes exner and theta_v from the final temperature and moisture, and updates
+    vn once from the summed (u, v) tendencies.
     """
 
     def __init__(
@@ -250,9 +247,7 @@ class Tendencies:
         geometry: factory.FieldSource,
         interpolation: factory.FieldSource,
         backend: gtx_typing.Backend | None = None,
-        coupling: physics_config.CouplingType = physics_config.CouplingType.PARALLEL,
     ) -> None:
-        self._coupling = coupling
         num_cells = grid.num_cells
         num_levels = grid.num_levels
         num_edges = grid.num_edges
@@ -330,16 +325,11 @@ class Tendencies:
 
         # Scratch buffers — allocated once
         # TODO(Yilu): rename the following variables including acc?
-        self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._ddt_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
         self._backend = backend
         self._acc: dict[str, gtx.Field] = {}
-
-    @property
-    def coupling(self) -> physics_config.CouplingType:
-        return self._coupling
 
     @property
     def acc(self) -> Mapping[str, gtx.Field]:
@@ -358,20 +348,8 @@ class Tendencies:
         outputs_properties: dict[str, model.FieldMetaData],
         dt_seconds: float,
     ) -> None:
+        """Sum this process's tendencies and add them to the state in place."""
         if not outputs:
-            return
-        for name, props in outputs_properties.items():
-            if props.kind != model.FieldKind.TENDENCY:
-                continue
-            field = outputs[name]
-            if (buffer := self._acc.get(name)) is None:
-                buffer = self._acc[name] = gtx.zeros(
-                    field.domain, dtype=field.dtype, allocator=self._backend
-                )
-            # TODO (Yilu): why use numpy/cupy array to accumulate? It is possibly slow
-            buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
-
-        if self._coupling is not physics_config.CouplingType.SEQUENTIAL:
             return
         tracers = state.tracers
         assert tracers is not None, "compute_diagnostics must run before advance"
@@ -385,18 +363,26 @@ class Tendencies:
         for name, props in outputs_properties.items():
             if props.kind != model.FieldKind.TENDENCY:
                 continue
+            field = outputs[name]
+            if (buffer := self._acc.get(name)) is None:
+                buffer = self._acc[name] = gtx.zeros(
+                    field.domain, dtype=field.dtype, allocator=self._backend
+                )
+            # TODO (Yilu): why use numpy/cupy array to accumulate? It is possibly slow
+            buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
+
             if name == "tend_w":
                 self._apply_tendency_w(
                     field_a=state.w,
                     coeff=dt_seconds,
-                    field_b=outputs[name],
+                    field_b=field,
                     output_field=state.w,
                 )
             elif (target := targets.get(name)) is not None:
                 self._apply_tendency(
                     field_a=target,
                     coeff=dt_seconds,
-                    field_b=outputs[name],
+                    field_b=field,
                     output_field=target,
                 )
 
@@ -408,31 +394,9 @@ class Tendencies:
     ) -> None:
         acc = self._acc
         tracers = state.tracers
-        assert tracers is not None, "compute_diagnostics must run before apply"
-        sequential = self._coupling is physics_config.CouplingType.SEQUENTIAL
+        assert tracers is not None, "compute_diagnostics must run before update"
 
-        if not sequential:
-            for name in MOISTURE_SPECIES:
-                key = f"tend_{name}"
-                if key in acc:
-                    tracer = getattr(tracers, name)
-                    self._apply_tendency(
-                        field_a=tracer,
-                        coeff=dt_seconds,
-                        field_b=acc[key],
-                        output_field=tracer,
-                    )
-
-        if sequential or "tend_temperature" not in acc:
-            new_temperature = state.diagnostics.temperature
-        else:
-            self._apply_tendency(
-                field_a=state.diagnostics.temperature,
-                coeff=dt_seconds,
-                field_b=acc["tend_temperature"],
-                output_field=self._new_te,
-            )
-            new_temperature = self._new_te
+        # the tracers, temperature, u, v and w were already advanced by 'advance'
         self._compute_virtual_temperature_tendency(
             dtime=dt_seconds,
             qv=tracers.qv,
@@ -441,7 +405,7 @@ class Tendencies:
             qr=tracers.qr,
             qs=tracers.qs,
             qg=tracers.qg,
-            temperature=new_temperature,
+            temperature=state.diagnostics.temperature,
             virtual_temperature=state.diagnostics.virtual_temperature,
             virtual_temperature_tendency=self._tv_tendency,
         )
@@ -482,12 +446,4 @@ class Tendencies:
                 coeff=dt_seconds,
                 field_b=self._ddt_vn,
                 output_field=state.vn,
-            )
-
-        if "tend_w" in acc and not sequential:
-            self._apply_tendency_w(
-                field_a=state.w,
-                coeff=dt_seconds,
-                field_b=acc["tend_w"],
-                output_field=state.w,
             )
