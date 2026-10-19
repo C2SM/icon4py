@@ -19,52 +19,44 @@ from icon4py.model.common.config import config_io, options as common_conf_opt
 
 @config_io.register_enum
 class SurfaceFluxType(int, enum.Enum):
-    """How the surface fluxes are obtained (``isrfc_type`` in ``nh_testcase_nml``)."""
+    """How the surface fluxes are obtained; only the fixed kinematic heat fluxes are ported."""
 
     INTERACTIVE = 0
-    """The ocean, sea-ice and land tiles of ``mo_vdf_sfc.f90``; not ported."""
+    """Fluxes of the interactive ocean, sea-ice and land tiles; not ported."""
     FIXED_HEAT_FLUXES = 1
     """Fixed kinematic heat fluxes over a fixed surface temperature."""
 
 
 @dataclasses.dataclass(kw_only=True)
 class SurfaceConfig:
-    """
-    The surface boundary of the atmosphere, which ICON reads from ``nh_testcase_nml``.
-
-    ICON's interactive surface models (``isrfc_type = 0``: ocean, sea ice, land) are not
-    ported. Default values are those of ``mo_nh_testcases_nml.f90``.
-    """
+    """The surface boundary of the atmosphere: the surface fluxes tmx mixes into the air."""
 
     surface_flux_type: typing.Annotated[
         SurfaceFluxType,
         common_conf_opt.ConfigOption(
-            description="How the surface fluxes are obtained (`isrfc_type`); only the fixed "
-            "kinematic heat fluxes are implemented.",
+            description="How the surface fluxes are obtained (only the fixed kinematic heat "
+            "fluxes are implemented).",
         ),
     ]
 
     kinematic_sensible_heat_flux: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="Kinematic sensible heat flux at the surface (`shflx` in `nh_testcase_nml`) "
-            "[K m/s]; the default is the one of mo_nh_testcases_nml.f90.",
+            description="Kinematic sensible heat flux at the surface [K m/s].",
         ),
     ] = 0.1
 
     kinematic_latent_heat_flux: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="Kinematic latent heat flux at the surface (`lhflx` in `nh_testcase_nml`) "
-            "[m/s]; the default is the one of mo_nh_testcases_nml.f90.",
+            description="Kinematic latent heat flux at the surface [m/s].",
         ),
     ] = 0.0
 
     sea_surface_temperature: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="Sea surface temperature, constant in space and time "
-            "(`ape_sst_val` of the `sst_const` case) [K].",
+            description="Sea surface temperature, constant in space and time [K].",
         ),
     ]
 

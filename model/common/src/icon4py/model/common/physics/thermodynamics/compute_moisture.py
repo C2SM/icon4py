@@ -70,7 +70,7 @@ def qv_from_relative_humidity(
 
 
 @gtx.field_operator
-def specific_humidity_on_cells(
+def _specific_humidity_on_cells(
     vapor_pressure: fa.CellField[ta.wpfloat], pressure: fa.CellField[ta.wpfloat]
 ) -> fa.CellField[ta.wpfloat]:
     """Specific humidity [kg/kg] from the water-vapour partial pressure and the total pressure."""

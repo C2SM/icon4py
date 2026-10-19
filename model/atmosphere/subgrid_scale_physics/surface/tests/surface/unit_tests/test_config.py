@@ -20,7 +20,7 @@ def _ape_config(**overrides: object) -> surface_config.SurfaceConfig:
 
 
 def test_config_defaults_are_the_fortran_defaults() -> None:
-    """shflx and lhflx of mo_nh_testcases_nml.f90 when the namelist leaves them out."""
+    """The defaults equal ICON's."""
     config = _ape_config()
     assert config.kinematic_sensible_heat_flux == 0.1
     assert config.kinematic_latent_heat_flux == 0.0

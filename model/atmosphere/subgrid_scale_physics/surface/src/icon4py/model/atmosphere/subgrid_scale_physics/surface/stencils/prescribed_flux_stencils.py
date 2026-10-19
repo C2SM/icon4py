@@ -13,8 +13,8 @@ import gt4py.next as gtx
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.dimension import CellDim
-from icon4py.model.common.physics.thermodynamics.compute_moisture import specific_humidity_on_cells
-from icon4py.model.common.physics.thermodynamics.compute_pressure import sat_pres_water_on_cells
+from icon4py.model.common.physics.thermodynamics.compute_moisture import _specific_humidity_on_cells
+from icon4py.model.common.physics.thermodynamics.compute_pressure import _sat_pres_water_on_cells
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -28,8 +28,8 @@ def _compute_surface_density(
     at the surface temperature: ``compute_sfc_sat_spec_humidity`` (mo_tmx_surface.f90, water
     surface) and ``compute_sfc_density`` (mo_vdf_diag_smag.f90).
     """
-    saturation_specific_humidity = specific_humidity_on_cells(
-        sat_pres_water_on_cells(surface_temperature), surface_pressure
+    saturation_specific_humidity = _specific_humidity_on_cells(
+        _sat_pres_water_on_cells(surface_temperature), surface_pressure
     )
     return surface_pressure / (
         PhysicsConstants.rd
@@ -57,10 +57,8 @@ def _compute_prescribed_surface_fluxes(
     (mo_tmx_surface.f90): the prescribed kinematic fluxes ``shflx`` [K m/s] and ``lhflx`` [m/s]
     times the surface density, and the surface fluxes of internal energy they carry.
 
-    ``temperature`` is the air temperature at the lowest level (``ptm1`` in the surface code);
-    ICON's interface binds ``theta_v`` to it, which the reference data cannot distinguish as
-    ``lhflx = 0`` zeroes ``ufvs``. The wind stress and ``q_snocpymlt`` are not touched, as in
-    ICON's early return.
+    ``temperature`` is the air temperature at the lowest level (``ptm1`` in the surface code).
+    The wind stress and ``q_snocpymlt`` are not touched, as in ICON's early return.
     """
     surface_density = _compute_surface_density(surface_temperature, surface_pressure)
     evapotranspiration = -lhflx * surface_density

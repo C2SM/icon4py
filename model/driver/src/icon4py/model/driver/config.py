@@ -226,7 +226,7 @@ class ExperimentConfig(config_io.ConfigWithShared):
     #: Read from the AES vertical-diffusion namelist; the driver does not run the
     #: granule yet (icon4py#1360), so it is carried but unused.
     tmx: tmx_config.TmxConfig | None = None
-    #: The surface scheme of tmx, read from `nh_testcase_nml`; carried like `tmx`.
+    #: The surface scheme: surface fluxes for tmx and, later, radiation; carried like `tmx`.
     surface: surface_config.SurfaceConfig | None = None
 
     def __post_init__(self) -> None:
