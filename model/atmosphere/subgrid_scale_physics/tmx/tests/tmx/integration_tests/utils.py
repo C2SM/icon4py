@@ -97,7 +97,6 @@ def construct_input_state(entry_savepoint: sb.TmxEntrySavepoint) -> tmx_states.T
         qs=entry_savepoint.qs(),
         qg=entry_savepoint.qg(),
         air_mass=entry_savepoint.mair(),
-        cv_air=entry_savepoint.cvair(),
         rho=entry_savepoint.rho(),
     )
 
