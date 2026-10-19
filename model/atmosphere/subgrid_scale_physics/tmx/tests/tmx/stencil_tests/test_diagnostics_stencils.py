@@ -176,10 +176,8 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         stencil_tests.StandardStaticVariants.NONE: (),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "cell_start_nudging",
-            "cell_start_lateral_boundary_level_2",
             "cell_start_lateral_boundary_level_3",
             "cell_end_local",
-            "cell_end_halo_level_2",
             "vertical_start",
             "vertical_start_interior",
             "vertical_end",
@@ -215,10 +213,8 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         grav: float,
         nlev: int,
         cell_start_nudging: int,
-        cell_start_lateral_boundary_level_2: int,
         cell_start_lateral_boundary_level_3: int,
         cell_end_local: int,
-        cell_end_halo_level_2: int,
         **kwargs: Any,
     ) -> dict:
         dry_static_energy_full = reference_funcs.compute_dry_static_energy_numpy(
@@ -249,7 +245,7 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
             ),
             rho_ic=on_subdomain(
                 rho_ic_full,
-                (cell_start_lateral_boundary_level_2, cell_end_halo_level_2),
+                (cell_start_lateral_boundary_level_3, cell_end_local),
                 (0, nlev + 1),
                 initial=rho_ic,
             ),
@@ -268,11 +264,9 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         # Distinct, non-trivial bounds per output: the zones of the simple grid
         # all collapse to (0, num_cells), which would hide a mixed-up domain.
         num_cells = grid.num_cells
-        cell_start_lateral_boundary_level_2 = 1
         cell_start_lateral_boundary_level_3 = 3
         cell_start_nudging = 5
         cell_end_local = num_cells - 3
-        cell_end_halo_level_2 = num_cells - 1
         assert cell_start_nudging < cell_end_local
 
         return dict(
@@ -308,10 +302,8 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
             vertical_end=gtx.int32(grid.num_levels),
             vertical_end_half=gtx.int32(grid.num_levels + 1),
             cell_start_nudging=gtx.int32(cell_start_nudging),
-            cell_start_lateral_boundary_level_2=gtx.int32(cell_start_lateral_boundary_level_2),
             cell_start_lateral_boundary_level_3=gtx.int32(cell_start_lateral_boundary_level_3),
             cell_end_local=gtx.int32(cell_end_local),
-            cell_end_halo_level_2=gtx.int32(cell_end_halo_level_2),
         )
 
 
