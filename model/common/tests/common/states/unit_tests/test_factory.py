@@ -447,3 +447,67 @@ def test_get_scalar_exports_in_metadata_dtype() -> None:
     value = _double_precision_source().get_scalar("scalar")
     assert type(value) is ta.wpfloat
     assert value == ta.wpfloat(1.0 / 3.0)
+
+
+class _FakeProgram:
+    """Stand-in for a gt4py `Program`: `with_backend` copies the program like `dataclasses.replace`."""
+
+    def __init__(self, backend=None, definition_stage=None, compilation_options=None, calls=None):
+        self.backend = backend
+        self.definition_stage = definition_stage if definition_stage is not None else object()
+        self.compilation_options = (
+            compilation_options if compilation_options is not None else object()
+        )
+        self.calls = calls if calls is not None else []
+
+    def with_backend(self, backend):
+        self.calls.append(backend)
+        return _FakeProgram(backend, self.definition_stage, self.compilation_options, self.calls)
+
+
+def _program_provider(func: _FakeProgram) -> factory.ProgramFieldProvider:
+    return factory.ProgramFieldProvider(
+        func=func,  # type: ignore[arg-type]
+        domain={dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END))},
+        fields={"out": "out"},
+        deps={},
+        do_exchange=False,
+    )
+
+
+@pytest.fixture
+def empty_bound_programs() -> Generator[None, None, None]:
+    saved = dict(factory.ProgramFieldProvider._bound_programs)
+    factory.ProgramFieldProvider._bound_programs.clear()
+    yield
+    factory.ProgramFieldProvider._bound_programs.clear()
+    factory.ProgramFieldProvider._bound_programs.update(saved)
+
+
+@pytest.mark.usefixtures("empty_bound_programs")
+def test_program_provider_binds_once_per_program_and_backend() -> None:
+    backend_a, backend_b = object(), object()
+    program = _FakeProgram()
+
+    bound = _program_provider(program)._bound_program(backend_a)
+    assert bound.backend is backend_a
+    assert _program_provider(program)._bound_program(backend_a) is bound
+    # a copy already bound elsewhere (e.g. `.with_backend(...)` at registration) shares the entry
+    assert _program_provider(program.with_backend(backend_b))._bound_program(backend_a) is bound
+    assert program.calls == [backend_a, backend_b]
+
+    other_backend = _program_provider(program)._bound_program(backend_b)
+    assert other_backend is not bound and other_backend.backend is backend_b
+    assert _program_provider(_FakeProgram())._bound_program(backend_a) is not bound
+    assert len(factory.ProgramFieldProvider._bound_programs) == 3
+
+
+@pytest.mark.usefixtures("empty_bound_programs")
+def test_program_provider_does_not_cache_embedded_execution() -> None:
+    program = _FakeProgram()
+    provider = _program_provider(program)
+
+    assert provider._bound_program(None).backend is None
+    assert provider._bound_program(None).backend is None
+    assert program.calls == [None, None]
+    assert not factory.ProgramFieldProvider._bound_programs
