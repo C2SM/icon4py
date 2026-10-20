@@ -689,7 +689,11 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
                 edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
             ),
             edge_horizontal_end=grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
-            hgrad_w_horizontal_start=0,
+            hgrad_w_horizontal_start=(
+                grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+                if grid.limited_area
+                else grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+            ),
             hgrad_w_horizontal_end=grid.end_index(cell_domain(h_grid.Zone.HALO)),
             cell_horizontal_start=grid.start_index(cell_domain(h_grid.Zone.NUDGING)),
             cell_horizontal_end=grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
