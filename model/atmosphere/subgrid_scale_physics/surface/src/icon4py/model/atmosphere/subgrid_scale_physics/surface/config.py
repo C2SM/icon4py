@@ -19,13 +19,13 @@ from icon4py.model.common.config import config_io, options as common_conf_opt
 
 @config_io.register_enum
 class SurfaceFluxType(int, enum.Enum):
-    """How the surface fluxes are obtained; only the fixed kinematic heat fluxes are ported."""
+    """
+    How the surface fluxes are obtained; ICON's interactive ocean, sea-ice and land tiles (0)
+    are not ported.
+    """
 
-    # the ported scheme first: the configuration docs build their example from the first member
     FIXED_HEAT_FLUXES = 1
     """Fixed kinematic heat fluxes over a fixed surface temperature."""
-    INTERACTIVE = 0
-    """Fluxes of the interactive ocean, sea-ice and land tiles; not ported."""
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -66,12 +66,7 @@ class SurfaceConfig:
             self.surface_flux_type = SurfaceFluxType(self.surface_flux_type)
         except ValueError:
             raise ValueError(
-                f"Invalid argument 'surface_flux_type': got {self.surface_flux_type}, expected "
-                f"one of {[member.value for member in SurfaceFluxType]}."
-            ) from None
-        if self.surface_flux_type is not SurfaceFluxType.FIXED_HEAT_FLUXES:
-            raise ValueError(
                 f"Invalid argument 'surface_flux_type': only fixed kinematic heat fluxes "
                 f"({SurfaceFluxType.FIXED_HEAT_FLUXES.value}) are implemented, "
-                f"got {self.surface_flux_type.value}."
-            )
+                f"got {self.surface_flux_type}."
+            ) from None
