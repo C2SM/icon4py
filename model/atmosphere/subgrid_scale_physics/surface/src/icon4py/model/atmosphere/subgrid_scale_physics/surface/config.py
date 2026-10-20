@@ -21,10 +21,11 @@ from icon4py.model.common.config import config_io, options as common_conf_opt
 class SurfaceFluxType(int, enum.Enum):
     """How the surface fluxes are obtained; only the fixed kinematic heat fluxes are ported."""
 
-    INTERACTIVE = 0
-    """Fluxes of the interactive ocean, sea-ice and land tiles; not ported."""
+    # the ported scheme first: the configuration docs build their example from the first member
     FIXED_HEAT_FLUXES = 1
     """Fixed kinematic heat fluxes over a fixed surface temperature."""
+    INTERACTIVE = 0
+    """Fluxes of the interactive ocean, sea-ice and land tiles; not ported."""
 
 
 @dataclasses.dataclass(kw_only=True)
