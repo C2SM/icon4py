@@ -189,8 +189,8 @@ def calculate_nabla4_numpy(
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     u_vert: np.ndarray,
     v_vert: np.ndarray,
-    primal_normal_vert_v1: np.ndarray,
-    primal_normal_vert_v2: np.ndarray,
+    primal_normal_vert_x: np.ndarray,
+    primal_normal_vert_y: np.ndarray,
     z_nabla2_e: np.ndarray,
     inv_vert_vert_length: np.ndarray,
     inv_primal_edge_length: np.ndarray,
@@ -199,24 +199,24 @@ def calculate_nabla4_numpy(
     u_vert_e2c2v = u_vert[e2c2v]
     v_vert_e2c2v = v_vert[e2c2v]
 
-    primal_normal_vert_v1 = np.expand_dims(primal_normal_vert_v1, axis=-1)
-    primal_normal_vert_v2 = np.expand_dims(primal_normal_vert_v2, axis=-1)
+    primal_normal_vert_x = np.expand_dims(primal_normal_vert_x, axis=-1)
+    primal_normal_vert_y = np.expand_dims(primal_normal_vert_y, axis=-1)
     inv_vert_vert_length = np.expand_dims(inv_vert_vert_length, axis=-1)
     inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
 
     nabv_tang = (
-        u_vert_e2c2v[:, 0] * primal_normal_vert_v1[:, 0]
-        + v_vert_e2c2v[:, 0] * primal_normal_vert_v2[:, 0]
+        u_vert_e2c2v[:, 0] * primal_normal_vert_x[:, 0]
+        + v_vert_e2c2v[:, 0] * primal_normal_vert_y[:, 0]
     ) + (
-        u_vert_e2c2v[:, 1] * primal_normal_vert_v1[:, 1]
-        + v_vert_e2c2v[:, 1] * primal_normal_vert_v2[:, 1]
+        u_vert_e2c2v[:, 1] * primal_normal_vert_x[:, 1]
+        + v_vert_e2c2v[:, 1] * primal_normal_vert_y[:, 1]
     )
     nabv_norm = (
-        u_vert_e2c2v[:, 2] * primal_normal_vert_v1[:, 2]
-        + v_vert_e2c2v[:, 2] * primal_normal_vert_v2[:, 2]
+        u_vert_e2c2v[:, 2] * primal_normal_vert_x[:, 2]
+        + v_vert_e2c2v[:, 2] * primal_normal_vert_y[:, 2]
     ) + (
-        u_vert_e2c2v[:, 3] * primal_normal_vert_v1[:, 3]
-        + v_vert_e2c2v[:, 3] * primal_normal_vert_v2[:, 3]
+        u_vert_e2c2v[:, 3] * primal_normal_vert_x[:, 3]
+        + v_vert_e2c2v[:, 3] * primal_normal_vert_y[:, 3]
     )
     z_nabla4_e2 = 4.0 * (
         (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2
@@ -280,8 +280,8 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         hdef_ic: np.ndarray,
         u_vert: np.ndarray,
         v_vert: np.ndarray,
-        primal_normal_vert_v1: np.ndarray,
-        primal_normal_vert_v2: np.ndarray,
+        primal_normal_vert_x: np.ndarray,
+        primal_normal_vert_y: np.ndarray,
         z_nabla2_e: np.ndarray,
         inv_vert_vert_length: np.ndarray,
         inv_primal_edge_length: np.ndarray,
@@ -368,8 +368,8 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             connectivities=connectivities,
             u_vert=u_vert,
             v_vert=v_vert,
-            primal_normal_vert_v1=primal_normal_vert_v1,
-            primal_normal_vert_v2=primal_normal_vert_v2,
+            primal_normal_vert_x=primal_normal_vert_x,
+            primal_normal_vert_y=primal_normal_vert_y,
             z_nabla2_e=z_nabla2_e,
             inv_vert_vert_length=inv_vert_vert_length,
             inv_primal_edge_length=inv_primal_edge_length,
@@ -555,10 +555,10 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         # vn diffusion
         u_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         v_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
-        primal_normal_vert_v1 = data_alloc.random_field(
+        primal_normal_vert_x = data_alloc.random_field(
             dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
-        primal_normal_vert_v2 = data_alloc.random_field(
+        primal_normal_vert_y = data_alloc.random_field(
             dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
         inv_vert_vert_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
@@ -641,8 +641,8 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             hdef_ic=hdef_ic,
             u_vert=u_vert,
             v_vert=v_vert,
-            primal_normal_vert_v1=primal_normal_vert_v1,
-            primal_normal_vert_v2=primal_normal_vert_v2,
+            primal_normal_vert_x=primal_normal_vert_x,
+            primal_normal_vert_y=primal_normal_vert_y,
             z_nabla2_e=z_nabla2_e,
             inv_vert_vert_length=inv_vert_vert_length,
             inv_primal_edge_length=inv_primal_edge_length,
