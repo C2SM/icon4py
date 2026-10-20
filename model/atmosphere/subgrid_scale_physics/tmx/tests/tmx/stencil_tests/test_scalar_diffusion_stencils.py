@@ -301,8 +301,8 @@ class TestDiffuseEnergyAndUpdateTemperature(stencil_tests.StencilTest):
         grid: base.Grid,
         *,
         energy: np.ndarray,
-        sensible_heat_flux: np.ndarray,
-        evapotranspiration: np.ndarray,
+        thermal_energy_flux: np.ndarray,
+        vapor_energy_flux: np.ndarray,
         temperature: np.ndarray,
         new_qv: np.ndarray,
         new_qc: np.ndarray,
@@ -330,10 +330,7 @@ class TestDiffuseEnergyAndUpdateTemperature(stencil_tests.StencilTest):
             1.0 / air_mass[:, rows],
         )
         a, b, c = matrix_diagonals_on_rows(matrix, air_mass.shape, rows)
-        temperature_sfc = temperature[:, vertical_end - 1]
-        surface_flux = sensible_heat_flux + temperature_sfc * evapotranspiration * (
-            phy.cvv - phy.cvd
-        )
+        surface_flux = thermal_energy_flux + vapor_energy_flux
         new_energy, _ = diffuse_scalar_numpy(
             stencil_tests.connectivities_asnumpy(grid),
             var=energy,
@@ -380,8 +377,8 @@ class TestDiffuseEnergyAndUpdateTemperature(stencil_tests.StencilTest):
             diffusivity=data_alloc.random_field(dims.CellDim, dims.KHalfDim, low=0.0),
             inv_dz=data_alloc.random_field(dims.CellDim, dims.KHalfDim, low=0.1),
             **_tracers(data_alloc, prefix="new_"),
-            sensible_heat_flux=data_alloc.random_field(dims.CellDim),
-            evapotranspiration=data_alloc.random_field(dims.CellDim),
+            thermal_energy_flux=data_alloc.random_field(dims.CellDim),
+            vapor_energy_flux=data_alloc.random_field(dims.CellDim),
             temperature=data_alloc.random_field(dims.CellDim, dims.KDim, low=200.0, high=300.0),
             height_above_ground=data_alloc.random_field(dims.CellDim, dims.KDim, high=1.0e4),
             new_temperature=data_alloc.zero_field(dims.CellDim, dims.KDim),
