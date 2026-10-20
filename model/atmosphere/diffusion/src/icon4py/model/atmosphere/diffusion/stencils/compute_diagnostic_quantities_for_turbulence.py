@@ -20,28 +20,19 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _temporary_fields_for_turbulence_diagnostics(
+def _flow_deformation(
     kh_smag: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
-) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    kh_smag_wp, diff_multfac_smag_wp = astype((kh_smag, diff_multfac_smag), wpfloat)
-
-    kh_c_wp = _interpolate_to_cell_center(kh_smag_wp, e_bln_c_s) / diff_multfac_smag_wp
-    div_wp = divergence(vn, geofac_div)
-    return kh_c_wp, div_wp
-
-
-@gtx.field_operator
-def _flow_deformation(
-    div: fa.CellKField[wpfloat],
-    kh_c: fa.CellKField[wpfloat],
     wgtfac_c: fa.CellKHalfField[vpfloat],
 ) -> tuple[fa.CellKHalfField[vpfloat], fa.CellKHalfField[vpfloat]]:
-    wgtfac_c_wp = astype(wgtfac_c, wpfloat)
+    kh_smag_wp, diff_multfac_smag_wp = astype((kh_smag, diff_multfac_smag), wpfloat)
+    kh_c = _interpolate_to_cell_center(kh_smag_wp, e_bln_c_s) / diff_multfac_smag_wp
+    div = divergence(vn, geofac_div)
 
+    wgtfac_c_wp = astype(wgtfac_c, wpfloat)
     div_ic_wp = astype(wgtfac_c * div(dims.KHalfDim + 0.5), wpfloat) + (
         wpfloat("1.0") - wgtfac_c_wp
     ) * div(dims.KHalfDim - 0.5)
@@ -73,10 +64,9 @@ def _compute_diagnostic_quantities_for_turbulence(
     fa.CellKHalfField[vpfloat],
     fa.CellKHalfField[vpfloat],
 ]:
-    kh_c, div = _temporary_fields_for_turbulence_diagnostics(
-        kh_smag, vn, e_bln_c_s, geofac_div, diff_multfac_smag
+    div_ic, hdef_ic = _flow_deformation(
+        kh_smag, vn, e_bln_c_s, geofac_div, diff_multfac_smag, wgtfac_c
     )
-    div_ic, hdef_ic = _flow_deformation(div, kh_c, wgtfac_c)
 
     dwdx, dwdy = (
         cell_horizontal_gradients_by_green_gauss_method_on_half_levels(

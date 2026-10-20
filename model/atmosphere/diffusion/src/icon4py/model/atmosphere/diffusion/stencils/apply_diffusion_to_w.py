@@ -32,13 +32,13 @@ def _apply_nabla2_to_w(
 def _apply_nabla2_to_w_in_upper_damping_layer(
     w: fa.CellKHalfField[wpfloat],
     diff_multfac_n2w: fa.KHalfField[wpfloat],
-    cell_area: fa.CellField[wpfloat],
+    area: fa.CellField[wpfloat],
     z_nabla2_c: fa.CellKHalfField[vpfloat],
 ) -> fa.CellKHalfField[wpfloat]:
     z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
-    cell_area_tmp = broadcast(cell_area, (dims.CellDim, dims.KHalfDim))
+    area = broadcast(area, (dims.CellDim, dims.KHalfDim))
 
-    w_wp = w + diff_multfac_n2w * cell_area_tmp * z_nabla2_c_wp
+    w_wp = w + diff_multfac_n2w * area * z_nabla2_c_wp
     return w_wp
 
 
