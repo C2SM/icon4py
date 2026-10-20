@@ -120,6 +120,7 @@ def test_examples_for(
     assert check(examples)
 
 
+@pytest.mark.snapshots
 @pytest.mark.parametrize(
     ("config_class", "key_presses"),
     (
@@ -145,4 +146,6 @@ def test_snapshots(snap_compare: Callable, config_class: type, key_presses: tupl
     executing the given key presses.
     """
     app = config_doc.ConfigDocApp(config_class)
-    assert snap_compare(app, press=key_presses, terminal_size=(160, 40))
+    assert snap_compare(app, press=key_presses, terminal_size=(160, 40)), (
+        "Something has changed the output of the config explorer app. Use `uv run pytest model/common -m snapshots` locally and follow the instructions to visually inspect and accept or fix."
+    )
