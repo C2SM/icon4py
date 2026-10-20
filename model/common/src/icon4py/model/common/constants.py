@@ -66,6 +66,11 @@ SPECIFIC_HEAT_CAPACITY_ICE: Final[ta.wpfloat] = ta.wpfloat(2106.0)
 #: the physical constant SPECIFIC_HEAT_CAPACITY_ICE.
 SPECIFIC_HEAT_CAPACITY_ICE_THERMO: Final[ta.wpfloat] = ta.wpfloat(2108.0)
 
+#: specific heat capacity of ice as defined in ICON's shared physical constants. Originally
+#: expressed as ci in mo_physical_constants.f90; used by get_cvair and the dycore moist
+#: thermodynamics. Differs from SPECIFIC_HEAT_CAPACITY_ICE. [J/K/kg]
+SPECIFIC_HEAT_CAPACITY_ICE_REFERENCE: Final[ta.wpfloat] = ta.wpfloat(2106.0)
+
 #: Melting temperature of ice/snow [K]. Originally expressed as tmelt in ICON.
 MELTING_TEMPERATURE: Final[ta.wpfloat] = ta.wpfloat(273.15)
 

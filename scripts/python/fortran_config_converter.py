@@ -220,7 +220,8 @@ NONHYDROSTATIC = ConfigMapping(
 
 
 def _convert_nudge_max_coeff(nudge_max_coeff: float) -> float:
-    return constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * nudge_max_coeff
+    # max_nudging_coefficient is a pure Python float, not numpy scalar, so we need to convert it to a float before multiplying with a wpfloat.
+    return float(constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO) * nudge_max_coeff
 
 
 INTERPOLATION = ConfigMapping(

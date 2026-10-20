@@ -102,9 +102,6 @@ class Diagnostics:
         edge_domain = h_grid.domain(dims.EdgeDim)
         vertex_domain = h_grid.domain(dims.VertexDim)
 
-        self._cell_start_lateral_boundary_level_2 = self._grid.start_index(
-            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-        )
         self._cell_start_lateral_boundary_level_3 = self._grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
@@ -114,7 +111,6 @@ class Diagnostics:
         self._cell_start_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._cell_end_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._cell_end_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
-        self._cell_end_halo_level_2 = self._grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
         self._edge_start_lateral_boundary_level_2 = self._grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -225,10 +221,8 @@ class Diagnostics:
             },
             horizontal_sizes={
                 "cell_start_nudging": self._cell_start_nudging,
-                "cell_start_lateral_boundary_level_2": self._cell_start_lateral_boundary_level_2,
                 "cell_start_lateral_boundary_level_3": self._cell_start_lateral_boundary_level_3,
                 "cell_end_local": self._cell_end_local,
-                "cell_end_halo_level_2": self._cell_end_halo_level_2,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
@@ -373,6 +367,7 @@ class Diagnostics:
 
         # ICON computes cvair in the driver (get_cvair, mo_aes_phy_diag.f90) on the prognostic
         # cells and passes it to tmx; here it is the first diagnostic of tmx.
+        # TODO (Yilu): this can be put into the next stencil
         self.compute_moist_air_isochoric_heat_capacity_per_area(
             qv=input_state.qv,
             qc=input_state.qc,
@@ -384,6 +379,7 @@ class Diagnostics:
             heat_capacity_per_area=diagnostic_state.cv_air,
         )
 
+        # TODO (Yilu): It seems that rho_ic on halo cells and lvl2 are never used. But the removal of boundary lvl2 and halo bounds can be reverted in ths tmx integration PR.
         self.compute_thermodynamic_diagnostics(
             temperature=input_state.temperature,
             virtual_temperature=input_state.virtual_temperature,

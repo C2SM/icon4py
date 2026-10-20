@@ -241,10 +241,8 @@ def compute_thermodynamic_diagnostics(
     grav: wpfloat,
     nlev: gtx.int32,
     cell_start_nudging: gtx.int32,
-    cell_start_lateral_boundary_level_2: gtx.int32,
     cell_start_lateral_boundary_level_3: gtx.int32,
     cell_end_local: gtx.int32,
-    cell_end_halo_level_2: gtx.int32,
     vertical_start: gtx.int32,
     vertical_start_interior: gtx.int32,
     vertical_end: gtx.int32,
@@ -276,7 +274,7 @@ def compute_thermodynamic_diagnostics(
             },
             # rho_ic
             {
-                dims.CellDim: (cell_start_lateral_boundary_level_2, cell_end_halo_level_2),
+                dims.CellDim: (cell_start_lateral_boundary_level_3, cell_end_local),
                 dims.KHalfDim: (vertical_start, vertical_end_half),
             },
             # bruvais
