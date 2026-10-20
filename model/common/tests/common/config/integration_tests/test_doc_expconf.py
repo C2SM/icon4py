@@ -21,19 +21,15 @@ from icon4py.model.driver.config import ExperimentConfig
 
 @pytest.mark.level("integration")
 @pytest.mark.snapshots
-def test_initial(snap_compare: Callable):
+def test_initial(snap_compare: Callable, snapshot_fail_msg):
     """Test the initial view."""
     app = config_doc.ConfigDocApp(ExperimentConfig)
-    assert snap_compare(app, terminal_size=(160, 40)), (
-        "Something has changed the output of the config explorer app. Use `uv run pytest model/common -m snapshots` locally and follow the instructions to visually inspect and accept or fix."
-    )
+    assert snap_compare(app, terminal_size=(160, 40)), snapshot_fail_msg
 
 
 @pytest.mark.level("integration")
 @pytest.mark.snapshots
-def test_select_one_down(snap_compare: Callable):
+def test_select_one_down(snap_compare: Callable, snapshot_fail_msg):
     """Test the initial view."""
     app = config_doc.ConfigDocApp(ExperimentConfig)
-    assert snap_compare(app, terminal_size=(160, 40), press=["down", "enter"]), (
-        "Something has changed the output of the config explorer app. Use `uv run pytest model/common -m snapshots` locally and follow the instructions to visually inspect and accept or fix."
-    )
+    assert snap_compare(app, terminal_size=(160, 40), press=["down", "enter"]), snapshot_fail_msg
