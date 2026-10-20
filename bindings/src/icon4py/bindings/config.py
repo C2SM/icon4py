@@ -15,14 +15,13 @@ from icon4py.model.common.utils import env
 WAIT_FOR_COMPILATION: bool = env.flag_to_bool("ICON4PY_WAIT_FOR_COMPILATION", False)
 """Wait in granule initialization until jit compilation is complete."""
 
-COPY_TRANSPOSED: bool = env.flag_to_bool("ICON4PY_COPY_TRANSPOSED", False)
+COPY_TRANSPOSED: bool = env.flag_to_bool("ICON4PY_COPY_TRANSPOSED", True)
 """Copy converted fields through transposed views, so that CuPy walks ICON's column-major arrays
-in memory order. Bit-identical; measurement switch of branch measure/transposed-copy."""
+in memory order. Bit-identical; 0 restores the plain copy."""
 
-COPY_SYNC_PER_CALL: bool = env.flag_to_bool("ICON4PY_COPY_SYNC_PER_CALL", False)
+COPY_SYNC_PER_CALL: bool = env.flag_to_bool("ICON4PY_COPY_SYNC_PER_CALL", True)
 """Wait for the conversion copies once per call instead of once per argument, so the CPU
-launches the next copy while the last one runs. Bit-identical; measurement switch of branch
-measure/transposed-copy."""
+launches the next copy while the last one runs. Bit-identical; 0 restores the per-argument syncs."""
 
 
 def _icon_precision() -> Literal["double", "mixed", "single"]:
