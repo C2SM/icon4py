@@ -46,7 +46,7 @@ import logging
 import types
 import typing
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
-from typing import Any, ClassVar, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -470,17 +470,6 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         params: scalar parameters used in the program
     """
 
-    #: Programs bound to a backend, shared by all providers. `Program.with_backend` returns a new
-    #: object with an empty pool of compiled programs, so binding on every call would compile on
-    #: every call. Keyed by object identity, which `with_backend` preserves for the definition
-    #: and the compilation options; the value keeps those objects alive so the ids stay unique.
-    _bound_programs: ClassVar[
-        dict[
-            tuple[int, int, int],
-            tuple[gtx_typing.Program, tuple[Any, Any, gtx_typing.Backend]],
-        ]
-    ] = {}
-
     def __init__(
         self,
         *,
@@ -589,18 +578,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         dims = self._domain_args(grid)
         offset_providers = self._get_offset_providers(grid.grid)
         deps.update(dims)
-        self._bound_program(backend)(**deps, offset_provider=offset_providers)
-
-    def _bound_program(self, backend: gtx_typing.Backend | None) -> gtx_typing.Program:
-        """Return `func` bound to `backend`, compiled at most once per program and backend."""
-        if backend is None:
-            return self._func.with_backend(None)
-        definition, options = self._func.definition_stage, self._func.compilation_options
-        key = (id(definition), id(options), id(backend))
-        if (entry := self._bound_programs.get(key)) is None:
-            entry = (self._func.with_backend(backend), (definition, options, backend))
-            self._bound_programs[key] = entry
-        return entry[0]
+        self._func.with_backend(backend)(**deps, offset_provider=offset_providers)
 
     @property
     def fields(self) -> Mapping[str, state_utils.FieldType]:

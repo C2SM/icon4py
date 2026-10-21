@@ -205,7 +205,7 @@ class IconLikeHaloConstructor(HaloConstructor):
                 f"rank {self._process_props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
             )
             # assign the index to the rank with the higher rank
-            updated_owner_mask[local_index] = max(owning_ranks) <= self._process_props.rank
+            updated_owner_mask[local_index] = self._xp.max(owning_ranks) <= self._process_props.rank
         return updated_owner_mask
 
     def _set_decomposition_info_dimension(
