@@ -76,6 +76,7 @@ def in_arguments_unchanged(monkeypatch):
     """
     guarded_calls: list = []
     guard(monkeypatch, dycore_wrapper, "solve_nh_run", guarded_calls)
+    guard(monkeypatch, dycore_wrapper, "solve_nh_substeps_run", guarded_calls)
     guard(monkeypatch, diffusion_wrapper, "diffusion_run", guarded_calls)
     yield guarded_calls
-    assert guarded_calls, "No 'solve_nh_run' or 'diffusion_run' call was guarded."
+    assert guarded_calls, "No 'solve_nh_run', 'solve_nh_substeps_run' or 'diffusion_run' call was guarded."

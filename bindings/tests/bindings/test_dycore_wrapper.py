@@ -1190,3 +1190,238 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
+
+
+def _multi_step_arrays(sp, icon_grid, linit: bool) -> dict[str, np.ndarray]:
+    """Host copies of the arguments of one dynamics step, as `test_granule_solve_nonhydro_multi_step_regional` builds them."""
+    zeros_c = lambda: data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # noqa: E731
+    zeros_e = lambda: data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray  # noqa: E731
+    w_adv = (sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)) if linit else (sp.ddt_w_adv_pc(1), sp.ddt_w_adv_pc(0))
+    arrays = {
+        "vn_traj": sp.vn_traj().ndarray,
+        "vol_flx_ic": zeros_c(),
+        "mass_flx_me": sp.mass_flx_me().ndarray,
+        "mass_flx_ic": sp.mass_flx_ic().ndarray,
+        "max_vcfl_size1_array": np.full(1, 0.0, dtype=np.float64),
+        "theta_v_ic": sp.theta_v_ic().ndarray,
+        "exner_pr": sp.exner_pr().ndarray,
+        "rho_ic": sp.rho_ic().ndarray,
+        "ddt_exner_phy": sp.ddt_exner_phy().ndarray,
+        "grf_tend_rho": sp.grf_tend_rho().ndarray,
+        "grf_tend_thv": sp.grf_tend_thv().ndarray,
+        "grf_tend_w": sp.grf_tend_w().ndarray,
+        "mass_fl_e": sp.mass_fl_e().ndarray,
+        "ddt_vn_phy": sp.ddt_vn_phy().ndarray,
+        "grf_tend_vn": sp.grf_tend_vn().ndarray,
+        "ddt_vn_apc_ntl1": sp.ddt_vn_apc_pc(0).ndarray,
+        "ddt_vn_apc_ntl2": sp.ddt_vn_apc_pc(1).ndarray,
+        "ddt_w_adv_ntl1": w_adv[0].ndarray,
+        "ddt_w_adv_ntl2": w_adv[1].ndarray,
+        "vt": sp.vt().ndarray,
+        "vn_ie": sp.vn_ie().ndarray,
+        "vn_incr": zeros_e(),
+        "rho_incr": zeros_c(),
+        "exner_incr": zeros_c(),
+        "w_concorr_c": sp.w_concorr_c().ndarray,
+        "exner_dyn_incr": sp.exner_dyn_incr().ndarray,
+        "w_now": sp.w_now().ndarray,
+        "vn_now": sp.vn_now().ndarray,
+        "theta_v_now": sp.theta_v_now().ndarray,
+        "rho_now": sp.rho_now().ndarray,
+        "exner_now": sp.exner_now().ndarray,
+        "w_new": sp.w_new().ndarray,
+        "vn_new": sp.vn_new().ndarray,
+        "theta_v_new": sp.theta_v_new().ndarray,
+        "rho_new": sp.rho_new().ndarray,
+        "exner_new": sp.exner_new().ndarray,
+    }
+    return {name: np.array(array, copy=True) for name, array in arrays.items()}
+
+
+def _array_infos(arrays: dict[str, np.ndarray]) -> dict:
+    return {name: test_utils.array_to_array_info(array) for name, array in arrays.items()}
+
+
+def _run_per_call(ffi, args: dict, *, ndyn_substeps: int, at_initial_timestep: bool, **scalars) -> None:
+    """ICON's substep loop around `solve_nh_run`, swapping as the multi-step test does."""
+    a = dict(args)
+    for i_substep in range(1, ndyn_substeps + 1):
+        if not (at_initial_timestep and i_substep == 1):
+            a["ddt_w_adv_ntl1"], a["ddt_w_adv_ntl2"] = a["ddt_w_adv_ntl2"], a["ddt_w_adv_ntl1"]
+        if i_substep != 1:
+            a["ddt_vn_apc_ntl1"], a["ddt_vn_apc_ntl2"] = a["ddt_vn_apc_ntl2"], a["ddt_vn_apc_ntl1"]
+        dycore_wrapper.solve_nh_run(
+            ffi=ffi,
+            perf_counters=None,
+            **a,
+            **scalars,
+            at_initial_timestep=at_initial_timestep,
+            ndyn_substeps_var=ndyn_substeps,
+            idyn_timestep=i_substep,
+            is_iau_active=False,
+            iau_wgt_dyn=0.0,
+        )
+        for name in ("w", "vn", "theta_v", "rho", "exner"):
+            a[f"{name}_now"], a[f"{name}_new"] = a[f"{name}_new"], a[f"{name}_now"]
+
+
+def _run_substeps(ffi, args: dict, *, ndyn_substeps: int, at_initial_timestep: bool, **scalars) -> None:
+    """One `solve_nh_substeps_run` call, given the arrays ICON passes for its first substep."""
+    a = dict(args)
+    if not at_initial_timestep:
+        a["ddt_w_adv_ntl1"], a["ddt_w_adv_ntl2"] = a["ddt_w_adv_ntl2"], a["ddt_w_adv_ntl1"]
+    dycore_wrapper.solve_nh_substeps_run(
+        ffi=ffi,
+        perf_counters=None,
+        **a,
+        **scalars,
+        at_initial_timestep=at_initial_timestep,
+        ndyn_substeps_var=ndyn_substeps,
+        is_iau_mode=False,
+        iau_time_at_end_of_step=0.0,
+        iau_window=0.0,
+        iau_window_function=1,
+    )
+
+
+def _step_scalars(sp) -> dict:
+    return {
+        "dtime": sp.dtime(),
+        "lprep_adv": sp.get_metadata("prep_adv").get("prep_adv"),
+        "divdamp_fac_o2": sp.divdamp_fac_o2(),
+    }
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize(
+    "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, at_initial_timestep",
+    [
+        (1, 1, "2021-06-20T12:00:10.000", 2, 2, "2021-06-20T12:00:10.000", True),
+        (1, 1, "2021-06-20T12:00:20.000", 2, 2, "2021-06-20T12:00:20.000", False),
+    ],
+)
+@pytest.mark.parametrize("backend", [None])
+def test_solve_nh_substeps_run_equals_per_call(  # noqa: PLR0917 [too-many-positional-arguments]
+    grid_init,  # initializes the grid as side-effect
+    solve_nh_init,  # initializes solve_nh as side-effect
+    in_arguments_unchanged,
+    step_date_init,
+    step_date_exit,
+    istep_exit,
+    substep_init,
+    substep_exit,
+    icon_grid,
+    savepoint_nonhydro_init,
+    experiment,
+    at_initial_timestep,
+    backend,
+):
+    """M5: the substep loop in one call leaves every argument bitwise as ICON's loop around solve_nh_run does."""
+    ndyn_substeps = experiment.config.driver.ndyn_substeps
+    sp = savepoint_nonhydro_init
+    linit = sp.get_metadata("linit").get("linit")
+    ffi = cffi.FFI()
+    per_call = _array_infos(_multi_step_arrays(sp, icon_grid, linit))
+    loop = _array_infos(_multi_step_arrays(sp, icon_grid, linit))
+    kwargs = dict(ndyn_substeps=ndyn_substeps, at_initial_timestep=at_initial_timestep, **_step_scalars(sp))
+
+    _run_per_call(ffi, per_call, **kwargs)
+    _run_substeps(ffi, loop, **kwargs)
+
+    differing = [
+        name
+        for name in per_call
+        if not np.array_equal(
+            py2fgen.as_array(ffi, per_call[name]), py2fgen.as_array(ffi, loop[name]), equal_nan=True
+        )
+    ]
+    assert not differing, f"loop and per-call results differ in {differing}"
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize(
+    "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, at_initial_timestep",
+    [
+        (1, 1, "2021-06-20T12:00:10.000", 2, 2, "2021-06-20T12:00:10.000", True),
+        (1, 1, "2021-06-20T12:00:20.000", 2, 2, "2021-06-20T12:00:20.000", False),
+    ],
+)
+@pytest.mark.parametrize("backend", [None])
+def test_granule_solve_nh_substeps_run_regional(  # noqa: PLR0917 [too-many-positional-arguments]
+    grid_init,  # initializes the grid as side-effect
+    solve_nh_init,  # initializes solve_nh as side-effect
+    in_arguments_unchanged,
+    step_date_init,
+    step_date_exit,
+    istep_exit,
+    substep_init,
+    substep_exit,
+    icon_grid,
+    savepoint_nonhydro_init,
+    savepoint_nonhydro_exit,
+    savepoint_nonhydro_step_final,
+    experiment,
+    at_initial_timestep,
+    backend,
+):
+    """`solve_nh_substeps_run` against the savepoints, as `test_granule_solve_nonhydro_multi_step_regional`."""
+    ndyn_substeps = experiment.config.driver.ndyn_substeps
+    sp = savepoint_nonhydro_init
+    sp_step_exit = savepoint_nonhydro_step_final
+    linit = sp.get_metadata("linit").get("linit")
+    ffi = cffi.FFI()
+    args = _array_infos(_multi_step_arrays(sp, icon_grid, linit))
+
+    _run_substeps(
+        ffi, args, ndyn_substeps=ndyn_substeps, at_initial_timestep=at_initial_timestep, **_step_scalars(sp)
+    )
+
+    # the last substep writes the *_new arrays it was given for an odd number of substeps, *_now for an even one
+    level = "new" if ndyn_substeps % 2 else "now"
+    result = {name: py2fgen.as_array(ffi, args[name]) for name in args}
+    cell_start_lb_plus2 = icon_grid.start_index(
+        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+    )
+    edge_start_lb_plus4 = icon_grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+    )
+
+    assert testing_test_utils.dallclose(
+        result["rho_ic"][cell_start_lb_plus2:, :],
+        savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
+    )
+    assert testing_test_utils.dallclose(
+        result["theta_v_ic"][cell_start_lb_plus2:, :],
+        savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
+    )
+    assert testing_test_utils.dallclose(
+        result["mass_fl_e"][edge_start_lb_plus4:, :],
+        savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
+        atol=5e-7,
+    )
+    assert testing_test_utils.dallclose(
+        result["mass_flx_me"], savepoint_nonhydro_exit.mass_flx_me().asnumpy(), atol=5e-7
+    )
+    assert testing_test_utils.dallclose(
+        result["vn_traj"], savepoint_nonhydro_exit.vn_traj().asnumpy(), atol=1e-12
+    )
+    assert testing_test_utils.dallclose(
+        result[f"theta_v_{level}"], sp_step_exit.theta_v_new().asnumpy(), atol=5e-7
+    )
+    assert testing_test_utils.dallclose(
+        result[f"rho_{level}"], savepoint_nonhydro_exit.rho_new().asnumpy()
+    )
+    assert testing_test_utils.dallclose(
+        result[f"exner_{level}"], sp_step_exit.exner_new().asnumpy()
+    )
+    assert testing_test_utils.dallclose(
+        result[f"w_{level}"], savepoint_nonhydro_exit.w_new().asnumpy(), atol=8e-14
+    )
+    assert testing_test_utils.dallclose(
+        result[f"vn_{level}"], savepoint_nonhydro_exit.vn_new().asnumpy(), atol=5e-13
+    )
+    assert testing_test_utils.dallclose(
+        result["exner_dyn_incr"], savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(), atol=1e-14
+    )
