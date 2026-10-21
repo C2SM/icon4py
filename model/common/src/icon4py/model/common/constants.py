@@ -122,6 +122,10 @@ LATENT_HEAT_FOR_SUBLIMATION_INVARIANT: Final[ta.wpfloat] = (
 VON_KARMAN_CONSTANT: Final[ta.wpfloat] = 0.4
 CKAP: Final[ta.wpfloat] = VON_KARMAN_CONSTANT
 
+#: Charnock constant, cchar in ICON.
+CHARNOCK_CONSTANT: Final[ta.wpfloat] = 0.018
+CCHAR: Final[ta.wpfloat] = CHARNOCK_CONSTANT
+
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - ta.wpfloat(
     1.0
@@ -210,6 +214,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     lvc = LATENT_HEAT_FOR_VAPORISATION_INVARIANT
     lsc = LATENT_HEAT_FOR_SUBLIMATION_INVARIANT
     von_karman = VON_KARMAN_CONSTANT
+    charnock = CHARNOCK_CONSTANT
     eps = WP_EPS
 
 
