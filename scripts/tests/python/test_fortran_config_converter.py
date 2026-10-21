@@ -318,10 +318,10 @@ def _echoed_vdf_record(**overrides: object) -> list[object]:
         "turb_prandtl": 35,
         "km_min": 37,
         "max_turb_scale": 38,
-        "surface_layer_fraction": 15,
-        "minimum_roughness_length": 18,
-        "ocean_roughness_length": 20,
-        "minimum_surface_wind": 39,
+        "fsl": 15,
+        "z0m_min": 18,
+        "z0m_oce": 20,
+        "min_sfc_wind": 39,
     }
     record: list[object] = [0.0] * 42
     record[positions["use_tmx"]] = True
@@ -445,10 +445,7 @@ def test_surface_config() -> None:
     atm_dict = {
         "aes_vdf_nml": {
             "aes_vdf_config": _echoed_vdf_record(
-                surface_layer_fraction=0.5,
-                minimum_roughness_length=2.0e-5,
-                ocean_roughness_length=2.0e-3,
-                minimum_surface_wind=0.4,
+                fsl=0.5, z0m_min=2.0e-5, z0m_oce=2.0e-3, min_sfc_wind=0.4
             )
         }
     }
@@ -467,6 +464,22 @@ def test_surface_config() -> None:
     assert config.minimum_roughness_length == 2.0e-5
     assert config.ocean_roughness_length == 2.0e-3
     assert config.minimum_surface_wind == 0.4
+
+
+def test_surface_rejects_positions_that_disagree_with_the_input_namelist() -> None:
+    # the input namelist sets `fsl` by name, but the position pinned for it holds another value
+    fortran_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(
+                solver_type=2, energy_type=2, turb_prandtl=0.5, fsl=0.4
+            )
+        }
+    }
+    with pytest.raises(ValueError, match=r"'fsl' is 0\.5 .* member order changed"):
+        fcc.make_tmx_config(
+            atm_dict=fortran_dict,
+            input_dict=_input_vdf(solver_type=2, energy_type=2, fsl=0.5),
+        )
 
 
 def test_surface_config_is_none_without_tmx() -> None:
