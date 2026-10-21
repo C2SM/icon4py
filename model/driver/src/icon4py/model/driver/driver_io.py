@@ -46,11 +46,17 @@ DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [
     "pressure",
 ]
 
-# A variable is named by its quantity's standard_name, except these leaves, which keep the
-# names the output files have always used (`exner_function`, not
-# `dimensionless_exner_function`).
-_FILE_NAMES: Final[dict[str, str]] = {
-    "exner": "exner_function",
+#: output variable name -> `IOMonitor.Input` leaf name. A variable keeps the name its
+#: quantity carries as `standard_name`, except where the output files have always used
+#: another name (`exner_function`, not `dimensionless_exner_function`).
+_VARIABLE_NAMES: Final[dict[str, str]] = {
+    "air_density": "rho",
+    "exner_function": "exner",
+    "virtual_potential_temperature": "theta_v",
+    "upward_air_velocity": "w",
+    "normal_velocity": "vn",
+    "eastward_wind": "u",
+    "northward_wind": "v",
     "temperature": "temperature",
     "virtual_temperature": "virtual_temperature",
     "pressure": "pressure",
@@ -97,21 +103,14 @@ class IOMonitor(fw.Component):
         variables: list[str],
     ) -> None:
         self.writer = writer
-        leaves: dict[str, str] = {}
-        for declaration in type(self).Input.declarations():
-            name = _FILE_NAMES.get(declaration.name, declaration.quantity.standard_name)
-            assert name is not None, f"Output leaf '{declaration.name}' has no name."
-            assert name not in leaves, (
-                f"Input leaves '{leaves[name]}' and '{declaration.name}' are both written as '{name}'."
-            )
-            leaves[name] = declaration.name
-        unknown = [name for name in variables if name not in leaves]
+        unknown = [name for name in variables if name not in _VARIABLE_NAMES]
         if unknown:
             raise ValueError(
-                f"Unknown output variable '{unknown[0]}'. Known variables are: {list(leaves)}."
+                f"Unknown output variable '{unknown[0]}'. "
+                f"Known variables are: {list(_VARIABLE_NAMES)}."
             )
         # output variable name -> Input leaf name
-        self.selected = {name: leaves[name] for name in variables}
+        self.selected = {name: _VARIABLE_NAMES[name] for name in variables}
 
     @functools.cached_property
     def cached_output(self) -> fw.Empty:

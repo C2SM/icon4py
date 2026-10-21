@@ -52,9 +52,9 @@ passing `theta_v` where `exner` is expected is not a type error. Tendencies were
   phantom, invariant type parameter: `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` are different
   types to mypy and the same array to gt4py. Invariance means that a signature
   `(Field[Q], Field[Q])` takes the same quantity twice. Stencils read `.data`.
-- `State`: a frozen, keyword-only dataclass of typed leaves. `declarations()` lists the `Field`
-  leaves (name, quantity, optional); plain leaves (`dtime: float`, datetimes) are ordinary
-  fields. A leaf annotated `Field[Q] | None` is optional.
+- `State`: a frozen, keyword-only dataclass of typed leaves. The `Field` leaves are read back
+  from the annotations; plain leaves (`dtime: float`, datetimes) are ordinary fields. A leaf
+  annotated `Field[Q] | None` is optional.
 - `allocate(State, grid, allocator, only=...)` makes a zero field per declaration (`only` names
   the optional leaves to allocate, the others stay None); `zeros(Q, grid, allocator)` makes one
   field; `copy(state, allocator)` copies the present leaves.
@@ -155,8 +155,8 @@ type check.
   `collect_input` does not match its `run`, where the call is written.
 - The metadata of a field is on its quantity tag; the IO reads its CF attributes from there, and
   the state CF tables and `FieldKind` are gone.
-- `allocate`, `copy`, the physics driver's accumulation and the IO work on any state through
-  `declarations()`.
+- `allocate` and `copy` work on any state through the annotations; the physics driver's
+  accumulation and the IO walk the present leaves through `fields()`.
 - Every `Input`/`Output` view is spelled out by keyword at the call site, and every stencil call
   reads `.data`.
 - Calls through the `fw.Component` protocol are not checked: `run` is `Any -> Any` there,

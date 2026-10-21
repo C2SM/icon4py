@@ -67,9 +67,7 @@ class TracerState(fw.State):
 
 
 #: the tracer names, in ICON's order (QV=0, QC=1, QI=2, QR=3, QS=4, QG=5)
-TRACERS: Final[tuple[str, ...]] = tuple(
-    declaration.name for declaration in TracerState.declarations()
-)
+TRACERS: Final[tuple[str, ...]] = ("qv", "qc", "qi", "qr", "qs", "qg")
 
 
 @dataclasses.dataclass(frozen=True)

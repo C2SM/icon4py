@@ -152,17 +152,10 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     )
 
     # initialization of the diagnostic and prognostic state
-    def random(name: str, shape: tuple[int, ...]) -> Any:
+    def random(name: str, field_dims: tuple[Any, ...]) -> Any:
         low = 0.0 if name == "w" else -1.0
-        return data_alloc.random_field(mesh, *dims_of[name], low=low, allocator=allocator).ndarray
+        return data_alloc.random_field(mesh, *field_dims, low=low, allocator=allocator).ndarray
 
-    dims_of = {
-        decl.name: decl.quantity.dims
-        for decl in (
-            *states.DiffusionDiagnostics.declarations(),
-            *states.PrognosticState.declarations(),
-        )
-    }
     diagnostic_state = fw.allocate(states.DiffusionDiagnostics, mesh, allocator, fill=random)
     prognostic_state = fw.allocate(states.PrognosticState, mesh, allocator, fill=random)
 

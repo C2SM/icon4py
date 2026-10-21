@@ -67,13 +67,6 @@ class StubWriter:
         self.stored.append((dict(state), model_time))
 
 
-class DuplicatedIOMonitor(driver_io.IOMonitor):
-    """Two leaves of one quantity: both would be written as `air_density`."""
-
-    class Input(driver_io.IOMonitor.Input):
-        rho_again: fw.Field[qty.RhoOnCellK]
-
-
 def make_monitor(
     grid: base.Grid, writer: StubWriter, variables: list[str] | None = None
 ) -> driver_io.IOMonitor:
@@ -140,13 +133,6 @@ def test_variables_subset(grid: base.Grid) -> None:
 def test_unknown_variable_raises(grid: base.Grid) -> None:
     with pytest.raises(ValueError, match=r"Unknown output variable 'not_a_field'.*air_density"):
         make_monitor(grid, StubWriter(), ["air_density", "not_a_field"])
-
-
-def test_two_leaves_with_one_output_name_are_rejected(grid: base.Grid) -> None:
-    with pytest.raises(AssertionError, match=r"'rho' and 'rho_again'.*'air_density'"):
-        DuplicatedIOMonitor(
-            writer=cast(common_io.IOMonitor, StubWriter()), variables=["air_density"]
-        )
 
 
 def test_dataarrays_carry_the_dims_of_their_leaf(grid: base.Grid) -> None:

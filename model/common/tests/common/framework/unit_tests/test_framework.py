@@ -95,11 +95,7 @@ def test_zeros_resolves_the_precision_at_allocation(
     assert fw.zeros(Pressure, grid, allocator=None).data.ndarray.dtype == np.float64
 
 
-def test_state_declarations_list_the_field_leaves_only(grid: base_grid.Grid) -> None:
-    assert [(d.name, d.quantity, d.optional) for d in Column.declarations()] == [
-        ("pressure", Pressure, False),
-        ("salt", Salt, False),
-    ]
+def test_state_fields_list_the_field_leaves_only(grid: base_grid.Grid) -> None:
     column = Column(
         pressure=fw.zeros(Pressure, grid, allocator=None),
         salt=fw.zeros(Salt, grid, allocator=None),
@@ -125,12 +121,7 @@ def test_state_maps_present_leaf_names_to_fields(grid: base_grid.Grid) -> None:
     assert {tracers: 1}[tracers] == 1
 
 
-def test_optional_leaves_are_declared_and_skipped_when_absent(grid: base_grid.Grid) -> None:
-    assert [(d.name, d.optional) for d in Tracers.declarations()] == [
-        ("pressure", False),
-        ("salt", True),
-        ("vt", True),
-    ]
+def test_optional_leaves_are_skipped_when_absent(grid: base_grid.Grid) -> None:
     tracers = fw.allocate(Tracers, grid, allocator=None, only=("vt",))
     assert tracers.salt is None
     assert tracers.vt is not None
@@ -164,7 +155,7 @@ def test_allocate_fill_is_written_on_the_leaf_without_a_host_conversion(
     def refuse(*args: Any, **kwargs: Any) -> Any:
         raise TypeError("Implicit conversion to a NumPy array is not allowed")
 
-    def fill(name: str, shape: tuple[int, ...]) -> float:
+    def fill(name: str, field_dims: tuple[gtx.Dimension, ...]) -> float:
         monkeypatch.setattr(np, "asarray", refuse)
         return 4.0
 
@@ -199,7 +190,6 @@ def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid
             return outputs if outputs is not None else self.cached_output
 
     sink = Sink()
-    assert fw.Empty.declarations() == ()
     assert list(fw.fields(fw.Empty())) == []
     own = sink.run(Halve.Input(pressure=fw.zeros(Pressure, grid, allocator=None)))
     assert isinstance(own, fw.Empty) and own is sink.cached_output

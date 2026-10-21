@@ -28,7 +28,6 @@ if typing.TYPE_CHECKING:
 
 __all__ = [
     "Component",
-    "Decl",
     "Empty",
     "Field",
     "PredictorCorrectorPair",
@@ -135,9 +134,9 @@ class State:
     """
     A frozen, keyword-only dataclass of typed leaves.
 
-    `Field` leaves are read back from the annotations by `declarations()`; plain leaves
-    (floats, ints, datetimes) are ordinary fields and are not listed. A leaf annotated
-    `Field[Q] | None` is optional: `allocate` may leave it None; `fields()` skips it.
+    `Field` leaves are read back from the annotations; plain leaves (floats, ints,
+    datetimes) are ordinary fields and are not listed. A leaf annotated `Field[Q] | None`
+    is optional: `allocate` may leave it None; `fields()` skips it.
 
     A state is not a `Mapping`: the present leaves of an instance are read back as a
     mapping by the `fields()` free function, next to `allocate` and `copy`. States are
@@ -148,23 +147,17 @@ class State:
         super().__init_subclass__()
         dataclasses.dataclass(frozen=True, eq=False, kw_only=True)(cls)
 
-    @classmethod
-    def declarations(cls) -> tuple[Decl, ...]:
-        """The `Field` leaves of the class, in declaration order."""
-        return _declarations(cls)
-
 
 def fields(state: State) -> dict[str, Field[Any]]:
     """
     The present leaves of a state, by name, in declaration order.
 
-    The instance-level dual of `State.declarations()`: one level of `Field` leaves, the
-    optional ones skipped while None. `allocate`, `copy`, the physics driver and the IO
-    walk a state through it.
+    One level of `Field` leaves, the optional ones skipped while None. `copy`, the
+    physics driver and the IO walk a state through it.
     """
     return {
         declaration.name: field
-        for declaration in state.declarations()
+        for declaration in _declarations(type(state))
         if (field := getattr(state, declaration.name)) is not None
     }
 
@@ -176,7 +169,7 @@ def _declarations(cls: type[State]) -> tuple[Decl, ...]:
     """
     The `Field` leaves of a `State` class, read from its annotations once and cached.
 
-    Behind `State.declarations()`. Code that handles any state walks it instead of a per-state
+    Behind `allocate` and `fields`. Code that handles any state walks it instead of a per-state
     list of fields: `allocate`, `leaves()` (and through it `copy`), the physics driver and the
     IO. Cached because `typing.get_type_hints` evaluates the annotations, which are strings here.
     """
@@ -214,24 +207,24 @@ def allocate[S: State](
     grid: base_grid.Grid,
     allocator: gtx_typing.Allocator | None,
     *,
-    fill: Callable[[str, tuple[int, ...]], Any] | None = None,
+    fill: Callable[[str, tuple[gtx.Dimension, ...]], Any] | None = None,
     only: Collection[str] | None = None,
 ) -> S:
     """
     A state with a zero field per declaration.
 
-    `fill(name, shape)` gives the value of a leaf instead of zeros. `only` names the optional
+    `fill(name, dims)` gives the value of a leaf instead of zeros. `only` names the optional
     leaves to allocate; the other optional leaves are None. Without it every leaf is allocated.
     """
     values: dict[str, Any] = {}
-    for declaration in cls.declarations():
+    for declaration in _declarations(cls):
         if declaration.optional and only is not None and declaration.name not in only:
             values[declaration.name] = None
             continue
         field = zeros(declaration.quantity, grid, allocator)
         if fill is not None:
             buffer: Any = field.data.ndarray  # NDArrayObject declares no __setitem__
-            buffer[...] = fill(declaration.name, buffer.shape)
+            buffer[...] = fill(declaration.name, declaration.quantity.dims)
         values[declaration.name] = field
     return cls(**values)
 

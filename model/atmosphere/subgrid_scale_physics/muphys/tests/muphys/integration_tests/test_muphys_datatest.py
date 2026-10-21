@@ -18,7 +18,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     component as muphys_component,
     config as muphys_config,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES, Q
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import (
+    PRECIP_DIAGNOSTICS,
+    SPECIES,
+    Q,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_full_muphys
 from icon4py.model.common import (
     dimension as dims,
@@ -157,9 +161,8 @@ def test_muphys_granule(
         }
     )
     direct_precip = {
-        declaration.name: gtx.zeros(state["te"].domain, dtype=ta.wpfloat, allocator=allocator)
-        for declaration in muphys_component.MuphysComponent.Output.declarations()
-        if not issubclass(declaration.quantity, fw.Tendency)
+        port: gtx.zeros(state["te"].domain, dtype=ta.wpfloat, allocator=allocator)
+        for port in PRECIP_DIAGNOSTICS
     }
     muphys_program(
         dz=state["dz"],
