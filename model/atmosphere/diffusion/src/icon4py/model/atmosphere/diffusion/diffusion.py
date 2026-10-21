@@ -698,6 +698,15 @@ class Diffusion:
         self.diff_multfac_smag = data_alloc.zero_field(
             self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
+        self.w_tmp = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat, allocator=allocator
+        )
+        self.theta_v_tmp = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+        )
+        self.vn_tmp = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+        )
 
     def _determine_horizontal_domains(self) -> None:
         cell_domain = h_grid.domain(dims.CellDim)
@@ -843,17 +852,29 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
+        # The numerical diffusion operation reads neighboring values of the prognostic fields it
+        # updates (through C2E, E2C, C2E2C and C2E2CO gathers), so the pre-diffusion
+        # state is frozen into temporary copies first.
+        log.debug("copying prognostic fields vn, w, theta_v: start")
+        self.copy_field_on_edge_k(field=prognostic_state.vn, output_field=self.vn_tmp)
+        self.copy_field_on_cell_khalf(field=prognostic_state.w, output_field=self.w_tmp)
+        self.copy_field_on_cell_k(field=prognostic_state.theta_v, output_field=self.theta_v_tmp)
+        log.debug("copying prognostic fields vn, w, theta_v: end")
+
         log.debug("running diffusion program (diffuse_prognostic_fields): start")
         self.apply_diffusion_to_prognostic_fields(
             kh_smag=self.kh_smag_e,
             smag_limit=smag_limit,
             smag_offset=smag_offset,
+            vn_in=self.vn_tmp,
             diff_multfac_smag=self.diff_multfac_smag,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             z_nabla2_e=self.z_nabla2_e,
             diff_multfac_vn=diff_multfac_vn,
+            w_old=self.w_tmp,
             diff_multfac_n2w=self.diff_multfac_n2w,
+            theta_v_in=self.theta_v_tmp,
             vn=prognostic_state.vn,
             w=prognostic_state.w,
             dwdx=diagnostic_state.dwdx,

@@ -271,6 +271,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         kh_smag: np.ndarray,
         smag_limit: np.ndarray,
         smag_offset: float,
+        vn_in: np.ndarray,
         e_bln_c_s: np.ndarray,
         geofac_div: np.ndarray,
         diff_multfac_smag: np.ndarray,
@@ -293,11 +294,13 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         geofac_n2s: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
+        w_old: np.ndarray,
         compute_hgrad_w: bool,
         dwdx: np.ndarray,
         dwdy: np.ndarray,
         diff_multfac_w: float,
         diff_multfac_n2w: np.ndarray,
+        theta_v_in: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         zd_vertoffset: np.ndarray,
         zd_diffcoef: np.ndarray,
@@ -307,7 +310,6 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         theta_v: np.ndarray,
         exner: np.ndarray,
         vn: np.ndarray,
-        w: np.ndarray,
         theta_ref_mc: np.ndarray,
         thresh_tdiff: float,
         smallest_vpfloat: float,
@@ -336,7 +338,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         c2e2c = connectivities[dims.C2E2C]
         e2c = connectivities[dims.E2C]
         edge = np.arange(area_edge.shape[0])
-        reshaped_k = np.arange(w.shape[1])[np.newaxis, :]
+        reshaped_k = np.arange(w_old.shape[1])[np.newaxis, :]
 
         # Smagorinsky limiter
         kh_smag_limited = np.maximum(0.0, kh_smag - smag_offset)
@@ -350,7 +352,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             geofac_div_e = np.expand_dims(geofac_div, axis=-1)
             diff_multfac_smag_e = np.expand_dims(diff_multfac_smag, axis=0)
             kh_c = np.sum(kh_smag[c2e] * e_bln_c_s_e, axis=1) / diff_multfac_smag_e
-            div = np.sum(vn[c2e] * geofac_div_e, axis=1)
+            div = np.sum(vn_in[c2e] * geofac_div_e, axis=1)
             div_ic_full, hdef_ic_full = calculate_diagnostics_for_turbulence_numpy(
                 wgtfac_c, div, kh_c, np.zeros_like(div_ic), np.zeros_like(hdef_ic)
             )
@@ -383,11 +385,11 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
                     z_nabla4_e2=z_nabla4_e2,
                     diff_multfac_vn=diff_multfac_vn,
                     nudgecoeff_e=nudgecoeff_e,
-                    vn=vn,
+                    vn=vn_in,
                     nudgezone_diff=nudgezone_diff,
                 ),
                 apply_nabla2_to_vn_in_lateral_boundary_numpy(
-                    z_nabla2_e, area_edge, vn, fac_bdydiff_v
+                    z_nabla2_e, area_edge, vn_in, fac_bdydiff_v
                 ),
             )
         else:
@@ -399,9 +401,9 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
                     z_nabla2_e=z_nabla2_e,
                     z_nabla4_e2=z_nabla4_e2,
                     diff_multfac_vn=diff_multfac_vn,
-                    vn=vn,
+                    vn=vn_in,
                 ),
-                vn,
+                vn_in,
             )
         out_vn = vn.copy()
         vn_slice = (
@@ -411,12 +413,12 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         out_vn[vn_slice] = vn_new[vn_slice]
 
         # Diffusion of w and horizontal gradients for turbulence
-        out_w = w.copy()
+        out_w = w_old.copy()
         out_dwdx = dwdx.copy()
         out_dwdy = dwdy.copy()
         if compute_hgrad_w:
             grad_dwdx, grad_dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
-                connectivities, w, geofac_grg_x, geofac_grg_y
+                connectivities, w_old, geofac_grg_x, geofac_grg_y
             )
             grad_slice = (
                 slice(hgrad_w_horizontal_start, hgrad_w_horizontal_end),
@@ -425,13 +427,13 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             out_dwdx[grad_slice] = grad_dwdx[grad_slice]
             out_dwdy[grad_slice] = grad_dwdy[grad_slice]
 
-        z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w, geofac_n2s)
+        z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w_old, geofac_n2s)
         w_new = apply_nabla2_to_w_numpy(
             connectivities=connectivities,
             area=area,
             z_nabla2_c=z_nabla2_c,
             geofac_n2s=geofac_n2s,
-            w=w,
+            w=w_old,
             diff_multfac_w=diff_multfac_w,
         )
         w_new = np.where(
@@ -449,8 +451,9 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         out_exner = exner.copy()
         if apply_to_temperature:
             tdiff = (
-                theta_v
-                - np.sum(np.where((c2e2c != -1)[:, :, np.newaxis], theta_v[c2e2c], 0), axis=1) / 3
+                theta_v_in
+                - np.sum(np.where((c2e2c != -1)[:, :, np.newaxis], theta_v_in[c2e2c], 0), axis=1)
+                / 3
             )
             trefdiff = (
                 theta_ref_mc
@@ -463,7 +466,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
                 (thresh_tdiff - tdiff + trefdiff) * 5.0e-4,
                 smallest_vpfloat,
             )
-            k_full = np.arange(theta_v.shape[1])
+            k_full = np.arange(theta_v_in.shape[1])
             kh_smag_enhanced = np.where(
                 k_full[np.newaxis, :] >= nlev - 2,
                 np.maximum(
@@ -478,7 +481,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             z_nabla2_e_theta = (
                 kh_smag_enhanced
                 * inv_dual_edge_length[:, np.newaxis]
-                * (theta_v[e2c[:, 1]] - theta_v[e2c[:, 0]])
+                * (theta_v_in[e2c[:, 1]] - theta_v_in[e2c[:, 0]])
             )
             z_temp = np.sum(z_nabla2_e_theta[c2e] * geofac_div[:, :, np.newaxis], axis=1)
             if apply_zdiffusion_t:
@@ -491,13 +494,13 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
                         geofac_n2s_c=geofac_n2s_c,
                         geofac_n2s_nbh=geofac_n2s_nbh,
                         vcoef=vcoef,
-                        theta_v=theta_v,
+                        theta_v=theta_v_in,
                         z_temp=z_temp,
                     ),
                     z_temp,
                 )
             theta_v_new, exner_new = update_theta_and_exner_numpy(
-                z_temp, area, theta_v, exner, rd_o_cvd
+                z_temp, area, theta_v_in, exner, rd_o_cvd
             )
             theta_slice = (
                 slice(cell_horizontal_start, cell_horizontal_end),
@@ -565,6 +568,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         nudgecoeff_e = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
         nudgezone_diff = ta.vpfloat(9.0)
         fac_bdydiff_v = ta.wpfloat(5.0)
+        vn_in = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         z_nabla2_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
@@ -586,7 +590,8 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
         geofac_grg_x = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
         geofac_grg_y = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
-        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        w_old = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        w = data_alloc.as_field(w_old.asnumpy().copy(), dims.CellDim, dims.KHalfDim)
         dwdx = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         dwdy = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         diff_multfac_w = ta.wpfloat(5.0)
@@ -594,6 +599,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         nrdmax = 13
 
         # theta_v and exner diffusion
+        theta_v_in = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         exner = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
@@ -626,6 +632,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             kh_smag=kh_smag,
             smag_limit=smag_limit,
             smag_offset=smag_offset,
+            vn_in=vn_in,
             e_bln_c_s=e_bln_c_s,
             geofac_div=geofac_div,
             diff_multfac_smag=diff_multfac_smag,
@@ -648,11 +655,13 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             geofac_n2s=geofac_n2s,
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
+            w_old=w_old,
             compute_hgrad_w=compute_hgrad_w,
             dwdx=dwdx,
             dwdy=dwdy,
             diff_multfac_w=diff_multfac_w,
             diff_multfac_n2w=diff_multfac_n2w,
+            theta_v_in=theta_v_in,
             inv_dual_edge_length=inv_dual_edge_length,
             zd_vertoffset=zd_vertoffset,
             zd_diffcoef=zd_diffcoef,
