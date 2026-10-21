@@ -318,6 +318,10 @@ def _echoed_vdf_record(**overrides: object) -> list[object]:
         "turb_prandtl": 35,
         "km_min": 37,
         "max_turb_scale": 38,
+        "surface_layer_fraction": 15,
+        "minimum_roughness_length": 18,
+        "ocean_roughness_length": 20,
+        "minimum_surface_wind": 39,
     }
     record: list[object] = [0.0] * 42
     record[positions["use_tmx"]] = True
@@ -438,7 +442,16 @@ def test_tmx_rejects_positions_that_disagree_with_the_input_namelist() -> None:
 
 
 def test_surface_config() -> None:
-    atm_dict = {"aes_vdf_nml": {"aes_vdf_config": _echoed_vdf_record()}}
+    atm_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(
+                surface_layer_fraction=0.5,
+                minimum_roughness_length=2.0e-5,
+                ocean_roughness_length=2.0e-3,
+                minimum_surface_wind=0.4,
+            )
+        }
+    }
     input_dict = {
         "nh_testcase_nml": {"ape_sst_case": "sst_const", "ape_sst_val": 30.0, "isrfc_type": 1}
     }
@@ -449,6 +462,11 @@ def test_surface_config() -> None:
     # shflx and lhflx left out: the defaults of mo_nh_testcases_nml.f90
     assert config.kinematic_sensible_heat_flux == 0.1
     assert config.kinematic_latent_heat_flux == 0.0
+    # the surface-layer members come from the echoed aes_vdf_nml record
+    assert config.surface_layer_fraction == 0.5
+    assert config.minimum_roughness_length == 2.0e-5
+    assert config.ocean_roughness_length == 2.0e-3
+    assert config.minimum_surface_wind == 0.4
 
 
 def test_surface_config_is_none_without_tmx() -> None:
