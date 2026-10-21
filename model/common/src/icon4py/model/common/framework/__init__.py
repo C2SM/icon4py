@@ -9,9 +9,10 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 import types
 import typing
-from collections.abc import Callable, Collection
+from collections.abc import Callable, Collection, Sequence
 from typing import Any, ClassVar, Literal, Protocol, dataclass_transform
 
 import gt4py.next as gtx
@@ -120,15 +121,6 @@ def zeros[Q: Quantity](
 # ------------------------------------------------------------------------------
 # State: a frozen dataclass of typed leaves
 # ------------------------------------------------------------------------------
-@dataclasses.dataclass(frozen=True)
-class Decl:
-    """One `Field` leaf of a `State` class: its name, its quantity and whether it may be None."""
-
-    name: str
-    quantity: type[Quantity]
-    optional: bool = False
-
-
 @dataclass_transform(frozen_default=True, kw_only_default=True, eq_default=False)
 class State:
     """
@@ -156,46 +148,47 @@ def fields(state: State) -> dict[str, Field[Any]]:
     physics driver and the IO walk a state through it.
     """
     return {
-        declaration.name: field
-        for declaration in _declarations(type(state))
-        if (field := getattr(state, declaration.name)) is not None
+        name: field
+        for name, _, _ in _declarations(type(state))  # type: ignore[arg-type]
+        if (field := getattr(state, name)) is not None
     }
 
 
-_DECLARATIONS: dict[type[State], tuple[Decl, ...]] = {}
-
-
-def _declarations(cls: type[State]) -> tuple[Decl, ...]:
+def _declaration(name: str, hint: Any) -> tuple[str, type[Quantity], bool] | None:
     """
-    The `Field` leaves of a `State` class, read from its annotations once and cached.
-
-    Behind `allocate` and `fields`. Code that handles any state walks it instead of a per-state
-    list of fields: `allocate`, `leaves()` (and through it `copy`), the physics driver and the
-    IO. Cached because `typing.get_type_hints` evaluates the annotations, which are strings here.
-    """
-    if cls not in _DECLARATIONS:
-        hints = typing.get_type_hints(cls)
-        found = []
-        for field in dataclasses.fields(cls):  # type: ignore[arg-type]
-            hint, optional = _without_none(hints[field.name])
-            if typing.get_origin(hint) is Field:
-                (quantity,) = typing.get_args(hint)
-                found.append(Decl(field.name, quantity, optional))
-        _DECLARATIONS[cls] = tuple(found)
-    return _DECLARATIONS[cls]
-
-
-def _without_none(hint: Any) -> tuple[Any, bool]:
-    """
-    `X | None` as `(X, True)`, any other hint as `(hint, False)`.
-
-    `_declarations` uses it to tell an optional leaf (`Field[Q] | None`) from a required one.
+    The `(name, quantity, optional)` triple for one state annotation, or None when the
+    annotation is not a `Field` leaf. `X | None` makes the leaf optional.
     """
     if typing.get_origin(hint) in (types.UnionType, typing.Union):
         others = [arg for arg in typing.get_args(hint) if arg is not type(None)]
         if len(others) == 1:
-            return others[0], True
-    return hint, False
+            hint, optional = others[0], True
+        else:
+            optional = False
+    else:
+        optional = False
+    if typing.get_origin(hint) is not Field:
+        return None
+    (quantity,) = typing.get_args(hint)
+    return (name, quantity, optional)
+
+
+@functools.cache
+def _declarations(cls: type[State]) -> Sequence[tuple[str, type[Quantity], bool]]:
+    """
+    The `(name, quantity, optional)` triples of a `State` class's `Field` leaves, in
+    declaration order. Cached because `typing.get_type_hints` evaluates the annotations,
+    which are strings here, and `fields()` runs per step in the driver.
+
+    Behind `allocate` and `fields`. Code that handles any state walks it instead of a
+    per-state list of fields: `copy` (through `fields`), the physics driver and the IO.
+    """
+    hints = typing.get_type_hints(cls)
+    return tuple(
+        declaration
+        for field in dataclasses.fields(cls)  # type: ignore[arg-type]
+        if (declaration := _declaration(field.name, hints[field.name])) is not None
+    )
 
 
 class Empty(State):
@@ -217,15 +210,16 @@ def allocate[S: State](
     leaves to allocate; the other optional leaves are None. Without it every leaf is allocated.
     """
     values: dict[str, Any] = {}
-    for declaration in _declarations(cls):
-        if declaration.optional and only is not None and declaration.name not in only:
-            values[declaration.name] = None
+    # type objects are hashable, but typeshed's cache wrapper cannot say so
+    for name, quantity, optional in _declarations(cls):  # type: ignore[arg-type]
+        if optional and only is not None and name not in only:
+            values[name] = None
             continue
-        field = zeros(declaration.quantity, grid, allocator)
+        field = zeros(quantity, grid, allocator)
         if fill is not None:
             buffer: Any = field.data.ndarray  # NDArrayObject declares no __setitem__
-            buffer[...] = fill(declaration.name, declaration.quantity.dims)
-        values[declaration.name] = field
+            buffer[...] = fill(name, quantity.dims)
+        values[name] = field
     return cls(**values)
 
 
