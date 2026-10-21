@@ -332,7 +332,7 @@ class PhysicsDriver(fw.Component):
 
         Element-wise with no neighbour access, so a plain array operation rather than a stencil.
         """
-        for name, field in output.items():
+        for name, field in fw.fields(output).items():
             if not issubclass(field.quantity, fw.Tendency):
                 continue
             if (accumulator := self.accumulators.get(name)) is None:
@@ -344,7 +344,7 @@ class PhysicsDriver(fw.Component):
     @staticmethod
     def _continue_in_place(entry: physics_state.EntryState, out: Output) -> None:
         """`out` continues the entry's prognostics: they are updated in place."""
-        for name, target in out.items():
+        for name, target in fw.fields(out).items():
             source: fw.Field[Any] = getattr(entry, name)
             if target.data is not source.data:
                 _array(target)[...] = source.data.ndarray

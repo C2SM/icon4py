@@ -21,7 +21,7 @@ import serialbox  # type: ignore[import-untyped]
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.framework import states
+from icon4py.model.common.framework import fields as fw_fields, states
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -134,7 +134,7 @@ def read_initial_condition_from_file(
     ntracer = config.ntracer
     if ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
-        for i, tracer in enumerate(tracer_state_now.values()):
+        for i, tracer in enumerate(fw_fields(tracer_state_now).values()):
             tracer.data.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
 
 

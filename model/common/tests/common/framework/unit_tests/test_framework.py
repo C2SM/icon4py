@@ -105,19 +105,19 @@ def test_state_declarations_list_the_field_leaves_only(grid: base_grid.Grid) -> 
         salt=fw.zeros(Salt, grid, allocator=None),
         dtime=1.0,
     )
-    assert list(column) == ["pressure", "salt"]
+    assert list(fw.fields(column)) == ["pressure", "salt"]
     with pytest.raises(dataclasses.FrozenInstanceError):
         column.dtime = 2.0  # type: ignore[misc]
 
 
 def test_state_maps_present_leaf_names_to_fields(grid: base_grid.Grid) -> None:
     tracers = fw.allocate(Tracers, grid, allocator=None, only=("vt",))
-    assert list(tracers) == ["pressure", "vt"]
-    assert tracers["vt"] is tracers.vt
+    assert list(fw.fields(tracers)) == ["pressure", "vt"]
+    assert fw.fields(tracers)["vt"] is tracers.vt
     # an optional leaf left None is absent from the mapping
-    assert "salt" not in tracers
-    assert tracers.get("salt") is None
-    # states compare by identity and stay hashable over the Mapping base
+    assert "salt" not in fw.fields(tracers)
+    assert fw.fields(tracers).get("salt") is None
+    # states compare by identity and stay hashable, the eq=False dataclass choice
     same, other = tracers, fw.allocate(Tracers, grid, allocator=None, only=("vt",))
     assert tracers == same
     assert tracers != other
@@ -134,8 +134,8 @@ def test_optional_leaves_are_declared_and_skipped_when_absent(grid: base_grid.Gr
     tracers = fw.allocate(Tracers, grid, allocator=None, only=("vt",))
     assert tracers.salt is None
     assert tracers.vt is not None
-    assert list(tracers) == ["pressure", "vt"]
-    assert list(fw.allocate(Tracers, grid, allocator=None)) == [
+    assert list(fw.fields(tracers)) == ["pressure", "vt"]
+    assert list(fw.fields(fw.allocate(Tracers, grid, allocator=None))) == [
         "pressure",
         "salt",
         "vt",
@@ -200,7 +200,7 @@ def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid
 
     sink = Sink()
     assert fw.Empty.declarations() == ()
-    assert list(fw.Empty()) == []
+    assert list(fw.fields(fw.Empty())) == []
     own = sink.run(Halve.Input(pressure=fw.zeros(Pressure, grid, allocator=None)))
     assert isinstance(own, fw.Empty) and own is sink.cached_output
 

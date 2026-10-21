@@ -11,7 +11,7 @@ from __future__ import annotations
 import dataclasses
 import types
 import typing
-from collections.abc import Callable, Collection, Iterator, Mapping
+from collections.abc import Callable, Collection
 from typing import Any, ClassVar, Literal, Protocol, dataclass_transform
 
 import gt4py.next as gtx
@@ -38,6 +38,7 @@ __all__ = [
     "TimeStepPair",
     "allocate",
     "copy",
+    "fields",
     "zeros",
 ]
 
@@ -130,17 +131,17 @@ class Decl:
 
 
 @dataclass_transform(frozen_default=True, kw_only_default=True, eq_default=False)
-class State(Mapping[str, Field[Any]]):
+class State:
     """
     A frozen, keyword-only dataclass of typed leaves.
 
     `Field` leaves are read back from the annotations by `declarations()`; plain leaves
     (floats, ints, datetimes) are ordinary fields and are not listed. A leaf annotated
-    `Field[Q] | None` is optional: `allocate` may leave it None; the mapping skips it.
+    `Field[Q] | None` is optional: `allocate` may leave it None; `fields()` skips it.
 
-    A state is a read-only `Mapping` from leaf name to field: `state[name]`, `for name in
-    state`, `state.items()`. States compare by identity and stay hashable: the Mapping's
-    dict equality would compare fields by alias, so it is overridden.
+    A state is not a `Mapping`: the present leaves of an instance are read back as a
+    mapping by the `fields()` free function, next to `allocate` and `copy`. States are
+    identity-equal and hashable, the `eq=False` dataclass choice.
     """
 
     def __init_subclass__(cls) -> None:
@@ -152,34 +153,20 @@ class State(Mapping[str, Field[Any]]):
         """The `Field` leaves of the class, in declaration order."""
         return _declarations(cls)
 
-    def _leaves(self) -> Iterator[tuple[Decl, Field[Any]]]:
-        """The declarations with their fields, skipping the optional leaves that are None."""
-        for declaration in self.declarations():
-            field = getattr(self, declaration.name)
-            if field is not None:
-                yield declaration, field
 
-    def __eq__(self, other: object) -> bool:
-        """Identity, the `eq=False` dataclass choice, kept over the Mapping's dict equality."""
-        return self is other
+def fields(state: State) -> dict[str, Field[Any]]:
+    """
+    The present leaves of a state, by name, in declaration order.
 
-    def __hash__(self) -> int:
-        return id(self)
-
-    def __getitem__(self, name: str) -> Field[Any]:
-        """The present leaf `name`; `KeyError` when it is absent or None."""
-        for declaration, field in self._leaves():
-            if declaration.name == name:
-                return field
-        raise KeyError(name)
-
-    def __iter__(self) -> Iterator[str]:
-        """The present leaf names, in declaration order."""
-        return (declaration.name for declaration, _ in self._leaves())
-
-    def __len__(self) -> int:
-        """The number of present leaves."""
-        return sum(1 for _ in self._leaves())
+    The instance-level dual of `State.declarations()`: one level of `Field` leaves, the
+    optional ones skipped while None. `allocate`, `copy`, the physics driver and the IO
+    walk a state through it.
+    """
+    return {
+        declaration.name: field
+        for declaration in state.declarations()
+        if (field := getattr(state, declaration.name)) is not None
+    }
 
 
 _DECLARATIONS: dict[type[State], tuple[Decl, ...]] = {}
@@ -253,7 +240,7 @@ def copy[S: State](state: S, allocator: gtx_typing.Allocator | None) -> S:
     """A new state with a copy of each present leaf on the allocator; the plain leaves are shared."""
     copies: dict[str, Any] = {
         name: Field(field.quantity, data_allocation.reallocate(field.data, allocator=allocator))
-        for name, field in state.items()
+        for name, field in fields(state).items()
     }
     copied: S = dataclasses.replace(typing.cast(Any, state), **copies)
     return copied
