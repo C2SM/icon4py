@@ -383,12 +383,14 @@ class GridFile:
             n = (variable.shape[0],) if variable_size > 1 else ()
             target_shape = (*n, -1)
 
-            slicer = [slice(None) for _ in range(variable_size)]
-            if indices is not None and indices.size > 0:
-                # apply the slicing to the correct dimension
-                slicer[(1 if transpose else 0)] = data_alloc.as_numpy(indices)
             _log.debug(f"reading {name}: transposing = {transpose}")
-            data = np.asarray(variable[tuple(slicer)])
+            # Read the whole variable and select the indices in numpy: passing
+            # scattered indices to netCDF4 results in one read per contiguous
+            # run of indices, which is very slow for decomposed grids.
+            data = np.asarray(variable[:])
+            if indices is not None and indices.size > 0:
+                # apply the selection to the correct dimension
+                data = np.take(data, data_alloc.as_numpy(indices), axis=(1 if transpose else 0))
             data = np.array(data, dtype=dtype).ravel(order="K").reshape(target_shape)
             return np.transpose(data) if transpose else data
         except KeyError as err:
