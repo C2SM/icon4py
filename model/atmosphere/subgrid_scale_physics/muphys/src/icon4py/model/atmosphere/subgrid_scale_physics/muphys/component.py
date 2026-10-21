@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import functools
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
@@ -91,7 +92,8 @@ class MuphysComponent(fw.Component):
         backend: model_backends.BackendLike = None,
         step: Callable[..., Any] | None = None,
     ) -> None:
-        super().__init__(grid, model_backends.get_allocator(backend))
+        self.grid = grid
+        self.allocator = model_backends.get_allocator(backend)
         self._dt_seconds = ta.wpfloat(dtime.total_seconds())
         self._dz = dz
         program_backend = model_options.customize_backend(program=None, backend=backend)
@@ -139,6 +141,11 @@ class MuphysComponent(fw.Component):
             )
         )
 
+    @functools.cached_property
+    def cached_output(self) -> Output:
+        """The buffers the granule writes when no `outputs=` is passed."""
+        return fw.allocate(type(self).Output, self.grid, self.allocator)
+
     def run(self, inputs: Input, outputs: Output | None = None) -> Output:
         """
         Run the granule on private copies of the inputs and report the tendencies.
@@ -147,7 +154,7 @@ class MuphysComponent(fw.Component):
         is handed and the old values are still needed afterwards; the layer thickness, pressure
         and density go in as they are, since the granule only reads them.
         """
-        out = self.buffers(outputs)
+        out = outputs if outputs is not None else self.cached_output
         self._copy_field(field=inputs.te.data, output_field=self._te)
         for s in SPECIES:
             self._copy_field(field=getattr(inputs, f"q{s}").data, output_field=getattr(self._q, s))

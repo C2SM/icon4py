@@ -78,7 +78,6 @@ def make_monitor(
     grid: base.Grid, writer: StubWriter, variables: list[str] | None = None
 ) -> driver_io.IOMonitor:
     return driver_io.IOMonitor(
-        grid=grid,
         writer=cast(common_io.IOMonitor, writer),
         variables=driver_io.DEFAULT_OUTPUT_VARIABLES if variables is None else variables,
     )
@@ -146,7 +145,7 @@ def test_unknown_variable_raises(grid: base.Grid) -> None:
 def test_two_leaves_with_one_output_name_are_rejected(grid: base.Grid) -> None:
     with pytest.raises(AssertionError, match=r"'rho' and 'rho_again'.*'air_density'"):
         DuplicatedIOMonitor(
-            grid=grid, writer=cast(common_io.IOMonitor, StubWriter()), variables=["air_density"]
+            writer=cast(common_io.IOMonitor, StubWriter()), variables=["air_density"]
         )
 
 

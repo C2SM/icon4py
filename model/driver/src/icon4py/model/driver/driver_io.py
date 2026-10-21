@@ -16,6 +16,7 @@ driver before each store.
 """
 
 import datetime
+import functools
 import pathlib
 import uuid
 from typing import Any, Final
@@ -92,11 +93,9 @@ class IOMonitor(fw.Component):
     def __init__(
         self,
         *,
-        grid: grid_base.Grid,
         writer: common_io.IOMonitor,
         variables: list[str],
     ) -> None:
-        super().__init__(grid, None)
         self.writer = writer
         leaves: dict[str, str] = {}
         for declaration in type(self).Input.declarations():
@@ -114,6 +113,11 @@ class IOMonitor(fw.Component):
         # output variable name -> Input leaf name
         self.selected = {name: leaves[name] for name in variables}
 
+    @functools.cached_property
+    def cached_output(self) -> fw.Empty:
+        """The empty state the monitor returns when no `outputs=` is passed."""
+        return fw.Empty()
+
     def run(self, inputs: Input, outputs: fw.Empty | None = None) -> fw.Empty:
         state: dict[str, xr.DataArray] = {}
         if self.writer.at_capture_time():
@@ -123,7 +127,7 @@ class IOMonitor(fw.Component):
                     field.data, _attributes(field.quantity), to_host=True
                 )
         self.writer.store(state, inputs.simulation_time)
-        return self.buffers(outputs)
+        return outputs if outputs is not None else self.cached_output
 
 
 def create_io_monitor(
@@ -173,4 +177,4 @@ def create_io_monitor(
         process_props=process_props,
         decomposition_info=decomposition_info,
     )
-    return IOMonitor(grid=grid, writer=writer, variables=output_variables)
+    return IOMonitor(writer=writer, variables=output_variables)

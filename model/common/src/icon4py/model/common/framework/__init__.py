@@ -9,11 +9,10 @@
 from __future__ import annotations
 
 import dataclasses
-import functools
 import types
 import typing
 from collections.abc import Callable, Collection, Iterator, Mapping
-from typing import Any, ClassVar, Literal, dataclass_transform
+from typing import Any, ClassVar, Literal, Protocol, dataclass_transform
 
 import gt4py.next as gtx
 
@@ -263,38 +262,28 @@ def copy[S: State](state: S, allocator: gtx_typing.Allocator | None) -> S:
 # ------------------------------------------------------------------------------
 # Component: Input, Output, run
 # ------------------------------------------------------------------------------
-class Component:
+class Component(Protocol):
     """
     `run(inputs, outputs=None) -> Output`, the only method a component implements.
+
+    A component declares its two states on the class (`class Input(fw.State)`); a component
+    that writes nothing declares `Output = fw.Empty`. The protocol has no implementation: the
+    constructor and the own buffers (`cached_output`) are each component's own.
 
     `output = component.run(inputs)` writes into the component's own buffers, allocated once
     on first use; `component.run(inputs, outputs=view)` writes where the caller says, numpy
     `out=` style. Either way `run` returns the output. Whether `outputs` may alias `inputs` is
     the component's business; nothing checks it here.
 
-    The own buffers (`cached_output`) hold every leaf of `Output`, the optional ones included:
-    a component with optional leaves (`Advection`, `PhysicsDriver`: the tracers) would allocate
-    all of them, so its caller always passes `outputs=`, views over the active ones only.
+    The own buffers hold every leaf of `Output`, the optional ones included: a component with
+    optional leaves (`Advection`, `PhysicsDriver`: the tracers) would allocate all of them, so
+    its caller always passes `outputs=`, views over the active ones only.
     """
 
     Input: type[State]
     Output: type[State]
 
-    def __init__(self, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None) -> None:
-        self.grid = grid
-        self.allocator = allocator
-
-    @functools.cached_property
-    def cached_output(self) -> Any:
-        """The buffers a component writes when no `outputs=` is passed."""
-        return allocate(type(self).Output, self.grid, self.allocator)
-
-    def buffers[S: State](self, outputs: S | None) -> S:
-        """The caller's buffers when given, else this component's own."""
-        return self.cached_output if outputs is None else outputs
-
     # `Any`: each component narrows `inputs` and `outputs` to its own `Input` and `Output`.
-    # Typed `State` here, every override would be incompatible (parameters are contravariant);
-    # the class attributes `Input` and `Output` are not valid in a type expression.
+    # Typed `State` here, every override would be incompatible (parameters are contravariant).
     def run(self, inputs: Any, outputs: Any = None) -> Any:
         raise NotImplementedError

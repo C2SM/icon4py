@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 import logging
 import typing
 from typing import Final
@@ -504,7 +505,8 @@ class SolveNonhydro(fw.Component):
         exchange: decomposition.ExchangeRuntime,
         max_nudging_coefficient: state_utils.FloatType,
     ):
-        super().__init__(grid, model_backends.get_allocator(backend))
+        self.grid = grid
+        self.allocator = model_backends.get_allocator(backend)
         self.diagnostics = fw.allocate(SolveNonhydro.Diagnostics, grid, self.allocator)
         self._exchange = exchange
 
@@ -1168,6 +1170,11 @@ class SolveNonhydro(fw.Component):
             self._dtime_previous_substep = dtime
         return self.rayleigh_damping_factor
 
+    @functools.cached_property
+    def cached_output(self) -> Output:
+        """The buffers the substeps write when no `outputs=` is passed."""
+        return fw.allocate(type(self).Output, self.grid, self.allocator)
+
     def run(self, inputs: Input, outputs: Output | None = None) -> Output:
         """
         Update the prognostic variables (`outputs`) after the dynamical process over one substep.
@@ -1175,7 +1182,7 @@ class SolveNonhydro(fw.Component):
         `outputs` may not alias `inputs`: the step reads the prognostics at the current time level
         while writing the next one.
         """
-        out = self.buffers(outputs)
+        out = outputs if outputs is not None else self.cached_output
         dtime = ta.wpfloat(inputs.dtime)
         at_initial_timestep = inputs.at_initial_timestep
         at_first_substep = inputs.at_first_substep

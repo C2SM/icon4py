@@ -58,8 +58,9 @@ passing `theta_v` where `exner` is expected is not a type error. Tendencies were
 - `allocate(State, grid, allocator, only=...)` makes a zero field per declaration (`only` names
   the optional leaves to allocate, the others stay None); `zeros(Q, grid, allocator)` makes one
   field; `copy(state, allocator)` copies the present leaves.
-- `Component`: `Input`, `Output` and `run(inputs, outputs=None) -> Output`, the only method a
-  component implements. A component that writes nothing declares `Output = fw.Empty`.
+- `Component`: a `Protocol` of `Input`, `Output` and `run(inputs, outputs=None) -> Output`, the
+  only method a component implements. A component declares its two states as nested classes; a
+  component that writes nothing declares `Output = fw.Empty`.
 - `TimeStepPair` / `PredictorCorrectorPair`: icon4py's pairs (`common.utils`), re-exported.
 
 The quantity tags are in `framework/quantities.py`. The states passed between the components
@@ -82,14 +83,18 @@ class Diffusion(fw.Component):
         vn: fw.Field[qty.VnOnEdgeK]
         theta_v: fw.Field[qty.ThetaVOnCellK]
 
+    @functools.cached_property
+    def cached_output(self) -> Output:
+        return fw.allocate(type(self).Output, self.grid, self.allocator)
+
     def run(self, inputs: Input, outputs: Output | None = None) -> Output:
-        out = self.buffers(outputs)
+        out = outputs if outputs is not None else self.cached_output
         ...  # stencils read inputs.vn.data and write out.vn.data
         return out
 ```
 
-`output = component.run(inputs)` writes into the component's own buffers
-(`Component.cached_output`, allocated once on first use); `component.run(inputs, outputs=view)`
+`output = component.run(inputs)` writes into the component's own buffers (a per-component
+`cached_output`, allocated once on first use); `component.run(inputs, outputs=view)`
 writes where the caller says, numpy `out=` style. Whether `outputs` may alias `inputs` is the
 component's business: the diffusion and the physics driver update in place, the dycore needs
 distinct `now` and `next`. Static fields (metrics, interpolation coefficients) stay constructor
@@ -108,8 +113,8 @@ the dycore it passes `now` in and `next` out.
 
 The tracers are optional leaves: `TracerState`, `Advection.Input`/`Output` and
 `PhysicsDriver.Input`/`Output` declare `qv`...`qg` as `Field[Q] | None`, and the driver's
-`TracerConfig` decides which are present. Since `Component.cached_output` would allocate every
-optional leaf, the driver always passes `outputs=` to these components.
+`TracerConfig` decides which are present. Since a component's own `cached_output` would
+allocate every optional leaf, the driver always passes `outputs=` to these components.
 
 The physics processes pick their `Input` from the physics driver's `EntryState` with a
 `collect_input`. `bind` pairs it with the component's `run`, so pairing one process's
@@ -154,9 +159,9 @@ type check.
   `declarations()`.
 - Every `Input`/`Output` view is spelled out by keyword at the call site, and every stencil call
   reads `.data`.
-- Calls through the `fw.Component` base are not checked: `run` is `Any -> Any` there, because
-  each component narrows `inputs` and `outputs` to its own `Input` and `Output`. Only calls on a
-  concrete class are checked.
+- Calls through the `fw.Component` protocol are not checked: `run` is `Any -> Any` there,
+  because each component narrows `inputs` and `outputs` to its own `Input` and `Output`. Only
+  calls on a concrete class are checked.
 - A quantity and its place are one tag: `ThetaVOnCellK` and `ThetaVOnCellKHalf` are unrelated
   types, and only a unit test checks that a tag's name matches its `dims`.
 - Whether `outputs` may alias `inputs` is not checked.

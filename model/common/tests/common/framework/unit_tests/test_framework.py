@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+import functools
 from typing import Any
 
 import gt4py.next as gtx
@@ -48,8 +49,17 @@ class Halve(fw.Component):
     class Output(fw.State):
         pressure: fw.Field[Pressure]
 
+    def __init__(self, grid: base_grid.Grid, allocator: Any | None) -> None:
+        self.grid = grid
+        self.allocator = allocator
+
+    @functools.cached_property
+    def cached_output(self) -> Output:
+        """The buffers the component writes when no `outputs=` is passed."""
+        return fw.allocate(type(self).Output, self.grid, self.allocator)
+
     def run(self, inputs: Input, outputs: Output | None = None) -> Output:
-        out = self.buffers(outputs)
+        out = outputs if outputs is not None else self.cached_output
         np.asarray(out.pressure.data.ndarray)[...] = 0.5 * np.asarray(inputs.pressure.data.ndarray)
         return out
 
@@ -180,10 +190,15 @@ def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid
         Input = Halve.Input
         Output = fw.Empty
 
-        def run(self, inputs: Halve.Input, outputs: fw.Empty | None = None) -> fw.Empty:
-            return self.buffers(outputs)
+        @functools.cached_property
+        def cached_output(self) -> fw.Empty:
+            """The empty state the component returns when no `outputs=` is passed."""
+            return fw.Empty()
 
-    sink = Sink(grid, allocator=None)
+        def run(self, inputs: Halve.Input, outputs: fw.Empty | None = None) -> fw.Empty:
+            return outputs if outputs is not None else self.cached_output
+
+    sink = Sink()
     assert fw.Empty.declarations() == ()
     assert list(fw.Empty()) == []
     own = sink.run(Halve.Input(pressure=fw.zeros(Pressure, grid, allocator=None)))

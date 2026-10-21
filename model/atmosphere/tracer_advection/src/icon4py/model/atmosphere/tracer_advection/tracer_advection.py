@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -158,8 +159,17 @@ class Advection(fw.Component, ABC):
         hfl_tracer: fw.Field[qty.HorizontalTracerFluxOnEdgeK]
         vfl_tracer: fw.Field[qty.VerticalTracerFluxOnCellKHalf]
 
+    def __init__(self, grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator | None) -> None:
+        self.grid = grid
+        self.allocator = allocator
+
+    @functools.cached_property
+    def cached_output(self) -> Output:
+        """The buffers advection writes when no `outputs=` is passed."""
+        return fw.allocate(type(self).Output, self.grid, self.allocator)
+
     def run(self, inputs: Input, outputs: Output | None = None) -> Output:
-        out = self.buffers(outputs)
+        out = outputs if outputs is not None else self.cached_output
         self._prepare(inputs)
         for name in states.TRACERS:
             tracer_now = getattr(inputs, name)

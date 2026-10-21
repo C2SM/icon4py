@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+import functools
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -132,7 +133,8 @@ class PhysicsDriver(fw.Component):
         static_state: static_fields.PhysicsDriverStaticState,
         backend: model_backends.BackendLike = None,
     ) -> None:
-        super().__init__(grid, model_backends.get_allocator(backend))
+        self.grid = grid
+        self.allocator = model_backends.get_allocator(backend)
         self.processes = tuple(processes)
         # the diagnostics the processes read, derived here each step
         self.diagnostics = fw.allocate(states.Diagnostics, grid, self.allocator)
@@ -241,8 +243,13 @@ class PhysicsDriver(fw.Component):
             grid, dims.EdgeDim, dims.KDim, allocator=self.allocator
         )
 
+    @functools.cached_property
+    def cached_output(self) -> Output:
+        """The buffers the processes write when no `outputs=` is passed."""
+        return fw.allocate(type(self).Output, self.grid, self.allocator)
+
     def run(self, inputs: Input, outputs: Output | None = None) -> Output:
-        out = self.buffers(outputs)
+        out = outputs if outputs is not None else self.cached_output
         entry = self._diagnose(inputs)
         self._zero_accumulators()
         # the time control reads the start of the step being integrated

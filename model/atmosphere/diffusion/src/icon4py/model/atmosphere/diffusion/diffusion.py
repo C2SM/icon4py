@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import functools
 import logging
 import math
 import typing
@@ -501,7 +502,8 @@ class Diffusion(fw.Component):
         ndyn_substeps: int,
         max_nudging_coefficient: state_utils.FloatType,
     ) -> None:
-        super().__init__(grid, model_backends.get_allocator(backend))
+        self.grid = grid
+        self.allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
         self.config = config
         self._params = params
@@ -832,6 +834,11 @@ class Diffusion(fw.Component):
             if target.data is not source.data:
                 target.data.ndarray[...] = source.data.ndarray
 
+    @functools.cached_property
+    def cached_output(self) -> Output:
+        """The buffers diffusion writes when no `outputs=` is passed."""
+        return fw.allocate(type(self).Output, self.grid, self.allocator)
+
     def run(  # noqa: PLR0915 [too-many-statements]
         self, inputs: Input, outputs: Output | None = None
     ) -> Output:
@@ -845,7 +852,7 @@ class Diffusion(fw.Component):
 
         The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
         """
-        out = self.buffers(outputs)
+        out = outputs if outputs is not None else self.cached_output
         self._continue_in_place(inputs, out)
         dtime = wpfloat(inputs.dtime)
         initial_run = inputs.initial_run
