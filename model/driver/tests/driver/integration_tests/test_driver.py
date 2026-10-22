@@ -136,16 +136,17 @@ def test_driver(
     """End-to-end standalone-driver validation over one time step.
 
     Experiments validate the final prognostic state against the end-of-time-step
-    (``time-step-exit``) savepoint. EXCLAIM_APE_AES additionally runs muphys and also
+    (``time-step-exit``) savepoint. EXCLAIM_APE_AES additionally runs the AES physics,
+    muphys, the surface scheme and tmx, coupled sequentially as in ICON, and also
     validates the tracers. Exception: MCH_CH_R04B09 compares against the mid-time-step
     dynamics savepoints, because its reference runs NWP physics + limited-area nudging
     after the dynamics, which the driver does not (see the comment in the body).
     Per-field tolerances live in ``_TOLERANCES``.
 
-    muphys (EXCLAIM_APE_AES): runs the aes-graupel scheme -- the port of the exact
-    ICON formulation that generated the reference. Graupel is the only *physics*
-    parameterization active, so vn/w/rho/exner/theta_v compare tightly; the tracer
-    comparison carries residuals from gaps not yet ported:
+    EXCLAIM_APE_AES: muphys is the aes-graupel scheme, the port of the exact ICON
+    formulation that generated the reference, the surface scheme provides the prescribed
+    fluxes and tmx the turbulent mixing of the v14 reference run. The tracer comparison
+    carries residuals from gaps not yet ported:
 
     - exner / theta_v: recomputed via the exact EOS in ``scatter_to_prognostic``, mirroring
       ICON's phy2dyn coupling (mo_interface_iconam_aes.f90). Measured on v6: exner ~3e-9
@@ -158,17 +159,9 @@ def test_driver(
     - negative tracers: ICON clips them (iqneg_d2p/iqneg_p2d); the driver does not.
     - vertical extent: ICON runs graupel on jks_cloudy..nlev; muphys runs the full column.
 
-    The muphys granule itself is validated in isolation against the aes-graupel savepoints
-    in test_muphys_datatest.py. EXCLAIM_APE_AES is currently xfailed, see the body.
+    The muphys, surface and tmx granules are validated in isolation against their own
+    savepoints in the datatests of their packages.
     """
-    if experiment_description == test_defs.Experiments.EXCLAIM_APE_AES:
-        # TODO(jcanton): the v08 archive was generated with turbulent mixing switched on
-        # (aes_vdf_config(1)%use_tmx = .TRUE.), unlike v07, so its trajectory diverges
-        # from a driver run that has no turbulence at all: vn drifts by ~1e-1 over the
-        # time step. This branch only ports the tmx granule; PR #1360 plugs it into the
-        # driver, at which point this case validates again.
-        pytest.xfail("Driver does not run tmx yet, which the v08 reference includes (PR #1360)")
-
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
@@ -227,8 +220,8 @@ def test_driver(
             "theta_v": diffusion_exit.theta_v(),
         }
     else:
-        # Nothing runs after diffusion for JW/GAUSS3D, and for EXCLAIM_APE_AES muphys
-        # is the only active physics: validate against the end-of-time-step savepoint.
+        # Nothing runs after diffusion for JW/GAUSS3D, and EXCLAIM_APE_AES runs the same
+        # physics as its reference: validate against the end-of-time-step savepoint.
         references = {
             "vn": savepoint_time_step_exit.vn(),
             "w": savepoint_time_step_exit.w(),
