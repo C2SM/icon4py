@@ -88,10 +88,6 @@ class SurfaceDiagnosticState:
     """Surface exchange coefficient for momentum (``km_sfc``), the lowest level of tmx's ``km``."""
     exchange_coefficient_heat: fa.CellField[ta.wpfloat]
     """Surface exchange coefficient for heat (``kh_sfc``), the lowest level of tmx's ``kh``."""
-    exchange_coefficient_momentum_neutral: fa.CellField[ta.wpfloat]
-    """Neutral exchange coefficient for momentum (``km_neutral``), for the 10 m wind."""
-    exchange_coefficient_heat_neutral: fa.CellField[ta.wpfloat]
-    """Neutral exchange coefficient for heat (``kh_neutral``), for the 2 m diagnostics."""
 
     @classmethod
     def allocate(

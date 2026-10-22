@@ -85,7 +85,7 @@ class TestComputeSurfaceLayerDiagnostics(stencil_tests.StencilTest):
         theta_v_mid = (
             surface_layer_fraction * theta_v + (1.0 - surface_layer_fraction) * theta_v_sfc
         )
-        richardson_number = z_mc * grav * (theta_v - theta_v_sfc) / (theta_v_mid * wind_speed)
+        richardson_number = z_mc * grav * (theta_v - theta_v_sfc) / (theta_v_mid * wind_speed**2)
         return _restrict(
             {
                 "wind_speed": wind_speed,
@@ -172,8 +172,10 @@ class TestComputeSeaSurfaceRoughness(stencil_tests.StencilTest):
         if is_initial_time:
             roughness = np.full_like(wind_speed, ocean_roughness_length)
         else:
-            roughness = (
-                wind_speed * exchange_coefficient_momentum * constants.CHARNOCK_CONSTANT / grav
+            km = exchange_coefficient_momentum
+            roughness = wind_speed**2 * km * constants.CHARNOCK_CONSTANT / grav + (
+                constants.ROUGHNESS_VISCOUS_COEFFICIENT
+                * np.minimum(0.01, constants.KINEMATIC_VISCOSITY_AIR / (km**0.5 * wind_speed))
             )
         roughness = np.maximum(minimum_roughness_length, roughness)
         return _restrict(
@@ -197,7 +199,6 @@ class TestComputeSeaSurfaceRoughnessAtInitialTime(TestComputeSeaSurfaceRoughness
 
 # Louis (1979) exchange coefficients, transcribed from mo_vdf_diag_smag.f90
 _BSM, _BUM, _BSH, _BUH = 5.0, 16.0, 5.0, 16.0  # Businger-Dyer coefficients
-_ZEPSEC = 0.028
 
 
 def _stability_function(
@@ -219,11 +220,9 @@ def _businger_momentum(z0: np.ndarray, z1: np.ndarray, length: np.ndarray) -> np
     with np.errstate(all="ignore"):
         zeta, zeta0 = z1 / length, z0 / length
         log_ratio = np.log(z1 / z0)
-        psi_vs, psi0_vs = -_BSM * np.log(zeta) - zeta + 1.0, -_BSM * np.log(zeta0) - zeta0 + 1.0
+        psi_vs = -_BSM + _BSM * zeta0 + (1.0 - _BSM) * np.log(zeta) - zeta + 1.0
         stable = np.where(
-            zeta > 1.0,
-            np.log(length / z0) + _BSH - psi_vs + psi0_vs,
-            log_ratio - (-_BSM * zeta) + (-_BSM * zeta0),
+            zeta > 1.0, log_ratio - psi_vs, log_ratio - (-_BSM * zeta) + (-_BSM * zeta0)
         )
         lamda, lamda0 = np.sqrt(np.sqrt(1.0 - _BUM * zeta)), np.sqrt(np.sqrt(1.0 - _BUM * zeta0))
         psi = (
@@ -249,11 +248,9 @@ def _businger_heat(z0: np.ndarray, z1: np.ndarray, length: np.ndarray) -> np.nda
     with np.errstate(all="ignore"):
         zeta, zeta0 = z1 / length, z0 / length
         log_ratio = np.log(z1 / z0)
-        psi_vs, psi0_vs = -_BSH * np.log(zeta) - zeta + 1.0, -_BSH * np.log(zeta0) - zeta0 + 1.0
+        psi_vs = -_BSH + _BSH * zeta0 + (1.0 - _BSH) * np.log(zeta) - zeta + 1.0
         stable = np.where(
-            zeta > 1.0,
-            np.log(length / z0) + _BSH - psi_vs + psi0_vs,
-            log_ratio - (-_BSH * zeta) + (-_BSH * zeta0),
+            zeta > 1.0, log_ratio - psi_vs, log_ratio - (-_BSH * zeta) + (-_BSH * zeta0)
         )
         lamda, lamda0 = np.sqrt(1.0 - _BUH * zeta), np.sqrt(1.0 - _BUH * zeta0)
         psi = 2.0 * (np.log(1.0 + lamda) - np.log(2.0))
@@ -265,12 +262,7 @@ def _businger_heat(z0: np.ndarray, z1: np.ndarray, length: np.ndarray) -> np.nda
 
 class TestComputeSurfaceExchangeCoefficients(stencil_tests.StencilTest):
     PROGRAM = compute_surface_exchange_coefficients
-    OUTPUTS = (
-        "exchange_coefficient_momentum",
-        "exchange_coefficient_heat",
-        "exchange_coefficient_momentum_neutral",
-        "exchange_coefficient_heat_neutral",
-    )
+    OUTPUTS = ("exchange_coefficient_momentum", "exchange_coefficient_heat")
 
     @stencil_tests.static_reference
     def reference(
@@ -303,7 +295,7 @@ class TestComputeSurfaceExchangeCoefficients(stencil_tests.StencilTest):
             lhfl = tch * wind_speed * (saturation_specific_humidity - specific_humidity)
             bflx = shfl + constants.RV_O_RD_MINUS_1 * theta_sfc * lhfl
             ustar = np.sqrt(tcm) * wind_speed
-            obukhov_length = -(ustar**3) * theta_sfc / grav / (ckap * bflx)
+            obukhov_length = -(ustar**3.0) * theta_sfc / grav / (ckap * bflx)
             inv_bus_mom = 1.0 / _businger_momentum(z0, z, obukhov_length)
             tch = inv_bus_mom / _businger_heat(z0, z, obukhov_length)
             tcm = inv_bus_mom * inv_bus_mom
@@ -311,9 +303,6 @@ class TestComputeSurfaceExchangeCoefficients(stencil_tests.StencilTest):
             {
                 "exchange_coefficient_momentum": tcm,
                 "exchange_coefficient_heat": tch,
-                "exchange_coefficient_momentum_neutral": ckap
-                / np.maximum(_ZEPSEC, np.sqrt(tcn_mom)),
-                "exchange_coefficient_heat_neutral": ckap / np.maximum(_ZEPSEC, np.sqrt(tcn_heat)),
             },
             horizontal_start,
             horizontal_end,
@@ -339,8 +328,6 @@ class TestComputeSurfaceExchangeCoefficients(stencil_tests.StencilTest):
             grav=constants.GRAV,
             exchange_coefficient_momentum=data_alloc.zero_field(dims.CellDim),
             exchange_coefficient_heat=data_alloc.zero_field(dims.CellDim),
-            exchange_coefficient_momentum_neutral=data_alloc.zero_field(dims.CellDim),
-            exchange_coefficient_heat_neutral=data_alloc.zero_field(dims.CellDim),
             horizontal_start=1,
             horizontal_end=grid.num_cells - 1,
         )

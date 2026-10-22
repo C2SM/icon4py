@@ -126,6 +126,12 @@ CKAP: Final[ta.wpfloat] = VON_KARMAN_CONSTANT
 CHARNOCK_CONSTANT: Final[ta.wpfloat] = 0.018
 CCHAR: Final[ta.wpfloat] = CHARNOCK_CONSTANT
 
+#: Viscous coefficient of the sea roughness length, viscous_coeff in ICON (mo_turb_vdiff_params.f90).
+ROUGHNESS_VISCOUS_COEFFICIENT: Final[ta.wpfloat] = 0.11
+
+#: Kinematic viscosity of air at 15 degC [m^2/s], nu in ICON (mo_physical_constants.f90).
+KINEMATIC_VISCOSITY_AIR: Final[ta.wpfloat] = 1.5e-5
+
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - ta.wpfloat(
     1.0
@@ -215,6 +221,8 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     lsc = LATENT_HEAT_FOR_SUBLIMATION_INVARIANT
     von_karman = VON_KARMAN_CONSTANT
     charnock = CHARNOCK_CONSTANT
+    roughness_viscous_coefficient = ROUGHNESS_VISCOUS_COEFFICIENT
+    kinematic_viscosity_air = KINEMATIC_VISCOSITY_AIR
     eps = WP_EPS
 
 

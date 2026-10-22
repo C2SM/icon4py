@@ -14,7 +14,17 @@ routines of mo_vdf_diag_smag.f90 and mo_tmx_surface.f90 it calls, in the order i
 """
 
 import gt4py.next as gtx
-from gt4py.next import abs, arctan, broadcast, log, maximum, power, sqrt, where  # noqa: A004
+from gt4py.next import (
+    abs,  # noqa: A004 [builtin-import-shadowing]
+    arctan,
+    broadcast,
+    log,
+    maximum,
+    minimum,
+    power,
+    sqrt,
+    where,
+)
 
 from icon4py.model.atmosphere.subgrid_scale_physics.surface.constants import LouisConstants
 from icon4py.model.common import field_type_aliases as fa
@@ -106,8 +116,7 @@ def _compute_moist_richardson_number(
     ``compute_moist_richardson`` (mo_vdf_diag_smag.f90).
 
     The mean virtual potential temperature of the surface layer weights the air with
-    ``surface_layer_fraction``; the denominator carries the wind speed, not its square, as
-    in ICON.
+    ``surface_layer_fraction``.
     """
     theta_v_mid = (
         surface_layer_fraction * virtual_potential_temperature
@@ -117,7 +126,7 @@ def _compute_moist_richardson_number(
         z_mc
         * grav
         * (virtual_potential_temperature - surface_virtual_potential_temperature)
-        / (theta_v_mid * wind_speed)
+        / (theta_v_mid * wind_speed * wind_speed)
     )
 
 
@@ -223,17 +232,22 @@ def _compute_sea_surface_roughness(
     ``compute_sfc_roughness`` (mo_tmx_surface.f90) for the sea.
 
     The ocean roughness length at the initial time, afterwards the Charnock relation with
-    the momentum exchange coefficient of the previous step; bounded below. The sea has the
-    same roughness length for momentum and heat.
+    the momentum exchange coefficient of the previous step plus the viscous (smooth-flow)
+    term; bounded below. The sea has the same roughness length for momentum and heat.
     """
     if is_initial_time:
         roughness_length = broadcast(ocean_roughness_length, (CellDim,))
     else:
         roughness_length = (
             wind_speed
+            * wind_speed
             * exchange_coefficient_momentum
             * PhysicsConstants.charnock
             * (wpfloat("1.0") / grav)
+        ) + PhysicsConstants.roughness_viscous_coefficient * minimum(
+            wpfloat("0.01"),
+            PhysicsConstants.kinematic_viscosity_air
+            / (power(exchange_coefficient_momentum, wpfloat("0.5")) * wind_speed),
         )
     roughness_length = maximum(minimum_roughness_length, roughness_length)
     return roughness_length, roughness_length
@@ -342,19 +356,19 @@ def _businger_momentum(
     zeta = height / obukhov_length
     zeta0 = roughness_length / obukhov_length
     log_height_ratio = log(height / roughness_length)
-    # stable: Zeng et al. (1997) beyond zeta = 1; ICON adds bsh, not bsm, there
-    psi_very_stable = -LouisConstants.businger_stable_momentum * log(zeta) - zeta + wpfloat("1.0")
-    psi0_very_stable = (
-        -LouisConstants.businger_stable_momentum * log(zeta0) - zeta0 + wpfloat("1.0")
+    # stable: Zeng et al. (1997) beyond zeta = 1
+    psi_very_stable = (
+        -LouisConstants.businger_stable_momentum
+        + LouisConstants.businger_stable_momentum * zeta0
+        + (wpfloat("1.0") - LouisConstants.businger_stable_momentum) * log(zeta)
+        - zeta
+        + wpfloat("1.0")
     )
     psi_stable = -LouisConstants.businger_stable_momentum * zeta
     psi0_stable = -LouisConstants.businger_stable_momentum * zeta0
     stable = where(
         zeta > wpfloat("1.0"),
-        log(obukhov_length / roughness_length)
-        + LouisConstants.businger_stable_heat
-        - psi_very_stable
-        + psi0_very_stable,
+        log_height_ratio - psi_very_stable,
         log_height_ratio - psi_stable + psi0_stable,
     )
     # unstable
@@ -397,16 +411,18 @@ def _businger_heat(
     zeta0 = roughness_length / obukhov_length
     log_height_ratio = log(height / roughness_length)
     # stable: Zeng et al. (1997) beyond zeta = 1
-    psi_very_stable = -LouisConstants.businger_stable_heat * log(zeta) - zeta + wpfloat("1.0")
-    psi0_very_stable = -LouisConstants.businger_stable_heat * log(zeta0) - zeta0 + wpfloat("1.0")
+    psi_very_stable = (
+        -LouisConstants.businger_stable_heat
+        + LouisConstants.businger_stable_heat * zeta0
+        + (wpfloat("1.0") - LouisConstants.businger_stable_heat) * log(zeta)
+        - zeta
+        + wpfloat("1.0")
+    )
     psi_stable = -LouisConstants.businger_stable_heat * zeta
     psi0_stable = -LouisConstants.businger_stable_heat * zeta0
     stable = where(
         zeta > wpfloat("1.0"),
-        log(obukhov_length / roughness_length)
-        + LouisConstants.businger_stable_heat
-        - psi_very_stable
-        + psi0_very_stable,
+        log_height_ratio - psi_very_stable,
         log_height_ratio - psi_stable + psi0_stable,
     )
     # unstable
@@ -451,7 +467,7 @@ def _louis_iteration(
     )
     ustar = sqrt(transfer_coefficient_momentum) * wind_speed
     obukhov_length = -(
-        ustar * ustar * ustar * surface_potential_temperature * (wpfloat("1.0") / grav)
+        power(ustar, wpfloat("3.0")) * surface_potential_temperature * (wpfloat("1.0") / grav)
     ) / (PhysicsConstants.von_karman * buoyancy_flux)
     inverse_businger_momentum = wpfloat("1.0") / _businger_momentum(
         roughness_length, reference_height, obukhov_length
@@ -473,12 +489,7 @@ def _compute_surface_exchange_coefficients(
     surface_potential_temperature: fa.CellField[wpfloat],
     saturation_specific_humidity: fa.CellField[wpfloat],
     grav: wpfloat,
-) -> tuple[
-    fa.CellField[wpfloat],
-    fa.CellField[wpfloat],
-    fa.CellField[wpfloat],
-    fa.CellField[wpfloat],
-]:
+) -> tuple[fa.CellField[wpfloat], fa.CellField[wpfloat]]:
     """
     ``compute_sfc_exchange_coefficients`` and ``sfc_exchange_coefficients``
     (mo_vdf_diag_smag.f90): the Louis (1979) exchange coefficients of momentum and heat.
@@ -486,10 +497,11 @@ def _compute_surface_exchange_coefficients(
     A bulk first guess from the Richardson number with the Holtslag & Boville stability
     functions, then five iterations on the Obukhov length with the Businger-Dyer profiles.
     The reference height of the surface layer is half the lowest layer thickness
-    ``ddqz_z_half``, as in ICON's wrapper.
+    ``ddqz_z_half``, as in ICON's wrapper. The interpolation factors of the 2 m and 10 m
+    diagnostics that ICON derives alongside are not ported.
 
     Returns:
-        the exchange coefficients of momentum and heat, and their neutral counterparts
+        the exchange coefficients of momentum and heat
     """
     reference_height = ddqz_z_half * wpfloat("0.5")
     ckap = PhysicsConstants.von_karman
@@ -569,13 +581,7 @@ def _compute_surface_exchange_coefficients(
         reference_height,
         grav,
     )
-    neutral_coefficient_momentum = ckap / maximum(
-        LouisConstants.minimum_sqrt_neutral_coefficient, sqrt(neutral_momentum)
-    )
-    neutral_coefficient_heat = ckap / maximum(
-        LouisConstants.minimum_sqrt_neutral_coefficient, sqrt(neutral_heat)
-    )
-    return transfer_momentum, transfer_heat, neutral_coefficient_momentum, neutral_coefficient_heat
+    return transfer_momentum, transfer_heat
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -590,8 +596,6 @@ def compute_surface_exchange_coefficients(
     grav: wpfloat,
     exchange_coefficient_momentum: fa.CellField[wpfloat],
     exchange_coefficient_heat: fa.CellField[wpfloat],
-    exchange_coefficient_momentum_neutral: fa.CellField[wpfloat],
-    exchange_coefficient_heat_neutral: fa.CellField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ) -> None:
@@ -604,11 +608,6 @@ def compute_surface_exchange_coefficients(
         surface_potential_temperature,
         saturation_specific_humidity,
         grav,
-        out=(
-            exchange_coefficient_momentum,
-            exchange_coefficient_heat,
-            exchange_coefficient_momentum_neutral,
-            exchange_coefficient_heat_neutral,
-        ),
+        out=(exchange_coefficient_momentum, exchange_coefficient_heat),
         domain={CellDim: (horizontal_start, horizontal_end)},
     )

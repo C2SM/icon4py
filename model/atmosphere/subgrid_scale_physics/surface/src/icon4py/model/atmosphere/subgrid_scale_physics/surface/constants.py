@@ -26,8 +26,6 @@ class LouisConstants(ta.wpfloat, enum.Enum):
     businger_stable_heat = 5.0
     #: Businger-Dyer coefficient of the unstable heat profile, buh in ICON
     businger_unstable_heat = 16.0
-    #: lower bound of the square root of the neutral transfer coefficients, zepsec in ICON
-    minimum_sqrt_neutral_coefficient = 0.028
     #: pi / 2 of the unstable momentum profile (mo_math_constants.f90)
     half_pi = math.pi / 2.0
     #: ln 2 of the unstable profiles (mo_math_constants.f90)

@@ -51,9 +51,6 @@ class EnergyUpdate:
         backend: model_backends.BackendLike,
         exchange: decomposition.ExchangeRuntime,
         dissipation_factor: float,
-        turb_prandtl: float,
-        use_km_const: bool,
-        km_const: float,
     ) -> None:
         self._exchange = exchange
 
@@ -93,25 +90,26 @@ class EnergyUpdate:
             },
             offset_provider={},
         )
-        self._surface_exchange_coefficients: tuple[float, float] | None = None
-        if use_km_const:
-            self._surface_exchange_coefficients = (km_const, km_const * (1.0 / turb_prandtl))
-            self._set_constant_on_surface_level = setup_program(
-                backend=backend,
-                program=vertical_operations.set_constant_on_model_levels_on_cells_wp,
-                horizontal_sizes=horizontal_sizes,
-                vertical_sizes={
-                    "vertical_start": gtx.int32(self._surface_level),
-                    "vertical_end": gtx.int32(num_levels),
-                },
-                offset_provider={},
-            )
+        # the lowest level of km and kh holds the surface exchange coefficients, as in
+        # ICON's Update_diagnostics (mo_vdf.f90)
+        self._set_surface_exchange_coefficient = setup_program(
+            backend=backend,
+            program=vertical_operations.set_cell_field_on_model_levels_on_cells_wp,
+            horizontal_sizes=horizontal_sizes,
+            vertical_sizes={
+                "vertical_start": gtx.int32(self._surface_level),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
 
     def run(
         self,
         *,
         input_state: tmx_states.TmxInputState,
         surface_flux_state: SurfaceFluxState,
+        surface_exchange_coefficient_momentum: fa.CellField[ta.wpfloat],
+        surface_exchange_coefficient_heat: fa.CellField[ta.wpfloat],
         heat_diffusion_tendency: fa.CellKField[ta.wpfloat],
         diagnostic_state: tmx_states.TmxDiagnosticState,
         tendency_state: tmx_states.TmxTendencyState,
@@ -126,10 +124,9 @@ class EnergyUpdate:
 
         Runs after the scalar and the wind diffusion: needs their new states, the heat-diffusion
         tendency, and `cv_air`, `km_ic` and `kh_ic` of `diagnostic_state`. Above the lowest model
-        level,
-        `km` and `kh` are copied from the half level below. At the lowest level,
-        `use_km_const=True` sets `km = km_const` and `kh = km_const / turb_prandtl`; otherwise
-        the caller must fill that level with the surface exchange coefficient.
+        level, `km` and `kh` are copied from the half level below; the lowest level takes the
+        surface exchange coefficients of the surface scheme (``km_sfc``, ``kh_sfc``), as ICON's
+        ``Update_diagnostics`` does.
         """
         log.debug("tmx energy update: start")
 
@@ -171,10 +168,12 @@ class EnergyUpdate:
         temperature_exchange = self._exchange.start(
             dims.CellDim, new_state.temperature, tendency_state.tend_temperature
         )
-        if self._surface_exchange_coefficients is not None:
-            km_surface, kh_surface = self._surface_exchange_coefficients
-            self._set_constant_on_surface_level(field=diagnostic_state.km, value=km_surface)
-            self._set_constant_on_surface_level(field=diagnostic_state.kh, value=kh_surface)
+        self._set_surface_exchange_coefficient(
+            field=diagnostic_state.km, value=surface_exchange_coefficient_momentum
+        )
+        self._set_surface_exchange_coefficient(
+            field=diagnostic_state.kh, value=surface_exchange_coefficient_heat
+        )
         cells = slice(self._cell_start, self._cell_end)
         for running_sum, column_sum in (
             (self._cptgz_vi, diagnostic_state.cptgz_vi),
