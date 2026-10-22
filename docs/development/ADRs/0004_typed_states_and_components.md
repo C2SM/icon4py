@@ -60,9 +60,11 @@ passing `theta_v` where `exner` is expected is not a type error. Tendencies were
 - `allocate(State, grid, allocator, only=...)` makes a zero field per declaration (`only` names
   the optional leaves to allocate, the others stay None); `zeros(Q, grid, allocator)` makes one
   field; `copy(state, allocator)` copies the present leaves.
-- `Component`: a `Protocol` of `Input`, `Output` and `run(inputs, outputs=None) -> Output`, the
+- `Component`: a `Protocol` of `Input`, `Output` and `run(inputs, outputs) -> Output`, the
   only method a component implements. A component declares its two states as nested classes; a
   component that writes nothing declares `Output = fw.Empty`.
+- `PhysicsComponent`: a `Component` under a `ProcessTimeControl`, run by the physics driver
+  through `step`; it keeps its last output in its own buffers (`cached_output`).
 - `TimeStepPair` / `PredictorCorrectorPair`: icon4py's pairs (`common.utils`), re-exported.
 
 The quantity tags are in `framework/quantities.py`. The states passed between the components
@@ -85,22 +87,15 @@ class Diffusion(fw.Component):
         vn: fw.Field[qty.VnOnEdgeK]
         theta_v: fw.Field[qty.ThetaVOnCellK]
 
-    @functools.cached_property
-    def cached_output(self) -> Output:
-        return fw.allocate(type(self).Output, self.grid, self.allocator)
-
-    def run(self, inputs: Input, outputs: Output | None = None) -> Output:
-        out = outputs if outputs is not None else self.cached_output
-        ...  # stencils read inputs.vn and write out.vn
-        return out
+    def run(self, inputs: Input, outputs: Output) -> Output:
+        ...  # stencils read inputs.vn and write outputs.vn
+        return outputs
 ```
 
-`output = component.run(inputs)` writes into the component's own buffers (a per-component
-`cached_output`, allocated once on first use); `component.run(inputs, outputs=view)`
-writes where the caller says, numpy `out=` style. Whether `outputs` may alias `inputs` is the
-component's business: the diffusion and the physics driver update in place, the dycore needs
-distinct `now` and `next`. Static fields (metrics, interpolation coefficients) stay constructor
-arguments.
+`component.run(inputs, outputs)` writes where the caller says, numpy `out=` style: the caller
+owns the buffers. Whether `outputs` may alias `inputs` is the component's business: the
+diffusion and the physics driver update in place, the dycore needs distinct `now` and `next`.
+Static fields (metrics, interpolation coefficients) stay constructor arguments.
 
 The components are `SolveNonhydro` (dycore), `Diffusion`, `Advection` (tracer advection),
 `PhysicsDriver` with `MuphysComponent` as its process, and the driver's `IOMonitor`
@@ -115,12 +110,12 @@ the dycore it passes `now` in and `next` out.
 
 The tracers are optional leaves: `TracerState`, `Advection.Input`/`Output` and
 `PhysicsDriver.Input`/`Output` declare `qv`...`qg` as `Field[Q] | None`, and the driver's
-`TracerConfig` decides which are present. Since a component's own `cached_output` would
-allocate every optional leaf, the driver always passes `outputs=` to these components.
+`TracerConfig` decides which are present; the driver's views hold the active ones only.
 
-The physics processes pick their `Input` from the physics driver's `EntryState` with a
-`collect_input`. `bind` pairs it with the component's `run`, so pairing one process's
-`collect_input` with another's `run` is a type error.
+The physics processes are `PhysicsComponent`s. The physics driver calls `step(entry, step_start, dtime)` on each: inside its window a process computes on the steps its time control
+fires and on its first step in the window, and returns its last output otherwise. A process
+picks its `Input` from the physics driver's `EntryState` with its `collect_input` method, which
+mypy checks against its `Input`.
 
 ### Adding a quantity
 
@@ -154,7 +149,7 @@ type check.
 ## Consequences
 
 - mypy reports a field of the wrong quantity, a missing or unknown leaf and a process whose
-  `collect_input` does not match its `run`, where the call is written.
+  `collect_input` builds another component's `Input`, where the code is written.
 - The metadata of a field is on its quantity tag; the IO reads its CF attributes from there, and
   the state CF tables and `FieldKind` are gone.
 - `allocate` and `copy` work on any state through the annotations; the physics driver's

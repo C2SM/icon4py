@@ -14,9 +14,7 @@ import datetime
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_driver import (
-    PhysicsProcess,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.common import framework as fw
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base as base_grid, simple
@@ -24,7 +22,7 @@ from icon4py.model.common.grid import base as base_grid, simple
 from .utils import (
     DT,
     T0,
-    RecordingStep,
+    RecordingProcess,
     driver,
     filled,
     inputs,
@@ -120,47 +118,56 @@ class TestProcessTimeControl:
             time_control(interval=datetime.timedelta(0)).validate_interval(DT)
 
 
-def test_physics_process_construction(grid: base_grid.Grid) -> None:
-    step = RecordingStep(filled(MoistOutput, grid))
-    process = PhysicsProcess(name="muphys", step=step, time_control=time_control())
-    assert process.name == "muphys"
-    assert process.step is step
-    assert process.time_control.interval == DT
+def test_step_computes_when_active_reuses_otherwise_and_skips_outside_the_window(
+    grid: base_grid.Grid,
+) -> None:
+    entry = fw.allocate(physics_state.EntryState, grid, None)
+    window_end = T0 + 4 * DT
+    process = RecordingProcess(
+        grid, filled(MoistOutput, grid), time_control(interval=2 * DT, end=window_end)
+    )
+
+    # the first step in the window computes even when it is not active
+    assert process.step(entry, T0 + DT, DT) is process.output
+    # active: computes again
+    assert process.step(entry, T0 + 2 * DT, DT) is process.output
+    # inactive: reuses the last output without collecting an input
+    assert process.step(entry, T0 + 3 * DT, DT) is process.output
+    assert len(process.entries) == 2
+    # outside the window: nothing
+    assert process.step(entry, window_end, DT) is None
+    assert len(process.entries) == 2
 
 
 def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
     grid: base_grid.Grid,
 ) -> None:
-    step_a = RecordingStep(filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0))
-    step_b = RecordingStep(filled(MoistOutput, grid, tend_qv=2e-7, pflx=7.0))
-    physics = driver(
-        grid,
-        [
-            PhysicsProcess(name="a", step=step_a, time_control=time_control()),
-            PhysicsProcess(name="b", step=step_b, time_control=time_control()),
-        ],
+    process_a = RecordingProcess(
+        grid, filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0), time_control()
     )
+    process_b = RecordingProcess(
+        grid, filled(MoistOutput, grid, tend_qv=2e-7, pflx=7.0), time_control()
+    )
+    physics = driver(grid, [process_a, process_b])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
     physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
 
     # parallel coupling: one entry state, diagnosed once, read by both processes
-    assert len(step_a.entries) == 1
-    assert step_b.entries == step_a.entries
-    assert step_b.entries[0] is step_a.entries[0]
+    assert len(process_a.entries) == 1
+    assert process_b.entries == process_a.entries
+    assert process_b.entries[0] is process_a.entries[0]
     # b reads the entry qv, not qv already updated by a's tendency
-    np.testing.assert_array_equal(step_a.qv_read[0], 1e-3)
-    np.testing.assert_array_equal(step_b.qv_read[0], 1e-3)
+    np.testing.assert_array_equal(process_a.qv_read[0], 1e-3)
+    np.testing.assert_array_equal(process_b.qv_read[0], 1e-3)
     # the tendencies are summed and applied once; the diagnostics are not accumulated
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + DT.total_seconds() * 3e-7, rtol=1e-12)
     assert set(physics.accumulators) == {"tend_qv"}
-    # the driver keeps each process's last output
-    assert physics.process_outputs == {"a": step_a.output, "b": step_b.output}
 
 
 def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:
-    step = RecordingStep(filled(MoistOutput, grid, tend_qv=1e-7))
-    physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
+    process = RecordingProcess(grid, filled(MoistOutput, grid, tend_qv=1e-7), time_control())
+    physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
     physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
@@ -173,10 +180,12 @@ def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:
 
 
 def test_run_raises_for_non_multiple_interval(grid: base_grid.Grid) -> None:
-    step = RecordingStep(filled(MoistOutput, grid, tend_qv=1e-7))
+    process = RecordingProcess(
+        grid, filled(MoistOutput, grid, tend_qv=1e-7), time_control(interval=1.5 * DT)
+    )
     physics = driver(
         grid,
-        [PhysicsProcess(name="x", step=step, time_control=time_control(interval=1.5 * DT))],
+        [process],
     )
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
@@ -185,15 +194,15 @@ def test_run_raises_for_non_multiple_interval(grid: base_grid.Grid) -> None:
             inputs(prognostic, tracer_state, simulation_current_datetime=T0),
             outputs=output(prognostic, tracer_state),
         )
-    assert step.entries == []
+    assert process.entries == []
 
 
 def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
-    step = RecordingStep(filled(MoistOutput, grid, tend_qv=1e-7))
     # the window starts in the future: the step being integrated is before it
     future = T0 + datetime.timedelta(days=1)
     window = time_control(start=future, end=future + datetime.timedelta(hours=1))
-    physics = driver(grid, [PhysicsProcess(name="future", step=step, time_control=window)])
+    process = RecordingProcess(grid, filled(MoistOutput, grid, tend_qv=1e-7), window)
+    physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
     physics.run(
@@ -201,17 +210,18 @@ def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
         outputs=output(prognostic, tracer_state),
     )
 
-    assert step.entries == []
-    assert physics.process_outputs == {}
+    assert process.entries == []
     np.testing.assert_array_equal(_qv(tracer_state), 1e-3)
 
 
 def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> None:
-    step = RecordingStep(filled(MoistOutput, grid, tend_qv=1e-7))
+    process = RecordingProcess(
+        grid, filled(MoistOutput, grid, tend_qv=1e-7), time_control(interval=2 * DT)
+    )
     # fires every other step
     physics = driver(
         grid,
-        [PhysicsProcess(name="p", step=step, time_control=time_control(interval=2 * DT))],
+        [process],
     )
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
@@ -227,17 +237,19 @@ def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> No
     )
 
     # the entry state reaches the process only on the step it computes
-    assert len(step.entries) == 1
+    assert len(process.entries) == 1
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 2 * DT.total_seconds() * 1e-7, rtol=1e-12)
 
 
 def test_first_in_window_step_inactive_computes(grid: base_grid.Grid) -> None:
     # A process whose first step in its window is not active (interval = 2 dt, the first
     # step starts at T0 + DT) has no output to reuse yet: it computes instead.
-    step = RecordingStep(filled(MoistOutput, grid, tend_qv=1e-7))
+    process = RecordingProcess(
+        grid, filled(MoistOutput, grid, tend_qv=1e-7), time_control(interval=2 * DT)
+    )
     physics = driver(
         grid,
-        [PhysicsProcess(name="p", step=step, time_control=time_control(interval=2 * DT))],
+        [process],
     )
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
@@ -246,7 +258,7 @@ def test_first_in_window_step_inactive_computes(grid: base_grid.Grid) -> None:
         outputs=output(prognostic, tracer_state),
     )
 
-    assert len(step.entries) == 1
+    assert len(process.entries) == 1
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + DT.total_seconds() * 1e-7, rtol=1e-12)
 
 
@@ -260,8 +272,8 @@ def test_run_requires_every_moisture_species(grid: base_grid.Grid) -> None:
 
 
 def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
-    step = RecordingStep(filled(MoistOutput, grid, tend_qv=1e-7))
-    physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
+    process = RecordingProcess(grid, filled(MoistOutput, grid, tend_qv=1e-7), time_control())
+    physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
     new_prognostic, new_tracers = prognostics(grid, theta_v=0.0), tracers(grid, qv=0.0)
 
@@ -274,10 +286,12 @@ def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
 
 
 def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -> None:
-    step = RecordingStep(
-        filled(ThermoOutput, grid, tend_qv=1e-7, tend_temperature=1e-3, tend_w=1e-4)
+    process = RecordingProcess(
+        grid,
+        filled(ThermoOutput, grid, tend_qv=1e-7, tend_temperature=1e-3, tend_w=1e-4),
+        time_control(),
     )
-    physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
+    physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
     exner_before = prognostic.exner.asnumpy().copy()
     theta_v_before = prognostic.theta_v.asnumpy().copy()
@@ -296,8 +310,8 @@ def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -
 def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> None:
     # uniform tend_u = 1e-4, tend_v = 0 with the neutral geometry of `driver`:
     # ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on every edge of the periodic simple grid
-    step = RecordingStep(filled(WindOutput, grid, tend_u=1e-4))
-    physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
+    process = RecordingProcess(grid, filled(WindOutput, grid, tend_u=1e-4), time_control())
+    physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
     physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
@@ -308,8 +322,8 @@ def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> Non
 def test_apply_rejects_a_lone_horizontal_wind_tendency(grid: base_grid.Grid) -> None:
     # vn is one projection of (u, v): a process emitting only one of the two would
     # silently lose the other half of the momentum, an error rather than a no-op
-    step = RecordingStep(filled(LoneWindOutput, grid, tend_u=1e-4))
-    physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
+    process = RecordingProcess(grid, filled(LoneWindOutput, grid, tend_u=1e-4), time_control())
+    physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
     with pytest.raises(ValueError, match="applied as a pair"):

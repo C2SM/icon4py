@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import dataclasses
-import functools
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -163,26 +162,20 @@ class Advection(fw.Component, ABC):
         self.grid = grid
         self.allocator = allocator
 
-    @functools.cached_property
-    def cached_output(self) -> Output:
-        """The buffers advection writes when no `outputs=` is passed."""
-        return fw.allocate(type(self).Output, self.grid, self.allocator)
-
-    def run(self, inputs: Input, outputs: Output | None = None) -> Output:
-        out = outputs if outputs is not None else self.cached_output
+    def run(self, inputs: Input, outputs: Output) -> Output:
         self._prepare(inputs)
         for name in states.TRACERS:
             tracer_now = getattr(inputs, name)
             if tracer_now is None:
                 continue
-            tracer_new = getattr(out, name)
+            tracer_new = getattr(outputs, name)
             if tracer_new is None:
                 raise ValueError(
                     f"Tracer '{name}' is given at the current time level but not at the next one."
                 )
-            self._advect(inputs, out, p_tracer_now=tracer_now, p_tracer_new=tracer_new)
+            self._advect(inputs, outputs, p_tracer_now=tracer_now, p_tracer_new=tracer_new)
         self._finalize()
-        return out
+        return outputs
 
     def _prepare(self, inputs: Input) -> None:
         """Before the tracers: the halo exchange of the vertical mass flux."""

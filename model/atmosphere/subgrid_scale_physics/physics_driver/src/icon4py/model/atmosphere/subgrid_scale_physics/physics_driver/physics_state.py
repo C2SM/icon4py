@@ -19,7 +19,7 @@ class EntryState(fw.State):
     ICON's dyn2phy: every leaf is a view onto the driver's input or onto its `diagnostics`, no
     copies. Diagnosed once per step and never updated between the processes, which all read the
     same entry state (parallel coupling). Each process picks its input from here by hand
-    (`collect_input` next to its component).
+    (its `collect_input` method).
     """
 
     vn: fw.Field[qty.VnOnEdgeK]

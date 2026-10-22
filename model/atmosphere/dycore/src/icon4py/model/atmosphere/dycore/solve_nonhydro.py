@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import dataclasses
-import functools
 import logging
 import typing
 from typing import Final
@@ -1170,19 +1169,13 @@ class SolveNonhydro(fw.Component):
             self._dtime_previous_substep = dtime
         return self.rayleigh_damping_factor
 
-    @functools.cached_property
-    def cached_output(self) -> Output:
-        """The buffers the substeps write when no `outputs=` is passed."""
-        return fw.allocate(type(self).Output, self.grid, self.allocator)
-
-    def run(self, inputs: Input, outputs: Output | None = None) -> Output:
+    def run(self, inputs: Input, outputs: Output) -> Output:
         """
         Update the prognostic variables (`outputs`) after the dynamical process over one substep.
 
         `outputs` may not alias `inputs`: the step reads the prognostics at the current time level
         while writing the next one.
         """
-        out = outputs if outputs is not None else self.cached_output
         dtime = ta.wpfloat(inputs.dtime)
         at_initial_timestep = inputs.at_initial_timestep
         at_first_substep = inputs.at_first_substep
@@ -1200,23 +1193,23 @@ class SolveNonhydro(fw.Component):
                 self.intermediate_fields.horizontal_gradient_of_normal_wind_divergence,
             )
 
-        self.run_predictor_step(inputs, out, z_fields=self.intermediate_fields)
-        self.run_corrector_step(inputs, out, z_fields=self.intermediate_fields)
+        self.run_predictor_step(inputs, outputs, z_fields=self.intermediate_fields)
+        self.run_corrector_step(inputs, outputs, z_fields=self.intermediate_fields)
         if self._grid.limited_area:
             self._compute_exner_from_rhotheta_in_lateral_boundary(
-                rho=out.rho,
-                theta_v=out.theta_v,
-                exner=out.exner,
+                rho=outputs.rho,
+                theta_v=outputs.theta_v,
+                exner=outputs.exner,
             )
         self._update_theta_and_exner_in_halo(
             rho_now=inputs.rho,
-            rho_new=out.rho,
+            rho_new=outputs.rho,
             theta_v_now=inputs.theta_v,
-            theta_v_new=out.theta_v,
+            theta_v_new=outputs.theta_v,
             exner_now=inputs.exner,
-            exner_new=out.exner,
+            exner_new=outputs.exner,
         )
-        return out
+        return outputs
 
     def run_predictor_step(
         self, inputs: Input, out: Output, *, z_fields: IntermediateFields

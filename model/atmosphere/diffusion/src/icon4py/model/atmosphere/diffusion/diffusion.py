@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import functools
 import logging
 import math
 import typing
@@ -834,13 +833,8 @@ class Diffusion(fw.Component):
             if target.ndarray is not source.ndarray:
                 target.ndarray[...] = source.ndarray
 
-    @functools.cached_property
-    def cached_output(self) -> Output:
-        """The buffers diffusion writes when no `outputs=` is passed."""
-        return fw.allocate(type(self).Output, self.grid, self.allocator)
-
     def run(  # noqa: PLR0915 [too-many-statements]
-        self, inputs: Input, outputs: Output | None = None
+        self, inputs: Input, outputs: Output
     ) -> Output:
         """
         Do one diffusion step.
@@ -852,8 +846,7 @@ class Diffusion(fw.Component):
 
         The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
         """
-        out = outputs if outputs is not None else self.cached_output
-        self._continue_in_place(inputs, out)
+        self._continue_in_place(inputs, outputs)
         dtime = wpfloat(inputs.dtime)
         initial_run = inputs.initial_run
         if initial_run:
@@ -879,7 +872,7 @@ class Diffusion(fw.Component):
 
         log.debug("rbf interpolation 1: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
-            p_e_in=out.vn,
+            p_e_in=outputs.vn,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
         )
@@ -902,7 +895,7 @@ class Diffusion(fw.Component):
             diff_multfac_smag=self.diff_multfac_smag,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
-            vn=out.vn,
+            vn=outputs.vn,
             smag_limit=smag_limit,
             kh_smag_e=self.kh_smag_e,
             kh_smag_ec=self.kh_smag_ec,
@@ -922,10 +915,10 @@ class Diffusion(fw.Component):
             )
             self.calculate_diagnostic_quantities_for_turbulence(
                 kh_smag_ec=self.kh_smag_ec,
-                vn=out.vn,
+                vn=outputs.vn,
                 diff_multfac_smag=self.diff_multfac_smag,
-                div_ic=out.div_ic,
-                hdef_ic=out.hdef_ic,
+                div_ic=outputs.div_ic,
+                hdef_ic=outputs.hdef_ic,
             )
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
@@ -966,13 +959,13 @@ class Diffusion(fw.Component):
             z_nabla2_e=self.z_nabla2_e,
             kh_smag_e=self.kh_smag_e,
             diff_multfac_vn=diff_multfac_vn,
-            vn=out.vn,
+            vn=outputs.vn,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
         log.debug("communication of prognostic.vn : start")
         handle_edge_comm = self._exchange(
-            out.vn,
+            outputs.vn,
             dim=dims.EdgeDim,
             full_exchange=False,
             stream=decomposition.DEFAULT_STREAM,
@@ -982,13 +975,13 @@ class Diffusion(fw.Component):
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
-        self.copy_field_on_cell_khalf(field=out.w, output_field=self.w_tmp)
+        self.copy_field_on_cell_khalf(field=outputs.w, output_field=self.w_tmp)
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             w_old=self.w_tmp,
-            w=out.w,
-            dwdx=out.dwdx,
-            dwdy=out.dwdy,
+            w=outputs.w,
+            dwdx=outputs.dwdx,
+            dwdy=outputs.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
         )
@@ -1007,7 +1000,7 @@ class Diffusion(fw.Component):
                 "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
             )
             self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-                theta_v=out.theta_v,
+                theta_v=outputs.theta_v,
                 kh_smag_e=self.kh_smag_e,
             )
             log.debug(
@@ -1015,13 +1008,13 @@ class Diffusion(fw.Component):
             )
             log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
             self.copy_field_on_cell_k(
-                field=out.theta_v, output_field=self.theta_v_tmp
+                field=outputs.theta_v, output_field=self.theta_v_tmp
             )  # TODO(): write in a way that we can avoid the copy
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
                 theta_v_in=self.theta_v_tmp,
-                theta_v=out.theta_v,
-                exner=out.exner,
+                theta_v=outputs.theta_v,
+                exner=outputs.exner,
             )
             # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
             # computations, which happen right after diffusion, do not require the halo lines to be correct and there
@@ -1031,8 +1024,8 @@ class Diffusion(fw.Component):
                 log.debug("communication of prognostic cell fields: theta and exner - start")
                 self._exchange.exchange(
                     dims.CellDim,
-                    out.theta_v,
-                    out.exner,
+                    outputs.theta_v,
+                    outputs.exner,
                     stream=decomposition.DEFAULT_STREAM,
                 )
                 log.debug("communication of prognostic cell fields: theta and exner - done")
@@ -1044,8 +1037,8 @@ class Diffusion(fw.Component):
             log.debug("communication of prognostic cell field: w - start")
             self._exchange.exchange(
                 dims.CellDim,
-                out.w,
+                outputs.w,
                 stream=decomposition.DEFAULT_STREAM,
             )
             log.debug("communication of prognostic cell field: w - done")
-        return out
+        return outputs

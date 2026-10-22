@@ -16,7 +16,6 @@ driver before each store.
 """
 
 import datetime
-import functools
 import pathlib
 import uuid
 from typing import Any, Final
@@ -112,11 +111,6 @@ class IOMonitor(fw.Component):
         # output variable name -> Input leaf name
         self.selected = {name: _VARIABLE_NAMES[name] for name in variables}
 
-    @functools.cached_property
-    def cached_output(self) -> fw.Empty:
-        """The empty state the monitor returns when no `outputs=` is passed."""
-        return fw.Empty()
-
     def run(self, inputs: Input, outputs: fw.Empty | None = None) -> fw.Empty:
         state: dict[str, xr.DataArray] = {}
         if self.writer.at_capture_time():
@@ -126,7 +120,7 @@ class IOMonitor(fw.Component):
                     field, _attributes(field.quantity), to_host=True
                 )
         self.writer.store(state, inputs.simulation_time)
-        return outputs if outputs is not None else self.cached_output
+        return outputs if outputs is not None else fw.Empty()
 
 
 def create_io_monitor(

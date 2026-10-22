@@ -32,6 +32,7 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
+    framework as fw,
     model_backends,
     time,
     type_alias as ta,
@@ -81,37 +82,39 @@ class Granules:
     physics: physics_driver.PhysicsDriver | None = None
 
 
-def _muphys_step(
+def _muphys(
     config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     static_field_factories: static_fields.StaticFieldFactories,
+    time_control: fw.ProcessTimeControl,
     backend: gtx_backend.Backend[Any] | None,
-) -> physics_driver.Step:
+) -> fw.PhysicsComponent:
     if config.muphys is None:
         raise ValueError("The 'muphys' process is not configured.")
-    component = muphys_component.MuphysComponent(
+    return muphys_component.MuphysComponent(
         grid=grid,
         dtime=config.driver.dtime,
         qnc=config.muphys.qnc,
         dz=static_field_factories.metrics.get(metrics_attributes.DDQZ_Z_FULL),
+        time_control=time_control,
         backend=backend,
     )
-    return physics_driver.bind(component.run, muphys_component.collect_input)
 
 
-type _StepBuilder = Callable[
+type _ProcessBuilder = Callable[
     [
         driver_config.ExperimentConfig,
         icon_grid.IconGrid,
         static_fields.StaticFieldFactories,
+        fw.ProcessTimeControl,
         gtx_backend.Backend[Any] | None,
     ],
-    physics_driver.Step,
+    fw.PhysicsComponent,
 ]
 
 # the physics processes, by the name of their section in the experiment configuration; the
 # driver runs those whose section is set
-PROCESSES: dict[str, _StepBuilder] = {"muphys": _muphys_step}
+PROCESSES: dict[str, _ProcessBuilder] = {"muphys": _muphys}
 
 
 def validate_granule_state_consistency(
@@ -500,16 +503,13 @@ def initialize_granules(
         )
 
     physics_granule: physics_driver.PhysicsDriver | None = None
+    time_control = fw.ProcessTimeControl(
+        interval=config.driver.dtime,
+        start_date=config.driver.start_of_simulation,
+        end_date=model_time_variables.simulation_end_datetime,
+    )
     physics_processes = [
-        physics_driver.PhysicsProcess(
-            name=name,
-            step=build(config, grid, static_field_factories, backend),
-            time_control=physics_driver.ProcessTimeControl(
-                interval=config.driver.dtime,
-                start_date=config.driver.start_of_simulation,
-                end_date=model_time_variables.simulation_end_datetime,
-            ),
-        )
+        build(config, grid, static_field_factories, time_control, backend)
         for name, build in PROCESSES.items()
         if getattr(config, name) is not None
     ]

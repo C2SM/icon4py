@@ -10,8 +10,8 @@
 
 from __future__ import annotations
 
-import dataclasses
 import datetime
+import functools
 from collections.abc import Sequence
 
 import numpy as np
@@ -20,9 +20,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_driver,
     physics_state,
     static_fields,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
-    ProcessTimeControl,
 )
 from icon4py.model.common import dimension as dims, framework as fw
 from icon4py.model.common.framework import states
@@ -38,12 +35,12 @@ def time_control(
     interval: datetime.timedelta = DT,
     start: datetime.datetime = T0,
     end: datetime.datetime = T0 + datetime.timedelta(days=1),
-) -> ProcessTimeControl:
-    return ProcessTimeControl(interval=interval, start_date=start, end_date=end)
+) -> fw.ProcessTimeControl:
+    return fw.ProcessTimeControl(interval=interval, start_date=start, end_date=end)
 
 
 def driver(
-    grid: base_grid.Grid, processes: Sequence[physics_driver.PhysicsProcess] = ()
+    grid: base_grid.Grid, processes: Sequence[fw.PhysicsComponent] = ()
 ) -> physics_driver.PhysicsDriver:
     # neutral geometry: primal_normal_cell_x = 1, primal_normal_cell_y = 0, c_lin_e = 0.5, so
     # the two-neighbour projection of a uniform u-tendency onto the edges is the identity
@@ -124,16 +121,29 @@ def filled[S: fw.State](cls: type[S], grid: base_grid.Grid, **values: float) -> 
     return fw.allocate(cls, grid, None, fill=lambda name, _: values.get(name, 0.0))
 
 
-@dataclasses.dataclass
-class RecordingStep:
-    """A process step returning a fixed output and recording the entry states it was given,
-    with a copy of the qv each one read."""
+class RecordingProcess(fw.PhysicsComponent):
+    """A physics process computing a fixed output and recording the entry states it collected
+    from, with a copy of the qv each one read."""
 
-    output: fw.State
-    entries: list[physics_state.EntryState] = dataclasses.field(default_factory=list)
-    qv_read: list[np.ndarray] = dataclasses.field(default_factory=list)
+    Input = physics_state.EntryState
+    Output = fw.State
 
-    def __call__(self, entry: physics_state.EntryState) -> fw.State:
+    def __init__(
+        self, grid: base_grid.Grid, output: fw.State, time_control: fw.ProcessTimeControl
+    ) -> None:
+        super().__init__(grid=grid, allocator=None, time_control=time_control)
+        self.output = output
+        self.entries: list[physics_state.EntryState] = []
+        self.qv_read: list[np.ndarray] = []
+
+    @functools.cached_property
+    def cached_output(self) -> fw.State:
+        return self.output
+
+    def collect_input(self, entry: physics_state.EntryState) -> physics_state.EntryState:
         self.entries.append(entry)
         self.qv_read.append(entry.qv.asnumpy().copy())
-        return self.output
+        return entry
+
+    def run(self, inputs: physics_state.EntryState, outputs: fw.State) -> fw.State:
+        return outputs

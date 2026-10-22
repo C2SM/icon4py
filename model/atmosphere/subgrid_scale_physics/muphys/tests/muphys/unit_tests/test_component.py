@@ -46,11 +46,20 @@ def grid() -> base_grid.Grid:
 
 
 def _component(
-    grid: base_grid.Grid, step: GranuleStandIn
+    grid: base_grid.Grid, compute: GranuleStandIn
 ) -> tuple[muphys_component.MuphysComponent, Any]:
     dz = data_alloc.constant_field(grid, 100.0, dims.CellDim, dims.KDim)
+    start = datetime.datetime(2024, 1, 1)
     component = muphys_component.MuphysComponent(
-        grid=grid, dtime=DTIME, qnc=100.0, dz=dz, backend=None, step=step
+        grid=grid,
+        dtime=DTIME,
+        qnc=100.0,
+        dz=dz,
+        time_control=fw.ProcessTimeControl(
+            interval=DTIME, start_date=start, end_date=start + datetime.timedelta(days=1)
+        ),
+        backend=None,
+        compute=compute,
     )
     return component, dz
 
@@ -66,9 +75,10 @@ def _inputs(grid: base_grid.Grid) -> muphys_component.MuphysComponent.Input:
 
 
 def test_collect_input_views_the_entry_state(grid: base_grid.Grid) -> None:
+    component, _ = _component(grid, GranuleStandIn())
     entry = fw.allocate(physics_state.EntryState, grid, None)
 
-    inputs = muphys_component.collect_input(entry)
+    inputs = component.collect_input(entry)
 
     assert inputs.te is entry.temperature
     assert inputs.p is entry.pressure
@@ -78,8 +88,8 @@ def test_collect_input_views_the_entry_state(grid: base_grid.Grid) -> None:
 
 
 def test_run_reports_tendencies_and_leaves_the_inputs_untouched(grid: base_grid.Grid) -> None:
-    step = GranuleStandIn()
-    component, dz = _component(grid, step)
+    compute = GranuleStandIn()
+    component, dz = _component(grid, compute)
     inputs = _inputs(grid)
 
     out = component.run(inputs)
@@ -92,7 +102,7 @@ def test_run_reports_tendencies_and_leaves_the_inputs_untouched(grid: base_grid.
     # the granule ran on private copies; the static and read-only fields went in as given
     np.testing.assert_array_equal(inputs.te.asnumpy(), 280.0)
     np.testing.assert_array_equal(inputs.qv.asnumpy(), 1e-3)
-    (call,) = step.calls
+    (call,) = compute.calls
     assert call["te"] is not inputs.te
     assert call["dz"] is dz
     assert call["p"] is inputs.p

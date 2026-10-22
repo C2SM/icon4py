@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import functools
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
@@ -35,12 +34,12 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    # a type-only import: the physics driver builds the muphys process, not the other way round
+    # a type-only import: muphys does not depend on the physics driver
     from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
     from icon4py.model.common.grid import base as base_grid
 
 
-class MuphysComponent(fw.Component):
+class MuphysComponent(fw.PhysicsComponent):
     """
     The muphys microphysics granule as a component.
 
@@ -89,11 +88,13 @@ class MuphysComponent(fw.Component):
         dtime: time.RelativeTime,
         qnc: float,
         dz: fa.CellKField[ta.wpfloat],
+        time_control: fw.ProcessTimeControl,
         backend: model_backends.BackendLike = None,
-        step: Callable[..., Any] | None = None,
+        compute: Callable[..., Any] | None = None,
     ) -> None:
-        self.grid = grid
-        self.allocator = model_backends.get_allocator(backend)
+        super().__init__(
+            grid=grid, allocator=model_backends.get_allocator(backend), time_control=time_control
+        )
         self._dt_seconds = ta.wpfloat(dtime.total_seconds())
         self._dz = dz
         program_backend = model_options.customize_backend(program=None, backend=backend)
@@ -121,8 +122,8 @@ class MuphysComponent(fw.Component):
             vertical_sizes=levels,
             offset_provider={},
         )
-        if step is None:
-            step = setup_muphys(
+        if compute is None:
+            compute = setup_muphys(
                 ncells=grid.num_cells,
                 nlev=grid.num_levels,
                 dt=self._dt_seconds,
@@ -130,7 +131,7 @@ class MuphysComponent(fw.Component):
                 backend=backend,
                 single_program=False,
             )
-        self._step = step
+        self._compute = compute
 
         # the private copies the granule overwrites
         self._te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=self.allocator)
@@ -140,11 +141,6 @@ class MuphysComponent(fw.Component):
                 for _ in SPECIES
             )
         )
-
-    @functools.cached_property
-    def cached_output(self) -> Output:
-        """The buffers the granule writes when no `outputs=` is passed."""
-        return fw.allocate(type(self).Output, self.grid, self.allocator)
 
     def run(self, inputs: Input, outputs: Output | None = None) -> Output:
         """
@@ -159,7 +155,7 @@ class MuphysComponent(fw.Component):
         for s in SPECIES:
             self._copy_field(field=getattr(inputs, f"q{s}"), output_field=getattr(self._q, s))
 
-        self._step(
+        self._compute(
             dz=self._dz,
             te=self._te,
             p=inputs.p,
@@ -190,17 +186,16 @@ class MuphysComponent(fw.Component):
             )
         return out
 
-
-def collect_input(entry: physics_state.EntryState) -> MuphysComponent.Input:
-    """The muphys input from the physics entry state (no copies)."""
-    return MuphysComponent.Input(
-        te=entry.temperature,
-        p=entry.pressure,
-        rho=entry.rho,
-        qv=entry.qv,
-        qc=entry.qc,
-        qi=entry.qi,
-        qr=entry.qr,
-        qs=entry.qs,
-        qg=entry.qg,
-    )
+    def collect_input(self, entry: physics_state.EntryState) -> Input:
+        """The muphys input from the physics entry state (no copies)."""
+        return MuphysComponent.Input(
+            te=entry.temperature,
+            p=entry.pressure,
+            rho=entry.rho,
+            qv=entry.qv,
+            qc=entry.qc,
+            qi=entry.qi,
+            qr=entry.qr,
+            qs=entry.qs,
+            qg=entry.qg,
+        )

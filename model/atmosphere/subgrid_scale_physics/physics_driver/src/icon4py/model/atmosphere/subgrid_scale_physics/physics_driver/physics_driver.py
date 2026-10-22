@@ -10,10 +10,8 @@
 
 from __future__ import annotations
 
-import dataclasses
 import datetime
-import functools
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
@@ -21,9 +19,6 @@ import gt4py.next as gtx
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_state,
     static_fields,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
-    ProcessTimeControl,
 )
 from icon4py.model.common import dimension as dims, framework as fw, model_backends, model_options
 from icon4py.model.common.framework import quantities as qty, states
@@ -44,30 +39,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-__all__ = ["PhysicsDriver", "PhysicsProcess", "ProcessTimeControl", "Step", "bind"]
-
-type Step = Callable[[physics_state.EntryState], fw.State]
-
-
-def bind[I: fw.State, O: fw.State](
-    run: Callable[[I], O], collect_input: Callable[[physics_state.EntryState], I]
-) -> Callable[[physics_state.EntryState], O]:
-    """
-    A process step: a component's `run` on what its `collect_input` picks from the entry state.
-
-    Checks once that the two belong together (another component's `collect_input` is a type
-    error); the driver then sees the step only as a `Step`.
-    """
-    return lambda entry: run(collect_input(entry))
-
-
-@dataclasses.dataclass(frozen=True)
-class PhysicsProcess:
-    """One physics process: its step and its time control."""
-
-    name: str
-    step: Step
-    time_control: ProcessTimeControl
+__all__ = ["PhysicsDriver"]
 
 
 def _present[Q: fw.Quantity](field: fw.Field[Q] | None) -> fw.Field[Q]:
@@ -127,7 +99,7 @@ class PhysicsDriver(fw.Component):
 
     def __init__(
         self,
-        processes: Sequence[PhysicsProcess],
+        processes: Sequence[fw.PhysicsComponent],
         *,
         grid: base_grid.Grid,
         static_state: static_fields.PhysicsDriverStaticState,
@@ -140,10 +112,6 @@ class PhysicsDriver(fw.Component):
         self.diagnostics = fw.allocate(states.Diagnostics, grid, self.allocator)
         # one sum per tendency the processes emit, by output name, made when first seen
         self.accumulators: dict[str, fw.Field[Any]] = {}
-        # the last output of each process, reused on the steps it is not active
-        # TODO(jcanton): part 02 fix this. Key by the process's component (identity), once the
-        # process holds it, and drop `PhysicsProcess.name`, which exists only for this key.
-        self.process_outputs: dict[str, fw.State] = {}
 
         cells = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_cells)}
         edges = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_edges)}
@@ -243,30 +211,16 @@ class PhysicsDriver(fw.Component):
             grid, dims.EdgeDim, dims.KDim, allocator=self.allocator
         )
 
-    @functools.cached_property
-    def cached_output(self) -> Output:
-        """The buffers the processes write when no `outputs=` is passed."""
-        return fw.allocate(type(self).Output, self.grid, self.allocator)
-
-    def run(self, inputs: Input, outputs: Output | None = None) -> Output:
-        out = outputs if outputs is not None else self.cached_output
+    def run(self, inputs: Input, outputs: Output) -> Output:
         entry = self._diagnose(inputs)
         self._zero_accumulators()
         # the time control reads the start of the step being integrated
         step_start = inputs.simulation_current_datetime - inputs.dtime
         for process in self.processes:
-            time_control = process.time_control
-            time_control.validate_interval(inputs.dtime)
-            # outside its window a process contributes nothing
-            if not time_control.is_in_window(step_start):
-                continue
-            # a process computes when it fires, and on its first step in the window when there
-            # is no output to reuse yet; otherwise its last output is accumulated again
-            if time_control.is_active(step_start) or process.name not in self.process_outputs:
-                self.process_outputs[process.name] = process.step(entry)
-            self._accumulate(self.process_outputs[process.name])
-        self._apply(entry, inputs.dtime.total_seconds(), out)
-        return out
+            if (output := process.step(entry, step_start, inputs.dtime)) is not None:
+                self._accumulate(output)
+        self._apply(entry, inputs.dtime.total_seconds(), outputs)
+        return outputs
 
     def _diagnose(self, inputs: Input) -> physics_state.EntryState:
         """The entry state: the inputs as given and the diagnostics derived from them (dyn2phy)."""

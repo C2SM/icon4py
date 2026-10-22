@@ -141,9 +141,15 @@ def test_muphys_granule(
         dtime=datetime.timedelta(seconds=dtime),
         qnc=muphys_configuration.qnc,
         dz=state["dz"],
+        # `run` is called directly: the time control is never consulted
+        time_control=fw.ProcessTimeControl(
+            interval=datetime.timedelta(seconds=dtime),
+            start_date=datetime.datetime.min,
+            end_date=datetime.datetime.max,
+        ),
         backend=backend,
         # The default Component setup is the separate-program mode.
-        step=muphys_program if single_program else None,
+        compute=muphys_program if single_program else None,
     )
     outputs = fw.fields(component.run(inputs))
     for name, field in state.items():

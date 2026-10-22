@@ -8,7 +8,9 @@
 
 from __future__ import annotations
 
+import abc
 import dataclasses
+import datetime
 import functools
 import types
 import typing
@@ -32,7 +34,9 @@ __all__ = [
     "Component",
     "Empty",
     "Field",
+    "PhysicsComponent",
     "PredictorCorrectorPair",
+    "ProcessTimeControl",
     "Quantity",
     "State",
     "Tendency",
@@ -281,20 +285,16 @@ def copy[S: State](state: S, allocator: gtx_typing.Allocator | None) -> S:
 # ------------------------------------------------------------------------------
 class Component(Protocol):
     """
-    `run(inputs, outputs=None) -> Output`, the only method a component implements.
+    `run(inputs, outputs) -> Output`, the only method a component implements.
 
     A component declares its two states on the class (`class Input(fw.State)`); a component
     that writes nothing declares `Output = fw.Empty`. The protocol has no implementation: the
-    constructor and the own buffers (`cached_output`) are each component's own.
+    constructor is each component's own.
 
-    `output = component.run(inputs)` writes into the component's own buffers, allocated once
-    on first use; `component.run(inputs, outputs=view)` writes where the caller says, numpy
-    `out=` style. Either way `run` returns the output. Whether `outputs` may alias `inputs` is
-    the component's business; nothing checks it here.
-
-    The own buffers hold every leaf of `Output`, the optional ones included: a component with
-    optional leaves (`Advection`, `PhysicsDriver`: the tracers) would allocate all of them, so
-    its caller always passes `outputs=`, views over the active ones only.
+    `component.run(inputs, outputs)` writes where the caller says, numpy `out=` style, and
+    returns `outputs`: the caller owns the buffers. Whether `outputs` may alias `inputs` is
+    the component's business; nothing checks it here. A `PhysicsComponent` also keeps buffers
+    of its own, since it reuses its last output between two computations.
     """
 
     Input: type[State]
@@ -302,5 +302,105 @@ class Component(Protocol):
 
     # `Any`: each component narrows `inputs` and `outputs` to its own `Input` and `Output`.
     # Typed `State` here, every override would be incompatible (parameters are contravariant).
-    def run(self, inputs: Any, outputs: Any = None) -> Any:
+    def run(self, inputs: Any, outputs: Any) -> Any:
         raise NotImplementedError
+
+
+# ------------------------------------------------------------------------------
+# PhysicsComponent: a component under a time control
+# ------------------------------------------------------------------------------
+@dataclasses.dataclass(frozen=True)
+class ProcessTimeControl:
+    """icon4py analogue of the per-process time fields in AES `aes_phy_tc`.
+
+    Mirrors `mo_aes_phy_main.f90` semantics, with one deviation: where AES
+    disables a process via `dt_xxx == 0`, icon4py leaves a disabled process out
+    of the driver's process list entirely, so it is never constructed and its
+    stencils are never compiled.
+      - `interval`   (`dt_xxx`): firing interval; must be > 0.
+      - `start_date` (`sd_xxx`), `end_date` (`ed_xxx`): half-open
+        `[start, end)` window during which the process exists at all.
+    """
+
+    interval: datetime.timedelta
+    start_date: datetime.datetime
+    end_date: datetime.datetime
+
+    def is_in_window(self, simulation_current_datetime: datetime.datetime) -> bool:
+        return self.start_date <= simulation_current_datetime < self.end_date
+
+    def is_active(self, simulation_current_datetime: datetime.datetime) -> bool:
+        """True if the process's mtime-event fires on the given step.
+
+        Equivalent to AES `isCurrentEventActive(ev_xxx, datetime)`. Fires only
+        when the elapsed time is an exact integer multiple of the interval.
+        """
+        if self.interval <= datetime.timedelta(0) or simulation_current_datetime < self.start_date:
+            return False
+        elapsed = simulation_current_datetime - self.start_date
+        return elapsed % self.interval == datetime.timedelta(0)
+
+    def validate_interval(self, dtime: datetime.timedelta) -> None:
+        """Fail loud if the firing interval cannot align with the model timestep.
+
+        ``is_active`` fires only when the elapsed time is an exact multiple of
+        ``interval``. With a discrete timestep that is observed only when
+        ``interval`` is a positive integer multiple of ``dtime`` -- otherwise the
+        process fires only at common multiples of both (or never), silently.
+        """
+        if self.interval <= datetime.timedelta(0):
+            raise ValueError(f"time-control interval must be positive, got {self.interval}")
+        if self.interval % dtime != datetime.timedelta(0):
+            raise ValueError(
+                f"time-control interval {self.interval} is not an integer multiple of "
+                f"the model timestep {dtime}: the process would fire only at common "
+                "multiples of both (or never)"
+            )
+
+
+class PhysicsComponent(Component):
+    """
+    A physics component with a time control: computes when its time control fires, else
+    returns its cached output; None outside its window.
+
+    `step` is what the physics driver calls; `run` computes. Between two computations the
+    driver accumulates the last output again, so `step` has `run` write it into the
+    component's own buffers (`cached_output`).
+    """
+
+    def __init__(
+        self,
+        *,
+        grid: base_grid.Grid,
+        allocator: gtx_typing.Allocator | None,
+        time_control: ProcessTimeControl,
+    ) -> None:
+        self.grid = grid
+        self.allocator = allocator
+        self.time_control = time_control
+        self._last_output: State | None = None
+
+    @abc.abstractmethod
+    def collect_input(self, entry: Any) -> Any:
+        """This component's `Input` from the physics driver's entry state; each subclass narrows both."""
+
+    @functools.cached_property
+    def cached_output(self) -> Any:
+        """The buffers `run` writes when no `outputs=` is passed."""
+        return allocate(type(self).Output, self.grid, self.allocator)
+
+    def step(
+        self, entry: Any, step_start: datetime.datetime, dtime: datetime.timedelta
+    ) -> State | None:
+        """This step's output: computed, reused from the cache, or None outside the window."""
+        time_control = self.time_control
+        time_control.validate_interval(dtime)
+        # Outside its window the process contributes nothing, and must not reach the reuse
+        # branch below, which would compute once on the first step.
+        if not time_control.is_in_window(step_start):
+            return None
+        # Compute on a firing (active) step, and also on the first in-window step, when there
+        # is nothing to reuse yet. Otherwise reuse the last computed output.
+        if time_control.is_active(step_start) or self._last_output is None:
+            self._last_output = self.run(self.collect_input(entry), self.cached_output)
+        return self._last_output

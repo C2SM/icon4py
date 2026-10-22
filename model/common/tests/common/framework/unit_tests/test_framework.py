@@ -8,7 +8,6 @@
 
 import copy
 import dataclasses
-import functools
 import pickle
 from typing import Any
 
@@ -56,19 +55,9 @@ class Halve(fw.Component):
     class Output(fw.State):
         pressure: fw.Field[Pressure]
 
-    def __init__(self, grid: base_grid.Grid, allocator: Any | None) -> None:
-        self.grid = grid
-        self.allocator = allocator
-
-    @functools.cached_property
-    def cached_output(self) -> Output:
-        """The buffers the component writes when no `outputs=` is passed."""
-        return fw.allocate(type(self).Output, self.grid, self.allocator)
-
-    def run(self, inputs: Input, outputs: Output | None = None) -> Output:
-        out = outputs if outputs is not None else self.cached_output
-        np.asarray(out.pressure.ndarray)[...] = 0.5 * np.asarray(inputs.pressure.ndarray)
-        return out
+    def run(self, inputs: Input, outputs: Output) -> Output:
+        np.asarray(outputs.pressure.ndarray)[...] = 0.5 * np.asarray(inputs.pressure.ndarray)
+        return outputs
 
 
 @pytest.fixture
@@ -209,15 +198,14 @@ def test_allocate_fill_is_written_on_the_leaf_without_a_host_conversion(
     assert np.all(np.asarray(fields.salt.ndarray) == 4.0)
 
 
-def test_component_writes_its_own_buffers_or_the_callers(grid: base_grid.Grid) -> None:
-    halve = Halve(grid, allocator=None)
+def test_component_writes_the_callers_buffers(grid: base_grid.Grid) -> None:
     pressure = fw.zeros(Pressure, grid, allocator=None)
     np.asarray(pressure.ndarray)[...] = 8.0
-    own = halve.run(Halve.Input(pressure=pressure))
-    assert own is halve.cached_output and own is halve.run(Halve.Input(pressure=pressure))
-    assert np.all(np.asarray(own.pressure.ndarray) == 4.0)
-    given = Halve.Output(pressure=pressure)
-    assert halve.run(Halve.Input(pressure=pressure), outputs=given) is given
+    given = fw.allocate(Halve.Output, grid, allocator=None)
+    assert Halve().run(Halve.Input(pressure=pressure), outputs=given) is given
+    assert np.all(np.asarray(given.pressure.ndarray) == 4.0)
+    # in place: the caller passes the input's buffers as the output
+    Halve().run(Halve.Input(pressure=pressure), outputs=Halve.Output(pressure=pressure))
     assert np.all(np.asarray(pressure.ndarray) == 4.0)
 
 
@@ -226,18 +214,14 @@ def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid
         Input = Halve.Input
         Output = fw.Empty
 
-        @functools.cached_property
-        def cached_output(self) -> fw.Empty:
-            """The empty state the component returns when no `outputs=` is passed."""
-            return fw.Empty()
+        def run(self, inputs: Halve.Input, outputs: fw.Empty) -> fw.Empty:
+            return outputs
 
-        def run(self, inputs: Halve.Input, outputs: fw.Empty | None = None) -> fw.Empty:
-            return outputs if outputs is not None else self.cached_output
-
-    sink = Sink()
     assert list(fw.fields(fw.Empty())) == []
-    own = sink.run(Halve.Input(pressure=fw.zeros(Pressure, grid, allocator=None)))
-    assert isinstance(own, fw.Empty) and own is sink.cached_output
+    empty = fw.Empty()
+    assert (
+        Sink().run(Halve.Input(pressure=fw.zeros(Pressure, grid, allocator=None)), empty) is empty
+    )
 
 
 def test_pairs_swap(grid: base_grid.Grid) -> None:
