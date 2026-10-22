@@ -831,7 +831,7 @@ class Diffusion(fw.Component):
         """The prognostics are diffused in place: `outputs` continues what `inputs` holds."""
         for name in ("vn", "w", "exner", "theta_v"):
             source, target = getattr(inputs, name), getattr(out, name)
-            if target.data is not source.data:
+            if target.ndarray is not source.ndarray:
                 target.data.ndarray[...] = source.data.ndarray
 
     @functools.cached_property

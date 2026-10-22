@@ -6,15 +6,22 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import copy
 import dataclasses
 import functools
+import pickle
 from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims, framework as fw, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    framework as fw,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import base as base_grid, simple
 
 
@@ -85,6 +92,44 @@ def test_field_keeps_its_quantity(grid: base_grid.Grid) -> None:
     assert pressure.quantity is Pressure
     assert pressure.data.ndarray.shape == (grid.num_cells, grid.num_levels)
     assert pressure.data.domain.dims == CELL_K
+
+
+def test_field_is_the_gt4py_field_it_tags(grid: base_grid.Grid) -> None:
+    data = gtx.zeros({dims.CellDim: grid.num_cells, dims.KDim: grid.num_levels}, dtype=ta.wpfloat)
+    pressure = fw.Field(Pressure, data)
+    assert isinstance(pressure, gtx.Field)
+    assert pressure.ndarray is data.ndarray and pressure.domain == data.domain
+    retagged = fw.Field(Pressure, pressure)
+    assert retagged.quantity is Pressure and retagged.ndarray is data.ndarray
+
+
+def test_fields_derived_from_a_field_are_untagged(grid: base_grid.Grid) -> None:
+    pressure = fw.zeros(Pressure, grid, allocator=None)
+    assert not isinstance(pressure + 1.0, fw.Field)
+    assert not isinstance(pressure[dims.CellDim(0) : dims.CellDim(2)], fw.Field)
+
+
+@gtx.field_operator
+def _double(field: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
+    return 2.0 * field
+
+
+def test_a_program_takes_a_field_as_is(grid: base_grid.Grid) -> None:
+    pressure = fw.zeros(Pressure, grid, allocator=None)
+    doubled = fw.zeros(Pressure, grid, allocator=None)
+    np.asarray(pressure.ndarray)[...] = 3.0
+    _double(pressure, out=doubled, offset_provider={})
+    assert np.all(np.asarray(doubled.ndarray) == 6.0)
+
+
+def test_field_copies_keep_the_quantity(grid: base_grid.Grid) -> None:
+    pressure = fw.zeros(Pressure, grid, allocator=None)
+    for copied in (
+        copy.copy(pressure),
+        copy.deepcopy(pressure),
+        pickle.loads(pickle.dumps(pressure)),
+    ):
+        assert isinstance(copied, fw.Field) and copied.quantity is Pressure
 
 
 def test_zeros_resolves_the_precision_at_allocation(

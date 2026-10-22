@@ -346,7 +346,7 @@ class PhysicsDriver(fw.Component):
         """`out` continues the entry's prognostics: they are updated in place."""
         for name, target in fw.fields(out).items():
             source: fw.Field[Any] = getattr(entry, name)
-            if target.data is not source.data:
+            if target.ndarray is not source.ndarray:
                 _array(target)[...] = source.data.ndarray
 
     def _apply(self, entry: physics_state.EntryState, dt_seconds: float, out: Output) -> None:
