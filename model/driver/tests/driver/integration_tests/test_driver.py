@@ -148,14 +148,16 @@ def test_driver(
     fluxes and tmx the turbulent mixing of the v14 reference run. The tracer comparison
     carries residuals from gaps not yet ported:
 
-    - exner / theta_v: recomputed via the exact EOS in ``scatter_to_prognostic``, mirroring
-      ICON's phy2dyn coupling (mo_interface_iconam_aes.f90). Measured on v6: exner ~3e-9
-      (atol=1e-8), theta_v ~7e-9 relative (rtol=3e-8) -- essentially exact.
+    - exner / theta_v: recomputed via the exact EOS in ``Tendencies.update_prognostics``.
+      Measured on v14 (gtfn_cpu, double precision): exner 4.8e-11 (atol=1e-8), theta_v 1.5e-10 relative
+      (rtol=3e-8) -- essentially exact.
     - tracer transport: the driver runs MIURA/PPM advection on the dycore-accumulated
       mass fluxes and airmass, matching the reference configuration (ltransport=.TRUE.),
-      so this validates transport+muphys. Measured on v6 (gtfn_cpu): qc/qr/qs/qi/qg are
-      bit-exact and qv's residual is ~9e-10 (atol=1e-8) -- the remaining gap stems from
-      the clipping / vertical-extent items below.
+      so this validates transport+muphys+tmx. Measured on v14 (gtfn_cpu): qs/qg are
+      bit-exact, qv 1.8e-12, qc 1.6e-12, qi 5.7e-13, qr 1.5e-13 -- the remaining gap
+      stems from the clipping / vertical-extent items below.
+    - vn and w: measured 5.5e-7 and 8.4e-9 (atol=6e-7 and 1e-8), the dynamics' roundoff
+      spread, unchanged by the physics.
     - negative tracers: ICON clips them (iqneg_d2p/iqneg_p2d); the driver does not.
     - vertical extent: ICON runs graupel on jks_cloudy..nlev; muphys runs the full column.
 
