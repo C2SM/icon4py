@@ -16,6 +16,7 @@ updated, and exner, theta_v and vn are updated once at the end.
 from __future__ import annotations
 
 import dataclasses
+import functools
 import typing
 from typing import TYPE_CHECKING, Final
 
@@ -41,6 +42,7 @@ from icon4py.model.common.physics.thermodynamics import (
     compute_tendencies,
 )
 from icon4py.model.common.states import model
+from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -94,8 +96,54 @@ class AdvancedState:
         }
 
 
+@dataclasses.dataclass(frozen=True)
+class SurfaceState:
+    """The surface fields the surface process writes and the other processes read.
+
+    Allocated once with the ``PhysicsState``, zero until the surface process has run. The
+    surface process's outputs are bound to these fields, so it writes them in place, and tmx
+    (later radiation) reads them here rather than another process's outputs by name.
+    """
+
+    fluxes: SurfaceFluxState
+    """The surface fluxes tmx takes as its bottom boundary condition."""
+    exchange_coefficient_momentum: fa.CellField[ta.wpfloat]
+    """Surface exchange coefficient for momentum (``km_sfc``), the lowest level of tmx's ``km``."""
+    exchange_coefficient_heat: fa.CellField[ta.wpfloat]
+    """Surface exchange coefficient for heat (``kh_sfc``), the lowest level of tmx's ``kh``."""
+    surface_temperature: fa.CellField[ta.wpfloat]
+    """Surface temperature (``ts``) [K]."""
+
+    @classmethod
+    def allocate(
+        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
+    ) -> SurfaceState:
+        """Allocate a surface state with all fields initialized to zero."""
+        zero_cell_field = functools.partial(
+            data_alloc.zero_field, grid, dims.CellDim, allocator=allocator
+        )
+        return cls(
+            fluxes=SurfaceFluxState.allocate(grid, allocator=allocator),
+            exchange_coefficient_momentum=zero_cell_field(),
+            exchange_coefficient_heat=zero_cell_field(),
+            surface_temperature=zero_cell_field(),
+        )
+
+    def fields(self) -> dict[str, gtx.Field]:
+        """The fields, flat, by the names the processes declare them with."""
+        return {
+            **{
+                field.name: getattr(self.fluxes, field.name)
+                for field in dataclasses.fields(self.fluxes)
+            },
+            "exchange_coefficient_momentum": self.exchange_coefficient_momentum,
+            "exchange_coefficient_heat": self.exchange_coefficient_heat,
+            "surface_temperature": self.surface_temperature,
+        }
+
+
 class PhysicsState:
-    """What the processes see in one step (ICON dyn2phy, ``field%ta`` / ``diag%``), in four parts.
+    """What the processes see in one step (ICON dyn2phy, ``field%ta`` / ``diag%``), in five parts.
 
     TODO (Yilu): The states in this module need to be vigorously improved when state and component is ready.
     They are workaround so that the refactoring for sequential run is minimal and the advanced variables are clear to users/developers.
@@ -113,6 +161,9 @@ class PhysicsState:
        place by their component. They persist across steps, holding the values of
        the last computed step (zeros before the process has first run).
        ``compute_diagnostics`` never touches them.
+    5. ``surface``, the ``SurfaceState``: the diagnostic outputs of the surface process
+       that the other processes read. An output named like one of its fields is bound
+       to that field instead of a buffer of its own.
     """
 
     def __init__(
@@ -186,6 +237,9 @@ class PhysicsState:
 
         # Diagnostic output buffers, keyed by process name, then by output name
         self._process_outputs: dict[str, dict[str, gtx.Field]] = {}
+        self.surface = SurfaceState.allocate(grid, allocator=backend)
+        # which process writes each surface field: one writer per field
+        self._surface_writers: dict[str, str] = {}
 
     @property
     def diagnostics(self) -> diagnostic_state.DiagnosticState:
@@ -212,12 +266,29 @@ class PhysicsState:
         Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
         is a diagnostic. Tendencies stay component-owned: ``Tendencies`` sums
         them across processes, and recycling needs each process's last tendency.
+
+        A diagnostic named like a field of ``surface`` is bound to that field, which
+        only one process may write; every other diagnostic gets a buffer of its own.
         """
         if process_name in self._process_outputs:
             raise ValueError(f"Process '{process_name}' already has output buffers.")
+        surface_fields = self.surface.fields()
         buffers: dict[str, gtx.Field] = {}
         for name, props in outputs_properties.items():
             if props.kind == model.FieldKind.TENDENCY:
+                continue
+            if (surface_field := surface_fields.get(name)) is not None:
+                if (writer := self._surface_writers.get(name)) is not None:
+                    raise ValueError(
+                        f"Surface field '{name}' is already written by process '{writer}'."
+                    )
+                if props.dims is not None and tuple(props.dims) != tuple(surface_field.domain.dims):
+                    raise ValueError(
+                        f"Output '{name}' of process '{process_name}' declares dims "
+                        f"{tuple(props.dims)}, but the surface field has {surface_field.domain.dims}."
+                    )
+                self._surface_writers[name] = process_name
+                buffers[name] = surface_field
                 continue
             if props.dims is None:
                 raise ValueError(
