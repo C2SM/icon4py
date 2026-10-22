@@ -478,23 +478,24 @@ class Tendencies:
         )
 
         # Scratch buffers — allocated once
-        # TODO(Yilu): rename the following variables including acc?
-        self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self._ddt_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
+        self._virtual_temperature_tendency = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=backend
+        )
+        self._vn_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
-        self._acc: dict[str, gtx.Field] = {
+        self._sums: dict[str, gtx.Field] = {
             tendency_name(name): data_alloc.zero_field(grid, *field_dims, allocator=backend)
             for name, field_dims in AdvancedState.field_dims().items()
         }
 
     @property
-    def acc(self) -> Mapping[str, gtx.Field]:
-        """The tendencies accumulated so far this step, keyed by output name."""
-        return self._acc
+    def sums(self) -> Mapping[str, gtx.Field]:
+        """The tendency sums over the processes so far this step, keyed by tendency name."""
+        return self._sums
 
     def zero(self) -> None:
         """Reset all sums; called by the driver at the start of every run."""
-        for buffer in self._acc.values():
+        for buffer in self._sums.values():
             buffer.ndarray[...] = 0.0  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
     def advance(
@@ -516,10 +517,10 @@ class Tendencies:
         for name, props in outputs_properties.items():
             if props.kind != model.FieldKind.TENDENCY:
                 continue
-            if (buffer := self._acc.get(name)) is None:
+            if (buffer := self._sums.get(name)) is None:
                 raise ValueError(
                     f"Tendency output '{name}' is not the tendency of an 'AdvancedState' field; "
-                    f"expected one of {list(self._acc)}."
+                    f"expected one of {list(self._sums)}."
                 )
             field = outputs[name]
             target = targets[name]
@@ -540,10 +541,18 @@ class Tendencies:
         state: PhysicsState,
         dt_seconds: float,
         perturbed_exner: fa.CellKField[ta.wpfloat] | None = None,
-    ) -> None:
-        acc = self._acc
+    ) -> tuple[list[gtx.Field], list[gtx.Field]]:
+        """Update exner, theta_v, the perturbed exner and vn from the advanced state.
+
+        Returns the fields the physics wrote this step, as ``(cell_fields, edge_fields)``:
+        the advanced tracers and w, exner, theta_v, the perturbed exner when given, and vn.
+        The driver syncs exactly these at the end of the step.
+        """
+        sums = self._sums
         tracers = state.tracers
         assert tracers is not None, "compute_diagnostics must run before update_prognostics"
+        assert state.w is not None and state.exner is not None
+        assert state.theta_v is not None and state.vn is not None
 
         # the tracers, temperature, u, v and w were already advanced by 'advance'
         self._compute_virtual_temperature_tendency(
@@ -556,13 +565,13 @@ class Tendencies:
             qg=tracers.qg,
             temperature=state.diagnostics.temperature,
             virtual_temperature=state.diagnostics.virtual_temperature,
-            virtual_temperature_tendency=self._tv_tendency,
+            virtual_temperature_tendency=self._virtual_temperature_tendency,
         )
         if perturbed_exner is None:
             self._update_exner_and_theta_v(
                 rho=state.rho,
                 virtual_temperature=state.diagnostics.virtual_temperature,
-                virtual_temperature_tendency=self._tv_tendency,
+                virtual_temperature_tendency=self._virtual_temperature_tendency,
                 dtime=dt_seconds,
                 exner=state.exner,
                 theta_v=state.theta_v,
@@ -571,7 +580,7 @@ class Tendencies:
             self._update_exner_theta_v_and_perturbed_exner(
                 rho=state.rho,
                 virtual_temperature=state.diagnostics.virtual_temperature,
-                virtual_temperature_tendency=self._tv_tendency,
+                virtual_temperature_tendency=self._virtual_temperature_tendency,
                 dtime=dt_seconds,
                 exner=state.exner,
                 theta_v=state.theta_v,
@@ -579,13 +588,19 @@ class Tendencies:
             )
 
         self._compute_vn_from_uv(
-            u=acc[tendency_name("u")],
-            v=acc[tendency_name("v")],
-            vn=self._ddt_vn,
+            u=sums[tendency_name("u")],
+            v=sums[tendency_name("v")],
+            vn=self._vn_tendency,
         )
         self._apply_tendency_vn(
             field_a=state.vn,
             coeff=dt_seconds,
-            field_b=self._ddt_vn,
+            field_b=self._vn_tendency,
             output_field=state.vn,
         )
+
+        written_cells: list[gtx.Field] = [getattr(tracers, name) for name in MOISTURE_SPECIES]
+        written_cells += [state.w, state.exner, state.theta_v]
+        if perturbed_exner is not None:
+            written_cells.append(perturbed_exner)
+        return written_cells, [state.vn]

@@ -18,8 +18,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physic
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.components.component_state import ComponentState
 from icon4py.model.common.components.components import Component
+from icon4py.model.common.decomposition import definitions as decomposition
 
 
 if TYPE_CHECKING:
@@ -109,6 +111,10 @@ class PhysicsDriver:
     runs (see ``Tendencies.advance``). Tendency outputs are summed over the
     processes.
 
+    The driver owns the halo exchanges of the interface, as ICON's
+    ``mo_interface_iconam_aes``: the summed wind tendencies before their projection
+    onto vn, and the fields the physics wrote at the end of the step. The granules
+    sync their own inputs and intermediate fields.
     """
 
     def __init__(
@@ -116,10 +122,12 @@ class PhysicsDriver:
         processes: list[PhysicsProcess],
         state: physics_state.PhysicsState,
         tendencies: physics_state.Tendencies,
+        exchange: decomposition.ExchangeRuntime | None = None,
     ) -> None:
         self._processes = processes
         self._state = state
         self._tendencies = tendencies
+        self._exchange = decomposition.SingleNodeExchange() if exchange is None else exchange
         for process in processes:
             process.component.bind_output_buffers(
                 state.allocate_process_outputs(process.name, process.component.outputs_properties)
@@ -140,6 +148,7 @@ class PhysicsDriver:
         interpolation: factory.FieldSource,
         metrics: factory.FieldSource,
         backend: gtx_typing.Backend | None = None,
+        exchange: decomposition.ExchangeRuntime | None = None,
     ) -> PhysicsDriver:
         """Build the driver together with the coupling pieces it owns.
 
@@ -154,6 +163,7 @@ class PhysicsDriver:
             tendencies=physics_state.Tendencies(
                 grid=grid, geometry=geometry, interpolation=interpolation, backend=backend
             ),
+            exchange=exchange,
         )
 
     def run(
@@ -178,5 +188,19 @@ class PhysicsDriver:
             self._tendencies.advance(
                 self._state, outputs, process.component.outputs_properties, dt_seconds
             )
-        self._tendencies.update_prognostics(self._state, dt_seconds, perturbed_exner)
-        # TODO (Yilu): halo exchange
+        # the projection onto vn reads first-halo cells of the summed wind
+        # tendencies from owned edges, which the final sync below cannot repair
+        sums = self._tendencies.sums
+        self._exchange.exchange(
+            dims.CellDim,
+            sums[physics_state.tendency_name("u")],
+            sums[physics_state.tendency_name("v")],
+        )
+        written_cells, written_edges = self._tendencies.update_prognostics(
+            self._state, dt_seconds, perturbed_exner
+        )
+        # the end-of-interface sync of what the physics wrote
+        if written_cells:
+            self._exchange.exchange(dims.CellDim, *written_cells)
+        if written_edges:
+            self._exchange.exchange(dims.EdgeDim, *written_edges)

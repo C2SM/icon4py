@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_drive
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.components.component_state import ComponentState
 from icon4py.model.common.states import model
 from icon4py.model.common.states.model import FieldMetaData
@@ -204,8 +205,28 @@ class RecordingCoupling:
     def advance(self, state, outputs, outputs_properties, dt_seconds) -> None:
         self.events.append(("advance", dict(outputs), dt_seconds))
 
-    def update_prognostics(self, state, dt_seconds, perturbed_exner=None) -> None:
+    #: the tendency sums the driver syncs before the projection onto vn
+    sums: dict = dataclasses.field(default_factory=lambda: {"tend_u": "SUM_TU", "tend_v": "SUM_TV"})
+    #: what update_prognostics reports as written: (cell_fields, edge_fields)
+    written: tuple = ((), ())
+
+    def update_prognostics(self, state, dt_seconds, perturbed_exner=None) -> tuple:
         self.events.append(("update_prognostics", dt_seconds, perturbed_exner))
+        return list(self.written[0]), list(self.written[1])
+
+
+@dataclasses.dataclass
+class RecordingExchange:
+    """Records the exchanges into the coupling's event list, so their order is assertable."""
+
+    events: list
+
+    def exchange(self, dim, *fields) -> None:
+        self.events.append(("exchange", dim, fields))
+
+
+#: the sync of the summed wind tendencies that precedes every update_prognostics
+_WIND_TENDENCY_SYNC = ("exchange", dims.CellDim, ("SUM_TU", "SUM_TV"))
 
 
 def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
@@ -214,6 +235,7 @@ def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
         processes=processes,
         state=coupling,
         tendencies=coupling,
+        exchange=RecordingExchange(coupling.events),
     )
     return driver, coupling
 
@@ -255,6 +277,7 @@ def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
         ("zero",),
         ("advance", {"tend_temperature": "A"}, 300.0),
         ("advance", {"tend_temperature": "B", "kh": "KH"}, 300.0),
+        _WIND_TENDENCY_SYNC,
         ("update_prognostics", 300.0, None),
     ]
     # both processes translated the same PhysicsState object, advanced in place in between
@@ -318,6 +341,7 @@ def test_out_of_window_process_does_nothing() -> None:
         ("compute_diagnostics", "prog", "diag"),
         ("zero",),
         ("advance", {}, 300.0),
+        _WIND_TENDENCY_SYNC,
         ("update_prognostics", 300.0, None),
     ]
 
@@ -400,3 +424,67 @@ def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:
     # before any run: the layer allocated, the component adopted the buffer
     assert comp.bound == {"kh": "BUF_kh"}
     assert driver.process_outputs["tmx"] == {"kh": "BUF_kh"}
+
+
+def test_run_syncs_the_wind_tendency_sums_before_the_prognostic_update() -> None:
+    state = RecordingComponentState()
+    comp = RecordingComponent(
+        outputs={"tend_u": "TU", "tend_v": "TV"},
+        output_kinds={"tend_u": model.FieldKind.TENDENCY, "tend_v": model.FieldKind.TENDENCY},
+    )
+    driver, coupling = _driver(
+        [PhysicsProcess(name="tmx", component=comp, state=state, time_control=_tc())]
+    )
+
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + _DT,
+    )
+
+    assert coupling.events.index(_WIND_TENDENCY_SYNC) < coupling.events.index(
+        ("update_prognostics", 300.0, None)
+    )
+
+
+def test_run_syncs_the_written_cell_and_edge_fields_after_the_prognostic_update() -> None:
+    state = RecordingComponentState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "T"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
+    )
+    driver, coupling = _driver(
+        [PhysicsProcess(name="muphys", component=comp, state=state, time_control=_tc())]
+    )
+    coupling.written = (("QV", "EXNER", "THETA_V"), ("VN",))
+
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + _DT,
+    )
+
+    update = coupling.events.index(("update_prognostics", 300.0, None))
+    assert coupling.events[update + 1 :] == [
+        ("exchange", dims.CellDim, ("QV", "EXNER", "THETA_V")),
+        ("exchange", dims.EdgeDim, ("VN",)),
+    ]
+
+
+def test_run_does_not_sync_when_nothing_was_written() -> None:
+    driver, coupling = _driver([])
+
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + _DT,
+    )
+
+    update = coupling.events.index(("update_prognostics", 300.0, None))
+    assert coupling.events[update + 1 :] == []

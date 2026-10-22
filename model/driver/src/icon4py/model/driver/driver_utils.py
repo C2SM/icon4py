@@ -537,6 +537,7 @@ def initialize_granules(
             interpolation=interpolation_field_source,
             metrics=metrics_field_source,
             backend=backend,
+            exchange=exchange,
         )
 
     return Granules(

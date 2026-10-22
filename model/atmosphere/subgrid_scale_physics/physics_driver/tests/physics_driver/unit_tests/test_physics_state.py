@@ -181,8 +181,8 @@ def test_advance_sums_tendencies_and_skips_diagnostics():
     acc.advance(ws, out, props, _DT_SECONDS)
     acc.advance(ws, out, props, _DT_SECONDS)  # a second process contributing the same tendency
 
-    np.testing.assert_allclose(acc.acc["tend_qv"].asnumpy(), 2e-7, rtol=1e-12)
-    assert "km" not in acc.acc
+    np.testing.assert_allclose(acc.sums["tend_qv"].asnumpy(), 2e-7, rtol=1e-12)
+    assert "km" not in acc.sums
 
 
 def test_zero_resets_between_steps():
@@ -198,7 +198,7 @@ def test_zero_resets_between_steps():
     acc.zero()
     acc.advance(ws, out, props, _DT_SECONDS)
 
-    np.testing.assert_allclose(acc.acc["tend_qv"].asnumpy(), 1e-7, rtol=1e-12)
+    np.testing.assert_allclose(acc.sums["tend_qv"].asnumpy(), 1e-7, rtol=1e-12)
 
 
 # ---------------------------------------------------------------------------
@@ -294,15 +294,15 @@ def test_update_projects_accumulated_wind_tendency_to_vn():
 def test_tendencies_start_with_a_zero_sum_per_advanced_field():
     tendencies = _tendencies(simple.simple_grid())
 
-    assert set(tendencies.acc) == {
+    assert set(tendencies.sums) == {
         physics_state.tendency_name(field.name)
         for field in dataclasses.fields(physics_state.AdvancedState)
     }
-    for buffer in tendencies.acc.values():
+    for buffer in tendencies.sums.values():
         np.testing.assert_array_equal(buffer.asnumpy(), 0.0)
     # the dims come from the field annotations: w lives on half levels
-    assert tendencies.acc["tend_w"].domain.dims == (dims.CellDim, dims.KHalfDim)
-    assert tendencies.acc["tend_temperature"].domain.dims == (dims.CellDim, dims.KDim)
+    assert tendencies.sums["tend_w"].domain.dims == (dims.CellDim, dims.KHalfDim)
+    assert tendencies.sums["tend_temperature"].domain.dims == (dims.CellDim, dims.KDim)
 
 
 def test_advance_rejects_a_tendency_of_no_advanced_field():
@@ -471,3 +471,29 @@ def test_allocate_process_outputs_rejects_wrong_dims_for_a_surface_field():
         ws.allocate_process_outputs(
             "surface", {"sensible_heat_flux": _meta(dims.CellDim, dims.KDim)}
         )
+
+
+def test_update_prognostics_returns_the_written_fields():
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+    prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
+    tracers = _tracer_state(grid, qv=1e-3)
+    ws.compute_diagnostics(prognostic, tracers, _diagnostic_state(grid))
+    acc = _accumulated(
+        grid, ws, tend_temperature=data_alloc.constant_field(grid, 1e-3, dims.CellDim, dims.KDim)
+    )
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+
+    written_cells, written_edges = acc.update_prognostics(
+        ws, dt_seconds=_DT_SECONDS, perturbed_exner=perturbed_exner
+    )
+
+    # identity, not equality: the driver's sync must target the very buffers that were written
+    assert [id(f) for f in written_cells] == [
+        *(id(getattr(tracers, name)) for name in physics_state.MOISTURE_SPECIES),
+        id(prognostic.w),
+        id(prognostic.exner),
+        id(prognostic.theta_v),
+        id(perturbed_exner),
+    ]
+    assert [id(f) for f in written_edges] == [id(prognostic.vn)]
