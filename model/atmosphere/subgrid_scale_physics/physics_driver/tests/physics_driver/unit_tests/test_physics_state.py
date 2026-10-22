@@ -409,3 +409,65 @@ def test_process_outputs_are_not_set_as_attributes():
     ws.allocate_process_outputs("tmx", {"kh": _meta(dims.CellDim, dims.KDim)})
 
     assert not hasattr(ws, "kh")
+
+
+# ---------------------------------------------------------------------------
+# The surface state
+# ---------------------------------------------------------------------------
+
+
+def test_surface_state_is_allocated_with_the_physics_state():
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+
+    fields = ws.surface.fields()
+    assert set(fields) == {
+        "evapotranspiration",
+        "sensible_heat_flux",
+        "latent_heat_flux",
+        "u_stress",
+        "v_stress",
+        "q_snocpymlt",
+        "thermal_energy_flux",
+        "vapor_energy_flux",
+        "exchange_coefficient_momentum",
+        "exchange_coefficient_heat",
+        "surface_temperature",
+    }
+    for field in fields.values():
+        assert field.domain.dims == (dims.CellDim,)
+        assert np.all(field.asnumpy() == 0.0)
+
+
+def test_allocate_process_outputs_binds_surface_fields_and_allocates_the_rest():
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+
+    buffers = ws.allocate_process_outputs(
+        "surface",
+        {"sensible_heat_flux": _meta(dims.CellDim), "kh": _meta(dims.CellDim, dims.KDim)},
+    )
+
+    # identity: the surface process writes the shared surface state in place
+    assert buffers["sensible_heat_flux"] is ws.surface.fluxes.sensible_heat_flux
+    assert buffers["kh"] is not ws.surface.fluxes.sensible_heat_flux
+    assert buffers["kh"].domain.dims == (dims.CellDim, dims.KDim)
+
+
+def test_allocate_process_outputs_rejects_a_second_writer_of_a_surface_field():
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+    ws.allocate_process_outputs("surface", {"surface_temperature": _meta(dims.CellDim)})
+
+    with pytest.raises(ValueError, match="already written by process 'surface'"):
+        ws.allocate_process_outputs("ocean", {"surface_temperature": _meta(dims.CellDim)})
+
+
+def test_allocate_process_outputs_rejects_wrong_dims_for_a_surface_field():
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+
+    with pytest.raises(ValueError, match="declares dims"):
+        ws.allocate_process_outputs(
+            "surface", {"sensible_heat_flux": _meta(dims.CellDim, dims.KDim)}
+        )
