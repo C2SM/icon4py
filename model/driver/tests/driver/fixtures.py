@@ -70,7 +70,6 @@ def _make_config(
     return config.with_overrides(
         driver={
             "dtime": time.RelativeTime(seconds=50),
-            "enable_output": False,
             "end_of_simulation": time.NumTimeSteps(BENCHMARK_STEPS),
         }
     )

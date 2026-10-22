@@ -26,7 +26,7 @@ from icon4py.model.common import dimension as dims, time
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base, vertical as v_grid
-from icon4py.model.common.io import distributed, netcdf_writers, ugrid, writers
+from icon4py.model.common.io import distributed, netcdf_writers, ugrid, utils as io_utils, writers
 from icon4py.model.common.io.io import (
     PHASE_DISTRIBUTE,
     PHASE_WRITE,
@@ -40,6 +40,7 @@ from icon4py.model.common.io.io import (
     generate_name,
 )
 from icon4py.model.common.states import data
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils
 
 from ...fixtures import test_path
@@ -90,10 +91,9 @@ def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
         ),
         vct_b=None,
     )
-    config = IOConfig(field_groups=[_single_group()])
+    config = IOConfig(output_path=test_path / "output", field_groups=[_single_group()])
     monitor = IOMonitor(
         config=config,
-        output_path=test_path / "output",
         vertical_size=vertical_params,
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
@@ -117,10 +117,9 @@ def test_io_monitor_write_ugrid_file(test_path: pathlib.Path) -> None:
         vct_b=None,
     )
 
-    config = IOConfig(field_groups=[_single_group()])
+    config = IOConfig(output_path=test_path / "output", field_groups=[_single_group()])
     monitor = IOMonitor(
         config=config,
-        output_path=test_path / "output",
         vertical_size=vertical_params,
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
@@ -169,10 +168,9 @@ def test_io_monitor_write_and_read_ugrid_dataset(
             nc_comment="Writing dummy data from icon4py for testing.",
         )
     ]
-    config = IOConfig(field_groups=field_configs)
+    config = IOConfig(output_path=test_path / "output", field_groups=field_configs)
     monitor = IOMonitor(
         config=config,
-        output_path=test_path / "output",
         vertical_size=vertical_params,
         horizontal_size=grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
@@ -744,11 +742,10 @@ def _simple_grid_vertical() -> v_grid.VerticalGrid:
 
 def test_io_monitor_ugrid_failure_raises_runtime_error(test_path: pathlib.Path) -> None:
     # a broken grid file must fail loudly (and, in a distributed run, on all ranks)
-    config = IOConfig(field_groups=[_single_group()])
+    config = IOConfig(output_path=test_path / "output", field_groups=[_single_group()])
     with pytest.raises(RuntimeError, match="UGRID topology"):
         IOMonitor(
             config=config,
-            output_path=test_path / "output",
             vertical_size=_simple_grid_vertical(),
             horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
             grid_file_name=test_path / "does_not_exist.nc",
@@ -761,13 +758,13 @@ def test_io_monitor_ugrid_failure_raises_runtime_error(test_path: pathlib.Path) 
 
 def test_io_config_time_properties_reach_field_group_monitors(test_path: pathlib.Path) -> None:
     config = IOConfig(
+        output_path=test_path / "output",
         field_groups=[FieldGroupIOConfig(basename="t", variables=["air_density"])],
         time_units="hours since 2000-01-01",
         calendar="standard",
     )
     monitor = IOMonitor(
         config=config,
-        output_path=test_path / "output",
         vertical_size=_simple_grid_vertical(),
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
@@ -828,6 +825,7 @@ def test_io_monitor_builds_alignment_aware_rank_block_distributions(
         horizontal_shard_size=8,
     )
     config = IOConfig(
+        output_path=test_path / "output",
         field_groups=[
             FieldGroupIOConfig(basename="a", **sharded),  # type: ignore[arg-type]
             FieldGroupIOConfig(basename="b", **sharded),  # type: ignore[arg-type]
@@ -841,7 +839,6 @@ def test_io_monitor_builds_alignment_aware_rank_block_distributions(
     )
     monitor = IOMonitor(
         config=config,
-        output_path=test_path / "output",
         vertical_size=_simple_grid_vertical(),
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
@@ -916,6 +913,7 @@ def test_fieldgroup_config_rejects_non_integer_timesteps_per_file(value: object)
 def test_io_monitor_variables_at_capture_time(test_path: pathlib.Path) -> None:
     """The union of the variables of the groups capturing at the current store call."""
     config = IOConfig(
+        output_path=test_path / "output",
         field_groups=[
             FieldGroupIOConfig(
                 basename="every_step",
@@ -930,11 +928,10 @@ def test_io_monitor_variables_at_capture_time(test_path: pathlib.Path) -> None:
                 backend=OutputBackend.NETCDF,
                 mode=OutputMode.GATHER,
             ),
-        ]
+        ],
     )
     monitor = IOMonitor(
         config=config,
-        output_path=test_path / "output",
         vertical_size=_simple_grid_vertical(),
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
@@ -954,6 +951,51 @@ def test_io_monitor_variables_at_capture_time(test_path: pathlib.Path) -> None:
     monitor.store(state, step_time + dt.timedelta(hours=1))
     assert monitor.variables_at_capture_time() == {"air_density", "exner_function"}
     monitor.close()
+
+
+def test_io_monitor_writes_horizontal_only_fields(test_path: pathlib.Path) -> None:
+    """A purely horizontal (surface) field is written as (time, cell) next to the 3D ones."""
+    grid = test_io_utils.simple_grid
+    state = test_io_utils.model_state(grid)
+    state["surface_pressure"] = io_utils.to_data_array(
+        data_alloc.random_field(grid, dims.CellDim),
+        data.DIAGNOSTIC_CF_ATTRIBUTES["surface_pressure"],
+    )
+    config = IOConfig(
+        output_path=test_path / "output",
+        field_groups=[
+            FieldGroupIOConfig(
+                basename="surface",
+                variables=["surface_pressure", "air_density"],
+                backend=OutputBackend.NETCDF,
+                mode=OutputMode.GATHER,
+            )
+        ],
+    )
+    monitor = IOMonitor(
+        config=config,
+        vertical_size=_simple_grid_vertical(),
+        horizontal_size=grid.config.horizontal_config,
+        grid_file_name=test_io_utils.grid_file,
+        grid_id=uuid.UUID(grid.id),
+        dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
+        decomposition_info=None,
+    )
+    step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
+    monitor.store(state, step_time)
+    monitor.store(state, step_time + dt.timedelta(hours=1))
+    monitor.close()
+
+    (output_file,) = sorted(monitor.path.glob("surface_*.nc"))
+    with ugrid.load_data_file(output_file) as ds:
+        assert ds["surface_pressure"].dims == ("time", "cell")
+        assert ds["surface_pressure"].shape == (2, grid.num_cells)
+        assert ds["surface_pressure"].attrs["standard_name"] == "air_pressure_at_ground_level"
+        np.testing.assert_array_equal(
+            ds["surface_pressure"].values[1], state["surface_pressure"].values
+        )
+        assert ds["air_density"].dims == ("time", "level", "cell")
 
 
 @pytest.mark.parametrize(
@@ -999,6 +1041,7 @@ def test_fieldgroup_config_yaml_rejects_untagged_interval() -> None:
 def test_io_config_yaml_roundtrip_two_groups() -> None:
     yaml_str = textwrap.dedent(
         """\
+        output_path: output
         field_groups:
           - basename: winds
             variables:
@@ -1032,6 +1075,7 @@ def test_io_config_yaml_roundtrip_two_groups() -> None:
         """
     )
     config = config_io.read_yaml_str(yaml_str, IOConfig)
+    assert config.output_path == pathlib.Path("output")
     assert [group.basename for group in config.field_groups] == ["winds", "precipitation"]
     assert config.field_groups[0].output_interval == 10
     assert config.field_groups[1].backend is OutputBackend.NETCDF

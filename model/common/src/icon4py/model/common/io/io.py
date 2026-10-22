@@ -15,7 +15,8 @@ import posixpath
 import statistics
 import timeit
 import uuid
-from typing import Annotated, Any, Final, TypeAlias
+from collections.abc import Iterator
+from typing import Annotated, Any, Final, Self, TypeAlias
 
 from icon4py.model.common import exceptions, time
 from icon4py.model.common.components import monitor
@@ -74,6 +75,9 @@ FILE_SUFFIXES: Final[dict[OutputBackend, str]] = {
     OutputBackend.NETCDF: ".nc",
     OutputBackend.ZARR: ".zarr",
 }
+
+#: Default output directory of an ``IOConfig``.
+DEFAULT_OUTPUT_PATH: Final[pathlib.Path] = pathlib.Path("./output")
 
 #: Timed phases of a capture step: "distribute" (collective gather / halo stripping)
 #: and "write" (file/store output).
@@ -213,6 +217,18 @@ class FieldGroupIOConfig:
             )
         self._validate()
 
+    @classmethod
+    def __examples__(cls) -> Iterator[tuple[Self, type[Self]]]:
+        """A valid field group for the configuration documentation (``config.config_doc``)."""
+        yield (
+            cls(
+                basename="winds",
+                variables=["eastward_wind", "northward_wind"],
+                output_interval=time.NumTimeSteps(10),
+            ),
+            cls,
+        )
+
     @property
     def block_alignment(self) -> int:
         """Granularity the distributed-mode rank-block size must be a multiple of.
@@ -308,12 +324,20 @@ class FieldGroupIOConfig:
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class IOConfig:
     """
-    Configuration of the output: the field groups and the time coordinate of their files.
+    Configuration of the output: the output directory, the field groups and the time
+    coordinate of their files.
 
-    The output directory is not part of it; the ``IOMonitor`` receives it from its caller.
     Validated on construction.
     """
 
+    output_path: Annotated[
+        pathlib.Path,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Output directory, the root of all field groups; relative to the working directory."
+            ),
+        ),
+    ] = DEFAULT_OUTPUT_PATH
     field_groups: Annotated[
         list[FieldGroupIOConfig],
         common_conf_opt.ConfigOption(
@@ -352,13 +376,24 @@ class IOConfig:
                 f"{', '.join(sorted(duplicates))}."
             )
 
+    @classmethod
+    def __examples__(cls) -> Iterator[tuple[Self, type[Self]]]:
+        """A valid output configuration for the configuration documentation."""
+        yield (
+            cls(
+                output_path=pathlib.Path("output"),
+                field_groups=[group for group, _ in FieldGroupIOConfig.__examples__()],
+            ),
+            cls,
+        )
+
 
 class IOMonitor(monitor.Monitor):
     """
     Composite Monitor for all IO groups.
 
-    Every field group writes its file series below ``output_path``, the run's output
-    directory. In a distributed run (multi-rank ``process_props``) the decomposition info
+    Every field group writes its file series below the output directory of ``config``.
+    In a distributed run (multi-rank ``process_props``) the decomposition info
     is required: each field group writes through the output distribution of its
     configured ``mode`` (see ``OutputMode``). ``store`` is then collective on the
     communicator in ``process_props``.
@@ -368,7 +403,6 @@ class IOMonitor(monitor.Monitor):
         self,
         *,
         config: IOConfig,
-        output_path: pathlib.Path,
         vertical_size: v_grid.VerticalGrid,
         horizontal_size: base.HorizontalGridSize,
         grid_file_name: pathlib.Path,
@@ -387,7 +421,7 @@ class IOMonitor(monitor.Monitor):
         self._process_props = process_props
         self._decomposition_info = decomposition_info
         self._horizontal_size = horizontal_size
-        self._output_path = output_path
+        self._output_path = config.output_path
         self._distributions: dict[tuple[OutputMode, int], distributed.OutputDistribution] = {}
         self._timings_logged = False
         self._initialize_output()

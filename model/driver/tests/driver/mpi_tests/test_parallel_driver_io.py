@@ -75,13 +75,8 @@ def _run_driver_with_output(
 
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
-        driver={
-            "output_path": output_path,
-            "enable_output": True,
-            "output_backend": output_backend,
-            "output_mode": output_mode,
-            "end_of_simulation": time.NumTimeSteps(1),
-        }
+        driver={"end_of_simulation": time.NumTimeSteps(1)},
+        io=driver_io.default_io_config(output_path, backend=output_backend, mode=output_mode),
     )
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
@@ -95,7 +90,8 @@ def _run_driver_with_output(
         process_props=process_props,
         backend=backend,
     )
-    return icon4py_driver.config.driver.output_path
+    assert icon4py_driver.config.io is not None
+    return icon4py_driver.config.io.output_path
 
 
 def _open_single_output(

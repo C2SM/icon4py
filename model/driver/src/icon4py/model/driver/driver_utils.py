@@ -638,7 +638,7 @@ def display_driver_setup_in_log_file(
     log.info(f"Initial diffusion      : {config.diffuse_before_time_loop}")
     log.info(f"Statistics enabled     : {config.enable_statistics_logging}")
     log.info(f"Active tracers         : {tracer_config}")
-    log.info(f"Output enabled         : {config.enable_output}")
+    log.info(f"Output enabled         : {io_config is not None}")
     if io_config is not None:
         for group in io_config.field_groups:
             log.info(_describe_output_group(group))

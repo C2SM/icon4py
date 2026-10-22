@@ -99,8 +99,13 @@ for float_type in (np.float32, np.float64):
 yaml.add_representer(type(None), lambda d, _: d.represent_scalar("tag:yaml.org,2002:null", ""))
 
 
+def load_yaml(yaml_str: str) -> typing.Any:
+    """Parse a YAML document into plain Python data, the input of ``CONV.structure``."""
+    return yaml.safe_load(yaml_str)
+
+
 def read_yaml_str[T](yaml_str: str, config_cls: type[T]) -> T:
-    return CONV.structure(yaml.safe_load(yaml_str), config_cls)
+    return CONV.structure(load_yaml(yaml_str), config_cls)
 
 
 def write_yaml_str[T](config_inst: T) -> str:

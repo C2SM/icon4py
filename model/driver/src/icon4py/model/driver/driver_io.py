@@ -20,17 +20,16 @@ The variables a run can write come from four sources:
 
 :func:`validate_output_variables` checks the field groups of an ``IOConfig`` against
 these sources at setup; :class:`OutputStateAssembler` assembles, at a capture step,
-exactly the variables the capturing groups request. :func:`resolve_io_config` picks
-the configured ``io`` section or the built-in default group, and
-:func:`create_io_monitor` builds the ``IOMonitor`` that writes one file series per
-field group.
+exactly the variables the capturing groups request. :func:`default_io_config` builds
+the built-in default group (every variable of the prognostic state and the standard
+diagnostics), and :func:`create_io_monitor` the ``IOMonitor`` that writes one file
+series per field group.
 """
 
-import logging
 import pathlib
 import uuid
 from collections.abc import Collection, Mapping
-from typing import Any, Final
+from typing import Any, Final, NamedTuple, Self
 
 import gt4py.next as gtx
 import xarray as xr
@@ -52,10 +51,6 @@ from icon4py.model.common.states import (
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import config as driver_config
-
-
-log = logging.getLogger(__name__)
 
 
 #: File-name stub of the built-in default output group (a counter + the backend's suffix,
@@ -151,27 +146,42 @@ DIAGNOSTIC_VARIABLES: Final[list[str]] = [
     "temperature",
     "virtual_temperature",
     "pressure",
+    "surface_pressure",
 ]
 
 #: The output variables of the built-in default group (prognostic + diagnostic).
 DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [*PROGNOSTIC_VARIABLES, *DIAGNOSTIC_VARIABLES]
 
-#: The diagnostic variables each family of programs of the ``DiagnosticsComputer`` provides.
-_TEMPERATURE_FAMILY: Final[frozenset[str]] = frozenset({"temperature", "virtual_temperature"})
-_WIND_FAMILY: Final[frozenset[str]] = frozenset({"eastward_wind", "northward_wind"})
-_PRESSURE_FAMILY: Final[frozenset[str]] = frozenset({"pressure"})
+
+class _Programs(NamedTuple):
+    """Which programs of the ``DiagnosticsComputer`` a set of variables needs."""
+
+    temperature: bool
+    winds: bool
+    pressure: bool
+
+    @classmethod
+    def needed_by(cls, variables: Collection[str]) -> Self:
+        requested = frozenset(variables)
+        pressure = bool(requested & {"pressure", "surface_pressure"})
+        return cls(
+            # the pressure program integrates the virtual temperature hydrostatically
+            temperature=pressure or bool(requested & {"temperature", "virtual_temperature"}),
+            winds=bool(requested & {"eastward_wind", "northward_wind"}),
+            pressure=pressure,
+        )
 
 
 class DiagnosticsComputer:
     """Diagnoses the requested standard diagnostic output fields.
 
-    Three families of programs: temperature and virtual temperature from ``theta_v``,
-    ``exner`` and the active tracers (an inactive species counts as zero, so a dry run
-    gives the dry-air temperature); the cell winds by RBF interpolation of ``vn``; and
-    pressure by vertical integration from the diagnosed surface pressure, which needs
-    the virtual temperature. :meth:`compute` runs only the families the variables of
-    the call need, so a group that writes just the winds pays for neither temperature
-    nor pressure.
+    Three programs: temperature and virtual temperature from ``theta_v``, ``exner`` and
+    the active tracers (an inactive species counts as zero, so a dry run gives the
+    dry-air temperature); the cell winds by RBF interpolation of ``vn``; and the pressure
+    on the model levels and at the surface by vertical integration from the diagnosed
+    surface pressure, which needs the virtual temperature. :meth:`compute` runs only the
+    programs the variables of the call need (``_Programs``), so a group that writes just
+    the winds pays for neither temperature nor pressure.
 
     The scratch/output buffers are allocated **once** and reused on every call (no
     per-step allocation, significant on GPU backends); the static inputs of the
@@ -229,18 +239,23 @@ class DiagnosticsComputer:
         self._u = _zero_full()
         self._v = _zero_full()
         self._pressure = _zero_full()
-        # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
-        # in-place buffer fills below would not type-check against the precise Field type.
-        self._pressure_on_cells_half_levels: Any = _zero_interface()
         self._pressure_ifc_on_model_levels = _zero_full()
+        # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
+        # in-place copy of the surface row in ``compute`` would not type-check against the
+        # precise Field type.
+        self._pressure_on_cells_half_levels: Any = _zero_interface()
+        self._surface_pressure: Any = data_alloc.zero_field(
+            grid, dims.CellDim, dtype=ta.wpfloat, allocator=backend
+        )
 
-        # static inputs, fetched only for the families some variable needs
+        # static inputs, fetched only for the programs some variable needs
+        programs = _Programs.needed_by(requested)
         self._ddqz_z_full: gtx.Field | None = (
-            metrics.get(metrics_attr.DDQZ_Z_FULL) if requested & _PRESSURE_FAMILY else None
+            metrics.get(metrics_attr.DDQZ_Z_FULL) if programs.pressure else None
         )
         self._rbf_vec_coeff_c1: gtx.Field | None = None
         self._rbf_vec_coeff_c2: gtx.Field | None = None
-        if requested & _WIND_FAMILY:
+        if programs.winds:
             self._rbf_vec_coeff_c1 = interpolation.get(intp_attr.RBF_VEC_COEFF_C1)
             self._rbf_vec_coeff_c2 = interpolation.get(intp_attr.RBF_VEC_COEFF_C2)
 
@@ -271,8 +286,9 @@ class DiagnosticsComputer:
         backend = self._backend
         num_levels = self._num_levels
         end_cell_end = self._end_cell_end
+        programs = _Programs.needed_by(requested)
 
-        if requested & (_TEMPERATURE_FAMILY | _PRESSURE_FAMILY):
+        if programs.temperature:
             compute_temperature.compute_virtual_temperature_and_temperature.with_backend(backend)(
                 qv=self._tracer_or_zero(tracer_state.qv),
                 qc=self._tracer_or_zero(tracer_state.qc),
@@ -291,7 +307,7 @@ class DiagnosticsComputer:
                 offset_provider={},
             )
 
-        if requested & _WIND_FAMILY:
+        if programs.winds:
             assert self._rbf_vec_coeff_c1 is not None and self._rbf_vec_coeff_c2 is not None
             rbf.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
                 p_e_in=prognostic_state.vn,
@@ -306,7 +322,7 @@ class DiagnosticsComputer:
                 offset_provider={"C2E2C2E": self._grid.get_connectivity("C2E2C2E")},
             )
 
-        if requested & _PRESSURE_FAMILY:
+        if programs.pressure:
             assert self._ddqz_z_full is not None
             compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(backend)(
                 exner=prognostic_state.exner,
@@ -321,6 +337,10 @@ class DiagnosticsComputer:
                 vertical_end=num_levels,
                 offset_provider={},
             )
+            # the surface pressure is the bottom row of the half-level pressure
+            self._surface_pressure.ndarray[:] = self._pressure_on_cells_half_levels.ndarray[
+                :, num_levels
+            ]
 
         buffers = {
             "eastward_wind": self._u,
@@ -328,6 +348,7 @@ class DiagnosticsComputer:
             "temperature": self._temperature,
             "virtual_temperature": self._virtual_temperature,
             "pressure": self._pressure,
+            "surface_pressure": self._surface_pressure,
         }
         return {name: buffers[name] for name in DIAGNOSTIC_VARIABLES if name in requested}
 
@@ -358,25 +379,15 @@ def physics_diagnostic_outputs(
     """The diagnostic outputs of the physics processes offered as output variables.
 
     Keyed by the CF ``standard_name`` of the output's metadata, e.g. ``precipitation_flux``
-    for the ``pflx`` output of muphys. Only fields with a vertical dimension are offered:
-    the writers do not support purely horizontal fields, so a 2D output is skipped (and
-    logged). Without physics there are none. The buffers hold the values of the last
+    for the ``pflx`` output of muphys; surface (purely horizontal) outputs are offered like
+    the others. Without physics there are none. The buffers hold the values of the last
     step the process ran, and zeros before that.
-
-    TODO(kotsaloscv): offer the surface (2D) physics outputs once the writers support
-    purely horizontal fields.
     """
     outputs: dict[str, physics_state.DiagnosticOutput] = {}
     if physics_diagnostics is None:
         return outputs
     for output in physics_diagnostics.outputs():
         name = output.metadata.standard_name
-        if not any(d.kind == gtx.DimensionKind.VERTICAL for d in output.field.domain.dims):
-            log.info(
-                f"Physics diagnostic '{output.name}' of process '{output.process_name}' "
-                f"('{name}') has no vertical dimension and cannot be written as output."
-            )
-            continue
         if name in outputs:
             raise ValueError(
                 f"Physics diagnostic output '{name}' is provided by more than one process: "
@@ -401,29 +412,30 @@ def physics_diagnostics_to_dataarrays(
 # --------------------------------------------------------------------------------------
 
 
-def default_io_config(config: driver_config.DriverConfig) -> common_io.IOConfig:
-    """The output configuration of a run without an ``io`` section.
+def default_io_config(
+    output_path: pathlib.Path = common_io.DEFAULT_OUTPUT_PATH,
+    *,
+    backend: common_io.OutputBackend = common_io.OutputBackend.ZARR,
+    mode: common_io.OutputMode = common_io.OutputMode.DISTRIBUTED,
+) -> common_io.IOConfig:
+    """The built-in default output configuration (``--enable-output`` without an ``io`` section).
 
     One field group holding all prognostic and diagnostic variables, captured every
-    step, written with the driver's ``output_backend`` and ``output_mode``.
+    step, written below ``output_path`` in the given format and write strategy.
     """
     return common_io.IOConfig(
+        output_path=output_path,
         field_groups=[
             common_io.FieldGroupIOConfig(
                 basename=DEFAULT_OUTPUT_BASENAME,
                 variables=list(DEFAULT_OUTPUT_VARIABLES),
-                backend=config.output_backend,
-                mode=config.output_mode,
+                backend=backend,
+                mode=mode,
                 nc_title="ICON4Py output",
                 nc_comment="Fields computed by ICON4Py.",
             )
-        ]
+        ],
     )
-
-
-def resolve_io_config(config: driver_config.ExperimentConfig) -> common_io.IOConfig:
-    """The configured ``io`` section, or the built-in default group without one."""
-    return config.io if config.io is not None else default_io_config(config.driver)
 
 
 def requested_output_variables(io_config: common_io.IOConfig) -> set[str]:
@@ -577,7 +589,6 @@ class OutputStateAssembler:
 def create_io_monitor(
     *,
     io_config: common_io.IOConfig,
-    output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     grid: grid_base.Grid,
     vertical_grid: v_grid.VerticalGrid,
@@ -585,7 +596,7 @@ def create_io_monitor(
     process_props: decomposition_defs.ProcessProperties,
     decomposition_info: decomposition_defs.DecompositionInfo | None,
 ) -> common_io.IOMonitor:
-    """Build the ``IOMonitor`` writing the field groups of ``io_config`` below
+    """Build the ``IOMonitor`` writing the field groups of ``io_config`` below its
     ``output_path``.
 
     In a distributed run (multi-rank ``process_props``) ``decomposition_info`` is
@@ -594,7 +605,6 @@ def create_io_monitor(
     """
     return common_io.IOMonitor(
         config=io_config,
-        output_path=output_path,
         vertical_size=vertical_grid,
         horizontal_size=grid.config.horizontal_config,
         grid_file_name=grid_file_path,

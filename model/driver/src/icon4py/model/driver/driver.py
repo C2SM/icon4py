@@ -706,14 +706,14 @@ def initialize_driver(
     process_props: decomposition_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
 ) -> Icon4pyDriver:
-    output_path = driver_config.prepare_output_directory(
-        config_output_path=config.driver.output_path,
-        cli_output_path=None,
-        process_props=process_props,
-    )
-    config = dataclasses.replace(
-        config, driver=dataclasses.replace(config.driver, output_path=output_path)
-    )
+    if config.io is not None:
+        # an existing output directory is never reused: a timestamped one is created
+        output_path = driver_config.prepare_output_directory(
+            config_output_path=config.io.output_path,
+            cli_output_path=None,
+            process_props=process_props,
+        )
+        config = config.with_overrides(io=dataclasses.replace(config.io, output_path=output_path))
 
     allocator = model_backends.get_allocator(backend)
 
@@ -765,25 +765,18 @@ def initialize_driver(
         backend=backend,
     )
     io_monitor = None
-    if config.io is not None and not config.driver.enable_output:
-        log.warning(
-            "The configuration has an 'io' section but 'driver.enable_output' is false: "
-            "no output is written."
-        )
-    if config.driver.enable_output:
+    if config.io is not None:
         log.info("Initializing IO monitor")
-        io_config = driver_io.resolve_io_config(config)
         # an unknown or ambiguous variable fails before the monitor creates any output file
         driver_io.validate_output_config(
-            io_config,
+            config.io,
             tracer_config=config.tracer_config,
             physics_diagnostics=(
                 granules.physics.diagnostics if granules.physics is not None else None
             ),
         )
         io_monitor = driver_io.create_io_monitor(
-            io_config=io_config,
-            output_path=config.driver.output_path,
+            io_config=config.io,
             grid_file_path=pathlib.Path(grid_manager.file_path),
             grid=grid_manager.grid,
             vertical_grid=vertical_grid,

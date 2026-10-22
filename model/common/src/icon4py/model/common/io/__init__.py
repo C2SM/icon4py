@@ -37,12 +37,10 @@ or, if not available there, built up according to [guidelines of CF standard nam
 
 The IO module is configured with an `IOConfig` holding
 
+- `output_path` (optional, default is `./output`): the output directory, the root of all field groups; relative to the working directory.
 - `field_groups`: list of field group configurations (see below); at least one, with unique `basename`s.
 - `time_units` (optional, default is "seconds since 1970-01-01 00:00:00"): unit of the time coordinate in the data files.
 - `calendar` (optional, default is "proleptic_gregorian"): calendar of the time coordinate in the data files.
-
-The output directory is not part of the configuration: the `IOMonitor` receives it from its
-caller (the run's output directory), and every field group writes below it.
 
 A field group is a set of variables written on the same schedule into the same file series; it is configured with
 
@@ -66,6 +64,7 @@ tagged interval are registered). A valid configuration could look like this:
 
 ```python
 import datetime
+import pathlib
 
 prognostic_group = FieldGroupIOConfig(
     output_interval=datetime.timedelta(hours=2),
@@ -84,13 +83,17 @@ wind_group = FieldGroupIOConfig(
     nc_comment="Writing additional wind fields data from icon4py",
 )
 
-io_config = IOConfig(field_groups=[prognostic_group, wind_group])
+io_config = IOConfig(
+    output_path=pathlib.Path("simulation1/output"),
+    field_groups=[prognostic_group, wind_group],
+)
 ```
 
 The same configuration in YAML, as the `io` section of the driver's experiment configuration:
 
 ```yaml
 io:
+  output_path: simulation1/output
   field_groups:
     - basename: icon4py_prognostics
       variables: [air_density, exner_function, upward_air_velocity]
@@ -110,13 +113,13 @@ io:
 ```
 
 This configuration must then be passed to an instance of the `IOMonitor`, together with the
-output directory and the grid information. The monitor decides upon each call to
+grid information. The monitor decides upon each call to
 `IOMonitor.store` what fields of the model state need to be written at that time;
 `IOMonitor.variables_at_capture_time` tells the caller beforehand which variables the
 capturing groups need, so it assembles only those (and nothing at steps nobody captures):
 
 ```
-io_monitor = IOMonitor(config=io_config, output_path=pathlib.Path("simulation1/output"), ...)
+io_monitor = IOMonitor(config=io_config, ...)
 (...)
 model_state = assemble(io_monitor.variables_at_capture_time())
 io_monitor.store(model_state, time)
@@ -159,6 +162,7 @@ shared netCDF file, which the installed `netCDF4` package must support:
 
 - We support NETCDF4 files and zarr stores (zarr format 3).
 - No transformation are applied to any output data: Fields are written with the same unstructured grid resolutions as they are computed.
+- Fields need a horizontal dimension (`cell`, `edge` or `vertex`); a vertical dimension (model or half levels) is optional, so a purely horizontal (surface) field is written as `(time, cell)`.
 - Horizontal coordinates the latitude and longitude in radians as provided by the ICON grid file.
 - Vertical coordinates are the model levels, there is no transformation to pressure levels.
 - Writing is synchronous: `store` returns once the data is written.

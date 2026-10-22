@@ -1,4 +1,5 @@
 io:
+  output_path: output
   field_groups:
     - basename: winds
       variables:

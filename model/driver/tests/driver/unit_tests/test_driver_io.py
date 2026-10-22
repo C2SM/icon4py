@@ -39,12 +39,9 @@ from icon4py.model.common.states import (
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import config as driver_config, driver_io
+from icon4py.model.driver import driver_io
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures import backend
-
-
-_MINIMAL_CONFIG_FILE = pathlib.Path(__file__).parent / "data" / "minimal_config.yml"
 
 
 @pytest.fixture
@@ -226,28 +223,13 @@ def test_diagnostic_data_is_host_numpy(
         assert isinstance(da.data, np.ndarray)
 
 
-def _driver_config(
-    output_backend: common_io.OutputBackend = common_io.OutputBackend.ZARR,
-    output_mode: common_io.OutputMode = common_io.OutputMode.DISTRIBUTED,
-) -> driver_config.DriverConfig:
-    return driver_config.DriverConfig.make_initial(
-        experiment_name="test",
-        profiling_options=None,
-        dtime=time.RelativeTime(seconds=10),
-        start_of_simulation=time.AbsoluteTime(2000, 1, 1, tzinfo=datetime.UTC),
-        end_of_simulation=time.NumTimeSteps(5),
-        enable_output=True,
-        output_backend=output_backend,
-        output_mode=output_mode,
-    )
-
-
-def test_default_io_config_builds_single_field_group() -> None:
-    """Without an 'io' section the run writes one group with all output fields, every step."""
+def test_default_io_config_builds_single_field_group(tmp_path: pathlib.Path) -> None:
+    """The built-in default group: all output fields, every step, below the given directory."""
     config = driver_io.default_io_config(
-        _driver_config(common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER)
+        tmp_path / "out", backend=common_io.OutputBackend.NETCDF, mode=common_io.OutputMode.GATHER
     )
 
+    assert config.output_path == tmp_path / "out"
     (field_group,) = config.field_groups
     # default cadence: capture on every model step
     assert field_group.output_interval == 1
@@ -258,38 +240,16 @@ def test_default_io_config_builds_single_field_group() -> None:
         *driver_io.DIAGNOSTIC_VARIABLES,
     ]
     assert field_group.basename == driver_io.DEFAULT_OUTPUT_BASENAME
-    # the driver's transitional defaults decide the format and write strategy of this group
     assert field_group.backend is common_io.OutputBackend.NETCDF
     assert field_group.mode is common_io.OutputMode.GATHER
+    # without arguments: the defaults of the IO module
+    default = driver_io.default_io_config()
+    assert default.output_path == common_io.DEFAULT_OUTPUT_PATH
+    assert default.field_groups[0].backend is common_io.OutputBackend.ZARR
+    assert default.field_groups[0].mode is common_io.OutputMode.DISTRIBUTED
 
 
-def _experiment_config(**driver_overrides: object) -> driver_config.ExperimentConfig:
-    config = config_io.read_yaml_str(
-        _MINIMAL_CONFIG_FILE.read_text(), driver_config.ExperimentConfig
-    )
-    return config.with_overrides(driver=driver_overrides) if driver_overrides else config
-
-
-def test_resolve_io_config_falls_back_to_the_default_group() -> None:
-    config = _experiment_config(enable_output=True, output_backend=common_io.OutputBackend.NETCDF)
-    assert config.io is None
-
-    resolved = driver_io.resolve_io_config(config)
-
-    assert resolved == driver_io.default_io_config(config.driver)
-    assert resolved.field_groups[0].backend is common_io.OutputBackend.NETCDF
-
-
-def test_resolve_io_config_prefers_the_io_section() -> None:
-    io_config = common_io.IOConfig(
-        field_groups=[common_io.FieldGroupIOConfig(basename="winds", variables=["eastward_wind"])]
-    )
-    config = _experiment_config(enable_output=True).with_overrides(io=io_config)
-
-    assert driver_io.resolve_io_config(config) is io_config
-
-
-def test_create_io_monitor_passes_io_config_and_output_path(
+def test_create_io_monitor_passes_the_io_config(
     grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """``IOMonitor`` is replaced by a recorder so the test needs no real grid file."""
@@ -300,7 +260,6 @@ def test_create_io_monitor_passes_io_config_and_output_path(
             self,
             *,
             config: common_io.IOConfig,
-            output_path: pathlib.Path,
             vertical_size: v_grid.VerticalGrid,
             horizontal_size: base.HorizontalGridSize,
             grid_file_name: pathlib.Path,
@@ -310,18 +269,17 @@ def test_create_io_monitor_passes_io_config_and_output_path(
             decomposition_info: decomposition_defs.DecompositionInfo | None,
         ) -> None:
             recorded["config"] = config
-            recorded["output_path"] = output_path
             recorded["grid_file_name"] = grid_file_name
             recorded["grid_id"] = grid_id
 
     monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
     io_config = common_io.IOConfig(
-        field_groups=[common_io.FieldGroupIOConfig(basename="a", variables=["air_density"])]
+        output_path=tmp_path,
+        field_groups=[common_io.FieldGroupIOConfig(basename="a", variables=["air_density"])],
     )
 
     driver_io.create_io_monitor(
         io_config=io_config,
-        output_path=tmp_path,
         grid_file_path=tmp_path / "grid.nc",
         grid=grid,
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
@@ -330,9 +288,8 @@ def test_create_io_monitor_passes_io_config_and_output_path(
         decomposition_info=None,
     )
 
+    # the configuration carries the output directory
     assert recorded["config"] is io_config
-    # output is written directly into the run output directory
-    assert recorded["output_path"] == tmp_path
     assert recorded["grid_file_name"] == tmp_path / "grid.nc"
     # the string grid id is converted to a UUID at the IO boundary
     assert recorded["grid_id"] == uuid.UUID(grid.id)
@@ -473,10 +430,8 @@ def test_physics_diagnostic_outputs_are_named_by_standard_name(grid: base.Grid) 
     assert outputs["rainfall_flux"].process_name == "muphys"
 
 
-def test_physics_diagnostic_outputs_skip_fields_without_vertical_dimension(
-    grid: base.Grid,
-) -> None:
-    # the writers need a vertical dimension: a surface field is not offered
+def test_physics_diagnostic_outputs_include_surface_fields(grid: base.Grid) -> None:
+    # a purely horizontal (surface) output is offered like the others
     outputs = driver_io.physics_diagnostic_outputs(
         _physics_diagnostics(
             grid,
@@ -488,7 +443,8 @@ def test_physics_diagnostic_outputs_skip_fields_without_vertical_dimension(
             },
         )
     )
-    assert set(outputs) == {"rainfall_flux"}
+    assert set(outputs) == {"rainfall_flux", "precipitation_flux"}
+    assert outputs["precipitation_flux"].field.domain.dims == (dims.CellDim,)
 
 
 def test_physics_diagnostic_outputs_without_physics_are_empty() -> None:
@@ -545,7 +501,7 @@ def test_assembler_assembles_only_the_requested_variables(grid: base.Grid) -> No
     assembler = _assembler(
         grid,
         _io_config(
-            ("prognostics", ["air_density", "eastward_wind"]),
+            ("prognostics", ["air_density", "eastward_wind", "surface_pressure"]),
             ("moisture", ["qv", "rainfall_flux"]),
         ),
         tracer_config=tracer_states.TracerConfig(qv=True),
@@ -553,12 +509,14 @@ def test_assembler_assembles_only_the_requested_variables(grid: base.Grid) -> No
     )
 
     state = assembler.assemble(
-        {"air_density", "qv", "rainfall_flux"}, prognostic_state, tracer_state
+        {"air_density", "qv", "rainfall_flux", "surface_pressure"}, prognostic_state, tracer_state
     )
-    assert set(state) == {"air_density", "qv", "rainfall_flux"}
+    assert set(state) == {"air_density", "qv", "rainfall_flux", "surface_pressure"}
     assert state["qv"].attrs["standard_name"] == "specific_humidity"
     assert state["rainfall_flux"].attrs["standard_name"] == "rainfall_flux"
     assert state["rainfall_flux"].dims == ("cell", "level")
+    # a purely horizontal diagnostic
+    assert state["surface_pressure"].dims == ("cell",)
 
     winds = assembler.assemble({"eastward_wind"}, prognostic_state, tracer_state)
     assert set(winds) == {"eastward_wind"}
@@ -590,6 +548,32 @@ def test_diagnostics_computer_returns_only_the_requested_variables(grid: base.Gr
 def test_diagnostics_computer_rejects_unknown_variables(grid: base.Grid) -> None:
     with pytest.raises(ValueError, match="Unknown diagnostic output variables: foo"):
         _diagnostics_computer(grid, ["foo"])
+
+
+def test_diagnostics_computer_surface_pressure(grid: base.Grid) -> None:
+    """The surface pressure is a cell field: the bottom half-level row of the pressure program."""
+    requested = ["pressure", "surface_pressure"]
+    computer = _diagnostics_computer(grid, requested)
+
+    fields = computer.compute(
+        _uniform_prognostic_state(grid), tracer_states.TracerState(), requested
+    )
+
+    surface_pressure = fields["surface_pressure"]
+    assert surface_pressure.domain.dims == (dims.CellDim,)
+    assert surface_pressure.asnumpy().shape == (grid.num_cells,)
+    # hydrostatic: the surface pressure exceeds the pressure of the lowest model level
+    assert (surface_pressure.asnumpy() > fields["pressure"].asnumpy()[:, -1]).all()
+    test_utils.assert_dallclose(
+        surface_pressure.asnumpy(),
+        computer._pressure_on_cells_half_levels.asnumpy()[:, grid.num_levels],
+    )
+    # the surface pressure alone also runs the temperature and pressure programs
+    alone = _diagnostics_computer(grid, ["surface_pressure"]).compute(
+        _uniform_prognostic_state(grid), tracer_states.TracerState(), ["surface_pressure"]
+    )
+    assert set(alone) == {"surface_pressure"}
+    test_utils.assert_dallclose(alone["surface_pressure"].asnumpy(), surface_pressure.asnumpy())
 
 
 def test_diagnostics_computer_uses_the_active_tracers(grid: base.Grid) -> None:
@@ -639,14 +623,21 @@ def test_diagnostic_fields_to_dataarrays(grid: base.Grid) -> None:
         return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
     fields = {name: _zero_cell_k() for name in driver_io.DIAGNOSTIC_VARIABLES}
+    # the surface pressure is a cell field
+    fields["surface_pressure"] = data_alloc.zero_field(grid, dims.CellDim, dtype=ta.wpfloat)
     state = driver_io.diagnostic_fields_to_dataarrays(fields)
 
     assert set(state.keys()) == set(driver_io.DIAGNOSTIC_VARIABLES)
-    for da in state.values():
-        assert da.dims == ("cell", "level")
-        assert da.shape == (grid.num_cells, grid.num_levels)
+    for name, da in state.items():
+        if name == "surface_pressure":
+            assert da.dims == ("cell",)
+            assert da.shape == (grid.num_cells,)
+        else:
+            assert da.dims == ("cell", "level")
+            assert da.shape == (grid.num_cells, grid.num_levels)
         assert isinstance(da.data, np.ndarray)
 
+    assert state["surface_pressure"].attrs["standard_name"] == "air_pressure_at_ground_level"
     assert state["temperature"].attrs["standard_name"] == "air_temperature"
     assert state["pressure"].attrs["units"] == "Pa"
     assert state["eastward_wind"].attrs["location"] == "face"

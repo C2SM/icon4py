@@ -190,8 +190,8 @@ def canonicalize_time_slice(
         canonical_slice = cf_utils.to_canonical_dim_order(new_slice)
         if canonical_slice is None:
             raise ValueError(
-                f"Cannot write field '{var_name}': only fields with a horizontal and a "
-                f"vertical dimension are supported."
+                f"Cannot write field '{var_name}': only fields with a horizontal "
+                f"dimension (optionally with a vertical one) are supported."
             )
         horizontal_name = str(canonical_slice.dims[-1])
         if horizontal_name not in horizontal_sizes:
