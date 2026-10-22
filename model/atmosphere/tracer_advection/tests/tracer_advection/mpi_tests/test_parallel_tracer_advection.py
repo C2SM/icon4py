@@ -179,14 +179,14 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
     test_helpers.assert_dallclose(
-        diagnostic_state.hfl_tracer.data.asnumpy(),
-        diagnostic_state_ref.hfl_tracer.data.asnumpy(),
+        diagnostic_state.hfl_tracer.asnumpy(),
+        diagnostic_state_ref.hfl_tracer.asnumpy(),
         atol=1e-11,
     )
 
     test_utils.assert_dallclose(
-        diagnostic_state.vfl_tracer.data.asnumpy(),
-        diagnostic_state_ref.vfl_tracer.data.asnumpy(),
+        diagnostic_state.vfl_tracer.asnumpy(),
+        diagnostic_state_ref.vfl_tracer.asnumpy(),
         rtol=1e-10,
     )
 

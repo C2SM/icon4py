@@ -106,16 +106,16 @@ class PrescribedTendencies:
         num_edges = self._grid.num_edges
 
         # lateral boundary tendencies
-        self._fill(forcing.grf_tend_rho.data, "grf_tend_rho", savepoint, num_cells)
-        self._fill(forcing.grf_tend_thv.data, "grf_tend_thv", savepoint, num_cells)
-        self._fill(forcing.grf_tend_w.data, "grf_tend_w", savepoint, num_cells)
-        self._fill(forcing.grf_tend_vn.data, "grf_tend_vn", savepoint, num_edges)
+        self._fill(forcing.grf_tend_rho, "grf_tend_rho", savepoint, num_cells)
+        self._fill(forcing.grf_tend_thv, "grf_tend_thv", savepoint, num_cells)
+        self._fill(forcing.grf_tend_w, "grf_tend_w", savepoint, num_cells)
+        self._fill(forcing.grf_tend_vn, "grf_tend_vn", savepoint, num_edges)
         # slow physics tendencies
         self._fill(
-            forcing.exner_tendency_due_to_slow_physics.data, "ddt_exner_phy", savepoint, num_cells
+            forcing.exner_tendency_due_to_slow_physics, "ddt_exner_phy", savepoint, num_cells
         )
         self._fill(
-            forcing.normal_wind_tendency_due_to_slow_physics_process.data,
+            forcing.normal_wind_tendency_due_to_slow_physics_process,
             "ddt_vn_phy",
             savepoint,
             num_edges,

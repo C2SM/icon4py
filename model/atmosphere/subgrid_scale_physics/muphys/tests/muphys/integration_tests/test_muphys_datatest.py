@@ -126,7 +126,7 @@ def test_muphys_granule(
         qs=fw.Field(qty.QsOnCellK, init_savepoint.qs()),
         qg=fw.Field(qty.QgOnCellK, init_savepoint.qg()),
     )
-    state = {"dz": init_savepoint.dz(), **{name: field.data for name, field in inputs.items()}}
+    state = {"dz": init_savepoint.dz(), **fw.fields(inputs)}
     initial_state = {name: field.asnumpy().copy() for name, field in state.items()}
     muphys_program = run_full_muphys.setup_muphys(
         ncells=icon_grid.num_cells,
@@ -145,7 +145,7 @@ def test_muphys_granule(
         # The default Component setup is the separate-program mode.
         step=muphys_program if single_program else None,
     )
-    outputs = {name: field.data for name, field in component.run(inputs).items()}
+    outputs = fw.fields(component.run(inputs))
     for name, field in state.items():
         np.testing.assert_array_equal(field.asnumpy(), initial_state[name], err_msg=name)
 

@@ -131,11 +131,6 @@ class Field[Q: Quantity](nd_array_field.NdArrayField[Any, Any]):
         # gt4py builds every derived field through `from_array`
         return cls._plain.from_array(data, domain=domain, dtype=dtype)
 
-    @property
-    def data(self) -> Self:
-        """The field itself, for the code that still unwraps it."""
-        return self
-
     def __repr__(self) -> str:
         return f"Field({self.quantity.__name__}, {self.ndarray.shape})"
 
@@ -265,7 +260,7 @@ def allocate[S: State](
             continue
         field = zeros(quantity, grid, allocator)
         if fill is not None:
-            buffer: Any = field.data.ndarray  # NDArrayObject declares no __setitem__
+            buffer: Any = field.ndarray  # NDArrayObject declares no __setitem__
             buffer[...] = fill(name, quantity.dims)
         values[name] = field
     return cls(**values)
@@ -274,7 +269,7 @@ def allocate[S: State](
 def copy[S: State](state: S, allocator: gtx_typing.Allocator | None) -> S:
     """A new state with a copy of each present leaf on the allocator; the plain leaves are shared."""
     copies: dict[str, Any] = {
-        name: Field(field.quantity, data_allocation.reallocate(field.data, allocator=allocator))
+        name: Field(field.quantity, data_allocation.reallocate(field, allocator=allocator))
         for name, field in fields(state).items()
     }
     copied: S = dataclasses.replace(typing.cast(Any, state), **copies)

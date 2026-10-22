@@ -192,7 +192,7 @@ def test_run_stores_every_call_and_assembles_at_capture_time_only(grid: base.Gri
 def test_stored_data_is_the_leaf_at_store_time(grid: base.Grid) -> None:
     writer = StubWriter()
     inputs = make_inputs(grid)
-    rho: Any = inputs.rho.data.ndarray
+    rho: Any = inputs.rho.ndarray
     rho[...] = 1.5
 
     make_monitor(grid, writer).run(inputs)

@@ -123,7 +123,7 @@ class IOMonitor(fw.Component):
             for name, leaf in self.selected.items():
                 field: fw.Field[Any] = getattr(inputs, leaf)
                 state[name] = io_utils.to_data_array(
-                    field.data, _attributes(field.quantity), to_host=True
+                    field, _attributes(field.quantity), to_host=True
                 )
         self.writer.store(state, inputs.simulation_time)
         return outputs if outputs is not None else self.cached_output

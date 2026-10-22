@@ -155,38 +155,38 @@ class MuphysComponent(fw.Component):
         and density go in as they are, since the granule only reads them.
         """
         out = outputs if outputs is not None else self.cached_output
-        self._copy_field(field=inputs.te.data, output_field=self._te)
+        self._copy_field(field=inputs.te, output_field=self._te)
         for s in SPECIES:
-            self._copy_field(field=getattr(inputs, f"q{s}").data, output_field=getattr(self._q, s))
+            self._copy_field(field=getattr(inputs, f"q{s}"), output_field=getattr(self._q, s))
 
         self._step(
             dz=self._dz,
             te=self._te,
-            p=inputs.p.data,
-            rho=inputs.rho.data,
+            p=inputs.p,
+            rho=inputs.rho,
             q_in=self._q,
             q_out=self._q,
             t_out=self._te,
-            pflx=out.pflx.data,
-            pr=out.pr.data,
-            ps=out.ps.data,
-            pi=out.pi.data,
-            pg=out.pg.data,
-            pre=out.pre.data,
+            pflx=out.pflx,
+            pr=out.pr,
+            ps=out.ps,
+            pi=out.pi,
+            pg=out.pg,
+            pre=out.pre,
         )
 
         self._calculate_tendency(
             dtime=self._dt_seconds,
-            old_field=inputs.te.data,
+            old_field=inputs.te,
             new_field=self._te,
-            tendency=out.tend_temperature.data,
+            tendency=out.tend_temperature,
         )
         for s in SPECIES:
             self._calculate_tendency(
                 dtime=self._dt_seconds,
-                old_field=getattr(inputs, f"q{s}").data,
+                old_field=getattr(inputs, f"q{s}"),
                 new_field=getattr(self._q, s),
-                tendency=getattr(out, f"tend_q{s}").data,
+                tendency=getattr(out, f"tend_q{s}"),
             )
         return out
 

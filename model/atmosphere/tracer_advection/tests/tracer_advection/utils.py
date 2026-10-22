@@ -154,14 +154,12 @@ def log_serialized(
     p_tracer_now: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
 ):
-    log_dbg(diagnostic_state.airmass_now.data.asnumpy(), "airmass_now")
-    log_dbg(diagnostic_state.airmass_new.data.asnumpy(), "airmass_new")
-    log_dbg(diagnostic_state.grf_tend_tracer.data.asnumpy(), "grf_tend_tracer")
-    log_dbg(prep_adv.vn_traj.data.asnumpy(), "vn_traj")
-    log_dbg(prep_adv.mass_flx_me.data.asnumpy(), "mass_flx_me")
-    log_dbg(
-        prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels.data.asnumpy(), "mass_flx_ic"
-    )
+    log_dbg(diagnostic_state.airmass_now.asnumpy(), "airmass_now")
+    log_dbg(diagnostic_state.airmass_new.asnumpy(), "airmass_new")
+    log_dbg(diagnostic_state.grf_tend_tracer.asnumpy(), "grf_tend_tracer")
+    log_dbg(prep_adv.vn_traj.asnumpy(), "vn_traj")
+    log_dbg(prep_adv.mass_flx_me.asnumpy(), "mass_flx_me")
+    log_dbg(prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels.asnumpy(), "mass_flx_ic")
     log_dbg(p_tracer_now.asnumpy(), "p_tracer_now")
     log.debug(f"dtime: {dtime}")
 
@@ -201,22 +199,22 @@ def verify_advection_fields(
     p_tracer_new_range = np.arange(start_cell_lateral_boundary, end_cell_local)
 
     # log tracer_advection output fields
-    log_dbg(diagnostic_state.hfl_tracer.data.asnumpy()[hfl_tracer_range, :], "hfl_tracer")
-    log_dbg(diagnostic_state_ref.hfl_tracer.data.asnumpy()[hfl_tracer_range, :], "hfl_tracer_ref")
-    log_dbg(diagnostic_state.vfl_tracer.data.asnumpy()[vfl_tracer_range, :], "vfl_tracer")
-    log_dbg(diagnostic_state_ref.vfl_tracer.data.asnumpy()[vfl_tracer_range, :], "vfl_tracer_ref")
+    log_dbg(diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :], "hfl_tracer")
+    log_dbg(diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :], "hfl_tracer_ref")
+    log_dbg(diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :], "vfl_tracer")
+    log_dbg(diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :], "vfl_tracer_ref")
     log_dbg(p_tracer_new.asnumpy()[p_tracer_new_range, :], "p_tracer_new")
     log_dbg(p_tracer_new_ref.asnumpy()[p_tracer_new_range, :], "p_tracer_new_ref")
 
     # verify tracer_advection output fields
     test_utils.assert_dallclose(
-        diagnostic_state.hfl_tracer.data.asnumpy()[hfl_tracer_range, :],
-        diagnostic_state_ref.hfl_tracer.data.asnumpy()[hfl_tracer_range, :],
+        diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
+        diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         atol=1e-11 if test_utils.wp_is_dp else 2e-5,
     )
     test_utils.assert_dallclose(
-        diagnostic_state.vfl_tracer.data.asnumpy()[vfl_tracer_range, :],
-        diagnostic_state_ref.vfl_tracer.data.asnumpy()[vfl_tracer_range, :],
+        diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
+        diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
         atol=2e-14,
     )
     test_utils.assert_dallclose(

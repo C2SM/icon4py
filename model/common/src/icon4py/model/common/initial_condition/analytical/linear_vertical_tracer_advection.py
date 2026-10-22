@@ -128,9 +128,9 @@ def _fill_prep_adv_from_prescribed_wind_field(
         model_top_height=model_top_height,
     )
 
-    vn_traj = prep_adv_state.vn_traj.data.ndarray
-    mass_flx_me = prep_adv_state.mass_flx_me.data.ndarray
-    mass_flx_ic = prep_adv_state.dynamical_vertical_mass_flux_at_cells_on_half_levels.data.ndarray
+    vn_traj = prep_adv_state.vn_traj.ndarray
+    mass_flx_me = prep_adv_state.mass_flx_me.ndarray
+    mass_flx_ic = prep_adv_state.dynamical_vertical_mass_flux_at_cells_on_half_levels.ndarray
 
     vn_traj[:, :] = 0.0
     mass_flx_me[:, :] = 0.0
@@ -204,7 +204,7 @@ def linear_vertical_advection(
     z_mc = metrics.get(metrics_meta.Z_MC).ndarray
     z_ifc = metrics.get(metrics_meta.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
 
-    prognostic_state_now.rho.data.ndarray[:, :] = 1.0
+    prognostic_state_now.rho.ndarray[:, :] = 1.0
 
     _fill_prep_adv_from_prescribed_wind_field(
         velocity_field=ic_config.velocity_field,
@@ -214,7 +214,7 @@ def linear_vertical_advection(
 
     _fill_tracer_from_analytical_profile(
         config=ic_config,
-        tracer_buffer=tracer_state_now.qv.data.ndarray,
+        tracer_buffer=tracer_state_now.qv.ndarray,
         z_mc=z_mc,
         z_ifc=z_ifc,
         center_z=ic_config.initial_center * config.vertical_grid.model_top_height,

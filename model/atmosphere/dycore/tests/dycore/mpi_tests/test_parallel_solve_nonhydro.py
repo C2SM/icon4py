@@ -156,58 +156,58 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: dycore step run ")
 
     expected_theta_v = savepoint_nonhydro_step_final.theta_v_new().asnumpy()
-    calculated_theta_v = prognostic_states.next.theta_v.data.asnumpy()
+    calculated_theta_v = prognostic_states.next.theta_v.asnumpy()
     assert test_utils.dallclose(
         expected_theta_v,
         calculated_theta_v,
     )
     expected_exner = savepoint_nonhydro_step_final.exner_new().asnumpy()
-    calculated_exner = prognostic_states.next.exner.data.asnumpy()
+    calculated_exner = prognostic_states.next.exner.asnumpy()
     assert test_utils.dallclose(
         expected_exner,
         calculated_exner,
     )
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        prognostic_states.next.vn.data.asnumpy(),
+        prognostic_states.next.vn.asnumpy(),
         atol=1e-14,
         rtol=1e-10,
     )
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        prognostic_states.next.w.data.asnumpy(),
+        prognostic_states.next.w.asnumpy(),
         atol=1e-14,
     )
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_new().asnumpy(),
-        prognostic_states.next.rho.data.asnumpy(),
+        prognostic_states.next.rho.asnumpy(),
     )
 
     # `rho_ic` is only computed on locally owned cells, the reference contains ICON's halo values.
     end_cell_local = icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL))
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_ic().asnumpy()[:end_cell_local, :],
-        solve_nonhydro.diagnostics.rho_at_cells_on_half_levels.data.asnumpy()[:end_cell_local, :],
+        solve_nonhydro.diagnostics.rho_at_cells_on_half_levels.asnumpy()[:end_cell_local, :],
     )
 
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
-        solve_nonhydro.diagnostics.theta_v_at_cells_on_half_levels.data.asnumpy(),
+        solve_nonhydro.diagnostics.theta_v_at_cells_on_half_levels.asnumpy(),
     )
 
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        solve_nonhydro.diagnostics.mass_flux_at_edges_on_model_levels.data.asnumpy(),
+        solve_nonhydro.diagnostics.mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1e-10,
     )
 
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        prep_adv.mass_flx_me.data.asnumpy(),
+        prep_adv.mass_flx_me.asnumpy(),
         rtol=1e-10,
     )
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        prep_adv.vn_traj.data.asnumpy(),
+        prep_adv.vn_traj.asnumpy(),
         rtol=1e-10,
     )

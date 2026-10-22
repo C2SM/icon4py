@@ -243,9 +243,9 @@ def _fill_prep_adv_from_prescribed_wind_field(
     )
     vn = u * primal_normal_x + v * primal_normal_y
 
-    vn_traj = prep_adv_state.vn_traj.data.ndarray
-    mass_flx_me = prep_adv_state.mass_flx_me.data.ndarray
-    mass_flx_ic = prep_adv_state.dynamical_vertical_mass_flux_at_cells_on_half_levels.data.ndarray
+    vn_traj = prep_adv_state.vn_traj.ndarray
+    mass_flx_me = prep_adv_state.mass_flx_me.ndarray
+    mass_flx_ic = prep_adv_state.dynamical_vertical_mass_flux_at_cells_on_half_levels.ndarray
     vn_traj[:, :] = vn[:, None]
     mass_flx_me[:, :] = vn[:, None]
     mass_flx_ic[:, :] = 0.0
@@ -352,7 +352,7 @@ def linear_horizontal_advection(
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
 
     # density is set to the inverse of the vertical grid spacing, so that the mass flux equals the velocity
-    prognostic_state_now.rho.data.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray
+    prognostic_state_now.rho.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray
 
     weights, nodes = _prepare_torus_quadratic_quadrature(
         vertex_x=vertex_x,
@@ -382,7 +382,7 @@ def linear_horizontal_advection(
     )
     _fill_tracer_from_analytical_profile(
         config=ic_config,
-        tracer_buffer=tracer_state_now.qv.data.ndarray,
+        tracer_buffer=tracer_state_now.qv.ndarray,
         weights=weights,
         nodes=nodes,
         tracer_center_x=center_x,

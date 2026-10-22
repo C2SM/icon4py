@@ -242,10 +242,10 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     for field_name, serial_source, local_source in fields_to_check:
         print(f"verifying field {field_name}")
         global_reference_field = process_props.comm.bcast(
-            getattr(serial_source, field_name).data.asnumpy(),
+            getattr(serial_source, field_name).asnumpy(),
             root=0,
         )
-        local_field = getattr(local_source, field_name).data
+        local_field = getattr(local_source, field_name)
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_icon4py_driver.decomposition_info,
             process_props=process_props,

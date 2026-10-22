@@ -180,7 +180,7 @@ class Advection(fw.Component, ABC):
                 raise ValueError(
                     f"Tracer '{name}' is given at the current time level but not at the next one."
                 )
-            self._advect(inputs, out, p_tracer_now=tracer_now.data, p_tracer_new=tracer_new.data)
+            self._advect(inputs, out, p_tracer_now=tracer_now, p_tracer_new=tracer_new)
         self._finalize()
         return out
 
@@ -188,7 +188,7 @@ class Advection(fw.Component, ABC):
         """Before the tracers: the halo exchange of the vertical mass flux."""
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
         self._exchange.exchange(
-            dims.CellDim, inputs.mass_flx_ic.data, stream=decomposition.DEFAULT_STREAM
+            dims.CellDim, inputs.mass_flx_ic, stream=decomposition.DEFAULT_STREAM
         )
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
@@ -361,15 +361,15 @@ class GodunovSplittingAdvection(Advection):
 
         # reintegrate density for conservation of mass
         rhodz_in, horizontal_start = (
-            (inputs.airmass_now.data, self._start_cell_lateral_boundary_level_2)
+            (inputs.airmass_now, self._start_cell_lateral_boundary_level_2)
             if self._even_timestep
-            else (inputs.airmass_new.data, self._start_cell_lateral_boundary_level_3)
+            else (inputs.airmass_new, self._start_cell_lateral_boundary_level_3)
         )
 
         log.debug("running stencil apply_density_increment - start")
         self._apply_density_increment(
             rhodz_in=rhodz_in,
-            p_mflx_contra_v=inputs.mass_flx_ic.data,
+            p_mflx_contra_v=inputs.mass_flx_ic,
             rhodz_out=self._rhodz_ast2,
             p_dtime=dtime,
             even_timestep=self._even_timestep,
@@ -381,49 +381,49 @@ class GodunovSplittingAdvection(Advection):
         if self._even_timestep:
             # vertical transport
             self._vertical_advection.run(
-                mass_flx_ic=inputs.mass_flx_ic.data,
+                mass_flx_ic=inputs.mass_flx_ic,
                 p_tracer_now=p_tracer_now,
                 p_tracer_new=p_tracer_new,
-                rhodz_now=inputs.airmass_now.data,
+                rhodz_now=inputs.airmass_now,
                 rhodz_new=self._rhodz_ast2,
-                p_mflx_tracer_v=out.vfl_tracer.data,
+                p_mflx_tracer_v=out.vfl_tracer,
                 dtime=dtime,
                 even_timestep=self._even_timestep,
             )
 
             # horizontal transport
             self._horizontal_advection.run(
-                vn_traj=inputs.vn_traj.data,
-                mass_flx_me=inputs.mass_flx_me.data,
+                vn_traj=inputs.vn_traj,
+                mass_flx_me=inputs.mass_flx_me,
                 p_tracer_now=p_tracer_new,
                 p_tracer_new=p_tracer_new,
                 rhodz_now=self._rhodz_ast2,
-                rhodz_new=inputs.airmass_new.data,
-                p_mflx_tracer_h=out.hfl_tracer.data,
+                rhodz_new=inputs.airmass_new,
+                p_mflx_tracer_h=out.hfl_tracer,
                 dtime=dtime,
             )
 
         else:
             # horizontal transport
             self._horizontal_advection.run(
-                vn_traj=inputs.vn_traj.data,
-                mass_flx_me=inputs.mass_flx_me.data,
+                vn_traj=inputs.vn_traj,
+                mass_flx_me=inputs.mass_flx_me,
                 p_tracer_now=p_tracer_now,
                 p_tracer_new=p_tracer_new,
-                rhodz_now=inputs.airmass_now.data,
+                rhodz_now=inputs.airmass_now,
                 rhodz_new=self._rhodz_ast2,
-                p_mflx_tracer_h=out.hfl_tracer.data,
+                p_mflx_tracer_h=out.hfl_tracer,
                 dtime=dtime,
             )
 
             # vertical transport
             self._vertical_advection.run(
-                mass_flx_ic=inputs.mass_flx_ic.data,
+                mass_flx_ic=inputs.mass_flx_ic,
                 p_tracer_now=p_tracer_new,
                 p_tracer_new=p_tracer_new,
                 rhodz_now=self._rhodz_ast2,
-                rhodz_new=inputs.airmass_new.data,
-                p_mflx_tracer_v=out.vfl_tracer.data,
+                rhodz_new=inputs.airmass_new,
+                p_mflx_tracer_v=out.vfl_tracer,
                 dtime=dtime,
                 even_timestep=self._even_timestep,
             )
@@ -433,7 +433,7 @@ class GodunovSplittingAdvection(Advection):
             log.debug("running stencil apply_interpolated_tracer_time_tendency - start")
             self._apply_interpolated_tracer_time_tendency(
                 p_tracer_now=p_tracer_now,
-                p_grf_tend_tracer=inputs.grf_tend_tracer.data,
+                p_grf_tend_tracer=inputs.grf_tend_tracer,
                 p_tracer_new=p_tracer_new,
                 p_dtime=dtime,
             )

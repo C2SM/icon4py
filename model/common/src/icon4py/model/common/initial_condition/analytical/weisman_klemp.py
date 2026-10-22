@@ -195,9 +195,9 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     theta_tropopause = ic_config.theta_tropopause
     qv_max = ic_config.qv_max
 
-    exner_ndarray = prognostic_state_now.exner.data.ndarray
-    rho_ndarray = prognostic_state_now.rho.data.ndarray
-    theta_v_ndarray = prognostic_state_now.theta_v.data.ndarray
+    exner_ndarray = prognostic_state_now.exner.ndarray
+    rho_ndarray = prognostic_state_now.rho.ndarray
+    theta_v_ndarray = prognostic_state_now.theta_v.ndarray
 
     # With flat topography (wk82) the height of the model levels is horizontally
     # homogeneous, so the base-state profiles depend on the vertical level only.
@@ -312,7 +312,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     rho_ndarray[:, :] = (
         exner_ndarray**phy_const.CVD_O_RD * phy_const.P0REF / phy_const.RD / theta_v_ndarray
     )
-    tracer_state_now.qv.data.ndarray[:, :] = qv[array_ns.newaxis, :]
+    tracer_state_now.qv.ndarray[:, :] = qv[array_ns.newaxis, :]
     log.info("Weisman-Klemp base-state profile completed.")
 
     # Sheared horizontal wind, projected onto the edge-normal direction.
@@ -321,24 +321,24 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         - 0.45
     )
     boundary_lvl2 = zone_idx["end_edge_lateral_boundary_level_2"]
-    prognostic_state_now.vn.data.ndarray[:boundary_lvl2, :] = 0.0
-    prognostic_state_now.vn.data.ndarray[boundary_lvl2:, :] = (
+    prognostic_state_now.vn.ndarray[:boundary_lvl2, :] = 0.0
+    prognostic_state_now.vn.ndarray[boundary_lvl2:, :] = (
         wind_speed[array_ns.newaxis, :] * primal_normal_x[boundary_lvl2:, array_ns.newaxis]
     )
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
-    prognostic_state_now.w.data.ndarray[:, :] = testcases_utils.init_w(
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,
         edge_cell_distance=edge_cell_distance,
         primal_edge_length=primal_edge_length,
         cell_area=cell_area,
-        vn=prognostic_state_now.vn.data.ndarray,
+        vn=prognostic_state_now.vn.ndarray,
         vct_b=vct_b.ndarray,
         nlev=num_levels,
     )
-    exchange.exchange(dims.CellDim, prognostic_state_now.w.data)
+    exchange.exchange(dims.CellDim, prognostic_state_now.w)
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
         rho=rho_ndarray,
@@ -360,7 +360,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         z_mc=z_mc,
         theta_v=theta_v_ndarray,
         rho=rho_ndarray,
-        qv=tracer_state_now.qv.data.ndarray,
+        qv=tracer_state_now.qv.ndarray,
         exner=exner_ndarray,
         center_x=ic_config.bubble_center_x,
         center_y=ic_config.bubble_center_y,

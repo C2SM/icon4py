@@ -280,18 +280,18 @@ def assemble_driver_states(
     rbf_vec_coeff_c2 = static_fields.interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2)
 
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-        p_e_in=prognostic_states.current.vn.data,
+        p_e_in=prognostic_states.current.vn,
         ptr_coeff_1=rbf_vec_coeff_c1,
         ptr_coeff_2=rbf_vec_coeff_c2,
-        p_u_out=diagnostic_state.u.data,
-        p_v_out=diagnostic_state.v.data,
+        p_u_out=diagnostic_state.u,
+        p_v_out=diagnostic_state.v,
         horizontal_start=end_cell_lateral_boundary_level_2,
         horizontal_end=end_cell_end,
         vertical_start=0,
         vertical_end=grid.num_levels,
         offset_provider=grid.connectivities,
     )
-    exchange.exchange(dims.CellDim, diagnostic_state.u.data, diagnostic_state.v.data)
+    exchange.exchange(dims.CellDim, diagnostic_state.u, diagnostic_state.v)
 
     diffusion_enabled = experiment_config.diffusion is not None
     tracer_advection_enabled = experiment_config.tracer_advection is not None

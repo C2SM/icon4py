@@ -99,11 +99,11 @@ def _read_prognostic_state(
     read_cell_k: Callable[[str], data_alloc.NDArray],
     read_edge_k: Callable[[str], data_alloc.NDArray],
 ):
-    prognostic_state.rho.data.ndarray[:, :] = read_cell_k("rho_now")
-    prognostic_state.exner.data.ndarray[:, :] = read_cell_k("exner_now")
-    prognostic_state.theta_v.data.ndarray[:, :] = read_cell_k("theta_v_now")
-    prognostic_state.vn.data.ndarray[:, :] = read_edge_k("vn_now")
-    prognostic_state.w.data.ndarray[:, :] = read_cell_k("w_now")
+    prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")
+    prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")
+    prognostic_state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
+    prognostic_state.vn.ndarray[:, :] = read_edge_k("vn_now")
+    prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")
 
 
 def read_initial_condition_from_file(
@@ -135,7 +135,7 @@ def read_initial_condition_from_file(
     if ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
         for i, tracer in enumerate(fw_fields(tracer_state_now).values()):
-            tracer.data.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
+            tracer.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
 
 
 def read_restart_from_file(
@@ -200,7 +200,7 @@ def read_restart_from_file(
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
-    dycore_diagnostics.perturbed_exner_at_cells_on_model_levels.data.ndarray[:, :] = read_cell_k(
+    dycore_diagnostics.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = read_cell_k(
         "exner_pr"
     )
 
@@ -211,11 +211,11 @@ def read_restart_from_file(
         serializer, velocity_savepoint, "ddt_w_adv_pc", grid.num_cells, array_ns
     )
     normal_wind_pair = dycore_diagnostics.normal_wind_advective_tendency
-    normal_wind_pair.predictor.data.ndarray[:, :] = normal_wind_tendency[0]
-    normal_wind_pair.corrector.data.ndarray[:, :] = normal_wind_tendency[1]
+    normal_wind_pair.predictor.ndarray[:, :] = normal_wind_tendency[0]
+    normal_wind_pair.corrector.ndarray[:, :] = normal_wind_tendency[1]
     # The dycore swaps the vertical advective tendency at the first substep of a time step
     # that is not the initial one, and then consumes the predictor without recomputing it.
     # The two time levels are therefore stored swapped.
     vertical_wind_pair = dycore_diagnostics.vertical_wind_advective_tendency
-    vertical_wind_pair.predictor.data.ndarray[:, :] = vertical_wind_tendency[1]
-    vertical_wind_pair.corrector.data.ndarray[:, :] = vertical_wind_tendency[0]
+    vertical_wind_pair.predictor.ndarray[:, :] = vertical_wind_tendency[1]
+    vertical_wind_pair.corrector.ndarray[:, :] = vertical_wind_tendency[0]

@@ -35,11 +35,11 @@ def test_tracer_state_copy_allocates_new_buffers_for_the_active_tracers(
     grid: base_grid.Grid,
 ) -> None:
     tracers = fw.allocate(states.TracerState, grid, allocator=None, only=("qv",))
-    np.asarray(tracers.qv.data.ndarray)[...] = 2.0  # type: ignore[union-attr]
+    np.asarray(tracers.qv.ndarray)[...] = 2.0  # type: ignore[union-attr]
     copy = fw.copy(tracers, None)
     assert copy.qc is None
     assert copy.qv is not None and copy.qv is not tracers.qv
-    assert np.all(np.asarray(copy.qv.data.ndarray) == 2.0)
+    assert np.all(np.asarray(copy.qv.ndarray) == 2.0)
 
 
 def test_prep_advection_merges_the_dycore_and_advection_views(grid: base_grid.Grid) -> None:

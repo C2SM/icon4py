@@ -18,7 +18,7 @@ states and components (a component declares its `Input` and `Output` as frozen d
 fields tagged by their quantity) and neglected string-keyed dictionaries with metadata tables,
 `typing.Annotated` and `typing.NewType`, to achieve that mypy reports a missing, extra or swapped
 field where a component is called, accepting that every view is spelled out by keyword and that
-stencils read `.data`.
+the tagged field subclasses gt4py's embedded `NdArrayField`.
 
 ## Context
 
@@ -48,10 +48,12 @@ passing `theta_v` where `exner` is expected is not a type error. Tendencies were
   `long_name` and `precision` (`"wp"` or `"vp"`, resolved through `type_alias` when a field is
   allocated). Tendencies derive from the `Tendency` marker base, which replaces
   `FieldKind.TENDENCY`: the physics driver accumulates exactly those.
-- `Field[Q]`: a gt4py field tagged by its quantity, `Field(qty.VnOnEdgeK, data)`. The tag is a
+- `Field[Q]`: a gt4py field tagged by its quantity, `Field(qty.VnOnEdgeK, data)`, sharing the
+  buffer of `data`. It subclasses gt4py's `NdArrayField`, so it goes into a stencil as it is; a
+  field gt4py derives from it (arithmetic, slicing) is a plain, untagged one. The tag is a
   phantom, invariant type parameter: `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` are different
   types to mypy and the same array to gt4py. Invariance means that a signature
-  `(Field[Q], Field[Q])` takes the same quantity twice. Stencils read `.data`.
+  `(Field[Q], Field[Q])` takes the same quantity twice.
 - `State`: a frozen, keyword-only dataclass of typed leaves. The `Field` leaves are read back
   from the annotations; plain leaves (`dtime: float`, datetimes) are ordinary fields. A leaf
   annotated `Field[Q] | None` is optional.
@@ -89,7 +91,7 @@ class Diffusion(fw.Component):
 
     def run(self, inputs: Input, outputs: Output | None = None) -> Output:
         out = outputs if outputs is not None else self.cached_output
-        ...  # stencils read inputs.vn.data and write out.vn.data
+        ...  # stencils read inputs.vn and write out.vn
         return out
 ```
 
@@ -157,8 +159,10 @@ type check.
   the state CF tables and `FieldKind` are gone.
 - `allocate` and `copy` work on any state through the annotations; the physics driver's
   accumulation and the IO walk the present leaves through `fields()`.
-- Every `Input`/`Output` view is spelled out by keyword at the call site, and every stencil call
-  reads `.data`.
+- Every `Input`/`Output` view is spelled out by keyword at the call site.
+- `Field` builds on gt4py internals: it subclasses `NdArrayField` (gtfn's argument conversion
+  accepts only that class), relies on gt4py building every derived field through `from_array`,
+  and has one subclass per array namespace (NumPy, CuPy).
 - Calls through the `fw.Component` protocol are not checked: `run` is `Any -> Any` there,
   because each component narrows `inputs` and `outputs` to its own `Input` and `Output`. Only
   calls on a concrete class are checked.
@@ -177,9 +181,15 @@ type check.
 - Bad, because nothing checks the keys against the tables: a missing or misspelled key is a
   `KeyError` at run time, and the value of a key is a `gtx.Field` to mypy.
 
+### A wrapper holding the gt4py field (`Field(quantity, data)` with `.data`)
+
+- Good, because it depends on no gt4py internals.
+- Bad, because every stencil call unwraps `.data`, or a call wrapper does it at a cost on every
+  call.
+
 ### gt4py's dimension-typed fields alone (`fa.CellKField[wpfloat]`)
 
-- Good, because no wrapper and no `.data`.
+- Good, because it is gt4py's own type, with nothing on top.
 - Bad, because the dimensions are run-time objects: `CellKField` and `CellKHalfField` are one
   type to mypy, and two quantities on the same dimensions (`theta_v`, `exner`) are never
   distinguished.

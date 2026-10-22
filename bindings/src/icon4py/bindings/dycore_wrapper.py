@@ -451,4 +451,4 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     if gtx_config.COLLECT_METRICS_LEVEL > 0:
         gtx_metrics.dump_json("gt4py_timers.json")
 
-    max_vcfl_size1_array[0] = max_vertical_cfl.data.ndarray[()]  # pass back to Fortran
+    max_vcfl_size1_array[0] = max_vertical_cfl.ndarray[()]  # pass back to Fortran

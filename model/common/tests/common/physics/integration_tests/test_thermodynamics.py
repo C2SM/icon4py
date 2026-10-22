@@ -213,14 +213,14 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     end_cell_local = icon_grid.start_index(cell_domain(h_grid.Zone.END))
     compute_tendencies.compute_virtual_temperature_tendency.with_backend(backend)(
         dtime=dtime,
-        qv=tracer_state.qv.data,
-        qc=tracer_state.qc.data,
-        qi=tracer_state.qi.data,
-        qr=tracer_state.qr.data,
-        qs=tracer_state.qs.data,
-        qg=tracer_state.qg.data,
-        temperature=diagnostic_state.temperature.data,
-        virtual_temperature=diagnostic_state.virtual_temperature.data,
+        qv=tracer_state.qv,
+        qc=tracer_state.qc,
+        qi=tracer_state.qi,
+        qr=tracer_state.qr,
+        qs=tracer_state.qs,
+        qg=tracer_state.qg,
+        temperature=diagnostic_state.temperature,
+        virtual_temperature=diagnostic_state.virtual_temperature,
         virtual_temperature_tendency=virtual_temperature_tendency,
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,
@@ -230,13 +230,13 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     )
 
     updated_virtual_temperature = (
-        diagnostic_state.virtual_temperature.data.asnumpy()
+        diagnostic_state.virtual_temperature.asnumpy()
         + virtual_temperature_tendency.asnumpy() * dtime
     )
 
     compute_tendencies.compute_exner_tendency.with_backend(backend)(
         dtime=dtime,
-        virtual_temperature=diagnostic_state.virtual_temperature.data,
+        virtual_temperature=diagnostic_state.virtual_temperature,
         virtual_temperature_tendency=virtual_temperature_tendency,
         exner=exner,
         out=exner_tendency,
@@ -253,9 +253,9 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
         gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         metrics_savepoint.ddqz_z_full(),
-        diagnostic_state.pressure.data,
+        diagnostic_state.pressure,
         data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
-        diagnostic_state.pressure_ifc.data,
+        diagnostic_state.pressure_ifc,
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,
         vertical_start=gtx.int32(0),
@@ -274,12 +274,12 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         atol=1.0e-13,
     )
     assert test_utils.dallclose(
-        diagnostic_state.pressure.data.asnumpy(),
+        diagnostic_state.pressure.asnumpy(),
         satad_exit.pressure().asnumpy(),
         atol=1.0e-13,
     )
     assert test_utils.dallclose(
-        diagnostic_state.pressure_ifc.data.asnumpy(),
+        diagnostic_state.pressure_ifc.asnumpy(),
         satad_exit.pressure_ifc().asnumpy(),
         atol=1.0e-13,
     )

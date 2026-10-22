@@ -79,7 +79,7 @@ def _present[Q: fw.Quantity](field: fw.Field[Q] | None) -> fw.Field[Q]:
 
 def _array(field: fw.Field[Any]) -> Any:
     # NDArrayObject declares no __setitem__
-    return field.data.ndarray
+    return field.ndarray
 
 
 class PhysicsDriver(fw.Component):
@@ -298,28 +298,28 @@ class PhysicsDriver(fw.Component):
         )
         # 1. virtual temperature and temperature
         self._diagnose_temperature(
-            qv=entry.qv.data,
-            qc=entry.qc.data,
-            qi=entry.qi.data,
-            qr=entry.qr.data,
-            qs=entry.qs.data,
-            qg=entry.qg.data,
-            theta_v=entry.theta_v.data,
-            exner=entry.exner.data,
-            virtual_temperature=entry.virtual_temperature.data,
-            temperature=entry.temperature.data,
+            qv=entry.qv,
+            qc=entry.qc,
+            qi=entry.qi,
+            qr=entry.qr,
+            qs=entry.qs,
+            qg=entry.qg,
+            theta_v=entry.theta_v,
+            exner=entry.exner,
+            virtual_temperature=entry.virtual_temperature,
+            temperature=entry.temperature,
         )
         # 2. surface pressure at the bottom interface, then the full pressure column
         self._compute_surface_and_hydrostatic_pressure(
-            exner=entry.exner.data,
-            virtual_temperature=entry.virtual_temperature.data,
+            exner=entry.exner,
+            virtual_temperature=entry.virtual_temperature,
             ddqz_z_full=self._ddqz_z_full,
-            pressure=entry.pressure.data,
+            pressure=entry.pressure,
             pressure_ifc_on_model_levels=self._pressure_ifc_on_model_levels,
-            pressure_ifc=entry.pressure_ifc.data,
+            pressure_ifc=entry.pressure_ifc,
         )
         # 3. cell-centre (u, v) from the edge-normal vn
-        self._rbf_interpolation(p_e_in=entry.vn.data, p_u_out=entry.u.data, p_v_out=entry.v.data)
+        self._rbf_interpolation(p_e_in=entry.vn, p_u_out=entry.u, p_v_out=entry.v)
         return entry
 
     def _zero_accumulators(self) -> None:
@@ -339,7 +339,7 @@ class PhysicsDriver(fw.Component):
                 accumulator = self.accumulators[name] = fw.zeros(
                     field.quantity, self.grid, self.allocator
                 )
-            _array(accumulator)[...] += field.data.ndarray
+            _array(accumulator)[...] += field.ndarray
 
     @staticmethod
     def _continue_in_place(entry: physics_state.EntryState, out: Output) -> None:
@@ -347,7 +347,7 @@ class PhysicsDriver(fw.Component):
         for name, target in fw.fields(out).items():
             source: fw.Field[Any] = getattr(entry, name)
             if target.ndarray is not source.ndarray:
-                _array(target)[...] = source.data.ndarray
+                _array(target)[...] = source.ndarray
 
     def _apply(self, entry: physics_state.EntryState, dt_seconds: float, out: Output) -> None:
         """
@@ -363,39 +363,39 @@ class PhysicsDriver(fw.Component):
         # 1. tracers: q += dt * sum of the tendencies (mo_interface_iconam_aes:513)
         for name in states.TRACERS:
             if (tendency := acc.get(f"tend_{name}")) is not None:
-                tracer = _present(getattr(out, name)).data
+                tracer = _present(getattr(out, name))
                 self._apply_tendency(
-                    field_a=tracer, coeff=dt_seconds, field_b=tendency.data, output_field=tracer
+                    field_a=tracer, coeff=dt_seconds, field_b=tendency, output_field=tracer
                 )
 
         # 2. temperature -> exner/theta_v: one exact-EOS update from the entry temperature plus
         #    the summed tendency, with the final (post step 1) moisture
         if "tend_temperature" in acc:
             self._apply_tendency(
-                field_a=entry.temperature.data,
+                field_a=entry.temperature,
                 coeff=dt_seconds,
-                field_b=acc["tend_temperature"].data,
+                field_b=acc["tend_temperature"],
                 output_field=self._new_temperature,
             )
             self._compute_virtual_temperature_tendency(
                 dtime=dt_seconds,
-                qv=_present(out.qv).data,
-                qc=_present(out.qc).data,
-                qi=_present(out.qi).data,
-                qr=_present(out.qr).data,
-                qs=_present(out.qs).data,
-                qg=_present(out.qg).data,
+                qv=_present(out.qv),
+                qc=_present(out.qc),
+                qi=_present(out.qi),
+                qr=_present(out.qr),
+                qs=_present(out.qs),
+                qg=_present(out.qg),
                 temperature=self._new_temperature,
-                virtual_temperature=entry.virtual_temperature.data,
+                virtual_temperature=entry.virtual_temperature,
                 virtual_temperature_tendency=self._virtual_temperature_tendency,
             )
             self._update_exner_and_theta_v(
-                rho=entry.rho.data,
-                virtual_temperature=entry.virtual_temperature.data,
+                rho=entry.rho,
+                virtual_temperature=entry.virtual_temperature,
                 virtual_temperature_tendency=self._virtual_temperature_tendency,
                 dtime=dt_seconds,
-                exner=out.exner.data,
-                theta_v=out.theta_v.data,
+                exner=out.exner,
+                theta_v=out.theta_v,
             )
 
         # 3. winds: one projection of the summed (u, v) tendencies onto the edge normals
@@ -406,21 +406,19 @@ class PhysicsDriver(fw.Component):
                 f"the horizontal wind tendencies are applied as a pair; got only {declared}"
             )
         if wind_tendencies:
-            self._compute_vn_from_uv(
-                u=acc["tend_u"].data, v=acc["tend_v"].data, vn=self._vn_tendency
-            )
+            self._compute_vn_from_uv(u=acc["tend_u"], v=acc["tend_v"], vn=self._vn_tendency)
             self._apply_tendency_vn(
-                field_a=out.vn.data,
+                field_a=out.vn,
                 coeff=dt_seconds,
                 field_b=self._vn_tendency,
-                output_field=out.vn.data,
+                output_field=out.vn,
             )
 
         # 4. w, on half levels
         if "tend_w" in acc:
             self._apply_tendency_w(
-                field_a=out.w.data,
+                field_a=out.w,
                 coeff=dt_seconds,
-                field_b=acc["tend_w"].data,
-                output_field=out.w.data,
+                field_b=acc["tend_w"],
+                output_field=out.w,
             )

@@ -190,10 +190,10 @@ class Icon4pyDriver:
             qr=qr,
             qs=qs,
             qg=qg,
-            theta_v=prognostics.theta_v.data,
-            exner=prognostics.exner.data,
-            virtual_temperature=diagnostics.virtual_temperature.data,
-            temperature=diagnostics.temperature.data,
+            theta_v=prognostics.theta_v,
+            exner=prognostics.exner,
+            virtual_temperature=diagnostics.virtual_temperature,
+            temperature=diagnostics.temperature,
             horizontal_start=0,
             horizontal_end=end_cell_end,
             vertical_start=0,
@@ -201,11 +201,11 @@ class Icon4pyDriver:
             offset_provider={},
         )
         rbf.edge_2_cell_vector_rbf_interpolation.with_backend(self.backend)(
-            p_e_in=prognostics.vn.data,
+            p_e_in=prognostics.vn,
             ptr_coeff_1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
             ptr_coeff_2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
-            p_u_out=diagnostics.u.data,
-            p_v_out=diagnostics.v.data,
+            p_u_out=diagnostics.u,
+            p_v_out=diagnostics.v,
             horizontal_start=self.grid.end_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
             horizontal_end=end_cell_end,
             vertical_start=0,
@@ -213,12 +213,12 @@ class Icon4pyDriver:
             offset_provider={"C2E2C2E": self.grid.get_connectivity("C2E2C2E")},
         )
         compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(self.backend)(
-            exner=prognostics.exner.data,
-            virtual_temperature=diagnostics.virtual_temperature.data,
+            exner=prognostics.exner,
+            virtual_temperature=diagnostics.virtual_temperature,
             ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
-            pressure=diagnostics.pressure.data,
+            pressure=diagnostics.pressure,
             pressure_ifc_on_model_levels=self._pressure_ifc_on_model_levels,
-            pressure_ifc=diagnostics.pressure_ifc.data,
+            pressure_ifc=diagnostics.pressure_ifc,
             horizontal_start=0,
             horizontal_end=end_cell_end,
             vertical_start=0,
@@ -373,8 +373,8 @@ class Icon4pyDriver:
         # the dynamics leaves behind, as ICON does around its substep loop.
         if tracer_advection_diagnostic_state is not None:
             self._compute_airmass(
-                rho_in=prognostic_states.current.rho.data,
-                airmass_out=tracer_advection_diagnostic_state.airmass_now.data,
+                rho_in=prognostic_states.current.rho,
+                airmass_out=tracer_advection_diagnostic_state.airmass_now,
             )
 
         if self.config.nonhydrostatic is not None:
@@ -397,8 +397,8 @@ class Icon4pyDriver:
                 else prognostic_states.current.rho
             )
             self._compute_airmass(
-                rho_in=rho_after_dynamics.data,
-                airmass_out=tracer_advection_diagnostic_state.airmass_new.data,
+                rho_in=rho_after_dynamics,
+                airmass_out=tracer_advection_diagnostic_state.airmass_new,
             )
 
         if self.granules.diffusion is not None:
@@ -583,7 +583,7 @@ class Icon4pyDriver:
     # horizontal cfl is not ported
     def _adjust_ndyn_substeps_var(self, dycore_diagnostics: states.DycoreDiagnostics) -> None:
         # NDArrayObject declares no __setitem__
-        max_vertical_cfl: Any = dycore_diagnostics.max_vertical_cfl.data.ndarray
+        max_vertical_cfl: Any = dycore_diagnostics.max_vertical_cfl.ndarray
         global_max_vertical_cfl = self.global_reductions.max(
             self._xp.asarray(max_vertical_cfl[()], dtype=ta.wpfloat),
         )
@@ -852,12 +852,12 @@ class Icon4pyDriver:
         if self.config.driver.enable_statistics_logging:
             # TODO (Chia Rui): Do global max when multinode is ready
             rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
-                prognostic_states.rho.data,
+                prognostic_states.rho,
             )
             vn_arg_max, max_vn = driver_utils.find_maximum_from_field(
-                prognostic_states.vn.data,
+                prognostic_states.vn,
             )
-            w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w.data)
+            w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w)
 
             def _determine_sign(input_number: float) -> str:
                 return " " if input_number >= 0.0 else "-"
@@ -877,7 +877,7 @@ class Icon4pyDriver:
 
     def _compute_total_mass_and_energy(self, prognostic_states: states.PrognosticState) -> None:
         if self.config.driver.enable_statistics_logging:
-            rho_ndarray = prognostic_states.rho.data.ndarray
+            rho_ndarray = prognostic_states.rho.ndarray
             cell_area_ndarray = self.static_field_factories.geometry.get(
                 geom_attr.CELL_AREA
             ).ndarray
@@ -893,11 +893,11 @@ class Icon4pyDriver:
 
     def _compute_mean_at_final_time_step(self, prognostic_states: states.PrognosticState) -> None:
         if self.config.driver.enable_statistics_logging:
-            rho_ndarray = prognostic_states.rho.data.ndarray
-            vn_ndarray = prognostic_states.vn.data.ndarray
-            w_ndarray = prognostic_states.w.data.ndarray
-            theta_v_ndarray = prognostic_states.theta_v.data.ndarray
-            exner_ndarray = prognostic_states.exner.data.ndarray
+            rho_ndarray = prognostic_states.rho.ndarray
+            vn_ndarray = prognostic_states.vn.ndarray
+            w_ndarray = prognostic_states.w.ndarray
+            theta_v_ndarray = prognostic_states.theta_v.ndarray
+            exner_ndarray = prognostic_states.exner.ndarray
             log.info("")
             log.info("Global mean of    rho         vn           w          theta_v     exner:")
             log.info(

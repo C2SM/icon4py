@@ -67,7 +67,7 @@ class Halve(fw.Component):
 
     def run(self, inputs: Input, outputs: Output | None = None) -> Output:
         out = outputs if outputs is not None else self.cached_output
-        np.asarray(out.pressure.data.ndarray)[...] = 0.5 * np.asarray(inputs.pressure.data.ndarray)
+        np.asarray(out.pressure.ndarray)[...] = 0.5 * np.asarray(inputs.pressure.ndarray)
         return out
 
 
@@ -90,8 +90,8 @@ def test_quantity_is_a_tag_with_metadata() -> None:
 def test_field_keeps_its_quantity(grid: base_grid.Grid) -> None:
     pressure = fw.zeros(Pressure, grid, allocator=None)
     assert pressure.quantity is Pressure
-    assert pressure.data.ndarray.shape == (grid.num_cells, grid.num_levels)
-    assert pressure.data.domain.dims == CELL_K
+    assert pressure.ndarray.shape == (grid.num_cells, grid.num_levels)
+    assert pressure.domain.dims == CELL_K
 
 
 def test_field_is_the_gt4py_field_it_tags(grid: base_grid.Grid) -> None:
@@ -136,8 +136,8 @@ def test_zeros_resolves_the_precision_at_allocation(
     grid: base_grid.Grid, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(ta, "vpfloat", gtx.float32)
-    assert fw.zeros(Vt, grid, allocator=None).data.ndarray.dtype == np.float32
-    assert fw.zeros(Pressure, grid, allocator=None).data.ndarray.dtype == np.float64
+    assert fw.zeros(Vt, grid, allocator=None).ndarray.dtype == np.float32
+    assert fw.zeros(Pressure, grid, allocator=None).ndarray.dtype == np.float64
 
 
 def test_state_fields_list_the_field_leaves_only(grid: base_grid.Grid) -> None:
@@ -184,9 +184,9 @@ def test_allocate_follows_the_declared_dims(grid: base_grid.Grid) -> None:
         salt: fw.Field[Salt]
 
     fields = fw.allocate(Fields, grid, allocator=None, fill=lambda name, shape: float(len(name)))
-    assert fields.pressure.data.ndarray.shape == (grid.num_cells, grid.num_levels)
-    assert fields.salt.data.ndarray.shape == (grid.num_cells,)
-    assert np.all(np.asarray(fields.salt.data.ndarray) == 4.0)
+    assert fields.pressure.ndarray.shape == (grid.num_cells, grid.num_levels)
+    assert fields.salt.ndarray.shape == (grid.num_cells,)
+    assert np.all(np.asarray(fields.salt.ndarray) == 4.0)
 
 
 def test_allocate_fill_is_written_on_the_leaf_without_a_host_conversion(
@@ -206,19 +206,19 @@ def test_allocate_fill_is_written_on_the_leaf_without_a_host_conversion(
 
     fields = fw.allocate(Fields, grid, allocator=None, fill=fill)
     monkeypatch.undo()
-    assert np.all(np.asarray(fields.salt.data.ndarray) == 4.0)
+    assert np.all(np.asarray(fields.salt.ndarray) == 4.0)
 
 
 def test_component_writes_its_own_buffers_or_the_callers(grid: base_grid.Grid) -> None:
     halve = Halve(grid, allocator=None)
     pressure = fw.zeros(Pressure, grid, allocator=None)
-    np.asarray(pressure.data.ndarray)[...] = 8.0
+    np.asarray(pressure.ndarray)[...] = 8.0
     own = halve.run(Halve.Input(pressure=pressure))
     assert own is halve.cached_output and own is halve.run(Halve.Input(pressure=pressure))
-    assert np.all(np.asarray(own.pressure.data.ndarray) == 4.0)
+    assert np.all(np.asarray(own.pressure.ndarray) == 4.0)
     given = Halve.Output(pressure=pressure)
     assert halve.run(Halve.Input(pressure=pressure), outputs=given) is given
-    assert np.all(np.asarray(pressure.data.ndarray) == 4.0)
+    assert np.all(np.asarray(pressure.ndarray) == 4.0)
 
 
 def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid.Grid) -> None:

@@ -136,11 +136,11 @@ def test_initial_conditions(
     prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
     computed = {
-        "rho": prognostic_state_now.rho.data,
-        "exner": prognostic_state_now.exner.data,
-        "theta_v": prognostic_state_now.theta_v.data,
-        "vn": prognostic_state_now.vn.data,
-        "w": prognostic_state_now.w.data,
+        "rho": prognostic_state_now.rho,
+        "exner": prognostic_state_now.exner,
+        "theta_v": prognostic_state_now.theta_v,
+        "vn": prognostic_state_now.vn,
+        "w": prognostic_state_now.w,
     }
     references = {
         "rho": prognostics_savepoint.rho_now(),
@@ -152,7 +152,7 @@ def test_initial_conditions(
 
     # Moist experiments (e.g. APE) initialize the water-vapour tracer
     if tracer_state_now.qv is not None:
-        computed["qv"] = tracer_state_now.qv.data
+        computed["qv"] = tracer_state_now.qv
         references["qv"] = prognostics_savepoint.tracer_now(data.QV)
 
     tolerances = _TOLERANCES[experiment_description]

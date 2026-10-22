@@ -64,7 +64,7 @@ def grid() -> base_grid.Grid:
 
 def _qv(tracer_state: states.TracerState) -> np.ndarray:
     assert tracer_state.qv is not None
-    return tracer_state.qv.data.asnumpy()
+    return tracer_state.qv.asnumpy()
 
 
 class TestProcessTimeControl:
@@ -270,7 +270,7 @@ def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
     # the inputs are read only; out continues them, with the tendencies applied
     np.testing.assert_array_equal(_qv(tracer_state), 1e-3)
     np.testing.assert_allclose(_qv(new_tracers), 1e-3 + DT.total_seconds() * 1e-7, rtol=1e-12)
-    np.testing.assert_array_equal(new_prognostic.theta_v.data.asnumpy(), 300.0)
+    np.testing.assert_array_equal(new_prognostic.theta_v.asnumpy(), 300.0)
 
 
 def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -> None:
@@ -279,18 +279,18 @@ def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -
     )
     physics = driver(grid, [PhysicsProcess(name="p", step=step, time_control=time_control())])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-    exner_before = prognostic.exner.data.asnumpy().copy()
-    theta_v_before = prognostic.theta_v.data.asnumpy().copy()
+    exner_before = prognostic.exner.asnumpy().copy()
+    theta_v_before = prognostic.theta_v.asnumpy().copy()
 
     physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
 
     dt = DT.total_seconds()
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 1e-7 * dt, rtol=1e-12)
-    np.testing.assert_allclose(prognostic.w.data.asnumpy(), 1e-4 * dt, rtol=1e-12)
+    np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
     # EOS wiring smoke test: the exact-EOS update rewrote exner and theta_v (no direction
     # assertion: the uniform test state is not EOS-consistent)
-    assert not np.array_equal(prognostic.exner.data.asnumpy(), exner_before)
-    assert not np.array_equal(prognostic.theta_v.data.asnumpy(), theta_v_before)
+    assert not np.array_equal(prognostic.exner.asnumpy(), exner_before)
+    assert not np.array_equal(prognostic.theta_v.asnumpy(), theta_v_before)
 
 
 def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> None:
@@ -302,7 +302,7 @@ def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> Non
 
     physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
 
-    np.testing.assert_allclose(prognostic.vn.data.asnumpy(), 1e-4 * DT.total_seconds(), rtol=1e-12)
+    np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * DT.total_seconds(), rtol=1e-12)
 
 
 def test_apply_rejects_a_lone_horizontal_wind_tendency(grid: base_grid.Grid) -> None:

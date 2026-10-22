@@ -135,5 +135,5 @@ class RecordingStep:
 
     def __call__(self, entry: physics_state.EntryState) -> fw.State:
         self.entries.append(entry)
-        self.qv_read.append(entry.qv.data.asnumpy().copy())
+        self.qv_read.append(entry.qv.asnumpy().copy())
         return self.output

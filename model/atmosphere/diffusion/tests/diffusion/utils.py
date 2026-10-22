@@ -58,13 +58,13 @@ def verify_diffusion_fields(
     diffusion_savepoint: sb.IconDiffusionExitSavepoint,
 ):
     ref_w = diffusion_savepoint.w().asnumpy()
-    val_w = prognostic_state.w.data.asnumpy()
+    val_w = prognostic_state.w.asnumpy()
     ref_exner = diffusion_savepoint.exner().asnumpy()
     ref_theta_v = diffusion_savepoint.theta_v().asnumpy()
-    val_theta_v = prognostic_state.theta_v.data.asnumpy()
-    val_exner = prognostic_state.exner.data.asnumpy()
+    val_theta_v = prognostic_state.theta_v.asnumpy()
+    val_exner = prognostic_state.exner.asnumpy()
     ref_vn = diffusion_savepoint.vn().asnumpy()
-    val_vn = prognostic_state.vn.data.asnumpy()
+    val_vn = prognostic_state.vn.asnumpy()
 
     validate_diagnostics = (
         config.shear_type
@@ -72,13 +72,13 @@ def verify_diffusion_fields(
     )
     if validate_diagnostics:
         ref_div_ic = diffusion_savepoint.div_ic().asnumpy()
-        val_div_ic = diagnostic_state.div_ic.data.asnumpy()
+        val_div_ic = diagnostic_state.div_ic.asnumpy()
         ref_hdef_ic = diffusion_savepoint.hdef_ic().asnumpy()
-        val_hdef_ic = diagnostic_state.hdef_ic.data.asnumpy()
+        val_hdef_ic = diagnostic_state.hdef_ic.asnumpy()
         ref_dwdx = diffusion_savepoint.dwdx().asnumpy()
-        val_dwdx = diagnostic_state.dwdx.data.asnumpy()
+        val_dwdx = diagnostic_state.dwdx.asnumpy()
         ref_dwdy = diffusion_savepoint.dwdy().asnumpy()
-        val_dwdy = diagnostic_state.dwdy.data.asnumpy()
+        val_dwdy = diagnostic_state.dwdy.asnumpy()
 
         test_utils.assert_dallclose(
             val_div_ic, ref_div_ic, atol=1e-16 if test_utils.wp_is_dp else 4e-9

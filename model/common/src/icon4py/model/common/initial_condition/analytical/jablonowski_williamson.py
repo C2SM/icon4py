@@ -304,23 +304,23 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         primal_normal_x=primal_normal_x,
         eta_v_at_edge=eta_v_at_edge_dp.ndarray,
     )
-    prognostic_state_now.vn.data.ndarray[:, :] = vn_dp.astype(ta.wpfloat)
+    prognostic_state_now.vn.ndarray[:, :] = vn_dp.astype(ta.wpfloat)
     log.info("U2vn computation completed.")
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
 
-    prognostic_state_now.w.data.ndarray[:, :] = testcases_utils.init_w(
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,
         edge_cell_distance=edge_cell_distance,
         primal_edge_length=primal_edge_length,
         cell_area=cell_area,
-        vn=prognostic_state_now.vn.data.ndarray,
+        vn=prognostic_state_now.vn.ndarray,
         vct_b=vct_b.ndarray,
         nlev=num_levels,
     )
-    exchange.exchange(dims.CellDim, prognostic_state_now.w.data)
+    exchange.exchange(dims.CellDim, prognostic_state_now.w)
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
         rho=rho_dp,
@@ -336,9 +336,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    prognostic_state_now.exner.data.ndarray[:] = exner_dp.astype(ta.wpfloat)
-    prognostic_state_now.rho.data.ndarray[:] = rho_dp.astype(ta.wpfloat)
-    prognostic_state_now.theta_v.data.ndarray[:] = theta_v_dp.astype(ta.wpfloat)
+    prognostic_state_now.exner.ndarray[:] = exner_dp.astype(ta.wpfloat)
+    prognostic_state_now.rho.ndarray[:] = rho_dp.astype(ta.wpfloat)
+    prognostic_state_now.theta_v.ndarray[:] = theta_v_dp.astype(ta.wpfloat)
 
     # Moist initialization only runs when transport is active. The only tracer we
     # need to set is qv; the hydrometeors (qc, qi, ...) keep their zero-initialized
@@ -363,7 +363,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             grid=grid,
             backend=backend,
             allocator=allocator,
-            exner=prognostic_state_now.exner.data,
+            exner=prognostic_state_now.exner,
             virtual_temperature=virtual_temperature,
             ddqz_z_full=ddqz_z_full_field,
         )
@@ -373,7 +373,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             pressure=pressure_ndarray,
             cell_area=cell_area,
             ddqz_z_full=ddqz_z_full_field.ndarray,
-            qv=tracer_state_now.qv.data.ndarray,
+            qv=tracer_state_now.qv.ndarray,
             global_reductions=global_reductions,
             n_iter=ic_config.moisture_init_iterations,
             rh_at_1000hpa=ic_config.rh_at_1000hpa,
