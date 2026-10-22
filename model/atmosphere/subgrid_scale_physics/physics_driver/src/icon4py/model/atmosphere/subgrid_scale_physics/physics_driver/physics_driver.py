@@ -164,10 +164,11 @@ class PhysicsDriver:
         diagnostics: diagnostic_state.DiagnosticState,
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
+        air_mass: fa.CellKField[ta.wpfloat] | None = None,
         perturbed_exner: fa.CellKField[ta.wpfloat] | None = None,
     ) -> None:
         step_start_datetime = simulation_current_datetime - dtime
-        self._state.compute_diagnostics(prognostic, tracers, diagnostics)
+        self._state.compute_diagnostics(prognostic, tracers, diagnostics, air_mass)
         self._tendencies.zero()
         dt_seconds = dtime.total_seconds()
         # TODO (Yilu): compute the heat capacity after muphy

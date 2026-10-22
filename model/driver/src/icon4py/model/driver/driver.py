@@ -372,7 +372,12 @@ class Icon4pyDriver:
                 diagnostics=diagnostic_state,
                 dtime=self.config.driver.dtime,
                 simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
-                # TODO (Yilu): pass in airmass
+                # the air mass of the state the physics sees, ICON's ``mair`` (``airmass_new``)
+                air_mass=(
+                    tracer_advection_diagnostic_state.airmass_new
+                    if tracer_advection_diagnostic_state is not None
+                    else None
+                ),
                 perturbed_exner=(
                     solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels
                     if solve_nonhydro_diagnostic_state is not None

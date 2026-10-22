@@ -35,8 +35,7 @@ class SurfaceComponent:
 
     The scheme produces no tendencies: its outputs are the surface fluxes and the surface
     temperature, which the physics driver binds to its surface state so that tmx reads them
-    there. Every buffer the scheme writes into is bound once by ``bind_output_buffers`` or,
-    without a driver, allocated on first use.
+    there. Without a driver the component writes a flux state of its own.
     """
 
     # TODO (Yilu): inherit the Component protocol once it is formalized (deferred to a separate PR).
@@ -50,13 +49,12 @@ class SurfaceComponent:
         config: surface_config.SurfaceConfig,
         backend: gtx_typing.Backend | None = None,
     ) -> None:
-        self._grid = grid
-        self._allocator = model_backends.get_allocator(backend)
         self._surface = surface.Surface(grid=grid, config=config, backend=backend)
-        # Left unallocated: under a driver these are bound to caller-owned buffers before
-        # the first step, so allocating them here would be thrown away.
-        self._fluxes: SurfaceFluxState | None = None
-        self._surface_temperature: fa.CellField[ta.wpfloat] | None = None
+        # the outputs: replaced by the caller's buffers in `bind_output_buffers`
+        self._fluxes = SurfaceFluxState.allocate(
+            grid, allocator=model_backends.get_allocator(backend)
+        )
+        self._surface_temperature: fa.CellField[ta.wpfloat] = self._surface.surface_temperature
 
     def __call__(
         self, state: dict[str, model.DataField], time_step: time.AbsoluteTime
@@ -67,39 +65,26 @@ class SurfaceComponent:
         already filled in place.
         """
         fields = cast("dict[str, fa.CellField[ta.wpfloat]]", state)
-        fluxes = self._flux_buffers()
         self._surface.run(
             input_state=surface_states.SurfaceInputState(
                 surface_pressure=fields["surface_pressure"], temperature=fields["temperature"]
             ),
-            out=fluxes,
+            out=self._fluxes,
         )
         return cast(
             "dict[str, model.DataField]",
             {
-                **{name: getattr(fluxes, name) for name in surface_data.FLUX_PORTS},
-                "surface_temperature": self._surface_temperature_buffer(),
+                **{name: getattr(self._fluxes, name) for name in surface_data.FLUX_PORTS},
+                "surface_temperature": self._surface_temperature,
             },
         )
-
-    def _flux_buffers(self) -> SurfaceFluxState:
-        """The flux outputs: the caller's if bound, else our own, allocated on first use."""
-        if self._fluxes is None:
-            self._fluxes = SurfaceFluxState.allocate(self._grid, allocator=self._allocator)
-        return self._fluxes
-
-    def _surface_temperature_buffer(self) -> fa.CellField[ta.wpfloat]:
-        """The surface temperature output: the caller's if bound, else the scheme's own field."""
-        if self._surface_temperature is None:
-            return self._surface.surface_temperature
-        return self._surface_temperature
 
     def bind_output_buffers(self, buffers: dict[str, Any]) -> None:
         """Redirect the outputs into buffers the caller owns.
 
-        ``__call__`` hands the flux buffers to the scheme as its output state on every step,
-        so binding them once here redirects every write that follows. The surface temperature
-        is constant, so the bound buffer is filled once, here.
+        ``__call__`` hands the flux state to the scheme as its output on every step, so
+        replacing it once here redirects every write that follows. The surface temperature is
+        constant, so the bound buffer is filled once, here.
 
         ``PhysicsDriver`` calls this once per process while it is being built, passing the
         fields of its surface state.
