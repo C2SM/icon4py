@@ -178,7 +178,7 @@ class RecordingCoupling:
     events: list = dataclasses.field(default_factory=list)
 
     # PhysicsState surface
-    def compute_diagnostics(self, prognostic, tracers, diagnostics) -> None:
+    def compute_diagnostics(self, prognostic, tracers, diagnostics, air_mass=None) -> None:
         self.events.append(("compute_diagnostics", prognostic, diagnostics))
 
     _process_outputs: dict = dataclasses.field(default_factory=dict)

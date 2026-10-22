@@ -149,7 +149,8 @@ class PhysicsState:
     They are workaround so that the refactoring for sequential run is minimal and the advanced variables are clear to users/developers.
 
     1. Set pointers into the model state (``exner``, ``theta_v``, ``rho``, ``vn``,
-       ``w``, ``tracers``).
+       ``w``, ``tracers``, and ``air_mass``, the dycore's air mass per unit area that
+       ICON hands to the physics as ``mair``).
     2. ``diagnostics``, the caller's ``DiagnosticState``, linked and diagnosed once at
        ``PhysicsDriver.run`` entry. The virtual temperature and the pressure stay at
        step start.
@@ -231,6 +232,7 @@ class PhysicsState:
         self.vn: gtx.Field | None = None
         self.w: gtx.Field | None = None
         self.tracers: tracer_states.TracerState | None = None
+        self.air_mass: gtx.Field | None = None
         self.advanced: AdvancedState | None = None
         # The caller's diagnostic state — linked by every compute_diagnostics call
         self._diagnostics: diagnostic_state.DiagnosticState | None = None
@@ -304,8 +306,12 @@ class PhysicsState:
         prognostic: prognostics.PrognosticState,
         tracers: tracer_states.TracerState,
         diagnostics: diagnostic_state.DiagnosticState,
+        air_mass: fa.CellKField[ta.wpfloat] | None = None,
     ) -> None:
         """Bind the model-state pointers, link ``diagnostics`` and diagnose into it (dyn2phy).
+
+        `air_mass` is optional because only some processes need it; a process that does
+        reports its absence.
 
         After this call the facade is complete: every model-state field the physics
         may touch is reachable as ``state.<name>`` — the raw PrognosticState, DiagnosticState,
@@ -327,6 +333,7 @@ class PhysicsState:
         self.vn = prognostic.vn
         self.w = prognostic.w
         self.tracers = tracers
+        self.air_mass = air_mass
         self._diagnostics = diagnostics
         self.advanced = AdvancedState(
             temperature=self.diagnostics.temperature,
