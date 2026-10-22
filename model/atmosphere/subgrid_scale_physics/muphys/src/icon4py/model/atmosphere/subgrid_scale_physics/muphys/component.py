@@ -228,7 +228,7 @@ class MuphysComponent:
         driver never copies a diagnostic out of our results.
 
         ``PhysicsDriver`` calls this once per process while it is being built,
-        passing the buffers its ``DiagnosticsStore`` owns. If nobody calls it the
+        passing the buffers its ``PhysicsState`` owns. If nobody calls it the
         component allocates its own on the first step, which is what lets it run
         on its own in the granule datatests.
         """

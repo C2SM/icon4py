@@ -8,22 +8,25 @@
 
 """The two-layer coupling pieces of the PhysicsDriver.
 
-All physics processes are coupled in PARALLEL: every process computes its
-tendencies from the same frozen step-entry state, and the summed tendencies
-are applied to the prognostic state exactly once, after all processes.
-
-Deliberately NOT implemented here: ICON AES couples microphyscs and turbulence sequentially
-(each process sees the previous one's provisional update). Reintroducing that
-would require per-process state advances and working tracer buffers.
+The ``PhysicsState`` facade the processes read, and the ``Tendencies`` that advance it
+sequentially, as ICON AES does: each process sees the state the previous ones have already
+updated, and exner, theta_v and vn are updated once at the end.
 """
 
 from __future__ import annotations
 
+import dataclasses
+import typing
 from typing import TYPE_CHECKING, Final
 
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, model_options
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    model_options,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
@@ -37,7 +40,7 @@ from icon4py.model.common.physics.thermodynamics import (
     compute_temperature,
     compute_tendencies,
 )
-from icon4py.model.common.states import diagnostic_state, model
+from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -47,20 +50,69 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import factory, prognostic_state as prognostics, tracer_states
+    from icon4py.model.common.states import (
+        diagnostic_state,
+        factory,
+        prognostic_state as prognostics,
+        tracer_states,
+    )
 
 
 # The six moisture species physics requires from the TracerState.
 MOISTURE_SPECIES: Final = ("qv", "qc", "qi", "qr", "qs", "qg")
 
 
-class EntryState:
-    """The PhysicsState facade: model-state pointers + diagnosed fields (ICON dyn2phy, ``field%ta`` / ``diag%``).
+def tendency_name(name: str) -> str:
+    """The output name of the tendency of the state field ``name``."""
+    return f"tend_{name}"
 
-    Diagnosed once at ``PhysicsDriver.run`` entry; NEVER updated between processes —
-    all processes are parallel-coupled and see the same step-entry state. The
-    diagnostics gathered here used to be duplicated in each process's state adapter.
-    Pressure is step-start by construction, as in ICON.
+
+@dataclasses.dataclass(frozen=True)
+class AdvancedState:
+    """The state fields the processes' tendencies advance in place, as pointers (no copies).
+
+    A process names the tendency of a field ``tendency_name(<field name>)``.
+    """
+
+    temperature: fa.CellKField[ta.wpfloat]
+    u: fa.CellKField[ta.wpfloat]
+    v: fa.CellKField[ta.wpfloat]
+    w: fa.CellKHalfField[ta.wpfloat]
+    qv: fa.CellKField[ta.wpfloat]
+    qc: fa.CellKField[ta.wpfloat]
+    qi: fa.CellKField[ta.wpfloat]
+    qr: fa.CellKField[ta.wpfloat]
+    qs: fa.CellKField[ta.wpfloat]
+    qg: fa.CellKField[ta.wpfloat]
+
+    @classmethod
+    def field_dims(cls) -> dict[str, tuple[gtx.Dimension, ...]]:
+        hints = typing.get_type_hints(cls)
+        return {
+            field.name: typing.get_args(typing.get_args(hints[field.name])[0])
+            for field in dataclasses.fields(cls)
+        }
+
+
+class PhysicsState:
+    """What the processes see in one step (ICON dyn2phy, ``field%ta`` / ``diag%``), in four parts.
+
+    TODO (Yilu): The states in this module need to be vigorously improved when state and component is ready.
+    They are workaround so that the refactoring for sequential run is minimal and the advanced variables are clear to users/developers.
+
+    1. Set pointers into the model state (``exner``, ``theta_v``, ``rho``, ``vn``,
+       ``w``, ``tracers``).
+    2. ``diagnostics``, the caller's ``DiagnosticState``, linked and diagnosed once at
+       ``PhysicsDriver.run`` entry. The virtual temperature and the pressure stay at
+       step start.
+    3. ``advanced``, an ``AdvancedState`` of pointers to the fields that
+       ``Tendencies.advance`` updates in place after each process: ``temperature``,
+       ``u`` and ``v`` of ``diagnostics``, ``w`` and the moisture tracers.
+    4. ``process_outputs``, the diagnostic (non-tendency) output buffers of each
+       process. They are allocated once, when the driver is built, and written in
+       place by their component. They persist across steps, holding the values of
+       the last computed step (zeros before the process has first run).
+       ``compute_diagnostics`` never touches them.
     """
 
     def __init__(
@@ -71,6 +123,8 @@ class EntryState:
         metrics: factory.FieldSource,
         backend: gtx_typing.Backend | None = None,
     ) -> None:
+        self._grid = grid
+        self._backend = backend
         num_cells = grid.num_cells
         num_levels = grid.num_levels
 
@@ -112,7 +166,6 @@ class EntryState:
             offset_provider=grid.connectivities,
         )
 
-        self.diagnostics = diagnostic_state.initialize_diagnostic_state(grid, backend)
         # Scratch for the pressure scan: a scan's range is deduced from its single
         # output domain, so the half-level result lands on model levels first and
         # compute_surface_and_hydrostatic_pressure copies it up (see that program).
@@ -127,26 +180,73 @@ class EntryState:
         self.vn: gtx.Field | None = None
         self.w: gtx.Field | None = None
         self.tracers: tracer_states.TracerState | None = None
+        self.advanced: AdvancedState | None = None
+        # The caller's diagnostic state — linked by every compute_diagnostics call
+        self._diagnostics: diagnostic_state.DiagnosticState | None = None
+
+        # Diagnostic output buffers, keyed by process name, then by output name
+        self._process_outputs: dict[str, dict[str, gtx.Field]] = {}
+
+    @property
+    def diagnostics(self) -> diagnostic_state.DiagnosticState:
+        """The caller's diagnostic state, linked by ``compute_diagnostics``."""
+        assert self._diagnostics is not None, "compute_diagnostics must run first"
+        return self._diagnostics
+
+    @property
+    def process_outputs(self) -> Mapping[str, Mapping[str, gtx.Field]]:
+        """The diagnostic output buffers of every process, keyed by process name.
+
+        Keyed per process, so two processes may declare the same output name.
+        """
+        return self._process_outputs
+
+    def allocate_process_outputs(
+        self, process_name: str, outputs_properties: Mapping[str, model.FieldMetaData]
+    ) -> dict[str, gtx.Field]:
+        """Allocate the process's diagnostic output buffers from their metadata and keep them.
+
+        (TODO Yilu): I think these should also be linked back to some global variables.
+        And not all outputs should be allocated or linked here.
+
+        Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
+        is a diagnostic. Tendencies stay component-owned: ``Tendencies`` sums
+        them across processes, and recycling needs each process's last tendency.
+        """
+        if process_name in self._process_outputs:
+            raise ValueError(f"Process '{process_name}' already has output buffers.")
+        buffers: dict[str, gtx.Field] = {}
+        for name, props in outputs_properties.items():
+            if props.kind == model.FieldKind.TENDENCY:
+                continue
+            if props.dims is None:
+                raise ValueError(
+                    f"Diagnostic output '{name}' of process '{process_name}' declares no 'dims', "
+                    "which are needed to allocate its buffer."
+                )
+            buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
+        self._process_outputs[process_name] = buffers
+        return buffers
 
     def compute_diagnostics(
         self,
         prognostic: prognostics.PrognosticState,
         tracers: tracer_states.TracerState,
+        diagnostics: diagnostic_state.DiagnosticState,
     ) -> None:
-        """Bind the model-state pointers and diagnose the physics fields (dyn2phy).
+        """Bind the model-state pointers, link ``diagnostics`` and diagnose into it (dyn2phy).
 
         After this call the facade is complete: every model-state field the physics
-        may touch is reachable as ``entry_state.<name>`` — the raw PrognosticState
-        and TracerState never appear below the PhysicsState layer. Strictly
-        read-only for the processes: only the driver's single apply step writes,
-        through the pointers bound here.
+        may touch is reachable as ``state.<name>`` — the raw PrognosticState, DiagnosticState,
+        and TracerState never appear below the PhysicsState layer.
         """
         # Physics needs all six moisture species; TracerState fields are optional (a
         # tracer may be inactive per TracerConfig), so fail loudly once here rather
         # than feed None into the physics.
         if missing := [name for name in MOISTURE_SPECIES if getattr(tracers, name) is None]:
             raise ValueError(
-                f"physics requires all moisture species active in the TracerState; missing: {missing}"
+                "Physics requires all moisture species to be active in the 'TracerState', "
+                f"missing: {missing}."
             )
 
         # Pointers into the model state — same memory, physics names (no copies)
@@ -156,6 +256,14 @@ class EntryState:
         self.vn = prognostic.vn
         self.w = prognostic.w
         self.tracers = tracers
+        self._diagnostics = diagnostics
+        self.advanced = AdvancedState(
+            temperature=self.diagnostics.temperature,
+            u=self.diagnostics.u,
+            v=self.diagnostics.v,
+            w=prognostic.w,
+            **{name: getattr(tracers, name) for name in MOISTURE_SPECIES},
+        )
 
         # 1. Virtual temperature and temperature
         self._diagnose_temperature(
@@ -190,19 +298,22 @@ class EntryState:
 
 
 class Tendencies:
-    """The tendency sums of one timestep, and their single application to the state.
+    """The tendency sums of one timestep, and their application to the state.
 
-    One timestep is ``zero``, then ``accumulate`` once per process, then ``apply``.
+    One timestep is ``zero``, then ``advance`` once per process,
+    then ``update_prognostics``.
 
-    Sums are keyed by output name (``tend_*``) and their buffers allocated lazily
-    on first contribution. Only outputs whose metadata carries ``kind``
-    ``TENDENCY`` accumulate; the rest are diagnostics, written by the components
-    directly into the buffers of the ``DiagnosticsStore``.
+    There is one sum per ``AdvancedState`` field, keyed by its tendency name
+    (``tend_<field>``) and allocated as zeros at construction. Only outputs whose
+    metadata carries ``kind`` ``TENDENCY`` accumulate, and each must be the tendency
+    of an ``AdvancedState`` field; the rest are diagnostics, written by the
+    components directly into the ``PhysicsState.process_outputs`` buffers.
 
-    In ``apply`` the order matters: the tracers are updated first, because the
-    exner/theta_v update uses the final moisture, then the temperature, then the
-    winds. Which tendencies exist depends on which processes ran, so a tendency
-    that nothing produced is simply not applied.
+    The coupling is sequential, as ICON AES (``fc_xxx = 1``): ``advance`` adds each
+    process's tendencies to the tracers, temperature and u/v/w in place, so the next
+    process reads the advanced state. ``update_prognostics`` does not add them again: it
+    only recomputes exner and theta_v from the final temperature and moisture, and updates
+    vn once from the summed (u, v) tendencies.
     """
 
     def __init__(
@@ -237,9 +348,8 @@ class Tendencies:
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        # w has KDim+1 half-levels — same stencil, but domain extends to nlev+1
-        self._apply_tendency_w = model_options.setup_program(
-            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
+        self._apply_tendency_on_half_levels = model_options.setup_program(
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_khalf,
             backend=backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes={
@@ -269,6 +379,13 @@ class Tendencies:
             vertical_sizes=full_vertical,
             offset_provider={},
         )
+        self._update_exner_theta_v_and_perturbed_exner = model_options.setup_program(
+            program=compute_temperature.update_exner_theta_v_and_perturbed_exner,
+            backend=backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes=full_vertical,
+            offset_provider={},
+        )
         self._compute_vn_from_uv = model_options.setup_program(
             program=compute_vn_from_uv,
             backend=backend,
@@ -283,12 +400,14 @@ class Tendencies:
         )
 
         # Scratch buffers — allocated once
-        self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
+        # TODO(Yilu): rename the following variables including acc?
         self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._ddt_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
-        self._backend = backend
-        self._acc: dict[str, gtx.Field] = {}
+        self._acc: dict[str, gtx.Field] = {
+            tendency_name(name): data_alloc.zero_field(grid, *field_dims, allocator=backend)
+            for name, field_dims in AdvancedState.field_dims().items()
+        }
 
     @property
     def acc(self) -> Mapping[str, gtx.Field]:
@@ -300,141 +419,95 @@ class Tendencies:
         for buffer in self._acc.values():
             buffer.ndarray[...] = 0.0  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
-    def accumulate(
-        self, outputs: dict[str, gtx.Field], outputs_properties: dict[str, model.FieldMetaData]
+    def advance(
+        self,
+        state: PhysicsState,
+        outputs: dict[str, gtx.Field],
+        outputs_properties: dict[str, model.FieldMetaData],
+        dt_seconds: float,
     ) -> None:
-        """Add a process's tendency outputs to the per-variable sums.
-
-        Element-wise sum with no neighbor access, so a plain array operation on
-        the field buffers rather than a stencil. A process that did not run this
-        step has no outputs and contributes nothing.
-        """
+        """Sum this process's tendencies and add them to the state in place."""
         if not outputs:
             return
+        advanced = state.advanced
+        assert advanced is not None
+        targets = {
+            tendency_name(field.name): getattr(advanced, field.name)
+            for field in dataclasses.fields(advanced)
+        }
         for name, props in outputs_properties.items():
             if props.kind != model.FieldKind.TENDENCY:
                 continue
-            field = outputs[name]
             if (buffer := self._acc.get(name)) is None:
-                buffer = self._acc[name] = gtx.zeros(
-                    field.domain, dtype=field.dtype, allocator=self._backend
-                )
-            buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
-
-    def apply(self, entry_state: EntryState, dt_seconds: float) -> None:
-        """Write the accumulated tendencies to the model state — through the facade's pointers."""
-        acc = self._acc
-        tracers = entry_state.tracers
-        assert tracers is not None, "compute_diagnostics must run before apply"
-
-        # 1. Tracers: q += dt * sum of tendencies (mo_interface_iconam_aes:513)
-        for name in MOISTURE_SPECIES:
-            key = f"tend_{name}"
-            if key in acc:
-                tracer = getattr(tracers, name)
-                self._apply_tendency(
-                    field_a=tracer,
-                    coeff=dt_seconds,
-                    field_b=acc[key],
-                    output_field=tracer,
-                )
-
-        # 2. Temperature -> exner/theta_v: ONE exact-EOS update from the entry T
-        #    plus the summed tendency, with the final (post step 1) moisture.
-        if "tend_temperature" in acc:
-            self._apply_tendency(
-                field_a=entry_state.diagnostics.temperature,
-                coeff=dt_seconds,
-                field_b=acc["tend_temperature"],
-                output_field=self._new_te,
-            )
-            self._compute_virtual_temperature_tendency(
-                dtime=dt_seconds,
-                qv=tracers.qv,
-                qc=tracers.qc,
-                qi=tracers.qi,
-                qr=tracers.qr,
-                qs=tracers.qs,
-                qg=tracers.qg,
-                temperature=self._new_te,
-                virtual_temperature=entry_state.diagnostics.virtual_temperature,
-                virtual_temperature_tendency=self._tv_tendency,
-            )
-            self._update_exner_and_theta_v(
-                rho=entry_state.rho,
-                virtual_temperature=entry_state.diagnostics.virtual_temperature,
-                virtual_temperature_tendency=self._tv_tendency,
-                dtime=dt_seconds,
-                exner=entry_state.exner,
-                theta_v=entry_state.theta_v,
-            )
-
-        # 3. Winds: ONE projection of the summed (u, v) tendencies onto edge normals
-        wind_tendencies = {"tend_u", "tend_v"} & acc.keys()
-        if len(wind_tendencies) == 1:
-            (declared,) = wind_tendencies
-            raise ValueError(
-                f"the horizontal wind tendencies are applied as a pair; got only {declared}"
-            )
-        if wind_tendencies:
-            self._compute_vn_from_uv(
-                u=acc["tend_u"],
-                v=acc["tend_v"],
-                vn=self._ddt_vn,
-            )
-            self._apply_tendency_vn(
-                field_a=entry_state.vn,
-                coeff=dt_seconds,
-                field_b=self._ddt_vn,
-                output_field=entry_state.vn,
-            )
-
-        # 4. w (KDim+1 half-levels)
-        if "tend_w" in acc:
-            self._apply_tendency_w(
-                field_a=entry_state.w,
-                coeff=dt_seconds,
-                field_b=acc["tend_w"],
-                output_field=entry_state.w,
-            )
-
-
-class DiagnosticsStore:
-    """Storage for the diagnostic (non-tendency) outputs of the processes.
-
-    Allocates one buffer per output from its declared metadata at driver
-    construction and hands it to the component, which writes into it directly.
-    The buffers are keyed per process, so two processes may declare the same
-    output name. A buffer holds the values of the last computed step, and zeros
-    before its process has run.
-    """
-
-    def __init__(self, *, grid: base_grid.Grid, backend: gtx_typing.Backend | None = None) -> None:
-        self._grid = grid
-        self._backend = backend
-        self._store: dict[str, dict[str, gtx.Field]] = {}
-
-    def allocate(
-        self, process_name: str, outputs_properties: dict[str, model.FieldMetaData]
-    ) -> dict[str, gtx.Field]:
-        """Allocate the process's diagnostic buffers from their metadata and keep them.
-
-        Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
-        is a diagnostic — tendencies stay component-owned (the accumulators sum
-        across processes and recycling needs each process's last tendency).
-        """
-        buffers: dict[str, gtx.Field] = {}
-        for name, props in outputs_properties.items():
-            if props.kind == model.FieldKind.TENDENCY:
-                continue
-            if props.dims is None:
                 raise ValueError(
-                    f"diagnostic output '{name}' of process '{process_name}' declares no dims; "
-                    "the store allocates its buffer from that metadata"
+                    f"Tendency output '{name}' is not the tendency of an 'AdvancedState' field; "
+                    f"expected one of {list(self._acc)}."
                 )
-            buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
-        self._store[process_name] = buffers
-        return buffers
+            field = outputs[name]
+            target = targets[name]
+            apply_tendency = (
+                self._apply_tendency_on_half_levels
+                if dims.KHalfDim in target.domain.dims
+                else self._apply_tendency
+            )
+            # the sum over the processes, for the final vn and virtual temperature updates
+            apply_tendency(
+                field_a=buffer, coeff=ta.wpfloat(1.0), field_b=field, output_field=buffer
+            )
+            # the state the next process reads (ICON's interfaces advance ``field%*`` in place)
+            apply_tendency(field_a=target, coeff=dt_seconds, field_b=field, output_field=target)
 
-    def __getitem__(self, process_name: str) -> dict[str, gtx.Field]:
-        return self._store[process_name]
+    def update_prognostics(
+        self,
+        state: PhysicsState,
+        dt_seconds: float,
+        perturbed_exner: fa.CellKField[ta.wpfloat] | None = None,
+    ) -> None:
+        acc = self._acc
+        tracers = state.tracers
+        assert tracers is not None, "compute_diagnostics must run before update_prognostics"
+
+        # the tracers, temperature, u, v and w were already advanced by 'advance'
+        self._compute_virtual_temperature_tendency(
+            dtime=dt_seconds,
+            qv=tracers.qv,
+            qc=tracers.qc,
+            qi=tracers.qi,
+            qr=tracers.qr,
+            qs=tracers.qs,
+            qg=tracers.qg,
+            temperature=state.diagnostics.temperature,
+            virtual_temperature=state.diagnostics.virtual_temperature,
+            virtual_temperature_tendency=self._tv_tendency,
+        )
+        if perturbed_exner is None:
+            self._update_exner_and_theta_v(
+                rho=state.rho,
+                virtual_temperature=state.diagnostics.virtual_temperature,
+                virtual_temperature_tendency=self._tv_tendency,
+                dtime=dt_seconds,
+                exner=state.exner,
+                theta_v=state.theta_v,
+            )
+        else:
+            self._update_exner_theta_v_and_perturbed_exner(
+                rho=state.rho,
+                virtual_temperature=state.diagnostics.virtual_temperature,
+                virtual_temperature_tendency=self._tv_tendency,
+                dtime=dt_seconds,
+                exner=state.exner,
+                theta_v=state.theta_v,
+                perturbed_exner=perturbed_exner,
+            )
+
+        self._compute_vn_from_uv(
+            u=acc[tendency_name("u")],
+            v=acc[tendency_name("v")],
+            vn=self._ddt_vn,
+        )
+        self._apply_tendency_vn(
+            field_a=state.vn,
+            coeff=dt_seconds,
+            field_b=self._ddt_vn,
+            output_field=state.vn,
+        )
