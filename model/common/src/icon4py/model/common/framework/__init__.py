@@ -34,7 +34,7 @@ __all__ = [
     "Component",
     "Empty",
     "Field",
-    "PhysicsComponent",
+    "PhysicsProcess",
     "PredictorCorrectorPair",
     "ProcessTimeControl",
     "Quantity",
@@ -293,7 +293,7 @@ class Component(Protocol):
 
     `component.run(inputs, outputs)` writes where the caller says, numpy `out=` style, and
     returns `outputs`: the caller owns the buffers. Whether `outputs` may alias `inputs` is
-    the component's business; nothing checks it here. A `PhysicsComponent` also keeps buffers
+    the component's business; nothing checks it here. A `PhysicsProcess` also keeps buffers
     of its own, since it reuses its last output between two computations.
     """
 
@@ -307,7 +307,7 @@ class Component(Protocol):
 
 
 # ------------------------------------------------------------------------------
-# PhysicsComponent: a component under a time control
+# PhysicsProcess: a component under a time control
 # ------------------------------------------------------------------------------
 @dataclasses.dataclass(frozen=True)
 class ProcessTimeControl:
@@ -358,7 +358,7 @@ class ProcessTimeControl:
             )
 
 
-class PhysicsComponent(Component):
+class PhysicsProcess(Component):
     """
     A physics component with a time control: computes when its time control fires, else
     returns its cached output; None outside its window.

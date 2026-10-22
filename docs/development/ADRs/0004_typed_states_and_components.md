@@ -63,7 +63,7 @@ passing `theta_v` where `exner` is expected is not a type error. Tendencies were
 - `Component`: a `Protocol` of `Input`, `Output` and `run(inputs, outputs) -> Output`, the
   only method a component implements. A component declares its two states as nested classes; a
   component that writes nothing declares `Output = fw.Empty`.
-- `PhysicsComponent`: a `Component` under a `ProcessTimeControl`, run by the physics driver
+- `PhysicsProcess`: a `Component` under a `ProcessTimeControl`, run by the physics driver
   through `step`; it keeps its last output in its own buffers (`cached_output`).
 - `TimeStepPair` / `PredictorCorrectorPair`: icon4py's pairs (`common.utils`), re-exported.
 
@@ -112,7 +112,7 @@ The tracers are optional leaves: `TracerState`, `Advection.Input`/`Output` and
 `PhysicsDriver.Input`/`Output` declare `qv`...`qg` as `Field[Q] | None`, and the driver's
 `TracerConfig` decides which are present; the driver's views hold the active ones only.
 
-The physics processes are `PhysicsComponent`s. The physics driver calls `step(entry, step_start, dtime)` on each: inside its window a process computes on the steps its time control
+The physics processes subclass `PhysicsProcess`. The physics driver calls `step(entry, step_start, dtime)` on each: inside its window a process computes on the steps its time control
 fires and on its first step in the window, and returns its last output otherwise. A process
 picks its `Input` from the physics driver's `EntryState` with its `collect_input` method, which
 mypy checks against its `Input`.

@@ -99,7 +99,7 @@ class PhysicsDriver(fw.Component):
 
     def __init__(
         self,
-        processes: Sequence[fw.PhysicsComponent],
+        processes: Sequence[fw.PhysicsProcess],
         *,
         grid: base_grid.Grid,
         static_state: static_fields.PhysicsDriverStaticState,

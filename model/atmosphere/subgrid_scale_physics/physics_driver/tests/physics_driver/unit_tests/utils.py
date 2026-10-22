@@ -40,7 +40,7 @@ def time_control(
 
 
 def driver(
-    grid: base_grid.Grid, processes: Sequence[fw.PhysicsComponent] = ()
+    grid: base_grid.Grid, processes: Sequence[fw.PhysicsProcess] = ()
 ) -> physics_driver.PhysicsDriver:
     # neutral geometry: primal_normal_cell_x = 1, primal_normal_cell_y = 0, c_lin_e = 0.5, so
     # the two-neighbour projection of a uniform u-tendency onto the edges is the identity
@@ -121,7 +121,7 @@ def filled[S: fw.State](cls: type[S], grid: base_grid.Grid, **values: float) -> 
     return fw.allocate(cls, grid, None, fill=lambda name, _: values.get(name, 0.0))
 
 
-class RecordingProcess(fw.PhysicsComponent):
+class RecordingProcess(fw.PhysicsProcess):
     """A physics process computing a fixed output and recording the entry states it collected
     from, with a copy of the qv each one read."""
 

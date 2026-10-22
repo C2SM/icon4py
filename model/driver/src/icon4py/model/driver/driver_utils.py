@@ -88,7 +88,7 @@ def _muphys(
     static_field_factories: static_fields.StaticFieldFactories,
     time_control: fw.ProcessTimeControl,
     backend: gtx_backend.Backend[Any] | None,
-) -> fw.PhysicsComponent:
+) -> fw.PhysicsProcess:
     if config.muphys is None:
         raise ValueError("The 'muphys' process is not configured.")
     return muphys_component.MuphysComponent(
@@ -109,7 +109,7 @@ type _ProcessBuilder = Callable[
         fw.ProcessTimeControl,
         gtx_backend.Backend[Any] | None,
     ],
-    fw.PhysicsComponent,
+    fw.PhysicsProcess,
 ]
 
 # the physics processes, by the name of their section in the experiment configuration; the
