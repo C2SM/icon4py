@@ -20,9 +20,9 @@ if TYPE_CHECKING:
 
 
 class State(ComponentState):
-    """Maps the entry state to the input names of the muphys component.
+    """Maps the PhysicsState to the input names of the muphys component.
 
-    Every non-static input is taken from the entry state; ``dz`` is the only
+    Every non-static input is taken from the PhysicsState; ``dz`` is the only
     field this adapter owns. It derives nothing and holds nothing else.
     """
 

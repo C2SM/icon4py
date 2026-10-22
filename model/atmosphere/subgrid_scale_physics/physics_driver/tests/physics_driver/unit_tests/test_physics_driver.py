@@ -171,55 +171,54 @@ class RecordingComponentState(ComponentState):
 class RecordingCoupling:
     """Stub for the whole PhysicsState layer, recording the driver's coupling calls.
 
-    Plays entry state, accumulators, and apply at once — the driver only cares
-    about the call sequence, which `events` captures in order.
+    Plays PhysicsState and Tendencies at once — the driver only cares about the
+    call sequence, which `events` captures in order.
     """
 
     events: list = dataclasses.field(default_factory=list)
 
-    # EntryState surface
-    def compute_diagnostics(self, prognostic, tracers) -> None:
-        self.events.append(("compute_diagnostics", prognostic))
+    # PhysicsState surface
+    def compute_diagnostics(self, prognostic, tracers, diagnostics) -> None:
+        self.events.append(("compute_diagnostics", prognostic, diagnostics))
 
-    # Tendencies surface
-    def zero(self) -> None:
-        self.events.append(("zero",))
+    _process_outputs: dict = dataclasses.field(default_factory=dict)
 
-    def accumulate(self, outputs, outputs_properties) -> None:
-        self.events.append(("accumulate", dict(outputs)))
+    @property
+    def process_outputs(self) -> dict:
+        return self._process_outputs
 
-    def apply(self, entry_state, dt_seconds) -> None:
-        self.events.append(("apply", dt_seconds))
-
-    # DiagnosticsStore surface
-    store: dict = dataclasses.field(default_factory=dict)
-
-    def allocate(self, process_name, outputs_properties):
+    def allocate_process_outputs(self, process_name, outputs_properties):
         self.events.append(("allocate", process_name))
         buffers = {
             name: f"BUF_{name}"
             for name, props in outputs_properties.items()
             if props.kind != model.FieldKind.TENDENCY
         }
-        self.store[process_name] = buffers
+        self._process_outputs[process_name] = buffers
         return buffers
 
-    def __getitem__(self, process_name):
-        return self.store[process_name]
+    # Tendencies surface
+    def zero(self) -> None:
+        self.events.append(("zero",))
+
+    def advance(self, state, outputs, outputs_properties, dt_seconds) -> None:
+        self.events.append(("advance", dict(outputs), dt_seconds))
+
+    def update_prognostics(self, state, dt_seconds, perturbed_exner=None) -> None:
+        self.events.append(("update_prognostics", dt_seconds, perturbed_exner))
 
 
 def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
     coupling = RecordingCoupling()
     driver = PhysicsDriver(
         processes=processes,
-        entry_state=coupling,
+        state=coupling,
         tendencies=coupling,
-        diagnostics=coupling,
     )
     return driver, coupling
 
 
-def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
+def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
     state = RecordingComponentState()
     comp_a = RecordingComponent(
         outputs={"tend_temperature": "A"},
@@ -239,28 +238,30 @@ def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
     driver.run(
         prognostic="prog",
         tracers="tracers",
+        diagnostics="diag",
         dtime=_DT,
         simulation_current_datetime=_T0 + _DT,
     )
 
     assert comp_a.call_count == 1
     assert comp_b.call_count == 1
-    # parallel coupling: buffers allocated at construction, compute_diagnostics + zero once at
-    # entry, one accumulate per process, exactly one apply at the very end
+    # buffers allocated at construction, compute_diagnostics + zero once at entry, one
+    # advance per process (before the next process runs), exactly one update
+    # at the very end
     assert coupling.events == [
         ("allocate", "A"),
         ("allocate", "B"),
-        ("compute_diagnostics", "prog"),
+        ("compute_diagnostics", "prog", "diag"),
         ("zero",),
-        ("accumulate", {"tend_temperature": "A"}),
-        ("accumulate", {"tend_temperature": "B", "kh": "KH"}),
-        ("apply", 300.0),
+        ("advance", {"tend_temperature": "A"}, 300.0),
+        ("advance", {"tend_temperature": "B", "kh": "KH"}, 300.0),
+        ("update_prognostics", 300.0, None),
     ]
-    # both processes translated the same (frozen) entry state
+    # both processes translated the same PhysicsState object, advanced in place in between
     assert state.input_calls == [coupling, coupling]
-    # the store holds the layer-allocated buffers the granule writes into, by process
-    assert driver.diagnostics["B"] == {"kh": "BUF_kh"}
-    assert driver.diagnostics["A"] == {}
+    # the state holds the layer-allocated buffers the granule writes into, by process
+    assert driver.process_outputs["B"] == {"kh": "BUF_kh"}
+    assert driver.process_outputs["A"] == {}
 
 
 def test_run_raises_for_non_multiple_interval() -> None:
@@ -281,6 +282,7 @@ def test_run_raises_for_non_multiple_interval() -> None:
         driver.run(
             prognostic="prog",
             tracers="tracers",
+            diagnostics="diag",
             dtime=_DT,
             simulation_current_datetime=_T0,
         )
@@ -303,26 +305,27 @@ def test_out_of_window_process_does_nothing() -> None:
     driver.run(
         prognostic="prog",
         tracers="tracers",
+        diagnostics="diag",
         dtime=_DT,
         simulation_current_datetime=_T0,
     )
 
     assert comp.call_count == 0
     assert state.input_calls == []
-    # the accumulate call still happens, with nothing in it to add
+    # the advance call still happens, with nothing in it to add
     assert coupling.events == [
         ("allocate", "future"),
-        ("compute_diagnostics", "prog"),
+        ("compute_diagnostics", "prog", "diag"),
         ("zero",),
-        ("accumulate", {}),
-        ("apply", 300.0),
+        ("advance", {}, 300.0),
+        ("update_prognostics", 300.0, None),
     ]
 
 
 def test_inactive_in_window_recycles_cached_outputs() -> None:
     state = RecordingComponentState()
     # Component computes once; on the recycle step it MUST NOT be called, but its
-    # cached tendencies accumulate again.
+    # cached tendencies are advanced again.
     comp = RecordingComponent(
         outputs={"tend_temperature": "FRESH"},
         output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
@@ -334,24 +337,29 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
 
     # Step 1: active (step start == _T0, elapsed == 0), compute + cache.
     driver.run(
-        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + _DT
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + _DT,
     )
     # Step 2: in window, but not active (elapsed == _DT) — recycle the cached outputs.
     driver.run(
-        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + 2 * _DT
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + 2 * _DT,
     )
 
     assert comp.call_count == 1
     # The state is translated only on the firing step: a process that derives its own
     # inputs must not compute them for the step that reuses the cached outputs.
     assert state.input_calls == [coupling]
-    accumulates = [e for e in coupling.events if e[0] == "accumulate"]
-    assert accumulates == [
-        ("accumulate", {"tend_temperature": "FRESH"}),
-        ("accumulate", {"tend_temperature": "FRESH"}),  # recycled
-    ]
-    applies = [e for e in coupling.events if e[0] == "apply"]
-    assert len(applies) == 2  # one per run
+    advances = [e for e in coupling.events if e[0] == "advance"]
+    assert advances == [("advance", {"tend_temperature": "FRESH"}, 300.0)] * 2
+    updates = [e for e in coupling.events if e[0] == "update_prognostics"]
+    assert len(updates) == 2  # one per run
 
 
 def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
@@ -369,11 +377,15 @@ def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
 
     # First call lands in-window but off the firing tick (step start == _T0 + _DT).
     driver.run(
-        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + 2 * _DT
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + 2 * _DT,
     )
 
     assert comp.call_count == 1
-    assert ("accumulate", {"tend_temperature": "FRESH"}) in coupling.events
+    assert ("advance", {"tend_temperature": "FRESH"}, 300.0) in coupling.events
 
 
 def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:
@@ -387,4 +399,4 @@ def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:
     )
     # before any run: the layer allocated, the component adopted the buffer
     assert comp.bound == {"kh": "BUF_kh"}
-    assert driver.diagnostics["tmx"] == {"kh": "BUF_kh"}
+    assert driver.process_outputs["tmx"] == {"kh": "BUF_kh"}

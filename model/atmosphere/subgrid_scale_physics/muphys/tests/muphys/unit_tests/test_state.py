@@ -54,7 +54,7 @@ def test_as_component_input_maps_the_facade_without_copies():
 
 
 def test_diagnostic_outputs_declare_dims():
-    """Every non-tendency output must declare dims -- the DiagnosticsStore allocates from it."""
+    """Every non-tendency output must declare dims -- the PhysicsState allocates from it."""
     for name, props in muphys_data.OUTPUTS_PROPERTIES.items():
         if props.kind == model.FieldKind.TENDENCY:
             continue
