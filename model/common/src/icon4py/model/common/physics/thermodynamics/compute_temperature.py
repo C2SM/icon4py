@@ -223,3 +223,24 @@ def _compute_virtual_potential_temperature(
         virtual potential temperature at full levels [K]
     """
     return virtual_temperature * power(PhysicsConstants.p0ref / pressure, PhysicsConstants.rd_o_cpd)
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def _compute_potential_temperature(
+    temperature: fa.CellField[wpfloat],
+    pressure: fa.CellField[wpfloat],
+) -> fa.CellField[wpfloat]:
+    """
+    Compute the potential temperature on cells.
+
+    Written as ``potential_temperature`` in mo_aes_thermo.f90, an exponential of a
+    logarithm rather than a power, so that it reproduces ICON to rounding.
+
+    Args:
+        temperature: (virtual) temperature [K]
+        pressure: air pressure [Pa]
+
+    Returns:
+        potential temperature [K]
+    """
+    return temperature * exp(PhysicsConstants.rd_o_cpd * log(PhysicsConstants.p0ref / pressure))

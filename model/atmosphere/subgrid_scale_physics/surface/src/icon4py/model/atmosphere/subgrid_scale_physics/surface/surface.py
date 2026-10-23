@@ -15,6 +15,7 @@ import typing
 
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
     config as surface_config,
+    diagnostics,
     surface_states,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.surface.stencils import prescribed_flux_stencils
@@ -35,9 +36,11 @@ log = logging.getLogger(__name__)
 
 class Surface:
     """
-    One step of the surface scheme (``Compute`` of ``t_vdf_sfc`` in mo_vdf_sfc.f90), restricted
-    to the prescribed fluxes of ``isrfc_type = 1`` over a sea surface of fixed temperature
-    (``ape_sst_case = sst_const``), the only scheme with reference data.
+    One step of the surface scheme over a sea surface of fixed temperature
+    (``ape_sst_case = sst_const``): ``Compute_diagnostics`` of ``t_vdf_sfc`` (mo_vdf_sfc.f90),
+    the surface-layer diagnostics and the Louis exchange coefficients that tmx takes as the
+    lowest level of its ``km`` and ``kh``, then ``Compute``, restricted to the prescribed
+    fluxes of ``isrfc_type = 1``, the only scheme with reference data.
 
     The surface temperature is a constant field built from the configuration, as ICON's ocean
     tile holds it without a mixed-layer ocean (mo_vdf_sfc.f90 zeroes its tendency). The scheme
@@ -57,6 +60,7 @@ class Surface:
         *,
         grid: base_grid.Grid,
         config: surface_config.SurfaceConfig,
+        metric_state: surface_states.SurfaceMetricState,
         backend: model_backends.BackendLike,
     ) -> None:
         self.surface_temperature: fa.CellField[ta.wpfloat] = data_alloc.constant_field(
@@ -68,6 +72,16 @@ class Surface:
         )
         """Sea surface temperature (``ts``) [K], constant."""
 
+        self.diagnostics = diagnostics.Diagnostics(
+            grid=grid,
+            metric_state=metric_state,
+            surface_temperature=self.surface_temperature,
+            backend=backend,
+            minimum_surface_wind=config.minimum_surface_wind,
+            surface_layer_fraction=config.surface_layer_fraction,
+            ocean_roughness_length=config.ocean_roughness_length,
+            minimum_roughness_length=config.minimum_roughness_length,
+        )
         cell_domain = h_grid.domain(dims.CellDim)
         self._compute_prescribed_surface_fluxes = setup_program(
             backend=backend,
@@ -84,18 +98,33 @@ class Surface:
             offset_provider={},
         )
 
-    def run(self, *, input_state: surface_states.SurfaceInputState, out: SurfaceFluxState) -> None:
+    def run(
+        self,
+        *,
+        input_state: surface_states.SurfaceInputState,
+        diagnostic_state: surface_states.SurfaceDiagnosticState,
+        out: SurfaceFluxState,
+        is_initial_time: bool,
+    ) -> None:
         """
-        Compute the surface fluxes of the step into `out`.
+        Compute the surface diagnostics of the step into `diagnostic_state` and the surface
+        fluxes into `out`.
 
+        `diagnostic_state` carries the roughness length and the exchange coefficients from one
+        step to the next; `is_initial_time` selects the initial roughness length of the sea.
         Writes the heat and moisture fluxes and the energy fluxes they carry; the wind stress
         and `q_snocpymlt` of `out` are left as they are (zero from `allocate`), as ICON's
         prescribed-flux branch leaves them.
         """
+        self.diagnostics.run(
+            input_state=input_state,
+            diagnostic_state=diagnostic_state,
+            is_initial_time=is_initial_time,
+        )
         log.debug("surface fluxes (prescribed): start")
         self._compute_prescribed_surface_fluxes(
-            surface_pressure=input_state.surface_pressure,
             temperature=input_state.temperature,
+            density=diagnostic_state.density,
             evapotranspiration=out.evapotranspiration,
             sensible_heat_flux=out.sensible_heat_flux,
             latent_heat_flux=out.latent_heat_flux,

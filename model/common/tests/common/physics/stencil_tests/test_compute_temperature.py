@@ -15,6 +15,7 @@ import pytest
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.physics.thermodynamics.compute_temperature import (
+    _compute_potential_temperature,
     _compute_virtual_potential_temperature,
     compute_temperature_from_internal_energy_per_area,
     compute_virtual_temperature_and_temperature,
@@ -157,4 +158,33 @@ class TestComputeVirtualPotentialTemperature(stencil_tests.StencilTest):
                 dims.KDim: (0, gtx.int32(grid.num_levels)),
             },
             out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+        )
+
+
+class TestComputePotentialTemperature(stencil_tests.StencilTest):
+    PROGRAM = _compute_potential_temperature
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        temperature: np.ndarray,
+        pressure: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        theta = temperature * np.exp(phy_const.RD_O_CPD * np.log(phy_const.P0REF / pressure))
+        return dict(out=theta)
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        temperature = data_alloc.random_field(dims.CellDim, low=180.0, high=320.0, dtype=wpfloat)
+        pressure = data_alloc.random_field(dims.CellDim, low=1.0e3, high=1.05e5, dtype=wpfloat)
+        return dict(
+            temperature=temperature,
+            pressure=pressure,
+            domain={dims.CellDim: (0, gtx.int32(grid.num_cells))},
+            out=data_alloc.zero_field(dims.CellDim, dtype=wpfloat),
         )
