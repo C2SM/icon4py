@@ -22,7 +22,7 @@ resolution-markers = [
   "python_full_version < '3.13' and sys_platform == 'emscripten'",
   "python_full_version < '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'"
 ]
-revision = 3
+revision = 5
 version = 1
 
 [manifest]
@@ -1180,7 +1180,7 @@ dependencies = [
   { name = "typing-extensions" }
 ]
 name = "dace"
-source = { git = "https://github.com/spcl/dace.git?branch=main#f187d88a7aad49ff30296c5282783f8923832f9b" }
+source = { git = "https://github.com/spcl/dace.git?branch=main#fe3ce2163fbc0b1531c2da31e3a8876d21a8de87" }
 version = "2.0.0a10"
 
 [[package]]
@@ -2146,7 +2146,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.3" },
+  { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_noview_nested_sdfg" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
