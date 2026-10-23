@@ -63,8 +63,6 @@ passing `theta_v` where `exner` is expected is not a type error. Tendencies were
 - `Component`: a `Protocol` of `Input`, `Output` and `run(inputs, outputs) -> Output`, the
   only method a component implements. A component declares its two states as nested classes; a
   component that writes nothing declares `Output = fw.Empty`.
-- `PhysicsProcess`: a `Component` under a `ProcessTimeControl`, run by the physics driver
-  through `step`; it keeps its last output in its own buffers (`cached_output`).
 - `TimeStepPair` / `PredictorCorrectorPair`: icon4py's pairs (`common.utils`), re-exported.
 
 The quantity tags are in `framework/quantities.py`. The states passed between the components
@@ -98,7 +96,7 @@ diffusion and the physics driver update in place, the dycore needs distinct `now
 Static fields (metrics, interpolation coefficients) stay constructor arguments.
 
 The components are `SolveNonhydro` (dycore), `Diffusion`, `Advection` (tracer advection),
-`PhysicsDriver` with `MuphysComponent` as its process, and the driver's `IOMonitor`
+`PhysicsDriver`, `Muphys` (microphysics, run by the physics driver) and the driver's `IOMonitor`
 (`driver_io.py`).
 
 ### Calling the components
@@ -112,10 +110,14 @@ The tracers are optional leaves: `TracerState`, `Advection.Input`/`Output` and
 `PhysicsDriver.Input`/`Output` declare `qv`...`qg` as `Field[Q] | None`, and the driver's
 `TracerConfig` decides which are present; the driver's views hold the active ones only.
 
-The physics processes subclass `PhysicsProcess`. The physics driver calls `step(entry, step_start, dtime)` on each: inside its window a process computes on the steps its time control
-fires and on its first step in the window, and returns its last output otherwise. A process
-picks its `Input` from the physics driver's `EntryState` with its `collect_input` method, which
-mypy checks against its `Input`.
+The physics components (`Muphys`) are plain components. The physics driver runs each in a
+`PhysicsProcess` (`physics_driver.py`): the component, its `collect_input`, which picks the
+component's `Input` from the physics driver's `EntryState`, a `ProcessTimeControl` and the
+output buffers the process keeps between two runs. The physics driver calls
+`process.step(entry, step_start)`: inside its window the process runs its component on the
+steps its time control fires and on its first step in the window, and returns its last output
+otherwise. `PhysicsProcess` is generic over the component's `Input` and `Output`, so mypy checks
+`collect_input` against the component it is paired with.
 
 ### Adding a quantity
 

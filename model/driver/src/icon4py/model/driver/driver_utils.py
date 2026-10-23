@@ -86,18 +86,25 @@ def _muphys(
     config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     static_field_factories: static_fields.StaticFieldFactories,
-    time_control: fw.ProcessTimeControl,
+    time_control: physics_driver.ProcessTimeControl,
     backend: gtx_backend.Backend[Any] | None,
-) -> fw.PhysicsProcess:
+) -> physics_driver.PhysicsProcess[muphys_component.Muphys.Input, muphys_component.Muphys.Output]:
     if config.muphys is None:
         raise ValueError("The 'muphys' process is not configured.")
-    return muphys_component.MuphysComponent(
+    muphys = muphys_component.Muphys(
         grid=grid,
         dtime=config.driver.dtime,
         qnc=config.muphys.qnc,
         dz=static_field_factories.metrics.get(metrics_attributes.DDQZ_Z_FULL),
-        time_control=time_control,
         backend=backend,
+    )
+    return physics_driver.PhysicsProcess(
+        component=muphys,
+        collect_input=muphys_component.collect_input,
+        time_control=time_control,
+        outputs=fw.allocate(
+            muphys_component.Muphys.Output, grid, model_backends.get_allocator(backend)
+        ),
     )
 
 
@@ -106,10 +113,10 @@ type _ProcessBuilder = Callable[
         driver_config.ExperimentConfig,
         icon_grid.IconGrid,
         static_fields.StaticFieldFactories,
-        fw.ProcessTimeControl,
+        physics_driver.ProcessTimeControl,
         gtx_backend.Backend[Any] | None,
     ],
-    fw.PhysicsProcess,
+    physics_driver.PhysicsProcess[Any, Any],
 ]
 
 # the physics processes, by the name of their section in the experiment configuration; the
@@ -503,7 +510,7 @@ def initialize_granules(
         )
 
     physics_granule: physics_driver.PhysicsDriver | None = None
-    time_control = fw.ProcessTimeControl(
+    time_control = physics_driver.ProcessTimeControl(
         interval=config.driver.dtime,
         start_date=config.driver.start_of_simulation,
         end_date=model_time_variables.simulation_end_datetime,

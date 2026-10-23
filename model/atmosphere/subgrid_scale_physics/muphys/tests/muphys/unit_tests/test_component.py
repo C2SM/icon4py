@@ -47,27 +47,23 @@ def grid() -> base_grid.Grid:
 
 def _component(
     grid: base_grid.Grid, compute: GranuleStandIn
-) -> tuple[muphys_component.MuphysComponent, Any]:
+) -> tuple[muphys_component.Muphys, Any]:
     dz = data_alloc.constant_field(grid, 100.0, dims.CellDim, dims.KDim)
-    start = datetime.datetime(2024, 1, 1)
-    component = muphys_component.MuphysComponent(
+    component = muphys_component.Muphys(
         grid=grid,
         dtime=DTIME,
         qnc=100.0,
         dz=dz,
-        time_control=fw.ProcessTimeControl(
-            interval=DTIME, start_date=start, end_date=start + datetime.timedelta(days=1)
-        ),
         backend=None,
         compute=compute,
     )
     return component, dz
 
 
-def _inputs(grid: base_grid.Grid) -> muphys_component.MuphysComponent.Input:
+def _inputs(grid: base_grid.Grid) -> muphys_component.Muphys.Input:
     values = {"te": 280.0, "p": 9e4, "rho": 1.1, "qv": 1e-3}
     return fw.allocate(
-        muphys_component.MuphysComponent.Input,
+        muphys_component.Muphys.Input,
         grid,
         None,
         fill=lambda name, _: values.get(name, 0.0),
@@ -75,10 +71,9 @@ def _inputs(grid: base_grid.Grid) -> muphys_component.MuphysComponent.Input:
 
 
 def test_collect_input_views_the_entry_state(grid: base_grid.Grid) -> None:
-    component, _ = _component(grid, GranuleStandIn())
     entry = fw.allocate(physics_state.EntryState, grid, None)
 
-    inputs = component.collect_input(entry)
+    inputs = muphys_component.collect_input(entry)
 
     assert inputs.te is entry.temperature
     assert inputs.p is entry.pressure
@@ -91,9 +86,11 @@ def test_run_reports_tendencies_and_leaves_the_inputs_untouched(grid: base_grid.
     compute = GranuleStandIn()
     component, dz = _component(grid, compute)
     inputs = _inputs(grid)
+    outputs = fw.allocate(muphys_component.Muphys.Output, grid, None)
 
-    out = component.run(inputs)
+    out = component.run(inputs, outputs)
 
+    assert out is outputs
     dt = DTIME.total_seconds()
     np.testing.assert_allclose(out.tend_temperature.asnumpy(), 1.0 / dt, rtol=1e-12)
     np.testing.assert_allclose(out.tend_qv.asnumpy(), 2.0 / dt, rtol=1e-12)
@@ -107,13 +104,3 @@ def test_run_reports_tendencies_and_leaves_the_inputs_untouched(grid: base_grid.
     assert call["dz"] is dz
     assert call["p"] is inputs.p
     assert call["rho"] is inputs.rho
-
-
-def test_run_writes_where_the_caller_says(grid: base_grid.Grid) -> None:
-    component, _ = _component(grid, GranuleStandIn())
-    view = fw.allocate(muphys_component.MuphysComponent.Output, grid, None)
-
-    out = component.run(_inputs(grid), outputs=view)
-
-    assert out is view
-    np.testing.assert_array_equal(view.pflx.asnumpy(), 3.0)

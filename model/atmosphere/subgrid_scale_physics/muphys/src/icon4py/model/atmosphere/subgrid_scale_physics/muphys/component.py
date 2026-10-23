@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-class MuphysComponent(fw.PhysicsProcess):
+class Muphys(fw.Component):
     """
     The muphys microphysics granule as a component.
 
@@ -52,7 +52,7 @@ class MuphysComponent(fw.PhysicsProcess):
       applied to the model state; they are reported as they come.
 
     The tendencies are computed on the prognostic subdomain only: outside it the output
-    buffers keep what they hold (zeros in the component's own buffers).
+    buffers keep what they hold.
     """
 
     class Input(fw.State):
@@ -88,13 +88,10 @@ class MuphysComponent(fw.PhysicsProcess):
         dtime: time.RelativeTime,
         qnc: float,
         dz: fa.CellKField[ta.wpfloat],
-        time_control: fw.ProcessTimeControl,
         backend: model_backends.BackendLike = None,
         compute: Callable[..., Any] | None = None,
     ) -> None:
-        super().__init__(
-            grid=grid, allocator=model_backends.get_allocator(backend), time_control=time_control
-        )
+        allocator = model_backends.get_allocator(backend)
         self._dt_seconds = ta.wpfloat(dtime.total_seconds())
         self._dz = dz
         program_backend = model_options.customize_backend(program=None, backend=backend)
@@ -134,15 +131,15 @@ class MuphysComponent(fw.PhysicsProcess):
         self._compute = compute
 
         # the private copies the granule overwrites
-        self._te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=self.allocator)
+        self._te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
         self._q = Q(
             *(
-                data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=self.allocator)
+                data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
                 for _ in SPECIES
             )
         )
 
-    def run(self, inputs: Input, outputs: Output | None = None) -> Output:
+    def run(self, inputs: Input, outputs: Output) -> Output:
         """
         Run the granule on private copies of the inputs and report the tendencies.
 
@@ -150,7 +147,6 @@ class MuphysComponent(fw.PhysicsProcess):
         is handed and the old values are still needed afterwards; the layer thickness, pressure
         and density go in as they are, since the granule only reads them.
         """
-        out = outputs if outputs is not None else self.cached_output
         self._copy_field(field=inputs.te, output_field=self._te)
         for s in SPECIES:
             self._copy_field(field=getattr(inputs, f"q{s}"), output_field=getattr(self._q, s))
@@ -163,39 +159,40 @@ class MuphysComponent(fw.PhysicsProcess):
             q_in=self._q,
             q_out=self._q,
             t_out=self._te,
-            pflx=out.pflx,
-            pr=out.pr,
-            ps=out.ps,
-            pi=out.pi,
-            pg=out.pg,
-            pre=out.pre,
+            pflx=outputs.pflx,
+            pr=outputs.pr,
+            ps=outputs.ps,
+            pi=outputs.pi,
+            pg=outputs.pg,
+            pre=outputs.pre,
         )
 
         self._calculate_tendency(
             dtime=self._dt_seconds,
             old_field=inputs.te,
             new_field=self._te,
-            tendency=out.tend_temperature,
+            tendency=outputs.tend_temperature,
         )
         for s in SPECIES:
             self._calculate_tendency(
                 dtime=self._dt_seconds,
                 old_field=getattr(inputs, f"q{s}"),
                 new_field=getattr(self._q, s),
-                tendency=getattr(out, f"tend_q{s}"),
+                tendency=getattr(outputs, f"tend_q{s}"),
             )
-        return out
+        return outputs
 
-    def collect_input(self, entry: physics_state.EntryState) -> Input:
-        """The muphys input from the physics entry state (no copies)."""
-        return MuphysComponent.Input(
-            te=entry.temperature,
-            p=entry.pressure,
-            rho=entry.rho,
-            qv=entry.qv,
-            qc=entry.qc,
-            qi=entry.qi,
-            qr=entry.qr,
-            qs=entry.qs,
-            qg=entry.qg,
-        )
+
+def collect_input(entry: physics_state.EntryState) -> Muphys.Input:
+    """The muphys input from the physics entry state (no copies)."""
+    return Muphys.Input(
+        te=entry.temperature,
+        p=entry.pressure,
+        rho=entry.rho,
+        qv=entry.qv,
+        qc=entry.qc,
+        qi=entry.qi,
+        qr=entry.qr,
+        qs=entry.qs,
+        qg=entry.qg,
+    )

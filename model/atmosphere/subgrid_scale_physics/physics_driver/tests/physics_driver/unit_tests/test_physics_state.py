@@ -15,7 +15,7 @@ from icon4py.model.common import framework as fw
 from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base as base_grid, simple
 
-from .utils import RecordingProcess, driver, inputs, output, prognostics, time_control, tracers
+from .utils import driver, inputs, output, prognostics, recording, time_control, tracers
 
 
 @pytest.fixture
@@ -24,14 +24,14 @@ def grid() -> base_grid.Grid:
 
 
 def test_entry_state_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Grid) -> None:
-    process = RecordingProcess(grid, fw.Empty(), time_control())
+    process, recorder = recording(fw.Empty(), time_control())
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
     driver_inputs = inputs(prognostic, tracer_state)
 
     physics.run(driver_inputs, outputs=output(prognostic, tracer_state))
 
-    (entry,) = process.entries
+    (entry,) = recorder.entries
     assert isinstance(physics.diagnostics, states.Diagnostics)
     # no copies: the prognostics and tracers as given, the diagnostics in the driver's buffers
     for name in ("vn", "w", "exner", "theta_v", "rho", *states.TRACERS):
@@ -49,7 +49,7 @@ def test_diagnose_fills_the_diagnostics_and_leaves_the_inputs_untouched(
     Read-only-ness is the load-bearing invariant of parallel coupling: the prognostics and
     tracers stay bitwise identical until the driver's single apply step.
     """
-    process = RecordingProcess(grid, fw.Empty(), time_control())
+    process, _ = recording(fw.Empty(), time_control())
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid, exner=0.95, theta_v=300.0), tracers(grid)
     before = {name: field.asnumpy().copy() for name, field in fw.fields(prognostic).items()}

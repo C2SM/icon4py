@@ -11,8 +11,8 @@
 from __future__ import annotations
 
 import datetime
-import functools
 from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
@@ -35,12 +35,12 @@ def time_control(
     interval: datetime.timedelta = DT,
     start: datetime.datetime = T0,
     end: datetime.datetime = T0 + datetime.timedelta(days=1),
-) -> fw.ProcessTimeControl:
-    return fw.ProcessTimeControl(interval=interval, start_date=start, end_date=end)
+) -> physics_driver.ProcessTimeControl:
+    return physics_driver.ProcessTimeControl(interval=interval, start_date=start, end_date=end)
 
 
 def driver(
-    grid: base_grid.Grid, processes: Sequence[fw.PhysicsProcess] = ()
+    grid: base_grid.Grid, processes: Sequence[physics_driver.PhysicsProcess[Any, Any]] = ()
 ) -> physics_driver.PhysicsDriver:
     # neutral geometry: primal_normal_cell_x = 1, primal_normal_cell_y = 0, c_lin_e = 0.5, so
     # the two-neighbour projection of a uniform u-tendency onto the edges is the identity
@@ -121,29 +121,32 @@ def filled[S: fw.State](cls: type[S], grid: base_grid.Grid, **values: float) -> 
     return fw.allocate(cls, grid, None, fill=lambda name, _: values.get(name, 0.0))
 
 
-class RecordingProcess(fw.PhysicsProcess):
-    """A physics process computing a fixed output and recording the entry states it collected
-    from, with a copy of the qv each one read."""
+class Recorder(fw.Component):
+    """A component returning its outputs as given and recording the entry states it ran on,
+    with a copy of the qv each one read."""
 
     Input = physics_state.EntryState
     Output = fw.State
 
-    def __init__(
-        self, grid: base_grid.Grid, output: fw.State, time_control: fw.ProcessTimeControl
-    ) -> None:
-        super().__init__(grid=grid, allocator=None, time_control=time_control)
-        self.output = output
+    def __init__(self) -> None:
         self.entries: list[physics_state.EntryState] = []
         self.qv_read: list[np.ndarray] = []
 
-    @functools.cached_property
-    def cached_output(self) -> fw.State:
-        return self.output
-
-    def collect_input(self, entry: physics_state.EntryState) -> physics_state.EntryState:
-        self.entries.append(entry)
-        self.qv_read.append(entry.qv.asnumpy().copy())
-        return entry
-
     def run(self, inputs: physics_state.EntryState, outputs: fw.State) -> fw.State:
+        self.entries.append(inputs)
+        self.qv_read.append(inputs.qv.asnumpy().copy())
         return outputs
+
+
+def recording(
+    outputs: fw.State, time_control: physics_driver.ProcessTimeControl
+) -> tuple[physics_driver.PhysicsProcess[physics_state.EntryState, fw.State], Recorder]:
+    """A process with a fixed output, running a `Recorder` on the whole entry state."""
+    recorder = Recorder()
+    process = physics_driver.PhysicsProcess(
+        component=recorder,
+        collect_input=lambda entry: entry,
+        time_control=time_control,
+        outputs=outputs,
+    )
+    return process, recorder
