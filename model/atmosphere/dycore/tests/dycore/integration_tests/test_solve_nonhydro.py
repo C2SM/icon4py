@@ -191,7 +191,9 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.dtime()
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
+    forcing = utils.construct_forcing(sp, icon_grid, backend)
+    dycore_diagnostics = utils.construct_dycore_diagnostics(sp)
+    prep_adv = utils.construct_prep_advection(sp, icon_grid, backend)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
@@ -213,24 +215,32 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         backend=backend,
         max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
+    solve_nonhydro.diagnostics = utils.construct_diagnostics(sp)
     at_first_substep = substep_init == 1
 
     prognostic_states = utils.create_prognostic_states(sp)
 
     if not (at_initial_timestep and at_first_substep):
-        diagnostic_state_nh.vertical_wind_advective_tendency.swap()
+        dycore_diagnostics.vertical_wind_advective_tendency.swap()
     if not at_first_substep:
-        diagnostic_state_nh.normal_wind_advective_tendency.swap()
+        dycore_diagnostics.normal_wind_advective_tendency.swap()
 
     solve_nonhydro.run_predictor_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
+        utils.dycore_inputs(
+            prognostic_states.current,
+            forcing,
+            second_order_divdamp_factor=sp.divdamp_fac_o2(),
+            dtime=dtime,
+            ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
+            at_initial_timestep=at_initial_timestep,
+            prepare_fluxes_for_advection=sp.get_metadata("prep_adv").get("prep_adv"),
+            at_first_substep=at_first_substep,
+            at_last_substep=substep_init == experiment.config.driver.ndyn_substeps,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
+        ),
+        utils.dycore_output(prognostic_states.next, prep_adv, dycore_diagnostics),
         z_fields=solve_nonhydro.intermediate_fields,
-        dtime=dtime,
-        at_initial_timestep=at_initial_timestep,
-        at_first_substep=at_first_substep,
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -251,7 +261,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencils 2, 3
     test_utils.assert_dallclose(
-        diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels.asnumpy()[
+        dycore_diagnostics.perturbed_exner_at_cells_on_model_levels.asnumpy()[
             cell_start_lateral_boundary_level_3:, :
         ],
         sp_exit.exner_pr().asnumpy()[cell_start_lateral_boundary_level_3:, :],
@@ -277,7 +287,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencils 7,8,9
     test_utils.assert_dallclose(
-        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy()[
+        solve_nonhydro.diagnostics.rho_at_cells_on_half_levels.asnumpy()[
             cell_start_lateral_boundary_level_3:, :
         ],
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
@@ -294,7 +304,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencils 7,8,9, 11
     test_utils.assert_dallclose(
-        diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy()[
+        solve_nonhydro.diagnostics.theta_v_at_cells_on_half_levels.asnumpy()[
             cell_start_lateral_boundary_level_3:, :
         ],
         sp_exit.theta_v_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
@@ -379,14 +389,14 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
     # stencil 30
     test_utils.assert_dallclose(
-        diagnostic_state_nh.tangential_wind.asnumpy(),
+        solve_nonhydro.diagnostics.tangential_wind.asnumpy(),
         sp_exit.vt().asnumpy(),
         atol=5e-14 if test_utils.wp_is_dp else 3e-4,
     )
 
     # stencil 32
     test_utils.assert_dallclose(
-        diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
+        solve_nonhydro.diagnostics.mass_flux_at_edges_on_model_levels.asnumpy(),
         sp_exit.mass_fl_e().asnumpy(),
         atol=4e-12 if test_utils.wp_is_dp else 0.03,
     )
@@ -401,7 +411,9 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencil 35,36, 37,38
     test_utils.assert_dallclose(
-        diagnostic_state_nh.vn_on_half_levels.asnumpy()[edge_start_lateral_boundary_level_5:, :],
+        solve_nonhydro.diagnostics.vn_on_half_levels.asnumpy()[
+            edge_start_lateral_boundary_level_5:, :
+        ],
         sp_exit.vn_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=2e-14 if test_utils.wp_is_dp else 6e-4,
     )
@@ -435,7 +447,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencils 39,40
     test_utils.assert_dallclose(
-        diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels.asnumpy(),
+        solve_nonhydro.diagnostics.contravariant_correction_at_cells_on_half_levels.asnumpy(),
         sp_exit.w_concorr_c().asnumpy(),
         # practically zero in APE (max abs value 1.9e-12)
         atol=1e-15 if test_utils.wp_is_dp else 8e-5,
@@ -506,16 +518,9 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = init_savepoint.dtime()
     prepare_fluxes_for_advection = init_savepoint.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=init_savepoint.vn_traj(),
-        mass_flx_me=init_savepoint.mass_flx_me(),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=init_savepoint.mass_flx_ic(),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
-        ),
-    )
-
-    diagnostic_state_nh = utils.construct_diagnostics(init_savepoint, icon_grid, backend)
+    prep_adv = utils.construct_prep_advection(init_savepoint, icon_grid, backend)
+    forcing = utils.construct_forcing(init_savepoint, icon_grid, backend)
+    dycore_diagnostics = utils.construct_dycore_diagnostics(init_savepoint)
 
     z_fields = solve_nh.IntermediateFields(
         horizontal_pressure_gradient=init_savepoint.z_gradh_exner(),
@@ -549,39 +554,43 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         backend=backend,
         max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
+    solve_nonhydro.diagnostics = utils.construct_diagnostics(init_savepoint)
     at_first_substep = substep_init == 1
     at_last_substep = substep_init == experiment.config.driver.ndyn_substeps
 
     prognostic_states = utils.create_prognostic_states(init_savepoint)
 
     if not (at_initial_timestep and at_first_substep):
-        diagnostic_state_nh.vertical_wind_advective_tendency.swap()
+        dycore_diagnostics.vertical_wind_advective_tendency.swap()
     if not at_first_substep:
-        diagnostic_state_nh.normal_wind_advective_tendency.swap()
+        dycore_diagnostics.normal_wind_advective_tendency.swap()
 
     solve_nonhydro.run_corrector_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
+        utils.dycore_inputs(
+            prognostic_states.current,
+            forcing,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            dtime=dtime,
+            ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
+            at_initial_timestep=at_initial_timestep,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
+            at_first_substep=at_first_substep,
+            at_last_substep=at_last_substep,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
+        ),
+        utils.dycore_output(prognostic_states.next, prep_adv, dycore_diagnostics),
         z_fields=z_fields,
-        prep_adv=prep_adv,
-        second_order_divdamp_factor=second_order_divdamp_factor,
-        dtime=dtime,
-        ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
-        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
-        at_first_substep=at_first_substep,
-        at_last_substep=at_last_substep,
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
     )
 
     # stencil 10
     test_utils.assert_dallclose(
-        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
+        solve_nonhydro.diagnostics.rho_at_cells_on_half_levels.asnumpy(),
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
     )
     # stencil 10
     test_utils.assert_dallclose(
-        diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
+        solve_nonhydro.diagnostics.theta_v_at_cells_on_half_levels.asnumpy(),
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         atol=1.0e-12,
     )
@@ -626,7 +635,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencil 32
     test_utils.assert_dallclose(
-        diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
+        solve_nonhydro.diagnostics.mass_flux_at_edges_on_model_levels.asnumpy(),
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         atol=0 if test_utils.wp_is_dp else 1e-3,
         rtol=test_utils.scale_tol(5e-7),  # TODO(halungge): was rtol=1e-10 for local experiment only
@@ -648,7 +657,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     )
     # stencil 60 only relevant for last substep
     test_utils.assert_dallclose(
-        diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
+        dycore_diagnostics.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -706,16 +715,9 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.dtime()
     prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=sp.vn_traj(),
-        mass_flx_me=sp.mass_flx_me(),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
-        ),
-    )
-
-    diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
+    prep_adv = utils.construct_prep_advection(sp, icon_grid, backend)
+    forcing = utils.construct_forcing(sp, icon_grid, backend)
+    dycore_diagnostics = utils.construct_dycore_diagnostics(sp)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
@@ -738,22 +740,25 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
+    solve_nonhydro.diagnostics = utils.construct_diagnostics(sp)
     prognostic_states = utils.create_prognostic_states(sp)
 
     second_order_divdamp_factor = sp.divdamp_fac_o2()
-    solve_nonhydro.time_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        prep_adv=prep_adv,
-        second_order_divdamp_factor=second_order_divdamp_factor,
-        dtime=dtime,
-        ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
-        at_initial_timestep=at_initial_timestep,
-        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
-        at_first_substep=substep_init == 1,
-        at_last_substep=substep_init == experiment.config.driver.ndyn_substeps,
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
+    solve_nonhydro.run(
+        utils.dycore_inputs(
+            prognostic_states.current,
+            forcing,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            dtime=dtime,
+            ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
+            at_initial_timestep=at_initial_timestep,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
+            at_first_substep=substep_init == 1,
+            at_last_substep=substep_init == experiment.config.driver.ndyn_substeps,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
+        ),
+        utils.dycore_output(prognostic_states.next, prep_adv, dycore_diagnostics),
     )
     prognostic_state_nnew = prognostic_states.next
     test_utils.assert_dallclose(
@@ -783,7 +788,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     )
 
     test_utils.assert_dallclose(
-        diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
+        dycore_diagnostics.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -828,19 +833,13 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.dtime()
     prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=sp.vn_traj(),
-        mass_flx_me=sp.mass_flx_me(),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
-        ),
-    )
+    prep_adv = utils.construct_prep_advection(sp, icon_grid, backend)
 
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = utils.construct_diagnostics(
-        sp, icon_grid, backend, swap_vertical_wind_advective_tendency=not linit
+    forcing = utils.construct_forcing(sp, icon_grid, backend)
+    dycore_diagnostics = utils.construct_dycore_diagnostics(
+        sp, swap_vertical_wind_advective_tendency=not linit
     )
     prognostic_states = utils.create_prognostic_states(sp)
 
@@ -865,28 +864,31 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
         max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
+    solve_nonhydro.diagnostics = utils.construct_diagnostics(sp)
     for i_substep in range(experiment.config.driver.ndyn_substeps):
         at_first_substep = i_substep == 0
         at_last_substep = i_substep == (experiment.config.driver.ndyn_substeps - 1)
 
         if not (at_initial_timestep and at_first_substep):
-            diagnostic_state_nh.vertical_wind_advective_tendency.swap()
+            dycore_diagnostics.vertical_wind_advective_tendency.swap()
         if not at_first_substep:
-            diagnostic_state_nh.normal_wind_advective_tendency.swap()
+            dycore_diagnostics.normal_wind_advective_tendency.swap()
 
-        solve_nonhydro.time_step(
-            diagnostic_state_nh=diagnostic_state_nh,
-            prognostic_states=prognostic_states,
-            prep_adv=prep_adv,
-            second_order_divdamp_factor=sp.divdamp_fac_o2(),
-            dtime=dtime,
-            ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
-            at_initial_timestep=at_initial_timestep,
-            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
-            at_first_substep=at_first_substep,
-            at_last_substep=at_last_substep,
-            is_iau_active=is_iau_active,
-            iau_wgt_dyn=iau_wgt_dyn,
+        solve_nonhydro.run(
+            utils.dycore_inputs(
+                prognostic_states.current,
+                forcing,
+                second_order_divdamp_factor=sp.divdamp_fac_o2(),
+                dtime=dtime,
+                ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
+                at_initial_timestep=at_initial_timestep,
+                prepare_fluxes_for_advection=prepare_fluxes_for_advection,
+                at_first_substep=at_first_substep,
+                at_last_substep=at_last_substep,
+                is_iau_active=is_iau_active,
+                iau_wgt_dyn=iau_wgt_dyn,
+            ),
+            utils.dycore_output(prognostic_states.next, prep_adv, dycore_diagnostics),
         )
 
         if not at_last_substep:
@@ -900,17 +902,21 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     )
 
     test_utils.assert_dallclose(
-        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
+        solve_nonhydro.diagnostics.rho_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     test_utils.assert_dallclose(
-        diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
+        solve_nonhydro.diagnostics.theta_v_at_cells_on_half_levels.asnumpy()[
+            cell_start_lb_plus2:, :
+        ],
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     test_utils.assert_dallclose(
-        diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy()[edge_start_lb_plus4:, :],
+        solve_nonhydro.diagnostics.mass_flux_at_edges_on_model_levels.asnumpy()[
+            edge_start_lb_plus4:, :
+        ],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
         atol=5e-7 if test_utils.wp_is_dp else 0.2,
     )
@@ -954,7 +960,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
         atol=5e-13 if test_utils.wp_is_dp else 5e-4,
     )
     test_utils.assert_dallclose(
-        diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
+        dycore_diagnostics.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14 if test_utils.wp_is_dp else 4e-7,
     )

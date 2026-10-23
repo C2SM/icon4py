@@ -8,15 +8,53 @@
 
 import numpy as np
 
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.common import framework as fw
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.testing import serialbox as sb, test_utils
+
+
+def construct_diagnostics(savepoint: sb.IconDiffusionInitSavepoint) -> states.DiffusionDiagnostics:
+    return states.DiffusionDiagnostics(
+        hdef_ic=fw.Field(qty.HorizontalWindDeformationOnCellKHalf, savepoint.hdef_ic()),
+        div_ic=fw.Field(qty.DivergenceOnCellKHalf, savepoint.div_ic()),
+        dwdx=fw.Field(qty.ZonalGradientOfWOnCellKHalf, savepoint.dwdx()),
+        dwdy=fw.Field(qty.MeridionalGradientOfWOnCellKHalf, savepoint.dwdy()),
+    )
+
+
+def diffusion_views(
+    prognostic_state: states.PrognosticState,
+    diagnostic_state: states.DiffusionDiagnostics,
+    dtime: float,
+    initial_run: bool = False,
+) -> tuple[diffusion.Diffusion.Input, diffusion.Diffusion.Output]:
+    """The diffusion's views over the prognostics (diffused in place) and its diagnostics."""
+    inputs = diffusion.Diffusion.Input(
+        vn=prognostic_state.vn,
+        w=prognostic_state.w,
+        exner=prognostic_state.exner,
+        theta_v=prognostic_state.theta_v,
+        dtime=dtime,
+        initial_run=initial_run,
+    )
+    out = diffusion.Diffusion.Output(
+        vn=prognostic_state.vn,
+        w=prognostic_state.w,
+        exner=prognostic_state.exner,
+        theta_v=prognostic_state.theta_v,
+        hdef_ic=diagnostic_state.hdef_ic,
+        div_ic=diagnostic_state.div_ic,
+        dwdx=diagnostic_state.dwdx,
+        dwdy=diagnostic_state.dwdy,
+    )
+    return inputs, out
 
 
 def verify_diffusion_fields(
     config: diffusion.DiffusionConfig,
-    diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-    prognostic_state: prognostics.PrognosticState,
+    diagnostic_state: states.DiffusionDiagnostics,
+    prognostic_state: states.PrognosticState,
     diffusion_savepoint: sb.IconDiffusionExitSavepoint,
 ):
     ref_w = diffusion_savepoint.w().asnumpy()

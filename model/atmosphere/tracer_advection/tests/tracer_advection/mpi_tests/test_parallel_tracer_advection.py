@@ -42,6 +42,7 @@ from icon4py.model.testing.fixtures.datatest import (
 
 from ..fixtures import *  # noqa: F403
 from ..utils import (
+    advection_views,
     construct_diagnostic_exit_state,
     construct_diagnostic_init_state,
     construct_interpolation_state,
@@ -157,7 +158,7 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
     diagnostic_state = construct_diagnostic_init_state(
         icon_grid=icon_grid, savepoint=advection_init_savepoint, ntracer=ntracer, backend=backend
     )
-    prep_adv = construct_prep_adv(advection_init_savepoint)
+    prep_adv = construct_prep_adv(advection_init_savepoint, icon_grid, backend)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
 
     p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
@@ -166,11 +167,7 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
     log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
 
     advection_granule.run(
-        diagnostic_state=diagnostic_state,
-        prep_adv=prep_adv,
-        p_tracer_now=p_tracer_now,
-        p_tracer_new=p_tracer_new,
-        dtime=dtime,
+        *advection_views(diagnostic_state, prep_adv, p_tracer_now, p_tracer_new, dtime)
     )
 
     diagnostic_state_ref = construct_diagnostic_exit_state(

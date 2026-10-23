@@ -1,0 +1,106 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""Tests of the muphys component around a stand-in for the granule."""
+
+import dataclasses
+import datetime
+from typing import Any
+
+import numpy as np
+import pytest
+
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as muphys_component
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
+from icon4py.model.common import dimension as dims, framework as fw
+from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+DTIME = datetime.timedelta(seconds=10)
+
+
+@dataclasses.dataclass
+class GranuleStandIn:
+    """Overwrites what it is given, as the granule does: te + 1, qv + 2, pflx = 3."""
+
+    calls: list[dict[str, Any]] = dataclasses.field(default_factory=list)
+
+    def __call__(
+        self, *, te: Any, q_in: Any, t_out: Any, q_out: Any, pflx: Any, **kwargs: Any
+    ) -> None:
+        self.calls.append({"te": te, "q_in": q_in, "t_out": t_out, "q_out": q_out, **kwargs})
+        t_out.ndarray[...] = te.ndarray + 1.0
+        q_out.v.ndarray[...] = q_in.v.ndarray + 2.0
+        pflx.ndarray[...] = 3.0
+
+
+@pytest.fixture
+def grid() -> base_grid.Grid:
+    return simple.simple_grid()
+
+
+def _component(
+    grid: base_grid.Grid, compute: GranuleStandIn
+) -> tuple[muphys_component.Muphys, Any]:
+    dz = data_alloc.constant_field(grid, 100.0, dims.CellDim, dims.KDim)
+    component = muphys_component.Muphys(
+        grid=grid,
+        dtime=DTIME,
+        qnc=100.0,
+        dz=dz,
+        backend=None,
+        compute=compute,
+    )
+    return component, dz
+
+
+def _inputs(grid: base_grid.Grid) -> muphys_component.Muphys.Input:
+    values = {"te": 280.0, "p": 9e4, "rho": 1.1, "qv": 1e-3}
+    return fw.allocate(
+        muphys_component.Muphys.Input,
+        grid,
+        None,
+        fill=lambda name, _: values.get(name, 0.0),
+    )
+
+
+def test_collect_input_views_the_entry_state(grid: base_grid.Grid) -> None:
+    entry = fw.allocate(physics_state.EntryState, grid, None)
+
+    inputs = muphys_component.collect_input(entry)
+
+    assert inputs.te is entry.temperature
+    assert inputs.p is entry.pressure
+    assert inputs.rho is entry.rho
+    for name in ("qv", "qc", "qi", "qr", "qs", "qg"):
+        assert getattr(inputs, name) is getattr(entry, name), name
+
+
+def test_run_reports_tendencies_and_leaves_the_inputs_untouched(grid: base_grid.Grid) -> None:
+    compute = GranuleStandIn()
+    component, dz = _component(grid, compute)
+    inputs = _inputs(grid)
+    outputs = fw.allocate(muphys_component.Muphys.Output, grid, None)
+
+    out = component.run(inputs, outputs)
+
+    assert out is outputs
+    dt = DTIME.total_seconds()
+    np.testing.assert_allclose(out.tend_temperature.asnumpy(), 1.0 / dt, rtol=1e-12)
+    np.testing.assert_allclose(out.tend_qv.asnumpy(), 2.0 / dt, rtol=1e-12)
+    np.testing.assert_array_equal(out.tend_qc.asnumpy(), 0.0)
+    np.testing.assert_array_equal(out.pflx.asnumpy(), 3.0)
+    # the granule ran on private copies; the static and read-only fields went in as given
+    np.testing.assert_array_equal(inputs.te.asnumpy(), 280.0)
+    np.testing.assert_array_equal(inputs.qv.asnumpy(), 1e-3)
+    (call,) = compute.calls
+    assert call["te"] is not inputs.te
+    assert call["dz"] is dz
+    assert call["p"] is inputs.p
+    assert call["rho"] is inputs.rho

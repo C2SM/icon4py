@@ -7,7 +7,7 @@ tags:
 
 # Physics components interface: return values
 
-- **Status**: valid
+- **Status**: superseded by [0004: Typed States and Components](0004_typed_states_and_components.md)
 - **Authors**: Magdalena Luz (@halungge), Ong Chia Rui (@ongchia)
 - **Created**: 2024-07-23
 - **Updated**: 2024-09-11
