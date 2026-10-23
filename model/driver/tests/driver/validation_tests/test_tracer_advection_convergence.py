@@ -175,6 +175,7 @@ def test_horizontal_tracer_advection_convergence(
             grid_manager=grid_managers[i],
             process_props=process_props,
             backend=backend,
+            io_ranks=None,
         )
         simulated_tracer = ds.tracers.current.qv.ndarray
 
@@ -295,6 +296,7 @@ def test_vertical_tracer_advection_convergence(
             grid_manager=grid_manager,
             process_props=process_props,
             backend=backend,
+            io_ranks=None,
         )
         simulated_tracer = ds.tracers.current.qv.ndarray
 

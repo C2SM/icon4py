@@ -110,6 +110,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         grid_manager=single_rank_grid_manager,
         process_props=single_rank_process_props,
         backend=backend,
+        io_ranks=None,
     )
 
     single_rank_prognostic = prognostics.initialize_prognostic_state(
@@ -168,6 +169,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         grid_manager=multi_rank_grid_manager,
         process_props=process_props,
         backend=backend,
+        io_ranks=None,
     )
 
     multi_rank_prognostic = prognostics.initialize_prognostic_state(

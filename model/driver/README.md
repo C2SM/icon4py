@@ -11,7 +11,9 @@ It supports both single-node and distributed (MPI) runs, including distributed
 output: in MPI runs the ranks write either through the root rank (`gather` mode)
 or each into its own block of a shared store (`distributed` mode, the default;
 see `icon4py.model.common.io`). Which variables are written, how often and into
-which files is configured in field groups (see [Output](#output)).
+which files is configured in field groups (see [Output](#output)). Optionally,
+some ranks are dedicated to output (`io.num_io_ranks`): the ranks running the
+model ship their fields to them and continue while the IO ranks write.
 
 ## Installation
 
@@ -38,6 +40,17 @@ The output, if any, is configured in the `io` section of the configuration file
 
 ```bash
 mpirun -np 4 icon4py-driver \
+    --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
+    --config-file-path $CONFIG_FOLDER \
+    --icon4py-backend gtfn_cpu
+```
+
+With dedicated IO ranks (`num_io_ranks` in the `io` section) the launcher provides
+the compute *and* the IO ranks; the last `num_io_ranks` ranks only write (here 4
+compute ranks and 2 IO ranks, with `num_io_ranks: 2`):
+
+```bash
+mpirun -np 6 icon4py-driver \
     --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
     --config-file-path $CONFIG_FOLDER \
     --icon4py-backend gtfn_cpu
@@ -88,6 +101,14 @@ The variables a run can write are validated at startup. They are
 Fields are written with their horizontal dimension (`cell`, `edge` or `vertex`) and,
 if they have one, their vertical dimension (model or half levels): a surface field
 such as `surface_pressure` is stored as `(time, cell)`.
+
+Some ranks of an MPI run can be dedicated to output (`num_io_ranks`, default 0):
+the last ranks of the run become IO ranks, the model runs on the remaining compute
+ranks, which ship their output fields to the IO ranks at every capture step and
+continue computing while the IO ranks write (through the same backends and modes,
+on the IO ranks' communicator; see "Dedicated IO ranks" in
+`icon4py.model.common.io`). There must be at least as many compute ranks as IO
+ranks.
 
 ## Configuration directory
 
