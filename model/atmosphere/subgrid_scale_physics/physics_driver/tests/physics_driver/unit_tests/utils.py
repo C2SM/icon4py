@@ -18,6 +18,7 @@ import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_driver,
+    physics_process,
     physics_state,
     static_fields,
 )
@@ -35,12 +36,12 @@ def time_control(
     interval: datetime.timedelta = DT,
     start: datetime.datetime = T0,
     end: datetime.datetime = T0 + datetime.timedelta(days=1),
-) -> physics_driver.ProcessTimeControl:
-    return physics_driver.ProcessTimeControl(interval=interval, start_date=start, end_date=end)
+) -> physics_process.ProcessTimeControl:
+    return physics_process.ProcessTimeControl(interval=interval, start_date=start, end_date=end)
 
 
 def driver(
-    grid: base_grid.Grid, processes: Sequence[physics_driver.PhysicsProcess[Any, Any]] = ()
+    grid: base_grid.Grid, processes: Sequence[physics_process.PhysicsProcess[Any, Any]] = ()
 ) -> physics_driver.PhysicsDriver:
     # neutral geometry: primal_normal_cell_x = 1, primal_normal_cell_y = 0, c_lin_e = 0.5, so
     # the two-neighbour projection of a uniform u-tendency onto the edges is the identity
@@ -139,11 +140,11 @@ class Recorder(fw.Component):
 
 
 def recording(
-    outputs: fw.State, time_control: physics_driver.ProcessTimeControl
-) -> tuple[physics_driver.PhysicsProcess[physics_state.EntryState, fw.State], Recorder]:
+    outputs: fw.State, time_control: physics_process.ProcessTimeControl
+) -> tuple[physics_process.PhysicsProcess[physics_state.EntryState, fw.State], Recorder]:
     """A process with a fixed output, running a `Recorder` on the whole entry state."""
     recorder = Recorder()
-    process = physics_driver.PhysicsProcess(
+    process = physics_process.PhysicsProcess(
         component=recorder,
         collect_input=lambda entry: entry,
         time_control=time_control,

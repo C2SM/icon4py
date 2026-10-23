@@ -183,6 +183,8 @@ class Muphys(fw.Component):
         return outputs
 
 
+# NOTE: temporary, components MWE part 02 (collect): replaced by `fw.collect(Muphys.Input, ...)`,
+# which picks the leaves by quantity.
 def collect_input(entry: physics_state.EntryState) -> Muphys.Input:
     """The muphys input from the physics entry state (no copies)."""
     return Muphys.Input(

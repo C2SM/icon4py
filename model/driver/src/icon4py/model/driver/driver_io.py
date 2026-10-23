@@ -80,6 +80,9 @@ class IOMonitor(fw.Component):
     the DataArrays are built only when the writer captures.
     """
 
+    # NOTE: temporary, components MWE part 06 (IO from the config): the `Input` is built from
+    # the configured variables, looked up among the quantities, instead of declaring everything
+    # IO could write and filtering it through `_VARIABLE_NAMES`.
     class Input(fw.State):
         rho: fw.Field[qty.RhoOnCellK]
         exner: fw.Field[qty.ExnerOnCellK]

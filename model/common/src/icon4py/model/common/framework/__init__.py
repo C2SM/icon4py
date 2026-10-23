@@ -86,6 +86,8 @@ class Quantity:
         raise TypeError(f"'{cls.__name__}' is a type-level tag, not a value.")
 
 
+# NOTE: temporary, components MWE part 07 (tendencies): `TendencyOf[Q]`, derived from its parent
+# quantity, replaces the marker base and the hand-declared tendency tags.
 class Tendency(Quantity):
     """Marker base of the tendencies."""
 

@@ -12,6 +12,8 @@ from icon4py.model.common import framework as fw
 from icon4py.model.common.framework import quantities as qty
 
 
+# NOTE: temporary, components MWE part 02 (collect): the processes collect from the physics
+# driver's `Input` and `Diagnostics` directly, and the entry state goes.
 class EntryState(fw.State):
     """
     The prognostics the physics driver received and the diagnostics it derived from them.

@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
-    physics_driver,
+    physics_process,
     physics_state,
 )
 from icon4py.model.common import framework as fw
@@ -314,7 +314,7 @@ def static_checks(outputs: MoistOutput) -> None:
     it stops being an error.
     """
     # a collect_input that builds another component's Input
-    physics_driver.PhysicsProcess(
+    physics_process.PhysicsProcess(
         component=Recorder(),
         collect_input=_empty,  # type: ignore[arg-type]
         time_control=time_control(),

@@ -111,7 +111,7 @@ The tracers are optional leaves: `TracerState`, `Advection.Input`/`Output` and
 `TracerConfig` decides which are present; the driver's views hold the active ones only.
 
 The physics components (`Muphys`) are plain components. The physics driver runs each in a
-`PhysicsProcess` (`physics_driver.py`): the component, its `collect_input`, which picks the
+`PhysicsProcess` (`physics_process.py`): the component, its `collect_input`, which picks the
 component's `Input` from the physics driver's `EntryState`, a `ProcessTimeControl` and the
 output buffers the process keeps between two runs. The physics driver calls
 `process.step(entry, step_start)`: inside its window the process runs its component on the

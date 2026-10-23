@@ -10,19 +10,16 @@
 
 from __future__ import annotations
 
-import dataclasses
 import datetime
-from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, Protocol
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    physics_process,
     physics_state,
     static_fields,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
-    ProcessTimeControl,
 )
 from icon4py.model.common import dimension as dims, framework as fw, model_backends, model_options
 from icon4py.model.common.framework import quantities as qty, states
@@ -43,45 +40,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-__all__ = ["PhysicsDriver", "PhysicsProcess", "ProcessTimeControl"]
-
-
-class _Runs[I, O](Protocol):
-    """What a process needs of its component: `run(inputs, outputs) -> outputs`."""
-
-    def run(self, inputs: I, outputs: O) -> O: ...
-
-
-@dataclasses.dataclass
-class PhysicsProcess[I: fw.State, O: fw.State]:
-    """
-    A component under a time control, with the output buffers it keeps between two runs.
-
-    Inside its window the process runs its component on the steps its time control fires and
-    on its first step in the window; on the other steps it returns the output of its last
-    run, which stays in `outputs` until the next. Typed over the component's `Input` and
-    `Output`: a `collect_input` that builds another component's `Input` is a type error.
-    """
-
-    component: _Runs[I, O]
-    # the component's `Input` from the physics driver's entry state
-    collect_input: Callable[[physics_state.EntryState], I]
-    time_control: ProcessTimeControl
-    outputs: O
-    _has_run: bool = dataclasses.field(default=False, init=False)
-
-    def step(self, entry: physics_state.EntryState, step_start: datetime.datetime) -> O | None:
-        """This step's output: computed, the last one again, or None outside the window."""
-        # Outside its window the process contributes nothing, and must not reach the reuse
-        # branch below, which would run once on the first step.
-        if not self.time_control.is_in_window(step_start):
-            return None
-        # Run on a computing step, and also on the first in-window step, when there is nothing
-        # to reuse yet. Otherwise the last output is still in `outputs`.
-        if self.time_control.computes_at(step_start) or not self._has_run:
-            self.component.run(self.collect_input(entry), self.outputs)
-            self._has_run = True
-        return self.outputs
+__all__ = ["PhysicsDriver"]
 
 
 def _present[Q: fw.Quantity](field: fw.Field[Q] | None) -> fw.Field[Q]:
@@ -141,7 +100,7 @@ class PhysicsDriver(fw.Component):
 
     def __init__(
         self,
-        processes: Sequence[PhysicsProcess[Any, Any]],
+        processes: Sequence[physics_process.PhysicsProcess[Any, Any]],
         *,
         grid: base_grid.Grid,
         static_state: static_fields.PhysicsDriverStaticState,
@@ -264,6 +223,8 @@ class PhysicsDriver(fw.Component):
         self._apply(entry, inputs.dtime.total_seconds(), outputs)
         return outputs
 
+    # NOTE: temporary, components MWE parts 04 (recipes) and 05 (derived inputs): the
+    # diagnostics become recipes, which the processes name on their `Input`, and `_diagnose` goes.
     def _diagnose(self, inputs: Input) -> physics_state.EntryState:
         """The entry state: the inputs as given and the diagnostics derived from them (dyn2phy)."""
         # The tracers are optional leaves (a tracer may be inactive in the TracerConfig): fail
@@ -318,6 +279,9 @@ class PhysicsDriver(fw.Component):
         self._rbf_interpolation(p_e_in=entry.vn, p_u_out=entry.u, p_v_out=entry.v)
         return entry
 
+    # NOTE: temporary, components MWE parts 07 (tendencies) and 08 (updates): 07 keys the
+    # accumulators by the tendency's parent quantity instead of its output name; 08 replaces
+    # `_zero_accumulators`, `_accumulate` and `_apply` with the updates each process declares.
     def _zero_accumulators(self) -> None:
         for accumulator in self.accumulators.values():
             _array(accumulator)[...] = 0.0

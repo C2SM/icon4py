@@ -22,6 +22,8 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.framework import Quantity, Tendency
 
 
+# NOTE: temporary, components MWE part 03 (dims): a quantity and its place become two tags
+# (`Field[Q, D]`), so `ThetaVOnCellK` and `ThetaVOnCellKHalf` become one quantity at two places.
 CELL = (dims.CellDim,)
 CELL_K = (dims.CellDim, dims.KDim)
 CELL_KHALF = (dims.CellDim, dims.KHalfDim)

@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as muphys_component
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_driver,
+    physics_process,
     static_fields as physics_driver_static_fields,
 )
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
@@ -86,9 +87,9 @@ def _muphys(
     config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     static_field_factories: static_fields.StaticFieldFactories,
-    time_control: physics_driver.ProcessTimeControl,
+    time_control: physics_process.ProcessTimeControl,
     backend: gtx_backend.Backend[Any] | None,
-) -> physics_driver.PhysicsProcess[muphys_component.Muphys.Input, muphys_component.Muphys.Output]:
+) -> physics_process.PhysicsProcess[muphys_component.Muphys.Input, muphys_component.Muphys.Output]:
     if config.muphys is None:
         raise ValueError("The 'muphys' process is not configured.")
     muphys = muphys_component.Muphys(
@@ -98,7 +99,7 @@ def _muphys(
         dz=static_field_factories.metrics.get(metrics_attributes.DDQZ_Z_FULL),
         backend=backend,
     )
-    return physics_driver.PhysicsProcess(
+    return physics_process.PhysicsProcess(
         component=muphys,
         collect_input=muphys_component.collect_input,
         time_control=time_control,
@@ -113,10 +114,10 @@ type _ProcessBuilder = Callable[
         driver_config.ExperimentConfig,
         icon_grid.IconGrid,
         static_fields.StaticFieldFactories,
-        physics_driver.ProcessTimeControl,
+        physics_process.ProcessTimeControl,
         gtx_backend.Backend[Any] | None,
     ],
-    physics_driver.PhysicsProcess[Any, Any],
+    physics_process.PhysicsProcess[Any, Any],
 ]
 
 # the physics processes, by the name of their section in the experiment configuration; the
@@ -510,7 +511,7 @@ def initialize_granules(
         )
 
     physics_granule: physics_driver.PhysicsDriver | None = None
-    time_control = physics_driver.ProcessTimeControl(
+    time_control = physics_process.ProcessTimeControl(
         interval=config.driver.dtime,
         start_date=config.driver.start_of_simulation,
         end_date=model_time_variables.simulation_end_datetime,

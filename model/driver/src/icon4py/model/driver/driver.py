@@ -167,6 +167,8 @@ class Icon4pyDriver:
             offset_provider={},
         )
 
+    # NOTE: temporary, components MWE parts 04 (recipes) and 05 (derived inputs): the output
+    # diagnostics become recipes, which IO names on its `Input`, and this method goes.
     def _diagnose_for_output(
         self, prognostics: states.PrognosticState, diagnostics: states.Diagnostics
     ) -> None:
@@ -226,6 +228,8 @@ class Icon4pyDriver:
             offset_provider={},
         )
 
+    # NOTE: temporary, components MWE part 02 (collect): the view is collected by quantity
+    # (`fw.collect`) instead of spelled out by keyword.
     def _store_output(
         self,
         prognostics: states.PrognosticState,
@@ -475,6 +479,8 @@ class Icon4pyDriver:
         if not at_first_substep:
             dycore_diagnostics.normal_wind_advective_tendency.swap()
 
+    # NOTE: temporary, components MWE part 02 (collect): the view is collected by quantity
+    # (`fw.collect`) instead of spelled out by keyword.
     def _dycore_inputs(
         self,
         prognostics_now: states.PrognosticState,
@@ -509,6 +515,8 @@ class Icon4pyDriver:
             at_last_substep=at_last_substep,
         )
 
+    # NOTE: temporary, components MWE part 02 (collect): the view is collected by quantity
+    # (`fw.collect`) instead of spelled out by keyword.
     def _dycore_output(
         self,
         prognostics_next: states.PrognosticState,
@@ -670,6 +678,8 @@ class Icon4pyDriver:
         # reset max_vertical_cfl to zero
         max_vertical_cfl[...] = 0.0
 
+    # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
+    # (`fw.collect`) instead of spelled out by keyword.
     def _advection_views(
         self,
         tracers: common_utils.TimeStepPair[states.TracerState],
@@ -705,6 +715,8 @@ class Icon4pyDriver:
         )
         return inputs, out
 
+    # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
+    # (`fw.collect`) instead of spelled out by keyword.
     def _physics_views(
         self, prognostic_state: states.PrognosticState, tracer_state: states.TracerState
     ) -> tuple[physics_driver.PhysicsDriver.Input, physics_driver.PhysicsDriver.Output]:
@@ -738,6 +750,8 @@ class Icon4pyDriver:
         )
         return inputs, out
 
+    # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
+    # (`fw.collect`) instead of spelled out by keyword.
     def _diffusion_views(
         self,
         prognostic_state: states.PrognosticState,
