@@ -91,8 +91,6 @@ def _run_driver_compare_single_multi_rank(
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
-    if experiment_description.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     if model_backends.is_cpu_backend(backend) and test_utils.is_gtfn_backend(backend):
         atol = 1e-12

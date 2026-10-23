@@ -49,6 +49,7 @@ def apply(
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
+    decomposition_info: decomposition_defs.DecompositionInfo,
 ) -> None:
     """
     Fill the prognostic and tracer states by dispatching on the type of ``config``.
@@ -126,6 +127,7 @@ def apply(
                     solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
                     backend=backend,
                     exchange=exchange,
+                    decomposition_info=decomposition_info,
                 )
                 return
             from_file_ic.read_initial_condition_from_file(
@@ -135,6 +137,7 @@ def apply(
                 tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
+                decomposition_info=decomposition_info,
             )
         case _:
             raise TypeError(

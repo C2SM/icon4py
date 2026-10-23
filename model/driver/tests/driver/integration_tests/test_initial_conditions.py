@@ -132,6 +132,7 @@ def test_initial_conditions(
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
+        decomposition_info=icon4py_driver.decomposition_info,
     )
     prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
