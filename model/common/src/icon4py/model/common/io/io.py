@@ -15,8 +15,8 @@ import posixpath
 import statistics
 import timeit
 import uuid
-from collections.abc import Iterator
-from typing import Annotated, Any, Final, Self, TypeAlias
+from collections.abc import Iterator, Mapping, Sequence
+from typing import Annotated, Any, Final, Protocol, Self, TypeAlias
 
 from icon4py.model.common import exceptions, time
 from icon4py.model.common.components import monitor
@@ -80,9 +80,14 @@ FILE_SUFFIXES: Final[dict[OutputBackend, str]] = {
 DEFAULT_OUTPUT_PATH: Final[pathlib.Path] = pathlib.Path("./output")
 
 #: Timed phases of a capture step: "distribute" (collective gather / halo stripping)
-#: and "write" (file/store output).
+#: and "write" (file/store output). The compute ranks of a run with dedicated IO ranks
+#: (``io_servers.IOClient``) have "send" instead of "write" (posting the transfers to
+#: the IO rank), with "send_wait" as the part of it spent blocked on the in-flight
+#: bound -- the signal that the IO ranks do not keep up.
 PHASE_DISTRIBUTE: Final[str] = "distribute"
 PHASE_WRITE: Final[str] = "write"
+PHASE_SEND: Final[str] = "send"
+PHASE_SEND_WAIT: Final[str] = "send_wait"
 
 
 def normalized_basename(basename: str) -> str:
@@ -104,6 +109,47 @@ def _interval_in_steps(output_interval: OutputInterval, dtime: time.RelativeTime
             )
         return int(output_interval // dtime)
     return output_interval
+
+
+class OutputSchedule:
+    """Capture schedule of a field group, evaluated in model steps.
+
+    The monitors advance the schedule by one step at every ``store`` call; the current
+    step is a capture step if the number of steps counted so far is a multiple of the
+    output interval (a time delta is normalized to steps with the model time step, see
+    ``_interval_in_steps``), so the very first step -- the initial state -- is always
+    captured. ``at_capture_time`` is a pure predicate and ``advance`` the only mutation.
+    The schedule holds nothing but the step counter, so the compute and the IO side of
+    a run with dedicated IO ranks (``io_servers``) each keep one without exchanging it.
+    """
+
+    def __init__(self, output_interval: OutputInterval, dtime: time.RelativeTime):
+        self._interval_steps = _interval_in_steps(output_interval, dtime)
+        self._step_counter = 0
+
+    def at_capture_time(self) -> bool:
+        """Whether the current step is a capture step (pure)."""
+        return self._step_counter % self._interval_steps == 0
+
+    def advance(self) -> None:
+        """Count the current step as done."""
+        self._step_counter += 1
+
+
+def log_phase_timings(label: str, phase_seconds: Mapping[str, Sequence[float]], rank: int) -> None:
+    """Log the accumulated per-phase output overhead of one rank (see ``PHASE_*``).
+
+    Communication-free on purpose (see ``IOMonitor.report_timings``); phases without
+    samples are left out.
+    """
+    for phase, seconds in phase_seconds.items():
+        if not seconds:
+            continue
+        log.info(
+            f"output timings of {label}, phase '{phase}' on rank {rank}: total "
+            f"{sum(seconds):.6f} s, mean {statistics.mean(seconds):.6f} s over "
+            f"{len(seconds)} capture(s)"
+        )
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -324,8 +370,8 @@ class FieldGroupIOConfig:
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class IOConfig:
     """
-    Configuration of the output: the output directory, the field groups and the time
-    coordinate of their files.
+    Configuration of the output: the output directory, the field groups, the time
+    coordinate of their files and the ranks dedicated to writing them.
 
     Validated on construction.
     """
@@ -362,11 +408,33 @@ class IOConfig:
             description="Calendar of the time coordinate in the data files.",
         ),
     ] = cf_utils.DEFAULT_CALENDAR
+    num_io_ranks: Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Number of MPI ranks dedicated to output (0: the ranks running the model write "
+                "themselves). The last ranks of the run become IO ranks: the compute ranks "
+                "ship their output fields to them and continue while the IO ranks write (see "
+                "'Dedicated IO ranks' in 'icon4py.model.common.io'). Needs an MPI run with at "
+                "least as many compute ranks as IO ranks."
+            ),
+        ),
+    ] = 0
 
     def __post_init__(self) -> None:
         if not self.field_groups:
             raise exceptions.InvalidConfigError(
                 "Invalid 'field_groups': at least one output field group is required."
+            )
+        # bool is a subclass of int, but is not a rank count
+        if (
+            isinstance(self.num_io_ranks, bool)
+            or not isinstance(self.num_io_ranks, int)
+            or self.num_io_ranks < 0
+        ):
+            raise exceptions.InvalidConfigError(
+                f"Invalid 'num_io_ranks': must be a non-negative integer, got "
+                f"{self.num_io_ranks!r}."
             )
         # compared as paths: './winds' and 'winds' name the same file series
         basenames = [normalized_basename(group.basename) for group in self.field_groups]
@@ -388,6 +456,28 @@ class IOConfig:
         )
 
 
+class OutputMonitor(monitor.Monitor, Protocol):
+    """The output monitor of a model run, whatever the ranks writing the files.
+
+    Implemented by ``IOMonitor`` (the calling ranks write themselves) and by
+    ``io_servers.IOClient`` (the compute ranks of a run with dedicated IO ranks ship
+    their fields to those). Both must be called at every model step on every rank of
+    the calling communicator (``store``) and closed once at the end.
+    """
+
+    config: IOConfig
+
+    def store(
+        self, state: dict, model_time: dt.datetime, *args: Any, **kwargs: dict[str, Any]
+    ) -> None: ...
+
+    def close(self) -> None: ...
+
+    def variables_at_capture_time(self) -> set[str]: ...
+
+    def report_timings(self) -> None: ...
+
+
 class IOMonitor(monitor.Monitor):
     """
     Composite Monitor for all IO groups.
@@ -396,7 +486,11 @@ class IOMonitor(monitor.Monitor):
     In a distributed run (multi-rank ``process_props``) the decomposition info
     is required: each field group writes through the output distribution of its
     configured ``mode`` (see ``OutputMode``). ``store`` is then collective on the
-    communicator in ``process_props``.
+    communicator in ``process_props``. A single-rank communicator writes the full state
+    as is, unless the decomposition info says the local entries are not the
+    undecomposed grid (``DecompositionInfo.is_identity``) -- a dedicated IO rank serving
+    several compute ranks (``io_servers.IOServer``) then writes through the ``mode``'s
+    distribution too.
     """
 
     def __init__(
@@ -449,11 +543,11 @@ class IOMonitor(monitor.Monitor):
         ``RankBlockDistribution``); for other modes it is normalized to 1 so groups
         share one instance.
         """
-        if self._process_props.is_single_rank() or mode == OutputMode.GATHER:
+        if self._writes_undecomposed_state() or mode == OutputMode.GATHER:
             block_alignment = 1
         key = (mode, block_alignment)
         if key not in self._distributions:
-            if self._process_props.is_single_rank():
+            if self._writes_undecomposed_state():
                 distribution: distributed.OutputDistribution = distributed.SingleNodeDistribution(
                     self._horizontal_size
                 )
@@ -471,6 +565,16 @@ class IOMonitor(monitor.Monitor):
                 )
             self._distributions[key] = distribution
         return self._distributions[key]
+
+    def _writes_undecomposed_state(self) -> bool:
+        """Whether this (single) rank's state is the undecomposed grid, written as is.
+
+        Not so for a single dedicated IO rank (``io_servers.IOServer``): its state is
+        the whole grid in a permuted order, written through the ``mode``'s distribution.
+        """
+        return self._process_props.is_single_rank() and (
+            self._decomposition_info is None or self._decomposition_info.is_identity()
+        )
 
     def _initialize_output(self) -> None:
         self._create_output_dir()
@@ -511,6 +615,17 @@ class IOMonitor(monitor.Monitor):
         for m in self._group_monitors:
             m.store(state, model_time, *args, **kwargs)
 
+    def capture(self, state: dict, model_time: dt.datetime, groups: Sequence[int]) -> None:
+        """Write a capture step of the given field groups, their schedules aside.
+
+        ``groups`` indexes ``config.field_groups``. The entry point of a dedicated IO
+        rank (``io_servers.IOServer``): the compute ranks evaluate the schedules and
+        ship exactly the capture steps, so every call is a capture. Not to be mixed
+        with ``store`` on the same monitor.
+        """
+        for index in groups:
+            self._group_monitors[index].capture(state, model_time)
+
     def close(self) -> None:
         """Close all field-group writers.
 
@@ -548,15 +663,9 @@ class IOMonitor(monitor.Monitor):
             return
         self._timings_logged = True
         for m in self._group_monitors:
-            for phase in (PHASE_DISTRIBUTE, PHASE_WRITE):
-                seconds = m.phase_seconds[phase]
-                if not seconds:
-                    continue
-                log.info(
-                    f"output timings of group '{m.config.basename}', phase '{phase}' on "
-                    f"rank {self._process_props.rank}: total {sum(seconds):.6f} s, mean "
-                    f"{statistics.mean(seconds):.6f} s over {len(seconds)} capture(s)"
-                )
+            log_phase_timings(
+                f"group '{m.config.basename}'", m.phase_seconds, self._process_props.rank
+            )
 
 
 def generate_name(basename: str, counter: int, suffix: str) -> str:
@@ -613,8 +722,7 @@ class FieldGroupMonitor(monitor.Monitor):
         }
         self._field_names = config.variables
         self._handle_output_path(output_path, config.basename)
-        self._output_interval_steps = _interval_in_steps(config.output_interval, dtime)
-        self._step_counter = 0
+        self._schedule = OutputSchedule(config.output_interval, dtime)
         self._file_counter = 0
         self._current_timesteps_in_file = 0
         self._dataset: writers.FieldWriter | None = None
@@ -708,10 +816,19 @@ class FieldGroupMonitor(monitor.Monitor):
             state: dict  model state dictionary
             model_time: the current time step of the simulation
         """
-        capture = self.at_capture_time()
-        self._step_counter += 1
+        capture = self._schedule.at_capture_time()
+        self._schedule.advance()
         if not capture:
             return
+        self.capture(state, model_time)
+
+    def capture(self, state: dict, model_time: dt.datetime) -> None:
+        """Write the group's fields of ``state`` as one time slice, the schedule aside.
+
+        The capture-step part of ``store``; called directly by a dedicated IO rank,
+        which receives exactly the capture steps (see ``IOMonitor.capture``). Same
+        collectivity as ``store``.
+        """
         # TODO(halungge): this should do a deep copy of the data once IO becomes
         #   asynchronous (the gather/halo-strip paths already copy, the single-node
         #   path writes synchronously before the state is mutated)
@@ -759,8 +876,8 @@ class FieldGroupMonitor(monitor.Monitor):
         self._dataset.append(state_to_store, model_time)
 
     def at_capture_time(self) -> bool:
-        # fire every N model steps
-        return self._step_counter % self._output_interval_steps == 0
+        """Whether the current ``store`` call is a capture step (pure, see ``OutputSchedule``)."""
+        return self._schedule.at_capture_time()
 
     @property
     def phase_seconds(self) -> dict[str, list[float]]:

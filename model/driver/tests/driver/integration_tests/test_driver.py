@@ -199,6 +199,7 @@ def test_driver(
         grid_manager=grid_manager,
         process_props=process_props,
         backend=backend,
+        io_ranks=None,
     )
 
     prognostics = ds.prognostics.current

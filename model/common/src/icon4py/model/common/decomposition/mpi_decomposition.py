@@ -14,12 +14,12 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from types import ModuleType
-from typing import Any, Union
+from typing import Any, Final, Union
 
 import numpy as np
 from gt4py import next as gtx
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.decomposition.definitions import (
     Reductions,
@@ -205,6 +205,74 @@ class MPICommProcessProperties(decomp_defs.ProcessProperties):
     @functools.cached_property
     def comm_size(self) -> int:  # type: ignore [override]
         return self.comm.Get_size()
+
+
+#: Names of the role communicators of ``split_io_ranks``, shown in the rank prefix of
+#: distributed log records (``ProcessProperties.comm_name``).
+COMPUTE_COMM_NAME: Final[str] = "compute"
+IO_COMM_NAME: Final[str] = "io"
+
+
+@dataclass(frozen=True)
+class IORankSplit:
+    """A communicator split into compute ranks and dedicated IO ranks.
+
+    Every rank belongs to exactly one role; the roles talk through an
+    inter-communicator (``io.io_servers``: compute ranks ship their output fields to
+    the IO ranks, which write them). Everything else the model does -- halo exchanges,
+    reductions, the grid decomposition -- runs on the compute role's communicator, i.e.
+    on the ``process_props`` of a compute rank; nothing but the output layer knows the
+    IO ranks exist.
+
+    Attributes:
+        is_io_rank: whether this rank is a dedicated IO rank.
+        process_props: process properties of this rank's role communicator (compute or
+            IO); named ``COMPUTE_COMM_NAME`` / ``IO_COMM_NAME``.
+        intercomm: inter-communicator whose remote group is the other role. Ranks are
+            addressed by their rank in that role's communicator.
+    """
+
+    is_io_rank: bool
+    process_props: MPICommProcessProperties
+    intercomm: mpi4py.MPI.Intercomm
+
+
+def split_io_ranks(process_props: decomp_defs.ProcessProperties, num_io_ranks: int) -> IORankSplit:
+    """Split the communicator into compute ranks and the last ``num_io_ranks`` IO ranks.
+
+    Collective on the communicator of ``process_props``. The IO ranks are the highest
+    ``num_io_ranks`` ranks; every IO rank serves at least one compute rank
+    (``io.io_servers``), so at most half of the ranks can be IO ranks.
+
+    Raises:
+        InvalidConfigError: on a single-node run (no MPI communicator), or if
+            ``num_io_ranks`` is not positive or exceeds the number of compute ranks.
+    """
+    if process_props.comm is None:
+        raise exceptions.InvalidConfigError(
+            "Dedicated IO ranks require an MPI run: the process properties carry no communicator."
+        )
+    if not 1 <= num_io_ranks <= process_props.comm_size - num_io_ranks:
+        raise exceptions.InvalidConfigError(
+            f"Invalid number of IO ranks {num_io_ranks}: must be at least 1 and at most "
+            f"the number of compute ranks it leaves of the {process_props.comm_size} ranks "
+            f"(every IO rank serves at least one compute rank)."
+        )
+    num_compute_ranks = process_props.comm_size - num_io_ranks
+    is_io_rank = process_props.rank >= num_compute_ranks
+    role_comm = process_props.comm.Split(color=int(is_io_rank), key=process_props.rank)
+    role_comm.Set_name(IO_COMM_NAME if is_io_rank else COMPUTE_COMM_NAME)
+    # the leaders are the first rank of each role: rank 0 (compute) and rank
+    # num_compute_ranks (IO) of the original communicator
+    remote_leader = 0 if is_io_rank else num_compute_ranks
+    intercomm = role_comm.Create_intercomm(
+        local_leader=0, peer_comm=process_props.comm, remote_leader=remote_leader, tag=0
+    )
+    return IORankSplit(
+        is_io_rank=is_io_rank,
+        process_props=MPICommProcessProperties(role_comm),
+        intercomm=intercomm,
+    )
 
 
 class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):

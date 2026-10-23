@@ -110,6 +110,7 @@ def test_initial_conditions(
         grid_manager=grid_manager,
         process_props=process_props,
         backend=backend,
+        io_ranks=None,
     )
 
     prognostic_state_now = prognostics.initialize_prognostic_state(
