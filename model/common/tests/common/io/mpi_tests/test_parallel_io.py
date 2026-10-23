@@ -31,9 +31,16 @@ import zarr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time as common_time
-from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.io import distributed, io as common_io, netcdf_writers, writers
+from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
+from icon4py.model.common.grid import base, vertical as v_grid
+from icon4py.model.common.io import (
+    distributed,
+    io as common_io,
+    io_servers,
+    netcdf_writers,
+    writers,
+)
+from icon4py.model.testing import definitions as test_defs, grid_utils
 
 from ...fixtures import process_props
 
@@ -123,6 +130,14 @@ def synthetic_state(info: decomp_defs.DecompositionInfo, step: int) -> dict[str,
     return state
 
 
+def create_vertical_grid() -> v_grid.VerticalGrid:
+    return v_grid.VerticalGrid(
+        v_grid.VerticalGridConfig(num_levels=NUM_LEVELS),
+        vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, NUM_LEVELS + 1)),
+        vct_b=None,
+    )
+
+
 def create_monitor(
     output_backend: common_io.OutputBackend,
     output_mode: common_io.OutputMode,
@@ -143,14 +158,9 @@ def create_monitor(
         horizontal_chunk_size=horizontal_chunk_size,
         horizontal_shard_size=horizontal_shard_size,
     )
-    vertical = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=NUM_LEVELS),
-        vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, NUM_LEVELS + 1)),
-        vct_b=None,
-    )
     return common_io.FieldGroupMonitor(
         config=config,
-        vertical=vertical,
+        vertical=create_vertical_grid(),
         distribution=distribution,
         grid_id=GRID_ID,
         dtime=common_time.RelativeTime(hours=1),
@@ -308,3 +318,133 @@ def test_gather_mode_overwrite_refusal_raises_on_all_ranks(
     process_props.comm.Barrier()
     with pytest.raises(errors.InvalidConfigError, match="already exists"):
         monitor.store(synthetic_state(info, 0), dt.datetime(2000, 1, 1))
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "output_backend, output_mode, num_io_ranks",
+    [
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 1),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 2),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER, 2),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 1),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 2),
+        # a single IO rank writes a one-block rank-block file through a serial handle
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.DISTRIBUTED, 1),
+        pytest.param(
+            common_io.OutputBackend.NETCDF,
+            common_io.OutputMode.DISTRIBUTED,
+            2,
+            marks=pytest.mark.skipif(
+                netcdf_writers.missing_parallel_support() is not None,
+                reason=(
+                    "needs an MPI-parallel netCDF4 installation (PyPI wheels are serial "
+                    "builds; see 'Parallel netCDF' in 'icon4py.model.common.io')"
+                ),
+            ),
+        ),
+    ],
+)
+def test_io_rank_output_synthetic_decomposition(
+    process_props: decomp_defs.ProcessProperties,
+    *,
+    output_backend: common_io.OutputBackend,
+    output_mode: common_io.OutputMode,
+    num_io_ranks: int,
+    tmp_path: pathlib.Path,
+) -> None:
+    """The compute ranks ship the synthetic state to dedicated IO ranks, which write it.
+
+    The communicator is split into compute and IO ranks; the synthetic decomposition
+    lives on the compute communicator, the writers run on the IO communicator, and the
+    root rank verifies the files exactly like ``test_parallel_output_synthetic_decomposition``.
+    """
+    # the synthetic decomposition needs two ranks (one of them empty), and no IO rank
+    # may be left without a compute rank to serve
+    if process_props.comm_size - num_io_ranks < max(2, num_io_ranks):
+        pytest.skip("needs at least two compute ranks and at least as many as IO ranks")
+    output_path = pathlib.Path(
+        process_props.comm.bcast(str(tmp_path) if process_props.rank == 0 else None, root=0)
+    )
+    config = common_io.IOConfig(
+        output_path=output_path,
+        field_groups=[
+            common_io.FieldGroupIOConfig(
+                basename="synthetic_output",
+                variables=list(VARIABLES),
+                output_interval=common_time.NumTimeSteps(1),
+                timesteps_per_file=2,  # forces a file rollover at the third capture step
+                backend=output_backend,
+                mode=output_mode,
+            )
+        ],
+        num_io_ranks=num_io_ranks,
+    )
+    dtime = common_time.RelativeTime(hours=1)
+    split = mpi_decomposition.split_io_ranks(process_props, config.num_io_ranks)
+
+    if split.is_io_rank:
+        server = io_servers.IOServer(split.intercomm)
+        setup = server.receive_setup()
+        assert server.served_ranks == io_servers.served_compute_ranks(
+            split.process_props.rank, process_props.comm_size - num_io_ranks, num_io_ranks
+        )
+        io_monitor = common_io.IOMonitor(
+            config=setup.config,
+            vertical_size=create_vertical_grid(),
+            horizontal_size=setup.horizontal_size,
+            grid_file_name=grid_utils._download_grid_file(test_defs.Grids.R02B04_GLOBAL),
+            grid_id=setup.grid_id,
+            dtime=dtime,
+            process_props=split.process_props,
+            decomposition_info=setup.decomposition_info,
+        )
+        server.serve(io_monitor)
+    else:
+        info = synthetic_decomposition_info(split.process_props)
+        client = io_servers.IOClient(
+            config=config,
+            dtime=dtime,
+            grid_id=GRID_ID,
+            horizontal_size=base.HorizontalGridSize(
+                num_cells=GLOBAL_SIZES[dims.CellDim],
+                num_edges=GLOBAL_SIZES[dims.EdgeDim],
+                num_vertices=GLOBAL_SIZES[dims.VertexDim],
+            ),
+            decomposition_info=info,
+            intercomm=split.intercomm,
+        )
+        for step in range(NUM_STEPS):
+            model_time = dt.datetime(2000, 1, 1) + step * dt.timedelta(hours=1)
+            client.store(synthetic_state(info, step), model_time)
+        client.close()
+        client.report_timings()
+
+    process_props.comm.Barrier()
+    if process_props.rank != 0:
+        return
+
+    suffix = common_io.FILE_SUFFIXES[output_backend]
+    files = sorted(output_path.glob(f"synthetic_output_*{suffix}"))
+    assert len(files) == 2, f"expected two files after the rollover, got: {files}"
+    identity = {name: np.arange(GLOBAL_SIZES[dim]) for name, dim, _ in VARIABLES.values()}
+    for path, num_slices, first_step in ((files[0], 2, 0), (files[1], 1, 2)):
+        if output_backend == common_io.OutputBackend.NETCDF:
+            dataset = xr.open_dataset(path, decode_times=False)
+        else:
+            dataset = xr.open_zarr(path, decode_times=False, mask_and_scale=False)
+        with dataset:
+            if output_mode == common_io.OutputMode.DISTRIBUTED:
+                # the blocks are the IO ranks': one per IO rank, and the axis is padded
+                # to a multiple of that count
+                global_index = {
+                    name: dataset[f"{writers.GLOBAL_INDEX_PREFIX}_{name}"].values
+                    for name, *_ in VARIABLES.values()
+                }
+                for name, dim, _ in VARIABLES.values():
+                    assert dataset.sizes[name] % num_io_ranks == 0
+                    assert dataset.sizes[name] >= GLOBAL_SIZES[dim]
+            else:
+                global_index = identity
+            assert_dataset_is_exact(dataset, num_slices, first_step, global_index)

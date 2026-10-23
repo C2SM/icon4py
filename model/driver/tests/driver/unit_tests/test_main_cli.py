@@ -16,8 +16,12 @@ import pytest
 from typer.testing import CliRunner
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import (
+    definitions as decomp_defs,
+    mpi_decomposition as mpi_decomp,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import config as driver_config, driver, driver_utils, main
+from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils, main
 
 from ..fixtures import *  # noqa: F403
 
@@ -38,6 +42,15 @@ def _config_file_with_io_section(directory: pathlib.Path) -> pathlib.Path:
             "io:\n", (_DATA_DIR / "io_section.yml").read_text(), 1
         )
     )
+    return config_file
+
+
+def _config_file_with_io_ranks(directory: pathlib.Path, num_io_ranks: int) -> pathlib.Path:
+    """The configuration with the 'io' section, dedicating ``num_io_ranks`` ranks to output."""
+    config_file = _config_file_with_io_section(directory)
+    text = config_file.read_text()
+    assert text.count("  num_io_ranks: 0\n") == 1
+    config_file.write_text(text.replace("  num_io_ranks: 0\n", f"  num_io_ranks: {num_io_ranks}\n"))
     return config_file
 
 
@@ -87,6 +100,8 @@ def test_main_cli(backend: gtx_typing.Backend, backend_name: str) -> None:
     run_driver_kwargs = mock_run_driver.call_args.kwargs
     assert run_driver_kwargs["grid_manager"] is mock_grid_manager
     assert data_alloc.backend_name(run_driver_kwargs["backend"]) == data_alloc.backend_name(backend)
+    # no dedicated IO ranks: the run's communicator is used as is
+    assert run_driver_kwargs["io_ranks"] is None
     config = _run_config(mock_run_driver)
     assert config.driver.experiment_name == "foo"
     # no 'io' section in the file: no output
@@ -101,3 +116,69 @@ def test_main_cli_reads_the_io_section(backend_name: str, tmp_path: pathlib.Path
     assert config.io is not None
     assert config.io.output_path == pathlib.Path("output")
     assert [group.basename for group in config.io.field_groups] == ["winds", "precipitation"]
+
+
+# --------------------------------------------------------------------------------------
+# Dedicated IO ranks
+# --------------------------------------------------------------------------------------
+
+
+def _io_rank_split(is_io_rank: bool) -> mpi_decomp.IORankSplit:
+    # neither the role communicator nor the inter-communicator is touched: the grid
+    # manager, the driver run and the IO server are mocked away
+    return mpi_decomp.IORankSplit(
+        is_io_rank=is_io_rank,
+        process_props=decomp_defs.SingleNodeProcessProperties(),  # type: ignore[arg-type]  # stand-in for the role communicator
+        intercomm=object(),  # type: ignore[arg-type]  # not used
+    )
+
+
+def test_split_io_ranks_without_io_ranks_leaves_the_communicator_alone(
+    tmp_path: pathlib.Path,
+) -> None:
+    process_props = decomp_defs.SingleNodeProcessProperties()
+    # no output at all, and output written by the ranks running the model themselves
+    without_output = driver_config.read_experiment_config_from_yaml(_TEST_CONFIG_FILE)
+    assert without_output.io is None
+    assert main.split_io_ranks(without_output, process_props) is None
+    with_output = driver_config.read_experiment_config_from_yaml(
+        _config_file_with_io_section(tmp_path)
+    )
+    assert with_output.io is not None and with_output.io.num_io_ranks == 0
+    assert main.split_io_ranks(with_output, process_props) is None
+
+
+def test_main_cli_compute_rank_runs_the_driver_on_its_role_communicator(
+    backend_name: str, tmp_path: pathlib.Path
+) -> None:
+    split = _io_rank_split(is_io_rank=False)
+    with mock.patch.object(mpi_decomp, "split_io_ranks", return_value=split) as mock_split:
+        _, mock_run_driver = _run_cli(_config_file_with_io_ranks(tmp_path, 2), backend_name)
+    mock_split.assert_called_once()
+    assert mock_split.call_args.args[1] == 2
+    kwargs = mock_run_driver.call_args.kwargs
+    assert kwargs["io_ranks"] is split
+    # the model (and its grid decomposition) runs on the compute communicator
+    assert kwargs["process_props"] is split.process_props
+    assert kwargs["config"].io.num_io_ranks == 2
+
+
+def test_main_cli_io_rank_runs_the_io_server(backend_name: str, tmp_path: pathlib.Path) -> None:
+    split = _io_rank_split(is_io_rank=True)
+    config_file = _config_file_with_io_ranks(tmp_path, 2)
+    with (
+        mock.patch.object(mpi_decomp, "split_io_ranks", return_value=split),
+        mock.patch.object(driver_io, "run_io_server") as mock_run_io_server,
+    ):
+        _, mock_run_driver = _run_cli(config_file, backend_name)
+    mock_run_driver.assert_not_called()
+    mock_run_io_server.assert_called_once()
+    kwargs = mock_run_io_server.call_args.kwargs
+    assert kwargs["io_ranks"] is split
+    assert kwargs["grid_file_path"] == config_file.parent / "dummy_grid.nc"
+    # the IO rank reads the same experiment configuration (for the vertical grid)
+    assert kwargs["config"].io is not None
+    assert [group.basename for group in kwargs["config"].io.field_groups] == [
+        "winds",
+        "precipitation",
+    ]

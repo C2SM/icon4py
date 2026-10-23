@@ -21,9 +21,12 @@ The variables a run can write come from four sources:
 :func:`validate_output_variables` checks the field groups of an ``IOConfig`` against
 these sources at setup; :class:`OutputStateAssembler` assembles, at a capture step,
 exactly the variables the capturing groups request, and :func:`create_io_monitor`
-builds the ``IOMonitor`` that writes one file series per field group.
+builds the output monitor that writes one file series per field group: an
+``IOMonitor`` when the ranks write themselves, an ``IOClient`` shipping the fields to
+dedicated IO ranks (``IOConfig.num_io_ranks``), whose side is :func:`run_io_server`.
 """
 
+import logging
 import pathlib
 import uuid
 from collections.abc import Collection, Mapping
@@ -33,12 +36,21 @@ import gt4py.next as gtx
 import xarray as xr
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
-from icon4py.model.common import dimension as dims, exceptions, time, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common import (
+    dimension as dims,
+    exceptions,
+    model_backends,
+    time,
+    type_alias as ta,
+)
+from icon4py.model.common.decomposition import (
+    definitions as decomposition_defs,
+    mpi_decomposition as mpi_decomp,
+)
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
-from icon4py.model.common.io import io as common_io, utils as io_utils
+from icon4py.model.common.io import io as common_io, io_servers, utils as io_utils
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.physics.thermodynamics import compute_pressure, compute_temperature
 from icon4py.model.common.states import (
@@ -50,6 +62,10 @@ from icon4py.model.common.states import (
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.driver import config as driver_config, driver_utils
+
+
+log = logging.getLogger(__name__)
 
 
 # --------------------------------------------------------------------------------------
@@ -525,22 +541,84 @@ def create_io_monitor(
     dtime: time.RelativeTime,
     process_props: decomposition_defs.ProcessProperties,
     decomposition_info: decomposition_defs.DecompositionInfo | None,
-) -> common_io.IOMonitor:
-    """Build the ``IOMonitor`` writing the field groups of ``io_config`` below its
+    io_ranks: mpi_decomp.IORankSplit | None,
+) -> common_io.OutputMonitor:
+    """Build the output monitor writing the field groups of ``io_config`` below its
     ``output_path``.
 
     In a distributed run (multi-rank ``process_props``) ``decomposition_info`` is
     required; each group's ``mode`` selects how the ranks write (see
     ``common_io.OutputMode``).
+
+    With dedicated IO ranks (``io_ranks`` given, on a compute rank) the monitor is an
+    ``IOClient`` shipping the fields to this rank's IO rank, which writes them with
+    this very configuration (see ``run_io_server``); ``process_props`` are then the
+    compute ranks'. None: the ranks write themselves (``IOMonitor``). Either way the
+    split must agree with ``io_config.num_io_ranks``, the setting it was made for.
     """
+    if (io_ranks is None) != (io_config.num_io_ranks == 0):
+        raise ValueError(
+            "The communicator split and 'num_io_ranks' of the output configuration must "
+            "agree: dedicated IO ranks with both or with neither."
+        )
+    # Grid.id holds the file's `uuidOfHGrid` as a string; the IO layer wants a UUID.
+    grid_id = uuid.UUID(grid.id)
+    if io_ranks is not None:
+        if decomposition_info is None:
+            raise ValueError("Output through dedicated IO ranks requires 'decomposition_info'.")
+        return io_servers.IOClient(
+            config=io_config,
+            dtime=dtime,
+            grid_id=grid_id,
+            horizontal_size=grid.config.horizontal_config,
+            decomposition_info=decomposition_info,
+            intercomm=io_ranks.intercomm,
+        )
     return common_io.IOMonitor(
         config=io_config,
         vertical_size=vertical_grid,
         horizontal_size=grid.config.horizontal_config,
         grid_file_name=grid_file_path,
-        # Grid.id holds the file's `uuidOfHGrid` as a string; the IO layer wants a UUID.
-        grid_id=uuid.UUID(grid.id),
+        grid_id=grid_id,
         dtime=dtime,
         process_props=process_props,
         decomposition_info=decomposition_info,
     )
+
+
+def run_io_server(
+    *,
+    config: driver_config.ExperimentConfig,
+    grid_file_path: pathlib.Path,
+    io_ranks: mpi_decomp.IORankSplit,
+) -> None:
+    """Run this dedicated IO rank: write the compute ranks' output until they finish.
+
+    Returns once every served compute rank closed its output. The compute ranks define
+    the output (their ``IOClient`` ships the output configuration and the grid
+    identity); this rank contributes only what the writers need locally: the vertical
+    grid, built on host from the experiment configuration (an IO rank never touches a
+    device), and the grid file for the UGRID topology. Raises on any IO-side failure;
+    the caller must abort the run, since the compute ranks cannot observe the failure
+    (see ``io_servers``).
+    """
+    server = io_servers.IOServer(io_ranks.intercomm)
+    setup = server.receive_setup()
+    log.info(
+        f"IO rank {io_ranks.process_props.rank} serves compute ranks {list(server.served_ranks)}"
+    )
+    vertical_grid = driver_utils.create_vertical_grid(
+        vertical_grid_config=config.vertical_grid,
+        allocator=model_backends.get_allocator(None),
+    )
+    io_monitor = common_io.IOMonitor(
+        config=setup.config,
+        vertical_size=vertical_grid,
+        horizontal_size=setup.horizontal_size,
+        grid_file_name=grid_file_path,
+        grid_id=setup.grid_id,
+        dtime=config.driver.dtime,
+        process_props=io_ranks.process_props,
+        decomposition_info=setup.decomposition_info,
+    )
+    server.serve(io_monitor)

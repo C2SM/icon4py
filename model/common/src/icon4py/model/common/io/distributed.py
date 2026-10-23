@@ -24,8 +24,11 @@ This module provides the strategies for that step, sitting between the
 - :class:`RankBlockDistribution`: every rank keeps its owned entries and writes them
   itself into a rank-contiguous block of a shared store (see :class:`RankBlock`).
 
-All strategies operate solely on the communicator in ``process_props``; a future
-compute/output communicator split only changes which ``process_props`` is passed in.
+All strategies operate solely on the communicator in ``process_props``. With dedicated
+IO ranks (:mod:`icon4py.model.common.io.io_servers`) that communicator is the IO
+ranks' one: every IO rank holds the owned entries of the compute ranks it serves as
+its local state (a decomposition without halos), and these strategies apply
+unchanged; the compute ranks only strip halos (:func:`owned_entries`) and ship.
 
 ``prepare`` is collective: at a capture step it must be called on every rank of the
 communicator (it performs the MPI communication). Ranks with ``writes_output == False``
@@ -124,8 +127,9 @@ class RankBlock:
     block boundary -- by default with exactly one chunk per block -- hence concurrent
     writes of different ranks never touch the same chunk. An axis therefore never
     holds fewer chunks (or shard files) than ranks; the default one-chunk-per-block
-    layout is that minimum. Dedicated IO ranks (planned for asynchronous output) will
-    lower this floor to the IO-rank count, making chunk and shard counts freely
+    layout is that minimum. With dedicated IO ranks (``io_servers``) the blocks are
+    those of the IO ranks -- each holding the entries of all compute ranks it serves
+    -- so the floor drops to the IO-rank count, making chunk and shard counts freely
     tunable.
 
     Entries past ``count`` within a block are padding: they always read as the fill
@@ -181,17 +185,17 @@ def check_chunks_align_with_blocks(
             )
 
 
-def _owned_global_index(
+def owned_global_index(
     decomposition_info: decomposition.DecompositionInfo, dim: gtx.Dimension
 ) -> np.ndarray:
-    """Owned global indices of a dimension, as int64 (the MPI-exchange dtype)."""
+    """Owned global indices of a dimension, as int64 (the MPI-exchange dtype), on host."""
     return np.asarray(
         decomposition_info.global_index(dim, decomposition.DecompositionInfo.EntryType.OWNED),
         dtype=np.int64,
     )
 
 
-def _owned_entries(
+def owned_entries(
     dim_name: str, decomposition_info: decomposition.DecompositionInfo, field: xr.DataArray
 ) -> np.ndarray:
     """Drop halo entries from the leading (horizontal) axis of a field."""
@@ -250,13 +254,13 @@ class GatherDistribution:
         self._global_size: dict[str, int] = {}
 
         for dim, dim_name in HORIZONTAL_DIM_NAMES.items():
-            owned_global_index = _owned_global_index(self._decomposition_info, dim)
+            global_index = owned_global_index(self._decomposition_info, dim)
             entry_counts = mpi_decomposition.allgather_entry_counts(
-                process_props, owned_global_index.shape[0], array_ns=np
+                process_props, global_index.shape[0], array_ns=np
             )
             global_size = int(entry_counts.sum())
             insert_index = mpi_decomposition.gather_entries(
-                process_props, owned_global_index, entry_counts=entry_counts
+                process_props, global_index, entry_counts=entry_counts
             )
             mpi_decomposition.check_global_index_partition(
                 process_props, dim_name, insert_index, global_size
@@ -286,7 +290,7 @@ class GatherDistribution:
         gathered: dict[str, xr.DataArray] = {}
         for name, field in state.items():
             dim_name = str(field.dims[0])
-            owned = _owned_entries(dim_name, self._decomposition_info, field)
+            owned = owned_entries(dim_name, self._decomposition_info, field)
             entries = mpi_decomposition.gather_entries(
                 self._process_props, owned, entry_counts=self._entry_counts[dim_name]
             )
@@ -336,10 +340,10 @@ class RankBlockDistribution:
         self._rank_blocks: dict[str, RankBlock] = {}
 
         for dim, dim_name in HORIZONTAL_DIM_NAMES.items():
-            owned_global_index = _owned_global_index(self._decomposition_info, dim)
+            global_index = owned_global_index(self._decomposition_info, dim)
             # ``RankBlock`` is frozen; keep the array it hands out immutable too
-            owned_global_index.setflags(write=False)
-            count = owned_global_index.shape[0]
+            global_index.setflags(write=False)
+            count = global_index.shape[0]
             entry_counts = mpi_decomposition.allgather_entry_counts(
                 process_props, count, array_ns=np
             )
@@ -347,7 +351,7 @@ class RankBlockDistribution:
             # the gather serves only the partition check: rank-block output never
             # reassembles the global field
             gathered_index = mpi_decomposition.gather_entries(
-                process_props, owned_global_index, entry_counts=entry_counts
+                process_props, global_index, entry_counts=entry_counts
             )
             mpi_decomposition.check_global_index_partition(
                 process_props, dim_name, gathered_index, global_size
@@ -368,7 +372,7 @@ class RankBlockDistribution:
                 size=size,
                 padded_size=padded_size,
                 global_size=global_size,
-                global_index=owned_global_index,
+                global_index=global_index,
             )
 
     @property
@@ -391,7 +395,7 @@ class RankBlockDistribution:
     def prepare(self, state: dict[str, xr.DataArray]) -> dict[str, xr.DataArray] | None:
         return {
             name: xr.DataArray(
-                _owned_entries(str(field.dims[0]), self._decomposition_info, field),
+                owned_entries(str(field.dims[0]), self._decomposition_info, field),
                 dims=field.dims,
                 attrs=dict(field.attrs),
             )

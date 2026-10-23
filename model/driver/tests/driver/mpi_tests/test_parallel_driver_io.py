@@ -16,6 +16,7 @@ is exercised only on an MPI-parallel netCDF4 installation (PyPI wheels are seria
 builds; see "Parallel netCDF" in ``icon4py.model.common.io``).
 """
 
+import dataclasses
 import logging
 import pathlib
 
@@ -25,7 +26,7 @@ import pytest
 import xarray as xr
 
 from icon4py.model.common import model_backends, time
-from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.io import io as common_io, netcdf_writers, writers
 from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 from icon4py.model.testing import (
@@ -91,6 +92,7 @@ def _run_driver_with_output(
         grid_manager=grid_manager,
         process_props=process_props,
         backend=backend,
+        io_ranks=None,
     )
     assert icon4py_driver.config.io is not None
     return icon4py_driver.config.io.output_path
@@ -196,3 +198,102 @@ def test_parallel_output_matches_single_rank_reference(
                     assert dataset.sizes["time"] == reference.sizes["time"]
                 else:
                     _assert_dataset_matches_reference(dataset, reference, atol, rtol)
+
+
+@pytest.mark.datatest
+@pytest.mark.embedded_remap_error
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("integration")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
+@pytest.mark.parametrize(
+    "output_backend, output_mode",
+    [
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER),
+    ],
+)
+def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-many-positional-arguments]
+    download_ser_data: None,
+    experiment_description: test_defs.ExperimentDescription,
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+    output_backend: common_io.OutputBackend,
+    output_mode: common_io.OutputMode,
+) -> None:
+    """Half of the ranks become IO ranks; the model runs on the other half and ships to them.
+
+    The compute ranks run the driver on the compute communicator (``io_ranks`` given),
+    the IO ranks run ``driver_io.run_io_server`` -- exactly the two branches of
+    ``main`` -- and the files must reproduce the single-rank reference.
+    """
+    if experiment_description.grid.limited_area:
+        pytest.xfail("Limited-area grids not yet supported")
+    num_io_ranks = process_props.comm_size // 2
+    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-10, rtol=0.0)
+    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
+
+    single_rank_output = _run_driver_with_output(
+        experiment_description,
+        tmp_path / f"serial_reference_rank_{process_props.rank}",
+        decomp_defs.SingleNodeProcessProperties(),
+        backend,
+        output_backend=common_io.OutputBackend.NETCDF,
+        output_mode=common_io.OutputMode.GATHER,
+        config_file_path=config_file_path,
+    )
+
+    io_ranks = mpi_decomposition.split_io_ranks(process_props, num_io_ranks)
+    config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
+    config = config.with_overrides(
+        driver={"end_of_simulation": time.NumTimeSteps(1)},
+        io=dataclasses.replace(
+            io_config_with_all_variables(
+                tmp_path
+                / f"io_ranks_{output_backend.value}_{output_mode.value}_rank_{process_props.rank}",
+                backend=output_backend,
+                mode=output_mode,
+            ),
+            num_io_ranks=num_io_ranks,
+        ),
+    )
+    output_path: pathlib.Path | None = None
+    if io_ranks.is_io_rank:
+        driver_io.run_io_server(config=config, grid_file_path=grid_file_path, io_ranks=io_ranks)
+    else:
+        grid_manager = driver_utils.create_grid_manager(
+            grid_file_path=grid_file_path,
+            vertical_grid_config=config.vertical_grid,
+            allocator=model_backends.get_allocator(backend),
+            process_props=io_ranks.process_props,
+        )
+        _, icon4py_driver = driver.run_driver(
+            config=config,
+            grid_manager=grid_manager,
+            process_props=io_ranks.process_props,
+            backend=backend,
+            io_ranks=io_ranks,
+        )
+        assert icon4py_driver.config.io is not None
+        output_path = icon4py_driver.config.io.output_path
+
+    # the IO ranks must have finished writing before the root rank reads the stores
+    process_props.comm.Barrier()
+    if process_props.rank != 0:
+        return
+    assert output_path is not None  # rank 0 is a compute rank
+
+    with (
+        _open_single_output(single_rank_output, common_io.OutputBackend.NETCDF) as reference,
+        _open_single_output(output_path, output_backend) as dataset,
+    ):
+        if output_mode == common_io.OutputMode.DISTRIBUTED:
+            # the blocks are the IO ranks': as many as there are IO ranks
+            cell_size = dataset.sizes["cell"]
+            assert cell_size % num_io_ranks == 0 and cell_size >= reference.sizes["cell"]
+            reassembled = _reassemble_global_order(dataset, reference)
+            _assert_dataset_matches_reference(reassembled, reference, atol, rtol)
+        else:
+            _assert_dataset_matches_reference(dataset, reference, atol, rtol)
