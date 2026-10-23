@@ -74,8 +74,18 @@ def init_mpi() -> None:
     from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
 
     if not MPI.Is_initialized():
-        log.info("initializing MPI")
-        MPI.Init()
+        log.info("Initializing MPI with thread level 'funneled'")
+        # THREAD_FUNNELED: only the main thread makes MPI calls. The asynchronous
+        # output writers (io.writers.AsyncWriteQueue) run background threads, but
+        # those only perform local file writes -- all communication, including the
+        # per-append barrier of rank-block zarr output, stays on the main thread.
+        MPI.Init_thread(MPI.THREAD_FUNNELED)
+    provided = MPI.Query_thread()
+    if provided < MPI.THREAD_FUNNELED:
+        raise RuntimeError(
+            f"The MPI library provides thread level {provided}, but 'MPI_THREAD_FUNNELED' "
+            f"({MPI.THREAD_FUNNELED}) is required for asynchronous output."
+        )
 
 
 def finalize_mpi() -> None:
