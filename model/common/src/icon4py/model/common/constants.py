@@ -182,6 +182,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     rd = GAS_CONSTANT_DRY_AIR
     rv = GAS_CONSTANT_WATER_VAPOR
     rv_o_rd_minus_1 = RV_O_RD_MINUS_1
+    rd_o_rv = RD_O_RV
     cvd = SPECIFIC_HEAT_CAPACITY_VOLUME_DRY_AIR
     cpd = SPECIFIC_HEAT_CAPACITY_PRESSURE_DRY_AIR
     cpv = SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR
@@ -191,6 +192,9 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     ci_thermo = SPECIFIC_HEAT_CAPACITY_ICE_THERMO
     water_density = WATER_DENSITY
     tmelt = MELTING_TEMPERATURE
+    tetens_p0 = TETENS_P0
+    tetens_a_water = TETENS_A_WATER
+    tetens_b_water = TETENS_B_WATER
     water_triple_point_temperature = WATER_TRIPLE_POINT_TEMPERATURE
     lh_vaporise = LATENT_HEAT_FOR_VAPORISATION
     lh_sublimate = LATENT_HEAT_FOR_SUBLIMATION
