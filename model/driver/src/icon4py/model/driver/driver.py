@@ -77,25 +77,17 @@ class Icon4pyDriver:
         vertical_grid_config: v_grid.VerticalGridConfig,
         process_props: decomposition_defs.ProcessProperties,
         io_monitor: common_io.IOMonitor | None = None,
+        output_assembler: driver_io.OutputStateAssembler | None = None,
         tendencies: prescribed_tendencies.PrescribedTendencies | None = None,
     ):
+        if (io_monitor is None) != (output_assembler is None):
+            raise ValueError(
+                "The IO monitor and the output assembler come together: both or neither."
+            )
         self.config = config
         self.io_monitor = io_monitor
         # assembles what the monitor's field groups request from the driver's own state
-        self._output_assembler = (
-            driver_io.OutputStateAssembler(
-                io_config=io_monitor.config,
-                grid=grid,
-                backend=backend,
-                static_field_factories=static_field_factories,
-                tracer_config=config.tracer_config,
-                physics_diagnostics=(
-                    granules.physics.diagnostics if granules.physics is not None else None
-                ),
-            )
-            if io_monitor is not None
-            else None
-        )
+        self._output_assembler = output_assembler
         self.backend = backend
         self.grid = grid
         self.decomposition_info = decomposition_info
@@ -170,6 +162,7 @@ class Icon4pyDriver:
         self,
         prognostic_state: prognostics.PrognosticState,
         tracer_state: tracer_states.TracerState,
+        diagnostic_state: diagnostics.DiagnosticState,
         simulation_current_datetime: time.AbsoluteTime,
     ) -> None:
         """Assemble what the capturing field groups request and hand it to the IO monitor.
@@ -186,7 +179,7 @@ class Icon4pyDriver:
         if variables:
             with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
                 state_to_store = self._output_assembler.assemble(
-                    variables, prognostic_state, tracer_state
+                    variables, prognostic_state, tracer_state, diagnostic_state
                 )
         else:
             state_to_store = {}
@@ -220,6 +213,7 @@ class Icon4pyDriver:
                 self._store_output(
                     prognostic_states.current,
                     tracers.current,
+                    ds.diagnostic,
                     self.model_time_variables.simulation_current_datetime,
                 )
 
@@ -272,6 +266,7 @@ class Icon4pyDriver:
                     self._store_output(
                         prognostic_states.current,
                         tracers.current,
+                        ds.diagnostic,
                         self.model_time_variables.simulation_current_datetime,
                     )
             if self.io_monitor is not None:
@@ -764,12 +759,16 @@ def initialize_driver(
         ),
         backend=backend,
     )
-    io_monitor = None
+    io_monitor = output_assembler = None
     if config.io is not None:
         log.info("Initializing IO monitor")
+        # the assembler validates the field groups against the variables of this run, so
         # an unknown or ambiguous variable fails before the monitor creates any output file
-        driver_io.validate_output_config(
-            config.io,
+        output_assembler = driver_io.OutputStateAssembler(
+            io_config=config.io,
+            grid=grid_manager.grid,
+            backend=backend,
+            static_field_factories=static_field_factories,
             tracer_config=config.tracer_config,
             physics_diagnostics=(
                 granules.physics.diagnostics if granules.physics is not None else None
@@ -806,6 +805,7 @@ def initialize_driver(
             else None
         ),
         io_monitor=io_monitor,
+        output_assembler=output_assembler,
     )
 
     return icon4py_driver

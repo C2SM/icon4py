@@ -15,6 +15,7 @@ import pathlib
 import typing
 from typing import Any
 
+import yaml
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.atmosphere.diffusion import diffusion
@@ -252,7 +253,7 @@ def read_experiment_config_from_yaml(config_file_path: pathlib.Path) -> Experime
     Unlike the strict ``config_io.read_yaml_str``, this reader tolerates the removed driver
     output options of older files (``DEPRECATED_DRIVER_OPTIONS``).
     """
-    spec = config_io.load_yaml(config_file_path.read_text())
+    spec = yaml.safe_load(config_file_path.read_text())
     _drop_deprecated_driver_options(spec, config_file_path)
     config = config_io.CONV.structure(spec, ExperimentConfig)
     root = config_file_path.resolve().parent

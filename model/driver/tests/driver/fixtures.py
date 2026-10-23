@@ -7,13 +7,17 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import pathlib
+from typing import Final
+
 import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import grid_manager as gm
-from icon4py.model.driver import config as driver_config, driver_utils
+from icon4py.model.common.io import io as common_io
+from icon4py.model.driver import config as driver_config, driver_io, driver_utils
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures import (
     backend,
@@ -49,6 +53,37 @@ BENCHMARK_EXPERIMENTS: list[test_defs.ExperimentDescription] = [test_defs.Experi
 BENCHMARK_STEPS: int = 5
 BENCHMARK_ROUNDS: int = 2
 BENCHMARK_WARMUP_ROUNDS: int = 1
+
+#: Basename of the file series the output tests write (a counter and the backend's suffix
+#: are appended).
+OUTPUT_BASENAME: Final[str] = "icon4py_output"
+#: Every variable a run without tracers and physics can write.
+ALL_OUTPUT_VARIABLES: Final[list[str]] = [
+    *driver_io.PROGNOSTIC_VARIABLES,
+    *driver_io.DIAGNOSTIC_VARIABLES,
+]
+
+
+def io_config_with_all_variables(
+    output_path: pathlib.Path,
+    *,
+    backend: common_io.OutputBackend = common_io.OutputBackend.ZARR,
+    mode: common_io.OutputMode = common_io.OutputMode.DISTRIBUTED,
+) -> common_io.IOConfig:
+    """One field group with every prognostic and diagnostic variable, captured every step."""
+    return common_io.IOConfig(
+        output_path=output_path,
+        field_groups=[
+            common_io.FieldGroupIOConfig(
+                basename=OUTPUT_BASENAME,
+                variables=list(ALL_OUTPUT_VARIABLES),
+                backend=backend,
+                mode=mode,
+                nc_title="ICON4Py output",
+                nc_comment="Fields computed by ICON4Py.",
+            )
+        ],
+    )
 
 
 def _resolve_grid(grid_option: str) -> test_defs.GridDescription:

@@ -30,20 +30,17 @@ export CONFIG_FOLDER=<path to the configuration directory>
 icon4py-driver \
     --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
     --config-file-path $CONFIG_FOLDER \
-    --icon4py-backend gtfn_cpu \
-    --output-path $ICON4PY_ROOT/output_path \
-    --enable-output
+    --icon4py-backend gtfn_cpu
 ```
 
-A distributed (MPI) run with output only differs in the launcher:
+The output, if any, is configured in the `io` section of the configuration file
+(see "Output"). A distributed (MPI) run only differs in the launcher:
 
 ```bash
 mpirun -np 4 icon4py-driver \
     --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
     --config-file-path $CONFIG_FOLDER \
-    --icon4py-backend gtfn_cpu \
-    --output-path $ICON4PY_ROOT/output_path \
-    --enable-output --output-backend zarr --output-mode distributed
+    --icon4py-backend gtfn_cpu
 ```
 
 ## Output
@@ -92,10 +89,6 @@ Fields are written with their horizontal dimension (`cell`, `edge` or `vertex`) 
 if they have one, their vertical dimension (model or half levels): a surface field
 such as `surface_pressure` is stored as `(time, cell)`.
 
-`--enable-output` on the command line writes, without an `io` section, the built-in
-default group (`icon4py_output`: all prognostic and diagnostic variables, every step,
-zarr, distributed) below `./output`.
-
 ## Configuration directory
 
 The driver expects a configuration directory containing the following JSON files:
@@ -132,24 +125,10 @@ Of course you can write the necessary configuration files manually or start by s
 
 ### Optional options
 
-- `--output-path`: override the output directory (`io.output_path`) of the
-  configuration file.
 - `--log-level`: logging level. Possible values are `notset` (default), `debug`,
   `info`, `warning`, `error`, `critical`.
 - `--print-distributed-debug-msg`: print debug logging messages from all MPI
   ranks (only effective when `--log-level debug` is set).
-- `--enable-output/--no-enable-output`: switch the output on or off. On, the
-  configured `io` section is written or, without one, the built-in default group
-  (see "Output"); off drops the `io` section. Works in single-node and MPI runs
-  alike (output is collective in MPI runs).
-- `--output-backend`: override the file format, `zarr` or `netcdf`, of every
-  field group.
-- `--output-mode`: override how the ranks of an MPI run write every field group:
-  `distributed` (every rank writes its own block of a shared store) or `gather`
-  (owned entries are collected and written by the root rank). Distributed
-  netCDF requires an MPI-parallel netCDF4 installation (checked at startup, see
-  `icon4py.model.common.io`); zarr is parallel with any installation.
 
-Without these options the configuration file decides. `--output-path`,
-`--output-backend` and `--output-mode` need output: an `io` section or
-`--enable-output`.
+The output has no command-line options: it is configured in the `io` section of the
+configuration file only (see "Output"), in single-node and MPI runs alike.

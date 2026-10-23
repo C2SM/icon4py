@@ -42,6 +42,8 @@ from icon4py.model.testing.fixtures.datatest import (
     process_props,
 )
 
+from ..fixtures import ALL_OUTPUT_VARIABLES, OUTPUT_BASENAME, io_config_with_all_variables
+
 
 _log = logging.getLogger(__file__)
 
@@ -76,7 +78,7 @@ def _run_driver_with_output(
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={"end_of_simulation": time.NumTimeSteps(1)},
-        io=driver_io.default_io_config(output_path, backend=output_backend, mode=output_mode),
+        io=io_config_with_all_variables(output_path, backend=output_backend, mode=output_mode),
     )
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
@@ -98,7 +100,7 @@ def _open_single_output(
     output_path: pathlib.Path, output_backend: common_io.OutputBackend
 ) -> xr.Dataset:
     suffix = common_io.FILE_SUFFIXES[output_backend]
-    matches = sorted(output_path.rglob(f"{driver_io.DEFAULT_OUTPUT_BASENAME}_*{suffix}"))
+    matches = sorted(output_path.rglob(f"{OUTPUT_BASENAME}_*{suffix}"))
     assert len(matches) == 1, f"expected exactly one output under {output_path}, got {matches}"
     match output_backend:
         case common_io.OutputBackend.NETCDF:
@@ -111,7 +113,7 @@ def _assert_dataset_matches_reference(
     dataset: xr.Dataset, reference: xr.Dataset, atol: float, rtol: float
 ) -> None:
     assert dataset.sizes["time"] == reference.sizes["time"]
-    for name in driver_io.DEFAULT_OUTPUT_VARIABLES:
+    for name in ALL_OUTPUT_VARIABLES:
         test_utils.assert_dallclose(
             dataset[name].values, reference[name].values, atol=atol, rtol=rtol, err_msg=name
         )
@@ -120,7 +122,7 @@ def _assert_dataset_matches_reference(
 def _reassemble_global_order(dataset: xr.Dataset, reference: xr.Dataset) -> xr.Dataset:
     """Undo the rank-block layout of a distributed store via its global indices."""
     reassembled = {}
-    for name in driver_io.DEFAULT_OUTPUT_VARIABLES:
+    for name in ALL_OUTPUT_VARIABLES:
         variable = dataset[name]
         horizontal_name = str(variable.dims[-1])
         global_index = dataset[f"{writers.GLOBAL_INDEX_PREFIX}_{horizontal_name}"].values

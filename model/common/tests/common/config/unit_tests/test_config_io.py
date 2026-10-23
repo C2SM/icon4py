@@ -337,14 +337,3 @@ def test_endtime_rejects_unsupported_tag() -> None:
     with pytest.raises(cattrs.ClassValidationError) as err:
         config_io.read_yaml_str("endtime:\n  type: foo\n  value: 1\n", EndtimeConfig)
     assert "Unsupported time type 'foo'" in str(err.value.exceptions[0])
-
-
-def test_time_union_writes_subclass_instances_like_the_member() -> None:
-    class _Stamp(time.AbsoluteTime):
-        """A datetime subclass, as other libraries hand them out."""
-
-    reference = AbsOrStepsConfig(_Stamp(2026, 7, 30, 14, 41, 46))
-    assert (
-        config_io.write_yaml_str(reference)
-        == "value:\n  type: absolute\n  value: '2026-07-30T14:41:46'\n"
-    )

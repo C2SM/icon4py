@@ -34,6 +34,7 @@ from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     data as state_data,
+    diagnostic_state as diagnostics,
     model as state_model,
     prognostic_state as prognostics,
     tracer_states,
@@ -42,6 +43,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_io
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures import backend
+
+from ..fixtures import ALL_OUTPUT_VARIABLES
 
 
 @pytest.fixture
@@ -223,32 +226,6 @@ def test_diagnostic_data_is_host_numpy(
         assert isinstance(da.data, np.ndarray)
 
 
-def test_default_io_config_builds_single_field_group(tmp_path: pathlib.Path) -> None:
-    """The built-in default group: all output fields, every step, below the given directory."""
-    config = driver_io.default_io_config(
-        tmp_path / "out", backend=common_io.OutputBackend.NETCDF, mode=common_io.OutputMode.GATHER
-    )
-
-    assert config.output_path == tmp_path / "out"
-    (field_group,) = config.field_groups
-    # default cadence: capture on every model step
-    assert field_group.output_interval == 1
-    # a single group holding all fields, prognostic + diagnostic, in one file series
-    assert list(field_group.variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
-    assert list(field_group.variables) == [
-        *driver_io.PROGNOSTIC_VARIABLES,
-        *driver_io.DIAGNOSTIC_VARIABLES,
-    ]
-    assert field_group.basename == driver_io.DEFAULT_OUTPUT_BASENAME
-    assert field_group.backend is common_io.OutputBackend.NETCDF
-    assert field_group.mode is common_io.OutputMode.GATHER
-    # without arguments: the defaults of the IO module
-    default = driver_io.default_io_config()
-    assert default.output_path == common_io.DEFAULT_OUTPUT_PATH
-    assert default.field_groups[0].backend is common_io.OutputBackend.ZARR
-    assert default.field_groups[0].mode is common_io.OutputMode.DISTRIBUTED
-
-
 def test_create_io_monitor_passes_the_io_config(
     grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -389,6 +366,11 @@ def _assembler(
     )
 
 
+def _diagnostic_state(grid: base.Grid) -> diagnostics.DiagnosticState:
+    """The driver's diagnostic state the output diagnostics are computed into."""
+    return diagnostics.initialize_diagnostic_state(grid, allocator=None)
+
+
 def _uniform_prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
     """A thermodynamically plausible uniform state (the zero state gives no pressure)."""
     return prognostics.PrognosticState(
@@ -402,7 +384,7 @@ def _uniform_prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
 
 def test_available_variables_are_the_prognostics_and_diagnostics(grid: base.Grid) -> None:
     assembler = _assembler(grid, _io_config(("prognostics", ["air_density"])))
-    assert assembler.available_variables == set(driver_io.DEFAULT_OUTPUT_VARIABLES)
+    assert assembler.available_variables == set(ALL_OUTPUT_VARIABLES)
 
 
 def test_available_variables_include_the_active_tracers(grid: base.Grid) -> None:
@@ -411,7 +393,7 @@ def test_available_variables_include_the_active_tracers(grid: base.Grid) -> None
         _io_config(("moisture", ["qv"])),
         tracer_config=tracer_states.TracerConfig(qv=True, qc=True),
     )
-    assert assembler.available_variables == {*driver_io.DEFAULT_OUTPUT_VARIABLES, "qv", "qc"}
+    assert assembler.available_variables == {*ALL_OUTPUT_VARIABLES, "qv", "qc"}
 
 
 def test_available_variables_include_the_physics_diagnostics(grid: base.Grid) -> None:
@@ -420,7 +402,7 @@ def test_available_variables_include_the_physics_diagnostics(grid: base.Grid) ->
         _io_config(("precipitation", ["rainfall_flux"])),
         physics_diagnostics=_physics_diagnostics(grid, _rainfall_outputs()),
     )
-    assert assembler.available_variables == {*driver_io.DEFAULT_OUTPUT_VARIABLES, "rainfall_flux"}
+    assert assembler.available_variables == {*ALL_OUTPUT_VARIABLES, "rainfall_flux"}
 
 
 def test_physics_diagnostic_outputs_are_named_by_standard_name(grid: base.Grid) -> None:
@@ -508,8 +490,12 @@ def test_assembler_assembles_only_the_requested_variables(grid: base.Grid) -> No
         physics_diagnostics=_physics_diagnostics(grid, _rainfall_outputs()),
     )
 
+    diagnostic_state = _diagnostic_state(grid)
     state = assembler.assemble(
-        {"air_density", "qv", "rainfall_flux", "surface_pressure"}, prognostic_state, tracer_state
+        {"air_density", "qv", "rainfall_flux", "surface_pressure"},
+        prognostic_state,
+        tracer_state,
+        diagnostic_state,
     )
     assert set(state) == {"air_density", "qv", "rainfall_flux", "surface_pressure"}
     assert state["qv"].attrs["standard_name"] == "specific_humidity"
@@ -518,8 +504,10 @@ def test_assembler_assembles_only_the_requested_variables(grid: base.Grid) -> No
     # a purely horizontal diagnostic
     assert state["surface_pressure"].dims == ("cell",)
 
-    winds = assembler.assemble({"eastward_wind"}, prognostic_state, tracer_state)
+    winds = assembler.assemble({"eastward_wind"}, prognostic_state, tracer_state, diagnostic_state)
     assert set(winds) == {"eastward_wind"}
+    # the diagnostics are computed into the driver's diagnostic state
+    assert winds["eastward_wind"].data is diagnostic_state.u.ndarray
 
 
 def test_assembler_builds_no_diagnostics_computer_without_diagnostics(
@@ -536,13 +524,21 @@ def test_assembler_builds_no_diagnostics_computer_without_diagnostics(
 def test_diagnostics_computer_returns_only_the_requested_variables(grid: base.Grid) -> None:
     computer = _diagnostics_computer(grid, ["pressure", "eastward_wind"])
     prognostic_state = _uniform_prognostic_state(grid)
+    diagnostic_state = _diagnostic_state(grid)
 
-    fields = computer.compute(prognostic_state, tracer_states.TracerState(), ["pressure"])
+    fields = computer.compute(
+        prognostic_state, tracer_states.TracerState(), diagnostic_state, ["pressure"]
+    )
     assert set(fields) == {"pressure"}
+    assert fields["pressure"] is diagnostic_state.pressure
     assert (fields["pressure"].asnumpy() > 0.0).all()
+    # the wind program did not run: the diagnostic state's winds are untouched
+    assert not diagnostic_state.u.asnumpy().any()
 
     with pytest.raises(ValueError, match="not configured for this computer: temperature"):
-        computer.compute(prognostic_state, tracer_states.TracerState(), ["temperature"])
+        computer.compute(
+            prognostic_state, tracer_states.TracerState(), diagnostic_state, ["temperature"]
+        )
 
 
 def test_diagnostics_computer_rejects_unknown_variables(grid: base.Grid) -> None:
@@ -554,23 +550,27 @@ def test_diagnostics_computer_surface_pressure(grid: base.Grid) -> None:
     """The surface pressure is a cell field: the bottom half-level row of the pressure program."""
     requested = ["pressure", "surface_pressure"]
     computer = _diagnostics_computer(grid, requested)
+    diagnostic_state = _diagnostic_state(grid)
 
     fields = computer.compute(
-        _uniform_prognostic_state(grid), tracer_states.TracerState(), requested
+        _uniform_prognostic_state(grid), tracer_states.TracerState(), diagnostic_state, requested
     )
 
     surface_pressure = fields["surface_pressure"]
     assert surface_pressure.domain.dims == (dims.CellDim,)
     assert surface_pressure.asnumpy().shape == (grid.num_cells,)
+    # the diagnostic state's view of the bottom row of its half-level pressure
+    test_utils.assert_dallclose(
+        surface_pressure.asnumpy(), diagnostic_state.pressure_ifc.asnumpy()[:, -1]
+    )
     # hydrostatic: the surface pressure exceeds the pressure of the lowest model level
     assert (surface_pressure.asnumpy() > fields["pressure"].asnumpy()[:, -1]).all()
-    test_utils.assert_dallclose(
-        surface_pressure.asnumpy(),
-        computer._pressure_on_cells_half_levels.asnumpy()[:, grid.num_levels],
-    )
     # the surface pressure alone also runs the temperature and pressure programs
     alone = _diagnostics_computer(grid, ["surface_pressure"]).compute(
-        _uniform_prognostic_state(grid), tracer_states.TracerState(), ["surface_pressure"]
+        _uniform_prognostic_state(grid),
+        tracer_states.TracerState(),
+        _diagnostic_state(grid),
+        ["surface_pressure"],
     )
     assert set(alone) == {"surface_pressure"}
     test_utils.assert_dallclose(alone["surface_pressure"].asnumpy(), surface_pressure.asnumpy())
@@ -581,15 +581,18 @@ def test_diagnostics_computer_uses_the_active_tracers(grid: base.Grid) -> None:
     requested = ["temperature", "virtual_temperature"]
     computer = _diagnostics_computer(grid, requested)
     prognostic_state = _uniform_prognostic_state(grid)
+    diagnostic_state = _diagnostic_state(grid)
 
-    dry = computer.compute(prognostic_state, tracer_states.TracerState(), requested)
+    dry = computer.compute(
+        prognostic_state, tracer_states.TracerState(), diagnostic_state, requested
+    )
     test_utils.assert_dallclose(dry["temperature"].asnumpy(), dry["virtual_temperature"].asnumpy())
     dry_temperature = dry["temperature"].asnumpy().copy()
 
     moist_tracers = tracer_states.TracerState(
         qv=data_alloc.constant_field(grid, 0.01, dims.CellDim, dims.KDim)
     )
-    moist = computer.compute(prognostic_state, moist_tracers, requested)
+    moist = computer.compute(prognostic_state, moist_tracers, diagnostic_state, requested)
     test_utils.assert_dallclose(moist["virtual_temperature"].asnumpy(), dry_temperature)
     assert (moist["temperature"].asnumpy() < moist["virtual_temperature"].asnumpy()).all()
 

@@ -99,13 +99,8 @@ for float_type in (np.float32, np.float64):
 yaml.add_representer(type(None), lambda d, _: d.represent_scalar("tag:yaml.org,2002:null", ""))
 
 
-def load_yaml(yaml_str: str) -> typing.Any:
-    """Parse a YAML document into plain Python data, the input of ``CONV.structure``."""
-    return yaml.safe_load(yaml_str)
-
-
 def read_yaml_str[T](yaml_str: str, config_cls: type[T]) -> T:
-    return CONV.structure(load_yaml(yaml_str), config_cls)
+    return CONV.structure(yaml.safe_load(yaml_str), config_cls)
 
 
 def write_yaml_str[T](config_inst: T) -> str:
@@ -186,13 +181,22 @@ def unstructure_reltime(reltime: time.RelativeTime) -> str:
 def register_time_union[T](
     union_type: types.UnionType, mapping: typing.Mapping[str, type[T]]
 ) -> None:
-    """Register the tagged YAML form ``{type: <tag>, value: <time>}`` for a union of time types.
+    """Register the tagged YAML form of a union of time types.
 
-    Unlike ``register_config_union``, whose members are config classes with their fields
-    written next to the ``type`` key, the members here are scalars (a date, a time delta,
-    a number of steps) written under ``value`` and structured with their own hooks.
-    ``mapping`` names the tag of every member type of ``union_type``; the input mapping is
-    left untouched.
+    A value is written as a mapping of the member's tag and the member's own YAML form,
+    for example::
+
+        end_of_simulation:
+          type: numsteps
+          value: 10
+        output_interval:
+          type: relative
+          value: 30 minutes
+        start:
+          type: absolute
+          value: '2020-01-01T00:00:00'
+
+    ``mapping`` gives the tag of every member type of ``union_type``.
     """
     inverse_mapping: dict[type[T], str] = {member: tag for tag, member in mapping.items()}
 
@@ -211,19 +215,7 @@ def register_time_union[T](
         return CONV.structure(spec["value"], mapping[tag])
 
     def unstructure(value: T) -> dict:
-        # bool is a subclass of int but no time type; an instance of a subclass of a
-        # member (a datetime subclass, say) is written like the member
-        tag = next(
-            (
-                tag
-                for member, tag in inverse_mapping.items()
-                if not isinstance(value, bool) and isinstance(value, member)
-            ),
-            None,
-        )
-        if tag is None:
-            raise TypeError(f"Unsupported time type '{type(value)}' for '{union_type}'.")
-        return {"type": tag, "value": CONV.unstructure(value)}
+        return {"type": inverse_mapping[type(value)], "value": CONV.unstructure(value)}
 
     CONV.register_structure_hook(union_type, structure)
     CONV.register_unstructure_hook(union_type, unstructure)
@@ -236,7 +228,17 @@ register_time_union(
 
 
 def register_config_union[T](union_type: type[T], mapping: typing.Mapping[str, type[T]]) -> None:
+    """Register the tagged YAML form of a union of config classes.
 
+    The member is picked by the ``type`` tag, written next to the member's own options,
+    for example::
+
+        initial_condition:
+          type: jablonowski_williamson
+          p_sfc: 100000.0
+
+    ``mapping`` gives the tag of every member class of ``union_type``.
+    """
     inverse_mapping: dict[type[T], str] = {v: k for k, v in mapping.items()}
 
     def unstructure(instance: T) -> dict:

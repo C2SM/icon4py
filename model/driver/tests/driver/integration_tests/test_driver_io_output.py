@@ -33,6 +33,7 @@ from icon4py.model.driver import config as driver_config, driver, driver_io, dri
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 
 from ..fixtures import *  # noqa: F403
+from ..fixtures import ALL_OUTPUT_VARIABLES, OUTPUT_BASENAME, io_config_with_all_variables
 
 
 def _find_one(directory: pathlib.Path, pattern: str) -> pathlib.Path:
@@ -89,7 +90,7 @@ def test_driver_writes_output(
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={"end_of_simulation": time.NumTimeSteps(1)},
-        io=driver_io.default_io_config(
+        io=io_config_with_all_variables(
             tmp_path / "io_driver_output",
             backend=output_backend,
             # gather is valid for both backends everywhere (distributed netCDF
@@ -106,10 +107,10 @@ def test_driver_writes_output(
     # single data file: all prognostic AND diagnostic fields together. Two time slices:
     # the initial state (always written) plus the one integrated step.
     suffix = common_io.FILE_SUFFIXES[output_backend]
-    output_file = _find_one(tmp_path, f"{driver_io.DEFAULT_OUTPUT_BASENAME}_*{suffix}")
+    output_file = _find_one(tmp_path, f"{OUTPUT_BASENAME}_*{suffix}")
     with _open_output(output_file, output_backend) as ds:
         assert ds.attrs["Conventions"] == "CF-1.7"
-        for name in driver_io.DEFAULT_OUTPUT_VARIABLES:
+        for name in ALL_OUTPUT_VARIABLES:
             assert name in ds.variables, f"{name} missing from output"
             var = ds[name]
             assert var.dims[0] == "time"
@@ -162,8 +163,8 @@ def test_driver_writes_configured_field_groups(
 
     _run_driver(experiment_description, process_props, backend, config)
 
-    # the built-in default group is not written when field groups are configured
-    assert not list(tmp_path.rglob(f"{driver_io.DEFAULT_OUTPUT_BASENAME}_*"))
+    # only the configured groups are written
+    assert not list(tmp_path.rglob(f"{OUTPUT_BASENAME}_*"))
     # the winds every second step: the initial state and step 2
     with _open_output(_find_one(tmp_path, "winds_*.nc"), common_io.OutputBackend.NETCDF) as ds:
         assert {"eastward_wind", "northward_wind", "surface_pressure"} <= set(ds.variables)
