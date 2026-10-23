@@ -1000,3 +1000,133 @@ def test_netcdf_writer_append_two_fields_sharing_standard_name(
     assert "air_density" in writer.variables
     assert "air_density_copy" in writer.variables
     writer.close()
+
+
+def _surface_field(grid: grid_def.Grid) -> xr.DataArray:
+    """A purely horizontal (surface) cell field, like the surface pressure."""
+    return utils.to_data_array(
+        data_alloc.random_field(grid, dims.CellDim),
+        data.DIAGNOSTIC_CF_ATTRIBUTES["surface_pressure"],
+    )
+
+
+def _padded_rank_blocks(
+    grid: grid_def.Grid, padding: int
+) -> tuple[dict[str, distributed.RankBlock], grid_def.HorizontalGridSize]:
+    """Single-rank rank blocks with ``padding`` unused entries on every horizontal axis."""
+    rank_blocks = {
+        dim_name: distributed.RankBlock(
+            start=0,
+            count=size,
+            size=size + padding,
+            padded_size=size + padding,
+            global_size=size,
+            global_index=np.arange(size, dtype=np.int64),
+        )
+        for dim_name, size in (
+            (writers.CELL, grid.num_cells),
+            (writers.EDGE, grid.num_edges),
+            (writers.VERTEX, grid.num_vertices),
+        )
+    }
+    padded_horizontal = grid_def.HorizontalGridSize(
+        num_cells=grid.num_cells + padding,
+        num_edges=grid.num_edges + padding,
+        num_vertices=grid.num_vertices + padding,
+    )
+    return rank_blocks, padded_horizontal
+
+
+def test_netcdf_writer_writes_horizontal_only_fields(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    """A surface field is a (time, cell) variable next to the (time, level, cell) ones."""
+    writer, grid = initialized_writer(test_path, random_name)
+    state = {
+        "surface_pressure": _surface_field(grid),
+        "air_density": test_io_utils.model_state(grid)["air_density"],
+    }
+    time = datetime.now()
+    writer.append(state, time)
+    writer.append(state, time + timedelta(hours=1))
+
+    surface_pressure = writer.variables["surface_pressure"]
+    assert surface_pressure.dimensions == (writers.TIME, writers.CELL)
+    assert surface_pressure.shape == (2, grid.num_cells)
+    assert surface_pressure.standard_name == "air_pressure_at_ground_level"
+    test_utils.assert_dallclose(surface_pressure[1], state["surface_pressure"].data)
+    assert writer.variables["air_density"].dimensions == (
+        writers.TIME,
+        writers.MODEL_LEVEL,
+        writers.CELL,
+    )
+
+
+def test_zarr_writer_writes_horizontal_only_fields(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    grid = test_io_utils.simple_grid
+    writer, store_path = initialized_zarr_writer(test_path, random_name, grid)
+    state = {"surface_pressure": _surface_field(grid)}
+    writer.append(state, datetime.now())
+    writer.close()
+
+    with xr.open_zarr(store_path) as ds:
+        assert ds["surface_pressure"].dims == ("time", "cell")
+        assert ds["surface_pressure"].shape == (1, grid.num_cells)
+        assert ds["surface_pressure"].attrs["standard_name"] == "air_pressure_at_ground_level"
+        test_utils.assert_dallclose(
+            ds["surface_pressure"].values[0], state["surface_pressure"].data
+        )
+
+
+def test_netcdf_writer_rank_block_pads_horizontal_only_fields(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # the rank-block layout of a surface field: data in the rank's block, NaN padding,
+    # one chunk per block along the only (horizontal) axis
+    grid = test_io_utils.simple_grid
+    padding = 3
+    rank_blocks, padded_horizontal = _padded_rank_blocks(grid, padding)
+    writer, file_path = initialized_netcdf_rank_block_writer(
+        test_path, random_name, grid, rank_blocks, padded_horizontal
+    )
+    state = {"surface_pressure": _surface_field(grid)}
+    writer.append(state, datetime.now())
+    writer.close()
+
+    with xr.open_dataset(file_path) as ds:
+        assert ds["surface_pressure"].dims == ("time", "cell")
+        assert ds["surface_pressure"].shape == (1, grid.num_cells + padding)
+        values = ds["surface_pressure"].values[0]
+        test_utils.assert_dallclose(values[: grid.num_cells], state["surface_pressure"].data)
+        assert np.all(np.isnan(values[grid.num_cells :]))
+        assert ds["surface_pressure"].attrs[writers.LAYOUT_ATTRIBUTE] == writers.RANK_BLOCK_LAYOUT
+    with nc.Dataset(file_path) as raw:
+        assert raw["surface_pressure"].chunking() == [1, rank_blocks[writers.CELL].size]
+
+
+def test_zarr_writer_rank_block_pads_horizontal_only_fields(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    grid = test_io_utils.simple_grid
+    padding = 3
+    rank_blocks, padded_horizontal = _padded_rank_blocks(grid, padding)
+    writer, store_path = initialized_zarr_writer(
+        test_path, random_name, grid, rank_blocks=rank_blocks, horizontal=padded_horizontal
+    )
+    state = {"surface_pressure": _surface_field(grid)}
+    writer.append(state, datetime.now())
+    writer.close()
+
+    with xr.open_zarr(store_path) as ds:
+        assert ds["surface_pressure"].dims == ("time", "cell")
+        assert ds["surface_pressure"].shape == (1, grid.num_cells + padding)
+        values = ds["surface_pressure"].values[0]
+        test_utils.assert_dallclose(values[: grid.num_cells], state["surface_pressure"].data)
+        assert np.all(np.isnan(values[grid.num_cells :]))
+        assert ds["surface_pressure"].attrs[writers.LAYOUT_ATTRIBUTE] == writers.RANK_BLOCK_LAYOUT
+    group = zarr.open_group(store_path, mode="r")
+    surface_pressure = group["surface_pressure"]
+    assert isinstance(surface_pressure, zarr.Array)
+    assert surface_pressure.chunks == (1, rank_blocks[writers.CELL].size)

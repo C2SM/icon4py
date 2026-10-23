@@ -23,18 +23,28 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+import icon4py.model.common.exceptions as errors
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
+from icon4py.model.common import dimension as dims, time, type_alias as ta
+from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base, simple, vertical as v_grid
+from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import io as common_io
+from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     data as state_data,
+    diagnostic_state as diagnostics,
     model as state_model,
     prognostic_state as prognostics,
+    tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_io
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures import backend
+
+from ..fixtures import ALL_OUTPUT_VARIABLES
 
 
 @pytest.fixture
@@ -216,13 +226,10 @@ def test_diagnostic_data_is_host_numpy(
         assert isinstance(da.data, np.ndarray)
 
 
-def test_create_io_monitor_builds_single_field_group(
+def test_create_io_monitor_passes_the_io_config(
     grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The monitor holds one field group with all output fields, capturing every step.
-
-    ``IOMonitor`` is replaced by a recorder so the test needs no real grid file.
-    """
+    """``IOMonitor`` is replaced by a recorder so the test needs no real grid file."""
     recorded: dict[str, object] = {}
 
     class _RecordingMonitor:
@@ -243,9 +250,13 @@ def test_create_io_monitor_builds_single_field_group(
             recorded["grid_id"] = grid_id
 
     monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
+    io_config = common_io.IOConfig(
+        output_path=tmp_path,
+        field_groups=[common_io.FieldGroupIOConfig(basename="a", variables=["air_density"])],
+    )
 
     driver_io.create_io_monitor(
-        output_path=tmp_path,
+        io_config=io_config,
         grid_file_path=tmp_path / "grid.nc",
         grid=grid,
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
@@ -254,54 +265,355 @@ def test_create_io_monitor_builds_single_field_group(
         decomposition_info=None,
     )
 
-    config = recorded["config"]
-    assert isinstance(config, common_io.IOConfig)
-    assert len(config.field_groups) == 1
-    field_group = config.field_groups[0]
-    # default cadence: capture on every model step
-    assert field_group.output_interval == 1
-    # default output setup: zarr stores, every rank writing its own block under MPI
-    assert field_group.backend == common_io.OutputBackend.ZARR
-    assert field_group.mode == common_io.OutputMode.DISTRIBUTED
-    # a single group holding all fields, prognostic + diagnostic, in one file
-    assert list(field_group.variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
-    assert list(field_group.variables) == [
-        *driver_io.PROGNOSTIC_VARIABLES,
-        *driver_io.DIAGNOSTIC_VARIABLES,
-    ]
-    assert field_group.basename == driver_io.DEFAULT_OUTPUT_BASENAME
-    # output is written directly into the run output directory
-    assert config.output_path == str(tmp_path)
+    # the configuration carries the output directory
+    assert recorded["config"] is io_config
+    assert recorded["grid_file_name"] == tmp_path / "grid.nc"
     # the string grid id is converted to a UUID at the IO boundary
     assert recorded["grid_id"] == uuid.UUID(grid.id)
 
 
-def test_create_io_monitor_has_no_separate_diagnostic_group(
-    grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Prognostics and diagnostics are not split: there is exactly one field group."""
-    recorded: dict[str, common_io.IOConfig] = {}
+# --------------------------------------------------------------------------------------
+# Output state assembly
+# --------------------------------------------------------------------------------------
 
-    class _RecordingMonitor:
-        def __init__(self, *, config: common_io.IOConfig, **kwargs: object) -> None:
-            recorded["config"] = config
 
-    monkeypatch.setattr(common_io, "IOMonitor", _RecordingMonitor)
+class _StubFieldSource:
+    """Minimal FieldSource stand-in: serves pre-built fields by name."""
 
-    driver_io.create_io_monitor(
-        output_path=tmp_path,
-        grid_file_path=tmp_path / "grid.nc",
+    def __init__(self, fields: dict[str, gtx.Field]) -> None:
+        self._fields = fields
+
+    def get(self, name: str) -> gtx.Field:
+        return self._fields[name]
+
+
+class _StubStaticFields:
+    """The two field sources the diagnostics computer reads its static inputs from."""
+
+    def __init__(self, grid: base.Grid) -> None:
+        self.metrics = _StubFieldSource(
+            {
+                metrics_attr.DDQZ_Z_FULL: data_alloc.constant_field(
+                    grid, 100.0, dims.CellDim, dims.KDim
+                ),
+            }
+        )
+        self.interpolation = _StubFieldSource(
+            {
+                intp_attr.RBF_VEC_COEFF_C1: data_alloc.zero_field(
+                    grid, dims.CellDim, dims.C2E2C2EDim
+                ),
+                intp_attr.RBF_VEC_COEFF_C2: data_alloc.zero_field(
+                    grid, dims.CellDim, dims.C2E2C2EDim
+                ),
+            }
+        )
+
+
+def _diagnostics_computer(grid: base.Grid, variables: list[str]) -> driver_io.DiagnosticsComputer:
+    static = _StubStaticFields(grid)
+    return driver_io.DiagnosticsComputer(
         grid=grid,
-        vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
-        dtime=datetime.timedelta(seconds=1),
-        process_props=decomposition_defs.SingleNodeProcessProperties(),
-        decomposition_info=None,
+        backend=None,
+        variables=variables,
+        metrics=static.metrics,  # type: ignore[arg-type]  # stand-in serving the static fields
+        interpolation=static.interpolation,  # type: ignore[arg-type]  # stand-in serving the static fields
     )
 
-    groups = recorded["config"].field_groups
-    assert len(groups) == 1
-    assert set(driver_io.DIAGNOSTIC_VARIABLES) <= set(groups[0].variables)
-    assert set(driver_io.PROGNOSTIC_VARIABLES) <= set(groups[0].variables)
+
+def _metadata(key: str, *field_dims: gtx.Dimension) -> state_model.FieldMetaData:
+    """Precipitation metadata with the dims the physics store allocates its buffer from."""
+    return dataclasses.replace(state_data.PRECIPITATION_CF_ATTRIBUTES[key], dims=field_dims)
+
+
+def _physics_diagnostics(
+    grid: base.Grid, outputs: dict[str, dict[str, state_model.FieldMetaData]]
+) -> physics_state.DiagnosticsStore:
+    """A physics diagnostics store with the given outputs allocated, per process."""
+    store = physics_state.DiagnosticsStore(grid=grid)
+    for process_name, outputs_properties in outputs.items():
+        store.allocate(process_name, outputs_properties)
+    return store
+
+
+def _rainfall_outputs() -> dict[str, dict[str, state_model.FieldMetaData]]:
+    return {"muphys": {"pr": _metadata("rainfall_flux", dims.CellDim, dims.KDim)}}
+
+
+def _io_config(*groups: tuple[str, list[str]]) -> common_io.IOConfig:
+    return common_io.IOConfig(
+        field_groups=[
+            common_io.FieldGroupIOConfig(basename=basename, variables=variables)
+            for basename, variables in groups
+        ]
+    )
+
+
+def _assembler(
+    grid: base.Grid,
+    io_config: common_io.IOConfig,
+    *,
+    tracer_config: tracer_states.TracerConfig | None = None,
+    physics_diagnostics: physics_state.DiagnosticsStore | None = None,
+) -> driver_io.OutputStateAssembler:
+    return driver_io.OutputStateAssembler(
+        io_config=io_config,
+        grid=grid,
+        backend=None,
+        static_field_factories=_StubStaticFields(grid),  # type: ignore[arg-type]  # stand-in serving the static fields
+        tracer_config=tracer_config,
+        physics_diagnostics=physics_diagnostics,
+    )
+
+
+def _diagnostic_state(grid: base.Grid) -> diagnostics.DiagnosticState:
+    """The driver's diagnostic state the output diagnostics are computed into."""
+    return diagnostics.initialize_diagnostic_state(grid, allocator=None)
+
+
+def _uniform_prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
+    """A thermodynamically plausible uniform state (the zero state gives no pressure)."""
+    return prognostics.PrognosticState(
+        rho=data_alloc.constant_field(grid, 1.2, dims.CellDim, dims.KDim),
+        w=data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat),
+        vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat),
+        exner=data_alloc.constant_field(grid, 0.95, dims.CellDim, dims.KDim),
+        theta_v=data_alloc.constant_field(grid, 300.0, dims.CellDim, dims.KDim),
+    )
+
+
+def test_available_variables_are_the_prognostics_and_diagnostics(grid: base.Grid) -> None:
+    assembler = _assembler(grid, _io_config(("prognostics", ["air_density"])))
+    assert assembler.available_variables == set(ALL_OUTPUT_VARIABLES)
+
+
+def test_available_variables_include_the_active_tracers(grid: base.Grid) -> None:
+    assembler = _assembler(
+        grid,
+        _io_config(("moisture", ["qv"])),
+        tracer_config=tracer_states.TracerConfig(qv=True, qc=True),
+    )
+    assert assembler.available_variables == {*ALL_OUTPUT_VARIABLES, "qv", "qc"}
+
+
+def test_available_variables_include_the_physics_diagnostics(grid: base.Grid) -> None:
+    assembler = _assembler(
+        grid,
+        _io_config(("precipitation", ["rainfall_flux"])),
+        physics_diagnostics=_physics_diagnostics(grid, _rainfall_outputs()),
+    )
+    assert assembler.available_variables == {*ALL_OUTPUT_VARIABLES, "rainfall_flux"}
+
+
+def test_physics_diagnostic_outputs_are_named_by_standard_name(grid: base.Grid) -> None:
+    outputs = driver_io.physics_diagnostic_outputs(_physics_diagnostics(grid, _rainfall_outputs()))
+    assert set(outputs) == {"rainfall_flux"}
+    assert outputs["rainfall_flux"].name == "pr"
+    assert outputs["rainfall_flux"].process_name == "muphys"
+
+
+def test_physics_diagnostic_outputs_include_surface_fields(grid: base.Grid) -> None:
+    # a purely horizontal (surface) output is offered like the others
+    outputs = driver_io.physics_diagnostic_outputs(
+        _physics_diagnostics(
+            grid,
+            {
+                "muphys": {
+                    "pr": _metadata("rainfall_flux", dims.CellDim, dims.KDim),
+                    "pr_sfc": _metadata("precipitation_flux", dims.CellDim),
+                }
+            },
+        )
+    )
+    assert set(outputs) == {"rainfall_flux", "precipitation_flux"}
+    assert outputs["precipitation_flux"].field.domain.dims == (dims.CellDim,)
+
+
+def test_physics_diagnostic_outputs_without_physics_are_empty() -> None:
+    assert driver_io.physics_diagnostic_outputs(None) == {}
+
+
+def test_duplicate_physics_diagnostic_names_raise(grid: base.Grid) -> None:
+    rainfall = _metadata("rainfall_flux", dims.CellDim, dims.KDim)
+    store = _physics_diagnostics(grid, {"muphys": {"pr": rainfall}, "graupel": {"rain": rainfall}})
+    with pytest.raises(ValueError, match="more than one process: muphys, graupel"):
+        driver_io.physics_diagnostic_outputs(store)
+
+
+def test_validate_output_variables_rejects_unknown_names() -> None:
+    io_config = _io_config(("winds", ["eastward_wind", "foo", "bar"]))
+    sources = driver_io.output_variable_sources(tracer_config=None, physics_outputs={})
+    with pytest.raises(errors.InvalidConfigError, match="field group 'winds': bar, foo") as err:
+        driver_io.validate_output_variables(io_config, sources)
+    # the message tells the user what is available
+    assert "air_density" in str(err.value)
+
+
+def test_validate_output_variables_rejects_ambiguous_names_only_when_requested(
+    grid: base.Grid,
+) -> None:
+    # a physics output whose standard name is a prognostic variable name
+    clashing = state_model.FieldMetaData(
+        standard_name="air_density", units="kg m-3", dims=(dims.CellDim, dims.KDim)
+    )
+    sources = driver_io.output_variable_sources(
+        tracer_config=None,
+        physics_outputs=driver_io.physics_diagnostic_outputs(
+            _physics_diagnostics(grid, {"muphys": {"rho": clashing}})
+        ),
+    )
+    assert sources["air_density"] == ["prognostic", "physics"]
+
+    driver_io.validate_output_variables(_io_config(("exner", ["exner_function"])), sources)
+    with pytest.raises(errors.InvalidConfigError, match="ambiguous: provided by the prognostic"):
+        driver_io.validate_output_variables(_io_config(("rho", ["air_density"])), sources)
+
+
+def test_assembler_rejects_unknown_variables_at_setup(grid: base.Grid) -> None:
+    # no tracer is active, so 'qv' is not an output variable of this run
+    with pytest.raises(errors.InvalidConfigError, match="field group 'moisture': qv"):
+        _assembler(grid, _io_config(("moisture", ["qv"])))
+
+
+def test_assembler_assembles_only_the_requested_variables(grid: base.Grid) -> None:
+    prognostic_state = _uniform_prognostic_state(grid)
+    tracer_state = tracer_states.TracerState(
+        qv=data_alloc.constant_field(grid, 0.01, dims.CellDim, dims.KDim)
+    )
+    assembler = _assembler(
+        grid,
+        _io_config(
+            ("prognostics", ["air_density", "eastward_wind", "surface_pressure"]),
+            ("moisture", ["qv", "rainfall_flux"]),
+        ),
+        tracer_config=tracer_states.TracerConfig(qv=True),
+        physics_diagnostics=_physics_diagnostics(grid, _rainfall_outputs()),
+    )
+
+    diagnostic_state = _diagnostic_state(grid)
+    state = assembler.assemble(
+        {"air_density", "qv", "rainfall_flux", "surface_pressure"},
+        prognostic_state,
+        tracer_state,
+        diagnostic_state,
+    )
+    assert set(state) == {"air_density", "qv", "rainfall_flux", "surface_pressure"}
+    assert state["qv"].attrs["standard_name"] == "specific_humidity"
+    assert state["rainfall_flux"].attrs["standard_name"] == "rainfall_flux"
+    assert state["rainfall_flux"].dims == ("cell", "level")
+    # a purely horizontal diagnostic
+    assert state["surface_pressure"].dims == ("cell",)
+
+    winds = assembler.assemble({"eastward_wind"}, prognostic_state, tracer_state, diagnostic_state)
+    assert set(winds) == {"eastward_wind"}
+    # the diagnostics are computed into the driver's diagnostic state
+    assert winds["eastward_wind"].data is diagnostic_state.u.ndarray
+
+
+def test_assembler_builds_no_diagnostics_computer_without_diagnostics(
+    grid: base.Grid, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _Unexpected:
+        def __init__(self, **kwargs: object) -> None:
+            raise AssertionError("no diagnostic is requested: the computer must not be built")
+
+    monkeypatch.setattr(driver_io, "DiagnosticsComputer", _Unexpected)
+    _assembler(grid, _io_config(("prognostics", ["air_density", "normal_velocity"])))
+
+
+def test_diagnostics_computer_returns_only_the_requested_variables(grid: base.Grid) -> None:
+    computer = _diagnostics_computer(grid, ["pressure", "eastward_wind"])
+    prognostic_state = _uniform_prognostic_state(grid)
+    diagnostic_state = _diagnostic_state(grid)
+
+    fields = computer.compute(
+        prognostic_state, tracer_states.TracerState(), diagnostic_state, ["pressure"]
+    )
+    assert set(fields) == {"pressure"}
+    assert fields["pressure"] is diagnostic_state.pressure
+    assert (fields["pressure"].asnumpy() > 0.0).all()
+    # the wind program did not run: the diagnostic state's winds are untouched
+    assert not diagnostic_state.u.asnumpy().any()
+
+    with pytest.raises(ValueError, match="not configured for this computer: temperature"):
+        computer.compute(
+            prognostic_state, tracer_states.TracerState(), diagnostic_state, ["temperature"]
+        )
+
+
+def test_diagnostics_computer_rejects_unknown_variables(grid: base.Grid) -> None:
+    with pytest.raises(ValueError, match="Unknown diagnostic output variables: foo"):
+        _diagnostics_computer(grid, ["foo"])
+
+
+def test_diagnostics_computer_surface_pressure(grid: base.Grid) -> None:
+    """The surface pressure is a cell field: the bottom half-level row of the pressure program."""
+    requested = ["pressure", "surface_pressure"]
+    computer = _diagnostics_computer(grid, requested)
+    diagnostic_state = _diagnostic_state(grid)
+
+    fields = computer.compute(
+        _uniform_prognostic_state(grid), tracer_states.TracerState(), diagnostic_state, requested
+    )
+
+    surface_pressure = fields["surface_pressure"]
+    assert surface_pressure.domain.dims == (dims.CellDim,)
+    assert surface_pressure.asnumpy().shape == (grid.num_cells,)
+    # the diagnostic state's view of the bottom row of its half-level pressure
+    test_utils.assert_dallclose(
+        surface_pressure.asnumpy(), diagnostic_state.pressure_ifc.asnumpy()[:, -1]
+    )
+    # hydrostatic: the surface pressure exceeds the pressure of the lowest model level
+    assert (surface_pressure.asnumpy() > fields["pressure"].asnumpy()[:, -1]).all()
+    # the surface pressure alone also runs the temperature and pressure programs
+    alone = _diagnostics_computer(grid, ["surface_pressure"]).compute(
+        _uniform_prognostic_state(grid),
+        tracer_states.TracerState(),
+        _diagnostic_state(grid),
+        ["surface_pressure"],
+    )
+    assert set(alone) == {"surface_pressure"}
+    test_utils.assert_dallclose(alone["surface_pressure"].asnumpy(), surface_pressure.asnumpy())
+
+
+def test_diagnostics_computer_uses_the_active_tracers(grid: base.Grid) -> None:
+    """Moist air: the temperature falls below the virtual temperature; dry air: they agree."""
+    requested = ["temperature", "virtual_temperature"]
+    computer = _diagnostics_computer(grid, requested)
+    prognostic_state = _uniform_prognostic_state(grid)
+    diagnostic_state = _diagnostic_state(grid)
+
+    dry = computer.compute(
+        prognostic_state, tracer_states.TracerState(), diagnostic_state, requested
+    )
+    test_utils.assert_dallclose(dry["temperature"].asnumpy(), dry["virtual_temperature"].asnumpy())
+    dry_temperature = dry["temperature"].asnumpy().copy()
+
+    moist_tracers = tracer_states.TracerState(
+        qv=data_alloc.constant_field(grid, 0.01, dims.CellDim, dims.KDim)
+    )
+    moist = computer.compute(prognostic_state, moist_tracers, diagnostic_state, requested)
+    test_utils.assert_dallclose(moist["virtual_temperature"].asnumpy(), dry_temperature)
+    assert (moist["temperature"].asnumpy() < moist["virtual_temperature"].asnumpy()).all()
+
+
+def test_tracer_state_to_dataarrays(grid: base.Grid, backend: gtx.typing.Backend | None) -> None:
+    tracer_state = tracer_states.TracerState(
+        qv=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend)
+    )
+
+    state = driver_io.tracer_state_to_dataarrays(tracer_state, ["qv"])
+
+    assert set(state) == {"qv"}
+    assert state["qv"].dims == ("cell", "level")
+    assert state["qv"].attrs["standard_name"] == "specific_humidity"
+    assert state["qv"].attrs["location"] == "face"
+    # host numpy, also from a device buffer
+    assert isinstance(state["qv"].data, np.ndarray)
+    with pytest.raises(ValueError, match="'qc' is not active"):
+        driver_io.tracer_state_to_dataarrays(tracer_state, ["qc"])
+    with pytest.raises(ValueError, match="Unknown tracer output variable 'foo'"):
+        driver_io.tracer_state_to_dataarrays(tracer_state, ["foo"])
 
 
 def test_diagnostic_fields_to_dataarrays(grid: base.Grid) -> None:
@@ -314,14 +626,21 @@ def test_diagnostic_fields_to_dataarrays(grid: base.Grid) -> None:
         return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
     fields = {name: _zero_cell_k() for name in driver_io.DIAGNOSTIC_VARIABLES}
+    # the surface pressure is a cell field
+    fields["surface_pressure"] = data_alloc.zero_field(grid, dims.CellDim, dtype=ta.wpfloat)
     state = driver_io.diagnostic_fields_to_dataarrays(fields)
 
     assert set(state.keys()) == set(driver_io.DIAGNOSTIC_VARIABLES)
-    for da in state.values():
-        assert da.dims == ("cell", "level")
-        assert da.shape == (grid.num_cells, grid.num_levels)
+    for name, da in state.items():
+        if name == "surface_pressure":
+            assert da.dims == ("cell",)
+            assert da.shape == (grid.num_cells,)
+        else:
+            assert da.dims == ("cell", "level")
+            assert da.shape == (grid.num_cells, grid.num_levels)
         assert isinstance(da.data, np.ndarray)
 
+    assert state["surface_pressure"].attrs["standard_name"] == "air_pressure_at_ground_level"
     assert state["temperature"].attrs["standard_name"] == "air_temperature"
     assert state["pressure"].attrs["units"] == "Pa"
     assert state["eastward_wind"].attrs["location"] == "face"

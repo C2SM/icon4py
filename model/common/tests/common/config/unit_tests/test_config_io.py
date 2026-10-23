@@ -76,6 +76,18 @@ class EndtimeConfig:
     endtime: time.EndOfSimulation
 
 
+# a union of time types of its own: registered independently of ``time.EndOfSimulation``
+type ABS_OR_STEPS = time.AbsoluteTime | time.NumTimeSteps
+config_io.register_time_union(
+    ABS_OR_STEPS.__value__, {"absolute": time.AbsoluteTime, "numsteps": time.NumTimeSteps}
+)
+
+
+@dataclasses.dataclass
+class AbsOrStepsConfig:
+    value: ABS_OR_STEPS
+
+
 @dataclasses.dataclass
 class NumpyFloatConfig:
     single: np.float32
@@ -287,3 +299,41 @@ def test_dispatch_shared_clash_raises() -> None:
             ),
             SharedConfig,
         )
+
+
+@pytest.mark.parametrize(
+    ("input_str", "reference"),
+    (
+        pytest.param(
+            "value:\n  type: absolute\n  value: '2026-07-30T14:41:46'\n",
+            AbsOrStepsConfig(
+                time.AbsoluteTime(year=2026, month=7, day=30, hour=14, minute=41, second=46)
+            ),
+            id="absolute",
+        ),
+        pytest.param(
+            "value:\n  type: numsteps\n  value: 41\n", AbsOrStepsConfig(41), id="numsteps"
+        ),
+    ),
+)
+def test_time_union_roundtrip(input_str: str, reference: AbsOrStepsConfig) -> None:
+    read_value = config_io.read_yaml_str(input_str, AbsOrStepsConfig)
+    assert read_value == reference
+    assert config_io.write_yaml_str(read_value) == input_str
+
+
+def test_time_union_rejects_unsupported_tag() -> None:
+    # 'relative' is a time type, but not a member of this union
+    with pytest.raises(TypeError, match="Unsupported time type 'relative'"):
+        config_io.read_yaml_str("type: relative\nvalue: 50 seconds\n", ABS_OR_STEPS.__value__)
+
+
+def test_time_union_rejects_untagged_value() -> None:
+    with pytest.raises(TypeError, match="tagged mapping"):
+        config_io.read_yaml_str("41\n", ABS_OR_STEPS.__value__)
+
+
+def test_endtime_rejects_unsupported_tag() -> None:
+    with pytest.raises(cattrs.ClassValidationError) as err:
+        config_io.read_yaml_str("endtime:\n  type: foo\n  value: 1\n", EndtimeConfig)
+    assert "Unsupported time type 'foo'" in str(err.value.exceptions[0])

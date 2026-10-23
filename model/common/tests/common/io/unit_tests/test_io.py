@@ -10,9 +10,11 @@
 import datetime as dt
 import pathlib
 import re
+import textwrap
 import uuid
 from typing import Any
 
+import cattrs
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -21,9 +23,10 @@ import zarr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time
+from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base, vertical as v_grid
-from icon4py.model.common.io import distributed, netcdf_writers, ugrid, writers
+from icon4py.model.common.io import distributed, netcdf_writers, ugrid, utils as io_utils, writers
 from icon4py.model.common.io.io import (
     PHASE_DISTRIBUTE,
     PHASE_WRITE,
@@ -37,6 +40,7 @@ from icon4py.model.common.io.io import (
     generate_name,
 )
 from icon4py.model.common.states import data
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils
 
 from ...fixtures import test_path
@@ -46,6 +50,11 @@ from .test_distributed import synthetic_decomposition_info
 
 # setting backend to fieldview embedded here.
 backend = None
+
+
+def _single_group() -> FieldGroupIOConfig:
+    """The smallest valid output configuration needs one field group."""
+    return FieldGroupIOConfig(basename="single", variables=["air_density"])
 
 
 @pytest.mark.parametrize(
@@ -73,7 +82,6 @@ def is_valid_uxgrid(file: pathlib.Path | str) -> bool:
 
 
 def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
-    path_name = test_path.absolute().as_posix() + "/output"
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -83,7 +91,7 @@ def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
         ),
         vct_b=None,
     )
-    config = IOConfig(field_groups=[], output_path=path_name)
+    config = IOConfig(output_path=test_path / "output", field_groups=[_single_group()])
     monitor = IOMonitor(
         config=config,
         vertical_size=vertical_params,
@@ -99,7 +107,6 @@ def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
 
 
 def test_io_monitor_write_ugrid_file(test_path: pathlib.Path) -> None:
-    path_name = test_path.absolute().as_posix() + "/output"
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -110,7 +117,7 @@ def test_io_monitor_write_ugrid_file(test_path: pathlib.Path) -> None:
         vct_b=None,
     )
 
-    config = IOConfig(field_groups=[], output_path=path_name)
+    config = IOConfig(output_path=test_path / "output", field_groups=[_single_group()])
     monitor = IOMonitor(
         config=config,
         vertical_size=vertical_params,
@@ -136,7 +143,6 @@ def test_io_monitor_write_ugrid_file(test_path: pathlib.Path) -> None:
 def test_io_monitor_write_and_read_ugrid_dataset(
     test_path: pathlib.Path, variables: list[str]
 ) -> None:
-    path_name = test_path.absolute().as_posix() + "/output"
     grid = grid_utils.get_grid_manager_from_identifier(
         test_defs.Experiments.EXCLAIM_APE.grid,
         num_levels=60,
@@ -162,7 +168,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(
             nc_comment="Writing dummy data from icon4py for testing.",
         )
     ]
-    config = IOConfig(field_groups=field_configs, output_path=path_name)
+    config = IOConfig(output_path=test_path / "output", field_groups=field_configs)
     monitor = IOMonitor(
         config=config,
         vertical_size=vertical_params,
@@ -736,7 +742,7 @@ def _simple_grid_vertical() -> v_grid.VerticalGrid:
 
 def test_io_monitor_ugrid_failure_raises_runtime_error(test_path: pathlib.Path) -> None:
     # a broken grid file must fail loudly (and, in a distributed run, on all ranks)
-    config = IOConfig(field_groups=[], output_path=str(test_path / "output"))
+    config = IOConfig(output_path=test_path / "output", field_groups=[_single_group()])
     with pytest.raises(RuntimeError, match="UGRID topology"):
         IOMonitor(
             config=config,
@@ -752,8 +758,8 @@ def test_io_monitor_ugrid_failure_raises_runtime_error(test_path: pathlib.Path) 
 
 def test_io_config_time_properties_reach_field_group_monitors(test_path: pathlib.Path) -> None:
     config = IOConfig(
+        output_path=test_path / "output",
         field_groups=[FieldGroupIOConfig(basename="t", variables=["air_density"])],
-        output_path=str(test_path / "output"),
         time_units="hours since 2000-01-01",
         calendar="standard",
     )
@@ -819,6 +825,7 @@ def test_io_monitor_builds_alignment_aware_rank_block_distributions(
         horizontal_shard_size=8,
     )
     config = IOConfig(
+        output_path=test_path / "output",
         field_groups=[
             FieldGroupIOConfig(basename="a", **sharded),  # type: ignore[arg-type]
             FieldGroupIOConfig(basename="b", **sharded),  # type: ignore[arg-type]
@@ -829,7 +836,6 @@ def test_io_monitor_builds_alignment_aware_rank_block_distributions(
                 mode=OutputMode.DISTRIBUTED,
             ),
         ],
-        output_path=str(test_path / "output"),
     )
     monitor = IOMonitor(
         config=config,
@@ -849,3 +855,230 @@ def test_io_monitor_builds_alignment_aware_rank_block_distributions(
     assert aligned.rank_blocks["cell"].size == 8
     assert aligned.rank_blocks["cell"].padded_size == 16
     assert unaligned.rank_blocks["cell"].size == 4
+
+
+def test_io_config_requires_field_groups() -> None:
+    with pytest.raises(errors.InvalidConfigError, match="at least one output field group"):
+        IOConfig(field_groups=[])
+
+
+def test_io_config_rejects_duplicate_basenames() -> None:
+    # two groups sharing a basename would write the same file series
+    with pytest.raises(errors.InvalidConfigError, match="must be unique, duplicated: a"):
+        IOConfig(
+            field_groups=[
+                FieldGroupIOConfig(basename="a", variables=["air_density"]),
+                FieldGroupIOConfig(basename="b", variables=["air_density"]),
+                FieldGroupIOConfig(basename="a", variables=["exner_function"]),
+            ]
+        )
+
+
+def test_io_config_compares_basenames_as_paths() -> None:
+    # './sub/../winds' and 'winds' name the same file series, whatever the backend
+    with pytest.raises(errors.InvalidConfigError, match="must be unique, duplicated: winds"):
+        IOConfig(
+            field_groups=[
+                FieldGroupIOConfig(basename="winds", variables=["air_density"]),
+                FieldGroupIOConfig(
+                    basename="./sub/../winds",
+                    variables=["air_density"],
+                    backend=OutputBackend.NETCDF,
+                ),
+            ]
+        )
+
+
+@pytest.mark.parametrize("basename", [".", "./", "..", "../winds", "sub/../../winds"])
+def test_fieldgroup_config_rejects_basename_outside_the_output_directory(basename: str) -> None:
+    with pytest.raises(errors.InvalidConfigError, match="below the output directory"):
+        FieldGroupIOConfig(basename=basename, variables=["air_density"])
+
+
+def test_fieldgroup_config_rejects_duplicate_variables() -> None:
+    with pytest.raises(errors.InvalidConfigError, match="duplicated names: air_density"):
+        FieldGroupIOConfig(basename="a", variables=["air_density", "exner_function", "air_density"])
+
+
+@pytest.mark.parametrize("value", [True, 2.5, "3"])
+def test_fieldgroup_config_rejects_non_integer_timesteps_per_file(value: object) -> None:
+    with pytest.raises(errors.InvalidConfigError, match="'timesteps_per_file': must be an integer"):
+        FieldGroupIOConfig(
+            basename="a",
+            variables=["air_density"],
+            timesteps_per_file=value,  # type: ignore[arg-type]  # invalid on purpose
+        )
+
+
+def test_io_monitor_variables_at_capture_time(test_path: pathlib.Path) -> None:
+    """The union of the variables of the groups capturing at the current store call."""
+    config = IOConfig(
+        output_path=test_path / "output",
+        field_groups=[
+            FieldGroupIOConfig(
+                basename="every_step",
+                variables=["air_density"],
+                backend=OutputBackend.NETCDF,
+                mode=OutputMode.GATHER,
+            ),
+            FieldGroupIOConfig(
+                basename="every_other_step",
+                variables=["exner_function", "air_density"],
+                output_interval=time.NumTimeSteps(2),
+                backend=OutputBackend.NETCDF,
+                mode=OutputMode.GATHER,
+            ),
+        ],
+    )
+    monitor = IOMonitor(
+        config=config,
+        vertical_size=_simple_grid_vertical(),
+        horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+        grid_file_name=test_io_utils.grid_file,
+        grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+        dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
+        decomposition_info=None,
+    )
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
+
+    # the predicate is pure: asking twice gives the same answer
+    assert monitor.variables_at_capture_time() == {"air_density", "exner_function"}
+    assert monitor.variables_at_capture_time() == {"air_density", "exner_function"}
+    monitor.store(state, step_time)
+    assert monitor.variables_at_capture_time() == {"air_density"}
+    monitor.store(state, step_time + dt.timedelta(hours=1))
+    assert monitor.variables_at_capture_time() == {"air_density", "exner_function"}
+    monitor.close()
+
+
+def test_io_monitor_writes_horizontal_only_fields(test_path: pathlib.Path) -> None:
+    """A purely horizontal (surface) field is written as (time, cell) next to the 3D ones."""
+    grid = test_io_utils.simple_grid
+    state = test_io_utils.model_state(grid)
+    state["surface_pressure"] = io_utils.to_data_array(
+        data_alloc.random_field(grid, dims.CellDim),
+        data.DIAGNOSTIC_CF_ATTRIBUTES["surface_pressure"],
+    )
+    config = IOConfig(
+        output_path=test_path / "output",
+        field_groups=[
+            FieldGroupIOConfig(
+                basename="surface",
+                variables=["surface_pressure", "air_density"],
+                backend=OutputBackend.NETCDF,
+                mode=OutputMode.GATHER,
+            )
+        ],
+    )
+    monitor = IOMonitor(
+        config=config,
+        vertical_size=_simple_grid_vertical(),
+        horizontal_size=grid.config.horizontal_config,
+        grid_file_name=test_io_utils.grid_file,
+        grid_id=uuid.UUID(grid.id),
+        dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
+        decomposition_info=None,
+    )
+    step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
+    monitor.store(state, step_time)
+    monitor.store(state, step_time + dt.timedelta(hours=1))
+    monitor.close()
+
+    (output_file,) = sorted(monitor.path.glob("surface_*.nc"))
+    with ugrid.load_data_file(output_file) as ds:
+        assert ds["surface_pressure"].dims == ("time", "cell")
+        assert ds["surface_pressure"].shape == (2, grid.num_cells)
+        assert ds["surface_pressure"].attrs["standard_name"] == "air_pressure_at_ground_level"
+        np.testing.assert_array_equal(
+            ds["surface_pressure"].values[1], state["surface_pressure"].values
+        )
+        assert ds["air_density"].dims == ("time", "level", "cell")
+
+
+@pytest.mark.parametrize(
+    ("interval_yaml", "interval"),
+    [
+        pytest.param("  type: numsteps\n  value: 10\n", time.NumTimeSteps(10), id="numsteps"),
+        pytest.param(
+            "  type: relative\n  value: 1800 seconds\n",
+            time.RelativeTime(minutes=30),
+            id="relative",
+        ),
+    ],
+)
+def test_fieldgroup_config_yaml_roundtrip(interval_yaml: str, interval: OutputInterval) -> None:
+    """The YAML form of a field group: tagged interval, lower-case enum names."""
+    yaml_str = (
+        "basename: a\n"
+        "variables:\n"
+        "  - air_density\n"
+        "output_interval:\n" + interval_yaml + "timesteps_per_file: 10\n"
+        "backend: zarr\n"
+        "mode: distributed\n"
+        "horizontal_chunk_size:\n"
+        "horizontal_shard_size:\n"
+        "nc_title: ICON4Py Simulation\n"
+        "nc_comment: ICON inspired code in Python and GT4Py\n"
+    )
+    config = config_io.read_yaml_str(yaml_str, FieldGroupIOConfig)
+    assert config == FieldGroupIOConfig(
+        basename="a", variables=["air_density"], output_interval=interval
+    )
+    assert config_io.write_yaml_str(config) == yaml_str
+
+
+def test_fieldgroup_config_yaml_rejects_untagged_interval() -> None:
+    # the interval is tagged like 'end_of_simulation': a bare number is ambiguous
+    with pytest.raises(cattrs.ClassValidationError):
+        config_io.read_yaml_str(
+            "basename: a\nvariables: [air_density]\noutput_interval: 10\n", FieldGroupIOConfig
+        )
+
+
+def test_io_config_yaml_roundtrip_two_groups() -> None:
+    yaml_str = textwrap.dedent(
+        """\
+        output_path: output
+        field_groups:
+          - basename: winds
+            variables:
+              - eastward_wind
+              - northward_wind
+            output_interval:
+              type: numsteps
+              value: 10
+            timesteps_per_file: 10
+            backend: zarr
+            mode: distributed
+            horizontal_chunk_size:
+            horizontal_shard_size:
+            nc_title: ICON4Py Simulation
+            nc_comment: ICON inspired code in Python and GT4Py
+          - basename: precipitation
+            variables:
+              - precipitation_flux
+            output_interval:
+              type: numsteps
+              value: 1
+            timesteps_per_file: 0
+            backend: netcdf
+            mode: gather
+            horizontal_chunk_size:
+            horizontal_shard_size:
+            nc_title: ICON4Py Simulation
+            nc_comment: ICON inspired code in Python and GT4Py
+        time_units: seconds since 1970-01-01 00:00:00
+        calendar: proleptic_gregorian
+        """
+    )
+    config = config_io.read_yaml_str(yaml_str, IOConfig)
+    assert config.output_path == pathlib.Path("output")
+    assert [group.basename for group in config.field_groups] == ["winds", "precipitation"]
+    assert config.field_groups[0].output_interval == 10
+    assert config.field_groups[1].backend is OutputBackend.NETCDF
+    assert config.field_groups[1].mode is OutputMode.GATHER
+    assert config.field_groups[1].timesteps_per_file == 0
+    assert config_io.write_yaml_str(config) == yaml_str

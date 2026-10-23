@@ -1,0 +1,32 @@
+io:
+  output_path: output
+  field_groups:
+    - basename: winds
+      variables:
+        - eastward_wind
+        - northward_wind
+      output_interval:
+        type: numsteps
+        value: 10
+      timesteps_per_file: 10
+      backend: zarr
+      mode: distributed
+      horizontal_chunk_size:
+      horizontal_shard_size:
+      nc_title: ICON4Py Simulation
+      nc_comment: ICON inspired code in Python and GT4Py
+    - basename: precipitation
+      variables:
+        - precipitation_flux
+      output_interval:
+        type: numsteps
+        value: 1
+      timesteps_per_file: 0
+      backend: netcdf
+      mode: gather
+      horizontal_chunk_size:
+      horizontal_shard_size:
+      nc_title: ICON4Py Simulation
+      nc_comment: ICON inspired code in Python and GT4Py
+  time_units: seconds since 1970-01-01 00:00:00
+  calendar: proleptic_gregorian

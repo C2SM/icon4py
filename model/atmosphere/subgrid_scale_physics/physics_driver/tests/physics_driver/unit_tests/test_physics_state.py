@@ -329,3 +329,24 @@ def test_diagnostics_store_allocates_a_half_level_output_from_khalfdim():
 
     assert buffers["kh"].domain.dims == (dims.CellDim, dims.KHalfDim)
     assert buffers["kh"].ndarray.shape == (grid.num_cells, grid.num_levels + 1)
+
+
+def test_diagnostics_store_outputs_carry_metadata() -> None:
+    # consumers of the store (the model output) enumerate the diagnostic buffers together
+    # with the metadata they were allocated from; tendencies are not part of the store
+    grid = simple.simple_grid()
+    store = physics_state.DiagnosticsStore(grid=grid)
+    kh = _meta(dims.CellDim, dims.KDim)
+    pr = _meta(dims.CellDim, dims.KDim)
+    tmx_buffers = store.allocate(
+        "tmx", {"tend_temperature": _meta(dims.CellDim, dims.KDim, kind=_TENDENCY), "kh": kh}
+    )
+    muphys_buffers = store.allocate("muphys", {"pr": pr})
+
+    outputs = list(store.outputs())
+
+    assert [(o.process_name, o.name) for o in outputs] == [("tmx", "kh"), ("muphys", "pr")]
+    assert outputs[0].metadata is kh
+    assert outputs[0].field is tmx_buffers["kh"]
+    assert outputs[1].metadata is pr
+    assert outputs[1].field is muphys_buffers["pr"]
