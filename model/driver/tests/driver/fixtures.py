@@ -17,7 +17,12 @@ from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.common.io import io as common_io
-from icon4py.model.driver import config as driver_config, driver_io, driver_utils
+from icon4py.model.driver import (
+    config as driver_config,
+    driver_diagnostics,
+    driver_io,
+    driver_utils,
+)
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures import (
     backend,
@@ -60,7 +65,7 @@ OUTPUT_BASENAME: Final[str] = "icon4py_output"
 #: Every variable a run without tracers and physics can write.
 ALL_OUTPUT_VARIABLES: Final[list[str]] = [
     *driver_io.PROGNOSTIC_VARIABLES,
-    *driver_io.DIAGNOSTIC_VARIABLES,
+    *driver_diagnostics.DIAGNOSTIC_VARIABLES,
 ]
 
 

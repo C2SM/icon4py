@@ -244,12 +244,24 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             ),
             id="shared",
         ),
+        pytest.param(
+            "value:\n  type: absolute\n  value: '2026-07-30T14:41:46'\n",
+            AbsOrStepsConfig,
+            AbsOrStepsConfig(
+                time.AbsoluteTime(year=2026, month=7, day=30, hour=14, minute=41, second=46)
+            ),
+            id="time-union-absolute",
+        ),
+        pytest.param(
+            "value:\n  type: numsteps\n  value: 41\n",
+            AbsOrStepsConfig,
+            AbsOrStepsConfig(41),
+            id="time-union-numsteps",
+        ),
     ),
 )
 def test_roundtrip_customized_type(
-    input_str: str,
-    config_type: type[time.AbsoluteTime | time.RelativeTime | time.EndOfSimulation],
-    reference: time.AbsoluteTime | time.RelativeTime,
+    input_str: str, config_type: type[object], reference: object
 ) -> None:
     read_value = config_io.read_yaml_str(input_str, config_type)
     assert read_value == reference
@@ -299,27 +311,6 @@ def test_dispatch_shared_clash_raises() -> None:
             ),
             SharedConfig,
         )
-
-
-@pytest.mark.parametrize(
-    ("input_str", "reference"),
-    (
-        pytest.param(
-            "value:\n  type: absolute\n  value: '2026-07-30T14:41:46'\n",
-            AbsOrStepsConfig(
-                time.AbsoluteTime(year=2026, month=7, day=30, hour=14, minute=41, second=46)
-            ),
-            id="absolute",
-        ),
-        pytest.param(
-            "value:\n  type: numsteps\n  value: 41\n", AbsOrStepsConfig(41), id="numsteps"
-        ),
-    ),
-)
-def test_time_union_roundtrip(input_str: str, reference: AbsOrStepsConfig) -> None:
-    read_value = config_io.read_yaml_str(input_str, AbsOrStepsConfig)
-    assert read_value == reference
-    assert config_io.write_yaml_str(read_value) == input_str
 
 
 def test_time_union_rejects_unsupported_tag() -> None:

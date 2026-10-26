@@ -52,9 +52,13 @@ from .test_distributed import synthetic_decomposition_info
 backend = None
 
 
-def _single_group() -> FieldGroupIOConfig:
-    """The smallest valid output configuration needs one field group."""
-    return FieldGroupIOConfig(basename="single", variables=["air_density"])
+@pytest.fixture
+def single_group_config(test_path: pathlib.Path) -> IOConfig:
+    """The smallest valid output configuration: one field group, writing below ``test_path``."""
+    return IOConfig(
+        output_path=test_path / "output",
+        field_groups=[FieldGroupIOConfig(basename="single", variables=["air_density"])],
+    )
 
 
 @pytest.mark.parametrize(
@@ -81,7 +85,7 @@ def is_valid_uxgrid(file: pathlib.Path | str) -> bool:
         return False
 
 
-def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
+def test_io_monitor_create_output_path(single_group_config: IOConfig) -> None:
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -91,9 +95,8 @@ def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
         ),
         vct_b=None,
     )
-    config = IOConfig(output_path=test_path / "output", field_groups=[_single_group()])
     monitor = IOMonitor(
-        config=config,
+        config=single_group_config,
         vertical_size=vertical_params,
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
@@ -106,7 +109,7 @@ def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
     assert monitor.path.is_dir()
 
 
-def test_io_monitor_write_ugrid_file(test_path: pathlib.Path) -> None:
+def test_io_monitor_write_ugrid_file(single_group_config: IOConfig) -> None:
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -117,9 +120,8 @@ def test_io_monitor_write_ugrid_file(test_path: pathlib.Path) -> None:
         vct_b=None,
     )
 
-    config = IOConfig(output_path=test_path / "output", field_groups=[_single_group()])
     monitor = IOMonitor(
-        config=config,
+        config=single_group_config,
         vertical_size=vertical_params,
         horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
@@ -740,12 +742,13 @@ def _simple_grid_vertical() -> v_grid.VerticalGrid:
     )
 
 
-def test_io_monitor_ugrid_failure_raises_runtime_error(test_path: pathlib.Path) -> None:
+def test_io_monitor_ugrid_failure_raises_runtime_error(
+    test_path: pathlib.Path, single_group_config: IOConfig
+) -> None:
     # a broken grid file must fail loudly (and, in a distributed run, on all ranks)
-    config = IOConfig(output_path=test_path / "output", field_groups=[_single_group()])
     with pytest.raises(RuntimeError, match="UGRID topology"):
         IOMonitor(
-            config=config,
+            config=single_group_config,
             vertical_size=_simple_grid_vertical(),
             horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
             grid_file_name=test_path / "does_not_exist.nc",
