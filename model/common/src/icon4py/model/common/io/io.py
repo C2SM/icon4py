@@ -408,15 +408,15 @@ class IOConfig:
             description="Calendar of the time coordinate in the data files.",
         ),
     ] = cf_utils.DEFAULT_CALENDAR
-    num_io_ranks: Annotated[
+    io_ranks_per_node: Annotated[
         int,
         common_conf_opt.ConfigOption(
             description=(
-                "Number of MPI ranks dedicated to output (0: the ranks running the model write "
-                "themselves). The last ranks of the run become IO ranks: the compute ranks "
-                "ship their output fields to them and continue while the IO ranks write (see "
-                "'Dedicated IO ranks' in 'icon4py.model.common.io'). Needs an MPI run with at "
-                "least as many compute ranks as IO ranks."
+                "Number of MPI ranks per node dedicated to output (0: the ranks running the "
+                "model write themselves). The last ranks of every node become IO ranks: the "
+                "node's compute ranks ship their output fields to them and continue while the "
+                "IO ranks write (see 'Dedicated IO ranks' in 'icon4py.model.common.io'). Needs "
+                "an MPI run with at least twice as many ranks per node."
             ),
         ),
     ] = 0
@@ -428,13 +428,13 @@ class IOConfig:
             )
         # bool is a subclass of int, but is not a rank count
         if (
-            isinstance(self.num_io_ranks, bool)
-            or not isinstance(self.num_io_ranks, int)
-            or self.num_io_ranks < 0
+            isinstance(self.io_ranks_per_node, bool)
+            or not isinstance(self.io_ranks_per_node, int)
+            or self.io_ranks_per_node < 0
         ):
             raise exceptions.InvalidConfigError(
-                f"Invalid 'num_io_ranks': must be a non-negative integer, got "
-                f"{self.num_io_ranks!r}."
+                f"Invalid 'io_ranks_per_node': must be a non-negative integer, got "
+                f"{self.io_ranks_per_node!r}."
             )
         # compared as paths: './winds' and 'winds' name the same file series
         basenames = [normalized_basename(group.basename) for group in self.field_groups]

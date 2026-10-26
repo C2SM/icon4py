@@ -9,13 +9,13 @@
 """Output through dedicated IO ranks.
 
 The communicator of a run is split into compute ranks and IO ranks
-(``decomposition.mpi_decomposition.split_io_ranks``, as many as the
-``IOConfig.num_io_ranks`` of the output configuration). The compute ranks run the model
-and, at every capture step, ship their owned entries of the output fields to the IO
-rank serving them (:class:`IOClient`, the compute side's output monitor); the IO ranks
-receive them and write (:class:`IOServer`). Compute rank ``c`` is served by IO rank
-:func:`io_rank_of` ``(c)``: the compute ranks are divided into as many contiguous
-blocks as there are IO ranks (:func:`served_compute_ranks`).
+(``decomposition.mpi_decomposition.split_io_ranks``: the last ``IOConfig.io_ranks_per_node``
+ranks of every node). The compute ranks run the model and, at every capture step, ship
+their owned entries of the output fields to the IO rank serving them (:class:`IOClient`,
+the compute side's output monitor); the IO ranks receive them and write
+(:class:`IOServer`). Who serves whom is decided by the split
+(``mpi_decomposition.assign_io_ranks``): a compute rank ships to an IO rank on its own
+node, and the node's compute ranks are shared evenly among its IO ranks.
 
 An IO rank writes through the ordinary output stack, on the IO ranks' communicator:
 its local state is the concatenation of the owned entries of the compute ranks it
@@ -60,6 +60,7 @@ import datetime as dt
 import logging
 import timeit
 import uuid
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Final
 
 import numpy as np
@@ -88,27 +89,6 @@ MAX_IN_FLIGHT_CAPTURES: Final[int] = 2
 _SETUP_TAG: Final[int] = 1
 _HEADER_TAG: Final[int] = 2
 _DATA_TAG: Final[int] = 3
-
-
-def served_compute_ranks(io_rank: int, num_compute_ranks: int, num_io_ranks: int) -> range:
-    """Compute ranks served by an IO rank.
-
-    The compute ranks are divided into ``num_io_ranks`` contiguous blocks whose sizes
-    differ by at most one (the first ``num_compute_ranks % num_io_ranks`` IO ranks
-    serve one more); inverse of :func:`io_rank_of`.
-    """
-    size, extra = divmod(num_compute_ranks, num_io_ranks)
-    start = io_rank * size + min(io_rank, extra)
-    return range(start, start + size + (1 if io_rank < extra else 0))
-
-
-def io_rank_of(compute_rank: int, num_compute_ranks: int, num_io_ranks: int) -> int:
-    """IO rank serving a compute rank (see :func:`served_compute_ranks`)."""
-    size, extra = divmod(num_compute_ranks, num_io_ranks)
-    larger_blocks_end = extra * (size + 1)
-    if compute_rank < larger_blocks_end:
-        return compute_rank // (size + 1)
-    return extra + (compute_rank - larger_blocks_end) // size
 
 
 @dataclasses.dataclass(frozen=True)
@@ -204,10 +184,11 @@ class IOClient(monitor.Monitor):
 
     Keeps the capture schedules of the field groups (``io.OutputSchedule``); at a
     capture step it strips the halos of the capturing groups' fields and ships them to
-    its IO rank as described in the module docstring. Construction sends the setup, so
-    the IO rank must be waiting in ``IOServer.receive_setup``. Like ``IOMonitor``,
-    ``store`` must be called at every model step on every compute rank; there is no
-    communication among the compute ranks.
+    ``io_rank`` (its IO rank in the IO communicator, ``IORankSplit.io_rank``) as
+    described in the module docstring. Construction sends the setup, so the IO rank
+    must be waiting in ``IOServer.receive_setup``. Like ``IOMonitor``, ``store`` must
+    be called at every model step on every compute rank; there is no communication
+    among the compute ranks.
     """
 
     def __init__(
@@ -219,12 +200,11 @@ class IOClient(monitor.Monitor):
         horizontal_size: base.HorizontalGridSize,
         decomposition_info: decomposition.DecompositionInfo,
         intercomm: mpi4py.MPI.Intercomm,
+        io_rank: int,
     ):
         self.config = config
         self._intercomm = intercomm
-        self._io_rank = io_rank_of(
-            intercomm.Get_rank(), intercomm.Get_size(), intercomm.Get_remote_size()
-        )
+        self._io_rank = io_rank
         self._decomposition_info = decomposition_info.as_host()
         self._schedules = [
             io.OutputSchedule(group.output_interval, dtime) for group in config.field_groups
@@ -362,20 +342,20 @@ class IOClient(monitor.Monitor):
 class IOServer:
     """The receiving side of a dedicated IO rank.
 
-    ``receive_setup`` collects the setups of the served compute ranks and describes the
-    monitor to build from them; ``serve`` then feeds every received capture step to
-    that monitor until the compute ranks close (see the module docstring).
+    ``receive_setup`` collects the setups of the served compute ranks (``served_ranks``,
+    in the compute communicator, see ``IORankSplit.served_compute_ranks``) and
+    describes the monitor to build from them; ``serve`` then feeds every received
+    capture step to that monitor until the compute ranks close (see the module
+    docstring).
     """
 
-    def __init__(self, intercomm: mpi4py.MPI.Intercomm):
+    def __init__(self, intercomm: mpi4py.MPI.Intercomm, served_ranks: Sequence[int]):
         self._intercomm = intercomm
-        self._served_ranks = served_compute_ranks(
-            intercomm.Get_rank(), intercomm.Get_remote_size(), intercomm.Get_size()
-        )
+        self._served_ranks = tuple(served_ranks)
         if not self._served_ranks:
             raise exceptions.InvalidConfigError(
-                f"IO rank {intercomm.Get_rank()} serves no compute rank: there must be at "
-                f"least as many compute ranks as IO ranks."
+                f"IO rank {intercomm.Get_rank()} serves no compute rank: every IO rank "
+                f"needs at least one."
             )
         #: per horizontal dimension name, the owned entry count of every served rank
         self._entry_counts: dict[str, list[int]] = {}
@@ -383,7 +363,7 @@ class IOServer:
         self._buffers: dict[str, np.ndarray] = {}
 
     @property
-    def served_ranks(self) -> range:
+    def served_ranks(self) -> tuple[int, ...]:
         """The compute ranks (in the compute communicator) shipping to this IO rank."""
         return self._served_ranks
 

@@ -45,12 +45,14 @@ def _config_file_with_io_section(directory: pathlib.Path) -> pathlib.Path:
     return config_file
 
 
-def _config_file_with_io_ranks(directory: pathlib.Path, num_io_ranks: int) -> pathlib.Path:
-    """The configuration with the 'io' section, dedicating ``num_io_ranks`` ranks to output."""
+def _config_file_with_io_ranks(directory: pathlib.Path, io_ranks_per_node: int) -> pathlib.Path:
+    """The configuration with the 'io' section, dedicating ``io_ranks_per_node`` ranks to output."""
     config_file = _config_file_with_io_section(directory)
     text = config_file.read_text()
-    assert text.count("  num_io_ranks: 0\n") == 1
-    config_file.write_text(text.replace("  num_io_ranks: 0\n", f"  num_io_ranks: {num_io_ranks}\n"))
+    assert text.count("  io_ranks_per_node: 0\n") == 1
+    config_file.write_text(
+        text.replace("  io_ranks_per_node: 0\n", f"  io_ranks_per_node: {io_ranks_per_node}\n")
+    )
     return config_file
 
 
@@ -130,6 +132,8 @@ def _io_rank_split(is_io_rank: bool) -> mpi_decomp.IORankSplit:
         is_io_rank=is_io_rank,
         process_props=decomp_defs.SingleNodeProcessProperties(),  # type: ignore[arg-type]  # stand-in for the role communicator
         intercomm=object(),  # type: ignore[arg-type]  # not used
+        io_rank=None if is_io_rank else 0,
+        served_compute_ranks=(0,) if is_io_rank else (),
     )
 
 
@@ -144,7 +148,7 @@ def test_split_io_ranks_without_io_ranks_leaves_the_communicator_alone(
     with_output = driver_config.read_experiment_config_from_yaml(
         _config_file_with_io_section(tmp_path)
     )
-    assert with_output.io is not None and with_output.io.num_io_ranks == 0
+    assert with_output.io is not None and with_output.io.io_ranks_per_node == 0
     assert main.split_io_ranks(with_output, process_props) is None
 
 
@@ -160,7 +164,7 @@ def test_main_cli_compute_rank_runs_the_driver_on_its_role_communicator(
     assert kwargs["io_ranks"] is split
     # the model (and its grid decomposition) runs on the compute communicator
     assert kwargs["process_props"] is split.process_props
-    assert kwargs["config"].io.num_io_ranks == 2
+    assert kwargs["config"].io.io_ranks_per_node == 2
 
 
 def test_main_cli_io_rank_runs_the_io_server(backend_name: str, tmp_path: pathlib.Path) -> None:

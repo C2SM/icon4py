@@ -68,7 +68,7 @@ def main(
     The configuration, output included (its ``io`` section), is read from the YAML
     file at ``config_file_path``; the driver is initialized, an initial condition is
     generated, and the time integration is run. With dedicated IO ranks
-    (``io.num_io_ranks``) the run's communicator is split first: the IO ranks only
+    (``io.io_ranks_per_node``) the run's communicator is split first: the IO ranks only
     receive and write the compute ranks' output.
     """
 
@@ -124,13 +124,13 @@ def main(
 def split_io_ranks(
     config: driver_config.ExperimentConfig, process_props: decomposition_defs.ProcessProperties
 ) -> mpi_decomp.IORankSplit | None:
-    """Split the run's communicator for ``io.num_io_ranks``; None without dedicated IO ranks.
+    """Split the run's communicator for ``io.io_ranks_per_node``; None without dedicated IO ranks.
 
     Collective on the communicator.
     """
-    if config.io is None or config.io.num_io_ranks == 0:
+    if config.io is None or config.io.io_ranks_per_node == 0:
         return None
-    return mpi_decomp.split_io_ranks(process_props, config.io.num_io_ranks)
+    return mpi_decomp.split_io_ranks(process_props, config.io.io_ranks_per_node)
 
 
 if __name__ == "__main__":

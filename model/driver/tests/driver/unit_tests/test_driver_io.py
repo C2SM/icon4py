@@ -278,11 +278,13 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
             horizontal_size: base.HorizontalGridSize,
             decomposition_info: decomposition_defs.DecompositionInfo,
             intercomm: object,
+            io_rank: int,
         ) -> None:
             recorded["config"] = config
             recorded["grid_id"] = grid_id
             recorded["intercomm"] = intercomm
             recorded["decomposition_info"] = decomposition_info
+            recorded["io_rank"] = io_rank
 
     monkeypatch.setattr(io_servers, "IOClient", _RecordingClient)
     intercomm = object()
@@ -290,12 +292,14 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
         is_io_rank=False,
         process_props=None,  # type: ignore[arg-type]  # not used by the recorder
         intercomm=intercomm,  # type: ignore[arg-type]  # not used by the recorder
+        io_rank=3,
+        served_compute_ranks=(),
     )
     decomposition_info = decomposition_defs.DecompositionInfo()
     io_config = common_io.IOConfig(
         output_path=tmp_path,
         field_groups=[common_io.FieldGroupIOConfig(basename="a", variables=["air_density"])],
-        num_io_ranks=1,
+        io_ranks_per_node=1,
     )
 
     io_monitor = driver_io.create_io_monitor(
@@ -313,6 +317,8 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
     assert recorded["grid_id"] == uuid.UUID(grid.id)
     assert recorded["intercomm"] is intercomm
     assert recorded["decomposition_info"] is decomposition_info
+    # the client ships to the IO rank the split assigned to this compute rank
+    assert recorded["io_rank"] == 3
 
     with pytest.raises(ValueError, match="requires 'decomposition_info'"):
         driver_io.create_io_monitor(
@@ -327,7 +333,7 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
         )
     # the split and the configured rank count must agree, in both directions
     for mismatched_config, mismatched_split in (
-        (dataclasses.replace(io_config, num_io_ranks=0), io_ranks),
+        (dataclasses.replace(io_config, io_ranks_per_node=0), io_ranks),
         (io_config, None),
     ):
         with pytest.raises(ValueError, match="must agree"):

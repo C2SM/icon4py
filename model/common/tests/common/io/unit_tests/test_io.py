@@ -1076,7 +1076,7 @@ def test_io_config_yaml_roundtrip_two_groups() -> None:
             nc_comment: ICON inspired code in Python and GT4Py
         time_units: seconds since 1970-01-01 00:00:00
         calendar: proleptic_gregorian
-        num_io_ranks: 0
+        io_ranks_per_node: 0
         """
     )
     config = config_io.read_yaml_str(yaml_str, IOConfig)
@@ -1086,7 +1086,7 @@ def test_io_config_yaml_roundtrip_two_groups() -> None:
     assert config.field_groups[1].backend is OutputBackend.NETCDF
     assert config.field_groups[1].mode is OutputMode.GATHER
     assert config.field_groups[1].timesteps_per_file == 0
-    assert config.num_io_ranks == 0
+    assert config.io_ranks_per_node == 0
     assert config_io.write_yaml_str(config) == yaml_str
 
 
@@ -1114,8 +1114,9 @@ def test_output_schedule_normalizes_time_deltas() -> None:
 
 
 @pytest.mark.parametrize("value", [-1, True, 1.5])
-def test_io_config_rejects_invalid_num_io_ranks(value: object) -> None:
-    with pytest.raises(errors.InvalidConfigError, match="'num_io_ranks'"):
-        IOConfig(field_groups=[_single_group()], num_io_ranks=value)  # type: ignore[arg-type]  # invalid on purpose
-    assert IOConfig(field_groups=[_single_group()]).num_io_ranks == 0
-    assert IOConfig(field_groups=[_single_group()], num_io_ranks=2).num_io_ranks == 2
+def test_io_config_rejects_invalid_io_ranks_per_node(value: object) -> None:
+    group = FieldGroupIOConfig(basename="single", variables=["air_density"])
+    with pytest.raises(errors.InvalidConfigError, match="'io_ranks_per_node'"):
+        IOConfig(field_groups=[group], io_ranks_per_node=value)  # type: ignore[arg-type]  # invalid on purpose
+    assert IOConfig(field_groups=[group]).io_ranks_per_node == 0
+    assert IOConfig(field_groups=[group], io_ranks_per_node=2).io_ranks_per_node == 2

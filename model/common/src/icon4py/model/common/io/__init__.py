@@ -41,7 +41,7 @@ The IO module is configured with an `IOConfig` holding
 - `field_groups`: list of field group configurations (see below); at least one, with unique `basename`s.
 - `time_units` (optional, default is "seconds since 1970-01-01 00:00:00"): unit of the time coordinate in the data files.
 - `calendar` (optional, default is "proleptic_gregorian"): calendar of the time coordinate in the data files.
-- `num_io_ranks` (optional, default is 0): number of MPI ranks dedicated to output, see "Dedicated IO ranks" below. The program running the model splits the communicator accordingly (the driver's `main` does); the module itself only carries the value.
+- `io_ranks_per_node` (optional, default is 0): number of MPI ranks per node dedicated to output, see "Dedicated IO ranks" below. The program running the model splits the communicator accordingly (the driver's `main` does); the module itself only carries the value.
 
 A field group is a set of variables written on the same schedule into the same file series; it is configured with
 
@@ -163,9 +163,15 @@ shared netCDF file, which the installed `netCDF4` package must support:
 
 Instead of writing themselves, the ranks running the model can ship their output to
 dedicated IO ranks (`io_servers`): the run's communicator is split
-(`decomposition.mpi_decomposition.split_io_ranks`) into compute ranks and the last
-`num_io_ranks` ranks of the `IOConfig`, and the two roles talk through an
-inter-communicator.
+(`decomposition.mpi_decomposition.split_io_ranks`) into compute ranks and IO ranks --
+on every node the last `io_ranks_per_node` ranks of the `IOConfig` -- and the two roles
+talk through an inter-communicator. The nodes are found through MPI's shared-memory
+split, so the choice does not depend on how the launcher places the ranks: a compute
+rank always ships to an IO rank on its own node, and the node's compute ranks are
+shared evenly among its IO ranks. With the launcher's usual block placement and one
+task per node more than compute ranks (e.g. five tasks on a node with four GPUs and
+`io_ranks_per_node: 1`), the IO rank is the node's last task and every compute rank
+keeps a GPU of its own.
 
 - The compute ranks use an `IOClient` as their output monitor; it offers the interface
   of the `IOMonitor` (`store`, `variables_at_capture_time`, `close`, see

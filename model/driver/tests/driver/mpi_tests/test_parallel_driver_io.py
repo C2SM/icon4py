@@ -16,6 +16,7 @@ is exercised only on an MPI-parallel netCDF4 installation (PyPI wheels are seria
 builds; see "Parallel netCDF" in ``icon4py.model.common.io``).
 """
 
+import collections
 import dataclasses
 import logging
 import pathlib
@@ -222,7 +223,7 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
     output_backend: common_io.OutputBackend,
     output_mode: common_io.OutputMode,
 ) -> None:
-    """Half of the ranks become IO ranks; the model runs on the other half and ships to them.
+    """Half of every node's ranks become IO ranks; the model runs on the others and ships to them.
 
     The compute ranks run the driver on the compute communicator (``io_ranks`` given),
     the IO ranks run ``driver_io.run_io_server`` -- exactly the two branches of
@@ -230,7 +231,11 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
     """
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
-    num_io_ranks = process_props.comm_size // 2
+    node_ids = mpi_decomposition.allgather_node_ids(process_props)
+    io_ranks_per_node = min(collections.Counter(node_ids).values()) // 2
+    if io_ranks_per_node == 0:
+        pytest.skip("needs at least two ranks per node")
+    num_io_ranks = io_ranks_per_node * len(set(node_ids))
     atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-10, rtol=0.0)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
@@ -245,7 +250,7 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
         config_file_path=config_file_path,
     )
 
-    io_ranks = mpi_decomposition.split_io_ranks(process_props, num_io_ranks)
+    io_ranks = mpi_decomposition.split_io_ranks(process_props, io_ranks_per_node)
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={"end_of_simulation": time.NumTimeSteps(1)},
@@ -256,7 +261,7 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
                 backend=output_backend,
                 mode=output_mode,
             ),
-            num_io_ranks=num_io_ranks,
+            io_ranks_per_node=io_ranks_per_node,
         ),
     )
     output_path: pathlib.Path | None = None

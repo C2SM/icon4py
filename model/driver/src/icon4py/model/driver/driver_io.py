@@ -339,18 +339,22 @@ def create_io_monitor(
     ``IOClient`` shipping the fields to this rank's IO rank, which writes them with
     this very configuration (see ``run_io_server``); ``process_props`` are then the
     compute ranks'. None: the ranks write themselves (``IOMonitor``). Either way the
-    split must agree with ``io_config.num_io_ranks``, the setting it was made for.
+    split must agree with ``io_config.io_ranks_per_node``, the setting it was made for.
     """
-    if (io_ranks is None) != (io_config.num_io_ranks == 0):
+    if (io_ranks is None) != (io_config.io_ranks_per_node == 0):
         raise ValueError(
-            "The communicator split and 'num_io_ranks' of the output configuration must "
-            "agree: dedicated IO ranks with both or with neither."
+            "The communicator split and 'io_ranks_per_node' of the output configuration "
+            "must agree: dedicated IO ranks with both or with neither."
         )
     # Grid.id holds the file's `uuidOfHGrid` as a string; the IO layer wants a UUID.
     grid_id = uuid.UUID(grid.id)
     if io_ranks is not None:
         if decomposition_info is None:
             raise ValueError("Output through dedicated IO ranks requires 'decomposition_info'.")
+        if io_ranks.io_rank is None:
+            raise ValueError(
+                "The output monitor is built on the compute ranks; this rank is an IO rank."
+            )
         return io_servers.IOClient(
             config=io_config,
             dtime=dtime,
@@ -358,6 +362,7 @@ def create_io_monitor(
             horizontal_size=grid.config.horizontal_config,
             decomposition_info=decomposition_info,
             intercomm=io_ranks.intercomm,
+            io_rank=io_ranks.io_rank,
         )
     return common_io.IOMonitor(
         config=io_config,
@@ -387,7 +392,7 @@ def run_io_server(
     the caller must abort the run, since the compute ranks cannot observe the failure
     (see ``io_servers``).
     """
-    server = io_servers.IOServer(io_ranks.intercomm)
+    server = io_servers.IOServer(io_ranks.intercomm, served_ranks=io_ranks.served_compute_ranks)
     setup = server.receive_setup()
     log.info(
         f"IO rank {io_ranks.process_props.rank} serves compute ranks {list(server.served_ranks)}"

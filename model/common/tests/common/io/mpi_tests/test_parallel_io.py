@@ -18,6 +18,7 @@ field ``1000 * global_index + level + 10 * step``.
 Works with any rank count >= 2 (``mpirun -np 8 ... --with-mpi``), no test data needed.
 """
 
+import collections
 import datetime as dt
 import itertools
 import pathlib
@@ -323,7 +324,7 @@ def test_gather_mode_overwrite_refusal_raises_on_all_ranks(
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "output_backend, output_mode, num_io_ranks",
+    "output_backend, output_mode, io_ranks_per_node",
     [
         (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 1),
         (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 2),
@@ -351,7 +352,7 @@ def test_io_rank_output_synthetic_decomposition(
     *,
     output_backend: common_io.OutputBackend,
     output_mode: common_io.OutputMode,
-    num_io_ranks: int,
+    io_ranks_per_node: int,
     tmp_path: pathlib.Path,
 ) -> None:
     """The compute ranks ship the synthetic state to dedicated IO ranks, which write it.
@@ -360,10 +361,15 @@ def test_io_rank_output_synthetic_decomposition(
     lives on the compute communicator, the writers run on the IO communicator, and the
     root rank verifies the files exactly like ``test_parallel_output_synthetic_decomposition``.
     """
-    # the synthetic decomposition needs two ranks (one of them empty), and no IO rank
-    # may be left without a compute rank to serve
-    if process_props.comm_size - num_io_ranks < max(2, num_io_ranks):
-        pytest.skip("needs at least two compute ranks and at least as many as IO ranks")
+    node_ids = mpi_decomposition.allgather_node_ids(process_props)
+    num_io_ranks = io_ranks_per_node * len(set(node_ids))
+    # every node needs a compute rank per IO rank, and the synthetic decomposition two
+    # compute ranks in total (one of them empty)
+    if (
+        min(collections.Counter(node_ids).values()) < 2 * io_ranks_per_node
+        or process_props.comm_size - num_io_ranks < 2
+    ):
+        pytest.skip("needs twice as many ranks per node as IO ranks and two compute ranks")
     output_path = pathlib.Path(
         process_props.comm.bcast(str(tmp_path) if process_props.rank == 0 else None, root=0)
     )
@@ -379,17 +385,14 @@ def test_io_rank_output_synthetic_decomposition(
                 mode=output_mode,
             )
         ],
-        num_io_ranks=num_io_ranks,
+        io_ranks_per_node=io_ranks_per_node,
     )
     dtime = common_time.RelativeTime(hours=1)
-    split = mpi_decomposition.split_io_ranks(process_props, config.num_io_ranks)
+    split = mpi_decomposition.split_io_ranks(process_props, config.io_ranks_per_node)
 
     if split.is_io_rank:
-        server = io_servers.IOServer(split.intercomm)
+        server = io_servers.IOServer(split.intercomm, served_ranks=split.served_compute_ranks)
         setup = server.receive_setup()
-        assert server.served_ranks == io_servers.served_compute_ranks(
-            split.process_props.rank, process_props.comm_size - num_io_ranks, num_io_ranks
-        )
         io_monitor = common_io.IOMonitor(
             config=setup.config,
             vertical_size=create_vertical_grid(),
@@ -414,6 +417,7 @@ def test_io_rank_output_synthetic_decomposition(
             ),
             decomposition_info=info,
             intercomm=split.intercomm,
+            io_rank=split.io_rank,
         )
         for step in range(NUM_STEPS):
             model_time = dt.datetime(2000, 1, 1) + step * dt.timedelta(hours=1)

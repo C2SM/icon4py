@@ -56,29 +56,6 @@ VARIABLES: dict[str, tuple[str, int]] = {
 
 
 # ------------------------------------------------------------------------------------
-# Rank mapping
-# ------------------------------------------------------------------------------------
-
-
-@pytest.mark.parametrize(
-    "num_compute_ranks, num_io_ranks", [(1, 1), (4, 1), (4, 2), (7, 3), (5, 5)]
-)
-def test_served_ranks_partition_the_compute_ranks(
-    num_compute_ranks: int, num_io_ranks: int
-) -> None:
-    blocks = [
-        io_servers.served_compute_ranks(io_rank, num_compute_ranks, num_io_ranks)
-        for io_rank in range(num_io_ranks)
-    ]
-    assert list(itertools.chain.from_iterable(blocks)) == list(range(num_compute_ranks))
-    sizes = {len(block) for block in blocks}
-    assert min(sizes) >= 1 and max(sizes) - min(sizes) <= 1
-    for io_rank, block in enumerate(blocks):
-        for compute_rank in block:
-            assert io_servers.io_rank_of(compute_rank, num_compute_ranks, num_io_ranks) == io_rank
-
-
-# ------------------------------------------------------------------------------------
 # In-process stand-in for the inter-communicator
 # ------------------------------------------------------------------------------------
 
@@ -251,7 +228,7 @@ def io_config(
                 mode=mode,
             )
         ],
-        num_io_ranks=1,
+        io_ranks_per_node=1,
     )
 
 
@@ -278,7 +255,10 @@ class ServerThread:
     """
 
     def __init__(self, intercomm: _FakeIntercomm):
-        self.server = io_servers.IOServer(intercomm)  # type: ignore[arg-type]  # in-process stand-in
+        self.server = io_servers.IOServer(
+            intercomm,  # type: ignore[arg-type]  # in-process stand-in
+            served_ranks=range(NUM_COMPUTE_RANKS),
+        )
         self.setup: io_servers.ServerSetup | None = None
         self._failure: BaseException | None = None
         self._thread = threading.Thread(target=self._run, daemon=True)
@@ -320,6 +300,7 @@ def make_clients(
             horizontal_size=horizontal_size(),
             decomposition_info=info,
             intercomm=intercomm,  # type: ignore[arg-type]  # in-process stand-in
+            io_rank=0,
         )
         for info, intercomm in zip(infos, compute_intercomms, strict=True)
     ]
@@ -393,7 +374,7 @@ def test_io_rank_writes_the_shipped_captures_exactly(
     server.join()
 
     assert server.setup is not None
-    assert server.server.served_ranks == range(NUM_COMPUTE_RANKS)
+    assert server.server.served_ranks == tuple(range(NUM_COMPUTE_RANKS))
     assert not server.setup.decomposition_info.is_identity()
     for client in clients:
         seconds = client.phase_seconds
@@ -473,13 +454,14 @@ def test_io_rank_rejects_differing_setups(tmp_path: pathlib.Path) -> None:
             horizontal_size=horizontal_size(),
             decomposition_info=synthetic_decomposition_info(rank),
             intercomm=intercomm,  # type: ignore[arg-type]  # in-process stand-in
+            io_rank=0,
         )
     with pytest.raises(RuntimeError, match="differing output setups"):
         server.join()
 
 
 def test_io_server_requires_a_served_compute_rank() -> None:
-    _, io_intercomms = fake_intercomms(1, 2)
-    io_servers.IOServer(io_intercomms[0])  # type: ignore[arg-type]  # in-process stand-in
+    _, (io_intercomm,) = fake_intercomms(1, 1)
+    io_servers.IOServer(io_intercomm, served_ranks=(0,))  # type: ignore[arg-type]  # in-process stand-in
     with pytest.raises(errors.InvalidConfigError, match="serves no compute rank"):
-        io_servers.IOServer(io_intercomms[1])  # type: ignore[arg-type]  # in-process stand-in
+        io_servers.IOServer(io_intercomm, served_ranks=())  # type: ignore[arg-type]  # in-process stand-in
