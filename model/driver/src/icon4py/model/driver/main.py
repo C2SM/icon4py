@@ -18,7 +18,6 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.io import io as common_io
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 
 
@@ -41,10 +40,6 @@ def main(
             )
         ),
     ],
-    output_path: Annotated[
-        pathlib.Path | None,
-        typer.Option(help="Optional override output path. Normally read from config."),
-    ] = None,
     # it may be better to split device from backend,
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
     # whether to automatically use gpu if cupy is installed can be discussed further
@@ -66,33 +61,13 @@ def main(
             help="Print out debug logging message for all ranks (only works when log_level is set to debug).",
         ),
     ] = False,
-    enable_output: Annotated[
-        bool,
-        typer.Option(
-            "--enable-output/--no-enable-output",
-            help="Write the prognostic and diagnostic fields to output.",
-        ),
-    ] = False,
-    output_backend: Annotated[
-        common_io.OutputBackend,
-        typer.Option(help="Output file format."),
-    ] = common_io.OutputBackend.ZARR,
-    output_mode: Annotated[
-        common_io.OutputMode,
-        typer.Option(
-            help=(
-                "How ranks write output in distributed runs ('distributed' netCDF "
-                "needs an MPI-parallel netCDF4 installation)."
-            )
-        ),
-    ] = common_io.OutputMode.DISTRIBUTED,
 ) -> None:
     """
     CLI entry point that runs the icon4py driver.
 
-    The configuration is read from the YAML file at ``config_file_path``, the
-    driver is initialized, an initial condition is generated, and the time
-    integration is run.
+    The configuration, output included (its ``io`` section), is read from the YAML
+    file at ``config_file_path``; the driver is initialized, an initial condition is
+    generated, and the time integration is run.
     """
 
     process_props = decomposition_defs.get_process_properties(
@@ -105,14 +80,6 @@ def main(
     )
 
     config = driver_config.read_experiment_config_from_yaml(config_file_path)
-    driver_overrides: dict[str, object] = {
-        "enable_output": enable_output,
-        "output_backend": output_backend,
-        "output_mode": output_mode,
-    }
-    if output_path is not None:
-        driver_overrides["output_path"] = output_path
-    config = config.with_overrides(driver=driver_overrides)
 
     backend = model_options.customize_backend(
         program=None,

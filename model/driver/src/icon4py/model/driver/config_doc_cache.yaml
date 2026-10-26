@@ -4,7 +4,7 @@ description: ICON4Py experiment configuration.
 default: No default value.
 optional: false
 examples:
-  - "Config File:\n  geometry:\n    use_analytical_means: true\n  metrics:\n    exner_expol: 0.3333333333333333\n    vwind_offctr: 0.15\n    thslp_zdiffu: 0.025\n    thhgtd_zdiffu: 200.0\n    rayleigh_type: klemp\n    rayleigh_coeff: 0.05\n    divdamp_trans_start: 12500.0\n    divdamp_trans_end: 17500.0\n    divdamp_type: 3\n    igradp_method: 3\n  interpolation:\n    divergence_averaging_central_cell_weight: 0.5\n    max_nudging_coefficient: 0.375\n    nudge_efold_width: 2.0\n    nudge_zone_width: 10\n    rbf_kernel_cell: gaussian\n    rbf_kernel_edge: inverse_multiquadratic\n    rbf_kernel_vertex: gaussian\n    lsq_dim_unk: 2\n    lsq_dim_c: 3\n    lsq_wgt_exp: 2\n    lsq_high_ord: 1\n  vertical_grid:\n    num_levels: 0\n    maximal_layer_thickness: 0.0\n    top_height_limit_for_maximal_layer_thickness: 0.0\n    lowest_layer_thickness: 0.0\n    model_top_height: 0.0\n    flat_height: 0.0\n    stretch_factor: 0.0\n    rayleigh_damping_height: 0.0\n    htop_moist_proc: 0.0\n    file_path: .\n    SLEVE_decay_scale_1: 0.0\n    SLEVE_decay_scale_2: 0.0\n    SLEVE_decay_exponent: 0.0\n    _SLEVE_minimum_layer_thickness_1: 0.0\n    _SLEVE_minimum_layer_thickness_2: 0.0\n    _SLEVE_minimum_relative_layer_thickness_1: 0.0\n    _SLEVE_minimum_relative_layer_thickness_2: 0.0\n  initial_condition:\n    type: jablonowski_williamson\n    p_sfc: 100000.0\n    baroclinic_amplitude: 1.0\n    u0: 35.0\n    temp0: 288.0\n    eta_0: 0.252\n    eta_t: 0.2\n    gamma: 0.005\n    dtemp: 480000.0\n    lon_perturbation_center: 0.3490658503988659\n    lat_perturbation_center: 0.6981317007977318\n    rh_at_1000hpa: 0.7\n    qv_max: 0.02\n    moisture_init_iterations: 10\n    global_moisture_content: 25.006\n    normalize_global_moisture: false\n  topography:\n    type: flat\n  prescribed_tendencies:\n    data_path:\n  driver:\n    experiment_name: ''\n    profiling_options:\n      gt4py_metrics_level: 100\n      gt4py_metrics_output_file: gt4py_metrics.json\n      skip_first_timestep: true\n    dtime: 0 seconds\n    start_of_simulation: '2026-01-01T00:00:00'\n    start_of_timestepping: '2026-01-01T00:00:00'\n    end_of_simulation:\n      type: relative\n      value: 0 seconds\n    output_path: .\n    apply_extra_second_order_divdamp: false\n    diffuse_before_time_loop: false\n    vertical_cfl_threshold: 0.0\n    ndyn_substeps: 0\n    enable_statistics_logging: false\n    enable_output: false\n    backend_config:\n      workspace_size: 268435456\n    output_backend: netcdf\n    output_mode: gather\n  nonhydrostatic:\n    itime_scheme: most_efficient\n    iadv_rhotheta: miura\n    igradp_method: taylor_hydro\n    rayleigh_type: klemp\n    divdamp_order: combined\n    divdamp_type: three_dimensional\n    l_vert_nested: false\n    deepatmos_mode: false\n    iau_init: false\n    extra_diffu: true\n    rhotheta_offctr: -0.1\n    veladv_offctr: 0.25\n    fourth_order_divdamp_factor: 0.0025\n    fourth_order_divdamp_factor2: 0.004\n    fourth_order_divdamp_factor3: 0.004\n    fourth_order_divdamp_factor4: 0.004\n    fourth_order_divdamp_z: 32500.0\n    fourth_order_divdamp_z2: 40000.0\n    fourth_order_divdamp_z3: 60000.0\n    fourth_order_divdamp_z4: 80000.0\n  diffusion:\n    diffusion_type: smagorinsky_4th_order\n    apply_to_vertical_wind: true\n    apply_to_horizontal_wind: true\n    apply_to_temperature: true\n    apply_smag_diff_to_vertical_wind: false\n    compute_3d_smag_coeff: false\n    type_vn_diffu: diamond_vertices\n    type_t_diffu: heterogeneous\n    hdiff_efdt_ratio: 36.0\n    hdiff_w_efdt_ratio: 15.0\n    smagorinski_scaling_factor: 0.015\n    smagorinski_scaling_factor2: 0.07137250670656087\n    smagorinski_scaling_factor3: 0.0\n    smagorinski_scaling_factor4: 1.0\n    smagorinski_scaling_height: 32500.0\n    smagorinski_scaling_height2: 60686.25335328044\n    smagorinski_scaling_height3: 50000.0\n    smagorinski_scaling_height4: 90000.0\n    apply_zdiffusion_t: true\n    temperature_boundary_diffusion_denominator: 135.0\n    velocity_boundary_diffusion_denominator: 200.0\n    shear_type: vertical_of_horizontal_wind\n    iforcing: no_forcing\n    a_hshr: 1.0\n    loutshs: false\n  tracer_config:\n    qv: false\n    qc: false\n    qi: false\n    qr: false\n    qs: false\n    qg: false\n  tracer_advection:\n    horizontal_advection_type: no_advection\n    horizontal_advection_limiter: no_limiter\n    vertical_advection_type: no_advection\n    vertical_advection_limiter: no_limiter\n  graupel:\n    liquid_autoconversion_option: seifert_beheng\n    snow_intercept_option: field_general_moment_estimation\n    do_latent_heat_nudging: false\n    use_constant_latent_heat: true\n    ice_stickeff_min: 0.075\n    power_law_coeff_for_ice_mean_fall_speed: 1.25\n    exponent_for_density_factor_in_ice_sedimentation: 0.33\n    power_law_coeff_for_snow_fall_speed: 20.0\n    rain_mu: 0.0\n    rain_n0: 1.0\n    snow2graupel_riming_coeff: 0.5\n  muphys:\n    qnc: 50000000.0\n  tmx:\n    solver_type: implicit\n    energy_type: internal\n    dissipation_factor: 1.0\n    use_louis: true\n    use_louis_land: true\n    use_louis_ice: true\n    louis_constant_b: 4.2\n    use_km_const: false\n    km_const: 1.0\n    use_scale_turb_energy_flux: false\n    scale_turb_energy_flux: 1.0\n    smag_constant: 0.23\n    turb_prandtl: 0.33333333333\n    km_min: 0.001\n    max_turb_scale: 300.0\n"
+  - "Config File:\n  geometry:\n    use_analytical_means: true\n  metrics:\n    exner_expol: 0.3333333333333333\n    vwind_offctr: 0.15\n    thslp_zdiffu: 0.025\n    thhgtd_zdiffu: 200.0\n    rayleigh_type: klemp\n    rayleigh_coeff: 0.05\n    divdamp_trans_start: 12500.0\n    divdamp_trans_end: 17500.0\n    divdamp_type: 3\n    igradp_method: 3\n  interpolation:\n    divergence_averaging_central_cell_weight: 0.5\n    max_nudging_coefficient: 0.375\n    nudge_efold_width: 2.0\n    nudge_zone_width: 10\n    rbf_kernel_cell: gaussian\n    rbf_kernel_edge: inverse_multiquadratic\n    rbf_kernel_vertex: gaussian\n    lsq_dim_unk: 2\n    lsq_dim_c: 3\n    lsq_wgt_exp: 2\n    lsq_high_ord: 1\n  vertical_grid:\n    num_levels: 0\n    maximal_layer_thickness: 0.0\n    top_height_limit_for_maximal_layer_thickness: 0.0\n    lowest_layer_thickness: 0.0\n    model_top_height: 0.0\n    flat_height: 0.0\n    stretch_factor: 0.0\n    rayleigh_damping_height: 0.0\n    htop_moist_proc: 0.0\n    file_path: .\n    SLEVE_decay_scale_1: 0.0\n    SLEVE_decay_scale_2: 0.0\n    SLEVE_decay_exponent: 0.0\n    _SLEVE_minimum_layer_thickness_1: 0.0\n    _SLEVE_minimum_layer_thickness_2: 0.0\n    _SLEVE_minimum_relative_layer_thickness_1: 0.0\n    _SLEVE_minimum_relative_layer_thickness_2: 0.0\n  initial_condition:\n    type: jablonowski_williamson\n    p_sfc: 100000.0\n    baroclinic_amplitude: 1.0\n    u0: 35.0\n    temp0: 288.0\n    eta_0: 0.252\n    eta_t: 0.2\n    gamma: 0.005\n    dtemp: 480000.0\n    lon_perturbation_center: 0.3490658503988659\n    lat_perturbation_center: 0.6981317007977318\n    rh_at_1000hpa: 0.7\n    qv_max: 0.02\n    moisture_init_iterations: 10\n    global_moisture_content: 25.006\n    normalize_global_moisture: false\n  topography:\n    type: flat\n  prescribed_tendencies:\n    data_path:\n  driver:\n    experiment_name: ''\n    profiling_options:\n      gt4py_metrics_level: 100\n      gt4py_metrics_output_file: gt4py_metrics.json\n      skip_first_timestep: true\n    dtime: 0 seconds\n    start_of_simulation: '2026-01-01T00:00:00'\n    start_of_timestepping: '2026-01-01T00:00:00'\n    end_of_simulation:\n      type: relative\n      value: 0 seconds\n    apply_extra_second_order_divdamp: false\n    diffuse_before_time_loop: false\n    vertical_cfl_threshold: 0.0\n    ndyn_substeps: 0\n    enable_statistics_logging: false\n    backend_config:\n      workspace_size: 268435456\n  io:\n    output_path: output\n    field_groups:\n      - basename: winds\n        variables:\n          - eastward_wind\n          - northward_wind\n        output_interval:\n          type: numsteps\n          value: 10\n        timesteps_per_file: 10\n        backend: zarr\n        mode: distributed\n        horizontal_chunk_size:\n        horizontal_shard_size:\n        nc_title: ICON4Py Simulation\n        nc_comment: ICON inspired code in Python and GT4Py\n    time_units: seconds since 1970-01-01 00:00:00\n    calendar: proleptic_gregorian\n  nonhydrostatic:\n    itime_scheme: most_efficient\n    iadv_rhotheta: miura\n    igradp_method: taylor_hydro\n    rayleigh_type: klemp\n    divdamp_order: combined\n    divdamp_type: three_dimensional\n    l_vert_nested: false\n    deepatmos_mode: false\n    iau_init: false\n    extra_diffu: true\n    rhotheta_offctr: -0.1\n    veladv_offctr: 0.25\n    fourth_order_divdamp_factor: 0.0025\n    fourth_order_divdamp_factor2: 0.004\n    fourth_order_divdamp_factor3: 0.004\n    fourth_order_divdamp_factor4: 0.004\n    fourth_order_divdamp_z: 32500.0\n    fourth_order_divdamp_z2: 40000.0\n    fourth_order_divdamp_z3: 60000.0\n    fourth_order_divdamp_z4: 80000.0\n  diffusion:\n    diffusion_type: smagorinsky_4th_order\n    apply_to_vertical_wind: true\n    apply_to_horizontal_wind: true\n    apply_to_temperature: true\n    apply_smag_diff_to_vertical_wind: false\n    compute_3d_smag_coeff: false\n    type_vn_diffu: diamond_vertices\n    type_t_diffu: heterogeneous\n    hdiff_efdt_ratio: 36.0\n    hdiff_w_efdt_ratio: 15.0\n    smagorinski_scaling_factor: 0.015\n    smagorinski_scaling_factor2: 0.07137250670656087\n    smagorinski_scaling_factor3: 0.0\n    smagorinski_scaling_factor4: 1.0\n    smagorinski_scaling_height: 32500.0\n    smagorinski_scaling_height2: 60686.25335328044\n    smagorinski_scaling_height3: 50000.0\n    smagorinski_scaling_height4: 90000.0\n    apply_zdiffusion_t: true\n    temperature_boundary_diffusion_denominator: 135.0\n    velocity_boundary_diffusion_denominator: 200.0\n    shear_type: vertical_of_horizontal_wind\n    iforcing: no_forcing\n    a_hshr: 1.0\n    loutshs: false\n  tracer_config:\n    qv: false\n    qc: false\n    qi: false\n    qr: false\n    qs: false\n    qg: false\n  tracer_advection:\n    horizontal_advection_type: no_advection\n    horizontal_advection_limiter: no_limiter\n    vertical_advection_type: no_advection\n    vertical_advection_limiter: no_limiter\n  graupel:\n    liquid_autoconversion_option: seifert_beheng\n    snow_intercept_option: field_general_moment_estimation\n    do_latent_heat_nudging: false\n    use_constant_latent_heat: true\n    ice_stickeff_min: 0.075\n    power_law_coeff_for_ice_mean_fall_speed: 1.25\n    exponent_for_density_factor_in_ice_sedimentation: 0.33\n    power_law_coeff_for_snow_fall_speed: 20.0\n    rain_mu: 0.0\n    rain_n0: 1.0\n    snow2graupel_riming_coeff: 0.5\n  muphys:\n    qnc: 50000000.0\n  tmx:\n    solver_type: implicit\n    energy_type: internal\n    dissipation_factor: 1.0\n    use_louis: true\n    use_louis_land: true\n    use_louis_ice: true\n    louis_constant_b: 4.2\n    use_km_const: false\n    km_const: 1.0\n    use_scale_turb_energy_flux: false\n    scale_turb_energy_flux: 1.0\n    smag_constant: 0.23\n    turb_prandtl: 0.33333333333\n    km_min: 0.001\n    max_turb_scale: 300.0\n  surface:\n    surface_flux_type: fixed_heat_fluxes\n    kinematic_sensible_heat_flux: 0.0\n    kinematic_latent_heat_flux: 0.0\n    sea_surface_temperature: 0.0\n"
 children:
   - display_name: shared
     type_name: list[icon4py.model.common.config.config_io.SharedOptionSet]
@@ -1840,7 +1840,7 @@ children:
     default: No default value.
     optional: false
     examples:
-      - "driver:\n  experiment_name: ''\n  profiling_options:\n    gt4py_metrics_level: 100\n    gt4py_metrics_output_file: gt4py_metrics.json\n    skip_first_timestep: true\n  dtime: 0 seconds\n  start_of_simulation: '2026-01-01T00:00:00'\n  start_of_timestepping: '2026-01-01T00:00:00'\n  end_of_simulation:\n    type: relative\n    value: 0 seconds\n  output_path: .\n  apply_extra_second_order_divdamp: false\n  diffuse_before_time_loop: false\n  vertical_cfl_threshold: 0.0\n  ndyn_substeps: 0\n  enable_statistics_logging: false\n  enable_output: false\n  backend_config:\n    workspace_size: 268435456\n  output_backend: netcdf\n  output_mode: gather\n"
+      - "driver:\n  experiment_name: ''\n  profiling_options:\n    gt4py_metrics_level: 100\n    gt4py_metrics_output_file: gt4py_metrics.json\n    skip_first_timestep: true\n  dtime: 0 seconds\n  start_of_simulation: '2026-01-01T00:00:00'\n  start_of_timestepping: '2026-01-01T00:00:00'\n  end_of_simulation:\n    type: relative\n    value: 0 seconds\n  apply_extra_second_order_divdamp: false\n  diffuse_before_time_loop: false\n  vertical_cfl_threshold: 0.0\n  ndyn_substeps: 0\n  enable_statistics_logging: false\n  backend_config:\n    workspace_size: 268435456\n"
     children:
       - display_name: experiment_name
         type_name: <class 'str'>
@@ -2062,21 +2062,6 @@ children:
           - end_of_simulation
         module_path: types
         is_union: true
-      - display_name: output_path
-        type_name: <class 'pathlib.Path'>
-        description: Output directory path, relative to the working directory.
-        default: output
-        optional: true
-        examples:
-          - 'output_path: .
-
-            '
-        children: []
-        config_name_path:
-          - driver
-          - output_path
-        module_path: pathlib
-        is_union: false
       - display_name: apply_extra_second_order_divdamp
         type_name: <class 'bool'>
         description: 'Whether or not to apply additional second order divergence damping. Not a namelist variable, coded as follows in mo_nh_stepping.f90: # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)'
@@ -2152,21 +2137,6 @@ children:
           - enable_statistics_logging
         module_path: builtins
         is_union: false
-      - display_name: enable_output
-        type_name: <class 'bool'>
-        description: Enable output to file. For now this is only documented in 'icon4py.model.driver.driver_io'.
-        default: 'False'
-        optional: true
-        examples:
-          - 'enable_output: false
-
-            '
-        children: []
-        config_name_path:
-          - driver
-          - enable_output
-        module_path: builtins
-        is_union: false
       - display_name: 'backend_config: one of the following'
         type_name: icon4py.model.common.backend_configuration.BackendConfig | None
         description: Backend configuration options, which affect performance but not the scientific outcome. `None` falls back to environment variables, if set, otherwise the default configuration is used.
@@ -2230,46 +2200,118 @@ children:
           - backend_config
         module_path: types
         is_union: true
-      - display_name: output_backend
-        type_name: <enum 'OutputBackend'>
-        description: File format of the output field groups ('netcdf' or 'zarr').
-        default: zarr
-        optional: true
-        examples:
-          - 'output_backend: netcdf
-
-            '
-          - 'output_backend: zarr
-
-            '
-        children: []
-        config_name_path:
-          - driver
-          - output_backend
-        module_path: icon4py.model.common.io.io
-        is_union: false
-      - display_name: output_mode
-        type_name: <enum 'OutputMode'>
-        description: Write strategy of distributed runs ('gather' or 'distributed', see 'icon4py.model.common.io.OutputMode'); 'distributed' netCDF needs an MPI-parallel netCDF4 installation in multi-rank runs (see 'Parallel netCDF' in 'icon4py.model.common.io').
-        default: distributed
-        optional: true
-        examples:
-          - 'output_mode: gather
-
-            '
-          - 'output_mode: distributed
-
-            '
-        children: []
-        config_name_path:
-          - driver
-          - output_mode
-        module_path: icon4py.model.common.io.io
-        is_union: false
     config_name_path:
       - driver
     module_path: icon4py.model.driver.config
     is_union: false
+  - display_name: 'io: one of the following'
+    type_name: icon4py.model.common.io.io.IOConfig | None
+    description: ??
+    default: None
+    optional: true
+    examples:
+      - "io:\n  output_path: output\n  field_groups:\n    - basename: winds\n      variables:\n        - eastward_wind\n        - northward_wind\n      output_interval:\n        type: numsteps\n        value: 10\n      timesteps_per_file: 10\n      backend: zarr\n      mode: distributed\n      horizontal_chunk_size:\n      horizontal_shard_size:\n      nc_title: ICON4Py Simulation\n      nc_comment: ICON inspired code in Python and GT4Py\n  time_units: seconds since 1970-01-01 00:00:00\n  calendar: proleptic_gregorian\n"
+      - 'io:
+
+        '
+    children:
+      - display_name: 'type: IOConfig'
+        type_name: <class 'icon4py.model.common.io.io.IOConfig'>
+        description: "\n    Configuration of the output: the output directory, the field groups and the time\n    coordinate of their files.\n\n    Validated on construction.\n    "
+        default: None
+        optional: true
+        examples:
+          - "io:\n  output_path: output\n  field_groups:\n    - basename: winds\n      variables:\n        - eastward_wind\n        - northward_wind\n      output_interval:\n        type: numsteps\n        value: 10\n      timesteps_per_file: 10\n      backend: zarr\n      mode: distributed\n      horizontal_chunk_size:\n      horizontal_shard_size:\n      nc_title: ICON4Py Simulation\n      nc_comment: ICON inspired code in Python and GT4Py\n  time_units: seconds since 1970-01-01 00:00:00\n  calendar: proleptic_gregorian\n"
+        children:
+          - display_name: output_path
+            type_name: <class 'pathlib.Path'>
+            description: Output directory, the root of all field groups; relative to the working directory.
+            default: output
+            optional: true
+            examples:
+              - 'output_path: .
+
+                '
+            children: []
+            config_name_path:
+              - io
+              - 'type: IOConfig'
+              - output_path
+            module_path: pathlib
+            is_union: false
+          - display_name: field_groups
+            type_name: list[icon4py.model.common.io.io.FieldGroupIOConfig]
+            description: Output field groups; each group is written on its own schedule into its own file series, so the basenames must be unique.
+            default: No default value.
+            optional: false
+            examples:
+              - 'field_groups: []
+
+                '
+              - "field_groups:\n  - basename: winds\n    variables:\n      - eastward_wind\n      - northward_wind\n    output_interval:\n      type: numsteps\n      value: 10\n    timesteps_per_file: 10\n    backend: zarr\n    mode: distributed\n    horizontal_chunk_size:\n    horizontal_shard_size:\n    nc_title: ICON4Py Simulation\n    nc_comment: ICON inspired code in Python and GT4Py\n"
+            children: []
+            config_name_path:
+              - io
+              - 'type: IOConfig'
+              - field_groups
+            module_path: builtins
+            is_union: false
+          - display_name: time_units
+            type_name: <class 'str'>
+            description: Unit of the time coordinate in the data files (the CF 'units' attribute of the time variable).
+            default: seconds since 1970-01-01 00:00:00
+            optional: true
+            examples:
+              - 'time_units: ''''
+
+                '
+            children: []
+            config_name_path:
+              - io
+              - 'type: IOConfig'
+              - time_units
+            module_path: builtins
+            is_union: false
+          - display_name: calendar
+            type_name: <class 'str'>
+            description: Calendar of the time coordinate in the data files.
+            default: proleptic_gregorian
+            optional: true
+            examples:
+              - 'calendar: ''''
+
+                '
+            children: []
+            config_name_path:
+              - io
+              - 'type: IOConfig'
+              - calendar
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - io
+          - 'type: IOConfig'
+        module_path: icon4py.model.common.io.io
+        is_union: false
+      - display_name: 'type: NoneType'
+        type_name: <class 'NoneType'>
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'io:
+
+            '
+        children: []
+        config_name_path:
+          - io
+          - 'type: NoneType'
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - io
+    module_path: types
+    is_union: true
   - display_name: 'nonhydrostatic: one of the following'
     type_name: icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig | None
     description: ??
@@ -3974,6 +4016,113 @@ children:
         is_union: false
     config_name_path:
       - tmx
+    module_path: types
+    is_union: true
+  - display_name: 'surface: one of the following'
+    type_name: icon4py.model.atmosphere.subgrid_scale_physics.surface.config.SurfaceConfig | None
+    description: ??
+    default: None
+    optional: true
+    examples:
+      - "surface:\n  surface_flux_type: fixed_heat_fluxes\n  kinematic_sensible_heat_flux: 0.0\n  kinematic_latent_heat_flux: 0.0\n  sea_surface_temperature: 0.0\n"
+      - 'surface:
+
+        '
+    children:
+      - display_name: 'type: SurfaceConfig'
+        type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.surface.config.SurfaceConfig'>
+        description: 'The surface boundary of the atmosphere: the surface fluxes tmx mixes into the air.'
+        default: None
+        optional: true
+        examples:
+          - "surface:\n  surface_flux_type: fixed_heat_fluxes\n  kinematic_sensible_heat_flux: 0.0\n  kinematic_latent_heat_flux: 0.0\n  sea_surface_temperature: 0.0\n"
+        children:
+          - display_name: surface_flux_type
+            type_name: <enum 'SurfaceFluxType'>
+            description: How the surface fluxes are obtained (only the fixed kinematic heat fluxes are implemented).
+            default: No default value.
+            optional: false
+            examples:
+              - 'surface_flux_type: fixed_heat_fluxes
+
+                '
+            children: []
+            config_name_path:
+              - surface
+              - 'type: SurfaceConfig'
+              - surface_flux_type
+            module_path: icon4py.model.atmosphere.subgrid_scale_physics.surface.config
+            is_union: false
+          - display_name: kinematic_sensible_heat_flux
+            type_name: <class 'float'>
+            description: Kinematic sensible heat flux at the surface [K m/s].
+            default: '0.1'
+            optional: true
+            examples:
+              - 'kinematic_sensible_heat_flux: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - surface
+              - 'type: SurfaceConfig'
+              - kinematic_sensible_heat_flux
+            module_path: builtins
+            is_union: false
+          - display_name: kinematic_latent_heat_flux
+            type_name: <class 'float'>
+            description: Kinematic latent heat flux at the surface [m/s].
+            default: '0.0'
+            optional: true
+            examples:
+              - 'kinematic_latent_heat_flux: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - surface
+              - 'type: SurfaceConfig'
+              - kinematic_latent_heat_flux
+            module_path: builtins
+            is_union: false
+          - display_name: sea_surface_temperature
+            type_name: <class 'float'>
+            description: Sea surface temperature, constant in space and time [K].
+            default: No default value.
+            optional: false
+            examples:
+              - 'sea_surface_temperature: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - surface
+              - 'type: SurfaceConfig'
+              - sea_surface_temperature
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - surface
+          - 'type: SurfaceConfig'
+        module_path: icon4py.model.atmosphere.subgrid_scale_physics.surface.config
+        is_union: false
+      - display_name: 'type: NoneType'
+        type_name: <class 'NoneType'>
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'surface:
+
+            '
+        children: []
+        config_name_path:
+          - surface
+          - 'type: NoneType'
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - surface
     module_path: types
     is_union: true
 config_name_path:

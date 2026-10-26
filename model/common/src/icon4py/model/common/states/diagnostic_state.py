@@ -45,7 +45,13 @@ class DiagnosticState:
 
     @property
     def surface_pressure(self) -> fa.CellField[ta.wpfloat]:
-        return gtx.as_field((dims.CellDim,), self.pressure_ifc.ndarray[:, -1])
+        """Air pressure [Pa] at the surface: the bottom half level of ``pressure_ifc``.
+
+        A view, not a copy: it shares memory with ``pressure_ifc`` and follows its updates,
+        so reading it allocates nothing.
+        """
+        bottom = self.pressure_ifc.domain[dims.KHalfDim].unit_range.stop - 1
+        return self.pressure_ifc[dims.KHalfDim(bottom)]
 
 
 @dataclasses.dataclass
