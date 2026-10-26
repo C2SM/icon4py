@@ -99,7 +99,9 @@ class NeedsExchange(Protocol):
             # ghex assumes all fields to in one call to have the same `dtype`, this is not the case for all producer functions in icon4py,
             # hence as a simple workaround we loop over the fields
             for name, field in fields.items():
-                log.debug(f"preparing exchange of {name} - domain={field.domain} dtype={field.dtype}")
+                log.debug(
+                    f"preparing exchange of {name} - domain={field.domain} dtype={field.dtype}"
+                )
                 first_dim = field.domain.dims[0]
                 assert first_dim.kind == gtx.DimensionKind.HORIZONTAL, (
                     f"1st dimension {first_dim} needs to be one of {list(dims.horizontal_dims())} for exchange"
