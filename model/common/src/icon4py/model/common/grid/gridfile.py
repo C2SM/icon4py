@@ -366,10 +366,11 @@ class GridFile:
     ) -> np.ndarray:
         """Read a field from the grid file.
 
-        If an index array is given it only reads the values at those positions.
+        If an index array is given only the values at those positions are returned.
+        The whole variable is read from the file and the selection is done in memory.
         Args:
             name: name of the field to read
-            indices: indices to read if requesting a restricted set of indices. We assume this be a 1d array it will be applied to the 1. dimension (after transposition)
+            indices: indices to select if requesting a restricted set of indices. We assume this be a 1d array it will be applied to the 1. dimension (after transposition)
             transpose: flag indicateing whether the array needs to be transposed
                 to match icon4py dimension ordering, defaults to False
             dtype: datatype of the field
