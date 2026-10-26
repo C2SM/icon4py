@@ -271,9 +271,6 @@ def _compute_advective_vertical_wind_tendency(
     owner_mask: fa.CellField[bool],
     dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.vpfloat]:
-    # TODO(havogt): the wp-vp roundtrips are here to be faithful to ICON's mixed precision.
-    # We assume it was not a deliberate decision in ICON and plan to drop the extra conversions
-    # in a separate PR.
     vertical_advection_of_w = _compute_vertical_advection_of_w(
         contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
     )
@@ -298,13 +295,11 @@ def _compute_advective_vertical_wind_tendency(
         dtime,
     )
 
-    vertical_wind_advective_tendency = astype(
-        astype(vertical_advection_of_w, wpfloat) + interpolated_horizontal_advection_of_w,
-        vpfloat,
+    vertical_wind_advective_tendency_wp = (
+        astype(vertical_advection_of_w, wpfloat) + interpolated_horizontal_advection_of_w
     )
 
-    vertical_wind_advective_tendency_wp = astype(vertical_wind_advective_tendency, wpfloat)
-    vertical_wind_advective_tendency = astype(
+    return astype(
         where(
             cfl_clipping & owner_mask,
             vertical_wind_advective_tendency_wp + extra_diffusion_for_w,
@@ -312,8 +307,6 @@ def _compute_advective_vertical_wind_tendency(
         ),
         vpfloat,
     )
-
-    return vertical_wind_advective_tendency
 
 
 @gtx.field_operator
