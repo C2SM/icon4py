@@ -10,9 +10,8 @@ import logging
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import typing as gtx_typing
 
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
+from icon4py.model.atmosphere.dycore import solve_nonhydro
 from icon4py.model.atmosphere.dycore.stencils import (
     velocity_advection_corrector,
     velocity_advection_predictor,
