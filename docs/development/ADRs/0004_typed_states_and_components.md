@@ -110,14 +110,20 @@ The tracers are optional leaves: `TracerState`, `Advection.Input`/`Output` and
 `PhysicsDriver.Input`/`Output` declare `qv`...`qg` as `Field[Q] | None`, and the driver's
 `TracerConfig` decides which are present; the driver's views hold the active ones only.
 
-The physics components (`Muphys`) are plain components. The physics driver runs each in a
-`PhysicsProcess` (`physics_process.py`): the component, its `collect_input`, which picks the
-component's `Input` from the physics driver's `EntryState`, a `ProcessTimeControl` and the
-output buffers the process keeps between two runs. The physics driver calls
-`process.step(entry, step_start)`: inside its window the process runs its component on the
-steps its time control fires and on its first step in the window, and returns its last output
-otherwise. `PhysicsProcess` is generic over the component's `Input` and `Output`, so mypy checks
-`collect_input` against the component it is paired with.
+The physics components (`Muphys`) are plain components. The physics driver runs each one
+inside a `PhysicsProcess` (`physics_process.py`), which holds:
+
+- the component;
+- its `collect_input`, which builds the component's `Input` from the physics driver's
+  `EntryState`;
+- a `ProcessTimeControl`;
+- the output buffers, kept between two runs.
+
+On every step the physics driver calls `process.step(entry, step_start)`. Outside its window
+the process returns None. Inside it, the process runs its component on the steps its time
+control fires and on its first step in the window; on the other steps it returns its last
+output again. `PhysicsProcess` is generic over the component's `Input` and `Output`, so mypy
+checks that `collect_input` builds the `Input` of the component it is paired with.
 
 ### Adding a quantity
 
