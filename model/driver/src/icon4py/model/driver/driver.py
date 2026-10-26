@@ -51,7 +51,7 @@ from icon4py.model.common.states import (
     tracer_prep_adv_states as prep_adv_states,
     tracer_states,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils, profiling
 from icon4py.model.driver import (
     config as driver_config,
     driver_constants,
@@ -699,101 +699,113 @@ def initialize_driver(
     process_props: decomposition_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
 ) -> Icon4pyDriver:
-    output_path = driver_config.prepare_output_directory(
-        config_output_path=config.driver.output_path,
-        cli_output_path=None,
-        process_props=process_props,
-    )
-    config = dataclasses.replace(
-        config, driver=dataclasses.replace(config.driver, output_path=output_path)
-    )
+    with profiling.annotate("driver.initialize_driver.prepare_output_directory"):
+        output_path = driver_config.prepare_output_directory(
+            config_output_path=config.driver.output_path,
+            cli_output_path=None,
+            process_props=process_props,
+        )
+        config = dataclasses.replace(
+            config, driver=dataclasses.replace(config.driver, output_path=output_path)
+        )
 
     allocator = model_backends.get_allocator(backend)
 
-    decomposition_info = grid_manager.decomposition_info
-    exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
+    with profiling.annotate("driver.initialize_driver.create_exchange"):
+        decomposition_info = grid_manager.decomposition_info
+        exchange = decomposition_defs.create_exchange(process_props, decomposition_info)
 
-    log.info("initializing the vertical grid")
-    vertical_grid = driver_utils.create_vertical_grid(
-        vertical_grid_config=config.vertical_grid,
-        allocator=allocator,
-    )
+    with profiling.annotate("driver.initialize_driver.vertical_grid"):
+        log.info("initializing the vertical grid")
+        vertical_grid = driver_utils.create_vertical_grid(
+            vertical_grid_config=config.vertical_grid,
+            allocator=allocator,
+        )
 
-    log.info("initializing the topography")
-    cell_topography = topography.create(
-        config=config.topography,
-        grid_manager=grid_manager,
-        backend=backend,
-        exchange=exchange,
-    )
+    with profiling.annotate("driver.initialize_driver.topography"):
+        log.info("initializing the topography")
+        cell_topography = topography.create(
+            config=config.topography,
+            grid_manager=grid_manager,
+            backend=backend,
+            exchange=exchange,
+        )
 
-    log.info("initializing the static-field factories")
-    static_field_factories = driver_utils.create_static_field_factories(
-        grid_manager=grid_manager,
-        decomposition_info=decomposition_info,
-        vertical_grid=vertical_grid,
-        cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
-        backend=backend,
-        process_props=process_props,
-        geometry_config=config.geometry,
-        interpolation_config=config.interpolation,
-        metrics_config=config.metrics,
-    )
+    with profiling.annotate("driver.initialize_driver.static_field_factories"):
+        log.info("initializing the static-field factories")
+        static_field_factories = driver_utils.create_static_field_factories(
+            grid_manager=grid_manager,
+            decomposition_info=decomposition_info,
+            vertical_grid=vertical_grid,
+            cell_topography=gtx.as_field(
+                (dims.CellDim,),
+                data=cell_topography,  # type: ignore[arg-type] # due to array_ns opacity
+                allocator=allocator,
+            ),
+            backend=backend,
+            process_props=process_props,
+            geometry_config=config.geometry,
+            interpolation_config=config.interpolation,
+            metrics_config=config.metrics,
+        )
 
     model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
 
-    log.info("initializing granules")
-    granules = driver_utils.initialize_granules(
-        config=config,
-        grid=grid_manager.grid,
-        vertical_grid=vertical_grid,
-        static_field_factories=static_field_factories,
-        model_time_variables=model_time_variables,
-        exchange=exchange,
-        owner_mask=gtx.as_field(
-            (dims.CellDim,),
-            decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # due to array_ns opacity
-            allocator=allocator,
-        ),
-        backend=backend,
-    )
-    io_monitor = None
-    if config.driver.enable_output:
-        log.info("Initializing IO monitor")
-        io_monitor = driver_io.create_io_monitor(
-            output_path=config.driver.output_path,
-            grid_file_path=pathlib.Path(grid_manager.file_path),
+    with profiling.annotate("driver.initialize_driver.granules"):
+        log.info("initializing granules")
+        granules = driver_utils.initialize_granules(
+            config=config,
             grid=grid_manager.grid,
             vertical_grid=vertical_grid,
-            dtime=config.driver.dtime,
-            output_backend=config.driver.output_backend,
-            output_mode=config.driver.output_mode,
-            process_props=process_props,
-            decomposition_info=decomposition_info,
+            static_field_factories=static_field_factories,
+            model_time_variables=model_time_variables,
+            exchange=exchange,
+            owner_mask=gtx.as_field(
+                (dims.CellDim,),
+                decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # due to array_ns opacity
+                allocator=allocator,
+            ),
+            backend=backend,
         )
-
-    icon4py_driver = Icon4pyDriver(
-        config=config,
-        backend=backend,
-        grid=grid_manager.grid,
-        decomposition_info=decomposition_info,
-        static_field_factories=static_field_factories,
-        granules=granules,
-        model_time_variables=model_time_variables,
-        vertical_grid_config=config.vertical_grid,
-        process_props=process_props,
-        tendencies=(
-            prescribed_tendencies.PrescribedTendencies(
-                config=config.prescribed_tendencies,
+    with profiling.annotate("driver.initialize_driver.io_monitor"):
+        io_monitor = None
+        if config.driver.enable_output:
+            log.info("Initializing IO monitor")
+            io_monitor = driver_io.create_io_monitor(
+                output_path=config.driver.output_path,
+                grid_file_path=pathlib.Path(grid_manager.file_path),
                 grid=grid_manager.grid,
-                backend=backend,
-                rank=process_props.rank,
+                vertical_grid=vertical_grid,
+                dtime=config.driver.dtime,
+                output_backend=config.driver.output_backend,
+                output_mode=config.driver.output_mode,
+                process_props=process_props,
+                decomposition_info=decomposition_info,
             )
-            if config.prescribed_tendencies.data_path is not None
-            else None
-        ),
-        io_monitor=io_monitor,
-    )
+
+    with profiling.annotate("driver.initialize_driver.construct_driver"):
+        icon4py_driver = Icon4pyDriver(
+            config=config,
+            backend=backend,
+            grid=grid_manager.grid,
+            decomposition_info=decomposition_info,
+            static_field_factories=static_field_factories,
+            granules=granules,
+            model_time_variables=model_time_variables,
+            vertical_grid_config=config.vertical_grid,
+            process_props=process_props,
+            tendencies=(
+                prescribed_tendencies.PrescribedTendencies(
+                    config=config.prescribed_tendencies,
+                    grid=grid_manager.grid,
+                    backend=backend,
+                    rank=process_props.rank,
+                )
+                if config.prescribed_tendencies.data_path is not None
+                else None
+            ),
+            io_monitor=io_monitor,
+        )
 
     return icon4py_driver
 
@@ -808,62 +820,66 @@ def initialize_driver_states(
     application of the initial condition, the assembly of ``DriverStates``, and the
     consistency check that precedes the time loop.
     """
-    prognostic_state_now = prognostics.initialize_prognostic_state(
-        grid=icon4py_driver.grid,
-        allocator=allocator,
-    )
-    tracer_state_now = tracer_states.initialize_tracer_state(
-        grid=icon4py_driver.grid,
-        allocator=allocator,
-        tracer_config=icon4py_driver.config.tracer_config,
-    )
-    solve_nonhydro_diagnostic_state = (
-        nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
+    with profiling.annotate("driver.initialize_driver_states.allocate_states"):
+        prognostic_state_now = prognostics.initialize_prognostic_state(
+            grid=icon4py_driver.grid,
+            allocator=allocator,
+        )
+        tracer_state_now = tracer_states.initialize_tracer_state(
+            grid=icon4py_driver.grid,
+            allocator=allocator,
+            tracer_config=icon4py_driver.config.tracer_config,
+        )
+        solve_nonhydro_diagnostic_state = (
+            nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
+                grid=icon4py_driver.grid, allocator=allocator
+            )
+            if icon4py_driver.config.nonhydrostatic is not None
+            else None
+        )
+        tracer_prep_adv_state = (
+            prep_adv_states.initialize_tracer_prep_adv_state(
+                grid=icon4py_driver.grid, allocator=allocator
+            )
+            if icon4py_driver.config.tracer_advection is not None
+            else None
+        )
+    with profiling.annotate("driver.initialize_driver_states.apply_initial_condition"):
+        ic_apply(
+            config=driver_utils.make_ic_config_ctx(icon4py_driver.config),
+            grid=icon4py_driver.grid,
+            static_fields=icon4py_driver.static_field_factories,
+            prognostic_state_now=prognostic_state_now,
+            tracer_state_now=tracer_state_now,
+            solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+            tracer_prep_adv_state=tracer_prep_adv_state,
+            backend=icon4py_driver.backend,
+            exchange=icon4py_driver.exchange,
+            global_reductions=icon4py_driver.global_reductions,
+        )
+    with profiling.annotate("driver.initialize_driver_states.assemble_driver_states"):
+        diagnostic_state = diagnostics.initialize_diagnostic_state(
             grid=icon4py_driver.grid, allocator=allocator
         )
-        if icon4py_driver.config.nonhydrostatic is not None
-        else None
-    )
-    tracer_prep_adv_state = (
-        prep_adv_states.initialize_tracer_prep_adv_state(
-            grid=icon4py_driver.grid, allocator=allocator
+        ds = driver_states.assemble_driver_states(
+            grid=icon4py_driver.grid,
+            allocator=allocator,
+            backend=icon4py_driver.backend,
+            exchange=icon4py_driver.exchange,
+            static_fields=icon4py_driver.static_field_factories,
+            prognostic_state_now=prognostic_state_now,
+            tracer_state_now=tracer_state_now,
+            diagnostic_state=diagnostic_state,
+            experiment_config=icon4py_driver.config,
+            solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+            tracer_prep_adv_state=tracer_prep_adv_state,
         )
-        if icon4py_driver.config.tracer_advection is not None
-        else None
-    )
-    ic_apply(
-        config=driver_utils.make_ic_config_ctx(icon4py_driver.config),
-        grid=icon4py_driver.grid,
-        static_fields=icon4py_driver.static_field_factories,
-        prognostic_state_now=prognostic_state_now,
-        tracer_state_now=tracer_state_now,
-        solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
-        tracer_prep_adv_state=tracer_prep_adv_state,
-        backend=icon4py_driver.backend,
-        exchange=icon4py_driver.exchange,
-        global_reductions=icon4py_driver.global_reductions,
-    )
-    diagnostic_state = diagnostics.initialize_diagnostic_state(
-        grid=icon4py_driver.grid, allocator=allocator
-    )
-    ds = driver_states.assemble_driver_states(
-        grid=icon4py_driver.grid,
-        allocator=allocator,
-        backend=icon4py_driver.backend,
-        exchange=icon4py_driver.exchange,
-        static_fields=icon4py_driver.static_field_factories,
-        prognostic_state_now=prognostic_state_now,
-        tracer_state_now=tracer_state_now,
-        diagnostic_state=diagnostic_state,
-        experiment_config=icon4py_driver.config,
-        solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
-        tracer_prep_adv_state=tracer_prep_adv_state,
-    )
-    driver_utils.validate_granule_state_consistency(
-        config=icon4py_driver.config,
-        granules=icon4py_driver.granules,
-        states=ds,
-    )
+    with profiling.annotate("driver.initialize_driver_states.validate_granule_state_consistency"):
+        driver_utils.validate_granule_state_consistency(
+            config=icon4py_driver.config,
+            granules=icon4py_driver.granules,
+            states=ds,
+        )
     return ds
 
 
@@ -874,13 +890,16 @@ def run_driver(
     process_props: decomposition_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
 ) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
-    icon4py_driver = initialize_driver(
-        config=config,
-        grid_manager=grid_manager,
-        process_props=process_props,
-        backend=backend,
-    )
-    allocator = model_backends.get_allocator(backend)
-    ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
-    icon4py_driver.time_integration(ds)
+    with profiling.annotate("driver.initialize_driver"):
+        icon4py_driver = initialize_driver(
+            config=config,
+            grid_manager=grid_manager,
+            process_props=process_props,
+            backend=backend,
+        )
+    with profiling.annotate("driver.initialize_driver_states"):
+        allocator = model_backends.get_allocator(backend)
+        ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
+    with profiling.annotate("driver.time_integration"):
+        icon4py_driver.time_integration(ds)
     return ds, icon4py_driver

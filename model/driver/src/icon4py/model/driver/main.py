@@ -19,6 +19,7 @@ from icon4py.model.common.decomposition import (
     mpi_decomposition as mpi_decomp,
 )
 from icon4py.model.common.io import io as common_io
+from icon4py.model.common.utils import profiling
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 
 
@@ -95,45 +96,50 @@ def main(
     integration is run.
     """
 
-    process_props = decomposition_defs.get_process_properties(
-        decomposition_defs.get_runtype(with_mpi=mpi_decomp.mpi4py is not None)
-    )
-    driver_utils.configure_logging(
-        logging_level=log_level,
-        print_distributed_debug_msg=print_distributed_debug_msg,
-        process_props=process_props,
-    )
+    with profiling.annotate("driver.setup_process_and_logging"):
+        process_props = decomposition_defs.get_process_properties(
+            decomposition_defs.get_runtype(with_mpi=mpi_decomp.mpi4py is not None)
+        )
+        driver_utils.configure_logging(
+            logging_level=log_level,
+            print_distributed_debug_msg=print_distributed_debug_msg,
+            process_props=process_props,
+        )
 
-    config = driver_config.read_experiment_config_from_yaml(config_file_path)
-    driver_overrides: dict[str, object] = {
-        "enable_output": enable_output,
-        "output_backend": output_backend,
-        "output_mode": output_mode,
-    }
-    if output_path is not None:
-        driver_overrides["output_path"] = output_path
-    config = config.with_overrides(driver=driver_overrides)
+    with profiling.annotate("driver.read_config"):
+        config = driver_config.read_experiment_config_from_yaml(config_file_path)
+        driver_overrides: dict[str, object] = {
+            "enable_output": enable_output,
+            "output_backend": output_backend,
+            "output_mode": output_mode,
+        }
+        if output_path is not None:
+            driver_overrides["output_path"] = output_path
+        config = config.with_overrides(driver=driver_overrides)
 
-    backend = model_options.customize_backend(
-        program=None,
-        backend=driver_utils.get_backend_from_name(icon4py_backend),
-        backend_config=config.driver.backend_config,
-    )
-    allocator = model_backends.get_allocator(backend)
+    with profiling.annotate("driver.setup_backend"):
+        backend = model_options.customize_backend(
+            program=None,
+            backend=driver_utils.get_backend_from_name(icon4py_backend),
+            backend_config=config.driver.backend_config,
+        )
+        allocator = model_backends.get_allocator(backend)
 
-    grid_manager = driver_utils.create_grid_manager(
-        grid_file_path=grid_file_path,
-        vertical_grid_config=config.vertical_grid,
-        allocator=allocator,
-        process_props=process_props,
-    )
+    with profiling.annotate("driver.create_grid_manager"):
+        grid_manager = driver_utils.create_grid_manager(
+            grid_file_path=grid_file_path,
+            vertical_grid_config=config.vertical_grid,
+            allocator=allocator,
+            process_props=process_props,
+        )
 
-    driver.run_driver(
-        config=config,
-        grid_manager=grid_manager,
-        process_props=process_props,
-        backend=backend,
-    )
+    with profiling.annotate("driver.run_driver"):
+        driver.run_driver(
+            config=config,
+            grid_manager=grid_manager,
+            process_props=process_props,
+            backend=backend,
+        )
 
 
 if __name__ == "__main__":

@@ -57,7 +57,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import model, utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 log = logging.getLogger(__name__)
@@ -380,6 +380,10 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         return self.fields[field_name]
 
     def _compute(self, factory: FieldSource, grid_provider: GridProvider) -> None:
+        with profiling.annotate(f"EmbeddedFieldOperatorProvider._compute.{_func_name(self._func)}"):
+            self._compute_fields(factory, grid_provider)
+
+    def _compute_fields(self, factory: FieldSource, grid_provider: GridProvider) -> None:
         # allocate output buffer
         compute_backend = self._func.backend
         log.info(
@@ -569,6 +573,16 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         grid: GridProvider,
         backend: gtx_typing.Backend | None,
     ) -> None:
+        with profiling.annotate(f"ProgramFieldProvider._compute.{_func_name(self._func)}"):
+            self._compute_fields(field_src=field_src, grid=grid, backend=backend)
+
+    def _compute_fields(
+        self,
+        *,
+        field_src: FieldSource,
+        grid: GridProvider,
+        backend: gtx_typing.Backend | None,
+    ) -> None:
         dtypes = field_src.dtypes_for_factory(self._output.values())
         self._fields = self._allocate(backend, grid, dtypes=dtypes)
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
@@ -658,30 +672,35 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
     ) -> None:
-        self._validate_dependencies()
-        args = {
-            k: buffer.ndarray
-            if hasattr(buffer := factory.get_full_precision(v), "ndarray")
-            else buffer
-            for k, v in self._dependencies.items()
-        }
-        offsets = {
-            k: grid_provider.grid.get_connectivity(v.value).ndarray
-            for k, v in self._connectivities.items()
-        }
-        args.update(offsets)
-        args.update(self._params)
-        results = self._func(**args)
-        # convert to tuple
-        results = (results,) if not isinstance(results, tuple) else results
-        # force double for floating-precision
-        dtypes = factory.dtypes_for_factory(self.fields.keys())
-        self._fields = {
-            k: self._as_field(backend, results[i], dtype=dtypes[k], grid=grid_provider)
-            if self._dims
-            else results[i]
-            for i, k in enumerate(self.fields)
-        }
+        range_name = f"NumpyDataProvider._compute.{_func_name(self._func)}"
+        with profiling.annotate(range_name):
+            self._validate_dependencies()
+            with profiling.annotate(f"{range_name}.deps"):
+                args = {
+                    k: buffer.ndarray
+                    if hasattr(buffer := factory.get_full_precision(v), "ndarray")
+                    else buffer
+                    for k, v in self._dependencies.items()
+                }
+                offsets = {
+                    k: grid_provider.grid.get_connectivity(v.value).ndarray
+                    for k, v in self._connectivities.items()
+                }
+            args.update(offsets)
+            args.update(self._params)
+            with profiling.annotate(f"{range_name}.func"):
+                results = self._func(**args)
+            # convert to tuple
+            results = (results,) if not isinstance(results, tuple) else results
+            # force double for floating-precision
+            dtypes = factory.dtypes_for_factory(self.fields.keys())
+            with profiling.annotate(f"{range_name}.as_field"):
+                self._fields = {
+                    k: self._as_field(backend, results[i], dtype=dtypes[k], grid=grid_provider)
+                    if self._dims
+                    else results[i]
+                    for i, k in enumerate(self.fields)
+                }
 
     def _as_field(
         self,
@@ -769,9 +788,8 @@ def _is_compatible_value(
 
 def _func_name(callable_: Callable[..., Any]) -> str:
     if isinstance(callable_, functools.partial):
-        return callable_.func.__name__
-    else:
-        return callable_.__name__
+        callable_ = callable_.func
+    return getattr(callable_, "__name__", type(callable_).__name__)
 
 
 def allfloats_as_double(dtype_metadata: state_utils.ScalarType) -> state_utils.ScalarType:
