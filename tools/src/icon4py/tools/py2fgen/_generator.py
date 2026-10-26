@@ -36,7 +36,12 @@ def get_cffi_description(functions: list[Callable], library_name: str) -> _codeg
 def _get_function_descriptor(fun: Callable) -> _codegen.Func:
     if not hasattr(fun, "param_descriptors"):
         raise TypeError("Cannot parse function, did you forget to decorate it with '@export'?")
-    return _codegen.Func(name=fun.__name__, module_name=fun.__module__, args=fun.param_descriptors)
+    return _codegen.Func(
+        name=fun.__name__,
+        module_name=fun.__module__,
+        args=fun.param_descriptors,
+        with_metadata=getattr(fun, "with_metadata", False),
+    )
 
 
 def configure_cffi_builder(
