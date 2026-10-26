@@ -559,7 +559,8 @@ def test_diagnostics_computer_surface_pressure(grid: base.Grid) -> None:
     surface_pressure = fields["surface_pressure"]
     assert surface_pressure.domain.dims == (dims.CellDim,)
     assert surface_pressure.asnumpy().shape == (grid.num_cells,)
-    # the diagnostic state's view of the bottom row of its half-level pressure
+    # the diagnostic state's view of the bottom row of its half-level pressure: no copy
+    assert np.shares_memory(surface_pressure.ndarray, diagnostic_state.pressure_ifc.ndarray)
     test_utils.assert_dallclose(
         surface_pressure.asnumpy(), diagnostic_state.pressure_ifc.asnumpy()[:, -1]
     )
@@ -574,6 +575,27 @@ def test_diagnostics_computer_surface_pressure(grid: base.Grid) -> None:
     )
     assert set(alone) == {"surface_pressure"}
     test_utils.assert_dallclose(alone["surface_pressure"].asnumpy(), surface_pressure.asnumpy())
+
+
+def test_diagnostics_computer_reads_only_the_requested_fields(
+    grid: base.Grid, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A call for the winds does not touch the other diagnostics of the state."""
+
+    def _not_requested(self: diagnostics.DiagnosticState) -> gtx.Field:
+        raise AssertionError("the surface pressure was not requested")
+
+    monkeypatch.setattr(diagnostics.DiagnosticState, "surface_pressure", property(_not_requested))
+    computer = _diagnostics_computer(grid, ["eastward_wind", "surface_pressure"])
+
+    fields = computer.compute(
+        _uniform_prognostic_state(grid),
+        tracer_states.TracerState(),
+        _diagnostic_state(grid),
+        ["eastward_wind"],
+    )
+
+    assert set(fields) == {"eastward_wind"}
 
 
 def test_diagnostics_computer_uses_the_active_tracers(grid: base.Grid) -> None:

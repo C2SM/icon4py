@@ -134,14 +134,18 @@ def tracer_state_to_dataarrays(
 # --------------------------------------------------------------------------------------
 
 
-DIAGNOSTIC_VARIABLES: Final[list[str]] = [
-    "eastward_wind",
-    "northward_wind",
-    "temperature",
-    "virtual_temperature",
-    "pressure",
-    "surface_pressure",
-]
+#: The diagnostic output variables, by CF name, with the ``DiagnosticState`` field the
+#: ``DiagnosticsComputer`` computes each of them into.
+_DIAGNOSTIC_STATE_FIELDS: Final[dict[str, str]] = {
+    "eastward_wind": "u",
+    "northward_wind": "v",
+    "temperature": "temperature",
+    "virtual_temperature": "virtual_temperature",
+    "pressure": "pressure",
+    "surface_pressure": "surface_pressure",
+}
+
+DIAGNOSTIC_VARIABLES: Final[list[str]] = list(_DIAGNOSTIC_STATE_FIELDS)
 
 
 class _Programs(NamedTuple):
@@ -247,7 +251,8 @@ class DiagnosticsComputer:
         """Diagnose the requested variables (a subset of those given at construction).
 
         The fields of ``diagnostic_state`` are overwritten in place; the returned fields
-        are those fields (the surface pressure is its view of the bottom half-level row).
+        are those fields, read for the requested variables only (the surface pressure is
+        the state's view of the bottom half level of ``pressure_ifc``).
         """
         requested = frozenset(variables)
         if unknown := requested - self._variables:
@@ -310,15 +315,11 @@ class DiagnosticsComputer:
                 offset_provider={},
             )
 
-        fields = {
-            "eastward_wind": diagnostic_state.u,
-            "northward_wind": diagnostic_state.v,
-            "temperature": diagnostic_state.temperature,
-            "virtual_temperature": diagnostic_state.virtual_temperature,
-            "pressure": diagnostic_state.pressure,
-            "surface_pressure": diagnostic_state.surface_pressure,
+        return {
+            name: getattr(diagnostic_state, _DIAGNOSTIC_STATE_FIELDS[name])
+            for name in DIAGNOSTIC_VARIABLES
+            if name in requested
         }
-        return {name: fields[name] for name in DIAGNOSTIC_VARIABLES if name in requested}
 
 
 def diagnostic_fields_to_dataarrays(
