@@ -50,7 +50,7 @@ Field groups are stored in the same file and share a common setting of
 - `output_interval`: the output schedule, given as either a positive integer N (write every N model steps, i.e. every N calls to `store`) or a `datetime.timedelta` (a simulation-time delta, e.g. `timedelta(hours=2)`, must be a multiple of the model time step). A time delta is normalized to a number of steps using the model time step, so the schedule is always evaluated in steps. Defaults to every step.
 - `basename`: Base name of the datafiles, without an extension (the backend's extension and a roll-over counter are appended, see `timesteps_per_file`); it may contain a _relative_ path which is appended to the `output_path`.
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
-- `variables`: List of variables names to be output. Variable names are the keys of the model state; for the driver's `IOMonitor` they are the `standard_name`s of its `Input` leaves' quantities (not all of them CF standard names), except the historical file names in `driver_io._FILE_NAMES` (`exner_function`, `temperature`, `virtual_temperature`, `pressure`).
+- `variables`: List of variables names to be output. Variable names are the keys of the model state; for the driver's `IOMonitor` they are the `standard_name`s of its `Input` leaves' quantities (not all of them CF standard names).
 - `backend` (default="zarr"): File format of the group, `"netcdf"` or `"zarr"`.
 - `mode` (default="distributed"): Write strategy of distributed (MPI) runs; single-rank runs write the full state either way:
     - `"gather"`: the owned entries of all ranks are collected on the root rank, which writes them in global order.
@@ -72,7 +72,7 @@ prognostic_group = FieldGroupIOConfig(
     output_interval=datetime.timedelta(hours=2),
     basename="icon4py_prognostics",
     timesteps_per_file=12,
-    variables=["air_density", "exner_function", "upward_air_velocity"],
+    variables=["air_density", "dimensionless_exner_function", "upward_air_velocity"],
     nc_title="prognostics from my experiment",
     nc_comment="Writing prognostic fields data from icon4py ",
 )

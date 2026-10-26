@@ -109,5 +109,5 @@ def test_driver_writes_output(
         assert "half_level" in ds["upward_air_velocity"].dims
         assert "edge" in ds["normal_velocity"].dims
         # diagnostics live on cells/full levels
-        assert "cell" in ds["temperature"].dims
+        assert "cell" in ds["air_temperature"].dims
         assert ds.sizes["time"] == 2

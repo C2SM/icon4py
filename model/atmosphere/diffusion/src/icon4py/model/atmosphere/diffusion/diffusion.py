@@ -826,10 +826,16 @@ class Diffusion(fw.Component):
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
 
     @staticmethod
-    def _continue_in_place(inputs: Input, out: Output) -> None:
-        """The prognostics are diffused in place: `outputs` continues what `inputs` holds."""
+    def _continue_in_place(inputs: Input, outputs: Output) -> None:
+        """
+        Copy the prognostics from `inputs` into `outputs`, unless they already share a buffer.
+
+        The stencils diffuse `outputs` in place. The driver passes the same buffers on both
+        sides, so nothing is copied; a caller passing distinct buffers (the tests) gets
+        `inputs` copied over first, so the diffusion starts from them.
+        """
         for name in ("vn", "w", "exner", "theta_v"):
-            source, target = getattr(inputs, name), getattr(out, name)
+            source, target = getattr(inputs, name), getattr(outputs, name)
             if target.ndarray is not source.ndarray:
                 target.ndarray[...] = source.ndarray
 
@@ -848,8 +854,7 @@ class Diffusion(fw.Component):
         """
         self._continue_in_place(inputs, outputs)
         dtime = wpfloat(inputs.dtime)
-        initial_run = inputs.initial_run
-        if initial_run:
+        if inputs.initial_run:
             diff_multfac_vn = data_alloc.zero_field(
                 self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
             )
@@ -1020,7 +1025,7 @@ class Diffusion(fw.Component):
             # computations, which happen right after diffusion, do not require the halo lines to be correct and there
             # is another halo exchange after the physics are applied.
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
-            if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+            if inputs.initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
                 log.debug("communication of prognostic cell fields: theta and exner - start")
                 self._exchange.exchange(
                     dims.CellDim,
@@ -1033,7 +1038,7 @@ class Diffusion(fw.Component):
         # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
         # computations, which happen right after diffusion, do not require the halo lines to be correct and there
         # is another halo exchange after the physics are applied.
-        if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+        if inputs.initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
             log.debug("communication of prognostic cell field: w - start")
             self._exchange.exchange(
                 dims.CellDim,

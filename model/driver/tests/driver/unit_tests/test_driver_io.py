@@ -36,15 +36,15 @@ START = datetime.datetime(2000, 1, 1)
 # the output variable of each Input leaf, as the output files name them
 EXPECTED_LEAVES: dict[str, str] = {
     "air_density": "rho",
-    "exner_function": "exner",
+    "dimensionless_exner_function": "exner",
     "virtual_potential_temperature": "theta_v",
     "upward_air_velocity": "w",
     "normal_velocity": "vn",
     "eastward_wind": "u",
     "northward_wind": "v",
-    "temperature": "temperature",
-    "virtual_temperature": "virtual_temperature",
-    "pressure": "pressure",
+    "air_temperature": "temperature",
+    "air_virtual_temperature": "virtual_temperature",
+    "air_pressure": "pressure",
 }
 
 # (UGRID horizontal dimension, vertical dimension) of each output variable
@@ -160,8 +160,8 @@ def test_written_attributes_are_those_of_the_leaf_quantity(grid: base.Grid) -> N
             quantity.long_name,
             quantity.units,
         )
-    # the file name and the CF standard_name of a variable may differ
-    assert state["exner_function"].attrs["standard_name"] == "dimensionless_exner_function"
+        # a variable is named after its quantity's standard_name
+        assert name == quantity.standard_name
 
 
 def test_data_is_host_numpy(grid: base.Grid, backend: gtx_backend.Backend[Any] | None) -> None:

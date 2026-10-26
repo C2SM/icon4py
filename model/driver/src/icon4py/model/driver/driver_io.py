@@ -34,31 +34,30 @@ DEFAULT_OUTPUT_BASENAME: Final[str] = "icon4py_output"
 
 DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [
     "air_density",
-    "exner_function",
+    "dimensionless_exner_function",
     "virtual_potential_temperature",
     "upward_air_velocity",
     "normal_velocity",
     "eastward_wind",
     "northward_wind",
-    "temperature",
-    "virtual_temperature",
-    "pressure",
+    "air_temperature",
+    "air_virtual_temperature",
+    "air_pressure",
 ]
 
-#: output variable name -> `IOMonitor.Input` leaf name. A variable keeps the name its
-#: quantity carries as `standard_name`, except where the output files have always used
-#: another name (`exner_function`, not `dimensionless_exner_function`).
+# output variable name -> `IOMonitor.Input` leaf name; a variable is named after its
+# quantity's `standard_name`
 _VARIABLE_NAMES: Final[dict[str, str]] = {
     "air_density": "rho",
-    "exner_function": "exner",
+    "dimensionless_exner_function": "exner",
     "virtual_potential_temperature": "theta_v",
     "upward_air_velocity": "w",
     "normal_velocity": "vn",
     "eastward_wind": "u",
     "northward_wind": "v",
-    "temperature": "temperature",
-    "virtual_temperature": "virtual_temperature",
-    "pressure": "pressure",
+    "air_temperature": "temperature",
+    "air_virtual_temperature": "virtual_temperature",
+    "air_pressure": "pressure",
 }
 
 

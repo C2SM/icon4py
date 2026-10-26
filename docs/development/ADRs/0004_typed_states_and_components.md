@@ -131,7 +131,7 @@ parentheses. Some existing standard names are not in the CF table (`normal_veloc
 values, and the output files name their variables after them. A field allocated in variable
 precision has `precision="vp"` on its tag. A time-averaged or accumulated variant of a quantity
 at the same place reuses the tag. The IO names an output variable after its quantity's
-`standard_name`; four variables keep their file names (`driver_io._FILE_NAMES`).
+`standard_name`.
 
 ### Type checking
 
