@@ -100,28 +100,6 @@ def test_read_experiment_config_from_yaml_keeps_absolute_data_path(
     assert config.prescribed_tendencies.data_path == pathlib.Path("/abs/ser_data")
 
 
-def test_read_experiment_config_from_yaml_drops_deprecated_driver_options(
-    tmp_path: pathlib.Path, caplog: pytest.LogCaptureFixture
-) -> None:
-    """The archived experiment configurations still set the removed driver output options."""
-    config_file = tmp_path / "config.yml"
-    config_file.write_text(
-        EXPERIMENT_CONFIG_YAML.replace(
-            "  experiment_name: foo\n",
-            "  experiment_name: foo\n  output_path: output\n  enable_output: false\n"
-            "  output_backend: zarr\n  output_mode: distributed\n",
-        )
-    )
-    with caplog.at_level(logging.WARNING, logger=driver_config.__name__):
-        config = driver_config.read_experiment_config_from_yaml(config_file)
-    assert config.io is None
-    assert config.driver.experiment_name == "foo"
-    assert "enable_output, output_backend, output_mode, output_path" in caplog.text
-    # the strict reader rejects them like any unknown key
-    with pytest.raises(cattrs.ClassValidationError):
-        config_io.read_yaml_str(config_file.read_text(), driver_config.ExperimentConfig)
-
-
 def test_io_roundtrip_cls_cls() -> None:
     conf = config_io.read_yaml_str(EXPERIMENT_CONFIG_YAML, driver_config.ExperimentConfig)
     assert conf.driver.experiment_name == "foo"

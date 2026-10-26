@@ -15,7 +15,6 @@ import pathlib
 import typing
 from typing import Any
 
-import yaml
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.atmosphere.diffusion import diffusion
@@ -224,38 +223,9 @@ class ExperimentConfig(config_io.ConfigWithShared):
         return dataclasses.replace(self, **replacements)
 
 
-#: Driver options superseded by the top-level 'io' section. The archived experiment
-#: configurations (test data) still set them, so :func:`read_experiment_config_from_yaml`
-#: drops them with a warning instead of rejecting the file.
-# TODO(kotsaloscv): remove with the next test-data version bump.
-DEPRECATED_DRIVER_OPTIONS: typing.Final[frozenset[str]] = frozenset(
-    {"enable_output", "output_backend", "output_mode", "output_path"}
-)
-
-
-def _drop_deprecated_driver_options(spec: Any, config_file_path: pathlib.Path) -> None:
-    driver_spec = spec.get("driver") if isinstance(spec, dict) else None
-    if not isinstance(driver_spec, dict):
-        return
-    if dropped := sorted(DEPRECATED_DRIVER_OPTIONS & set(driver_spec)):
-        for name in dropped:
-            del driver_spec[name]
-        log.warning(
-            f"Ignoring the removed driver option(s) {', '.join(dropped)} of "
-            f"'{config_file_path}': the output is configured in the top-level 'io' section "
-            f"(see 'icon4py.model.common.io')."
-        )
-
-
 def read_experiment_config_from_yaml(config_file_path: pathlib.Path) -> ExperimentConfig:
-    """Read an :class:`ExperimentConfig`, resolving relative ``data_path`` entries against the file's directory.
-
-    Unlike the strict ``config_io.read_yaml_str``, this reader tolerates the removed driver
-    output options of older files (``DEPRECATED_DRIVER_OPTIONS``).
-    """
-    spec = yaml.safe_load(config_file_path.read_text())
-    _drop_deprecated_driver_options(spec, config_file_path)
-    config = config_io.CONV.structure(spec, ExperimentConfig)
+    """Read an :class:`ExperimentConfig`, resolving relative ``data_path`` entries against the file's directory."""
+    config = config_io.read_yaml_str(config_file_path.read_text(), ExperimentConfig)
     root = config_file_path.resolve().parent
     overrides: dict[str, Any] = {}
     for field in dataclasses.fields(config):
