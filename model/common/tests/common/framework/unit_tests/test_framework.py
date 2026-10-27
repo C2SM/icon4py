@@ -23,17 +23,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.grid import base as base_grid, simple
 
-
-CELL_K = (dims.CellDim, dims.KDim)
-
-
-class Pressure(fw.Quantity, dims=CELL_K, standard_name="air_pressure", units="Pa"): ...
-
-
-class Salt(fw.Quantity, dims=(dims.CellDim,), units="1"): ...
-
-
-class Vt(fw.Quantity, dims=(dims.EdgeDim, dims.KDim), units="m s-1", precision="vp"): ...
+from tests.common.unit_tests.utils import CELL_K, Pressure, Salt, Vt
 
 
 class Column(fw.State):
@@ -63,17 +53,6 @@ class Halve(fw.Component["Halve.Input", "Halve.Output"]):
 @pytest.fixture
 def grid() -> base_grid.Grid:
     return simple.simple_grid()
-
-
-def test_quantity_is_a_tag_with_metadata() -> None:
-    assert Pressure.dims == CELL_K
-    assert Pressure.standard_name == "air_pressure"
-    assert Pressure.units == "Pa"
-    assert Pressure.precision == "wp"
-    assert Salt.standard_name is None
-    assert Vt.precision == "vp"
-    with pytest.raises(TypeError):
-        Pressure()
 
 
 def test_field_keeps_its_quantity(grid: base_grid.Grid) -> None:

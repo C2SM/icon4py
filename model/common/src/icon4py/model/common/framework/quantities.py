@@ -19,7 +19,7 @@ variables after them.
 """
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.framework import Quantity, Tendency
+from icon4py.model.common.quantity import Quantity, Tendency
 
 
 # NOTE: temporary, components MWE part 03 (dims): a quantity and its place become two tags

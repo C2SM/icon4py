@@ -21,7 +21,13 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_state,
     static_fields,
 )
-from icon4py.model.common import dimension as dims, framework as fw, model_backends, model_options
+from icon4py.model.common import (
+    dimension as dims,
+    framework as fw,
+    model_backends,
+    model_options,
+    quantity,
+)
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
@@ -43,7 +49,7 @@ if TYPE_CHECKING:
 __all__ = ["PhysicsDriver"]
 
 
-def _present[Q: fw.Quantity](field: fw.Field[Q] | None) -> fw.Field[Q]:
+def _present[Q: quantity.Quantity](field: fw.Field[Q] | None) -> fw.Field[Q]:
     """A tracer leaf the physics requires."""
     if field is None:
         raise ValueError("physics requires all moisture species active in the TracerState")
@@ -292,7 +298,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         Element-wise with no neighbour access, so a plain array operation rather than a stencil.
         """
         for name, field in fw.fields(output).items():
-            if not issubclass(field.quantity, fw.Tendency):
+            if not issubclass(field.quantity, quantity.Tendency):
                 continue
             if (accumulator := self.accumulators.get(name)) is None:
                 accumulator = self.accumulators[name] = fw.zeros(

@@ -13,12 +13,13 @@ import functools
 import types
 import typing
 from collections.abc import Callable, Collection, Sequence
-from typing import Any, ClassVar, Literal, Protocol, Self, dataclass_transform
+from typing import Any, ClassVar, Protocol, Self, dataclass_transform
 
 import gt4py.next as gtx
 from gt4py.next.embedded import nd_array_field
 
 from icon4py.model.common import type_alias as ta
+from icon4py.model.common.quantity import Quantity
 from icon4py.model.common.utils import PredictorCorrectorPair, TimeStepPair, data_allocation
 
 
@@ -33,9 +34,7 @@ __all__ = [
     "Empty",
     "Field",
     "PredictorCorrectorPair",
-    "Quantity",
     "State",
-    "Tendency",
     "TimeStepPair",
     "allocate",
     "copy",
@@ -44,52 +43,8 @@ __all__ = [
 ]
 
 
-# ------------------------------------------------------------------------------
-# Quantity: a type-level tag, never instantiated
-# ------------------------------------------------------------------------------
-class Quantity:
-    """
-    A type-level tag, one subclass per quantity at one place on the grid, never instantiated.
-
-    The metadata sits on the class; a keyword not given is inherited from the base (a marker
-    base like `Tendency` gives none).
-    """
-
-    dims: ClassVar[tuple[gtx.Dimension, ...]]
-    standard_name: ClassVar[str | None] = None
-    units: ClassVar[str]
-    long_name: ClassVar[str | None] = None
-    precision: ClassVar[Literal["wp", "vp"]] = "wp"
-
-    def __init_subclass__(
-        cls,
-        *,
-        dims: tuple[gtx.Dimension, ...] | None = None,
-        standard_name: str | None = None,
-        units: str | None = None,
-        long_name: str | None = None,
-        precision: Literal["wp", "vp"] | None = None,
-    ) -> None:
-        super().__init_subclass__()
-        given = {
-            "dims": dims,
-            "standard_name": standard_name,
-            "units": units,
-            "long_name": long_name,
-            "precision": precision,
-        }
-        for name, value in given.items():
-            if value is not None:
-                setattr(cls, name, value)
-
-    def __new__(cls, *args: Any, **kwargs: Any) -> Any:
-        raise TypeError(f"'{cls.__name__}' is a type-level tag, not a value.")
-
-
 # NOTE: temporary, components MWE part 07 (tendencies): `TendencyOf[Q]`, derived from its parent
 # quantity, replaces the marker base and the hand-declared tendency tags.
-class Tendency(Quantity):
-    """Marker base of the tendencies."""
 
 
 @dataclasses.dataclass(frozen=True, eq=False, init=False, repr=False)

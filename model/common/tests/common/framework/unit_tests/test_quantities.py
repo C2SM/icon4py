@@ -10,7 +10,7 @@ import inspect
 
 import pytest
 
-from icon4py.model.common import dimension as dims, framework as fw
+from icon4py.model.common import dimension as dims, framework as fw, quantity
 from icon4py.model.common.framework import quantities as qty
 
 
@@ -23,18 +23,18 @@ PLACES = {
 }
 
 
-def _quantities() -> list[type[fw.Quantity]]:
+def _quantities() -> list[type[quantity.Quantity]]:
     return [
         cls
         for _, cls in inspect.getmembers(qty, inspect.isclass)
-        if issubclass(cls, fw.Quantity)
+        if issubclass(cls, quantity.Quantity)
         and cls.__module__ == qty.__name__
-        and cls is not fw.Tendency
+        and cls is not quantity.Tendency
     ]
 
 
 @pytest.mark.parametrize("quantity", _quantities(), ids=lambda q: q.__name__)
-def test_quantity_is_named_after_its_place(quantity: type[fw.Quantity]) -> None:
+def test_quantity_is_named_after_its_place(quantity: type[quantity.Quantity]) -> None:
     # a 0-d quantity (`dims=()`) is at no place on the grid and has no suffix
     place = next((suffix for suffix in PLACES if quantity.__name__.endswith(suffix)), None)
     assert quantity.dims == (PLACES[place] if place is not None else ())
@@ -43,9 +43,9 @@ def test_quantity_is_named_after_its_place(quantity: type[fw.Quantity]) -> None:
 
 
 def test_tendencies_are_marked() -> None:
-    assert issubclass(qty.TendencyOfTemperatureOnCellK, fw.Tendency)
-    assert issubclass(qty.TendencyOfVnOnEdgeK, fw.Tendency)
-    assert not issubclass(qty.TemperatureOnCellK, fw.Tendency)
+    assert issubclass(qty.TendencyOfTemperatureOnCellK, quantity.Tendency)
+    assert issubclass(qty.TendencyOfVnOnEdgeK, quantity.Tendency)
+    assert not issubclass(qty.TemperatureOnCellK, quantity.Tendency)
 
 
 def test_the_dycore_precisions_follow_the_diagnostic_state() -> None:

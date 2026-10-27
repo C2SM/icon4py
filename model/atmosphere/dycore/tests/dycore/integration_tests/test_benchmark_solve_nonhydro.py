@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import framework as fw, model_backends
+from icon4py.model.common import framework as fw, model_backends, quantity
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import (
@@ -244,7 +244,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     second_order_divdamp_factor = 0.02
 
     def random_prognostics() -> states.PrognosticState:
-        def random(quantity: type[fw.Quantity]) -> fw.Field[Any]:
+        def random(quantity: type[quantity.Quantity]) -> fw.Field[Any]:
             return fw.Field(
                 quantity, data_alloc.random_field(mesh, *quantity.dims, allocator=allocator)
             )

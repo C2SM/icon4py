@@ -22,7 +22,7 @@ from typing import Any, Final
 
 import xarray as xr
 
-from icon4py.model.common import framework as fw, time
+from icon4py.model.common import framework as fw, quantity, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
@@ -61,7 +61,7 @@ _VARIABLE_NAMES: Final[dict[str, str]] = {
 }
 
 
-def _attributes(quantity: type[fw.Quantity]) -> dict[str, str]:
+def _attributes(quantity: type[quantity.Quantity]) -> dict[str, str]:
     """The CF attributes of a variable, from its quantity."""
     attributes = {
         "standard_name": quantity.standard_name,
