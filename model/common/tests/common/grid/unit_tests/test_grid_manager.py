@@ -26,6 +26,7 @@ from icon4py.model.common.grid import (
     gridfile,
     horizontal as h_grid,
     icon,
+    simple,
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -410,6 +411,58 @@ def test_grid_manager_eval_c2e2c2e(
         serialized_grid.get_connectivity("C2E2C2E").asnumpy(),
     )
     assert grid.get_connectivity("C2E2C2E").asnumpy().shape == (grid.num_cells, 9)
+
+
+def _icon_stencil_c9(c2e2c: np.ndarray) -> np.ndarray:
+    """Transcription of ICON's create_stencil_c9 (mo_intp_coeffs_lsq_bln.f90).
+
+    ICON does not compute the lateral boundary row (refin_ctrl 1), where a neighbor is missing;
+    there icon4py's convention is three -1 for each missing neighbor.
+    """
+    expected = np.empty((c2e2c.shape[0], 9), dtype=c2e2c.dtype)
+    for cell, neighbors in enumerate(c2e2c):
+        row = []
+        for neighbor in neighbors:
+            if neighbor < 0:
+                row.extend([-1, -1, -1])
+                continue
+            row.append(neighbor)
+            row.extend(n for n in c2e2c[neighbor] if n != cell)
+        expected[cell] = row
+    return expected
+
+
+@pytest.mark.with_netcdf
+@pytest.mark.parametrize(
+    "grid_description",
+    [test_defs.Grids.R02B04_GLOBAL, test_defs.Grids.MCH_CH_R04B09_DSL],
+)
+def test_grid_manager_eval_c2e2c2e2c(
+    grid_description: test_defs.GridDescription,
+    backend: gtx_typing.Backend,
+) -> None:
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
+    c2e2c = grid.get_connectivity("C2E2C").asnumpy()
+    c2e2c2e2c = grid.get_connectivity("C2E2C2E2C").asnumpy()
+    assert c2e2c2e2c.shape == (grid.num_cells, 9)
+    assert np.array_equal(c2e2c2e2c, _icon_stencil_c9(c2e2c))
+
+
+def test_construct_butterfly_cells_rejects_asymmetric_c2e2c() -> None:
+    c2e2c = np.asarray(simple.SimpleGridData().c2e2c_table).copy()
+    # cell 0 lists 15 as a neighbor, 15 no longer lists 0
+    c2e2c[15] = [12, 1, 14]
+    with pytest.raises(ValueError, match="not symmetric"):
+        gm._construct_butterfly_cells(c2e2c)
+
+
+def test_simple_grid_c2e2c2e2c_follows_construction() -> None:
+    simple_grid_data = simple.SimpleGridData()
+    c2e2c = np.asarray(simple_grid_data.c2e2c_table)
+    assert np.array_equal(np.asarray(simple_grid_data.c2e2c2e2c_table), _icon_stencil_c9(c2e2c))
+    assert np.array_equal(
+        np.asarray(simple_grid_data.c2e2c2e2c_table), gm._construct_butterfly_cells(c2e2c)
+    )
 
 
 # TODO (halungge): check EXCOAIM APE with new serialized data ( standard grid, start_idx/end_idx arrays
