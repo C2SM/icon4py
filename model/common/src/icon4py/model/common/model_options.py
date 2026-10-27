@@ -70,9 +70,6 @@ def _set_program_specific_dace_options(
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
         optimization_args.setdefault("vertical_split_allow_shared_data", True)
-        optimization_args.setdefault(
-            "vertical_split_shared_data", ("theta_v_at_edges_on_model_levels",)
-        )
         optimization_args.setdefault("vertical_split_shared_data_dimension", dimension.KDim)
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True

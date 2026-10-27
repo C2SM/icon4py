@@ -162,7 +162,6 @@ def test_setup_program_specify_inputs(
             "compute_rho_theta_pgrad_and_update_vn",
             {
                 "vertical_split_allow_shared_data": True,
-                "vertical_split_shared_data": ("theta_v_at_edges_on_model_levels",),
                 "vertical_split_shared_data_dimension": dimension.KDim,
             },
         ),
@@ -181,6 +180,7 @@ def test_selected_fusion_options(program: str, expected: dict) -> None:
     descriptor = {"optimization_args": {"optimization_hooks": {}}}
     options = model_options.get_dace_options(program, None, **descriptor)["optimization_args"]
     assert all(options[key] == value for key, value in expected.items())
+    assert "vertical_split_shared_data" not in options
     assert options.get("fuse_scan_inputs", False) == expected.get("fuse_scan_inputs", False)
     assert options.get("vertical_split_allow_shared_data", False) == expected.get(
         "vertical_split_allow_shared_data", False
