@@ -26,6 +26,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as m
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_driver,
     physics_process,
+    process_time_control,
     static_fields as physics_driver_static_fields,
 )
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
@@ -87,7 +88,7 @@ def _muphys(
     config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     static_field_factories: static_fields.StaticFieldFactories,
-    time_control: physics_process.ProcessTimeControl,
+    time_control: process_time_control.ProcessTimeControl,
     backend: gtx_backend.Backend[Any] | None,
 ) -> physics_process.PhysicsProcess[muphys_component.Muphys.Input, muphys_component.Muphys.Output]:
     if config.muphys is None:
@@ -114,7 +115,7 @@ type _ProcessBuilder = Callable[
         driver_config.ExperimentConfig,
         icon_grid.IconGrid,
         static_fields.StaticFieldFactories,
-        physics_process.ProcessTimeControl,
+        process_time_control.ProcessTimeControl,
         gtx_backend.Backend[Any] | None,
     ],
     physics_process.PhysicsProcess[Any, Any],
@@ -511,7 +512,7 @@ def initialize_granules(
         )
 
     physics_granule: physics_driver.PhysicsDriver | None = None
-    time_control = physics_process.ProcessTimeControl(
+    time_control = process_time_control.ProcessTimeControl(
         interval=config.driver.dtime,
         start_date=config.driver.start_of_simulation,
         end_date=model_time_variables.simulation_end_datetime,

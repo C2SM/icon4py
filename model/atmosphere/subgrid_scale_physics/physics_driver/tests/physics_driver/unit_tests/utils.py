@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_driver,
     physics_process,
     physics_state,
+    process_time_control,
     static_fields,
 )
 from icon4py.model.common import dimension as dims, framework as fw
@@ -36,8 +37,10 @@ def time_control(
     interval: datetime.timedelta = DT,
     start: datetime.datetime = T0,
     end: datetime.datetime = T0 + datetime.timedelta(days=1),
-) -> physics_process.ProcessTimeControl:
-    return physics_process.ProcessTimeControl(interval=interval, start_date=start, end_date=end)
+) -> process_time_control.ProcessTimeControl:
+    return process_time_control.ProcessTimeControl(
+        interval=interval, start_date=start, end_date=end
+    )
 
 
 def driver(
@@ -140,7 +143,7 @@ class Recorder(fw.Component):
 
 
 def recording(
-    outputs: fw.State, time_control: physics_process.ProcessTimeControl
+    outputs: fw.State, time_control: process_time_control.ProcessTimeControl
 ) -> tuple[physics_process.PhysicsProcess[physics_state.EntryState, fw.State], Recorder]:
     """A process with a fixed output, running a `Recorder` on the whole entry state."""
     recorder = Recorder()
