@@ -741,15 +741,31 @@ def _construct_butterfly_cells(
 
     For example, for the shape above, c0 -> (c1, c4, c9, c2, c7, c8, c3, c5, c6).
 
+    Each direct neighbor is followed by its own neighbors except the central cell, in the order
+    of c2e2c. This is the 9-point stencil of ICON's `create_stencil_c9`
+    (mo_intp_coeffs_lsq_bln.f90), so the columns match ICON's `lsq_idx_c` for `lsq_dim_c = 9`.
+    A missing direct neighbor (-1) yields three -1 entries.
+
     Args:
         c2e2c: shape (n_cells, 3) connectivity table from a central cell to its cell neighbors
     Returns:
         ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring cells of its cell neighbors
     """
     array_ns = data_alloc.array_namespace(c2e2c)
+    n_cells = c2e2c.shape[0]
     dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
-    c2e2c2e2c = array_ns.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
-    return c2e2c2e2c
+    # shape (n_cells, 3, 3): neighbors of each direct neighbor, one of which is the central cell
+    neighbors_of_neighbors = dummy_c2e2c[c2e2c, :]
+    central_cell = array_ns.arange(n_cells, dtype=c2e2c.dtype)[:, None, None]
+    is_central = neighbors_of_neighbors == central_cell
+    if not array_ns.all(array_ns.any(is_central, axis=-1) | (c2e2c < 0)):
+        raise ValueError("c2e2c is not symmetric: a neighbor does not list the central cell.")
+    # position of the central cell, 0 for a missing neighbor (its row is all -1)
+    central_pos = array_ns.argmax(is_central, axis=-1)
+    others = array_ns.asarray([[1, 2], [0, 2], [0, 1]])[central_pos]
+    second_ring = array_ns.take_along_axis(neighbors_of_neighbors, others, axis=-1)
+    c2e2c2e2c = array_ns.concatenate((c2e2c[:, :, None], second_ring), axis=-1)
+    return array_ns.reshape(c2e2c2e2c, (n_cells, 9))
 
 
 def _patch_with_dummy_lastline(ar):
