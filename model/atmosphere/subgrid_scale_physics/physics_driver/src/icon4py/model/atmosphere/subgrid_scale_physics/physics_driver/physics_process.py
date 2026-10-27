@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_
 from icon4py.model.common import framework as fw
 
 
-__all__ = ["PhysicsProcess", "ProcessTimeControl"]
+__all__ = ["PhysicsProcess"]
 
 
 class _Runs[I, O](Protocol):
