@@ -8,7 +8,7 @@
 
 """The two-layer coupling pieces of the PhysicsDriver.
 
-The ``PhysicsState`` facade the processes read, and the ``Tendencies`` that advance it
+The ``PhysicsState`` layer the processes read, and the ``Tendencies`` that advance it
 sequentially, as ICON AES does: each process sees the state the previous ones have already
 updated, and exner, theta_v and vn are updated once at the end.
 """
@@ -262,8 +262,8 @@ class PhysicsState:
     ) -> dict[str, gtx.Field]:
         """Allocate the process's diagnostic output buffers from their metadata and keep them.
 
-        (TODO Yilu): I think these should also be linked back to some global variables.
-        And not all outputs should be allocated or linked here.
+        The buffers are the home of each process's diagnostics until the output layer
+        links them to model-level fields.
 
         Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
         is a diagnostic. Tendencies stay component-owned: ``Tendencies`` sums
