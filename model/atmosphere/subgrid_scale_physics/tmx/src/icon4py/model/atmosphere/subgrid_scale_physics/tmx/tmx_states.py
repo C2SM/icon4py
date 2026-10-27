@@ -87,22 +87,6 @@ class TmxInterpolationState:
 
 
 @dataclasses.dataclass(frozen=True)
-class TmxSurfaceFluxState:
-    """Surface fluxes provided by the surface scheme (inputs to the atmospheric diffusion)."""
-
-    evapotranspiration: fa.CellField[ta.wpfloat]
-    """Surface evapotranspiration flux (`evspsbl`) [kg/(m^2 s)]."""
-    sensible_heat_flux: fa.CellField[ta.wpfloat]
-    """Surface sensible heat flux (`hfss`) [W/m^2]."""
-    u_stress: fa.CellField[ta.wpfloat]
-    """Zonal surface wind stress (`tauu`) [N/m^2]."""
-    v_stress: fa.CellField[ta.wpfloat]
-    """Meridional surface wind stress (`tauv`) [N/m^2]."""
-    q_snocpymlt: fa.CellField[ta.wpfloat]
-    """Heat used to melt snow on the canopy (`q_snocpymlt`), zero off land [W/m^2]."""
-
-
-@dataclasses.dataclass(frozen=True)
 class TmxInputState:
     """Atmospheric input fields of tmx (``t_vdf_atmo_inputs`` in mo_vdf_atmo_memory.f90)."""
 
@@ -134,8 +118,6 @@ class TmxInputState:
     """Air density on full levels [kg/m^3]."""
     air_mass: fa.CellKField[ta.wpfloat]
     """Air mass per unit area (`mair`) on full levels [kg/m^2]."""
-    cv_air: fa.CellKField[ta.wpfloat]
-    """Isochoric heat capacity of the air per unit area (`cvair`) on full levels [J/(K m^2)]."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -143,6 +125,12 @@ class TmxDiagnosticState:
     """Diagnostic fields of tmx (``t_vdf_atmo_diags`` in mo_vdf_atmo_memory.f90)."""
 
     # cell, full levels
+    cv_air: fa.CellKField[ta.wpfloat]
+    """
+    Isochoric heat capacity of the air per unit area (`cvair`) on full levels [J/(K m^2)].
+    Computed here from the tracers and the air mass (``get_cvair`` in mo_aes_phy_diag.f90), where
+    ICON passes it to tmx as the input ``cv_air_c``.
+    """
     theta_v: fa.CellKField[ta.wpfloat]
     """Virtual potential temperature at cell centers on full levels [K]."""
     cptgz: fa.CellKField[ta.wpfloat]
@@ -223,6 +211,7 @@ class TmxDiagnosticState:
             data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
         )
         return cls(
+            cv_air=zero_field(dims.CellDim, dims.KDim),
             theta_v=zero_field(dims.CellDim, dims.KDim),
             cptgz=zero_field(dims.CellDim, dims.KDim),
             div_c=zero_field(dims.CellDim, dims.KDim),
