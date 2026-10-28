@@ -76,7 +76,7 @@ at distances larger than _MAX_BOUNDARY_DISTANCE are labeled as _UNORDERED
    /     \/     \/     \/
    3------3------3------3 <- row 3 VERTICES
   / \    / \    / \    /
- /   \  /   \  /   \  /
+ /  \  /   \  /   \  /
 /_____\/_____\/_____\/
 
 ## EDGES:
@@ -179,38 +179,31 @@ def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
             raise ValueError(f"Invalid domain: {domain}, must be a HALO domain")
 
 
-def compute_domain_bounds(
+def _compute_halo_domain_bounds_for_distributed_grid(
     dim: gtx.Dimension,
-    refinement_fields: dict[gtx.Dimension, gtx.Field],
+    refinement_ctrl: data_alloc.NDArray,
     decomposition_info: decomposition.DecompositionInfo,
-) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
+    start_indices: dict,
+    end_indices: dict,
+) -> None:
     """
-    Compute the domain bounds (start_index, end_index) based on a grid Domain.
+    Compute halo domain bounds for a distributed grid.
 
-    In a local area model, ICON orders the field arrays according to their distance from the boundary. For each
-    dimension (cell, vertex, edge) points are "ordered" (moved to the beginning of the array) up to
-    the values defined in _GRID_REFINEMENT_BOUNDARY_WIDTH. We call these distance a Grid Zone. The `Dimension`
-    and the `Zone` determine a Grid `Domain`. For a given field values for a domain are located
-    in a contiguous section of the field array.
+    IconLikeHaloConstructor lays out the local arrays as:
+        [owned | halo_level_1 | halo_level_2 | halo_level_3]
 
-    This function can be used to deterine the start_index and end_index of a `Domain`in the arrays.
+    This differs from ICON's own memory layout, where some lateral-boundary
+    halo points are interspersed with the lateral-boundary owned points at the
+    front of the array.  The refinement-value scan used for the single-rank
+    case therefore yields wrong indices on a distributed grid: it looks for the
+    minimum array position of halo entries whose refinement value is above the
+    lateral-boundary threshold, but on IconLikeHaloConstructor's layout those
+    entries are at arbitrary positions inside the contiguous halo block.
 
-    For a global model grid all points are unordered. `Zone` that do not exist for a global model grid
-    return empty domains.
-
-    For distributed grids halo points build their own `Domain`and are located at the end of the field arrays, with the exception of
-    some points in the lateral boundary as described in (_refinement_level_placed_with_halo)
-
-    Args:
-        dim: Dimension one of `CellDim`. `VertexDim`, `EdgeDim`
-        refinement_fields: dict[Dimension, ndarray] containing the refinement_control values for each dimension
-        decomposition_info: DecompositionInfo needed to determine the HALO `Zone`s
-
+    Instead, we derive the boundaries directly from the decomposition info:
+    the owned count gives the exact start of the first halo level, and each
+    subsequent level follows contiguously.
     """
-    assert dim.kind == gtx.DimensionKind.HORIZONTAL, (
-        f"Dimension must be one of {list(dims.horizontal_dims())}"
-    )
-    refinement_ctrl = convert_to_non_nested_refinement_values(refinement_fields[dim].ndarray, dim)
     array_ns = data_alloc.array_namespace(refinement_ctrl)
     owned = decomposition_info.owner_mask(dim)
     halo_level_1 = decomposition_info.halo_level_mask(
@@ -219,15 +212,62 @@ def compute_domain_bounds(
     halo_level_2 = decomposition_info.halo_level_mask(
         dim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL
     )
+    owned_count = int(array_ns.sum(owned).item())
+    halo_1_count = int(array_ns.sum(halo_level_1).item())
+    halo_2_count = int(array_ns.sum(halo_level_2).item())
+    if dim == dims.EdgeDim:
+        halo_level_3 = decomposition_info.halo_level_mask(
+            dim, decomposition.DecompositionFlag.THIRD_HALO_LEVEL
+        )
+        halo_3_count = int(array_ns.sum(halo_level_3).item())
+    else:
+        halo_3_count = 0
 
-    start_indices = {}
-    end_indices = {}
+    h1_start = owned_count
+    h1_end = owned_count + halo_1_count
+    h2_start = h1_end
+    h2_end = h2_start + halo_2_count
+    h3_start = h2_end
+    h3_end = h3_start + halo_3_count
 
-    end_domain = h_grid.domain(dim)(h_grid.Zone.END)
-    start_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
-    end_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
 
-    halo_domains = h_grid.get_halo_domains(dim)
+    h1 = h_grid.domain(dim)(h_grid.Zone.HALO)
+    h2 = h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2)
+
+    start_indices[h1] = gtx.int32(h1_start)
+    end_indices[h1] = gtx.int32(h1_end)
+    start_indices[h2] = gtx.int32(h2_start)
+    end_indices[h2] = gtx.int32(h2_end)
+
+    # HALO_LEVEL_3 only exists for EdgeDim (closing edges of halo cells).
+    # CellDim and VertexDim do not have a third halo level in the domain schema.
+    if dim == dims.EdgeDim:
+        h3 = h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_3)
+        start_indices[h3] = gtx.int32(h3_start)
+        end_indices[h3] = gtx.int32(h3_end)
+
+
+def _compute_halo_domain_bounds_for_single_rank(
+    dim: gtx.Dimension,
+    refinement_ctrl: data_alloc.NDArray,
+    decomposition_info: decomposition.DecompositionInfo,
+    start_indices: dict,
+    end_indices: dict,
+) -> None:
+    """
+    Compute halo domain bounds for a single-rank (non-distributed) grid.
+
+    Uses the original refinement-value scan which matches ICON's memory layout.
+    On a single rank there are no halos so this produces empty domains.
+    """
+    array_ns = data_alloc.array_namespace(refinement_ctrl)
+    halo_level_1 = decomposition_info.halo_level_mask(
+        dim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL
+    )
+    halo_level_2 = decomposition_info.halo_level_mask(
+        dim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL
+    )
+
     upper_boundary_level_1 = _refinement_level_placed_with_halo(
         h_grid.domain(dim)(h_grid.Zone.HALO)
     )
@@ -237,13 +277,14 @@ def compute_domain_bounds(
         refinement_ctrl
         > _refinement_level_placed_with_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
     )
-
     halo_region_2 = array_ns.nonzero(halo_level_2 & not_lateral_boundary_2)[0]
     start_halo_2, end_halo_2 = (
         (array_ns.min(halo_region_2).item(), array_ns.max(halo_region_2).item() + 1)
         if halo_region_2.size > 0
         else (refinement_ctrl.size, refinement_ctrl.size)
     )
+
+    halo_domains = h_grid.get_halo_domains(dim)
     for domain in halo_domains:
         match domain.zone:
             case h_grid.Zone.HALO:
@@ -269,6 +310,65 @@ def compute_domain_bounds(
                 )
         start_indices[domain] = gtx.int32(start_index)  # type: ignore [attr-defined]
         end_indices[domain] = gtx.int32(end_index)  # type: ignore [attr-defined]
+
+
+def compute_domain_bounds(
+    dim: gtx.Dimension,
+    refinement_fields: dict[gtx.Dimension, gtx.Field],
+    decomposition_info: decomposition.DecompositionInfo,
+) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
+    """
+    Compute the domain bounds (start_index, end_index) based on a grid Domain.
+
+    In a local area model, ICON orders the field arrays according to their distance from the boundary. For each
+    dimension (cell, vertex, edge) points are "ordered" (moved to the beginning of the array) up to
+    the values defined in _GRID_REFINEMENT_BOUNDARY_WIDTH. We call these distance a Grid Zone. The `Dimension`
+    and the `Zone` determine a Grid `Domain`. For a given field values for a domain are located
+    in a contiguous section of the field array.
+
+    This function can be used to deterine the start_index and end_index of a `Domain`in the arrays.
+
+    For a global model grid all points are unordered. `Zone` that do not exist for a global model grid
+    return empty domains.
+
+    For distributed grids halo points build their own `Domain`and are located at the end of the field arrays.
+    IconLikeHaloConstructor lays out arrays as [owned | halo_level_1 | halo_level_2 | halo_level_3],
+    so halo boundaries are derived directly from the decomposition_info owner/halo counts rather than
+    from scanning refinement values (which only matches ICON's own non-contiguous halo layout).
+
+    Args:
+        dim: Dimension one of `CellDim`. `VertexDim`, `EdgeDim`
+        refinement_fields: dict[Dimension, ndarray] containing the refinement_control values for each dimension
+        decomposition_info: DecompositionInfo needed to determine the HALO `Zone`s
+
+    """
+    assert dim.kind == gtx.DimensionKind.HORIZONTAL, (
+        f"Dimension must be one of {list(dims.horizontal_dims())}"
+    )
+    refinement_ctrl = convert_to_non_nested_refinement_values(refinement_fields[dim].ndarray, dim)
+    array_ns = data_alloc.array_namespace(refinement_ctrl)
+    owned = decomposition_info.owner_mask(dim)
+
+
+    start_indices = {}
+    end_indices = {}
+
+    end_domain = h_grid.domain(dim)(h_grid.Zone.END)
+    start_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
+    end_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
+
+    # Halo domain bounds depend on the memory layout, which differs between
+    # single-rank (ICON's own layout, non-contiguous halos in the LAM case)
+    # and distributed runs (IconLikeHaloConstructor's layout: all owned first,
+    # then contiguous halo levels).
+    if decomposition_info.is_distributed():
+        _compute_halo_domain_bounds_for_distributed_grid(
+            dim, refinement_ctrl, decomposition_info, start_indices, end_indices
+        )
+    else:
+        _compute_halo_domain_bounds_for_single_rank(
+            dim, refinement_ctrl, decomposition_info, start_indices, end_indices
+        )
 
     ordered_domains = h_grid.get_ordered_domains(dim)
     for domain in ordered_domains:

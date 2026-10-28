@@ -13,6 +13,7 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING
 
+import numpy as np
 import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common import dimension as dims, model_backends
@@ -44,29 +45,34 @@ def read_from_file(
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> data_alloc.NDArray:
-    """Initialise prognostic state from a serialised ICON initial-condition snapshot.
+    """Read the topography field from a serialised ICON snapshot.
 
-    Reads ``prognostics / initial-state`` from the serialbox archive located at
-    ``parameters.data_path``.  All other physics arguments are accepted but
-    ignored so that this function shares the same call signature as the
-    analytical initial-condition functions (``jablonowski_williamson``,
-    ``gauss3d``, …) and can be stored transparently in
-    `~icon4py.model.common.initial_condition.create`.
+    Always reads from the single-rank (global) serialbox archive
+    ``icon_pydycore_rank0`` and selects local rows using the rank's global
+    cell indices.  The caller is responsible for pointing ``config.data_path``
+    at the single-rank ser_data directory (``mpitask1_*``), which contains
+    the full global topography field.
+
+    ``local_indices`` is converted to numpy before indexing because on GPU
+    backends ``decomposition_info.global_index()`` returns a CuPy array,
+    which cannot index a numpy serialbox buffer.
     """
-
     allocator = model_backends.get_allocator(backend)
     array_ns = data_alloc.import_array_ns(allocator)
 
-    fname = f"icon_pydycore_rank{exchange.my_rank()}"
     data_path = config.data_path
 
-    ser = serialbox.Serializer(serialbox.OpenModeKind.Read, str(data_path), fname)
-    sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()
-    log.debug("Reading prognostics initial-state from %s / %s", data_path, fname)
-
-    local_indices = grid_manager.decomposition_info.global_index(
-        dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.ALL
+    ser = serialbox.Serializer(
+        serialbox.OpenModeKind.Read, str(data_path), "icon_pydycore_rank0"
     )
-    return array_ns.asarray(array_ns.squeeze(ser.read("topography", sp).astype(float)))[
-        local_indices
-    ]
+    sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()
+    log.debug("Reading topography from %s / icon_pydycore_rank0", data_path)
+
+    # global_index() may return CuPy on GPU backends; np.asarray converts safely.
+    local_indices = np.asarray(
+        grid_manager.decomposition_info.global_index(
+            dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.ALL
+        )
+    )
+    global_topo = np.squeeze(ser.read("topography", sp).astype(float))
+    return array_ns.asarray(global_topo[local_indices])

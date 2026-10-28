@@ -107,12 +107,17 @@ def _run_driver_compare_single_multi_rank(
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
-    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
-
-    config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
-
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
-    single_rank_config = config.with_overrides(
+    if process_props.rank == 0:
+        dt_utils.download_experiment(experiment_description, single_rank_process_props)
+    process_props.comm.Barrier()
+
+    single_rank_config_path = dt_utils.get_path_for_experiment(
+        experiment_description, single_rank_process_props
+    )
+    single_rank_config = driver_config.read_experiment_config_from_yaml(
+        single_rank_config_path / "config.yml"
+    ).with_overrides(
         driver={
             "output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}",
             "end_of_simulation": end_of_simulation,
@@ -131,7 +136,27 @@ def _run_driver_compare_single_multi_rank(
         backend=backend,
     )
 
-    multi_rank_config = config.with_overrides(
+    multi_rank_config_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+
+    # JablonowskiWilliamsonConfig, Gauss3DConfig and similar analytic initial
+    # conditions have no data_path (they don't read from serialbox files).
+    # Only forward the override when the attribute actually exists.
+    ic_override = (
+        {"initial_condition": {"data_path": single_rank_config.initial_condition.data_path}}
+        if hasattr(single_rank_config.initial_condition, "data_path")
+        else {}
+    )
+    topo_override = (
+        {"topography": {"data_path": single_rank_config.topography.data_path}}
+        if hasattr(single_rank_config.topography, "data_path")
+        else {}
+    )
+
+    multi_rank_config = driver_config.read_experiment_config_from_yaml(
+        multi_rank_config_path / "config.yml"
+    ).with_overrides(
+        **ic_override,
+        **topo_override,
         driver={
             "output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
             "end_of_simulation": end_of_simulation,

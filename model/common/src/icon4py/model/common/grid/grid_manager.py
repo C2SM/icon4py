@@ -133,11 +133,10 @@ class GridManager:
         allocator: gtx_typing.Allocator,
         geometry_type: icon.GeometryType,
     ) -> CoordinateDict:
-        my_cell_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
-        my_edge_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
-        my_vertex_indices = data_alloc.as_numpy(
-            self._decomposition_info.global_index(dims.VertexDim)
-        )
+        # global_index() returns CuPy on GPU backends; the reader expects numpy.
+        my_cell_indices = np.asarray(self._decomposition_info.global_index(dims.CellDim))
+        my_edge_indices = np.asarray(self._decomposition_info.global_index(dims.EdgeDim))
+        my_vertex_indices = np.asarray(self._decomposition_info.global_index(dims.VertexDim))
         coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -248,20 +247,41 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
-        my_cell_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
-        my_edge_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
-        my_vertex_indices = data_alloc.as_numpy(
-            self._decomposition_info.global_index(dims.VertexDim)
-        )
+        # global_index() returns a CuPy array on GPU backends. Convert to numpy
+        # here because every use in this method feeds into the grid-file reader
+        # (which expects numpy) or into a plain numpy slice. The final gtx.Field
+        # objects are placed on the correct device via the allocator argument of
+        # gtx.as_field, so this host-side conversion is safe.
+        my_cell_indices = np.asarray(self._decomposition_info.global_index(dims.CellDim))
+        my_edge_indices = np.asarray(self._decomposition_info.global_index(dims.EdgeDim))
+        my_vertex_indices = np.asarray(self._decomposition_info.global_index(dims.VertexDim))
         vertex_edge_orientation = self._reader.int_variable(
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
             transpose=True,
             apply_offset=False,
             indices=my_vertex_indices,
         )
-
+        # Mask slots where no edge exists in the global grid.
+        #
+        # IMPORTANT: read the FULL global V2E table (no indices= restriction) and
+        # then numpy-slice to local vertex rows. Do NOT use:
+        #   self._get_index_field(V2E, indices=my_vertex_indices)
+        # because _get_index_field forwards indices= to the grid-file reader, which
+        # returns only the locally-partitioned rows of V2E. On a LAM grid those rows
+        # have INVALID_INDEX (-1) for edges that exist globally but are owned by other
+        # MPI ranks — zeroing those orientations is wrong and causes the
+        # test_edge_orientation_on_vertex failure on exclaim_ch_r04b09_dsl.
+        #
+        # Using the full global table and slicing with my_vertex_indices gives the
+        # correct mask: only pentagonal-vertex slots (where the 6th edge genuinely
+        # does not exist anywhere in the grid) are zeroed.
         global_v2e = self._get_index_field(gridfile.ConnectivityName.V2E)
-        vertex_edge_validity = global_v2e[my_vertex_indices, :] != gridfile.GridFile.INVALID_INDEX
+        local_v2e = global_v2e[my_vertex_indices, :]
+        vertex_edge_orientation = np.where(
+            local_v2e != gridfile.GridFile.INVALID_INDEX,
+            vertex_edge_orientation,
+            0,
+        )
 
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
@@ -329,11 +349,6 @@ class GridManager:
                 vertex_edge_orientation,
                 allocator=allocator,
             ),
-            gridfile.GeometryName.VERTEX_EDGE_VALIDITY.value: gtx.as_field(
-                (dims.VertexDim, dims.V2EDim),
-                vertex_edge_validity,
-                allocator=allocator,
-            ),
         }
 
     def _read_grid_refinement_fields(
@@ -361,7 +376,9 @@ class GridManager:
                 (dim,),
                 self._reader.int_variable(
                     name,
-                    indices=data_alloc.as_numpy(self._decomposition_info.global_index(dim)),
+                    # global_index() returns CuPy on GPU backends; the reader
+                    # expects numpy, so convert explicitly.
+                    indices=np.asarray(self._decomposition_info.global_index(dim)),
                     transpose=False,
                     apply_offset=False,
                 ),
