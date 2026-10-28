@@ -277,7 +277,8 @@ markers = [
   "infinite_concat_where",
   "gtfn_too_slow",
   "continuous_benchmarking",
-  "benchmark_only: benchmark only tests without verification"
+  "benchmark_only: benchmark only tests without verification",
+  "snapshots: snapshot tests for textual TUI apps (like config docs)"
 ]
 # add all namespace packages to pythonpath to make them available for pytest
 pythonpath = [
