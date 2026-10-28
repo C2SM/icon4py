@@ -233,6 +233,8 @@ def initialize_granules(
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
+    process_props: decomposition_defs.ProcessProperties,
+    decomposition_info: decomposition_defs.DecompositionInfo,
 ) -> Granules:
     geometry_field_source = static_field_factories.geometry
     interpolation_field_source = static_field_factories.interpolation
@@ -537,7 +539,8 @@ def initialize_granules(
             interpolation=interpolation_field_source,
             metrics=metrics_field_source,
             backend=backend,
-            exchange=exchange,
+            process_props=process_props,
+            decomposition_info=decomposition_info,
         )
 
     return Granules(
