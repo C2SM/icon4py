@@ -150,7 +150,7 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
             h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
-        geometry_type=int(geometry_type.value),
+        geometry_type=geometry_type,
         exchange=decomposition.SingleNodeExchange(),
     )
 

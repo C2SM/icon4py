@@ -1289,7 +1289,7 @@ def compute_lsq_coeffs(
     lsq_wgt_exp: int,
     start_idx: int,
     min_rlcell_int: int,
-    geometry_type: int,
+    geometry_type: icon_grid.GeometryType,
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     if lsq_dim_unk != 2:
@@ -1303,7 +1303,7 @@ def compute_lsq_coeffs(
 
     array_ns = data_alloc.array_namespace(cell_center_x)
     z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
-    match icon_grid.GeometryType(geometry_type):
+    match geometry_type:
         case icon_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_c):
                 z_dist_g[:, js, :] = projection.gnomonic_proj(

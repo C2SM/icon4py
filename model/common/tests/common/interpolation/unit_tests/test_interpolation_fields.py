@@ -453,6 +453,8 @@ def test_compute_lsq_coeffs(
     icon_grid: icon.IconGrid,
     backend: gtx_typing.Backend,
 ) -> None:
+    geometry_type = icon_grid.grid_params.geometry_type
+    assert geometry_type is not None
     lsq_pseudoinv = compute_lsq_coeffs(
         cell_center_x=grid_savepoint.cell_center_cart_x().ndarray,
         cell_center_y=grid_savepoint.cell_center_cart_y().ndarray,
@@ -472,7 +474,7 @@ def test_compute_lsq_coeffs(
         lsq_wgt_exp=experiment.config.interpolation.lsq_wgt_exp,
         start_idx=icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         min_rlcell_int=icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
-        geometry_type=icon_grid.grid_params.geometry_type,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        geometry_type=geometry_type,
         exchange=decomposition.SingleNodeExchange(),
     )
 
