@@ -9,18 +9,21 @@
 
 import dataclasses
 import typing
+from typing import Any
 
 import numpy as np
 from gt4py.next.embedded.nd_array_field import NdArrayField
 
 
 try:
-    import cupy as cp
+    import cupy as cp  # type: ignore[import-not-found]  # optional dependency without stubs
 except ImportError:
     cp = None
 
 
-def compare_values_shallow(value1, value2, obj_name="value"):  # noqa: PLR0911, PLR0912
+def compare_values_shallow(  # noqa: PLR0911, PLR0912
+    value1: Any, value2: Any, obj_name: str = "value"
+) -> tuple[bool, str | None]:
     # Handle comparison of NdArrayField objects
     if isinstance(value1, NdArrayField) and isinstance(value2, NdArrayField):
         try:
@@ -59,7 +62,7 @@ def compare_values_shallow(value1, value2, obj_name="value"):  # noqa: PLR0911, 
     # Check if both values are instances of numpy scalar types
     if isinstance(value1, np.ScalarType) and isinstance(value2, np.ScalarType):
         if value1 != value2:
-            return False, f"Value mismatch for {obj_name}: {value1} != {value2}"
+            return False, f"Value mismatch for {obj_name}: {value1!r} != {value2!r}"
         return True, None
 
     # Handle comparison of numpy array objects
@@ -86,7 +89,7 @@ def compare_values_shallow(value1, value2, obj_name="value"):  # noqa: PLR0911, 
         return True, None
 
 
-def _optional_fields(obj) -> frozenset[str]:
+def _optional_fields(obj: Any) -> frozenset[str]:
     """Dataclass fields whose annotation admits ``None``."""
     if not dataclasses.is_dataclass(obj):
         return frozenset()
@@ -95,11 +98,11 @@ def _optional_fields(obj) -> frozenset[str]:
     )
 
 
-def compare_objects(obj1, obj2, obj_name="object"):  # noqa: PLR0911
+def compare_objects(obj1: Any, obj2: Any, obj_name: str = "object") -> tuple[bool, str | None]:  # noqa: PLR0911
     # Check if both objects are instances of numpy scalar types
     if isinstance(obj1, np.ScalarType) and isinstance(obj2, np.ScalarType):
         if obj1 != obj2:
-            return False, f"Value mismatch for {obj_name}: {obj1} != {obj2}"
+            return False, f"Value mismatch for {obj_name}: {obj1!r} != {obj2!r}"
         return True, None
 
     # Check if both objects are lists

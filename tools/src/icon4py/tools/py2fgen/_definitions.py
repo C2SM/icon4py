@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from collections.abc import Callable, Mapping
-from typing import TYPE_CHECKING, Any, TypeAlias
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, Protocol, TypeAlias
 
 import cffi
 import numpy as np
@@ -101,9 +101,8 @@ if TYPE_CHECKING:
 else:
     type NDArray = np.ndarray
 
-type MapperType = (
-    Callable[[ArrayInfo, cffi.FFI], Any]
-    | Callable[[bool, cffi.FFI], Any]
-    | Callable[[int, cffi.FFI], Any]
-    | Callable[[float, cffi.FFI], Any]
-)
+
+class MapperType(Protocol):
+    """A Fortran-to-Python value mapper; ``ffi`` is always passed by keyword."""
+
+    def __call__(self, value: Any, *, ffi: cffi.FFI) -> Any: ...
