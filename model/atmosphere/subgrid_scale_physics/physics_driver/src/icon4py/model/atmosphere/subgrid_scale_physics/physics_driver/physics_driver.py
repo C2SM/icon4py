@@ -107,9 +107,8 @@ class PhysicsDriver:
 
     In one timestep (``run``) the PhysicsState is diagnosed once from the model
     state, then the processes run in list order. The coupling is sequential: each
-    process's tendencies are added to some variables in place before the next one
-    runs (see ``Tendencies.advance``). Tendency outputs are summed over the
-    processes.
+    process's tendencies are summed over the processes (``Tendencies.accumulate``)
+    and added to the state in place before the next one runs (``Tendencies.advance``).
 
     The driver owns the halo exchanges of the interface, as ICON's
     ``mo_interface_iconam_aes``: the summed wind tendencies before their projection
@@ -132,13 +131,15 @@ class PhysicsDriver:
         self._exchange = decomposition.create_exchange(process_props, decomposition_info)
         for process in processes:
             process.component.bind_output_buffers(
-                state.allocate_process_outputs(process.name, process.component.outputs_properties)
+                state.allocate_process_diagnostics(
+                    process.name, process.component.outputs_properties
+                )
             )
 
     @property
-    def process_outputs(self) -> Mapping[str, Mapping[str, gtx.Field]]:
+    def process_diagnostics(self) -> Mapping[str, Mapping[str, gtx.Field]]:
         """The diagnostic output buffers of every process, keyed by process name."""
-        return self._state.process_outputs
+        return self._state.process_diagnostics
 
     @classmethod
     def from_sources(
@@ -161,11 +162,13 @@ class PhysicsDriver:
         return cls(
             processes,
             state=physics_state.PhysicsState(
-                grid=grid, interpolation=interpolation, metrics=metrics, backend=backend
+                grid=grid,
+                geometry=geometry,
+                interpolation=interpolation,
+                metrics=metrics,
+                backend=backend,
             ),
-            tendencies=physics_state.Tendencies(
-                grid=grid, geometry=geometry, interpolation=interpolation, backend=backend
-            ),
+            tendencies=physics_state.Tendencies(grid=grid, backend=backend),
             process_props=process_props,
             decomposition_info=decomposition_info,
         )
@@ -191,20 +194,23 @@ class PhysicsDriver:
         # every step; revisit when the tmx time step is read from the configuration.
         for process in self._processes:
             outputs = process.run(self._state, step_start_datetime, dtime)
-            self._tendencies.advance(
-                self._state, outputs, process.component.outputs_properties, dt_seconds
-            )
+            outputs_properties = process.component.outputs_properties
+            # the step's totals, and the state the next process reads
+            self._tendencies.accumulate(outputs, outputs_properties)
+            self._tendencies.advance(self._state, outputs, outputs_properties, dt_seconds)
         # an owned edge projects the summed wind tendencies of its two adjacent cells
         # onto vn, and one of them may be a halo cell: sync the sums first, the sync
         # of vn at the end only repairs halo edges
         sums = self._tendencies.sums
-        self._exchange.exchange(
-            dims.CellDim,
-            sums[physics_state.tendency_name("u")],
-            sums[physics_state.tendency_name("v")],
-        )
-        written_cells, written_edges = self._tendencies.update_prognostics(
-            self._state, dt_seconds, perturbed_exner
+        wind_sums = [
+            sums[name]
+            for name in (physics_state.tendency_name("u"), physics_state.tendency_name("v"))
+            if name in sums
+        ]
+        if wind_sums:
+            self._exchange.exchange(dims.CellDim, *wind_sums)
+        written_cells, written_edges = self._state.update_prognostics(
+            self._tendencies.sums, dt_seconds, perturbed_exner
         )
         # the end-of-interface sync of what the physics wrote
         if written_cells:
