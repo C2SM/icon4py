@@ -15,8 +15,6 @@ updated, and exner, theta_v and vn are updated once at the end.
 
 from __future__ import annotations
 
-import dataclasses
-import functools
 from typing import TYPE_CHECKING, Final
 
 import gt4py.next as gtx
@@ -41,7 +39,6 @@ from icon4py.model.common.physics.thermodynamics import (
     compute_tendencies,
 )
 from icon4py.model.common.states import model
-from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -68,57 +65,11 @@ def tendency_name(name: str) -> str:
     return f"tend_{name}"
 
 
-@dataclasses.dataclass(frozen=True)
-class SurfaceState:
-    """The surface fields the surface process writes and the other processes read.
-
-    Allocated once with the ``PhysicsState``, zero until the surface process has run. The
-    surface process's outputs are bound to these fields, so it writes them in place, and tmx
-    (later radiation) reads them here rather than another process's outputs by name.
-    """
-
-    fluxes: SurfaceFluxState
-    """The surface fluxes tmx takes as its bottom boundary condition."""
-    exchange_coefficient_momentum: fa.CellField[ta.wpfloat]
-    """Surface exchange coefficient for momentum (``km_sfc``), the lowest level of tmx's ``km``."""
-    exchange_coefficient_heat: fa.CellField[ta.wpfloat]
-    """Surface exchange coefficient for heat (``kh_sfc``), the lowest level of tmx's ``kh``."""
-    surface_temperature: fa.CellField[ta.wpfloat]
-    """Surface temperature (``ts``) [K]."""
-
-    @classmethod
-    def allocate(
-        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
-    ) -> SurfaceState:
-        """Allocate a surface state with all fields initialized to zero."""
-        zero_cell_field = functools.partial(
-            data_alloc.zero_field, grid, dims.CellDim, allocator=allocator
-        )
-        return cls(
-            fluxes=SurfaceFluxState.allocate(grid, allocator=allocator),
-            exchange_coefficient_momentum=zero_cell_field(),
-            exchange_coefficient_heat=zero_cell_field(),
-            surface_temperature=zero_cell_field(),
-        )
-
-    def fields(self) -> dict[str, gtx.Field]:
-        """The fields, flat, by the names the processes declare them with."""
-        return {
-            **{
-                field.name: getattr(self.fluxes, field.name)
-                for field in dataclasses.fields(self.fluxes)
-            },
-            "exchange_coefficient_momentum": self.exchange_coefficient_momentum,
-            "exchange_coefficient_heat": self.exchange_coefficient_heat,
-            "surface_temperature": self.surface_temperature,
-        }
-
-
 class PhysicsState:
-    """What the processes see in one step (ICON dyn2phy, ``field%ta`` / ``diag%``), in four parts.
+    """What the processes see in one step (ICON dyn2phy, ``field%ta`` / ``diag%``), in three parts.
 
-    TODO (Yilu): The states in this module need to be vigorously improved when state and component is ready.
-    They are workaround so that the refactoring for sequential run is minimal and the advanced variables are clear to users/developers.
+    TODO (Yilu): this state and ``Tendencies`` are the untyped stand-ins for the typed
+    states of #1510; restructure them on top of it once it is merged.
 
     1. Set pointers into the model state (``exner``, ``theta_v``, ``rho``, ``vn``,
        ``w``, ``tracers``, and ``air_mass``, the dycore's air mass per unit area that
@@ -127,14 +78,12 @@ class PhysicsState:
        ``PhysicsDriver.run`` entry. The virtual temperature and the pressure stay at
        step start; ``Tendencies.advance`` updates ``temperature``, ``u`` and ``v`` in
        place after each process, as it does ``w`` and the moisture tracers.
-    3. ``process_diagnostics``, the diagnostic (non-tendency) output buffers of each
+    3. The diagnostic (non-tendency) output buffers of each
        process. They are allocated once, when the driver is built, and written in
        place by their component. They persist across steps, holding the values of
        the last computed step (zeros before the process has first run).
-       ``compute_diagnostics`` never touches them.
-    4. ``surface``, the ``SurfaceState``: the diagnostic outputs of the surface process
-       that the other processes read. An output named like one of its fields is bound
-       to that field instead of a buffer of its own.
+       ``compute_diagnostics`` never touches them. A process reads another's output
+       by name through ``diagnostic_output``, as tmx reads the surface fluxes.
 
     ``compute_diagnostics`` binds and diagnoses at entry (dyn2phy); ``update_prognostics``
     writes exner, theta_v and vn back at exit (phy2dyn).
@@ -265,23 +214,12 @@ class PhysicsState:
 
         # Diagnostic output buffers, keyed by process name, then by output name
         self._process_diagnostics: dict[str, dict[str, gtx.Field]] = {}
-        self.surface = SurfaceState.allocate(grid, allocator=backend)
-        # which process writes each surface field: one writer per field
-        self._surface_writers: dict[str, str] = {}
 
     @property
     def diagnostics(self) -> diagnostic_state.DiagnosticState:
         """The caller's diagnostic state, linked by ``compute_diagnostics``."""
         assert self._diagnostics is not None, "compute_diagnostics must run first"
         return self._diagnostics
-
-    @property
-    def process_diagnostics(self) -> Mapping[str, Mapping[str, gtx.Field]]:
-        """The diagnostic output buffers of every process, keyed by process name.
-
-        Keyed per process, so two processes may declare the same output name.
-        """
-        return self._process_diagnostics
 
     def allocate_process_diagnostics(
         self, process_name: str, outputs_properties: Mapping[str, model.FieldMetaData]
@@ -293,36 +231,26 @@ class PhysicsState:
         fills.
 
         TODO (Yilu): give them a model-level home the output layer can write, with every
-        diagnostic bound to it as the surface fields are bound here. #1510 types them as
-        each process's ``Output`` state; build on that.
+        diagnostic bound to it. #1510 types them as each process's ``Output`` state; build
+        on that.
 
         Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
         is a diagnostic. Tendencies stay component-owned: ``Tendencies`` sums
         them across processes, and recycling needs each process's last tendency.
 
-        A diagnostic named like a field of ``surface`` is bound to that field, which
-        only one process may write; every other diagnostic gets a buffer of its own.
+        A diagnostic name has one provider: a second process declaring it is rejected, so
+        that ``diagnostic_output`` can hand it to a reader by name alone.
         """
         if process_name in self._process_diagnostics:
             raise ValueError(f"Process '{process_name}' already has output buffers.")
-        surface_fields = self.surface.fields()
         buffers: dict[str, gtx.Field] = {}
         for name, props in outputs_properties.items():
             if props.kind == model.FieldKind.TENDENCY:
                 continue
-            if (surface_field := surface_fields.get(name)) is not None:
-                if (writer := self._surface_writers.get(name)) is not None:
-                    raise ValueError(
-                        f"Surface field '{name}' is already written by process '{writer}'."
-                    )
-                if props.dims is not None and tuple(props.dims) != tuple(surface_field.domain.dims):
-                    raise ValueError(
-                        f"Output '{name}' of process '{process_name}' declares dims "
-                        f"{tuple(props.dims)}, but the surface field has {surface_field.domain.dims}."
-                    )
-                self._surface_writers[name] = process_name
-                buffers[name] = surface_field
-                continue
+            if (provider := self._provider_of(name)) is not None:
+                raise ValueError(
+                    f"Diagnostic output '{name}' is already provided by process '{provider}'."
+                )
             if props.dims is None:
                 raise ValueError(
                     f"Diagnostic output '{name}' of process '{process_name}' declares no 'dims', "
@@ -331,6 +259,24 @@ class PhysicsState:
             buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
         self._process_diagnostics[process_name] = buffers
         return buffers
+
+    def _provider_of(self, name: str) -> str | None:
+        return next(
+            (process for process, buffers in self._process_diagnostics.items() if name in buffers),
+            None,
+        )
+
+    def diagnostic_output(self, name: str) -> gtx.Field:
+        """The diagnostic output ``name`` of the one process that provides it.
+
+        This is how a process reads another's output, as tmx reads the surface fluxes:
+        by name through the state, without knowing which process computes it.
+        """
+        if (provider := self._provider_of(name)) is None:
+            raise KeyError(
+                f"No process provides the diagnostic '{name}'; is the process computing it enabled?"
+            )
+        return self._process_diagnostics[provider][name]
 
     def compute_diagnostics(
         self,
@@ -414,6 +360,12 @@ class PhysicsState:
         the advanced tracers and w, exner, theta_v, the perturbed exner when given, and vn
         when a process produced a wind tendency. The driver syncs exactly these at the end
         of the step.
+
+        TODO (Yilu): ICON clips negative tracers at the entry and the exit of the interface
+        (``iqneg_d2p`` / ``iqneg_p2d``: set to zero and move the deficit over dt into the
+        tendency; default off, the APE experiment sets both to 2). Port it with the two
+        config members before the exner update here and in ``compute_diagnostics``; the
+        APE archive's config has to be regenerated for the switches.
         """
         tracers = self.tracers
         assert tracers is not None, "compute_diagnostics must run before update_prognostics"
@@ -491,7 +443,7 @@ class Tendencies:
     contribution, so which sums exist depends on which processes ran. Only outputs whose
     metadata carries ``kind`` ``TENDENCY`` accumulate, and each must be the tendency of
     temperature, u, v, w or a moisture tracer; the rest are diagnostics, written by the
-    components directly into the ``PhysicsState.process_diagnostics`` buffers.
+    components directly into the buffers the ``PhysicsState`` allocates for them.
 
     The coupling is sequential, as ICON AES (``fc_xxx = 1``): ``advance`` adds each
     process's tendencies to the tracers, temperature and u/v/w in place, so the next

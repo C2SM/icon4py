@@ -19,8 +19,8 @@ from icon4py.model.common.components.component_state import ComponentState
 class State(ComponentState):
     """Maps the PhysicsState to the input names of the tmx component.
 
-    Every input is a field of the facade or of its surface state, nothing is copied and
-    nothing is owned. The air mass is the one the driver hands to the physics (ICON's
+    Every input is a field of the facade or, for the surface fluxes, a diagnostic of
+    another process read by name; nothing is copied and nothing is owned. The air mass is the one the driver hands to the physics (ICON's
     ``mair``, the dycore's ``airmass_new``), so a facade without it cannot feed tmx.
     """
 
@@ -39,5 +39,5 @@ class State(ComponentState):
             "rho": state.rho,
             **{f"q{s}": getattr(state.tracers, f"q{s}") for s in ("v", "c", "i", "r", "s", "g")},
             "air_mass": state.air_mass,
-            **{name: getattr(state.surface.fluxes, name) for name in tmx_data.FLUX_PORTS},
+            **{name: state.diagnostic_output(name) for name in tmx_data.FLUX_PORTS},
         }

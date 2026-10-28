@@ -183,11 +183,8 @@ class RecordingCoupling:
     def compute_diagnostics(self, prognostic, tracers, diagnostics, air_mass=None) -> None:
         self.events.append(("compute_diagnostics", prognostic, diagnostics))
 
-    _process_diagnostics: dict = dataclasses.field(default_factory=dict)
-
-    @property
-    def process_diagnostics(self) -> dict:
-        return self._process_diagnostics
+    #: the buffers handed out per process, for the assertions
+    allocated: dict = dataclasses.field(default_factory=dict)
 
     def allocate_process_diagnostics(self, process_name, outputs_properties):
         self.events.append(("allocate", process_name))
@@ -196,7 +193,7 @@ class RecordingCoupling:
             for name, props in outputs_properties.items()
             if props.kind != model.FieldKind.TENDENCY
         }
-        self._process_diagnostics[process_name] = buffers
+        self.allocated[process_name] = buffers
         return buffers
 
     #: what update_prognostics reports as written: (cell_fields, edge_fields)
@@ -309,8 +306,8 @@ def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
     # both processes translated the same PhysicsState object, advanced in place in between
     assert state.input_calls == [coupling, coupling]
     # the state holds the layer-allocated buffers the granule writes into, by process
-    assert driver.process_diagnostics["B"] == {"kh": "BUF_kh"}
-    assert driver.process_diagnostics["A"] == {}
+    assert coupling.allocated["B"] == {"kh": "BUF_kh"}
+    assert coupling.allocated["A"] == {}
 
 
 def test_run_raises_for_non_multiple_interval() -> None:
@@ -445,12 +442,12 @@ def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:
         outputs={"tend_temperature": "T", "kh": "KH"},
         output_kinds={"tend_temperature": model.FieldKind.TENDENCY, "kh": None},
     )
-    driver, _ = _driver(
+    _, coupling = _driver(
         [PhysicsProcess(name="tmx", component=comp, state=state, time_control=_tc())]
     )
     # before any run: the layer allocated, the component adopted the buffer
     assert comp.bound == {"kh": "BUF_kh"}
-    assert driver.process_diagnostics["tmx"] == {"kh": "BUF_kh"}
+    assert coupling.allocated["tmx"] == {"kh": "BUF_kh"}
 
 
 def test_run_syncs_the_wind_tendency_sums_before_the_prognostic_update() -> None:
