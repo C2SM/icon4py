@@ -194,8 +194,9 @@ class PhysicsDriver:
             self._tendencies.advance(
                 self._state, outputs, process.component.outputs_properties, dt_seconds
             )
-        # the projection onto vn reads first-halo cells of the summed wind
-        # tendencies from owned edges, which the final sync below cannot repair
+        # an owned edge projects the summed wind tendencies of its two adjacent cells
+        # onto vn, and one of them may be a halo cell: sync the sums first, the sync
+        # of vn at the end only repairs halo edges
         sums = self._tendencies.sums
         self._exchange.exchange(
             dims.CellDim,
