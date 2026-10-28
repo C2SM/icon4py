@@ -771,6 +771,8 @@ def initialize_driver(
             allocator=allocator,
         ),
         backend=backend,
+        process_props=process_props,
+        decomposition_info=decomposition_info,
     )
     io_monitor = None
     if config.driver.enable_output:

@@ -122,12 +122,14 @@ class PhysicsDriver:
         processes: list[PhysicsProcess],
         state: physics_state.PhysicsState,
         tendencies: physics_state.Tendencies,
-        exchange: decomposition.ExchangeRuntime | None = None,
+        *,
+        process_props: decomposition.ProcessProperties,
+        decomposition_info: decomposition.DecompositionInfo,
     ) -> None:
         self._processes = processes
         self._state = state
         self._tendencies = tendencies
-        self._exchange = decomposition.SingleNodeExchange() if exchange is None else exchange
+        self._exchange = decomposition.create_exchange(process_props, decomposition_info)
         for process in processes:
             process.component.bind_output_buffers(
                 state.allocate_process_outputs(process.name, process.component.outputs_properties)
@@ -148,7 +150,8 @@ class PhysicsDriver:
         interpolation: factory.FieldSource,
         metrics: factory.FieldSource,
         backend: gtx_typing.Backend | None = None,
-        exchange: decomposition.ExchangeRuntime | None = None,
+        process_props: decomposition.ProcessProperties,
+        decomposition_info: decomposition.DecompositionInfo,
     ) -> PhysicsDriver:
         """Build the driver together with the coupling pieces it owns.
 
@@ -163,7 +166,8 @@ class PhysicsDriver:
             tendencies=physics_state.Tendencies(
                 grid=grid, geometry=geometry, interpolation=interpolation, backend=backend
             ),
-            exchange=exchange,
+            process_props=process_props,
+            decomposition_info=decomposition_info,
         )
 
     def run(
@@ -181,8 +185,10 @@ class PhysicsDriver:
         self._state.compute_diagnostics(prognostic, tracers, diagnostics, air_mass)
         self._tendencies.zero()
         dt_seconds = dtime.total_seconds()
-        # TODO (Yilu): compute the heat capacity after muphy
-        # TODO (Yilu): I think ICON has a bug that tmx does not contribute at all if tmx is not active at a given time step. Be careful. Although tmx should be run with muphy as a fast process.
+        # TODO (Yilu): on an in-window step on which a process is not active, every process
+        # recycles its last tendencies, as ICON's microphysics does. ICON's tmx interface
+        # instead contributes nothing on such a step. No difference while every process runs
+        # every step; revisit when the tmx time step is read from the configuration.
         for process in self._processes:
             outputs = process.run(self._state, step_start_datetime, dtime)
             self._tendencies.advance(

@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.components.component_state import ComponentState
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import model
 from icon4py.model.common.states.model import FieldMetaData
 
@@ -225,6 +226,24 @@ class RecordingExchange:
         self.events.append(("exchange", dim, fields))
 
 
+@dataclasses.dataclass(frozen=True)
+class RecordingProcessProperties(decomposition.ProcessProperties):
+    """Process properties that resolve to a given exchange, through the same dispatch as production."""
+
+    exchange: RecordingExchange
+    comm: None = None
+    rank: int = 0
+    comm_name: str = ""
+    comm_size: int = 1
+
+
+@decomposition.create_exchange.register(RecordingProcessProperties)
+def _create_recording_exchange(
+    process_props: RecordingProcessProperties, decomposition_info: decomposition.DecompositionInfo
+) -> RecordingExchange:
+    return process_props.exchange
+
+
 #: the sync of the summed wind tendencies that precedes every update_prognostics
 _WIND_TENDENCY_SYNC = ("exchange", dims.CellDim, ("SUM_TU", "SUM_TV"))
 
@@ -235,7 +254,8 @@ def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
         processes=processes,
         state=coupling,
         tendencies=coupling,
-        exchange=RecordingExchange(coupling.events),
+        process_props=RecordingProcessProperties(RecordingExchange(coupling.events)),
+        decomposition_info=decomposition.DecompositionInfo(),
     )
     return driver, coupling
 
