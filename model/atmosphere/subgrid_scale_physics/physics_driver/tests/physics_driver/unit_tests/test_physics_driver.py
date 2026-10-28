@@ -183,37 +183,41 @@ class RecordingCoupling:
     def compute_diagnostics(self, prognostic, tracers, diagnostics, air_mass=None) -> None:
         self.events.append(("compute_diagnostics", prognostic, diagnostics))
 
-    _process_outputs: dict = dataclasses.field(default_factory=dict)
+    _process_diagnostics: dict = dataclasses.field(default_factory=dict)
 
     @property
-    def process_outputs(self) -> dict:
-        return self._process_outputs
+    def process_diagnostics(self) -> dict:
+        return self._process_diagnostics
 
-    def allocate_process_outputs(self, process_name, outputs_properties):
+    def allocate_process_diagnostics(self, process_name, outputs_properties):
         self.events.append(("allocate", process_name))
         buffers = {
             name: f"BUF_{name}"
             for name, props in outputs_properties.items()
             if props.kind != model.FieldKind.TENDENCY
         }
-        self._process_outputs[process_name] = buffers
+        self._process_diagnostics[process_name] = buffers
         return buffers
+
+    #: what update_prognostics reports as written: (cell_fields, edge_fields)
+    written: tuple = ((), ())
+
+    def update_prognostics(self, sums, dt_seconds, perturbed_exner=None) -> tuple:
+        self.events.append(("update_prognostics", dt_seconds, perturbed_exner))
+        return list(self.written[0]), list(self.written[1])
 
     # Tendencies surface
     def zero(self) -> None:
         self.events.append(("zero",))
+
+    def accumulate(self, outputs, outputs_properties) -> None:
+        self.events.append(("accumulate", dict(outputs)))
 
     def advance(self, state, outputs, outputs_properties, dt_seconds) -> None:
         self.events.append(("advance", dict(outputs), dt_seconds))
 
     #: the tendency sums the driver syncs before the projection onto vn
     sums: dict = dataclasses.field(default_factory=lambda: {"tend_u": "SUM_TU", "tend_v": "SUM_TV"})
-    #: what update_prognostics reports as written: (cell_fields, edge_fields)
-    written: tuple = ((), ())
-
-    def update_prognostics(self, state, dt_seconds, perturbed_exner=None) -> tuple:
-        self.events.append(("update_prognostics", dt_seconds, perturbed_exner))
-        return list(self.written[0]), list(self.written[1])
 
 
 @dataclasses.dataclass
@@ -295,7 +299,9 @@ def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
         ("allocate", "B"),
         ("compute_diagnostics", "prog", "diag"),
         ("zero",),
+        ("accumulate", {"tend_temperature": "A"}),
         ("advance", {"tend_temperature": "A"}, 300.0),
+        ("accumulate", {"tend_temperature": "B", "kh": "KH"}),
         ("advance", {"tend_temperature": "B", "kh": "KH"}, 300.0),
         _WIND_TENDENCY_SYNC,
         ("update_prognostics", 300.0, None),
@@ -303,8 +309,8 @@ def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
     # both processes translated the same PhysicsState object, advanced in place in between
     assert state.input_calls == [coupling, coupling]
     # the state holds the layer-allocated buffers the granule writes into, by process
-    assert driver.process_outputs["B"] == {"kh": "BUF_kh"}
-    assert driver.process_outputs["A"] == {}
+    assert driver.process_diagnostics["B"] == {"kh": "BUF_kh"}
+    assert driver.process_diagnostics["A"] == {}
 
 
 def test_run_raises_for_non_multiple_interval() -> None:
@@ -355,11 +361,12 @@ def test_out_of_window_process_does_nothing() -> None:
 
     assert comp.call_count == 0
     assert state.input_calls == []
-    # the advance call still happens, with nothing in it to add
+    # the accumulate and advance calls still happen, with nothing in them to add
     assert coupling.events == [
         ("allocate", "future"),
         ("compute_diagnostics", "prog", "diag"),
         ("zero",),
+        ("accumulate", {}),
         ("advance", {}, 300.0),
         _WIND_TENDENCY_SYNC,
         ("update_prognostics", 300.0, None),
@@ -443,7 +450,7 @@ def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:
     )
     # before any run: the layer allocated, the component adopted the buffer
     assert comp.bound == {"kh": "BUF_kh"}
-    assert driver.process_outputs["tmx"] == {"kh": "BUF_kh"}
+    assert driver.process_diagnostics["tmx"] == {"kh": "BUF_kh"}
 
 
 def test_run_syncs_the_wind_tendency_sums_before_the_prognostic_update() -> None:

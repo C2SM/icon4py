@@ -8,8 +8,6 @@
 
 """Tests of the PhysicsState layer (PhysicsState facade, process outputs, tendency sums, single update)."""
 
-import dataclasses
-
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -89,6 +87,18 @@ def _diagnostic_state(grid) -> diagnostic_state.DiagnosticState:
 
 
 def _physics_state(grid) -> physics_state.PhysicsState:
+    # neutral geometry: primal_normal_x = 1, primal_normal_y = 0, c_lin_e = 0.5
+    # => two-neighbor projection of a uniform u-tendency is the identity
+    geometry = _StubFieldSource(
+        {
+            geometry_attributes.EDGE_NORMAL_CELL_U: data_alloc.constant_field(
+                grid, 1.0, dims.EdgeDim, dims.E2CDim
+            ),
+            geometry_attributes.EDGE_NORMAL_CELL_V: data_alloc.zero_field(
+                grid, dims.EdgeDim, dims.E2CDim
+            ),
+        }
+    )
     metrics = _StubFieldSource(
         {
             metrics_attributes.DDQZ_Z_FULL: data_alloc.constant_field(
@@ -104,10 +114,14 @@ def _physics_state(grid) -> physics_state.PhysicsState:
             interpolation_attributes.RBF_VEC_COEFF_C2: data_alloc.zero_field(
                 grid, dims.CellDim, dims.C2E2C2EDim
             ),
+            interpolation_attributes.C_LIN_E: data_alloc.constant_field(
+                grid, 0.5, dims.EdgeDim, dims.E2CDim
+            ),
         }
     )
     return physics_state.PhysicsState(
         grid=grid,
+        geometry=geometry,
         interpolation=interpolation,
         metrics=metrics,
         backend=None,
@@ -123,7 +137,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     """The dyn2phy diagnosis fills plausible fields and is strictly read-only.
 
     The prognostic state and tracers must stay bitwise identical: only
-    ``Tendencies.advance`` and ``Tendencies.update_prognostics`` change them.
+    ``Tendencies.advance`` and ``update_prognostics`` change them.
     """
     grid = simple.simple_grid()
     ws = _physics_state(grid)
@@ -153,12 +167,6 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     assert ws.w is prognostic.w
     assert ws.vn is prognostic.vn
     assert ws.tracers is tracers
-    assert ws.advanced.temperature is ws.diagnostics.temperature
-    assert ws.advanced.u is ws.diagnostics.u
-    assert ws.advanced.v is ws.diagnostics.v
-    assert ws.advanced.w is prognostic.w
-    for name in physics_state.MOISTURE_SPECIES:
-        assert getattr(ws.advanced, name) is getattr(tracers, name)
 
 
 # ---------------------------------------------------------------------------
@@ -166,10 +174,8 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 # ---------------------------------------------------------------------------
 
 
-def test_advance_sums_tendencies_and_skips_diagnostics():
+def test_accumulate_sums_tendencies_and_skips_diagnostics():
     grid = simple.simple_grid()
-    ws = _physics_state(grid)
-    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid), _diagnostic_state(grid))
     acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY), "km": _meta()}
     out = {
@@ -178,8 +184,8 @@ def test_advance_sums_tendencies_and_skips_diagnostics():
     }
 
     acc.zero()
-    acc.advance(ws, out, props, _DT_SECONDS)
-    acc.advance(ws, out, props, _DT_SECONDS)  # a second process contributing the same tendency
+    acc.accumulate(out, props)
+    acc.accumulate(out, props)  # a second process contributing the same tendency
 
     np.testing.assert_allclose(acc.sums["tend_qv"].asnumpy(), 2e-7, rtol=1e-12)
     assert "km" not in acc.sums
@@ -187,16 +193,14 @@ def test_advance_sums_tendencies_and_skips_diagnostics():
 
 def test_zero_resets_between_steps():
     grid = simple.simple_grid()
-    ws = _physics_state(grid)
-    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid), _diagnostic_state(grid))
     acc = _tendencies(grid)
     props = {"tend_qv": _meta(kind=_TENDENCY)}
     out = {"tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
     acc.zero()
-    acc.advance(ws, out, props, _DT_SECONDS)
+    acc.accumulate(out, props)
     acc.zero()
-    acc.advance(ws, out, props, _DT_SECONDS)
+    acc.accumulate(out, props)
 
     np.testing.assert_allclose(acc.sums["tend_qv"].asnumpy(), 1e-7, rtol=1e-12)
 
@@ -207,35 +211,15 @@ def test_zero_resets_between_steps():
 
 
 def _tendencies(grid) -> physics_state.Tendencies:
-    # neutral geometry: primal_normal_x = 1, primal_normal_y = 0, c_lin_e = 0.5
-    # => two-neighbor projection of a uniform u-tendency is the identity
-    geometry = _StubFieldSource(
-        {
-            geometry_attributes.EDGE_NORMAL_CELL_U: data_alloc.constant_field(
-                grid, 1.0, dims.EdgeDim, dims.E2CDim
-            ),
-            geometry_attributes.EDGE_NORMAL_CELL_V: data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.E2CDim
-            ),
-        }
-    )
-    interpolation = _StubFieldSource(
-        {
-            interpolation_attributes.C_LIN_E: data_alloc.constant_field(
-                grid, 0.5, dims.EdgeDim, dims.E2CDim
-            ),
-        }
-    )
-    return physics_state.Tendencies(
-        grid=grid, geometry=geometry, interpolation=interpolation, backend=None
-    )
+    return physics_state.Tendencies(grid=grid, backend=None)
 
 
 def _accumulated(grid, state, **tendencies) -> physics_state.Tendencies:
-    """Tendencies of one process with the given constant tendencies, advanced into ``state``."""
+    """Tendencies of one process with the given constant tendencies, summed and advanced into ``state``."""
     acc = _tendencies(grid)
     props = {name: _meta(kind=_TENDENCY) for name in tendencies}
     acc.zero()
+    acc.accumulate(tendencies, props)
     acc.advance(state, tendencies, props, _DT_SECONDS)
     return acc
 
@@ -259,7 +243,7 @@ def test_advance_and_update_apply_tracers_w_and_thermodynamics_once():
         tend_w=tend_w,
     )
 
-    acc.update_prognostics(ws, dt_seconds=dt)
+    ws.update_prognostics(acc.sums, dt_seconds=dt)
 
     np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)
     np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
@@ -286,23 +270,43 @@ def test_update_projects_accumulated_wind_tendency_to_vn():
         tend_v=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
 
-    acc.update_prognostics(ws, dt_seconds=dt)
+    _, written_edges = ws.update_prognostics(acc.sums, dt_seconds=dt)
 
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
+    assert [id(f) for f in written_edges] == [id(prognostic.vn)]
 
 
-def test_tendencies_start_with_a_zero_sum_per_advanced_field():
-    tendencies = _tendencies(simple.simple_grid())
+def test_update_prognostics_rejects_a_lone_wind_tendency():
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+    ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid), _diagnostic_state(grid))
+    acc = _accumulated(
+        grid, ws, tend_u=data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KDim)
+    )
 
-    assert set(tendencies.sums) == {
-        physics_state.tendency_name(field.name)
-        for field in dataclasses.fields(physics_state.AdvancedState)
-    }
-    for buffer in tendencies.sums.values():
-        np.testing.assert_array_equal(buffer.asnumpy(), 0.0)
-    # the dims come from the field annotations: w lives on half levels
-    assert tendencies.sums["tend_w"].domain.dims == (dims.CellDim, dims.KHalfDim)
-    assert tendencies.sums["tend_temperature"].domain.dims == (dims.CellDim, dims.KDim)
+    with pytest.raises(ValueError, match="applied as a pair; got only tend_u"):
+        ws.update_prognostics(acc.sums, dt_seconds=_DT_SECONDS)
+
+
+def test_sums_are_allocated_on_the_first_contribution():
+    grid = simple.simple_grid()
+    acc = _tendencies(grid)
+    assert acc.sums == {}
+
+    acc.zero()
+    acc.accumulate(
+        {
+            "tend_w": data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KHalfDim),
+            "tend_temperature": data_alloc.constant_field(grid, 1e-3, dims.CellDim, dims.KDim),
+        },
+        {"tend_w": _meta(kind=_TENDENCY), "tend_temperature": _meta(kind=_TENDENCY)},
+    )
+
+    # exactly the tendencies produced, shaped like them: w lives on half levels
+    assert set(acc.sums) == {"tend_w", "tend_temperature"}
+    assert acc.sums["tend_w"].domain.dims == (dims.CellDim, dims.KHalfDim)
+    assert acc.sums["tend_temperature"].domain.dims == (dims.CellDim, dims.KDim)
+    np.testing.assert_allclose(acc.sums["tend_w"].asnumpy(), 1e-4, rtol=1e-12)
 
 
 def test_advance_rejects_a_tendency_of_no_advanced_field():
@@ -327,7 +331,6 @@ def test_physics_state_links_the_callers_diagnostic_state():
 
     # linked, not copied: the caller's fields are the ones diagnosed and advanced
     assert ws.diagnostics is diagnostics
-    assert ws.advanced.temperature is temperature
     assert 200.0 < temperature.asnumpy().mean() < 320.0
     # the flat shorthand is gone -- pointers and diagnostics are structurally distinct
     assert not hasattr(ws, "ta")
@@ -339,7 +342,7 @@ def test_physics_state_links_the_callers_diagnostic_state():
 # ---------------------------------------------------------------------------
 
 
-def test_allocate_process_outputs_from_metadata():
+def test_allocate_process_diagnostics_from_metadata():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
     props = {
@@ -347,66 +350,66 @@ def test_allocate_process_outputs_from_metadata():
         "kh": _meta(dims.CellDim, dims.KDim),
         "cptgz_vi": _meta(dims.CellDim),
     }
-    buffers = ws.allocate_process_outputs("tmx", props)
+    buffers = ws.allocate_process_diagnostics("tmx", props)
     # tendencies are never layer-allocated; diagnostics get their declared shape
     assert set(buffers) == {"kh", "cptgz_vi"}
     assert buffers["kh"].domain.dims == (dims.CellDim, dims.KDim)
     assert buffers["cptgz_vi"].domain.dims == (dims.CellDim,)
-    assert ws.process_outputs["tmx"] is buffers
+    assert ws.process_diagnostics["tmx"] is buffers
 
 
-def test_allocate_process_outputs_of_a_half_level_output_from_khalfdim():
+def test_allocate_process_diagnostics_of_a_half_level_output_from_khalfdim():
     # Half levels are stated by the dimension alone, so a KHalfDim output must get
     # one level more than a full-level one.
     grid = simple.simple_grid()
     ws = _physics_state(grid)
 
-    buffers = ws.allocate_process_outputs("tmx", {"kh": _meta(dims.CellDim, dims.KHalfDim)})
+    buffers = ws.allocate_process_diagnostics("tmx", {"kh": _meta(dims.CellDim, dims.KHalfDim)})
 
     assert buffers["kh"].domain.dims == (dims.CellDim, dims.KHalfDim)
     assert buffers["kh"].ndarray.shape == (grid.num_cells, grid.num_levels + 1)
 
 
-def test_allocate_process_outputs_keeps_processes_apart():
+def test_allocate_process_diagnostics_keeps_processes_apart():
     # Keyed per process: two processes may declare the same output name.
     # TODO(Chia Rui): Maybe this is not always the case.
     grid = simple.simple_grid()
     ws = _physics_state(grid)
     props = {"kh": _meta(dims.CellDim, dims.KDim)}
 
-    ws.allocate_process_outputs("muphys", props)
-    ws.allocate_process_outputs("tmx", props)
+    ws.allocate_process_diagnostics("muphys", props)
+    ws.allocate_process_diagnostics("tmx", props)
 
-    assert ws.process_outputs["muphys"]["kh"] is not ws.process_outputs["tmx"]["kh"]
+    assert ws.process_diagnostics["muphys"]["kh"] is not ws.process_diagnostics["tmx"]["kh"]
 
 
-def test_allocate_process_outputs_rejects_a_duplicate_process_name():
+def test_allocate_process_diagnostics_rejects_a_duplicate_process_name():
     # A second allocation under the same name would silently orphan the buffers
     # already bound to the first process's component.
     grid = simple.simple_grid()
     ws = _physics_state(grid)
     props = {"kh": _meta(dims.CellDim, dims.KDim)}
-    ws.allocate_process_outputs("tmx", props)
+    ws.allocate_process_diagnostics("tmx", props)
 
     with pytest.raises(ValueError, match="already has output buffers"):
-        ws.allocate_process_outputs("tmx", props)
+        ws.allocate_process_diagnostics("tmx", props)
 
 
-def test_allocate_process_outputs_rejects_a_diagnostic_without_dims():
+def test_allocate_process_diagnostics_rejects_a_diagnostic_without_dims():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
 
     with pytest.raises(ValueError, match="declares no 'dims'"):
-        ws.allocate_process_outputs("tmx", {"kh": _meta()})
+        ws.allocate_process_diagnostics("tmx", {"kh": _meta()})
 
 
-def test_process_outputs_are_not_set_as_attributes():
-    # The outputs stay behind 'process_outputs', so an output name can never shadow
+def test_process_diagnostics_are_not_set_as_attributes():
+    # The outputs stay behind 'process_diagnostics', so an output name can never shadow
     # a model-state pointer or the diagnostics.
     grid = simple.simple_grid()
     ws = _physics_state(grid)
 
-    ws.allocate_process_outputs("tmx", {"kh": _meta(dims.CellDim, dims.KDim)})
+    ws.allocate_process_diagnostics("tmx", {"kh": _meta(dims.CellDim, dims.KDim)})
 
     assert not hasattr(ws, "kh")
 
@@ -439,11 +442,11 @@ def test_surface_state_is_allocated_with_the_physics_state():
         assert np.all(field.asnumpy() == 0.0)
 
 
-def test_allocate_process_outputs_binds_surface_fields_and_allocates_the_rest():
+def test_allocate_process_diagnostics_binds_surface_fields_and_allocates_the_rest():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
 
-    buffers = ws.allocate_process_outputs(
+    buffers = ws.allocate_process_diagnostics(
         "surface",
         {"sensible_heat_flux": _meta(dims.CellDim), "kh": _meta(dims.CellDim, dims.KDim)},
     )
@@ -454,21 +457,21 @@ def test_allocate_process_outputs_binds_surface_fields_and_allocates_the_rest():
     assert buffers["kh"].domain.dims == (dims.CellDim, dims.KDim)
 
 
-def test_allocate_process_outputs_rejects_a_second_writer_of_a_surface_field():
+def test_allocate_process_diagnostics_rejects_a_second_writer_of_a_surface_field():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
-    ws.allocate_process_outputs("surface", {"surface_temperature": _meta(dims.CellDim)})
+    ws.allocate_process_diagnostics("surface", {"surface_temperature": _meta(dims.CellDim)})
 
     with pytest.raises(ValueError, match="already written by process 'surface'"):
-        ws.allocate_process_outputs("ocean", {"surface_temperature": _meta(dims.CellDim)})
+        ws.allocate_process_diagnostics("ocean", {"surface_temperature": _meta(dims.CellDim)})
 
 
-def test_allocate_process_outputs_rejects_wrong_dims_for_a_surface_field():
+def test_allocate_process_diagnostics_rejects_wrong_dims_for_a_surface_field():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
 
     with pytest.raises(ValueError, match="declares dims"):
-        ws.allocate_process_outputs(
+        ws.allocate_process_diagnostics(
             "surface", {"sensible_heat_flux": _meta(dims.CellDim, dims.KDim)}
         )
 
@@ -484,8 +487,8 @@ def test_update_prognostics_returns_the_written_fields():
     )
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
-    written_cells, written_edges = acc.update_prognostics(
-        ws, dt_seconds=_DT_SECONDS, perturbed_exner=perturbed_exner
+    written_cells, written_edges = ws.update_prognostics(
+        acc.sums, dt_seconds=_DT_SECONDS, perturbed_exner=perturbed_exner
     )
 
     # identity, not equality: the driver's sync must target the very buffers that were written
@@ -496,4 +499,4 @@ def test_update_prognostics_returns_the_written_fields():
         id(prognostic.theta_v),
         id(perturbed_exner),
     ]
-    assert [id(f) for f in written_edges] == [id(prognostic.vn)]
+    assert written_edges == []  # no wind tendency was produced, so vn was not written
