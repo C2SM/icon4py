@@ -134,9 +134,11 @@ class GridManager:
         geometry_type: icon.GeometryType,
     ) -> CoordinateDict:
         # global_index() returns CuPy on GPU backends; the reader expects numpy.
-        my_cell_indices = np.asarray(self._decomposition_info.global_index(dims.CellDim))
-        my_edge_indices = np.asarray(self._decomposition_info.global_index(dims.EdgeDim))
-        my_vertex_indices = np.asarray(self._decomposition_info.global_index(dims.VertexDim))
+        my_cell_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
+        my_edge_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
+        my_vertex_indices = data_alloc.as_numpy(
+            self._decomposition_info.global_index(dims.VertexDim)
+        )
         coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -252,9 +254,11 @@ class GridManager:
         # (which expects numpy) or into a plain numpy slice. The final gtx.Field
         # objects are placed on the correct device via the allocator argument of
         # gtx.as_field, so this host-side conversion is safe.
-        my_cell_indices = np.asarray(self._decomposition_info.global_index(dims.CellDim))
-        my_edge_indices = np.asarray(self._decomposition_info.global_index(dims.EdgeDim))
-        my_vertex_indices = np.asarray(self._decomposition_info.global_index(dims.VertexDim))
+        my_cell_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
+        my_edge_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
+        my_vertex_indices = data_alloc.as_numpy(
+            self._decomposition_info.global_index(dims.VertexDim)
+        )
         vertex_edge_orientation = self._reader.int_variable(
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
             transpose=True,
@@ -378,7 +382,7 @@ class GridManager:
                     name,
                     # global_index() returns CuPy on GPU backends; the reader
                     # expects numpy, so convert explicitly.
-                    indices=np.asarray(self._decomposition_info.global_index(dim)),
+                    indices=data_alloc.as_numpy(self._decomposition_info.global_index(dim)),
                     transpose=False,
                     apply_offset=False,
                 ),
@@ -501,7 +505,7 @@ class GridManager:
             return {
                 k: halo.global_to_local(
                     self._decomposition_info.global_index(k.source),
-                    v[self._decomposition_info.global_index(k.target[0])],
+                    v[data_alloc.as_numpy(self._decomposition_info.global_index(k.target[0]))],
                 )
                 for k, v in neighbor_tables_global.items()
             }
