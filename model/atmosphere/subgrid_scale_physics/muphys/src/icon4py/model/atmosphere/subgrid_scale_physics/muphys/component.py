@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-class Muphys(fw.Component):
+class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
     """
     The muphys microphysics granule as a component.
 

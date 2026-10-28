@@ -281,9 +281,11 @@ def copy[S: State](state: S, allocator: gtx_typing.Allocator | None) -> S:
 # ------------------------------------------------------------------------------
 # Component: Input, Output, run
 # ------------------------------------------------------------------------------
-class Component(Protocol):
+
+
+class Component[I: State, O: State](Protocol):
     """
-    `run(inputs, outputs) -> Output`, the only method a component implements.
+    `run(inputs, outputs) -> outputs`, the only method a component implements.
 
     A component declares its two states on the class (`class Input(fw.State)`); a component
     that writes nothing declares `Output = fw.Empty`. The protocol has no implementation: the
@@ -294,10 +296,8 @@ class Component(Protocol):
     the component's business; nothing checks it here.
     """
 
-    Input: type[State]
-    Output: type[State]
+    Input: type[I]
+    Output: type[O]
 
-    # `Any`: each component narrows `inputs` and `outputs` to its own `Input` and `Output`.
-    # Typed `State` here, every override would be incompatible (parameters are contravariant).
-    def run(self, inputs: Any, outputs: Any) -> Any:
+    def run(self, inputs: I, outputs: O) -> O:
         raise NotImplementedError

@@ -55,7 +55,7 @@ def _array(field: fw.Field[Any]) -> Any:
     return field.ndarray
 
 
-class PhysicsDriver(fw.Component):
+class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"]):
     """
     Runs the physics processes under parallel coupling (ICON AES's aes_phy_main).
 

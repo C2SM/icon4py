@@ -125,7 +125,7 @@ def filled[S: fw.State](cls: type[S], grid: base_grid.Grid, **values: float) -> 
     return fw.allocate(cls, grid, None, fill=lambda name, _: values.get(name, 0.0))
 
 
-class Recorder(fw.Component):
+class Recorder(fw.Component[physics_state.EntryState, fw.State]):
     """A component returning its outputs as given and recording the entry states it ran on,
     with a copy of the qv each one read."""
 

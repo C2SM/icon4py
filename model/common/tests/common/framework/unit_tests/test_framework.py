@@ -48,7 +48,7 @@ class Tracers(fw.State):
     vt: fw.Field[Vt] | None = None
 
 
-class Halve(fw.Component):
+class Halve(fw.Component["Halve.Input", "Halve.Output"]):
     class Input(fw.State):
         pressure: fw.Field[Pressure]
 
@@ -210,7 +210,7 @@ def test_component_writes_the_callers_buffers(grid: base_grid.Grid) -> None:
 
 
 def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid.Grid) -> None:
-    class Sink(fw.Component):
+    class Sink(fw.Component[Halve.Input, fw.Empty]):
         Input = Halve.Input
         Output = fw.Empty
 

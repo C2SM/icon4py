@@ -13,7 +13,6 @@ from __future__ import annotations
 import dataclasses
 import datetime
 from collections.abc import Callable
-from typing import Protocol
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
@@ -23,12 +22,6 @@ from icon4py.model.common import framework as fw
 
 
 __all__ = ["PhysicsProcess"]
-
-
-class _Runs[I, O](Protocol):
-    """What a process needs of its component: `run(inputs, outputs) -> outputs`."""
-
-    def run(self, inputs: I, outputs: O) -> O: ...
 
 
 @dataclasses.dataclass
@@ -42,7 +35,7 @@ class PhysicsProcess[I: fw.State, O: fw.State]:
     `Output`: a `collect_input` that builds another component's `Input` is a type error.
     """
 
-    component: _Runs[I, O]
+    component: fw.Component[I, O]
     # the component's `Input` from the physics driver's entry state
     # NOTE: temporary, components MWE part 02 (collect): the process collects its component's
     # `Input` by quantity (`fw.collect`), and `collect_input` goes.

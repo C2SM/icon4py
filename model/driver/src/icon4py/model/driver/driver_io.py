@@ -71,7 +71,7 @@ def _attributes(quantity: type[fw.Quantity]) -> dict[str, str]:
     return {key: value for key, value in attributes.items() if value is not None}
 
 
-class IOMonitor(fw.Component):
+class IOMonitor(fw.Component["IOMonitor.Input", fw.Empty]):
     """
     Writes the selected variables through the common writer.
 
