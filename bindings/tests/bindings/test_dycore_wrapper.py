@@ -17,11 +17,15 @@ import pytest
 from icon4py.bindings import common as wrapper_common, dycore_wrapper
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import base as base_grid, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_defs, test_utils as testing_test_utils
+from icon4py.model.testing import (
+    definitions as test_defs,
+    serialbox,
+    test_utils as testing_test_utils,
+)
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 
@@ -34,12 +38,13 @@ logging.basicConfig(level=logging.INFO)
 
 @pytest.fixture
 def solve_nh_init(
-    grid_savepoint,
-    interpolation_savepoint,
-    metrics_savepoint,
-    experiment,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    experiment: test_defs.Experiment,
+) -> None:
     cfg = experiment.config.nonhydrostatic
+    assert cfg is not None
 
     # vertical grid params
     nflat_gradp = gtx.int32(
@@ -235,23 +240,23 @@ def solve_nh_init(
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-arguments]
-    grid_init,  # initializes the grid as side-effect
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
-    step_date_init,
-    step_date_exit,
-    experiment,
-    savepoint_nonhydro_init,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    caplog,
-    icon_grid,
-    at_initial_timestep,
-    backend,
-):
+    grid_init: None,  # initializes the grid as side-effect
+    istep_init: int,
+    istep_exit: int,
+    substep_init: int,
+    substep_exit: int,
+    step_date_init: str,
+    step_date_exit: str,
+    experiment: test_defs.Experiment,
+    savepoint_nonhydro_init: serialbox.IconNonHydroInitSavepoint,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    caplog: pytest.LogCaptureFixture,
+    icon_grid: base_grid.Grid,
+    at_initial_timestep: bool,
+    backend: None,
+) -> None:
     caplog.set_level(logging.DEBUG)
 
     # savepoints
@@ -260,6 +265,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     # --- Granule input parameters for dycore init
 
     cfg = experiment.config.nonhydrostatic
+    assert cfg is not None
     ndyn_substeps = experiment.config.driver.ndyn_substeps
 
     # vertical grid params
@@ -370,7 +376,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )  # TODO(): p.vol_flx_ic()
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
@@ -397,11 +403,11 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
     vn_incr_field = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
-    vn_incr = test_utils.array_to_array_info(vn_incr_field.ndarray)
+    vn_incr = test_utils.array_to_array_info(vn_incr_field.ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     rho_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    rho_incr = test_utils.array_to_array_info(rho_incr_field.ndarray)
+    rho_incr = test_utils.array_to_array_info(rho_incr_field.ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     exner_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    exner_incr = test_utils.array_to_array_info(exner_incr_field.ndarray)
+    exner_incr = test_utils.array_to_array_info(exner_incr_field.ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
@@ -478,6 +484,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
     expected_config = experiment.config.nonhydrostatic
+    assert expected_config is not None
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
@@ -783,23 +790,23 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     ],
 )
 def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many-positional-arguments]
-    grid_init,  # initializes the grid as side-effect
-    solve_nh_init,  # initializes solve_nh as side-effect
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
-    step_date_init,
-    step_date_exit,
-    experiment,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_final,
-    caplog,
-    icon_grid,
-    at_initial_timestep,
-    backend,
-):
+    grid_init: None,  # initializes the grid as side-effect
+    solve_nh_init: None,  # initializes solve_nh as side-effect
+    istep_init: int,
+    istep_exit: int,
+    substep_init: int,
+    substep_exit: int,
+    step_date_init: str,
+    step_date_exit: str,
+    experiment: test_defs.Experiment,
+    savepoint_nonhydro_init: serialbox.IconNonHydroInitSavepoint,
+    savepoint_nonhydro_exit: serialbox.IconNonHydroExitSavepoint,
+    savepoint_nonhydro_step_final: serialbox.IconNonHydroFinalSavepoint,
+    caplog: pytest.LogCaptureFixture,
+    icon_grid: base_grid.Grid,
+    at_initial_timestep: bool,
+    backend: None,
+) -> None:
     caplog.set_level(logging.DEBUG)
 
     ndyn_substeps = experiment.config.driver.ndyn_substeps
@@ -818,7 +825,7 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
@@ -845,13 +852,13 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
     vn_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     rho_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     exner_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
@@ -924,34 +931,34 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
 
     # Comparison asserts should now use py2fgen.as_array
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, theta_v_new),
+        py2fgen.as_array(ffi, theta_v_new),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, exner_new), sp_step_exit.exner_new().asnumpy()
-    )
+    exner_new_arr = py2fgen.as_array(ffi, exner_new)
+    assert exner_new_arr is not None
+    assert testing_test_utils.dallclose(exner_new_arr, sp_step_exit.exner_new().asnumpy())
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, vn_new),
+        py2fgen.as_array(ffi, vn_new),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-12,
         atol=1e-13,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, rho_new),
+        py2fgen.as_array(ffi, rho_new),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, w_new),
+        py2fgen.as_array(ffi, w_new),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, exner_dyn_incr),
+        py2fgen.as_array(ffi, exner_dyn_incr),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -968,22 +975,22 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-positional-arguments]
-    grid_init,  # initializes the grid as side-effect
-    solve_nh_init,  # initializes solve_nh as side-effect
-    step_date_init,
-    step_date_exit,
-    istep_exit,
-    substep_init,
-    substep_exit,
-    icon_grid,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_final,
-    experiment,
-    vn_only,  # TODO(): we don't use that value?
-    at_initial_timestep,
-    backend,
-):
+    grid_init: None,  # initializes the grid as side-effect
+    solve_nh_init: None,  # initializes solve_nh as side-effect
+    step_date_init: str,
+    step_date_exit: str,
+    istep_exit: int,
+    substep_init: int,
+    substep_exit: int,
+    icon_grid: base_grid.Grid,
+    savepoint_nonhydro_init: serialbox.IconNonHydroInitSavepoint,
+    savepoint_nonhydro_exit: serialbox.IconNonHydroExitSavepoint,
+    savepoint_nonhydro_step_final: serialbox.IconNonHydroFinalSavepoint,
+    experiment: test_defs.Experiment,
+    vn_only: bool,  # TODO(): we don't use that value?
+    at_initial_timestep: bool,
+    backend: None,
+) -> None:
     ndyn_substeps = experiment.config.driver.ndyn_substeps
 
     # savepoints
@@ -1001,7 +1008,7 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
@@ -1032,13 +1039,13 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
     vn_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     rho_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     exner_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
@@ -1127,63 +1134,63 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, rho_ic)[cell_start_lb_plus2:, :],
+        py2fgen.as_array(ffi, rho_ic)[cell_start_lb_plus2:, :],  # type: ignore[index]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, theta_v_ic)[cell_start_lb_plus2:, :],
+        py2fgen.as_array(ffi, theta_v_ic)[cell_start_lb_plus2:, :],  # type: ignore[index]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, mass_fl_e)[edge_start_lb_plus4:, :],
+        py2fgen.as_array(ffi, mass_fl_e)[edge_start_lb_plus4:, :],  # type: ignore[index]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
         atol=5e-7,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, mass_flx_me),
+        py2fgen.as_array(ffi, mass_flx_me),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         atol=5e-7,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, vn_traj),
+        py2fgen.as_array(ffi, vn_traj),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         atol=1e-12,
     )
 
     # we compare against _now fields as _new and _now are switched internally in the granule.
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, theta_v_now),
+        py2fgen.as_array(ffi, theta_v_now),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         sp_step_exit.theta_v_new().asnumpy(),
         atol=5e-7,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, rho_now),
+        py2fgen.as_array(ffi, rho_now),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, exner_now),
+        py2fgen.as_array(ffi, exner_now),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         sp_step_exit.exner_new().asnumpy(),
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, w_now),
+        py2fgen.as_array(ffi, w_now),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, vn_now),
+        py2fgen.as_array(ffi, vn_now),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         atol=5e-13,
     )
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, exner_dyn_incr),
+        py2fgen.as_array(ffi, exner_dyn_incr),  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )

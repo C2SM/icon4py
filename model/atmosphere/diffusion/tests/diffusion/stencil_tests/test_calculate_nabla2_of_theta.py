@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from collections.abc import Mapping
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -40,7 +41,7 @@ class TestCalculateNabla2OfTheta(stencil_tests.StencilTest):
         *,
         z_nabla2_e: np.ndarray,
         geofac_div: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)

@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
@@ -23,12 +24,14 @@ from ..utils import diff_multfac_vn_numpy, smag_limit_numpy
 # i.e. must not receive connectivities.
 
 
-def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
+def initial_diff_multfac_vn_numpy(
+    shape: tuple[int, ...], k4: wpfloat, hdiff_efdt_ratio: wpfloat
+) -> np.ndarray:
     return np.full(shape, k4 * hdiff_efdt_ratio / 3.0)
 
 
 @pytest.mark.single_precision_ready
-def test_scale_k(backend):
+def test_scale_k(backend: gtx_typing.Backend) -> None:
     grid = simple_grid.simple_grid(allocator=backend)
     field = data_alloc.random_field(grid, dims.KDim, dtype=wpfloat, allocator=backend)
     scaled_field = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
@@ -38,7 +41,7 @@ def test_scale_k(backend):
 
 
 @pytest.mark.single_precision_ready
-def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
+def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend: gtx_typing.Backend) -> None:
     grid = simple_grid.simple_grid(allocator=backend)
     diff_multfac_vn_init = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     smag_limit_init = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
@@ -60,7 +63,9 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
 
 
 @pytest.mark.single_precision_ready
-def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
+def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(
+    backend: gtx_typing.Backend,
+) -> None:
     grid = simple_grid.simple_grid(allocator=backend)
     diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     smag_limit = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
@@ -84,7 +89,9 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
 
 
 @pytest.mark.single_precision_ready
-def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
+def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(
+    backend: gtx_typing.Backend,
+) -> None:
     grid = simple_grid.simple_grid(allocator=backend)
     diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     smag_limit = data_alloc.zero_field(grid, dims.KDim, allocator=backend)

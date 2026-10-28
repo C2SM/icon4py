@@ -10,13 +10,14 @@ import pytest
 from gt4py.next import typing as gtx_typing
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.atmosphere.tracer_advection import tracer_advection
+from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,
+    icon,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
@@ -98,25 +99,25 @@ from ..utils import (
 )
 @pytest.mark.mpi
 def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    date,
-    even_timestep,
-    ntracer,
-    horizontal_advection_type,
-    horizontal_advection_limiter,
-    vertical_advection_type,
-    vertical_advection_limiter,
+    date: str,
+    even_timestep: bool,
+    ntracer: int,
+    horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: tracer_advection.HorizontalAdvectionLimiter,
+    vertical_advection_type: tracer_advection.VerticalAdvectionType,
+    vertical_advection_limiter: tracer_advection.VerticalAdvectionLimiter,
     *,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
-    backend,
-    advection_init_savepoint,
-    advection_exit_savepoint,
+    grid_savepoint: sb.IconGridSavepoint,
+    icon_grid: icon.IconGrid,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    backend: gtx_typing.Backend,
+    advection_init_savepoint: sb.AdvectionInitSavepoint,
+    advection_exit_savepoint: sb.AdvectionExitSavepoint,
     process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
-    construct_advection_lsq_state,
-):
+    construct_advection_lsq_state: tracer_advection_states.AdvectionLeastSquaresState,
+) -> None:
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
         pytest.xfail("ValueError: axes don't match array")

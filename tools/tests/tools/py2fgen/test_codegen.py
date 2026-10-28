@@ -44,7 +44,9 @@ simple_type = py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT32)
 @pytest.mark.parametrize(
     ("param", "expected"), ((simple_type, "value"), (field_2d, None), (field_1d, None))
 )
-def test_as_target(param, expected):
+def test_as_target(
+    param: py2fgen.ScalarParamDescriptor | py2fgen.ArrayParamDescriptor, expected: str | None
+) -> None:
     assert expected == as_f90_value(param)
 
 
@@ -77,7 +79,7 @@ bar = Func(
 )
 
 
-def test_cheader_generation_for_single_function():
+def test_cheader_generation_for_single_function() -> None:
     plugin = BindingsLibrary(library_name="libtest_plugin", functions=[foo])
 
     header = CHeaderGenerator.apply(plugin)
@@ -87,7 +89,7 @@ def test_cheader_generation_for_single_function():
     )
 
 
-def test_cheader_for_pointer_args():
+def test_cheader_for_pointer_args() -> None:
     plugin = BindingsLibrary(library_name="libtest_plugin", functions=[bar])
 
     header = CHeaderGenerator.apply(plugin)
@@ -97,14 +99,14 @@ def test_cheader_for_pointer_args():
     )
 
 
-def test_add_include_guard():
+def test_add_include_guard() -> None:
     guarded = add_include_guard("extern int foo(int a);", "libtest_plugin")
     assert guarded.startswith("#ifndef LIBTEST_PLUGIN_H\n#define LIBTEST_PLUGIN_H\n")
     assert guarded.rstrip().endswith("#endif")
     assert "extern int foo(int a);" in guarded
 
 
-def compare_ignore_whitespace(actual: str, expected: str):
+def compare_ignore_whitespace(actual: str, expected: str) -> bool:
     no_whitespace = {ord(c): None for c in string.whitespace}
     if actual.translate(no_whitespace) != expected.translate(no_whitespace):
         print("Expected:")
@@ -118,14 +120,14 @@ def compare_ignore_whitespace(actual: str, expected: str):
 
 
 @pytest.fixture
-def dummy_plugin():
+def dummy_plugin() -> BindingsLibrary:
     return BindingsLibrary(
         library_name="libtest_plugin",
         functions=[foo, bar],
     )
 
 
-def test_fortran_interface(dummy_plugin):
+def test_fortran_interface(dummy_plugin: BindingsLibrary) -> None:
     interface = generate_f90_interface(dummy_plugin)
     expected = """
 module libtest_plugin
@@ -261,7 +263,7 @@ end module
     assert compare_ignore_whitespace(interface, expected)
 
 
-def test_python_wrapper(dummy_plugin):
+def test_python_wrapper(dummy_plugin: BindingsLibrary) -> None:
     interface = generate_python_wrapper(dummy_plugin)
     expected = """import pkgutil
 from icon4py.tools.py2fgen import runtime_config
@@ -442,7 +444,7 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
     assert compare_ignore_whitespace(interface, expected)
 
 
-def test_c_header(dummy_plugin):
+def test_c_header(dummy_plugin: BindingsLibrary) -> None:
     interface = generate_c_header(dummy_plugin)
     expected = """
     extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1, unsigned char on_gpu);
@@ -451,7 +453,7 @@ def test_c_header(dummy_plugin):
     assert compare_ignore_whitespace(interface, expected)
 
 
-def test_bool_param_codegen():
+def test_bool_param_codegen() -> None:
     bool_func = Func(
         name="bool_fn",
         module_name="libtest",

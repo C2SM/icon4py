@@ -7,14 +7,20 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
+from icon4py.model.common.grid import (
+    base,
+    geometry_attributes as geometry_attrs,
+    horizontal as h_grid,
+    icon,
+)
 from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_defs, grid_utils as gridtest_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils as gridtest_utils, serialbox
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
@@ -99,23 +105,23 @@ from ..utils import (
     ],
 )
 def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    date,
-    even_timestep,
-    ntracer,
-    horizontal_advection_type,
-    horizontal_advection_limiter,
-    vertical_advection_type,
-    vertical_advection_limiter,
+    date: str,
+    even_timestep: bool,
+    ntracer: int,
+    horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: tracer_advection.HorizontalAdvectionLimiter,
+    vertical_advection_type: tracer_advection.VerticalAdvectionType,
+    vertical_advection_limiter: tracer_advection.VerticalAdvectionLimiter,
     *,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
-    backend,
-    advection_init_savepoint,
-    advection_exit_savepoint,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    icon_grid: icon.IconGrid,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    backend: gtx_typing.Backend,
+    advection_init_savepoint: serialbox.AdvectionInitSavepoint,
+    advection_exit_savepoint: serialbox.AdvectionExitSavepoint,
     experiment: test_defs.Experiment,
-):
+) -> None:
     config = tracer_advection.AdvectionConfig(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
@@ -125,11 +131,13 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
 
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
     geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
+    geometry_type = icon_grid.grid_params.geometry_type
+    assert geometry_type is not None
     least_squares_coeffs = compute_lsq_coeffs(
-        cell_center_x=geometry.get_full_precision(geometry_attrs.CELL_CENTER_X).asnumpy(),
-        cell_center_y=geometry.get_full_precision(geometry_attrs.CELL_CENTER_Y).asnumpy(),
-        cell_lat=geometry.get_full_precision(geometry_attrs.CELL_LAT).asnumpy(),
-        cell_lon=geometry.get_full_precision(geometry_attrs.CELL_LON).asnumpy(),
+        cell_center_x=geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy(),
+        cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy(),
+        cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
+        cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
         c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
         cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
         domain_length=geometry.grid.grid_params.domain_length,
@@ -142,7 +150,7 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
             h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
-        geometry_type=icon_grid.grid_params.geometry_type,
+        geometry_type=geometry_type,
         exchange=decomposition.SingleNodeExchange(),
     )
 

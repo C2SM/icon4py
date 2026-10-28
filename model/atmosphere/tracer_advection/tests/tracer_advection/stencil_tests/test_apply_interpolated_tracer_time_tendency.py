@@ -33,7 +33,7 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
         **kwargs: Any,
     ) -> dict:
         p_tracer_new = p_tracer_now + p_dtime * p_grf_tend_tracer
-        p_tracer_new = np.where(p_tracer_new < 0.0, 0.0, p_tracer_new)
+        p_tracer_new = np.where(p_tracer_new < 0.0, 0.0, p_tracer_new)  # type: ignore[operator]  # GT4Py NDArrayObject protocol limitation
 
         return dict(p_tracer_new=p_tracer_new)
 

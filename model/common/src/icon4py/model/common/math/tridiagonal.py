@@ -20,7 +20,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=(wpfloat("0.0"), wpfloat("0.0")))
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=(wpfloat("0.0"), wpfloat("0.0")))  # type: ignore[call-overload]  # GT4Py scan_operator stub limitation
 def _solve_tridiagonal_matrix_forward_sweep(
     state_kminus1: tuple[wpfloat, wpfloat],
     a: wpfloat,
@@ -42,7 +42,7 @@ def _solve_tridiagonal_matrix_back_substitution(
     return d_prime + x_kplus1 * q
 
 
-@gtx.scan_operator(axis=dims.KHalfDim, forward=True, init=(wpfloat("0.0"), wpfloat("0.0")))
+@gtx.scan_operator(axis=dims.KHalfDim, forward=True, init=(wpfloat("0.0"), wpfloat("0.0")))  # type: ignore[call-overload]  # GT4Py scan_operator stub limitation
 def _solve_tridiagonal_matrix_forward_sweep_on_half_levels_wp(
     state_kminus1: tuple[wpfloat, wpfloat],
     a: wpfloat,
@@ -85,7 +85,7 @@ def _solve_tridiagonal_matrix_forward_sweep_on_half_levels_mixed_precision(
     normalization = vpfloat("1.0") / (b + a * q_kminus1)
     q = (vpfloat("0.0") - c) * normalization
     d_prime = (d - astype(a, wpfloat) * d_prime_kminus1) * astype(normalization, wpfloat)
-    return q, d_prime  # type: ignore[return-value] # return type hints for scan operators broken in GT4Py
+    return q, d_prime
 
 
 @gtx.scan_operator(axis=dims.KHalfDim, forward=False, init=wpfloat("0.0"))
@@ -94,7 +94,7 @@ def _solve_tridiagonal_matrix_back_substitution_on_half_levels_mixed_precision(
     q: vpfloat,
     d_prime: wpfloat,
 ) -> wpfloat:
-    return d_prime + x_kplus1 * astype(q, wpfloat)  # type: ignore[return-value] # return type hints for scan operator broken in GT4Py
+    return d_prime + x_kplus1 * astype(q, wpfloat)
 
 
 # one per field type: field operators are not generic over dimensions

@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import typing
+
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
@@ -24,8 +26,11 @@ def test_config_rejects_negative_km_min() -> None:
         tmx_config.TmxConfig(km_min=-1.0)
 
 
-def test_config_coerces_enums_from_ints() -> None:
-    config = tmx_config.TmxConfig(solver_type=2, energy_type=2)
+def test_config_accepts_enum_members() -> None:
+    config = tmx_config.TmxConfig(
+        solver_type=tmx_config.SolverType.IMPLICIT,
+        energy_type=tmx_config.EnergyType.INTERNAL,
+    )
     assert config.solver_type is tmx_config.SolverType.IMPLICIT
     assert config.energy_type is tmx_config.EnergyType.INTERNAL
 
@@ -33,13 +38,13 @@ def test_config_coerces_enums_from_ints() -> None:
 @pytest.mark.parametrize("solver_type", [1, 3])
 def test_config_rejects_unimplemented_solver_types(solver_type: int) -> None:
     with pytest.raises(ValueError, match="solver_type"):
-        tmx_config.TmxConfig(solver_type=solver_type)
+        tmx_config.TmxConfig(solver_type=typing.cast(tmx_config.SolverType, solver_type))
 
 
 @pytest.mark.parametrize("energy_type", [1, 3])
 def test_config_rejects_unimplemented_energy_types(energy_type: int) -> None:
     with pytest.raises(ValueError, match="energy_type"):
-        tmx_config.TmxConfig(energy_type=energy_type)
+        tmx_config.TmxConfig(energy_type=typing.cast(tmx_config.EnergyType, energy_type))
 
 
 def test_config_round_trips_through_config_io() -> None:

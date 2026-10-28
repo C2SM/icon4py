@@ -125,23 +125,23 @@ def test_tmx_run_energy_update_single_step(
         # measured atol=1.5e-13, rtol=3.0e-4
         "dissip_ke": (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), 2.0e-13, 0.0),
         # measured atol=1.4e-6, rtol=5.0e-16
-        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 0.0, 6.0e-16),
+        "cptgzvi": (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), 0.0, 6.0e-16),  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
         # measured atol=7.5e-13, rtol=3.4e-9
-        "dissip_ke_vi": (
+        "dissip_ke_vi": (  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
             diagnostic_state.dissip_ke_vi,
             exit_savepoint.dissip_ke_vi(),
             9.0e-13,
             0.0,
         ),
         # measured atol=1.2e-6, rtol=6.4e-16
-        "int_energy_vi": (
+        "int_energy_vi": (  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
             diagnostic_state.int_energy_vi,
             exit_savepoint.int_energy_vi(),
             0.0,
             8.0e-16,
         ),
         # measured atol=4.8e-9, rtol=5.7e-11
-        "tend_int_energy_vi": (
+        "tend_int_energy_vi": (  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
             diagnostic_state.tend_int_energy_vi,
             exit_savepoint.tend_int_energy_vi(),
             0.0,

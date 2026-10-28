@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from collections.abc import Mapping
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -50,7 +51,7 @@ class TestMoApplyNabla2ToW(stencil_tests.StencilTest):
         geofac_n2s: np.ndarray,
         w: np.ndarray,
         diff_multfac_w: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         w = apply_nabla2_to_w_numpy(
@@ -64,7 +65,9 @@ class TestMoApplyNabla2ToW(stencil_tests.StencilTest):
         return dict(w=w)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         area = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
         z_nabla2_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)

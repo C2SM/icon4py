@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
 from unittest import mock
 
 import cffi
@@ -18,10 +19,19 @@ from icon4py.bindings import (
     grid_wrapper,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.testing.definitions import Experiment
+from icon4py.model.testing.serialbox import IconGridSavepoint
+from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 
 
-def _grid_init_kwargs(grid_savepoint, experiment, *, parallel_arrays, comm_id):
+def _grid_init_kwargs(
+    grid_savepoint: IconGridSavepoint,
+    experiment: Experiment,
+    *,
+    parallel_arrays: dict[str, py2fgen.ArrayInfo],
+    comm_id: int | None,
+) -> dict[str, Any]:
     """Build the kwargs dict for ``grid_wrapper.grid_init`` from savepoint data."""
     num_vertices = grid_savepoint.num(dims.VertexDim)
     num_cells = grid_savepoint.num(dims.CellDim)
@@ -116,7 +126,7 @@ def _grid_init_kwargs(grid_savepoint, experiment, *, parallel_arrays, comm_id):
 
 
 @pytest.fixture
-def grid_init(grid_savepoint, experiment):
+def grid_init(grid_savepoint: IconGridSavepoint, experiment: Experiment) -> None:
     # serial mode: parallel arrays unused inside grid_init
     _dummy_int = np.array([], dtype=np.int32)
     _dummy_bool = np.array([], dtype=np.bool_)
@@ -139,7 +149,9 @@ def grid_init(grid_savepoint, experiment):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("backend", [None])
-def test_grid_init_calls_decomposition_helpers_with_kwargs(grid_savepoint, experiment, backend):
+def test_grid_init_calls_decomposition_helpers_with_kwargs(
+    grid_savepoint: IconGridSavepoint, experiment: Experiment, backend: None
+) -> None:
     """grid_init must call ``construct_decomposition`` and ``print_grid_decomp_info`` with
     kwargs — both are keyword-only since #1270 and a positional call TypeErrors at runtime."""
     num_cells = grid_savepoint.num(dims.CellDim)

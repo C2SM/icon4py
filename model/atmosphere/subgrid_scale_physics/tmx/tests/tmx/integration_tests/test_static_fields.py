@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import static_fields
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import static_fields, tmx_states
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
@@ -26,6 +26,7 @@ from .utils import construct_interpolation_state, construct_metric_state
 
 
 if TYPE_CHECKING:
+    import gt4py.next as gtx
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.testing import serialbox as sb
@@ -124,5 +125,7 @@ def test_static_states_from_field_sources_match_savepoints(
         )
 
 
-def _leaves(state: object) -> list[tuple[str, object]]:
+def _leaves(
+    state: tmx_states.TmxMetricState | tmx_states.TmxInterpolationState,
+) -> list[tuple[str, gtx.Field]]:
     return [(f.name, getattr(state, f.name)) for f in dataclasses.fields(state)]

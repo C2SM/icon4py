@@ -82,7 +82,9 @@ class TestApplyDiffusionToThetaAndExner(stencil_tests.StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         kh_smag_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim)
         theta_v_in = data_alloc.random_field(dims.CellDim, dims.KDim)

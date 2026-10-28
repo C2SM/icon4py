@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Optional
+from collections.abc import Callable
 
 import cffi
 import pytest
@@ -46,11 +46,11 @@ def make_array_info(
 
 
 @export_with_mapping_hook
-def foo(a: gtx.Field[gtx.Dims[SomeDim], gtx.int32], b: gtx.int32):
-    return a, b
+def foo(a: gtx.Field[gtx.Dims[SomeDim], gtx.int32], b: gtx.int32) -> None:
+    return a, b  # type: ignore[return-value]  # py2fgen export requires 'None'
 
 
-def test_mapping_hook():
+def test_mapping_hook() -> None:
     ffi = cffi.FFI()
 
     array_ptr = ffi.new("int[10]")
@@ -65,19 +65,19 @@ def test_mapping_hook():
     assert result_b == 5
 
 
-def fun_non_optional(_: int):
+def fun_non_optional(_: int) -> None:
     pass
 
 
-def fun_with_optional(_: int | None):
+def fun_with_optional(_: int | None) -> None:
     pass
 
 
-def fun_with_None(_: int | None):
+def fun_with_None(_: int | None) -> None:
     pass
 
 
-def fun_with_None_first(_: None | int):
+def fun_with_None_first(_: None | int) -> None:
     pass
 
 
@@ -90,7 +90,7 @@ def fun_with_None_first(_: None | int):
         (fun_with_None_first, True),
     ],
 )
-def test_is_optional_type_hint(fun, is_optional):
+def test_is_optional_type_hint(fun: Callable[..., None], is_optional: bool) -> None:
     testee = typing.get_type_hints(fun)["_"]
 
     result = icon4py_export._is_optional_type_hint(testee)
@@ -107,7 +107,7 @@ def test_is_optional_type_hint(fun, is_optional):
         (fun_with_None_first, True),
     ],
 )
-def test_unpack_optional_type_hint(fun, expected_is_optional):
+def test_unpack_optional_type_hint(fun: Callable[..., None], expected_is_optional: bool) -> None:
     testee = typing.get_type_hints(fun)["_"]
 
     result, is_optional = icon4py_export._unpack_optional_type_hint(testee)

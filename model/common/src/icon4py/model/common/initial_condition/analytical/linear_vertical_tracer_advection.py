@@ -136,9 +136,9 @@ def _fill_prep_adv_from_prescribed_wind_field(
     mass_flx_me = prep_adv_state.mass_flx_me.ndarray
     mass_flx_ic = prep_adv_state.mass_flx_ic.ndarray
 
-    vn_traj[:, :] = 0.0
-    mass_flx_me[:, :] = 0.0
-    mass_flx_ic[:, :] = w
+    vn_traj[:, :] = 0.0  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    mass_flx_me[:, :] = 0.0  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    mass_flx_ic[:, :] = w  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
 
 def _fill_tracer_from_analytical_profile(
@@ -208,7 +208,7 @@ def linear_vertical_advection(
     z_mc = metrics.get(metrics_meta.Z_MC).ndarray
     z_ifc = metrics.get(metrics_meta.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
 
-    prognostic_state_now.rho.ndarray[:, :] = 1.0
+    prognostic_state_now.rho.ndarray[:, :] = 1.0  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
     _fill_prep_adv_from_prescribed_wind_field(
         velocity_field=ic_config.velocity_field,

@@ -8,7 +8,6 @@
 import copy
 import functools
 import logging
-from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -68,10 +67,10 @@ def test_props(process_props: decomp_defs.ProcessProperties) -> None:
 @pytest.mark.datatest
 def test_decomposition_info_masked(  # noqa: PLR0917 [too-many-positional-arguments]
     dim: gtx.Dimension,
-    owned: int,
-    total: int,
-    caplog: Any,
-    download_ser_data: Any,
+    owned: tuple[int, int],
+    total: tuple[int, int],
+    caplog: pytest.LogCaptureFixture,
+    download_ser_data: None,
     decomposition_info: decomp_defs.DecompositionInfo,
     process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
@@ -95,7 +94,9 @@ def test_decomposition_info_masked(  # noqa: PLR0917 [too-many-positional-argume
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
 
 
-def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
+def _assert_index_partitioning(
+    all_indices: np.ndarray, halo_indices: np.ndarray, owned_indices: np.ndarray
+) -> None:
     owned_list = owned_indices.tolist()
     halos_list = halo_indices.tolist()
     all_list = all_indices.tolist()
@@ -124,13 +125,13 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 @pytest.mark.mpi(min_size=2)
 def test_decomposition_info_local_index(  # noqa: PLR0917 [too-many-positional-arguments]
     dim: gtx.Dimension,
-    owned: int,
-    total: int,
-    caplog: Any,
+    owned: tuple[int, int],
+    total: tuple[int, int],
+    caplog: pytest.LogCaptureFixture,
     decomposition_info: decomp_defs.DecompositionInfo,
     process_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
-):
+) -> None:
     caplog.set_level(logging.INFO)
     parallel_helpers.check_comm_size(process_props, sizes=(2,))
     my_rank = process_props.rank
@@ -222,7 +223,7 @@ def test_domain_descriptor_id_are_globally_unique(
 @pytest.mark.datatest
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_decomposition_info_matches_gridsize(
-    caplog: Any,
+    caplog: pytest.LogCaptureFixture,
     decomposition_info: decomp_defs.DecompositionInfo,
     icon_grid: icon.IconGrid,
     process_props: decomp_defs.ProcessProperties,
@@ -290,7 +291,7 @@ def test_exchange_on_dummy_data(
     local_points = data_alloc.as_numpy(
         decomposition_info.local_index(dimension, decomp_defs.DecompositionInfo.EntryType.OWNED)
     )
-    assert (input_field.ndarray == number).all()
+    assert bool((input_field.ndarray == number).all())  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks .all() method
     exchange.exchange(dimension, input_field, stream=decomp_defs.BLOCK)
     result = input_field.asnumpy()
     _log.info(f"rank={process_props.rank} - num of halo points ={halo_points.shape}")
@@ -316,7 +317,7 @@ def test_halo_exchange_for_sparse_field(  # noqa: PLR0917 [too-many-positional-a
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
     decomposition_info: decomp_defs.DecompositionInfo,
-):
+) -> None:
     edge_length = grid_savepoint.primal_edge_length()
     edge_orientation = grid_savepoint.edge_orientation()
     area = grid_savepoint.cell_areas()
