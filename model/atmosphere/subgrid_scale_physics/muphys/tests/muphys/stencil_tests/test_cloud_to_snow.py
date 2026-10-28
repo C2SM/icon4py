@@ -43,7 +43,7 @@ class TestCloudToSnow(stencil_tests.StencilTest):
         return dict(riming_snow_rate=rate)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, gtx.Field]:
         return dict(
             t=data_alloc.constant_field(256.571, dims.CellDim, dims.KDim, dtype=wpfloat),
             qc=data_alloc.constant_field(3.31476e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
