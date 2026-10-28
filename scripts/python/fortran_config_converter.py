@@ -34,6 +34,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.subgrid_scale_physics.surface import config as surface_config
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, prescribed_tendencies, time
@@ -220,7 +221,7 @@ NONHYDROSTATIC = ConfigMapping(
 
 
 def _convert_nudge_max_coeff(nudge_max_coeff: float) -> float:
-    return constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * nudge_max_coeff
+    return float(constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * nudge_max_coeff)
 
 
 INTERPOLATION = ConfigMapping(
@@ -416,6 +417,30 @@ TMX = ConfigMapping(
 )
 
 
+def _sst_in_kelvin(sst_in_celsius: float) -> float:
+    return float(constants.MELTING_TEMPERATURE + sst_in_celsius)
+
+
+# The surface scheme of tmx is configured by `nh_testcase_nml`, which ICON does not dump;
+# these are the defaults of mo_nh_testcases_nml.f90 for the members the namelist leaves out.
+_SURFACE_TESTCASE_DEFAULTS: typing.Final = {
+    "isrfc_type": 0,
+    "ape_sst_case": "sst1",
+    "ape_sst_val": 29.0,
+}
+
+SURFACE = ConfigMapping(
+    surface_config.SurfaceConfig,
+    [
+        # read as a plain int so that `SurfaceConfig.__post_init__` reports the unported schemes
+        IconOption("surface_flux_type", ("isrfc_type",), converter=int),
+        IconOption("kinematic_sensible_heat_flux", ("shflx",), required=False),
+        IconOption("kinematic_latent_heat_flux", ("lhflx",), required=False),
+        IconOption("sea_surface_temperature", ("ape_sst_val",), converter=_sst_in_kelvin),
+    ],
+)
+
+
 def _read_use_tmx(atm_dict: dict[str, Any]) -> bool:
     """Read the `use_tmx` switch, checking the layout the pinned positions rely on.
 
@@ -479,6 +504,20 @@ def make_tmx_config(
         return None
     _check_tmx_positions(atm_dict=atm_dict, input_dict=input_dict)
     return TMX.build(atm_dict)
+
+
+def make_surface_config(
+    *, atm_dict: dict[str, Any], input_dict: dict[str, Any]
+) -> surface_config.SurfaceConfig | None:
+    """The configuration of tmx's surface scheme, or None when the experiment does not run tmx."""
+    if not tmx_is_active(atm_dict):
+        return None
+    testcase_nml = _SURFACE_TESTCASE_DEFAULTS | input_dict.get("nh_testcase_nml", {})
+    if (sst_case := testcase_nml["ape_sst_case"]) != "sst_const":
+        raise NotImplementedError(
+            f"ape_sst_case = {sst_case!r}: only the constant SST ('sst_const') is ported."
+        )
+    return SURFACE.build(testcase_nml)
 
 
 # The analytical test cases are read from `nh_testcase_nml`, which ICON does not dump
@@ -732,6 +771,7 @@ def convert_experiment(
     # tmx is configured by the AES vertical-diffusion namelist; the driver does not run
     # the granule yet (icon4py#1360), but the config travels with the experiment.
     tmx_cfg = make_tmx_config(atm_dict=atm_dict, input_dict=input_dict)
+    surface_cfg = make_surface_config(atm_dict=atm_dict, input_dict=input_dict)
 
     return driver_config.ExperimentConfig(
         geometry=geometry_cfg,
@@ -745,6 +785,7 @@ def convert_experiment(
         graupel=graupel_cfg,
         muphys=muphys_cfg,
         tmx=tmx_cfg,
+        surface=surface_cfg,
         topography=topography_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=make_prescribed_tendencies_config(atm_dict),

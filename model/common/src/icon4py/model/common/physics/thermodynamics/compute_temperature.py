@@ -155,7 +155,7 @@ def compute_temperature_from_internal_energy_per_area(  # noqa: PLR0917 [too-man
             PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
             + PhysicsConstants.cvv * qv
             + PhysicsConstants.cpl * qliq
-            + PhysicsConstants.cpi * qice
+            + PhysicsConstants.ci_thermo * qice
         )
         * rho
         * dz
@@ -195,7 +195,7 @@ def compute_temperature_from_internal_energy_per_area_scalar(  # noqa: PLR0917 [
             PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
             + PhysicsConstants.cvv * qv
             + PhysicsConstants.cpl * qliq
-            + PhysicsConstants.cpi * qice
+            + PhysicsConstants.ci_thermo * qice
         )
         * rho
         * dz

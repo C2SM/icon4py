@@ -53,6 +53,7 @@ ALL_MODEL_SUBPACKAGES = [
     "microphysics",
     "muphys",
     "tmx",
+    "surface",
     "physics_driver",
     "common",
     "driver",
