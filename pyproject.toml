@@ -154,18 +154,6 @@ version = "{current_version}"
 [tool.mypy]
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
-exclude = '''(?x)^(
-  ^model/testing/src/icon4py/model/testing/serialbox\.py$|  # serialbox C-extension module without type stubs
-  .*/docs/.*|                                                 # documentation files (depth-matched; docs/ may appear under multiple roots)
-  # Sibling packages in the same namespace are already fully annotated; these
-  # remaining directories are outside the model namespace packages and are
-  # excluded from this type-checking rollout.
-  ^bindings/tests/.*|         # untyped bindings tests (future annotation work)
-  ^tools/tests/.*|            # untyped tools tests (future annotation work)
-  ^scripts/.*|                # command-line scripts not imported as part of the checked packages
-  ^noxfile\.py$|              # nox session definitions
-  ^scripts-cli\.py$          # CLI entry point
-)$'''
 explicit_package_bases = true
 files = [
   '$MYPY_CONFIG_FILE_DIR'
@@ -187,6 +175,7 @@ $MYPY_CONFIG_FILE_DIR/model/driver/tests:
 $MYPY_CONFIG_FILE_DIR/model/testing/src:
 $MYPY_CONFIG_FILE_DIR/tools/src:
 $MYPY_CONFIG_FILE_DIR/bindings/src:
+$MYPY_CONFIG_FILE_DIR/tools:
 '''
 namespace_packages = true
 plugins = ["gt4py.next.type_system.mypy_plugin", "icon4py.model.common.type_system.mypy_plugin"]
@@ -277,6 +266,44 @@ ignore_missing_imports = true
 # Any so the bindings viztracer plugin can be checked consistently whether
 # viztracer is installed.
 module = ["viztracer"]
+
+[[tool.mypy.overrides]]
+# scripts/ holds repository-infrastructure tooling (release automation, CI
+# pipeline generation, serialization helpers). It predates the type-checking
+# rollout, lives outside the icon4py namespace packages, and is tracked here
+# explicitly per module instead of through a blanket exclude, so the
+# type-checking scope boundary stays visible in this config.
+ignore_errors = true
+module = ["scripts", "scripts.*"]
+
+[[tool.mypy.overrides]]
+# Root-level nox session definitions and the scripts CLI entry point are
+# development infrastructure outside the checked packages; see the scripts
+# override above for the rationale.
+ignore_errors = true
+module = ["noxfile", "scripts-cli"]
+
+[[tool.mypy.overrides]]
+# Sphinx build configuration and extensions for the dycore documentation.
+# Documentation sources are not part of the checked packages; tracked
+# explicitly per module instead of through a blanket exclude.
+ignore_errors = true
+module = ["model.atmosphere.dycore.docs", "model.atmosphere.dycore.docs.*"]
+
+[[tool.mypy.overrides]]
+# The icon4py_bindings.py files under bindings/tests/references and
+# bindings/tests/references_new are verbatim generator output checked in as
+# fixtures for the codegen comparison tests: they import the compiled
+# icon4py_bindings C extension module and define the generated ffi.def_extern
+# wrappers without annotations by design. Annotating them would break the
+# verbatim comparison against the generator output.
+ignore_errors = true
+module = [
+  "bindings.tests.bindings.references",
+  "bindings.tests.bindings.references.*",
+  "bindings.tests.bindings.references_new",
+  "bindings.tests.bindings.references_new.*"
+]
 
 # -- pytest --
 [tool.pytest]
