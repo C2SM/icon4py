@@ -26,6 +26,7 @@ from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
 
 def _facade(grid, air_mass):
     tracers = types.SimpleNamespace(qv="QV", qc="QC", qi="QI", qr="QR", qs="QS", qg="QG")
+    fluxes = SurfaceFluxState.allocate(grid)  # what the surface process provides
     return types.SimpleNamespace(
         diagnostics=types.SimpleNamespace(
             temperature="TA", virtual_temperature="TV", pressure="P", u="U", v="V"
@@ -34,7 +35,8 @@ def _facade(grid, air_mass):
         rho="RHO",
         tracers=tracers,
         air_mass=air_mass,
-        surface=types.SimpleNamespace(fluxes=SurfaceFluxState.allocate(grid)),
+        fluxes=fluxes,
+        diagnostic_output=lambda name: getattr(fluxes, name),
     )
 
 
@@ -48,7 +50,7 @@ def test_as_component_input_maps_the_facade_without_copies():
     assert inputs["temperature"] == "TA" and inputs["w"] == "W" and inputs["qg"] == "QG"
     assert inputs["air_mass"] == "MAIR"
     for name in tmx_data.FLUX_PORTS:
-        assert inputs[name] is getattr(facade.surface.fluxes, name)  # the surface state's fields
+        assert inputs[name] is getattr(facade.fluxes, name)  # read by name from the state
 
 
 def test_as_component_input_requires_the_air_mass():

@@ -355,7 +355,7 @@ def test_allocate_process_diagnostics_from_metadata():
     assert set(buffers) == {"kh", "cptgz_vi"}
     assert buffers["kh"].domain.dims == (dims.CellDim, dims.KDim)
     assert buffers["cptgz_vi"].domain.dims == (dims.CellDim,)
-    assert ws.process_diagnostics["tmx"] is buffers
+    assert ws.diagnostic_output("kh") is buffers["kh"]
 
 
 def test_allocate_process_diagnostics_of_a_half_level_output_from_khalfdim():
@@ -368,19 +368,6 @@ def test_allocate_process_diagnostics_of_a_half_level_output_from_khalfdim():
 
     assert buffers["kh"].domain.dims == (dims.CellDim, dims.KHalfDim)
     assert buffers["kh"].ndarray.shape == (grid.num_cells, grid.num_levels + 1)
-
-
-def test_allocate_process_diagnostics_keeps_processes_apart():
-    # Keyed per process: two processes may declare the same output name.
-    # TODO(Chia Rui): Maybe this is not always the case.
-    grid = simple.simple_grid()
-    ws = _physics_state(grid)
-    props = {"kh": _meta(dims.CellDim, dims.KDim)}
-
-    ws.allocate_process_diagnostics("muphys", props)
-    ws.allocate_process_diagnostics("tmx", props)
-
-    assert ws.process_diagnostics["muphys"]["kh"] is not ws.process_diagnostics["tmx"]["kh"]
 
 
 def test_allocate_process_diagnostics_rejects_a_duplicate_process_name():
@@ -415,65 +402,31 @@ def test_process_diagnostics_are_not_set_as_attributes():
 
 
 # ---------------------------------------------------------------------------
-# The surface state
+# Reading another process's diagnostics
 # ---------------------------------------------------------------------------
 
 
-def test_surface_state_is_allocated_with_the_physics_state():
+def test_diagnostic_output_finds_the_providing_process():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
-
-    fields = ws.surface.fields()
-    assert set(fields) == {
-        "evapotranspiration",
-        "sensible_heat_flux",
-        "latent_heat_flux",
-        "u_stress",
-        "v_stress",
-        "q_snocpymlt",
-        "thermal_energy_flux",
-        "vapor_energy_flux",
-        "exchange_coefficient_momentum",
-        "exchange_coefficient_heat",
-        "surface_temperature",
-    }
-    for field in fields.values():
-        assert field.domain.dims == (dims.CellDim,)
-        assert np.all(field.asnumpy() == 0.0)
-
-
-def test_allocate_process_diagnostics_binds_surface_fields_and_allocates_the_rest():
-    grid = simple.simple_grid()
-    ws = _physics_state(grid)
-
-    buffers = ws.allocate_process_diagnostics(
-        "surface",
-        {"sensible_heat_flux": _meta(dims.CellDim), "kh": _meta(dims.CellDim, dims.KDim)},
+    surface = ws.allocate_process_diagnostics(
+        "surface", {"sensible_heat_flux": _meta(dims.CellDim)}
     )
+    ws.allocate_process_diagnostics("tmx", {"kh": _meta(dims.CellDim, dims.KDim)})
 
-    # identity: the surface process writes the shared surface state in place
-    assert buffers["sensible_heat_flux"] is ws.surface.fluxes.sensible_heat_flux
-    assert buffers["kh"] is not ws.surface.fluxes.sensible_heat_flux
-    assert buffers["kh"].domain.dims == (dims.CellDim, dims.KDim)
+    # identity: the reader gets the very buffer the surface writes, by name alone
+    assert ws.diagnostic_output("sensible_heat_flux") is surface["sensible_heat_flux"]
+    with pytest.raises(KeyError, match="No process provides the diagnostic 'u_stress'"):
+        ws.diagnostic_output("u_stress")
 
 
-def test_allocate_process_diagnostics_rejects_a_second_writer_of_a_surface_field():
+def test_allocate_process_diagnostics_rejects_a_second_provider_of_a_name():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
     ws.allocate_process_diagnostics("surface", {"surface_temperature": _meta(dims.CellDim)})
 
-    with pytest.raises(ValueError, match="already written by process 'surface'"):
+    with pytest.raises(ValueError, match="already provided by process 'surface'"):
         ws.allocate_process_diagnostics("ocean", {"surface_temperature": _meta(dims.CellDim)})
-
-
-def test_allocate_process_diagnostics_rejects_wrong_dims_for_a_surface_field():
-    grid = simple.simple_grid()
-    ws = _physics_state(grid)
-
-    with pytest.raises(ValueError, match="declares dims"):
-        ws.allocate_process_diagnostics(
-            "surface", {"sensible_heat_flux": _meta(dims.CellDim, dims.KDim)}
-        )
 
 
 def test_update_prognostics_returns_the_written_fields():

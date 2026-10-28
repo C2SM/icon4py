@@ -25,9 +25,6 @@ from icon4py.model.common.decomposition import definitions as decomposition
 
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-    import gt4py.next as gtx
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common import field_type_aliases as fa, type_alias as ta
@@ -135,11 +132,6 @@ class PhysicsDriver:
                     process.name, process.component.outputs_properties
                 )
             )
-
-    @property
-    def process_diagnostics(self) -> Mapping[str, Mapping[str, gtx.Field]]:
-        """The diagnostic output buffers of every process, keyed by process name."""
-        return self._state.process_diagnostics
 
     @classmethod
     def from_sources(
