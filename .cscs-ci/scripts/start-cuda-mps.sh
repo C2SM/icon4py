@@ -29,7 +29,14 @@ if ! timeout ${mps_pid_file_timeout} bash -c "until [[ -f \"${pid_file}\" ]]; do
     exit 1
 fi
 
-echo "Using MPS server with GPU ${CUDA_VISIBLE_DEVICES}, MPS pipe directory ${CUDA_MPS_PIPE_DIRECTORY}, MPS log directory ${CUDA_MPS_LOG_DIRECTORY} on rank ${SLURM_PROCID}"
+# CUDA_VISIBLE_DEVICES indices are relative to the job's allocation; UUIDs
+# identify the physical GPU, e.g. to check if two jobs share a GPU.
+if ! gpu_uuids=$(nvidia-smi --query-gpu=uuid --format=csv,noheader -i "${CUDA_VISIBLE_DEVICES}" 2>/dev/null); then
+    gpu_uuids="unknown"
+fi
+gpu_uuids=${gpu_uuids//$'\n'/,}
+
+echo "Using MPS server with GPU ${CUDA_VISIBLE_DEVICES} (UUID ${gpu_uuids}), MPS pipe directory ${CUDA_MPS_PIPE_DIRECTORY}, MPS log directory ${CUDA_MPS_LOG_DIRECTORY} on rank ${SLURM_PROCID}"
 
 # Once the daemon has been started, unset CUDA_VISIBLE_DEVICES as the
 # selection has already been made in the daemon.

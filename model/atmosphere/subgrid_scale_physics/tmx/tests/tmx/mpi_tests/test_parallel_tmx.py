@@ -92,10 +92,13 @@ def test_parallel_tmx_run_single_step(
     diagnostic_state = tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator)
     tendency_state = tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator)
 
+    tmx_entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
     component.run(
-        input_state=construct_input_state(data_provider.from_savepoint_tmx_entry(date=date)),
+        input_state=construct_input_state(tmx_entry_savepoint),
         surface_flux_state=construct_surface_flux_state(
-            data_provider.from_savepoint_tmx_surface_fluxes(date=date)
+            data_provider.from_savepoint_tmx_surface_fluxes(date=date),
+            tmx_entry_savepoint,
+            allocator=allocator,
         ),
         diagnostic_state=diagnostic_state,
         tendency_state=tendency_state,

@@ -30,6 +30,7 @@ dependencies = [
   "icon4py-atmosphere-physics-driver~=0.4.1",
   "icon4py-atmosphere-microphysics~=0.4.1",
   "icon4py-atmosphere-muphys~=0.4.1",
+  "icon4py-atmosphere-surface~=0.4.1",
   "icon4py-atmosphere-tmx~=0.4.1",
   "icon4py-atmosphere-tracer_advection~=0.4.1",
   "icon4py-common[io]~=0.4.1",
@@ -37,7 +38,8 @@ dependencies = [
   "typer>=0.20.0",
   "devtools>=0.12",
   "gt4py==1.2.3",
-  "packaging>=20.0"
+  "packaging>=20.0",
+  "rich>=15.0.0"
 ]
 description = "ICON model driver."
 license = { text = "BSD-3 License" }
@@ -48,6 +50,7 @@ requires-python = ">=3.12"
 version = "0.4.1"
 
 [project.scripts]
+icon4py-configdoc = "icon4py.model.driver.config_doc:tapp"
 icon4py-driver = "icon4py.model.driver.main:app"
 
 [project.urls]
@@ -89,6 +92,7 @@ known-third-party = ['gt4py']
 # -- setuptools --
 [tool.setuptools.package-data]
 '*' = ['*.in', '*.md', '*.rst', '*.txt', 'LICENSE', 'py.typed']
+"icon4py.model.driver" = ["config_doc_cache.yaml"]
 
 [tool.setuptools.packages]
 find = { namespaces = true, where = ['src'] }
