@@ -11,8 +11,8 @@
 from __future__ import annotations
 
 import dataclasses
-import datetime
 from collections.abc import Callable
+from typing import ClassVar
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
@@ -25,15 +25,23 @@ __all__ = ["PhysicsProcess"]
 
 
 @dataclasses.dataclass
-class PhysicsProcess[I: fw.State, O: fw.State]:
+class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryState, O]):
     """
-    A component under a time control, with the output buffers it keeps between two runs.
+    A component that gates its wrapped component by time control.
 
-    Inside its window the process runs its component on the steps its time control fires and
-    on its first step in the window; on the other steps it returns the output of its last
-    run, which stays in `outputs` until the next. Typed over the component's `Input` and
-    `Output`: a `collect_input` that builds another component's `Input` is a type error.
+    The process's input is the physics driver's entry state, its output the wrapped component's,
+    which it keeps in the buffer the driver hands back to `run` each step so the values of the
+    last run survive to the next. Outside its time-control window the process contributes no
+    tendencies: it zeroes the `Tendency` leaves of the outputs it is handed and returns them,
+    the other leaves (the muphys fluxes) as given. Inside the window it runs its wrapped
+    component on the steps its time control fires and on its first step in the window; on the
+    other steps it returns the outputs unchanged, caching the last run's values. Typed over
+    the wrapped component's `Input` and `Output`: a `collect_input` that builds another
+    component's `Input` is a type error.
     """
+
+    Input = physics_state.EntryState
+    Output: ClassVar[type[O]]
 
     component: fw.Component[I, O]
     # the component's `Input` from the physics driver's entry state
@@ -44,15 +52,20 @@ class PhysicsProcess[I: fw.State, O: fw.State]:
     outputs: O
     _has_run: bool = dataclasses.field(default=False, init=False)
 
-    def step(self, entry: physics_state.EntryState, step_start: datetime.datetime) -> O | None:
-        """This step's output: computed, the last one again, or None outside the window."""
-        # Outside its window the process contributes nothing, and must not reach the reuse
-        # branch below, which would run once on the first step.
-        if not self.time_control.is_in_window(step_start):
-            return None
+    def run(self, inputs: physics_state.EntryState, outputs: O) -> O:
+        """This step's output: computed, cached from the last run, or zeroed outside the window."""
+        # Outside its window the process contributes no tendencies: the `Tendency` leaves of the
+        # outputs it is handed are zeroed, the other leaves (the muphys fluxes) left as given.
+        # It must not reach the caching branch below, which would run once on the first step.
+        if not self.time_control.is_in_window(inputs.step_start):
+            for field in fw.fields(outputs).values():
+                if issubclass(field.quantity, fw.Tendency):
+                    # NDArrayObject declares no __setitem__
+                    field.ndarray[...] = 0.0  # type: ignore[index]
+            return outputs
         # Run on a computing step, and also on the first in-window step, when there is nothing
-        # to reuse yet. Otherwise the last output is still in `outputs`.
-        if self.time_control.computes_at(step_start) or not self._has_run:
-            self.component.run(self.collect_input(entry), self.outputs)
+        # cached yet. Otherwise the values of the last run are still in the outputs.
+        if self.time_control.computes_at(inputs.step_start) or not self._has_run:
+            self.component.run(self.collect_input(inputs), outputs)
             self._has_run = True
-        return self.outputs
+        return outputs

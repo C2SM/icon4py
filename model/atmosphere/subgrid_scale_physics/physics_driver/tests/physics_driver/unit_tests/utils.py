@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import datetime
 from collections.abc import Sequence
 from typing import Any
@@ -123,6 +124,13 @@ def output(
 def filled[S: fw.State](cls: type[S], grid: base_grid.Grid, **values: float) -> S:
     """A state of `cls` with the given uniform leaves, zero elsewhere."""
     return fw.allocate(cls, grid, None, fill=lambda name, _: values.get(name, 0.0))
+
+
+def entry_state(grid: base_grid.Grid, *, step_start: datetime.datetime) -> physics_state.EntryState:
+    """An entry state of zero fields with the given step start."""
+    return dataclasses.replace(
+        fw.allocate(physics_state.EntryState, grid, None), step_start=step_start
+    )
 
 
 class Recorder(fw.Component[physics_state.EntryState, fw.State]):

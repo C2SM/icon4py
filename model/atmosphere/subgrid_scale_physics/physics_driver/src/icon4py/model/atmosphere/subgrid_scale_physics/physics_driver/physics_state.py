@@ -8,6 +8,8 @@
 
 """What the physics driver offers its processes each step."""
 
+import datetime
+
 from icon4py.model.common import framework as fw
 from icon4py.model.common.framework import quantities as qty
 
@@ -16,12 +18,15 @@ from icon4py.model.common.framework import quantities as qty
 # driver's `Input` and `Diagnostics` directly, and the entry state goes.
 class EntryState(fw.State):
     """
-    The prognostics the physics driver received and the diagnostics it derived from them.
+    The prognostics the physics driver received, the diagnostics it derived from them, and the
+    start of the step being integrated.
 
-    ICON's dyn2phy: every leaf is a view onto the driver's input or onto its `diagnostics`, no
-    copies. Diagnosed once per step and never updated between the processes, which all read the
-    same entry state (parallel coupling). Each process picks its component's input from here
-    by hand (its `collect_input`).
+    ICON's dyn2phy: every field leaf is a view onto the driver's input or onto its `diagnostics`,
+    no copies; `step_start` is derived from the input instead: the end of the step being
+    integrated less its length. Diagnosed once per step and never updated between the
+    processes, which all read the same entry state (parallel coupling). Each process picks its
+    component's input from here by hand (its `collect_input`); its time control reads
+    `step_start`.
     """
 
     vn: fw.Field[qty.VnOnEdgeK]
@@ -41,3 +46,4 @@ class EntryState(fw.State):
     pressure_ifc: fw.Field[qty.PressureOnCellKHalf]
     u: fw.Field[qty.UOnCellK]
     v: fw.Field[qty.VOnCellK]
+    step_start: datetime.datetime = datetime.datetime.min

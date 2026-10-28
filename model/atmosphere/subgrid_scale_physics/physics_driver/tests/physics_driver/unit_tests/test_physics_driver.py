@@ -27,6 +27,7 @@ from .utils import (
     T0,
     Recorder,
     driver,
+    entry_state,
     filled,
     inputs,
     output,
@@ -112,24 +113,62 @@ class TestProcessTimeControl:
             tc.interval = datetime.timedelta(seconds=1)  # type: ignore[misc]
 
 
-def test_step_computes_when_active_reuses_otherwise_and_skips_outside_the_window(
+def test_run_zeroes_the_tendency_leaves_of_the_outputs_outside_the_window(
     grid: base_grid.Grid,
 ) -> None:
-    entry = fw.allocate(physics_state.EntryState, grid, None)
     window_end = T0 + 4 * DT
     outputs = filled(MoistOutput, grid)
     process, recorder = recording(outputs, time_control(interval=2 * DT, end=window_end))
+    # the outputs handed to this step, with a tendency and a flux already in them
+    given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
+    entry = entry_state(grid, step_start=window_end)
 
-    # the first step in the window computes even when it is not active
-    assert process.step(entry, T0 + DT) is outputs
-    # active: computes again
-    assert process.step(entry, T0 + 2 * DT) is outputs
-    # inactive: reuses the last output without collecting an input
-    assert process.step(entry, T0 + 3 * DT) is outputs
+    result = process.run(entry, given)
+
+    # the zeroing happens in place: the outputs handed in are the outputs handed back
+    assert result is given
+    # the tendency leaves are zeroed, the non-tendency leaves (the muphys fluxes) are not
+    np.testing.assert_array_equal(given.tend_qv.asnumpy(), 0.0)
+    np.testing.assert_array_equal(given.pflx.asnumpy(), 5.0)
+    # outside its window the process never runs its component
+    assert recorder.entries == []
+
+
+def test_run_computes_on_the_first_in_window_step_even_when_not_triggered(
+    grid: base_grid.Grid,
+) -> None:
+    # the process's first step in its window is not one its time control fires; it computes
+    # anyway, because there is nothing cached yet
+    outputs = filled(MoistOutput, grid)
+    process, recorder = recording(outputs, time_control(interval=2 * DT))
+    entry = entry_state(grid, step_start=T0 + DT)
+
+    assert process.run(entry, outputs) is outputs
+    assert len(recorder.entries) == 1
+
+    # the next step fires the time control again, over the cached values: it computes again
+    again = entry_state(grid, step_start=T0 + 2 * DT)
+
+    assert process.run(again, outputs) is outputs
     assert len(recorder.entries) == 2
-    # outside the window: nothing
-    assert process.step(entry, window_end) is None
-    assert len(recorder.entries) == 2
+
+
+def test_run_returns_the_outputs_unchanged_on_a_non_computing_in_window_step(
+    grid: base_grid.Grid,
+) -> None:
+    outputs = filled(MoistOutput, grid)
+    process, recorder = recording(outputs, time_control(interval=2 * DT))
+    # the first step computes; the second is in the window but does not fire
+    process.run(entry_state(grid, step_start=T0), outputs)
+
+    given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
+    before = given.tend_qv.asnumpy().tobytes()
+    result = process.run(entry_state(grid, step_start=T0 + DT), given)
+
+    # the given outputs come back unchanged: the very same object, bitwise the same tendency
+    assert result is given
+    assert given.tend_qv.asnumpy().tobytes() == before
+    assert len(recorder.entries) == 1
 
 
 def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(

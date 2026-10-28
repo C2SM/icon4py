@@ -296,8 +296,8 @@ class Component[I: State, O: State](Protocol):
     the component's business; nothing checks it here.
     """
 
-    Input: type[I]
-    Output: type[O]
+    Input: ClassVar[type[I]]
+    Output: ClassVar[type[O]]
 
     def run(self, inputs: I, outputs: O) -> O:
         raise NotImplementedError

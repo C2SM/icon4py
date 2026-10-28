@@ -59,9 +59,10 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     """
     Runs the physics processes under parallel coupling (ICON AES's aes_phy_main).
 
-    In one step the entry state is diagnosed once from the prognostics, every process active on
-    the step reads that same entry state, the tendencies of their outputs are summed and the sum
-    is applied to the prognostics once, at the end. The processes never write the prognostics.
+    In one step the entry state is diagnosed once from the prognostics, every process reads that
+    same entry state and gates its wrapped component by its time control, the tendencies of
+    their outputs are summed and the sum is applied to the prognostics once, at the end. The
+    processes never write the prognostics.
 
     Not implemented: ICON AES couples microphysics and turbulence sequentially (each process
     sees the previous one's provisional update), which would need per-process state advances.
@@ -215,11 +216,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     def run(self, inputs: Input, outputs: Output) -> Output:
         entry = self._diagnose(inputs)
         self._zero_accumulators()
-        # the time control reads the start of the step being integrated
-        step_start = inputs.simulation_current_datetime - inputs.dtime
         for process in self.processes:
-            if (output := process.step(entry, step_start)) is not None:
-                self._accumulate(output)
+            self._accumulate(process.run(entry, process.outputs))
         self._apply(entry, inputs.dtime.total_seconds(), outputs)
         return outputs
 
@@ -252,6 +250,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             pressure_ifc=diagnostics.pressure_ifc,
             u=diagnostics.u,
             v=diagnostics.v,
+            step_start=inputs.simulation_current_datetime - inputs.dtime,
         )
         # 1. virtual temperature and temperature
         self._diagnose_temperature(
