@@ -46,10 +46,8 @@ def make_array_info(
 
 
 @export_with_mapping_hook
-def foo(
-    a: gtx.Field[gtx.Dims[SomeDim], gtx.int32], b: gtx.int32
-) -> tuple[gtx.Field[gtx.Dims[SomeDim], gtx.int32], gtx.int32]:
-    return a, b
+def foo(a: gtx.Field[gtx.Dims[SomeDim], gtx.int32], b: gtx.int32) -> None:
+    return a, b  # type: ignore[return-value]  # py2fgen export requires 'None'
 
 
 def test_mapping_hook() -> None:
