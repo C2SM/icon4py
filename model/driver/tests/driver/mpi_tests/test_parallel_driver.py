@@ -160,7 +160,7 @@ def _run_driver_compare_single_multi_rank(
         driver={
             "output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
             "end_of_simulation": end_of_simulation,
-        }
+        },
     )
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

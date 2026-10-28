@@ -62,9 +62,7 @@ def read_from_file(
 
     data_path = config.data_path
 
-    ser = serialbox.Serializer(
-        serialbox.OpenModeKind.Read, str(data_path), "icon_pydycore_rank0"
-    )
+    ser = serialbox.Serializer(serialbox.OpenModeKind.Read, str(data_path), "icon_pydycore_rank0")
     sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()
     log.debug("Reading topography from %s / icon_pydycore_rank0", data_path)
 

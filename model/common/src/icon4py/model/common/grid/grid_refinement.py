@@ -230,7 +230,6 @@ def _compute_halo_domain_bounds_for_distributed_grid(
     h3_start = h2_end
     h3_end = h3_start + halo_3_count
 
-
     h1 = h_grid.domain(dim)(h_grid.Zone.HALO)
     h2 = h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2)
 
@@ -348,7 +347,6 @@ def compute_domain_bounds(
     refinement_ctrl = convert_to_non_nested_refinement_values(refinement_fields[dim].ndarray, dim)
     array_ns = data_alloc.array_namespace(refinement_ctrl)
     owned = decomposition_info.owner_mask(dim)
-
 
     start_indices = {}
     end_indices = {}

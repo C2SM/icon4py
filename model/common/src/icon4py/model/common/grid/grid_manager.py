@@ -265,7 +265,7 @@ class GridManager:
         #
         # IMPORTANT: read the FULL global V2E table (no indices= restriction) and
         # then numpy-slice to local vertex rows. Do NOT use:
-        #   self._get_index_field(V2E, indices=my_vertex_indices)
+        # self._get_index_field(V2E, indices=my_vertex_indices) # noqa: ERA001
         # because _get_index_field forwards indices= to the grid-file reader, which
         # returns only the locally-partitioned rows of V2E. On a LAM grid those rows
         # have INVALID_INDEX (-1) for edges that exist globally but are owned by other
