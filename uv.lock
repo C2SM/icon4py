@@ -82,7 +82,7 @@ wheels = [
 [[package]]
 dependencies = [
   { name = "idna" },
-  { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "typing-extensions", marker = "python_full_version < '3.13'" }
 ]
 name = "anyio"
 sdist = { url = "https://files.pythonhosted.org/packages/19/14/2c5dd9f512b66549ae92767a9c7b330ae88e1932ca57876909410251fe13/anyio-4.13.0.tar.gz", hash = "sha256:334b70e641fd2221c1505b3890c69882fe4a2df910cba14d97019b90b24439dc", size = 231622, upload-time = "2026-03-24T12:59:09.671Z" }
@@ -287,7 +287,7 @@ dependencies = [
   { name = "packaging" },
   { name = "pillow" },
   { name = "pyyaml" },
-  { name = "tornado", marker = "sys_platform != 'emscripten' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
+  { name = "tornado", marker = "sys_platform != 'emscripten'" },
   { name = "xyzservices" }
 ]
 name = "bokeh"
@@ -535,7 +535,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  { name = "pycparser", marker = "implementation_name != 'PyPy' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "pycparser", marker = "implementation_name != 'PyPy'" }
 ]
 name = "cffi"
 sdist = { url = "https://files.pythonhosted.org/packages/eb/56/b1ba7935a17738ae8453301356628e8147c79dbb825bcbc73dc7401f9846/cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529", size = 523588, upload-time = "2025-09-08T23:24:04.541Z" }
@@ -737,7 +737,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "colorama", marker = "sys_platform == 'win32'" }
 ]
 name = "click"
 sdist = { url = "https://files.pythonhosted.org/packages/bb/63/f9e1ea081ce35720d8b92acde70daaedace594dc93b693c869e0d5910718/click-8.3.3.tar.gz", hash = "sha256:398329ad4837b2ff7cbe1dd166a4c0f8900c3ca3a218de04466f38f6497f18a2", size = 328061, upload-time = "2026-04-22T15:11:27.506Z" }
@@ -802,7 +802,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "colorama", marker = "sys_platform == 'win32'" }
 ]
 name = "colorlog"
 sdist = { url = "https://files.pythonhosted.org/packages/a2/61/f083b5ac52e505dfc1c624eafbf8c7589a0d7f32daa398d2e7590efa5fda/colorlog-6.10.1.tar.gz", hash = "sha256:eb4ae5cb65fe7fec7773c2306061a8e63e02efc2c72eba9d27b0fa23c94f1321", size = 17162, upload-time = "2025-10-16T16:14:11.978Z" }
@@ -1173,7 +1173,7 @@ dependencies = [
   { name = "ordered-set" },
   { name = "packaging" },
   { name = "ply" },
-  { name = "pyreadline", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
+  { name = "pyreadline", marker = "sys_platform == 'win32'" },
   { name = "pyyaml" },
   { name = "scikit-build" },
   { name = "sympy" },
@@ -1433,7 +1433,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  { name = "tzdata", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "tzdata", marker = "sys_platform == 'win32'" }
 ]
 name = "faker"
 sdist = { url = "https://files.pythonhosted.org/packages/18/06/70886e82d8f1d2b73454f3a7c1b7405300128df22e70d85a828951366932/faker-40.18.0.tar.gz", hash = "sha256:2207575c0e8f90e6ccd6dbef764de875c614d16d3db4eee9712d9a00087f2e70", size = 1968243, upload-time = "2026-05-14T16:43:04.834Z" }
@@ -1658,8 +1658,8 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-source = { git = "https://github.com/GridTools/gt4py?branch=dace_noview_nested_sdfg#b080870bf8dc4338f226c47a5fa558579e682f4e" }
-version = "1.2.3.post39+b080870b"
+source = { git = "https://github.com/GridTools/gt4py?branch=dace_noview_nested_sdfg#b11af0584a13e8bbb2694a2624be450974e6b638" }
+version = "1.2.3.post43+b11af058"
 
 [package.optional-dependencies]
 cuda12 = [
@@ -2044,7 +2044,7 @@ profiling = [
   { name = "viztracer" }
 ]
 rocm7 = [
-  { name = "icon4py-common", extra = ["rocm7"], marker = "(extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra != 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7') or (extra != 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "icon4py-common", extra = ["rocm7"], marker = "extra == 'extra-7-icon4py-rocm7' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13')" }
 ]
 testing = [
   { name = "icon4py-testing" }
@@ -3180,7 +3180,7 @@ wheels = [
 [[package]]
 dependencies = [
   { name = "ast-serialize" },
-  { name = "librt", marker = "platform_python_implementation != 'PyPy' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
+  { name = "librt", marker = "platform_python_implementation != 'PyPy'" },
   { name = "mypy-extensions" },
   { name = "pathspec" },
   { name = "typing-extensions" }
@@ -3589,7 +3589,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "typing-extensions", marker = "python_full_version < '3.13'" }
 ]
 name = "optype"
 sdist = { url = "https://files.pythonhosted.org/packages/9b/86/e6f1f6f3487492dfcf3b7a2d4e2534d27af6ac05b364b276706906c34865/optype-0.17.1.tar.gz", hash = "sha256:07bfa32b795dea28fba8605a6288d36370d072f25183fb9c29b5a90f4b6f5638", size = 53572, upload-time = "2026-05-17T22:13:28.725Z" }
@@ -3689,7 +3689,7 @@ wheels = [
 dependencies = [
   { name = "numpy" },
   { name = "python-dateutil" },
-  { name = "tzdata", marker = "sys_platform == 'emscripten' or sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "tzdata", marker = "sys_platform == 'emscripten' or sys_platform == 'win32'" }
 ]
 name = "pandas"
 sdist = { url = "https://files.pythonhosted.org/packages/f8/87/4341c6252d1c47b08768c3d25ac487362bf403f0313ddae4a2a26c9b1b4c/pandas-3.0.3.tar.gz", hash = "sha256:696a4a00a2a2a35d4e5deb3fc946641b96c944f02230e4f76137fe35d806c4fc", size = 4651414, upload-time = "2026-05-11T18:54:29.21Z" }
@@ -4332,7 +4332,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
+  { name = "colorama", marker = "sys_platform == 'win32'" },
   { name = "iniconfig" },
   { name = "packaging" },
   { name = "pluggy" },
@@ -4349,7 +4349,7 @@ wheels = [
 [[package]]
 dependencies = [
   { name = "pytest" },
-  { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "typing-extensions", marker = "python_full_version < '3.13'" }
 ]
 name = "pytest-asyncio"
 sdist = { url = "https://files.pythonhosted.org/packages/43/7c/d36d04db312ecf4298932ef77e6e4a9e8ad017906e24e34f0b0c361a2473/pytest_asyncio-1.4.0.tar.gz", hash = "sha256:c6c0d2259945122819f171a32ecea2c349ead889ee28176caaf492143424be42", size = 58514, upload-time = "2026-05-26T09:56:04.083Z" }
@@ -4638,7 +4638,7 @@ wheels = [
 [[package]]
 dependencies = [
   { name = "click" },
-  { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
+  { name = "colorama", marker = "sys_platform == 'win32'" },
   { name = "rich" }
 ]
 name = "rich-click"
@@ -4999,7 +4999,7 @@ wheels = [
 dependencies = [
   { name = "alabaster" },
   { name = "babel" },
-  { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" },
+  { name = "colorama", marker = "sys_platform == 'win32'" },
   { name = "docutils" },
   { name = "imagesize" },
   { name = "jinja2" },
@@ -5038,7 +5038,7 @@ wheels = [
 dependencies = [
   { name = "jinja2" },
   { name = "markupsafe" },
-  { name = "standard-imghdr", marker = "python_full_version >= '3.13' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "standard-imghdr", marker = "python_full_version >= '3.13'" }
 ]
 name = "sphinx-jinja2-compat"
 sdist = { url = "https://files.pythonhosted.org/packages/43/98/43313781f29e8c6c46fec907430310172d6f207e95e4fbea9289990fbbfe/sphinx_jinja2_compat-0.4.1.tar.gz", hash = "sha256:0188f0802d42c3da72997533b55a00815659a78d3f81d4b4747b1fb15a5728e6", size = 5222, upload-time = "2025-08-06T20:06:25.824Z" }
@@ -5424,7 +5424,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "colorama", marker = "sys_platform == 'win32'" }
 ]
 name = "tqdm"
 sdist = { url = "https://files.pythonhosted.org/packages/09/a9/6ba95a270c6f1fbcd8dac228323f2777d886cb206987444e4bce66338dd4/tqdm-4.67.3.tar.gz", hash = "sha256:7d825f03f89244ef73f1d4ce193cb1774a8179fd96f31d7e1dcde62092b960bb", size = 169598, upload-time = "2026-02-03T17:35:53.048Z" }
@@ -5703,7 +5703,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  { name = "legacy-cgi", marker = "python_full_version >= '3.13' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')" }
+  { name = "legacy-cgi", marker = "python_full_version >= '3.13'" }
 ]
 name = "webob"
 sdist = { url = "https://files.pythonhosted.org/packages/85/0b/1732085540b01f65e4e7999e15864fe14cd18b12a95731a43fd6fd11b26a/webob-1.8.9.tar.gz", hash = "sha256:ad6078e2edb6766d1334ec3dee072ac6a7f95b1e32ce10def8ff7f0f02d56589", size = 279775, upload-time = "2024-10-24T03:19:20.651Z" }
