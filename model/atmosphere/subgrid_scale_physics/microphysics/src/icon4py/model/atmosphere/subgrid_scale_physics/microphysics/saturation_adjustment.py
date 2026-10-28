@@ -49,25 +49,25 @@ class ConvergenceError(Exception):
 
 #: CF attributes of saturation adjustment input variables
 _SATURATION_ADJUST_INPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
-    air_density=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+    air_density=dict(  # type: ignore[dict-item]  # plain dict literal is not the icon4py FieldMetaData type
         standard_name="air_density",
         long_name="density",
         units="kg m-3",
         icon_var_name="rho",
     ),
-    temperature=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+    temperature=dict(  # type: ignore[dict-item]  # plain dict literal is not the icon4py FieldMetaData type
         standard_name="air_temperature",
         long_name="air temperature",
         units="K",
         icon_var_name="temp",
     ),
-    specific_humidity=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+    specific_humidity=dict(  # type: ignore[dict-item]  # plain dict literal is not the icon4py FieldMetaData type
         standard_name="specific_humidity",
         long_name="ratio of water vapor mass to total moist air parcel mass",
         units="1",
         icon_var_name="qv",
     ),
-    specific_cloud=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+    specific_cloud=dict(  # type: ignore[dict-item]  # plain dict literal is not the icon4py FieldMetaData type
         standard_name="specific_cloud_content",
         long_name="ratio of cloud water mass to total moist air parcel mass",
         units="1",
@@ -78,17 +78,17 @@ _SATURATION_ADJUST_INPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dic
 
 #: CF attributes of saturation adjustment output variables
 _SATURATION_ADJUST_OUTPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
-    tend_temperature_due_to_satad=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+    tend_temperature_due_to_satad=dict(  # type: ignore[dict-item]  # plain dict literal is not the icon4py FieldMetaData type
         standard_name="tendency_of_air_temperature_due_to_saturation_adjustment",
         long_name="tendency of air temperature due to saturation adjustment",
         units="K s-1",
     ),
-    tend_specific_humidity_due_to_satad=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+    tend_specific_humidity_due_to_satad=dict(  # type: ignore[dict-item]  # plain dict literal is not the icon4py FieldMetaData type
         standard_name="tendency_of_specific_humidity_due_to_saturation_adjustment",
         long_name="tendency of ratio of water vapor mass to total moist air parcel mass due to saturation adjustment",
         units="s-1",
     ),
-    tend_specific_cloud_due_to_satad=dict(  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
+    tend_specific_cloud_due_to_satad=dict(  # type: ignore[dict-item]  # plain dict literal is not the icon4py FieldMetaData type
         standard_name="tendency_of_specific_cloud_content_due_to_saturation_adjustment",
         long_name="tendency of ratio of cloud water mass to total moist air parcel mass due to saturation adjustment",
         units="s-1",
