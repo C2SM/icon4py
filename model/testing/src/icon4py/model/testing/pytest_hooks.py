@@ -31,7 +31,7 @@ _TEST_LEVELS = ("any", "unit", "integration", "validation")
 
 
 @pytest.fixture(autouse=True)
-def _clear_decomposition_cache() -> Iterator[Any]:
+def _clear_decomposition_cache() -> Iterator[None]:
     yield
     from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
         mpi_decomposition,
@@ -130,7 +130,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     """Modify collected test items based on command line options."""
-    scheduler = getattr(config, "_mpi_scheduler", None)
+    scheduler = config.stash.get(_MPI_SCHEDULER_KEY, None)
     if scheduler is not None:
         items[:] = scheduler.filter_items(items)
         if not items:
@@ -340,7 +340,7 @@ def handle_mpi_options(config: pytest.Config) -> None:
 
         if subcomm_size is not None:
             scheduler = MPISubcommScheduler(subcomm_size)
-            config._mpi_scheduler = scheduler  # type: ignore[attr-defined]  # pytest internal _mpi_scheduler not exposed in type stubs
+            config.stash[_MPI_SCHEDULER_KEY] = scheduler
 
             if scheduler.subcomm.Get_rank() == 0:
                 start_rank = scheduler.group_id * scheduler.subcomm_size
@@ -431,7 +431,13 @@ class MPISubcommScheduler:
             mpi_decomposition._get_process_properties = self._original_get_props
 
 
+# Typed stash key for the icon4py-owned MPI subcomm scheduler: the scheduler
+# is our own session state (not a pytest symbol), so it is stored through
+# pytest's typed stash instead of an untyped config attribute.
+_MPI_SCHEDULER_KEY = pytest.StashKey[MPISubcommScheduler]()
+
+
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    scheduler = getattr(session.config, "_mpi_scheduler", None)
+    scheduler = session.config.stash.get(_MPI_SCHEDULER_KEY, None)
     if scheduler is not None:
         scheduler.finalize()
