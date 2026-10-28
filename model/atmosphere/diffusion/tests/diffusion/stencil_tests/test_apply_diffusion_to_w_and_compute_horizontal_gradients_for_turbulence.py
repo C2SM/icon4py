@@ -75,7 +75,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
         horizontal_end: int,
         vertical_start: int,
         vertical_end: int,
-        **kwargs: Any,  # framework pattern: reference receives arbitrary stencil params
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         k = np.arange(w_old.shape[1])

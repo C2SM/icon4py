@@ -73,7 +73,7 @@ class TestApplyNabla2AndNabla4GlobalToVn(stencil_tests.StencilTest):
         z_nabla4_e2: np.ndarray,
         diff_multfac_vn: np.ndarray,
         vn: np.ndarray,
-        **kwargs: Any,  # framework pattern: reference receives arbitrary stencil params
+        **kwargs: Any,
     ) -> dict:
         vn = apply_nabla2_and_nabla4_global_to_vn_numpy(
             area_edge=area_edge,

@@ -85,7 +85,7 @@ class TestApplyNabla2AndNabla4ToVn(stencil_tests.StencilTest):
         nudgecoeff_e: np.ndarray,
         vn: np.ndarray,
         nudgezone_diff: vpfloat,
-        **kwargs: Any,  # framework pattern: reference receives arbitrary stencil params
+        **kwargs: Any,
     ) -> dict:
         vn = apply_nabla2_and_nabla4_to_vn_numpy(
             area_edge=area_edge,
