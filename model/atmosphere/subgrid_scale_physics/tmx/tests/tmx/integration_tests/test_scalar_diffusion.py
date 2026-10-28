@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import icon as icon_grid_
+    from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
     from icon4py.model.testing import serialbox as sb
 
 
@@ -46,7 +47,7 @@ if TYPE_CHECKING:
 class _Setup:
     component: scalar_diffusion.ScalarDiffusion
     input_state: tmx_states.TmxInputState
-    surface_flux_state: tmx_states.TmxSurfaceFluxState
+    surface_flux_state: SurfaceFluxState
     diagnostic_state: tmx_states.TmxDiagnosticState
     tendency_state: tmx_states.TmxTendencyState
     new_state: tmx_states.TmxNewState
@@ -80,11 +81,14 @@ def _setup(
         use_scale_turb_energy_flux=config.use_scale_turb_energy_flux,
         scale_turb_energy_flux=config.scale_turb_energy_flux,
     )
+    tmx_entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
     return _Setup(
         component=component,
-        input_state=construct_input_state(data_provider.from_savepoint_tmx_entry(date=date)),
+        input_state=construct_input_state(tmx_entry_savepoint),
         surface_flux_state=construct_surface_flux_state(
-            data_provider.from_savepoint_tmx_surface_fluxes(date=date)
+            data_provider.from_savepoint_tmx_surface_fluxes(date=date),
+            tmx_entry_savepoint,
+            allocator=allocator,
         ),
         diagnostic_state=dataclasses.replace(
             tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),

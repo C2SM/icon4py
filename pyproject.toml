@@ -62,7 +62,9 @@ test = [
   "pytest-factoryboy>=2.6.1",
   "pytest-mpi>=0.6",
   "pytest-unused-fixtures>=0.2.0",
-  "pytest-xdist[psutil]>=3.5.0"
+  "pytest-xdist[psutil]>=3.5.0",
+  "pytest-asyncio>=1.4.0",
+  "pytest-textual-snapshot>=1.0.0"
 ]
 typing = [
   "mypy[faster-cache]>=1.13.0",
@@ -99,6 +101,7 @@ dependencies = [
   "icon4py-atmosphere-microphysics~=0.4.1",
   "icon4py-atmosphere-muphys~=0.4.1",
   "icon4py-atmosphere-tmx~=0.4.1",
+  "icon4py-atmosphere-surface~=0.4.1",
   "icon4py-atmosphere-physics-driver~=0.4.1",
   "icon4py-common~=0.4.1",
   "icon4py-driver~=0.4.1"
@@ -176,6 +179,7 @@ $MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/surface/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
 $MYPY_CONFIG_FILE_DIR/model/driver/src:
@@ -290,7 +294,8 @@ markers = [
   "infinite_concat_where",
   "gtfn_too_slow",
   "continuous_benchmarking",
-  "benchmark_only: benchmark only tests without verification"
+  "benchmark_only: benchmark only tests without verification",
+  "snapshots: snapshot tests for textual TUI apps (like config docs)"
 ]
 # add all namespace packages to pythonpath to make them available for pytest
 pythonpath = [
@@ -301,6 +306,7 @@ pythonpath = [
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/atmosphere/subgrid_scale_physics/tmx",
+  "model/atmosphere/subgrid_scale_physics/surface",
   "model/atmosphere/subgrid_scale_physics/physics_driver",
   "model/common",
   "model/driver",
@@ -451,6 +457,7 @@ icon4py-atmosphere-dycore = { workspace = true }
 icon4py-atmosphere-microphysics = { workspace = true }
 icon4py-atmosphere-muphys = { workspace = true }
 icon4py-atmosphere-physics-driver = { workspace = true }
+icon4py-atmosphere-surface = { workspace = true }
 icon4py-atmosphere-tmx = { workspace = true }
 icon4py-atmosphere-tracer_advection = { workspace = true }
 icon4py-bindings = { workspace = true }
@@ -468,6 +475,7 @@ members = [
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/atmosphere/subgrid_scale_physics/tmx",
+  "model/atmosphere/subgrid_scale_physics/surface",
   "model/atmosphere/subgrid_scale_physics/physics_driver",
   "model/common",
   "model/driver",

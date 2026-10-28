@@ -259,7 +259,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         PhysicsConstants.lh_sublimate
         if use_constant_latent_heat
         else PhysicsConstants.lh_sublimate
-        + (MicrophysicsConstants.CP_V - PhysicsConstants.cpi)
+        + (MicrophysicsConstants.CP_V - PhysicsConstants.ci_thermo)
         * (temperature - PhysicsConstants.tmelt)
         - PhysicsConstants.rv * temperature
     )

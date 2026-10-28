@@ -34,6 +34,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if typing.TYPE_CHECKING:
     import icon4py.model.common.grid.states as grid_states
     from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+    from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
 
 
 log = logging.getLogger(__name__)
@@ -132,7 +133,7 @@ class ScalarDiffusion:
         self,
         *,
         input_state: tmx_states.TmxInputState,
-        surface_flux_state: tmx_states.TmxSurfaceFluxState,
+        surface_flux_state: SurfaceFluxState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
         tendency_state: tmx_states.TmxTendencyState,
         new_state: tmx_states.TmxNewState,
@@ -192,7 +193,7 @@ class ScalarDiffusion:
         self,
         *,
         input_state: tmx_states.TmxInputState,
-        surface_flux_state: tmx_states.TmxSurfaceFluxState,
+        surface_flux_state: SurfaceFluxState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
         tendency_state: tmx_states.TmxTendencyState,
         new_state: tmx_states.TmxNewState,
@@ -228,8 +229,8 @@ class ScalarDiffusion:
         self.diffuse_energy_and_update_temperature(
             energy=self.energy,
             diffusivity=diagnostic_state.kh_ic,
-            sensible_heat_flux=surface_flux_state.sensible_heat_flux,
-            evapotranspiration=surface_flux_state.evapotranspiration,
+            thermal_energy_flux=surface_flux_state.thermal_energy_flux,
+            vapor_energy_flux=surface_flux_state.vapor_energy_flux,
             temperature=input_state.temperature,
             new_qv=new_state.qv,
             new_qc=new_state.qc,
