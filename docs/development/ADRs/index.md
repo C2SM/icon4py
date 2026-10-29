@@ -20,7 +20,8 @@ Writing a new ADR is simple:
 
 - [0001: Model Physics Components Interface](0001_model_physics_components_interface.md)
 - [0002: Configuration Classes](0002_configuration_classes.md)
-- [0003: Configuration IO](0003_configuration_classes.md)
+- [0003: Configuration IO](0003_configuration_io.md)
+- [0004: Typed States and Components](0004_typed_states_and_components.md)
 
 ## Other References
 

@@ -1,0 +1,52 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+import numpy as np
+import pytest
+
+from icon4py.model.common import framework as fw
+from icon4py.model.common.framework import states
+from icon4py.model.common.grid import base as base_grid, simple
+
+
+@pytest.fixture
+def grid() -> base_grid.Grid:
+    return simple.simple_grid()
+
+
+def test_prognostic_state_allocates_its_five_leaves(grid: base_grid.Grid) -> None:
+    prognostics = fw.allocate(states.PrognosticState, grid, allocator=None)
+    assert list(fw.fields(prognostics)) == ["rho", "w", "vn", "exner", "theta_v"]
+
+
+def test_tracer_state_allocates_the_configured_tracers_only(grid: base_grid.Grid) -> None:
+    config = states.TracerConfig.from_ntracer(2)
+    tracers = fw.allocate(states.TracerState, grid, allocator=None, only=config.active_names)
+    assert list(fw.fields(tracers)) == ["qv", "qc"]
+    assert tracers.qi is None
+
+
+def test_tracer_state_copy_allocates_new_buffers_for_the_active_tracers(
+    grid: base_grid.Grid,
+) -> None:
+    tracers = fw.allocate(states.TracerState, grid, allocator=None, only=("qv",))
+    np.asarray(tracers.qv.ndarray)[...] = 2.0  # type: ignore[union-attr]
+    copy = fw.copy(tracers, None)
+    assert copy.qc is None
+    assert copy.qv is not None and copy.qv is not tracers.qv
+    assert np.all(np.asarray(copy.qv.ndarray) == 2.0)
+
+
+def test_prep_advection_merges_the_dycore_and_advection_views(grid: base_grid.Grid) -> None:
+    prep = fw.allocate(states.PrepAdvection, grid, allocator=None)
+    assert list(fw.fields(prep)) == [
+        "vn_traj",
+        "mass_flx_me",
+        "dynamical_vertical_mass_flux_at_cells_on_half_levels",
+        "dynamical_vertical_volumetric_flux_at_cells_on_half_levels",
+    ]
