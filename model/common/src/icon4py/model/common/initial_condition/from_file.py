@@ -104,13 +104,9 @@ def read_initial_condition_from_file(
     cell_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.CellDim))
     edge_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.EdgeDim))
 
-    def read_cell_k(name: str) -> data_alloc.NDArray:
+    def read_hdim_k(name: str, dim_indices) -> data_alloc.NDArray:
         buffer = np.squeeze(serializer.read(name, savepoint).astype(float))
-        return array_ns.asarray(buffer[cell_indices, :])
-
-    def read_edge_k(name: str) -> data_alloc.NDArray:
-        buffer = np.squeeze(serializer.read(name, savepoint).astype(float))
-        return array_ns.asarray(buffer[edge_indices, :])
+        return array_ns.asarray(buffer[dim_indices, :])
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
