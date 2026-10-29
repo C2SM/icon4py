@@ -249,11 +249,6 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
-        # global_index() returns a CuPy array on GPU backends. Convert to numpy
-        # here because every use in this method feeds into the grid-file reader
-        # (which expects numpy) or into a plain numpy slice. The final gtx.Field
-        # objects are placed on the correct device via the allocator argument of
-        # gtx.as_field, so this host-side conversion is safe.
         my_cell_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
         my_edge_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
         my_vertex_indices = data_alloc.as_numpy(
