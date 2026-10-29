@@ -265,28 +265,6 @@ class GridManager:
             apply_offset=False,
             indices=my_vertex_indices,
         )
-        # Mask slots where no edge exists in the global grid.
-        #
-        # IMPORTANT: read the FULL global V2E table (no indices= restriction) and
-        # then numpy-slice to local vertex rows. Do NOT use:
-        # self._get_index_field(V2E, indices=my_vertex_indices) # noqa: ERA001
-        # because _get_index_field forwards indices= to the grid-file reader, which
-        # returns only the locally-partitioned rows of V2E. On a LAM grid those rows
-        # have INVALID_INDEX (-1) for edges that exist globally but are owned by other
-        # MPI ranks — zeroing those orientations is wrong and causes the
-        # test_edge_orientation_on_vertex failure on exclaim_ch_r04b09_dsl.
-        #
-        # Using the full global table and slicing with my_vertex_indices gives the
-        # correct mask: only pentagonal-vertex slots (where the 6th edge genuinely
-        # does not exist anywhere in the grid) are zeroed.
-        global_v2e = self._get_index_field(gridfile.ConnectivityName.V2E)
-        local_v2e = global_v2e[my_vertex_indices, :]
-        vertex_edge_orientation = np.where(
-            local_v2e != gridfile.GridFile.INVALID_INDEX,
-            vertex_edge_orientation,
-            0,
-        )
-
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
