@@ -138,9 +138,6 @@ def _run_driver_compare_single_multi_rank(
 
     multi_rank_config_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    # JablonowskiWilliamsonConfig, Gauss3DConfig and similar analytic initial
-    # conditions have no data_path (they don't read from serialbox files).
-    # Only forward the override when the attribute actually exists.
     ic_override = (
         {"initial_condition": {"data_path": single_rank_config.initial_condition.data_path}}
         if hasattr(single_rank_config.initial_condition, "data_path")
