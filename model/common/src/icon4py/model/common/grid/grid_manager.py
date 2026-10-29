@@ -358,9 +358,7 @@ class GridManager:
                 (dim,),
                 self._reader.int_variable(
                     name,
-                    # global_index() returns CuPy on GPU backends; the reader
-                    # expects numpy, so convert explicitly.
-                    indices=data_alloc.as_numpy(self._decomposition_info.global_index(dim)),
+indices=data_alloc.as_numpy(self._decomposition_info.global_index(dim)),
                     transpose=False,
                     apply_offset=False,
                 ),
