@@ -8,9 +8,9 @@
 
 """The two-layer coupling pieces of the PhysicsDriver.
 
-The ``PhysicsState`` layer the processes read, and the ``Tendencies`` that advance it
-sequentially, as ICON AES does: each process sees the state the previous ones have already
-updated, and exner, theta_v and vn are updated once at the end.
+The ``PhysicsState`` the processes read and advance in turn, as ICON AES does: each process
+sees the state the previous ones have already updated. The ``Tendencies`` are the sums over
+the processes; at the end exner, theta_v and vn are updated once.
 """
 
 from __future__ import annotations
@@ -77,8 +77,8 @@ class PhysicsState:
        ICON hands to the physics as ``mair``).
     2. ``diagnostics``, the caller's ``DiagnosticState``, linked and diagnosed once at
        ``PhysicsDriver.run`` entry. The virtual temperature and the pressure stay at
-       step start; ``Tendencies.advance`` updates ``temperature``, ``u`` and ``v`` in
-       place after each process, as it does ``w`` and the moisture tracers.
+       step start; ``advance`` updates ``temperature``, ``u`` and ``v`` in place after
+       each process, as it does ``w`` and the moisture tracers.
     3. The diagnostic (non-tendency) output buffers of each
        process. They are allocated once, when the driver is built, and written in
        place by their component. They persist across steps, holding the values of
@@ -86,9 +86,9 @@ class PhysicsState:
        ``compute_diagnostics`` never touches them. A process reads another's output
        by name through ``diagnostic_output``, as tmx reads the surface fluxes.
 
-    ``compute_diagnostics`` binds and diagnoses at entry (dyn2phy); ``update_prognostics``
-    writes exner, theta_v and vn back at exit (phy2dyn) and syncs the halos of what the
-    physics wrote.
+    ``compute_diagnostics`` binds and diagnoses at entry (dyn2phy); ``advance`` adds each
+    process's tendencies in place; ``update_prognostics`` writes exner, theta_v and vn back
+    at exit (phy2dyn) and syncs the halos of what the physics wrote.
     """
 
     def __init__(
@@ -157,6 +157,24 @@ class PhysicsState:
             grid, dims.CellDim, dims.KDim, allocator=backend
         )
 
+        # The in-place advance of ``advance``: field += dt * tendency, on full and half levels
+        self._apply_tendency = model_options.setup_program(
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
+            backend=backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes=full_vertical,
+            offset_provider={},
+        )
+        self._apply_tendency_on_half_levels = model_options.setup_program(
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_khalf,
+            backend=backend,
+            horizontal_sizes=full_horizontal,
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels + 1),
+            },
+            offset_provider={},
+        )
         # The exit (phy2dyn) programs of update_prognostics
         self._apply_tendency_vn = model_options.setup_program(
             program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_edge_k,
@@ -291,6 +309,48 @@ class PhysicsState:
             p_v_out=self.diagnostics.v,
         )
 
+    def advance(
+        self,
+        outputs: dict[str, gtx.Field],
+        outputs_properties: dict[str, model.FieldMetaData],
+        dt_seconds: float,
+    ) -> None:
+        """Add ``dt_seconds`` times a process's tendencies to the state in place.
+
+        This is the sequential coupling, as ICON AES (``fc_xxx = 1``): the next process
+        reads the advanced temperature, winds, w and tracers, as ICON's interfaces advance
+        their physics state. Each tendency output must be the tendency of temperature, u,
+        v, w or a moisture tracer. ``update_prognostics`` does not add them again: it only
+        recomputes exner and theta_v from the final temperature and moisture, and updates
+        vn once from the summed (u, v) tendencies.
+        """
+        if not outputs:
+            return
+        tracers = self.tracers
+        assert tracers is not None and self.w is not None, "compute_diagnostics must run first"
+        targets = {
+            tendency_name("temperature"): self.diagnostics.temperature,
+            tendency_name("u"): self.diagnostics.u,
+            tendency_name("v"): self.diagnostics.v,
+            tendency_name("w"): self.w,
+            **{tendency_name(name): getattr(tracers, name) for name in MOISTURE_SPECIES},
+        }
+        for name, props in outputs_properties.items():
+            if props.kind != model.FieldKind.TENDENCY:
+                continue
+            if (target := targets.get(name)) is None:
+                raise ValueError(
+                    f"Tendency output '{name}' is not the tendency of an advanced field; "
+                    f"expected one of {list(targets)}."
+                )
+            field = outputs[name]
+            apply_tendency = (
+                self._apply_tendency_on_half_levels
+                if dims.KHalfDim in target.domain.dims
+                else self._apply_tendency
+            )
+            apply_tendency(field_a=target, coeff=dt_seconds, field_b=field, output_field=target)
+
     def allocate_process_diagnostics(
         self, process_name: str, outputs_properties: Mapping[str, model.FieldMetaData]
     ) -> dict[str, gtx.Field]:
@@ -357,7 +417,7 @@ class PhysicsState:
         """Write exner, theta_v, the perturbed exner and vn back at exit (phy2dyn).
 
         The tracers, temperature, u, v and w were already advanced in place by
-        ``Tendencies.advance``; exner and theta_v follow from the final temperature and
+        ``advance``; exner and theta_v follow from the final temperature and
         moisture, and vn from the summed wind tendencies ``sums``.
 
         The halo exchanges of the interface happen here, as in ICON's
@@ -445,58 +505,22 @@ class PhysicsState:
 
 
 class Tendencies:
-    """The tendency sums of one timestep, and the in-place advance of the state.
+    """The tendency sums of one timestep.
 
     TODO (Yilu): the sums are the untyped stand-in for a typed state of #1510, one field
     per tendency; restructure them on top of it once it is merged.
 
-    One timestep is ``zero``, then ``accumulate`` and ``advance`` once per process,
-    then ``PhysicsState.update_prognostics``.
+    One timestep is ``zero``, then ``accumulate`` once per process, each followed by
+    ``PhysicsState.advance`` of that process's tendencies, then
+    ``PhysicsState.update_prognostics`` with the sums.
 
     Sums are keyed by tendency name (``tend_<field>``) and allocated on the first
     contribution, so which sums exist depends on which processes ran. Only outputs whose
-    metadata carries ``kind`` ``TENDENCY`` accumulate, and each must be the tendency of
-    temperature, u, v, w or a moisture tracer; the rest are diagnostics, written by the
-    components directly into the buffers the ``PhysicsState`` allocates for them.
-
-    The coupling is sequential, as ICON AES (``fc_xxx = 1``): ``advance`` adds each
-    process's tendencies to the tracers, temperature and u/v/w in place, so the next
-    process reads the advanced state. ``PhysicsState.update_prognostics`` does not add
-    them again: it only recomputes exner and theta_v from the final temperature and
-    moisture, and updates vn once from the summed (u, v) tendencies, when a process
-    produced them.
+    metadata carries ``kind`` ``TENDENCY`` accumulate; the rest are diagnostics, written by
+    the components directly into the buffers the ``PhysicsState`` allocates for them.
     """
 
-    def __init__(self, *, grid: base_grid.Grid, backend: gtx_typing.Backend | None = None) -> None:
-        num_cells = grid.num_cells
-        num_levels = grid.num_levels
-
-        full_horizontal = {
-            "horizontal_start": gtx.int32(0),
-            "horizontal_end": gtx.int32(num_cells),
-        }
-        full_vertical = {
-            "vertical_start": gtx.int32(0),
-            "vertical_end": gtx.int32(num_levels),
-        }
-
-        self._apply_tendency = model_options.setup_program(
-            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
-            backend=backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes=full_vertical,
-            offset_provider={},
-        )
-        self._apply_tendency_on_half_levels = model_options.setup_program(
-            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_khalf,
-            backend=backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
-            },
-            offset_provider={},
-        )
+    def __init__(self, *, backend: gtx_typing.Backend | None = None) -> None:
         self._backend = backend
         self._sums: dict[str, gtx.Field] = {}
 
@@ -530,42 +554,3 @@ class Tendencies:
                     field.domain, dtype=field.dtype, allocator=self._backend
                 )
             buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
-
-    def advance(
-        self,
-        state: PhysicsState,
-        outputs: dict[str, gtx.Field],
-        outputs_properties: dict[str, model.FieldMetaData],
-        dt_seconds: float,
-    ) -> None:
-        """Add ``dt_seconds`` times a process's tendencies to the state in place.
-
-        This is the sequential coupling: the next process reads the advanced temperature,
-        winds, w and tracers, as ICON's interfaces advance their physics state.
-        """
-        if not outputs:
-            return
-        tracers = state.tracers
-        assert tracers is not None and state.w is not None, "compute_diagnostics must run first"
-        targets = {
-            tendency_name("temperature"): state.diagnostics.temperature,
-            tendency_name("u"): state.diagnostics.u,
-            tendency_name("v"): state.diagnostics.v,
-            tendency_name("w"): state.w,
-            **{tendency_name(name): getattr(tracers, name) for name in MOISTURE_SPECIES},
-        }
-        for name, props in outputs_properties.items():
-            if props.kind != model.FieldKind.TENDENCY:
-                continue
-            if (target := targets.get(name)) is None:
-                raise ValueError(
-                    f"Tendency output '{name}' is not the tendency of an advanced field; "
-                    f"expected one of {list(targets)}."
-                )
-            field = outputs[name]
-            apply_tendency = (
-                self._apply_tendency_on_half_levels
-                if dims.KHalfDim in target.domain.dims
-                else self._apply_tendency
-            )
-            apply_tendency(field_a=target, coeff=dt_seconds, field_b=field, output_field=target)

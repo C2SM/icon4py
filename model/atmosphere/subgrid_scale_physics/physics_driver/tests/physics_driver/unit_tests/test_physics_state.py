@@ -149,7 +149,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     """The dyn2phy diagnosis fills plausible fields and is strictly read-only.
 
     The prognostic state and tracers must stay bitwise identical: only
-    ``Tendencies.advance`` and ``update_prognostics`` change them.
+    ``advance`` and ``update_prognostics`` change them.
     """
     grid = simple.simple_grid()
     ws = _physics_state(grid)
@@ -188,7 +188,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 
 def test_accumulate_sums_tendencies_and_skips_diagnostics():
     grid = simple.simple_grid()
-    acc = _tendencies(grid)
+    acc = _tendencies()
     props = {"tend_qv": _meta(kind=_TENDENCY), "km": _meta()}
     out = {
         "tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim),
@@ -205,7 +205,7 @@ def test_accumulate_sums_tendencies_and_skips_diagnostics():
 
 def test_zero_resets_between_steps():
     grid = simple.simple_grid()
-    acc = _tendencies(grid)
+    acc = _tendencies()
     props = {"tend_qv": _meta(kind=_TENDENCY)}
     out = {"tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
@@ -222,17 +222,17 @@ def test_zero_resets_between_steps():
 # ---------------------------------------------------------------------------
 
 
-def _tendencies(grid) -> physics_state.Tendencies:
-    return physics_state.Tendencies(grid=grid, backend=None)
+def _tendencies() -> physics_state.Tendencies:
+    return physics_state.Tendencies(backend=None)
 
 
 def _accumulated(grid, state, **tendencies) -> physics_state.Tendencies:
     """Tendencies of one process with the given constant tendencies, summed and advanced into ``state``."""
-    acc = _tendencies(grid)
+    acc = _tendencies()
     props = {name: _meta(kind=_TENDENCY) for name in tendencies}
     acc.zero()
     acc.accumulate(tendencies, props)
-    acc.advance(state, tendencies, props, _DT_SECONDS)
+    state.advance(tendencies, props, _DT_SECONDS)
     return acc
 
 
@@ -306,7 +306,7 @@ def test_update_prognostics_rejects_a_lone_wind_tendency():
 
 def test_sums_are_allocated_on_the_first_contribution():
     grid = simple.simple_grid()
-    acc = _tendencies(grid)
+    acc = _tendencies()
     assert acc.sums == {}
 
     acc.zero()
@@ -329,12 +329,10 @@ def test_advance_rejects_a_tendency_of_no_advanced_field():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
     ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid), _diagnostic_state(grid))
-    acc = _tendencies(grid)
     out = {"tend_dummy": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
-    acc.zero()
     with pytest.raises(ValueError, match="'tend_dummy' is not the tendency"):
-        acc.advance(ws, out, {"tend_dummy": _meta(kind=_TENDENCY)}, _DT_SECONDS)
+        ws.advance(out, {"tend_dummy": _meta(kind=_TENDENCY)}, _DT_SECONDS)
 
 
 def test_physics_state_links_the_callers_diagnostic_state():
