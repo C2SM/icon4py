@@ -14,6 +14,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry_attributes, simple
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
@@ -86,7 +87,17 @@ def _diagnostic_state(grid) -> diagnostic_state.DiagnosticState:
     return diagnostic_state.initialize_diagnostic_state(grid, None)
 
 
-def _physics_state(grid) -> physics_state.PhysicsState:
+class _RecordingExchange:
+    """Records the halo exchanges as (dim, field identities), so their order and targets are assertable."""
+
+    def __init__(self) -> None:
+        self.events: list[tuple[gtx.Dimension, list[int]]] = []
+
+    def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> None:
+        self.events.append((dim, [id(f) for f in fields]))
+
+
+def _physics_state(grid, exchange=None) -> physics_state.PhysicsState:
     # neutral geometry: primal_normal_x = 1, primal_normal_y = 0, c_lin_e = 0.5
     # => two-neighbor projection of a uniform u-tendency is the identity
     geometry = _StubFieldSource(
@@ -124,6 +135,7 @@ def _physics_state(grid) -> physics_state.PhysicsState:
         geometry=geometry,
         interpolation=interpolation,
         metrics=metrics,
+        exchange=exchange if exchange is not None else decomposition.SingleNodeExchange(),
         backend=None,
     )
 
@@ -258,7 +270,8 @@ def test_update_projects_accumulated_wind_tendency_to_vn():
     # uniform ddt_u = 1e-4, ddt_v = 0; primal_normal_cell_x = 1, c_lin_e = 0.5 (two neighbors)
     # => ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on all edges of the periodic simple grid
     grid = simple.simple_grid()
-    ws = _physics_state(grid)
+    exchange = _RecordingExchange()
+    ws = _physics_state(grid, exchange)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
     ws.compute_diagnostics(prognostic, tracers, _diagnostic_state(grid))
@@ -270,10 +283,13 @@ def test_update_projects_accumulated_wind_tendency_to_vn():
         tend_v=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
 
-    _, written_edges = ws.update_prognostics(acc.sums, dt_seconds=dt)
+    ws.update_prognostics(acc.sums, dt_seconds=dt)
 
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
-    assert [id(f) for f in written_edges] == [id(prognostic.vn)]
+    # the summed wind tendencies are synced before the projection, the written cells and vn after it
+    assert [dim for dim, _ in exchange.events] == [dims.CellDim, dims.CellDim, dims.EdgeDim]
+    assert exchange.events[0][1] == [id(acc.sums["tend_u"]), id(acc.sums["tend_v"])]
+    assert exchange.events[-1][1] == [id(prognostic.vn)]
 
 
 def test_update_prognostics_rejects_a_lone_wind_tendency():
@@ -429,9 +445,10 @@ def test_allocate_process_diagnostics_rejects_a_second_provider_of_a_name():
         ws.allocate_process_diagnostics("ocean", {"surface_temperature": _meta(dims.CellDim)})
 
 
-def test_update_prognostics_returns_the_written_fields():
+def test_update_prognostics_syncs_the_written_fields():
     grid = simple.simple_grid()
-    ws = _physics_state(grid)
+    exchange = _RecordingExchange()
+    ws = _physics_state(grid, exchange)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
     ws.compute_diagnostics(prognostic, tracers, _diagnostic_state(grid))
@@ -440,16 +457,19 @@ def test_update_prognostics_returns_the_written_fields():
     )
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
-    written_cells, written_edges = ws.update_prognostics(
-        acc.sums, dt_seconds=_DT_SECONDS, perturbed_exner=perturbed_exner
-    )
+    ws.update_prognostics(acc.sums, dt_seconds=_DT_SECONDS, perturbed_exner=perturbed_exner)
 
-    # identity, not equality: the driver's sync must target the very buffers that were written
-    assert [id(f) for f in written_cells] == [
-        *(id(getattr(tracers, name)) for name in physics_state.MOISTURE_SPECIES),
-        id(prognostic.w),
-        id(prognostic.exner),
-        id(prognostic.theta_v),
-        id(perturbed_exner),
+    # identity, not equality: the sync must target the very buffers that were written;
+    # no wind tendency was produced, so vn was neither written nor synced
+    assert exchange.events == [
+        (
+            dims.CellDim,
+            [
+                *(id(getattr(tracers, name)) for name in physics_state.MOISTURE_SPECIES),
+                id(prognostic.w),
+                id(prognostic.exner),
+                id(prognostic.theta_v),
+                id(perturbed_exner),
+            ],
+        ),
     ]
-    assert written_edges == []  # no wind tendency was produced, so vn was not written

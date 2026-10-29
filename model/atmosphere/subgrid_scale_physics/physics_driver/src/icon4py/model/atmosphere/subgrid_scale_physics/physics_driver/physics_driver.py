@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physic
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
-from icon4py.model.common import dimension as dims
 from icon4py.model.common.components.component_state import ComponentState
 from icon4py.model.common.components.components import Component
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -107,10 +106,8 @@ class PhysicsDriver:
     process's tendencies are summed over the processes (``Tendencies.accumulate``)
     and added to the state in place before the next one runs (``Tendencies.advance``).
 
-    The driver owns the halo exchanges of the interface, as ICON's
-    ``mo_interface_iconam_aes``: the summed wind tendencies before their projection
-    onto vn, and the fields the physics wrote at the end of the step. The granules
-    sync their own inputs and intermediate fields.
+    At the end of the step ``PhysicsState.update_prognostics`` writes exner, theta_v and
+    vn back and syncs the halos of what the physics wrote.
     """
 
     def __init__(
@@ -118,14 +115,10 @@ class PhysicsDriver:
         processes: list[PhysicsProcess],
         state: physics_state.PhysicsState,
         tendencies: physics_state.Tendencies,
-        *,
-        process_props: decomposition.ProcessProperties,
-        decomposition_info: decomposition.DecompositionInfo,
     ) -> None:
         self._processes = processes
         self._state = state
         self._tendencies = tendencies
-        self._exchange = decomposition.create_exchange(process_props, decomposition_info)
         for process in processes:
             process.component.bind_output_buffers(
                 state.allocate_process_diagnostics(
@@ -158,11 +151,10 @@ class PhysicsDriver:
                 geometry=geometry,
                 interpolation=interpolation,
                 metrics=metrics,
+                exchange=decomposition.create_exchange(process_props, decomposition_info),
                 backend=backend,
             ),
             tendencies=physics_state.Tendencies(grid=grid, backend=backend),
-            process_props=process_props,
-            decomposition_info=decomposition_info,
         )
 
     def run(
@@ -190,22 +182,4 @@ class PhysicsDriver:
             # the step's totals, and the state the next process reads
             self._tendencies.accumulate(outputs, outputs_properties)
             self._tendencies.advance(self._state, outputs, outputs_properties, dt_seconds)
-        # an owned edge projects the summed wind tendencies of its two adjacent cells
-        # onto vn, and one of them may be a halo cell: sync the sums first, the sync
-        # of vn at the end only repairs halo edges
-        sums = self._tendencies.sums
-        wind_sums = [
-            sums[name]
-            for name in (physics_state.tendency_name("u"), physics_state.tendency_name("v"))
-            if name in sums
-        ]
-        if wind_sums:
-            self._exchange.exchange(dims.CellDim, *wind_sums)
-        written_cells, written_edges = self._state.update_prognostics(
-            self._tendencies.sums, dt_seconds, perturbed_exner
-        )
-        # the end-of-interface sync of what the physics wrote
-        if written_cells:
-            self._exchange.exchange(dims.CellDim, *written_cells)
-        if written_edges:
-            self._exchange.exchange(dims.EdgeDim, *written_edges)
+        self._state.update_prognostics(self._tendencies.sums, dt_seconds, perturbed_exner)
