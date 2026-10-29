@@ -288,10 +288,13 @@ class GridManager:
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
-                self._reader.variable(
-                    gridfile.GeometryName.EDGE_CELL_DISTANCE,
-                    transpose=True,
-                    indices=my_edge_indices,
+                np.nan_to_num(
+                    self._reader.variable(
+                        gridfile.GeometryName.EDGE_CELL_DISTANCE,
+                        transpose=True,
+                        indices=my_edge_indices,
+                    ),
+                    nan=0.0,
                 ),
                 allocator=allocator,
             ),
