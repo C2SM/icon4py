@@ -197,15 +197,15 @@ class RecordingCoupling:
     def update_prognostics(self, sums, dt_seconds, perturbed_exner=None) -> None:
         self.events.append(("update_prognostics", dt_seconds, perturbed_exner))
 
+    def advance(self, outputs, outputs_properties, dt_seconds) -> None:
+        self.events.append(("advance", dict(outputs), dt_seconds))
+
     # Tendencies surface
     def zero(self) -> None:
         self.events.append(("zero",))
 
     def accumulate(self, outputs, outputs_properties) -> None:
         self.events.append(("accumulate", dict(outputs)))
-
-    def advance(self, state, outputs, outputs_properties, dt_seconds) -> None:
-        self.events.append(("advance", dict(outputs), dt_seconds))
 
     #: the tendency sums the driver hands to update_prognostics
     sums: dict = dataclasses.field(default_factory=lambda: {"tend_u": "SUM_TU", "tend_v": "SUM_TV"})
