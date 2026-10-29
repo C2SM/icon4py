@@ -47,6 +47,7 @@ if TYPE_CHECKING:
 
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.common.states import (
         diagnostic_state,
@@ -86,7 +87,8 @@ class PhysicsState:
        by name through ``diagnostic_output``, as tmx reads the surface fluxes.
 
     ``compute_diagnostics`` binds and diagnoses at entry (dyn2phy); ``update_prognostics``
-    writes exner, theta_v and vn back at exit (phy2dyn).
+    writes exner, theta_v and vn back at exit (phy2dyn) and syncs the halos of what the
+    physics wrote.
     """
 
     def __init__(
@@ -96,10 +98,12 @@ class PhysicsState:
         geometry: factory.FieldSource,
         interpolation: factory.FieldSource,
         metrics: factory.FieldSource,
+        exchange: decomposition.ExchangeRuntime,
         backend: gtx_typing.Backend | None = None,
     ) -> None:
         self._grid = grid
         self._backend = backend
+        self._exchange = exchange
         num_cells = grid.num_cells
         num_levels = grid.num_levels
         num_edges = grid.num_edges
@@ -349,17 +353,18 @@ class PhysicsState:
         sums: Mapping[str, gtx.Field],
         dt_seconds: float,
         perturbed_exner: fa.CellKField[ta.wpfloat] | None = None,
-    ) -> tuple[list[gtx.Field], list[gtx.Field]]:
+    ) -> None:
         """Write exner, theta_v, the perturbed exner and vn back at exit (phy2dyn).
 
         The tracers, temperature, u, v and w were already advanced in place by
         ``Tendencies.advance``; exner and theta_v follow from the final temperature and
         moisture, and vn from the summed wind tendencies ``sums``.
 
-        Returns the fields the physics wrote this step, as ``(cell_fields, edge_fields)``:
-        the advanced tracers and w, exner, theta_v, the perturbed exner when given, and vn
-        when a process produced a wind tendency. The driver syncs exactly these at the end
-        of the step.
+        The halo exchanges of the interface happen here, as in ICON's
+        ``mo_interface_iconam_aes``: the summed wind tendencies before their projection,
+        and at the end what the physics wrote: the advanced tracers and w, exner, theta_v,
+        the perturbed exner when given, and vn when a process produced a wind tendency.
+        The granules sync their own inputs and intermediate fields.
 
         TODO (Yilu): ICON clips negative tracers at the entry and the exit of the interface
         (``iqneg_d2p`` / ``iqneg_p2d``: set to zero and move the deficit over dt into the
@@ -411,8 +416,12 @@ class PhysicsState:
             raise ValueError(
                 f"the horizontal wind tendencies are applied as a pair; got only {declared}"
             )
-        written_edges: list[gtx.Field] = []
         if wind_tendencies:
+            # an owned edge projects the sums of its two adjacent cells, and one of them may
+            # be a halo cell: sync the sums first, the sync of vn below only repairs halo edges
+            self._exchange.exchange(
+                dims.CellDim, sums[tendency_name("u")], sums[tendency_name("v")]
+            )
             self._compute_vn_from_uv(
                 u=sums[tendency_name("u")],
                 v=sums[tendency_name("v")],
@@ -424,13 +433,15 @@ class PhysicsState:
                 field_b=self._vn_tendency,
                 output_field=self.vn,
             )
-            written_edges.append(self.vn)
 
+        # the end-of-interface sync of what the physics wrote
         written_cells: list[gtx.Field] = [getattr(tracers, name) for name in MOISTURE_SPECIES]
         written_cells += [self.w, self.exner, self.theta_v]
         if perturbed_exner is not None:
             written_cells.append(perturbed_exner)
-        return written_cells, written_edges
+        self._exchange.exchange(dims.CellDim, *written_cells)
+        if wind_tendencies:
+            self._exchange.exchange(dims.EdgeDim, self.vn)
 
 
 class Tendencies:
