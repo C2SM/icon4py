@@ -183,13 +183,9 @@ def read_restart_from_file(
     cell_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.CellDim))
     edge_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.EdgeDim))
 
-    def read_cell_k(name: str) -> data_alloc.NDArray:
+    def read_hdim_k(name: str, dim_indices) -> data_alloc.NDArray:
         buffer = np.squeeze(serializer.read(name, nonhydro_savepoint).astype(float))
-        return array_ns.asarray(buffer[cell_indices, :])
-
-    def read_edge_k(name: str) -> data_alloc.NDArray:
-        buffer = np.squeeze(serializer.read(name, nonhydro_savepoint).astype(float))
-        return array_ns.asarray(buffer[edge_indices, :])
+        return array_ns.asarray(buffer[dim_indices, :])
 
     def read_predictor_corrector(
         name: str, indices: np.ndarray
