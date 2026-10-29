@@ -120,6 +120,7 @@ def test_examples_for(
     assert check(examples)
 
 
+@pytest.mark.snapshots
 @pytest.mark.parametrize(
     ("config_class", "key_presses"),
     (
@@ -137,7 +138,9 @@ def test_examples_for(
     ),
     ids=lambda val: val if not isinstance(val, tuple) else "".join(k[0] for k in val),
 )
-def test_snapshots(snap_compare: Callable, config_class: type, key_presses: tuple[str]) -> None:
+def test_snapshots(
+    snap_compare: Callable, config_class: type, key_presses: tuple[str], snapshot_fail_msg: str
+) -> None:
     """
     Compare svg 'screenshots' of a specific TUI app state.
 
@@ -145,4 +148,4 @@ def test_snapshots(snap_compare: Callable, config_class: type, key_presses: tupl
     executing the given key presses.
     """
     app = config_doc.ConfigDocApp(config_class)
-    assert snap_compare(app, press=key_presses, terminal_size=(160, 40))
+    assert snap_compare(app, press=key_presses, terminal_size=(160, 40)), snapshot_fail_msg

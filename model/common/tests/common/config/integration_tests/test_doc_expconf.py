@@ -20,14 +20,16 @@ from icon4py.model.driver.config import ExperimentConfig
 
 
 @pytest.mark.level("integration")
-def test_initial(snap_compare: Callable):
+@pytest.mark.snapshots
+def test_initial(snap_compare: Callable, snapshot_fail_msg):
     """Test the initial view."""
     app = config_doc.ConfigDocApp(ExperimentConfig)
-    assert snap_compare(app, terminal_size=(160, 40))
+    assert snap_compare(app, terminal_size=(160, 40)), snapshot_fail_msg
 
 
 @pytest.mark.level("integration")
-def test_select_one_down(snap_compare: Callable):
+@pytest.mark.snapshots
+def test_select_one_down(snap_compare: Callable, snapshot_fail_msg):
     """Test the initial view."""
     app = config_doc.ConfigDocApp(ExperimentConfig)
-    assert snap_compare(app, terminal_size=(160, 40), press=["down", "enter"])
+    assert snap_compare(app, terminal_size=(160, 40), press=["down", "enter"]), snapshot_fail_msg
