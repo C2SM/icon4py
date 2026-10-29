@@ -353,7 +353,7 @@ class GridManager:
                 (dim,),
                 self._reader.int_variable(
                     name,
-indices=data_alloc.as_numpy(self._decomposition_info.global_index(dim)),
+                    indices=data_alloc.as_numpy(self._decomposition_info.global_index(dim)),
                     transpose=False,
                     apply_offset=False,
                 ),

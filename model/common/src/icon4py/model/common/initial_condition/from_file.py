@@ -68,14 +68,15 @@ def _available_nonhydro_init_dates(serializer: serialbox.Serializer) -> str:
 
 def _read_prognostic_state(
     prognostic_state: prognostics.PrognosticState,
-    read_cell_k: Callable[[str], data_alloc.NDArray],
-    read_edge_k: Callable[[str], data_alloc.NDArray],
+    read_hdim_k: typing.Callable[[str], data_alloc.NDArray],
+    edge_indices,
+    cell_indices,
 ):
-    prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")
-    prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")
-    prognostic_state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
-    prognostic_state.vn.ndarray[:, :] = read_edge_k("vn_now")
-    prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")
+    prognostic_state.rho.ndarray[:, :] = read_hdim_k("rho_now", cell_indices)
+    prognostic_state.exner.ndarray[:, :] = read_hdim_k("exner_now", cell_indices)
+    prognostic_state.theta_v.ndarray[:, :] = read_hdim_k("theta_v_now", cell_indices)
+    prognostic_state.vn.ndarray[:, :] = read_hdim_k("vn_now", edge_indices)
+    prognostic_state.w.ndarray[:, :] = read_hdim_k("w_now", cell_indices)
 
 
 def read_initial_condition_from_file(
@@ -97,7 +98,7 @@ def read_initial_condition_from_file(
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
         str(ic_config.data_path),
-        "icon_pydycore_rank0",  
+        "icon_pydycore_rank0",
     )
     savepoint = serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
 
@@ -108,7 +109,7 @@ def read_initial_condition_from_file(
         buffer = np.squeeze(serializer.read(name, savepoint).astype(float))
         return array_ns.asarray(buffer[dim_indices, :])
 
-    _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
+    _read_prognostic_state(prognostic_state_now, read_hdim_k, edge_indices, cell_indices)
 
     ntracer = config.ntracer
     if ntracer > 0:
@@ -153,7 +154,7 @@ def read_restart_from_file(
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
         str(ic_config.data_path),
-        "icon_pydycore_rank0",  
+        "icon_pydycore_rank0",
     )
     try:
         nonhydro_savepoint = (
@@ -189,10 +190,10 @@ def read_restart_from_file(
         buffer = np.squeeze(serializer.read(name, velocity_savepoint).astype(float))
         return array_ns.asarray(buffer[indices, :, 0]), array_ns.asarray(buffer[indices, :, 1])
 
-    _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
+    _read_prognostic_state(prognostic_state_now, read_hdim_k, edge_indices, cell_indices)
 
     solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = (
-        read_cell_k("exner_pr")
+        read_hdim_k("exner_pr", cell_indices)
     )
 
     normal_wind_tendency = read_predictor_corrector("ddt_vn_apc_pc", edge_indices)
