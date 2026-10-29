@@ -1,8 +1,5 @@
 ---
-tags:
-  - components
-  - model state
-  - typing
+tags: [components, model state, typing]
 ---
 
 # Typed states and components
@@ -10,60 +7,71 @@ tags:
 - **Status**: valid
 - **Authors**: Mikael Simberg (@msimberg), Jacopo Canton (@jcanton)
 - **Created**: 2026-10-16
-- **Updated**: 2026-10-16
+- **Updated**: 2026-10-28
 
-In the context of a driver that composes the dycore, the diffusion, the tracer advection, the
-physics and the IO, facing component interfaces whose fields nothing checks, we decided for typed
-states and components and neglected string-keyed dictionaries with metadata tables,
-`typing.Annotated` and `typing.NewType`, to achieve that mypy reports a missing, extra or swapped
-field where a component is called, accepting that every view is spelled out by keyword and that
-the tagged field subclasses gt4py's embedded `NdArrayField`.
+ICON4Py has the dycore, the diffusion, the tracer advection, the physics with
+muphys and tmx, and the IO, driven by driver and physics_driver.
+Nothing reliably checks that the correct fields and variables are passed at the
+interfaces, so we decided to introduce typed states and components.
 
 ## Context
 
-A physics component received a `dict[str, DataField]` and returned one (ADR 0001). The keys it
-needed and produced were listed in side tables of `FieldMetaData`, and the driver built the dicts
-with per-process adapters (`as_component_input`). Nothing checked that the two agreed, so a
-missing or misspelled key was a `KeyError` at run time. Tendencies were marked by
-`FieldKind.TENDENCY` in the metadata.
-
-The dycore and the diffusion took state dataclasses of `gtx.Field`. To mypy a field is its
-dimensions and dtype, so passing `theta_v` where `exner` is expected is not a type error.
+The dycore and the diffusion took "states" as input: rigid state dataclasses of
+`gtx.Field`. To mypy a field is its dimensions and dtype, so passing `theta_v`
+where `exner` is expected was not a type error.
+A physics component received a `dict[str, DataField]` and returned one (ADR
+0001). The keys it needed and produced were listed in tables of
+`FieldMetaData`, and the driver built the dicts with per-process adapters
+(`as_component_input`). Nothing checked that the two agreed, so a missing or
+misspelled key was a `KeyError` at run time.
 
 **Concerns**
 
-- What a component reads and writes should be visible in its signature and checked statically.
-- gt4py and the stencils should see the same arrays as before, at no run-time cost.
-- Allocation, copies and IO should work on any state without a per-state list of fields.
-- The caller should choose the output buffers (in-place updates, double buffering) without an
-  allocation per call.
-- The metadata of a quantity (dimensions, units, CF names, precision) should live in one place.
+- What a component reads and writes should be visible in its signature and
+  **checked statically**.
+- gt4py and the stencils should see the same arrays as before, at no run-time
+  cost.
+- The metadata of a quantity (dimensions, units, CF names, precision) should
+  live in one single place.
+- Allocation, copies and IO should work on any state without a per-state list
+  of fields.
+- Who allocates and owns the buffers should be as unimportant as possible, and
+  as close as possible to functional programming.
 
 ## Decision
 
-### The pieces (`icon4py.model.common.framework`)
+### The pieces
 
-- `Quantity` is a type-level tag, one subclass per quantity at one place on the grid, never
-  instantiated. The metadata is on the class: `dims`, `units`, the CF `standard_name`,
-  `long_name` and `precision` (`"wp"` or `"vp"`). Tendencies derive from the `Tendency` marker
-  base, which replaces `FieldKind.TENDENCY`. The physics driver accumulates exactly those.
-- `Field[Q]` is a gt4py field tagged by its quantity, `Field(qty.VnOnEdgeK, data)`, sharing the
-  buffer of `data`. It subclasses gt4py's `NdArrayField`, so it goes into a stencil as it is. A
-  field gt4py derives from it (arithmetic, slicing) is a plain, untagged one. The tag is a
-  phantom, invariant type parameter: `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` are different
-  types to mypy and the same array to gt4py.
-- `State` is a frozen, keyword-only dataclass of typed leaves. Plain leaves (`dtime: float`,
-  datetimes) are ordinary fields, and a leaf annotated `Field[Q] | None` is optional.
-- `allocate`, `zeros` and `copy` make or copy fields for any state, from its annotations.
-- `Component` is a `Protocol` of `Input`, `Output` and `run(inputs, outputs) -> Output`, the only
-  method a component implements. A component that writes nothing declares `Output = fw.Empty`.
-
-The quantity tags are in `framework/quantities.py`, the states passed between the components in
-`framework/states.py`.
+- `Quantity` is a type-level tag. One subclass per quantity, never
+  instantiated, e.g. `VnOnEdgeK(Quantity, dims=EDGE_K,
+standard_name="normal_velocity", long_name="velocity normal to edge",
+units="m s-1"): ...`. The metadata is on the class: e.g. `dims`, `units`, the
+  CF `standard_name`, `long_name` and `precision` (`"wp"` or `"vp"`).
+  In this part01 of states and components dimensions/grid location are attached
+  to Quantity, as icon4py currently does with variable names. part03 will
+  separate the two.
+- Tendencies are special quantities that deserve their own tags. They are
+  identified with the `Tendency` marker, which replaces `FieldKind.TENDENCY`.
+  The physics driver accumulates them and updates the physics state with them;
+  this identification allows for checking and automation.
+- `Field[Q]` is a gt4py field with the additional quantity tag, e.g.
+  `Field(qty.VnOnEdgeK, data)`. It subclasses gt4py's `NdArrayField`, so the
+  stencils and program calls do not need to change. The tag is a phantom,
+  invariant type parameter: `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` are
+  different types to mypy, so icon4py errors out if they get swapped, but they
+  stay the same array to gt4py.
+- `State` is a frozen, keyword-only dataclass of typed variables (leaves). Not
+  necessarily only `Fields` (e.g. `ditme: float` is a plain leaf). Leaves can
+  be optional (tracers use this) and are annotated as `Field[Q] | None`.
+- `Component` is a `Protocol` of `Input`, `Output` and `run(inputs, outputs) ->
+Output`, the only method a component implements. A component that writes
+  nothing declares `Output = fw.Empty`. The caller specifies where `run`
+  writes, like numpy's `out=`. Whether `outputs` may alias `inputs` is up to
+  the component.
 
 ### Writing a component
 
-A trimmed `Diffusion`:
+Example with a trimmed `Diffusion`:
 
 ```python
 class Diffusion(fw.Component):
@@ -81,111 +89,106 @@ class Diffusion(fw.Component):
         return outputs
 ```
 
-`run` writes where the caller says, like numpy's `out=`: the caller owns the buffers. Whether
-`outputs` may alias `inputs` is up to the component. The diffusion and the physics driver update
-in place, the dycore needs distinct `now` and `next`. Static fields (metrics, interpolation
-coefficients) stay constructor arguments.
+Things to note:
+The diffusion and the physics driver update in place. The dycore needs distinct
+`now` and `next`. Static fields (metrics, interpolation coefficients) stay
+constructor arguments for now.
 
-The components are `SolveNonhydro`, `Diffusion`, `Advection`, `PhysicsDriver`, `Muphys` (run by
-the physics driver) and the driver's `IOMonitor`.
+At the moment of writing, the components are `SolveNonhydro`, `Diffusion`,
+`Advection`, `PhysicsDriver`, `Muphys` and `Tmx` (run by the physics driver)
+and `IOMonitor`.
 
-### Calling the components
+#### PhysicsProcess
 
-The driver owns the states. It builds each component's `Input` and `Output` from them by keyword
-and calls `run`, passing the same buffers on both sides for an in-place update and `now` and
-`next` to the dycore.
-
-The tracers are optional leaves (`qv` to `qg` declared as `Field[Q] | None`), and the driver's
-`TracerConfig` decides which are present.
-
-The physics driver runs each physics component inside a `PhysicsProcess`, which holds the
-component, its `collect_input` (builds the component's `Input` from the physics driver's
-`EntryState`), a `ProcessTimeControl` and the output buffers kept between two runs. Outside its
-window a process returns None. Inside it, the process runs its component when the time control
-fires and on its first step in the window, and returns its last output otherwise.
-`PhysicsProcess` is generic over the component's `Input` and `Output`, so mypy checks that
-`collect_input` builds the `Input` of its component.
+`PhysicsProcess` is a Component that gates its wrapped component by time
+control (with `ProcessTimeControl`). This is used for all processes called by
+the physics_driver.
 
 ### Adding a quantity
 
-One tag per quantity at one place on the grid, named `<Quantity>On<Place>` (`ThetaVOnCellK`,
-`ThetaVOnCellKHalf`), in `quantities.py`. A 0-d quantity has no place suffix
-(`MaxVerticalCflNumber`). A tag has a `standard_name` only where the
-[CF standard name table](https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html)
-has one, otherwise `long_name` says what the field is, with the ICON variable name in
-parentheses. Some existing standard names are icon4py's own (`normal_velocity`,
-`virtual_potential_temperature`, ...), and the output files name their variables after them. A
-time-averaged or accumulated variant of a quantity at the same place reuses the tag.
+One tag per quantity at one place on the grid, named `<Quantity>On<Place>`
+(`ThetaVOnCellK`, `ThetaVOnCellKHalf`), in `quantities.py`. A 0-d quantity has
+no place suffix (e.g. `MaxVerticalCflNumber`). A quantity has a `standard_name`
+only where the [CF standard name
+table](https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html)
+has one, otherwise `long_name` describes what the field is, with the ICON
+variable name in parentheses. A time-averaged or accumulated variant of a
+quantity at the same place reuses the tag.
 
 ### Type checking
 
-The framework, the physics components and the driver are checked with the strict mypy flags (see
-`[[tool.mypy.overrides]]` in `pyproject.toml`). `SolveNonhydro`, `Diffusion` and `Advection` use
-the default flags, but the driver's calls to them are strict. The Fortran bindings are not
-type-checked, so a swapped tag there is not reported. `test_framework.py` holds deliberate
-quantity mismatches under `type: ignore`, and `warn_unused_ignores` fails the check when one stops
-being an error.
+The framework (things introduced by this PR), the physics components and the
+driver are checked with the strict mypy flags (see `[[tool.mypy.overrides]]` in
+`pyproject.toml`). `SolveNonhydro`, `Diffusion` and `Advection` use the default
+flags, but the driver's calls to them are strict. The Fortran bindings are not
+type-checked, so a swapped tag there is not reported as error.
 
 ## Consequences
 
-On the positive side:
+Positive:
 
-- mypy reports a field of the wrong quantity, a missing or unknown leaf, and a process whose
-  `collect_input` builds another component's `Input`, where the code is written.
-- The metadata of a field is on its quantity tag. The IO reads its CF attributes from there, and
-  the state CF tables and `FieldKind` are gone.
-- Allocation, copies, the physics driver's accumulation and the IO work on any state.
+- mypy reports a field of the wrong quantity, a missing or unknown leaf, and a
+  process whose `collect_input` builds another component's `Input`, directly in
+  the editor.
+- The metadata of a field is on its quantity tag. The IO reads its CF
+  attributes from there, and the state CF tables and `FieldKind` are gone.
+- Allocation, copies, the physics driver's accumulation and the IO work on any
+  state without hardcoded mechanisms.
 
-On the negative side:
+Negative:
 
-- Every `Input` and `Output` view is spelled out by keyword at the call site.
-- `Field` builds on gt4py internals. It subclasses `NdArrayField` (gtfn's argument conversion
-  accepts only that class), relies on gt4py building every derived field through `from_array`,
-  and needs one subclass per array namespace (NumPy, CuPy).
-- Calls through the `fw.Component` protocol are not checked, because `run` is `Any -> Any` there.
-  Only calls on a concrete class are.
-- A quantity and its place are one tag, so `ThetaVOnCellK` and `ThetaVOnCellKHalf` are unrelated
-  types. Only a unit test checks that a tag's name matches its `dims`.
-- Whether `outputs` may alias `inputs` is not checked.
-- The field factories (geometry, metrics, interpolation) still key their fields by string and
-  describe them with `FieldMetaData`, and the static fields of the components are untagged
-  `gtx.Field`s.
+- Every `Input` and `Output` view is spelled out by keyword at the call site
+  (part02 Collect fixes this).
+- A quantity and its place are one tag, so `ThetaVOnCellK` and
+  `ThetaVOnCellKHalf` are unrelated types. Only a unit test checks that a tag's
+  name matches its `dims` (part03 Dims fixes this).
+- The static field factories (geometry, metrics, interpolation) still key their
+  fields by string and describe them with `FieldMetaData`, and the static
+  fields of the components are untagged `gtx.Field`s (there is no written plan
+  for this but should probably be part01b).
+- `Field` builds on gt4py internals. It subclasses `NdArrayField` (gtfn's
+  argument conversion accepts only that class), relies on gt4py building every
+  derived field through `from_array`, and needs one subclass per array
+  namespace (NumPy, CuPy).
+- Whether `outputs` may alias `inputs` is not checked (but that's by design).
 
 ## Alternatives Considered
 
 ### String-keyed dictionaries with metadata tables (ADR 0001)
 
 - Good, because the set of fields can be chosen at run time.
-- Bad, because nothing checks the keys against the tables. A missing or misspelled key is a
-  `KeyError` at run time, and the value of a key is a `gtx.Field` to mypy.
-
-### A wrapper holding the gt4py field (`Field(quantity, data)` with `.data`)
-
-- Good, because it depends on no gt4py internals.
-- Bad, because every stencil call unwraps `.data`, or a call wrapper does it at a cost on every
-  call.
+- Bad, because nothing checks the keys against the tables. A missing or
+  misspelled key is a `KeyError` at run time, and the value of a key is a
+  `gtx.Field` to mypy.
 
 ### gt4py's dimension-typed fields alone (`fa.CellKField[wpfloat]`)
 
 - Good, because it is gt4py's own type, with nothing on top.
-- Bad, because the dimensions are run-time objects. `CellKField` and `CellKHalfField` are one
-  type to mypy, and two quantities on the same dimensions (`theta_v`, `exner`) are never
-  distinguished.
+- Bad, because the dimensions are run-time objects. `CellKField` and
+  `CellKHalfField` are one type to mypy, and two quantities on the same
+  dimensions (`theta_v`, `exner`) are never distinguished.
+
+### A wrapper holding the gt4py field (`Field(quantity, data)` with `.data`)
+
+- Good, because it does not depend on gt4py internals.
+- Bad, because every stencil call unwraps `.data`, or a call wrapper does it at
+  a cost on every call.
 
 ### `typing.Annotated[gtx.Field, metadata]`
 
 - Good, because the metadata sits next to the annotation.
-- Bad, because the type checker ignores the metadata, so two quantities are the same type.
+- Bad, because the type checker ignores the metadata, so two quantities are the
+  same type and can only be checked at runtime.
 
 ### One `typing.NewType` per quantity
 
 - Good, because the checker tells the quantities apart.
-- Bad, because each `NewType` is isolated. There is no metadata on the type and no marker base
-  for the tendencies, and generic code over any quantity (`zeros`, `copy`) needs one version per
-  type or a cast.
+- Bad, because each `NewType` is isolated. There is no metadata on the type and
+  no marker base for the tendencies, and generic code over any quantity
+  (`zeros`, `copy`) needs one version per type or a cast.
 
 ## References
 
-- C2SM/icon4py-knowledge `mwe/components/DESIGN.md`, section "01 Typed states and components":
-  the minimal working example the design was developed on, with its trade-offs part by part.
+- C2SM/icon4py-knowledge `mwe/components/DESIGN.md`, section "01 Typed states
+  and components": the minimal working example the design was developed on.
 - [ADR 0001](0001_model_physics_components_interface.md), superseded by this one.
