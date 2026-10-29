@@ -76,7 +76,7 @@ at distances larger than _MAX_BOUNDARY_DISTANCE are labeled as _UNORDERED
    /     \/     \/     \/
    3------3------3------3 <- row 3 VERTICES
   / \    / \    / \    /
- /  \  /   \  /   \  /
+ /   \  /   \  /   \  /
 /_____\/_____\/_____\/
 
 ## EDGES:
