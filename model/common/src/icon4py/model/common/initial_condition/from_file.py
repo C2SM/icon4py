@@ -97,7 +97,7 @@ def read_initial_condition_from_file(
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
         str(ic_config.data_path),
-        "icon_pydycore_rank0",  # always read the single-rank (global) data
+        "icon_pydycore_rank0",  
     )
     savepoint = serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
 
