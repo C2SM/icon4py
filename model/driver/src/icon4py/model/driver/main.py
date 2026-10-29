@@ -6,9 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import contextlib
 import logging
 import pathlib
 import sys
+from collections.abc import Iterator
 from typing import Annotated
 
 import typer
@@ -69,7 +71,8 @@ def main(
     file at ``config_file_path``; the driver is initialized, an initial condition is
     generated, and the time integration is run. With dedicated IO ranks
     (``io.io_ranks_per_node``) the run's communicator is split first: the IO ranks only
-    receive and write the compute ranks' output.
+    receive and write the compute ranks' output, and a failure on any rank aborts the
+    whole run (``_abort_run_on_failure``).
     """
 
     process_props = decomposition_defs.get_process_properties(
@@ -87,38 +90,32 @@ def main(
         process_props=role_props,
     )
 
-    if io_ranks is not None and io_ranks.is_io_rank:
-        try:
+    with _abort_run_on_failure(io_ranks, process_props):
+        if io_ranks is not None and io_ranks.is_io_rank:
             driver_io.run_io_server(config=config, grid_file_path=grid_file_path, io_ranks=io_ranks)
-        except BaseException:
-            # the compute ranks cannot observe an IO-rank failure (they block at the
-            # in-flight bound at the latest): abort the whole run instead of hanging
-            log.exception(f"IO rank {io_ranks.process_props.rank} failed; aborting the run.")
-            process_props.comm.Abort(1)
-            raise
-        return
+            return
 
-    backend = model_options.customize_backend(
-        program=None,
-        backend=driver_utils.get_backend_from_name(icon4py_backend),
-        backend_config=config.driver.backend_config,
-    )
-    allocator = model_backends.get_allocator(backend)
+        backend = model_options.customize_backend(
+            program=None,
+            backend=driver_utils.get_backend_from_name(icon4py_backend),
+            backend_config=config.driver.backend_config,
+        )
+        allocator = model_backends.get_allocator(backend)
 
-    grid_manager = driver_utils.create_grid_manager(
-        grid_file_path=grid_file_path,
-        vertical_grid_config=config.vertical_grid,
-        allocator=allocator,
-        process_props=role_props,
-    )
+        grid_manager = driver_utils.create_grid_manager(
+            grid_file_path=grid_file_path,
+            vertical_grid_config=config.vertical_grid,
+            allocator=allocator,
+            process_props=role_props,
+        )
 
-    driver.run_driver(
-        config=config,
-        grid_manager=grid_manager,
-        process_props=role_props,
-        backend=backend,
-        io_ranks=io_ranks,
-    )
+        driver.run_driver(
+            config=config,
+            grid_manager=grid_manager,
+            process_props=role_props,
+            backend=backend,
+            io_ranks=io_ranks,
+        )
 
 
 def split_io_ranks(
@@ -131,6 +128,29 @@ def split_io_ranks(
     if config.io is None or config.io.io_ranks_per_node == 0:
         return None
     return mpi_decomp.split_io_ranks(process_props, config.io.io_ranks_per_node)
+
+
+@contextlib.contextmanager
+def _abort_run_on_failure(
+    io_ranks: mpi_decomp.IORankSplit | None, process_props: decomposition_defs.ProcessProperties
+) -> Iterator[None]:
+    """With dedicated IO ranks, abort the whole run when this rank fails.
+
+    Neither role can observe the other's failure: an IO rank waits for the setup or the
+    next capture of its compute ranks, and compute ranks block at the in-flight bound
+    once their IO rank stopped receiving. The failing rank would then wait in MPI's
+    shutdown for ranks that never get there, and the job would hang instead of failing.
+    The abort may interrupt IO ranks writing their last captures. Without dedicated IO
+    ranks the exception propagates as before.
+    """
+    try:
+        yield
+    except BaseException:
+        if io_ranks is not None:
+            role = "IO" if io_ranks.is_io_rank else "Compute"
+            log.exception(f"{role} rank {io_ranks.process_props.rank} failed; aborting the run.")
+            process_props.comm.Abort(1)
+        raise
 
 
 if __name__ == "__main__":

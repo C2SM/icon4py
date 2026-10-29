@@ -43,11 +43,13 @@ receives them deterministically without any tags beyond the three message kinds.
 ``IOClient.close`` completes the transfers and sends an empty header, which ends the
 IO rank's ``serve`` loop.
 
-Failure envelope: a compute rank that fails closes its client (the driver closes the
-monitor on error paths), so its IO rank finishes and exits cleanly. An IO rank that
-fails raises out of ``serve``; the compute ranks cannot observe that -- they block at
-the in-flight bound at the latest -- so the caller of ``serve`` must abort the run
-(the driver does, ``driver_io.run_io_server``). Every check that must fail on all IO
+Failure envelope: neither role can observe the other's failure. An IO rank waits for
+the setup or the next capture of its compute ranks, so a compute rank that fails
+before closing its client leaves it waiting; compute ranks block at the in-flight
+bound at the latest once their IO rank failed. A program using dedicated IO ranks must
+therefore abort the run when any rank fails (the driver's ``main`` does). A client
+closed cleanly, also on an error path, lets its IO rank finish: ``close`` completes
+the transfers and sends the shutdown header. Every check that must fail on all IO
 ranks together (existing output files, mismatching store metadata) is collective on
 their communicator through the ordinary output stack.
 """
@@ -416,7 +418,7 @@ class IOServer:
 
         ``io_monitor`` must be built from ``receive_setup`` (its process properties are
         the IO ranks'); it is closed when this returns, also on failure -- an IO-side
-        error propagates and the caller must abort the run (module docstring).
+        error propagates and the program must abort the run (module docstring).
         """
         try:
             while (header := self._receive_header()) is not None:

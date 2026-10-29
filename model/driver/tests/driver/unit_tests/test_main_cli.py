@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
-from typer.testing import CliRunner
+from typer.testing import CliRunner, Result
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import (
@@ -64,14 +64,17 @@ def backend_name(pytestconfig: pytest.Config) -> str:
     return spec
 
 
-def _run_cli(
-    config_file: pathlib.Path, backend_name: str, *options: str
-) -> tuple[mock.MagicMock, mock.MagicMock]:
+def _invoke_cli(
+    config_file: pathlib.Path,
+    backend_name: str,
+    *options: str,
+    run_driver_error: BaseException | None = None,
+) -> tuple[Result, mock.MagicMock, mock.MagicMock]:
     """Invoke the driver CLI with the grid manager and the driver run mocked away."""
     mock_grid_manager = mock.MagicMock()
     with (
         mock.patch.object(driver_utils, "create_grid_manager", return_value=mock_grid_manager),
-        mock.patch.object(driver, "run_driver") as mock_run_driver,
+        mock.patch.object(driver, "run_driver", side_effect=run_driver_error) as mock_run_driver,
     ):
         result = CliRunner().invoke(
             main.app,
@@ -85,6 +88,14 @@ def _run_cli(
                 *options,
             ],
         )
+    return result, mock_grid_manager, mock_run_driver
+
+
+def _run_cli(
+    config_file: pathlib.Path, backend_name: str, *options: str
+) -> tuple[mock.MagicMock, mock.MagicMock]:
+    """Invoke the driver CLI like ``_invoke_cli`` and require success."""
+    result, mock_grid_manager, mock_run_driver = _invoke_cli(config_file, backend_name, *options)
     assert result.exit_code == 0, result.output or result.exception
     return mock_grid_manager, mock_run_driver
 
@@ -186,3 +197,45 @@ def test_main_cli_io_rank_runs_the_io_server(backend_name: str, tmp_path: pathli
         "winds",
         "precipitation",
     ]
+
+
+def _process_props_with_mock_comm() -> mock.MagicMock:
+    """Process properties of a one-rank run whose communicator records 'Abort' calls."""
+    return mock.MagicMock(rank=0, comm_size=1, comm_name="")
+
+
+@pytest.mark.parametrize("is_io_rank", [False, True], ids=["compute-rank", "io-rank"])
+def test_main_cli_failure_with_io_ranks_aborts_the_run(
+    backend_name: str, tmp_path: pathlib.Path, is_io_rank: bool
+) -> None:
+    """Neither role can observe the other's failure: a failing rank aborts the whole run."""
+    process_props = _process_props_with_mock_comm()
+    failure = RuntimeError("the rank failed")
+    with (
+        mock.patch.object(decomp_defs, "get_process_properties", return_value=process_props),
+        mock.patch.object(
+            mpi_decomp, "split_io_ranks", return_value=_io_rank_split(is_io_rank=is_io_rank)
+        ),
+        mock.patch.object(driver_io, "run_io_server", side_effect=failure if is_io_rank else None),
+    ):
+        result, _, _ = _invoke_cli(
+            _config_file_with_io_ranks(tmp_path, 1),
+            backend_name,
+            run_driver_error=None if is_io_rank else failure,
+        )
+    process_props.comm.Abort.assert_called_once_with(1)
+    assert result.exception is failure
+
+
+def test_main_cli_failure_without_io_ranks_is_not_aborted(
+    backend_name: str, tmp_path: pathlib.Path
+) -> None:
+    """Without IO ranks a failure propagates as before: every rank raises it itself."""
+    process_props = _process_props_with_mock_comm()
+    failure = RuntimeError("the model failed")
+    with mock.patch.object(decomp_defs, "get_process_properties", return_value=process_props):
+        result, _, _ = _invoke_cli(
+            _config_file_with_io_section(tmp_path), backend_name, run_driver_error=failure
+        )
+    process_props.comm.Abort.assert_not_called()
+    assert result.exception is failure

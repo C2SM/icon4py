@@ -192,9 +192,10 @@ keeps a GPU of its own.
 - The compute ranks define the output: their configuration is shipped to the IO ranks
   at setup, so the two sides cannot diverge. The IO ranks need nothing but the
   vertical grid and the grid file (for the UGRID topology).
-- Failure envelope: a failing compute rank closes its client, so its IO rank finishes;
-  a failing IO rank cannot be observed by the compute ranks, so the caller of the
-  server must abort the run (the driver does, `driver_io.run_io_server`).
+- Failure envelope: neither role can observe the other's failure (an IO rank waits for
+  its compute ranks, compute ranks wait at the in-flight bound for their IO rank), so a
+  program using dedicated IO ranks must abort the run when any rank fails; the driver's
+  `main` does.
 
 ### Restrictions
 
