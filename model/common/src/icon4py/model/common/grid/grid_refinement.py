@@ -235,7 +235,7 @@ def _compute_halo_domain_bounds_for_distributed_grid(
 
     start_indices[h1] = gtx.int32(h1_start)
     end_indices[h1] = gtx.int32(h1_end)
-    start_indices[h2] = gtx.int32(h2_start)
+    start_indices[h2] = gtx.int32(h1_end)
     end_indices[h2] = gtx.int32(h2_end)
 
     # HALO_LEVEL_3 only exists for EdgeDim (closing edges of halo cells).
