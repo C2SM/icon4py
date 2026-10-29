@@ -221,63 +221,6 @@ class PhysicsState:
         assert self._diagnostics is not None, "compute_diagnostics must run first"
         return self._diagnostics
 
-    def allocate_process_diagnostics(
-        self, process_name: str, outputs_properties: Mapping[str, model.FieldMetaData]
-    ) -> dict[str, gtx.Field]:
-        """Allocate the process's diagnostic output buffers from their metadata and keep them.
-
-        The buffers are the home of each process's diagnostics because the model state has
-        no fields for them: the ``DiagnosticState`` holds only what ``compute_diagnostics``
-        fills.
-
-        TODO (Yilu): give them a model-level home the output layer can write, with every
-        diagnostic bound to it. #1510 types them as each process's ``Output`` state; build
-        on that.
-
-        Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
-        is a diagnostic. Tendencies stay component-owned: ``Tendencies`` sums
-        them across processes, and recycling needs each process's last tendency.
-
-        A diagnostic name has one provider: a second process declaring it is rejected, so
-        that ``diagnostic_output`` can hand it to a reader by name alone.
-        """
-        if process_name in self._process_diagnostics:
-            raise ValueError(f"Process '{process_name}' already has output buffers.")
-        buffers: dict[str, gtx.Field] = {}
-        for name, props in outputs_properties.items():
-            if props.kind == model.FieldKind.TENDENCY:
-                continue
-            if (provider := self._provider_of(name)) is not None:
-                raise ValueError(
-                    f"Diagnostic output '{name}' is already provided by process '{provider}'."
-                )
-            if props.dims is None:
-                raise ValueError(
-                    f"Diagnostic output '{name}' of process '{process_name}' declares no 'dims', "
-                    "which are needed to allocate its buffer."
-                )
-            buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
-        self._process_diagnostics[process_name] = buffers
-        return buffers
-
-    def _provider_of(self, name: str) -> str | None:
-        return next(
-            (process for process, buffers in self._process_diagnostics.items() if name in buffers),
-            None,
-        )
-
-    def diagnostic_output(self, name: str) -> gtx.Field:
-        """The diagnostic output ``name`` of the one process that provides it.
-
-        This is how a process reads another's output, as tmx reads the surface fluxes:
-        by name through the state, without knowing which process computes it.
-        """
-        if (provider := self._provider_of(name)) is None:
-            raise KeyError(
-                f"No process provides the diagnostic '{name}'; is the process computing it enabled?"
-            )
-        return self._process_diagnostics[provider][name]
-
     def compute_diagnostics(
         self,
         prognostic: prognostics.PrognosticState,
@@ -343,6 +286,63 @@ class PhysicsState:
             p_u_out=self.diagnostics.u,
             p_v_out=self.diagnostics.v,
         )
+
+    def allocate_process_diagnostics(
+        self, process_name: str, outputs_properties: Mapping[str, model.FieldMetaData]
+    ) -> dict[str, gtx.Field]:
+        """Allocate the process's diagnostic output buffers from their metadata and keep them.
+
+        The buffers are the home of each process's diagnostics because the model state has
+        no fields for them: the ``DiagnosticState`` holds only what ``compute_diagnostics``
+        fills.
+
+        TODO (Yilu): give them a model-level home the output layer can write, with every
+        diagnostic bound to it. #1510 types them as each process's ``Output`` state; build
+        on that.
+
+        Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
+        is a diagnostic. Tendencies stay component-owned: ``Tendencies`` sums
+        them across processes, and recycling needs each process's last tendency.
+
+        A diagnostic name has one provider: a second process declaring it is rejected, so
+        that ``diagnostic_output`` can hand it to a reader by name alone.
+        """
+        if process_name in self._process_diagnostics:
+            raise ValueError(f"Process '{process_name}' already has output buffers.")
+        buffers: dict[str, gtx.Field] = {}
+        for name, props in outputs_properties.items():
+            if props.kind == model.FieldKind.TENDENCY:
+                continue
+            if (provider := self._provider_of(name)) is not None:
+                raise ValueError(
+                    f"Diagnostic output '{name}' is already provided by process '{provider}'."
+                )
+            if props.dims is None:
+                raise ValueError(
+                    f"Diagnostic output '{name}' of process '{process_name}' declares no 'dims', "
+                    "which are needed to allocate its buffer."
+                )
+            buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
+        self._process_diagnostics[process_name] = buffers
+        return buffers
+
+    def _provider_of(self, name: str) -> str | None:
+        return next(
+            (process for process, buffers in self._process_diagnostics.items() if name in buffers),
+            None,
+        )
+
+    def diagnostic_output(self, name: str) -> gtx.Field:
+        """The diagnostic output ``name`` of the one process that provides it.
+
+        This is how a process reads another's output, as tmx reads the surface fluxes:
+        by name through the state, without knowing which process computes it.
+        """
+        if (provider := self._provider_of(name)) is None:
+            raise KeyError(
+                f"No process provides the diagnostic '{name}'; is the process computing it enabled?"
+            )
+        return self._process_diagnostics[provider][name]
 
     def update_prognostics(
         self,
@@ -435,6 +435,9 @@ class PhysicsState:
 
 class Tendencies:
     """The tendency sums of one timestep, and the in-place advance of the state.
+
+    TODO (Yilu): the sums are the untyped stand-in for a typed state of #1510, one field
+    per tendency; restructure them on top of it once it is merged.
 
     One timestep is ``zero``, then ``accumulate`` and ``advance`` once per process,
     then ``PhysicsState.update_prognostics``.
