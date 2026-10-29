@@ -311,7 +311,7 @@ def compute_perturbed_quantities_and_interpolation(
                 dims.KDim: (model_top, surface_level - 1),
             },
             {
-                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_local),
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
                 dims.KHalfDim: (model_top + 1, surface_level - 1),
             },
             # `theta_v_at_cells_on_half_levels` is read through E2C by the hydrostatic correction
