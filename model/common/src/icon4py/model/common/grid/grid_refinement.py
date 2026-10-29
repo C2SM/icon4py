@@ -234,8 +234,6 @@ def _compute_halo_domain_bounds_for_distributed_grid(
     start_indices[h2] = gtx.int32(h1_end)
     end_indices[h2] = gtx.int32(h2_end)
 
-    # HALO_LEVEL_3 only exists for EdgeDim (closing edges of halo cells).
-    # CellDim and VertexDim do not have a third halo level in the domain schema.
     if dim == dims.EdgeDim:
         h3 = h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_3)
         start_indices[h3] = gtx.int32(h2_end)
