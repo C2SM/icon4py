@@ -66,7 +66,6 @@ def read_from_file(
     sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()
     log.debug("Reading topography from %s / icon_pydycore_rank0", data_path)
 
-    # global_index() may return CuPy on GPU backends; np.asarray converts safely.
     local_indices = data_alloc.as_numpy(
         grid_manager.decomposition_info.global_index(
             dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.ALL
