@@ -215,13 +215,11 @@ def _compute_halo_domain_bounds_for_distributed_grid(
     owned_count = int(array_ns.sum(owned).item())
     halo_1_count = int(array_ns.sum(halo_level_1).item())
     halo_2_count = int(array_ns.sum(halo_level_2).item())
+    halo_3_count = 0
     if dim == dims.EdgeDim:
-        halo_level_3 = decomposition_info.halo_level_mask(
+        halo_3_count = int(array_ns.sum(decomposition_info.halo_level_mask(
             dim, decomposition.DecompositionFlag.THIRD_HALO_LEVEL
-        )
-        halo_3_count = int(array_ns.sum(halo_level_3).item())
-    else:
-        halo_3_count = 0
+        )).item())
 
     h1_start = owned_count
     h1_end = owned_count + halo_1_count
