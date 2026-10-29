@@ -225,8 +225,7 @@ def _compute_halo_domain_bounds_for_distributed_grid(
 
     h1_start = owned_count
     h1_end = owned_count + halo_1_count
-    h2_start = h1_end
-    h2_end = h2_start + halo_2_count
+    h2_end = h1_end + halo_2_count
     h3_start = h2_end
     h3_end = h3_start + halo_3_count
 
