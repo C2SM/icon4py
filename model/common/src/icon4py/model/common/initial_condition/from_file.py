@@ -68,8 +68,8 @@ def _available_nonhydro_init_dates(serializer: serialbox.Serializer) -> str:
 
 def _read_prognostic_state(
     prognostic_state: prognostics.PrognosticState,
-    read_cell_k,
-    read_edge_k,
+    read_cell_k: Callable[[str], data_alloc.NDArray],
+    read_edge_k: Callable[[str], data_alloc.NDArray],
 ):
     prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")
     prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")
