@@ -349,10 +349,6 @@ def compute_domain_bounds(
     start_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
     end_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
 
-    # Halo domain bounds depend on the memory layout, which differs between
-    # single-rank (ICON's own layout, non-contiguous halos in the LAM case)
-    # and distributed runs (IconLikeHaloConstructor's layout: all owned first,
-    # then contiguous halo levels).
     if decomposition_info.is_distributed():
         _compute_halo_domain_bounds_for_distributed_grid(
             dim, refinement_ctrl, decomposition_info, start_indices, end_indices
