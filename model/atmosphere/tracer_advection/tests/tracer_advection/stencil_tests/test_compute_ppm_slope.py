@@ -17,6 +17,39 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
+def compute_ppm_slope_numpy(
+    p_cc: np.ndarray,
+    p_cellhgt_mc_now: np.ndarray,
+    elev: int,
+) -> np.ndarray:
+    """Return z_slope for interior k levels."""
+    zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
+        p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
+    )
+    zfac = (p_cc[:, 2:] - p_cc[:, 1:-1]) / (p_cellhgt_mc_now[:, 2:] + p_cellhgt_mc_now[:, 1:-1])
+    z_slope_a = (
+        p_cellhgt_mc_now[:, 1:-1]
+        / (p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 2:])
+    ) * (
+        (2.0 * p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1]) * zfac
+        + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 2:]) * zfac_m1
+    )
+
+    zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
+        p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
+    )
+    zfac = (p_cc[:, 1:-1] - p_cc[:, 1:-1]) / (p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1])
+    z_slope_b = (
+        p_cellhgt_mc_now[:, 1:-1]
+        / (p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1])
+    ) * (
+        (2.0 * p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1]) * zfac
+        + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 1:-1]) * zfac_m1
+    )
+    k = np.arange(p_cc.shape[1])
+    return np.where(k[1:-1] < elev, z_slope_a, z_slope_b)
+
+
 @pytest.mark.uses_concat_where
 class TestComputePpmSlope(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_slope
@@ -35,33 +68,7 @@ class TestComputePpmSlope(stencil_tests.StencilTest):
         elev: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
-            p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
-        )
-        zfac = (p_cc[:, 2:] - p_cc[:, 1:-1]) / (p_cellhgt_mc_now[:, 2:] + p_cellhgt_mc_now[:, 1:-1])
-        z_slope_a = (
-            p_cellhgt_mc_now[:, 1:-1]
-            / (p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 2:])
-        ) * (
-            (2.0 * p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1]) * zfac
-            + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 2:]) * zfac_m1
-        )
-
-        zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
-            p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
-        )
-        zfac = (p_cc[:, 1:-1] - p_cc[:, 1:-1]) / (
-            p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1]
-        )
-        z_slope_b = (
-            p_cellhgt_mc_now[:, 1:-1]
-            / (p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1])
-        ) * (
-            (2.0 * p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1]) * zfac
-            + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 1:-1]) * zfac_m1
-        )
-        k = np.arange(p_cc.shape[1])
-        z_slope = np.where(k[1:-1] < elev, z_slope_a, z_slope_b)
+        z_slope = compute_ppm_slope_numpy(p_cc, p_cellhgt_mc_now, elev)
         return dict(z_slope=z_slope)
 
     @stencil_tests.input_data_fixture
