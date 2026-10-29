@@ -133,9 +133,12 @@ class GridManager:
         allocator: gtx_typing.Allocator,
         geometry_type: icon.GeometryType,
     ) -> CoordinateDict:
-        my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
-        my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
-        my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
+        # global_index() returns CuPy on GPU backends; the reader expects numpy.
+        my_cell_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
+        my_edge_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
+        my_vertex_indices = data_alloc.as_numpy(
+            self._decomposition_info.global_index(dims.VertexDim)
+        )
         coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -246,9 +249,17 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
-        my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
-        my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
-        my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
+        my_cell_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
+        my_edge_indices = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
+        my_vertex_indices = data_alloc.as_numpy(
+            self._decomposition_info.global_index(dims.VertexDim)
+        )
+        vertex_edge_orientation = self._reader.int_variable(
+            gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
+            transpose=True,
+            apply_offset=False,
+            indices=my_vertex_indices,
+        )
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
@@ -277,10 +288,13 @@ class GridManager:
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
-                self._reader.variable(
-                    gridfile.GeometryName.EDGE_CELL_DISTANCE,
-                    transpose=True,
-                    indices=my_edge_indices,
+                np.nan_to_num(
+                    self._reader.variable(
+                        gridfile.GeometryName.EDGE_CELL_DISTANCE,
+                        transpose=True,
+                        indices=my_edge_indices,
+                    ),
+                    nan=0.0,
                 ),
                 allocator=allocator,
             ),
@@ -312,12 +326,7 @@ class GridManager:
             ),
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
                 (dims.VertexDim, dims.V2EDim),
-                self._reader.int_variable(
-                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
-                    transpose=True,
-                    apply_offset=False,
-                    indices=my_vertex_indices,
-                ),
+                vertex_edge_orientation,
                 allocator=allocator,
             ),
         }
@@ -347,7 +356,7 @@ class GridManager:
                 (dim,),
                 self._reader.int_variable(
                     name,
-                    indices=self._decomposition_info.global_index(dim),
+                    indices=data_alloc.as_numpy(self._decomposition_info.global_index(dim)),
                     transpose=False,
                     apply_offset=False,
                 ),
@@ -402,9 +411,6 @@ class GridManager:
         global_size = self._read_full_grid_size()
         global_params = self._construct_grid_params(geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement)
-
-        if limited_area and not process_props.is_single_rank():
-            raise NotImplementedError("Limited-area grids are not supported in distributed runs")
 
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C, array_ns=xp)
         global_neighbor_tables = {
@@ -473,7 +479,7 @@ class GridManager:
             return {
                 k: halo.global_to_local(
                     self._decomposition_info.global_index(k.source),
-                    v[self._decomposition_info.global_index(k.target[0])],
+                    v[data_alloc.as_numpy(self._decomposition_info.global_index(k.target[0]))],
                 )
                 for k, v in neighbor_tables_global.items()
             }

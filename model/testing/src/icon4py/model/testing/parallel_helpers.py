@@ -84,9 +84,10 @@ def check_local_global_field(
     check_halos: bool,
     atol: float,
     rtol: float = 0.0,
+    equal_nan: bool = False,
 ) -> None:
     if dim.kind == gtx.DimensionKind.VERTICAL:
-        test_utils.assert_dallclose(global_reference_field, local_field)
+        test_utils.assert_dallclose(global_reference_field, local_field, equal_nan=equal_nan)
         return
 
     _log.info(
@@ -116,7 +117,12 @@ def check_local_global_field(
             if actual.shape[0] > 0 and desired.shape[0] > 0:
                 # abuse err_msg to print the domain region
                 test_utils.assert_dallclose(
-                    actual, desired, atol=atol, rtol=rtol, err_msg=entry_type.name
+                    actual,
+                    desired,
+                    atol=atol,
+                    rtol=rtol,
+                    equal_nan=equal_nan,
+                    err_msg=entry_type.name,
                 )
 
     # Compare owned local field, excluding halos, against global reference
@@ -156,5 +162,10 @@ def check_local_global_field(
 
         # abuse err_msg to print the domain region
         test_utils.assert_dallclose(
-            sorted_, global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
+            sorted_,
+            global_reference_field,
+            atol=atol,
+            rtol=rtol,
+            equal_nan=equal_nan,
+            err_msg="internal",
         )

@@ -842,6 +842,7 @@ def initialize_driver_states(
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
+        decomposition_info=icon4py_driver.decomposition_info,
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(
         grid=icon4py_driver.grid, allocator=allocator

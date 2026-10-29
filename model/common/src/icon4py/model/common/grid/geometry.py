@@ -131,6 +131,16 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(coordinate_provider)
 
         # Setup input fields
+        vertex_edge_orientation = extra_fields[gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX]
+        vertex_edge_validity = extra_fields.get(gridfile.GeometryName.VERTEX_EDGE_VALIDITY)
+        if vertex_edge_validity is None:
+            vertex_edge_validity = gtx.as_field(
+                (dims.VertexDim, dims.V2EDim),
+                self._xp.asarray(
+                    self._grid.get_connectivity(dims.V2E).ndarray != gridfile.GridFile.INVALID_INDEX
+                ),
+                allocator=self._backend,
+            )
         input_fields_provider = factory.PrecomputedFieldProvider(
             fields={
                 # TODO(halungge): rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
@@ -146,9 +156,13 @@ class GridGeometry(factory.FieldSource):
                 attrs.CELL_NORMAL_ORIENTATION: extra_fields[
                     gridfile.GeometryName.CELL_NORMAL_ORIENTATION
                 ],
-                attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
-                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX
-                ],
+                attrs.VERTEX_EDGE_ORIENTATION: gtx.as_field(
+                    (dims.VertexDim, dims.V2EDim),
+                    self._xp.where(
+                        vertex_edge_validity.ndarray, vertex_edge_orientation.ndarray, 0
+                    ),
+                    allocator=self._backend,
+                ),
                 attrs.EDGE_OWNER_MASK: gtx.as_field(
                     (dims.EdgeDim,),
                     decomposition_info.owner_mask(dims.EdgeDim),
