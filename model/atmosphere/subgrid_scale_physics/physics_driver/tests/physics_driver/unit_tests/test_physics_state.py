@@ -149,7 +149,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     """The dyn2phy diagnosis fills plausible fields and is strictly read-only.
 
     The prognostic state and tracers must stay bitwise identical: only
-    ``advance`` and ``update_prognostics`` change them.
+    ``update`` and ``update_prognostics`` change them.
     """
     grid = simple.simple_grid()
     ws = _physics_state(grid)
@@ -232,11 +232,11 @@ def _accumulated(grid, state, **tendencies) -> physics_state.Tendencies:
     props = {name: _meta(kind=_TENDENCY) for name in tendencies}
     acc.zero()
     acc.accumulate(tendencies, props)
-    state.advance(tendencies, props, _DT_SECONDS)
+    state.update(tendencies, props, _DT_SECONDS)
     return acc
 
 
-def test_advance_and_update_apply_tracers_w_and_thermodynamics_once():
+def test_update_and_update_prognostics_apply_tracers_w_and_thermodynamics_once():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
@@ -325,14 +325,14 @@ def test_sums_are_allocated_on_the_first_contribution():
     np.testing.assert_allclose(acc.sums["tend_w"].asnumpy(), 1e-4, rtol=1e-12)
 
 
-def test_advance_rejects_a_tendency_of_no_advanced_field():
+def test_update_rejects_a_tendency_of_no_advanced_field():
     grid = simple.simple_grid()
     ws = _physics_state(grid)
     ws.compute_diagnostics(_uniform_prognostic(grid), _tracer_state(grid), _diagnostic_state(grid))
     out = {"tend_dummy": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
     with pytest.raises(ValueError, match="'tend_dummy' is not the tendency"):
-        ws.advance(out, {"tend_dummy": _meta(kind=_TENDENCY)}, _DT_SECONDS)
+        ws.update(out, {"tend_dummy": _meta(kind=_TENDENCY)}, _DT_SECONDS)
 
 
 def test_physics_state_links_the_callers_diagnostic_state():

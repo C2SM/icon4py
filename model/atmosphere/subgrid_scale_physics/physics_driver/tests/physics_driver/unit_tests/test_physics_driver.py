@@ -197,8 +197,8 @@ class RecordingCoupling:
     def update_prognostics(self, sums, dt_seconds, perturbed_exner=None) -> None:
         self.events.append(("update_prognostics", dt_seconds, perturbed_exner))
 
-    def advance(self, outputs, outputs_properties, dt_seconds) -> None:
-        self.events.append(("advance", dict(outputs), dt_seconds))
+    def update(self, outputs, outputs_properties, dt_seconds) -> None:
+        self.events.append(("update", dict(outputs), dt_seconds))
 
     # Tendencies surface
     def zero(self) -> None:
@@ -217,7 +217,7 @@ def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
     return driver, coupling
 
 
-def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
+def test_run_diagnoses_once_updates_after_each_process_and_writes_back_once() -> None:
     state = RecordingComponentState()
     comp_a = RecordingComponent(
         outputs={"tend_temperature": "A"},
@@ -245,7 +245,7 @@ def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
     assert comp_a.call_count == 1
     assert comp_b.call_count == 1
     # buffers allocated at construction, compute_diagnostics + zero once at entry, one
-    # advance per process (before the next process runs), exactly one update
+    # update per process (before the next process runs), exactly one update_prognostics
     # at the very end
     assert coupling.events == [
         ("allocate", "A"),
@@ -253,9 +253,9 @@ def test_run_diagnoses_once_advances_each_process_and_updates_once() -> None:
         ("compute_diagnostics", "prog", "diag"),
         ("zero",),
         ("accumulate", {"tend_temperature": "A"}),
-        ("advance", {"tend_temperature": "A"}, 300.0),
+        ("update", {"tend_temperature": "A"}, 300.0),
         ("accumulate", {"tend_temperature": "B", "kh": "KH"}),
-        ("advance", {"tend_temperature": "B", "kh": "KH"}, 300.0),
+        ("update", {"tend_temperature": "B", "kh": "KH"}, 300.0),
         ("update_prognostics", 300.0, None),
     ]
     # both processes translated the same PhysicsState object, advanced in place in between
@@ -313,13 +313,13 @@ def test_out_of_window_process_does_nothing() -> None:
 
     assert comp.call_count == 0
     assert state.input_calls == []
-    # the accumulate and advance calls still happen, with nothing in them to add
+    # the accumulate and update calls still happen, with nothing in them to add
     assert coupling.events == [
         ("allocate", "future"),
         ("compute_diagnostics", "prog", "diag"),
         ("zero",),
         ("accumulate", {}),
-        ("advance", {}, 300.0),
+        ("update", {}, 300.0),
         ("update_prognostics", 300.0, None),
     ]
 
@@ -358,8 +358,8 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
     # The state is translated only on the firing step: a process that derives its own
     # inputs must not compute them for the step that reuses the cached outputs.
     assert state.input_calls == [coupling]
-    advances = [e for e in coupling.events if e[0] == "advance"]
-    assert advances == [("advance", {"tend_temperature": "FRESH"}, 300.0)] * 2
+    updates = [e for e in coupling.events if e[0] == "update"]
+    assert updates == [("update", {"tend_temperature": "FRESH"}, 300.0)] * 2
     updates = [e for e in coupling.events if e[0] == "update_prognostics"]
     assert len(updates) == 2  # one per run
 
@@ -387,7 +387,7 @@ def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
     )
 
     assert comp.call_count == 1
-    assert ("advance", {"tend_temperature": "FRESH"}, 300.0) in coupling.events
+    assert ("update", {"tend_temperature": "FRESH"}, 300.0) in coupling.events
 
 
 def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:

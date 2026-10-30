@@ -77,7 +77,7 @@ class PhysicsState:
        ICON hands to the physics as ``mair``).
     2. ``diagnostics``, the caller's ``DiagnosticState``, linked and diagnosed once at
        ``PhysicsDriver.run`` entry. The virtual temperature and the pressure stay at
-       step start; ``advance`` updates ``temperature``, ``u`` and ``v`` in place after
+       step start; ``update`` advances ``temperature``, ``u`` and ``v`` in place after
        each process, as it does ``w`` and the moisture tracers.
     3. The diagnostic (non-tendency) output buffers of each
        process. They are allocated once, when the driver is built, and written in
@@ -86,7 +86,7 @@ class PhysicsState:
        ``compute_diagnostics`` never touches them. A process reads another's output
        by name through ``diagnostic_output``, as tmx reads the surface fluxes.
 
-    ``compute_diagnostics`` binds and diagnoses at entry (dyn2phy); ``advance`` adds each
+    ``compute_diagnostics`` binds and diagnoses at entry (dyn2phy); ``update`` adds each
     process's tendencies in place; ``update_prognostics`` writes exner, theta_v and vn back
     at exit (phy2dyn) and syncs the halos of what the physics wrote.
     """
@@ -157,7 +157,7 @@ class PhysicsState:
             grid, dims.CellDim, dims.KDim, allocator=backend
         )
 
-        # The in-place advance of ``advance``: field += dt * tendency, on full and half levels
+        # ``update``: field += dt * tendency in place, on full and half levels
         self._apply_tendency = model_options.setup_program(
             program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
             backend=backend,
@@ -309,7 +309,7 @@ class PhysicsState:
             p_v_out=self.diagnostics.v,
         )
 
-    def advance(
+    def update(
         self,
         outputs: dict[str, gtx.Field],
         outputs_properties: dict[str, model.FieldMetaData],
@@ -417,7 +417,7 @@ class PhysicsState:
         """Write exner, theta_v, the perturbed exner and vn back at exit (phy2dyn).
 
         The tracers, temperature, u, v and w were already advanced in place by
-        ``advance``; exner and theta_v follow from the final temperature and
+        ``update``; exner and theta_v follow from the final temperature and
         moisture, and vn from the summed wind tendencies ``sums``.
 
         The halo exchanges of the interface happen here, as in ICON's
@@ -511,7 +511,7 @@ class Tendencies:
     per tendency; restructure them on top of it once it is merged.
 
     One timestep is ``zero``, then ``accumulate`` once per process, each followed by
-    ``PhysicsState.advance`` of that process's tendencies, then
+    ``PhysicsState.update`` of that process's tendencies, then
     ``PhysicsState.update_prognostics`` with the sums.
 
     Sums are keyed by tendency name (``tend_<field>``) and allocated on the first

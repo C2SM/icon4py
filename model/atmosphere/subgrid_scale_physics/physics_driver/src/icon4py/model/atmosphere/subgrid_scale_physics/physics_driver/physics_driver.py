@@ -104,7 +104,7 @@ class PhysicsDriver:
     In one timestep (``run``) the PhysicsState is diagnosed once from the model
     state, then the processes run in list order. The coupling is sequential: each
     process's tendencies are summed over the processes (``Tendencies.accumulate``)
-    and added to the state in place before the next one runs (``PhysicsState.advance``).
+    and added to the state in place before the next one runs (``PhysicsState.update``).
 
     At the end of the step ``PhysicsState.update_prognostics`` writes exner, theta_v and
     vn back and syncs the halos of what the physics wrote.
@@ -181,5 +181,5 @@ class PhysicsDriver:
             outputs_properties = process.component.outputs_properties
             # the step's totals, and the state the next process reads
             self._tendencies.accumulate(outputs, outputs_properties)
-            self._state.advance(outputs, outputs_properties, dt_seconds)
+            self._state.update(outputs, outputs_properties, dt_seconds)
         self._state.update_prognostics(self._tendencies.sums, dt_seconds, perturbed_exner)
