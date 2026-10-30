@@ -530,6 +530,10 @@ def initialize_granules(
                 time_control=every_step,
             )
         )
+    # TODO (Yilu): let the driver do nothing without processes and build it unconditionally,
+    # so that neither this guard nor the one in the time loop is needed. Today its
+    # construction compiles the state's programs, and its `run` would still diagnose at
+    # entry and rewrite exner and theta_v at exit, which a dynamics-only run should not pay.
     physics_granule: physics_driver.PhysicsDriver | None = None
     if processes:
         physics_granule = physics_driver.PhysicsDriver.from_sources(

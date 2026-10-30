@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import data as tmx_data, tmx, tmx_states
 from icon4py.model.common import model_backends, type_alias as ta
-from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
+from icon4py.model.common.states import surface_flux_state
 
 
 if TYPE_CHECKING:
@@ -98,7 +98,7 @@ class TmxComponent:
         )
         self._tmx.run(
             input_state=input_state,
-            surface_flux_state=SurfaceFluxState(
+            surface_flux_state=surface_flux_state.SurfaceFluxState(
                 **{name: fields[name] for name in tmx_data.FLUX_PORTS}
             ),
             diagnostic_state=self._diagnostic_state,

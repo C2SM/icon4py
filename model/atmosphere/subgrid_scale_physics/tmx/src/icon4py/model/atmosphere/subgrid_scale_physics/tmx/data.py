@@ -14,12 +14,13 @@ import dataclasses
 from typing import Final
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.states import data, model
-from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
+from icon4py.model.common.states import data, model, surface_flux_state
 
 
 #: the surface fluxes tmx reads from the physics driver's surface state, in declaration order
-FLUX_PORTS: Final = tuple(field.name for field in dataclasses.fields(SurfaceFluxState))
+FLUX_PORTS: Final = tuple(
+    field.name for field in dataclasses.fields(surface_flux_state.SurfaceFluxState)
+)
 
 #: the state fields tmx returns a tendency for, in the order of ``TmxTendencyState``
 TENDENCY_PORTS: Final = ("temperature", "qv", "qc", "qi", "u", "v", "w")

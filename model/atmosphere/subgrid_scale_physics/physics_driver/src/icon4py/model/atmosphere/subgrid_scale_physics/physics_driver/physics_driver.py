@@ -179,7 +179,6 @@ class PhysicsDriver:
         for process in self._processes:
             outputs = process.run(self._state, step_start_datetime, dtime)
             outputs_properties = process.component.outputs_properties
-            # the step's totals, and the state the next process reads
             self._tendencies.accumulate(outputs, outputs_properties)
             self._state.update(outputs, outputs_properties, dt_seconds)
         self._state.update_prognostics(self._tendencies.sums, dt_seconds, perturbed_exner)

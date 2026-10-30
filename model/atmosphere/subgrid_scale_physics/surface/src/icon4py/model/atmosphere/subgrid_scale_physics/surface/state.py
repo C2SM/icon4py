@@ -13,14 +13,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.components.component_state import ComponentState
+from icon4py.model.common.components import component_state
 
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-class State(ComponentState):
+class State(component_state.ComponentState):
     """Maps the PhysicsState to the input names of the surface component.
 
     The surface scheme sees the lowest level of the atmosphere: both inputs are views of the

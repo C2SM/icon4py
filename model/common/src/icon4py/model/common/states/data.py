@@ -209,8 +209,7 @@ TENDENCY_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     w=tendency_of(PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"]),
 )
 
-#: CF attributes of the surface fields the surface scheme hands to the atmosphere, keyed by
-#: the member names of ``SurfaceFluxState`` and of the physics driver's surface state.
+#: CF attributes of the surface fields the surface scheme hands to the atmosphere
 SURFACE_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     evapotranspiration=model.FieldMetaData(
         standard_name="water_evapotranspiration_flux",
