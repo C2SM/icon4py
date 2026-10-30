@@ -19,13 +19,14 @@ from icon4py.model.common.components import component_state
 class State(component_state.ComponentState):
     """Maps the PhysicsState to the input names of the tmx component.
 
-    Every input is a field of the facade or, for the surface fluxes, a diagnostic of
-    another process read by name; nothing is copied and nothing is owned. The air mass is the one the driver hands to the physics (ICON's
-    ``mair``, the dycore's ``airmass_new``), so a facade without it cannot feed tmx.
+    Every input is a field of the physics state or, for the surface fluxes, a diagnostic
+    of another process read by name; nothing is copied and nothing is owned. The air mass
+    is the one the driver hands to the physics (ICON's ``mair``, the dycore's
+    ``airmass_new``), so a physics state without it cannot feed tmx.
     """
 
     def as_component_input(self, state: Any) -> dict[str, Any]:
-        """The tmx inputs, mapped from the facade without copies."""
+        """The tmx inputs, mapped from the physics state without copies."""
         if state.air_mass is None:
             raise ValueError("tmx needs the air mass per unit area, which the PhysicsState lacks.")
         diagnostics = state.diagnostics

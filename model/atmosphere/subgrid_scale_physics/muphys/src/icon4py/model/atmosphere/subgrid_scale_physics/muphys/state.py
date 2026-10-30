@@ -30,7 +30,7 @@ class State(ComponentState):
         self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
 
     def as_component_input(self, state: Any) -> dict[str, Any]:
-        """The 10 muphys input fields, mapped from the facade (no copies)."""
+        """The 10 muphys input fields, mapped from the physics state (no copies)."""
         return {
             "dz": self.dz,
             "te": state.diagnostics.temperature,

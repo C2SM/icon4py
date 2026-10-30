@@ -26,7 +26,7 @@ class _StubFieldSource:
         return self._fields[name]
 
 
-def test_as_component_input_maps_the_facade_without_copies():
+def test_as_component_input_maps_the_physics_state_without_copies():
     dz = object()
     state = muphys_state.State(metrics=_StubFieldSource({metrics_attributes.DDQZ_Z_FULL: dz}))
     tracers = types.SimpleNamespace(qv="QV", qc="QC", qi="QI", qr="QR", qs="QS", qg="QG")

@@ -24,7 +24,7 @@ class State(component_state.ComponentState):
     """Maps the PhysicsState to the input names of the surface component.
 
     The surface scheme sees the lowest level of the atmosphere: both inputs are views of the
-    facade's diagnostics, nothing is copied and nothing is owned.
+    physics state's diagnostics, nothing is copied and nothing is owned.
     """
 
     def __init__(self, *, grid: base_grid.Grid) -> None:
