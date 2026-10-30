@@ -255,7 +255,7 @@ class PhysicsState:
         `air_mass` is optional because only some processes need it; a process that does
         reports its absence.
 
-        After this call the facade is complete: every model-state field the physics
+        After this call the state is complete: every model-state field the physics
         may touch is reachable as ``state.<name>`` — the raw PrognosticState, DiagnosticState,
         and TracerState never appear below the PhysicsState layer.
         """

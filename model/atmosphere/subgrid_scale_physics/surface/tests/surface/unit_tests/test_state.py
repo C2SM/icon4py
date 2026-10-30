@@ -26,11 +26,11 @@ def test_as_component_input_takes_the_lowest_level_as_views():
     grid = simple.simple_grid()
     pressure_ifc = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
     temperature = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-    facade = types.SimpleNamespace(
+    state = types.SimpleNamespace(
         diagnostics=types.SimpleNamespace(pressure_ifc=pressure_ifc, temperature=temperature)
     )
 
-    inputs = surface_state.State(grid=grid).as_component_input(facade)
+    inputs = surface_state.State(grid=grid).as_component_input(state)
 
     assert set(inputs) == set(surface_data.INPUTS_PROPERTIES)
     np.testing.assert_array_equal(
@@ -39,7 +39,7 @@ def test_as_component_input_takes_the_lowest_level_as_views():
     np.testing.assert_array_equal(
         inputs["temperature"].asnumpy(), temperature.asnumpy()[:, grid.num_levels - 1]
     )
-    # views of the facade's fields, not copies
+    # views of the physics state's fields, not copies
     assert np.shares_memory(inputs["surface_pressure"].ndarray, pressure_ifc.ndarray)
     assert np.shares_memory(inputs["temperature"].ndarray, temperature.ndarray)
 

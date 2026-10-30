@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests of the PhysicsState layer (PhysicsState facade, process outputs, tendency sums, single update)."""
+"""Tests of the PhysicsState layer (PhysicsState, process diagnostics, tendency sums, single update)."""
 
 import gt4py.next as gtx
 import numpy as np
@@ -173,7 +173,7 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     np.testing.assert_array_equal(prognostic.vn.asnumpy(), vn_before)
     np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3, rtol=0)
 
-    # the facade binds pointers, not copies: same objects, physics names
+    # the state binds pointers, not copies: same objects, physics names
     assert ws.exner is prognostic.exner
     assert ws.rho is prognostic.rho
     assert ws.w is prognostic.w
