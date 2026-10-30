@@ -20,13 +20,12 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple
-from icon4py.model.common.states import model
-from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
+from icon4py.model.common.states import model, surface_flux_state
 
 
 def _facade(grid, air_mass):
     tracers = types.SimpleNamespace(qv="QV", qc="QC", qi="QI", qr="QR", qs="QS", qg="QG")
-    fluxes = SurfaceFluxState.allocate(grid)  # what the surface process provides
+    fluxes = surface_flux_state.SurfaceFluxState.allocate(grid)  # what the surface process provides
     return types.SimpleNamespace(
         diagnostics=types.SimpleNamespace(
             temperature="TA", virtual_temperature="TV", pressure="P", u="U", v="V"

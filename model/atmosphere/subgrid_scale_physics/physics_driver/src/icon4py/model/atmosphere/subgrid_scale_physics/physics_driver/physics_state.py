@@ -318,11 +318,11 @@ class PhysicsState:
         """Add ``dt_seconds`` times a process's tendencies to the state in place.
 
         This is the sequential coupling, as ICON AES (``fc_xxx = 1``): the next process
-        reads the advanced temperature, winds, w and tracers, as ICON's interfaces advance
-        their physics state. Each tendency output must be the tendency of temperature, u,
-        v, w or a moisture tracer. ``update_prognostics`` does not add them again: it only
-        recomputes exner and theta_v from the final temperature and moisture, and updates
-        vn once from the summed (u, v) tendencies.
+        reads the advanced temperature, u, v, w and tracers, as ICON's AES physics
+        interfaces advance their physics state. Each tendency output must be the tendency
+        of temperature, u, v, w or a moisture tracer. ``update_prognostics`` does not add
+        them again: it only recomputes exner and theta_v from the final temperature and
+        moisture, and updates vn once from the summed (u, v) tendencies.
         """
         if not outputs:
             return
@@ -422,9 +422,10 @@ class PhysicsState:
 
         The halo exchanges of the interface happen here, as in ICON's
         ``mo_interface_iconam_aes``: the summed wind tendencies before their projection,
-        and at the end what the physics wrote: the advanced tracers and w, exner, theta_v,
-        the perturbed exner when given, and vn when a process produced a wind tendency.
-        The granules sync their own inputs and intermediate fields.
+        since an owned edge reads the sums of a halo cell and the sync of vn only repairs
+        halo edges, and at the end what the physics wrote: the advanced tracers and w, exner,
+        theta_v, the perturbed exner when given, and vn when a process produced a wind
+        tendency. The granules sync their own inputs and intermediate fields.
 
         TODO (Yilu): ICON clips negative tracers at the entry and the exit of the interface
         (``iqneg_d2p`` / ``iqneg_p2d``: set to zero and move the deficit over dt into the
@@ -477,8 +478,6 @@ class PhysicsState:
                 f"the horizontal wind tendencies are applied as a pair; got only {declared}"
             )
         if wind_tendencies:
-            # an owned edge projects the sums of its two adjacent cells, and one of them may
-            # be a halo cell: sync the sums first, the sync of vn below only repairs halo edges
             self._exchange.exchange(
                 dims.CellDim, sums[tendency_name("u")], sums[tendency_name("v")]
             )
@@ -494,7 +493,6 @@ class PhysicsState:
                 output_field=self.vn,
             )
 
-        # the end-of-interface sync of what the physics wrote
         written_cells: list[gtx.Field] = [getattr(tracers, name) for name in MOISTURE_SPECIES]
         written_cells += [self.w, self.exner, self.theta_v]
         if perturbed_exner is not None:

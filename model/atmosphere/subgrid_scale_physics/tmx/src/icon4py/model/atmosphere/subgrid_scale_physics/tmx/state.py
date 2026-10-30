@@ -13,10 +13,10 @@ from __future__ import annotations
 from typing import Any
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import data as tmx_data
-from icon4py.model.common.components.component_state import ComponentState
+from icon4py.model.common.components import component_state
 
 
-class State(ComponentState):
+class State(component_state.ComponentState):
     """Maps the PhysicsState to the input names of the tmx component.
 
     Every input is a field of the facade or, for the surface fluxes, a diagnostic of

@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
     surface_states,
 )
 from icon4py.model.common import model_backends
-from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
+from icon4py.model.common.states import surface_flux_state
 
 
 if TYPE_CHECKING:
@@ -51,7 +51,7 @@ class SurfaceComponent:
     ) -> None:
         self._surface = surface.Surface(grid=grid, config=config, backend=backend)
         # the outputs: replaced by the caller's buffers in `bind_output_buffers`
-        self._fluxes = SurfaceFluxState.allocate(
+        self._fluxes = surface_flux_state.SurfaceFluxState.allocate(
             grid, allocator=model_backends.get_allocator(backend)
         )
         self._surface_temperature: fa.CellField[ta.wpfloat] = self._surface.surface_temperature
@@ -89,6 +89,8 @@ class SurfaceComponent:
         ``PhysicsDriver`` calls this once per process while it is being built, passing the
         fields of its surface state.
         """
-        self._fluxes = SurfaceFluxState(**{name: buffers[name] for name in surface_data.FLUX_PORTS})
+        self._fluxes = surface_flux_state.SurfaceFluxState(
+            **{name: buffers[name] for name in surface_data.FLUX_PORTS}
+        )
         self._surface_temperature = buffers["surface_temperature"]
         self._surface_temperature.ndarray[...] = self._surface.surface_temperature.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
