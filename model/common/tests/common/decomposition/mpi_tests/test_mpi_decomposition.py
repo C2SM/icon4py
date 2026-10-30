@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import collections
 import copy
 import functools
 import logging
@@ -15,6 +16,7 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
+import icon4py.model.common.exceptions as errors
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
@@ -396,3 +398,74 @@ def test_exchange_and_reduction_cache_isolated_by_decomp_info(
     reductions1 = decomp_defs.create_reduction(process_props, decomposition_info)
     reductions2 = decomp_defs.create_reduction(process_props, other_decomposition_info)
     assert reductions1 is not reductions2
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("io_ranks_per_node", [1, 2])
+def test_split_io_ranks_roles_and_intercomm(
+    process_props: decomp_defs.ProcessProperties, io_ranks_per_node: int
+) -> None:
+    node_ids = mpi_decomposition.allgather_node_ids(process_props)
+    assert len(node_ids) == process_props.comm_size
+    # a node is identified by its lowest rank
+    my_node = node_ids[process_props.rank]
+    assert my_node == min(rank for rank, node in enumerate(node_ids) if node == my_node)
+    if min(collections.Counter(node_ids).values()) < 2 * io_ranks_per_node:
+        pytest.skip("needs at least twice as many ranks per node as IO ranks")
+    assignment = mpi_decomposition.assign_io_ranks(node_ids, io_ranks_per_node)
+    split = mpi_decomposition.split_io_ranks(process_props, io_ranks_per_node)
+
+    # the roles follow the assignment; each role is one communicator keeping the rank order
+    assert split.is_io_rank == (process_props.rank in assignment.io_ranks)
+    role_ranks = assignment.io_ranks if split.is_io_rank else assignment.compute_ranks
+    expected_name = (
+        mpi_decomposition.IO_COMM_NAME if split.is_io_rank else mpi_decomposition.COMPUTE_COMM_NAME
+    )
+    assert split.process_props.comm_size == len(role_ranks)
+    assert split.process_props.comm_name == expected_name
+    assert split.process_props.rank == role_ranks.index(process_props.rank)
+    if len(set(node_ids)) == 1:
+        # on a single node the IO ranks are simply the last ranks
+        last_ranks = range(process_props.comm_size - io_ranks_per_node, process_props.comm_size)
+        assert split.is_io_rank == (process_props.rank in last_ranks)
+
+    # who serves whom: an IO rank on the same node
+    if split.is_io_rank:
+        assert split.io_rank is None
+        assert split.served_compute_ranks == assignment.served_compute_ranks(
+            split.process_props.rank
+        )
+        assert split.served_compute_ranks
+    else:
+        assert split.served_compute_ranks == ()
+        assert split.io_rank == assignment.io_rank_of(split.process_props.rank)
+        assert node_ids[assignment.io_ranks[split.io_rank]] == my_node
+
+    # the inter-communicator connects the two roles
+    assert split.intercomm.Is_inter()
+    assert split.intercomm.Get_rank() == split.process_props.rank
+    assert split.intercomm.Get_size() == len(role_ranks)
+    assert split.intercomm.Get_remote_size() == process_props.comm_size - len(role_ranks)
+    # ...and carries messages between them: every compute rank tells its rank to its IO rank
+    if split.is_io_rank:
+        received = [split.intercomm.recv(source=rank, tag=7) for rank in split.served_compute_ranks]
+        assert received == list(split.served_compute_ranks)
+    else:
+        split.intercomm.send(split.process_props.rank, dest=split.io_rank, tag=7)
+    process_props.comm.Barrier()
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_split_io_ranks_rejects_invalid_counts(
+    process_props: decomp_defs.ProcessProperties,
+) -> None:
+    with pytest.raises(errors.InvalidConfigError, match="at least 1"):
+        mpi_decomposition.split_io_ranks(process_props, 0)
+    with pytest.raises(errors.InvalidConfigError, match="needs at least"):
+        mpi_decomposition.split_io_ranks(process_props, process_props.comm_size)
+    with pytest.raises(errors.InvalidConfigError, match="require an MPI run"):
+        mpi_decomposition.split_io_ranks(decomp_defs.SingleNodeProcessProperties(), 1)

@@ -176,6 +176,27 @@ class DecompositionInfo:
     def is_distributed(self) -> bool:
         return max(self._halo_levels[dims.CellDim]).item() > DecompositionFlag.OWNED
 
+    def is_identity(self) -> bool:
+        """Whether the local numbering is the global one: all entries owned, in global order.
+
+        True if, for every dimension, all entries are owned and the global index is
+        the identity ``0..n-1``: the undecomposed grid of a serial run, written as is
+        by ``io.IOMonitor``. False for a decomposed part (halos), and for the whole
+        grid in a permuted order -- the local state of a single dedicated IO rank
+        serving several compute ranks (``io.io_servers``).
+        """
+        for dim, global_index in self._global_index.items():
+            xp = data_alloc.array_namespace(global_index)
+            if not bool(self._owner_mask[dim].all()):
+                return False
+            if not bool(
+                xp.array_equal(
+                    global_index, xp.arange(global_index.shape[0], dtype=global_index.dtype)
+                )
+            ):
+                return False
+        return True
+
     def as_host(self) -> DecompositionInfo:
         """This decomposition info with host (numpy) buffers.
 

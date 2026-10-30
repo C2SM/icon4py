@@ -68,6 +68,7 @@ def _run_driver(
         grid_manager=grid_manager,
         process_props=process_props,
         backend=backend,
+        io_ranks=None,
     )
 
 

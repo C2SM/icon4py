@@ -121,3 +121,32 @@ def test_decomposition_info_as_host_copies_device_buffers() -> None:
         host.halo_levels(dims.CellDim),
     ):
         assert isinstance(array, np.ndarray)
+
+
+def _decomposition_info(
+    global_index: np.ndarray, owner_mask: np.ndarray
+) -> definitions.DecompositionInfo:
+    info = definitions.DecompositionInfo()
+    for dim in dims.horizontal_dims():
+        info.set_dimension(
+            dim,
+            global_index,
+            owner_mask,
+            np.where(
+                owner_mask,
+                definitions.DecompositionFlag.OWNED.value,
+                definitions.DecompositionFlag.FIRST_HALO_LEVEL.value,
+            ),
+        )
+    return info
+
+
+def test_decomposition_info_is_identity_for_the_undecomposed_grid() -> None:
+    all_owned = np.ones(5, dtype=bool)
+    assert _decomposition_info(np.arange(5), all_owned).is_identity()
+    # the whole grid, but permuted (e.g. the local state of a single dedicated IO rank)
+    assert not _decomposition_info(np.asarray([1, 0, 2, 4, 3]), all_owned).is_identity()
+    # halos make it decomposed even if the global index happens to be the identity
+    assert not _decomposition_info(
+        np.arange(5), np.asarray([True, True, True, True, False])
+    ).is_identity()

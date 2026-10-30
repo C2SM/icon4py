@@ -13,11 +13,15 @@ from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
-from typer.testing import CliRunner
+from typer.testing import CliRunner, Result
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import (
+    definitions as decomp_defs,
+    mpi_decomposition as mpi_decomp,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import config as driver_config, driver, driver_utils, main
+from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils, main
 
 from ..fixtures import *  # noqa: F403
 
@@ -41,6 +45,17 @@ def _config_file_with_io_section(directory: pathlib.Path) -> pathlib.Path:
     return config_file
 
 
+def _config_file_with_io_ranks(directory: pathlib.Path, io_ranks_per_node: int) -> pathlib.Path:
+    """The configuration with the 'io' section, dedicating ``io_ranks_per_node`` ranks to output."""
+    config_file = _config_file_with_io_section(directory)
+    text = config_file.read_text()
+    assert text.count("  io_ranks_per_node: 0\n") == 1
+    config_file.write_text(
+        text.replace("  io_ranks_per_node: 0\n", f"  io_ranks_per_node: {io_ranks_per_node}\n")
+    )
+    return config_file
+
+
 @pytest.fixture
 def backend_name(pytestconfig: pytest.Config) -> str:
     spec = pytestconfig.getoption("backend", model_backends.DEFAULT_BACKEND)
@@ -49,14 +64,17 @@ def backend_name(pytestconfig: pytest.Config) -> str:
     return spec
 
 
-def _run_cli(
-    config_file: pathlib.Path, backend_name: str, *options: str
-) -> tuple[mock.MagicMock, mock.MagicMock]:
+def _invoke_cli(
+    config_file: pathlib.Path,
+    backend_name: str,
+    *options: str,
+    run_driver_error: BaseException | None = None,
+) -> tuple[Result, mock.MagicMock, mock.MagicMock]:
     """Invoke the driver CLI with the grid manager and the driver run mocked away."""
     mock_grid_manager = mock.MagicMock()
     with (
         mock.patch.object(driver_utils, "create_grid_manager", return_value=mock_grid_manager),
-        mock.patch.object(driver, "run_driver") as mock_run_driver,
+        mock.patch.object(driver, "run_driver", side_effect=run_driver_error) as mock_run_driver,
     ):
         result = CliRunner().invoke(
             main.app,
@@ -70,6 +88,14 @@ def _run_cli(
                 *options,
             ],
         )
+    return result, mock_grid_manager, mock_run_driver
+
+
+def _run_cli(
+    config_file: pathlib.Path, backend_name: str, *options: str
+) -> tuple[mock.MagicMock, mock.MagicMock]:
+    """Invoke the driver CLI like ``_invoke_cli`` and require success."""
+    result, mock_grid_manager, mock_run_driver = _invoke_cli(config_file, backend_name, *options)
     assert result.exit_code == 0, result.output or result.exception
     return mock_grid_manager, mock_run_driver
 
@@ -87,6 +113,8 @@ def test_main_cli(backend: gtx_typing.Backend, backend_name: str) -> None:
     run_driver_kwargs = mock_run_driver.call_args.kwargs
     assert run_driver_kwargs["grid_manager"] is mock_grid_manager
     assert data_alloc.backend_name(run_driver_kwargs["backend"]) == data_alloc.backend_name(backend)
+    # no dedicated IO ranks: the run's communicator is used as is
+    assert run_driver_kwargs["io_ranks"] is None
     config = _run_config(mock_run_driver)
     assert config.driver.experiment_name == "foo"
     # no 'io' section in the file: no output
@@ -101,3 +129,113 @@ def test_main_cli_reads_the_io_section(backend_name: str, tmp_path: pathlib.Path
     assert config.io is not None
     assert config.io.output_path == pathlib.Path("output")
     assert [group.basename for group in config.io.field_groups] == ["winds", "precipitation"]
+
+
+# --------------------------------------------------------------------------------------
+# Dedicated IO ranks
+# --------------------------------------------------------------------------------------
+
+
+def _io_rank_split(is_io_rank: bool) -> mpi_decomp.IORankSplit:
+    # neither the role communicator nor the inter-communicator is touched: the grid
+    # manager, the driver run and the IO server are mocked away
+    return mpi_decomp.IORankSplit(
+        is_io_rank=is_io_rank,
+        process_props=decomp_defs.SingleNodeProcessProperties(),  # type: ignore[arg-type]  # stand-in for the role communicator
+        intercomm=object(),  # type: ignore[arg-type]  # not used
+        io_rank=None if is_io_rank else 0,
+        served_compute_ranks=(0,) if is_io_rank else (),
+    )
+
+
+def test_split_io_ranks_without_io_ranks_leaves_the_communicator_alone(
+    tmp_path: pathlib.Path,
+) -> None:
+    process_props = decomp_defs.SingleNodeProcessProperties()
+    # no output at all, and output written by the ranks running the model themselves
+    without_output = driver_config.read_experiment_config_from_yaml(_TEST_CONFIG_FILE)
+    assert without_output.io is None
+    assert main.split_io_ranks(without_output, process_props) is None
+    with_output = driver_config.read_experiment_config_from_yaml(
+        _config_file_with_io_section(tmp_path)
+    )
+    assert with_output.io is not None and with_output.io.io_ranks_per_node == 0
+    assert main.split_io_ranks(with_output, process_props) is None
+
+
+def test_main_cli_compute_rank_runs_the_driver_on_its_role_communicator(
+    backend_name: str, tmp_path: pathlib.Path
+) -> None:
+    split = _io_rank_split(is_io_rank=False)
+    with mock.patch.object(mpi_decomp, "split_io_ranks", return_value=split) as mock_split:
+        _, mock_run_driver = _run_cli(_config_file_with_io_ranks(tmp_path, 2), backend_name)
+    mock_split.assert_called_once()
+    assert mock_split.call_args.args[1] == 2
+    kwargs = mock_run_driver.call_args.kwargs
+    assert kwargs["io_ranks"] is split
+    # the model (and its grid decomposition) runs on the compute communicator
+    assert kwargs["process_props"] is split.process_props
+    assert kwargs["config"].io.io_ranks_per_node == 2
+
+
+def test_main_cli_io_rank_runs_the_io_server(backend_name: str, tmp_path: pathlib.Path) -> None:
+    split = _io_rank_split(is_io_rank=True)
+    config_file = _config_file_with_io_ranks(tmp_path, 2)
+    with (
+        mock.patch.object(mpi_decomp, "split_io_ranks", return_value=split),
+        mock.patch.object(driver_io, "run_io_server") as mock_run_io_server,
+    ):
+        _, mock_run_driver = _run_cli(config_file, backend_name)
+    mock_run_driver.assert_not_called()
+    mock_run_io_server.assert_called_once()
+    kwargs = mock_run_io_server.call_args.kwargs
+    assert kwargs["io_ranks"] is split
+    assert kwargs["grid_file_path"] == config_file.parent / "dummy_grid.nc"
+    # the IO rank reads the same experiment configuration (for the vertical grid)
+    assert kwargs["config"].io is not None
+    assert [group.basename for group in kwargs["config"].io.field_groups] == [
+        "winds",
+        "precipitation",
+    ]
+
+
+def _process_props_with_mock_comm() -> mock.MagicMock:
+    """Process properties of a one-rank run whose communicator records 'Abort' calls."""
+    return mock.MagicMock(rank=0, comm_size=1, comm_name="")
+
+
+@pytest.mark.parametrize("is_io_rank", [False, True], ids=["compute-rank", "io-rank"])
+def test_main_cli_failure_with_io_ranks_aborts_the_run(
+    backend_name: str, tmp_path: pathlib.Path, is_io_rank: bool
+) -> None:
+    """Neither role can observe the other's failure: a failing rank aborts the whole run."""
+    process_props = _process_props_with_mock_comm()
+    failure = RuntimeError("the rank failed")
+    with (
+        mock.patch.object(decomp_defs, "get_process_properties", return_value=process_props),
+        mock.patch.object(
+            mpi_decomp, "split_io_ranks", return_value=_io_rank_split(is_io_rank=is_io_rank)
+        ),
+        mock.patch.object(driver_io, "run_io_server", side_effect=failure if is_io_rank else None),
+    ):
+        result, _, _ = _invoke_cli(
+            _config_file_with_io_ranks(tmp_path, 1),
+            backend_name,
+            run_driver_error=None if is_io_rank else failure,
+        )
+    process_props.comm.Abort.assert_called_once_with(1)
+    assert result.exception is failure
+
+
+def test_main_cli_failure_without_io_ranks_is_not_aborted(
+    backend_name: str, tmp_path: pathlib.Path
+) -> None:
+    """Without IO ranks a failure propagates as before: every rank raises it itself."""
+    process_props = _process_props_with_mock_comm()
+    failure = RuntimeError("the model failed")
+    with mock.patch.object(decomp_defs, "get_process_properties", return_value=process_props):
+        result, _, _ = _invoke_cli(
+            _config_file_with_io_section(tmp_path), backend_name, run_driver_error=failure
+        )
+    process_props.comm.Abort.assert_not_called()
+    assert result.exception is failure
