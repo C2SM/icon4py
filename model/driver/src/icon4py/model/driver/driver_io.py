@@ -23,7 +23,7 @@ these sources at setup; :class:`OutputStateAssembler` assembles, at a capture st
 exactly the variables the capturing groups request, and :func:`create_io_monitor`
 builds the output monitor that writes one file series per field group: an
 ``IOMonitor`` when the ranks write themselves, an ``IOClient`` shipping the fields to
-dedicated IO ranks (``IOConfig.num_io_ranks``), whose side is :func:`run_io_server`.
+dedicated IO ranks (``IOConfig.io_ranks_per_node``), whose side is :func:`run_io_server`.
 """
 
 import logging
