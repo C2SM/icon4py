@@ -58,7 +58,6 @@ from icon4py.model.common import (
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math import vertical_operations
 from icon4py.model.common.math.stencils import generic_math_operations
-from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -358,7 +357,7 @@ class VerticalAdvection(abc.ABC):
     def run(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        mass_flx_ic: fa.CellKHalfField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -371,7 +370,7 @@ class VerticalAdvection(abc.ABC):
         Run a vertical tracer_advection step.
 
         Args:
-            prep_adv: input argument, data class that contains precalculated tracer_advection fields
+            mass_flx_ic: input argument, vertical mass flux at cells on half levels, averaged over the dynamics substeps
             p_tracer_now: input argument, field that contains current tracer mass fraction
             p_tracer_new: output argument, field that contains new tracer mass fraction
             rhodz_now: input argument, field that contains current air mass in each layer
@@ -438,7 +437,7 @@ class NoAdvection(VerticalAdvection):
     def run(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        mass_flx_ic: fa.CellKHalfField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -475,7 +474,7 @@ class FiniteVolume(VerticalAdvection):
     def run(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        mass_flx_ic: fa.CellKHalfField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -487,7 +486,7 @@ class FiniteVolume(VerticalAdvection):
         log.debug("vertical tracer_advection run - start")
 
         self._compute_numerical_flux(
-            prep_adv=prep_adv,
+            mass_flx_ic=mass_flx_ic,
             p_tracer_now=p_tracer_now,
             rhodz_now=rhodz_now,
             p_mflx_tracer_v=p_mflx_tracer_v,
@@ -511,7 +510,7 @@ class FiniteVolume(VerticalAdvection):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        mass_flx_ic: fa.CellKHalfField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
@@ -614,7 +613,7 @@ class FirstOrderUpwind(FiniteVolume):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        mass_flx_ic: fa.CellKHalfField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
@@ -629,7 +628,7 @@ class FirstOrderUpwind(FiniteVolume):
         log.debug("running stencil compute_vertical_tracer_flux_upwind - start")
         self._compute_vertical_tracer_flux_upwind(
             p_cc=p_tracer_now,
-            p_mflx_contra_v=prep_adv.mass_flx_ic,
+            p_mflx_contra_v=mass_flx_ic,
             p_upflux=p_mflx_tracer_v,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
@@ -893,7 +892,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        mass_flx_ic: fa.CellKHalfField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
@@ -918,7 +917,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
 
         log.debug("running stencil compute_ppm4gpu_courant_number - start")
         self._compute_ppm4gpu_courant_number(
-            p_mflx_contra_v=prep_adv.mass_flx_ic,
+            p_mflx_contra_v=mass_flx_ic,
             p_cellmass_now=rhodz_now,
             z_cfl=self._z_cfl,
             p_dtime=dtime,

@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
-import enum
 import functools
 from collections.abc import Sequence
 from typing import Any, Literal, Protocol, runtime_checkable
@@ -25,24 +24,11 @@ type BufferT = np_t.ArrayLike | gtx.Field
 type DTypeT = ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
 
 
-class FieldKind(enum.StrEnum):
-    """A component output that its consumer must handle specially.
-
-    Only kinds that change what a consumer does with an output belong here; an
-    output with no kind is stored as it comes. There is deliberately no member
-    for that default: it would mean the same thing as declaring nothing, and a
-    later kind (prognostics, say) would make "everything else" ambiguous.
-    """
-
-    #: a rate: applied to the target field as ``field += value * dt``
-    TENDENCY = "tendency"
-
-
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class FieldMetaData:
     """CF-style metadata describing one model field.
 
-    Attribute access is the interface (``meta.units``, ``meta.kind``); an unset
+    Attribute access is the interface (``meta.units``, ``meta.dims``); an unset
     optional entry reads as ``None``. ``as_dict`` renders the set entries as the
     plain attribute mapping the IO layer writes to netCDF.
     """
@@ -71,8 +57,6 @@ class FieldMetaData:
         | type[bool]
         | None
     ) = ta.wpfloat
-    #: set when a consumer must handle this output specially; see ``FieldKind``
-    kind: FieldKind | None = None
 
     def as_dict(self) -> dict[str, Any]:
         """The set entries, as the attribute mapping used for IO.

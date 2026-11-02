@@ -28,7 +28,13 @@ from icon4py.model.testing import (
 )
 
 from ..fixtures import *  # noqa: F403
-from ..utils import diff_multfac_vn_numpy, smag_limit_numpy, verify_diffusion_fields
+from ..utils import (
+    construct_diagnostics,
+    diff_multfac_vn_numpy,
+    diffusion_views,
+    smag_limit_numpy,
+    verify_diffusion_fields,
+)
 
 
 grid_functionality = collections.defaultdict(dict)
@@ -380,12 +386,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
 
     dtime = savepoint_diffusion_init.dtime()
 
-    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=savepoint_diffusion_init.hdef_ic(),
-        div_ic=savepoint_diffusion_init.div_ic(),
-        dwdx=savepoint_diffusion_init.dwdx(),
-        dwdy=savepoint_diffusion_init.dwdy(),
-    )
+    diagnostic_state = construct_diagnostics(savepoint_diffusion_init)
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
 
     vertical_config = experiment.config.vertical_grid
@@ -417,9 +418,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
-    diffusion_granule.run(
-        diagnostic_state=diagnostic_state, prognostic_state=prognostic_state, dtime=dtime
-    )
+    diffusion_granule.run(*diffusion_views(prognostic_state, diagnostic_state, dtime))
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_exit)
 
 
@@ -449,12 +448,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
         vct_a=vct_a,
         vct_b=vct_b,
     )
-    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=savepoint_diffusion_init.hdef_ic(),
-        div_ic=savepoint_diffusion_init.div_ic(),
-        dwdx=savepoint_diffusion_init.dwdx(),
-        dwdy=savepoint_diffusion_init.dwdy(),
-    )
+    diagnostic_state = construct_diagnostics(savepoint_diffusion_init)
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
     config = experiment.config.diffusion
     params = diffusion.DiffusionParams(config)
@@ -478,10 +472,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
     diffusion_granule.run(
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        dtime=dtime,
-        initial_run=True,
+        *diffusion_views(prognostic_state, diagnostic_state, dtime, initial_run=True)
     )
 
     verify_diffusion_fields(

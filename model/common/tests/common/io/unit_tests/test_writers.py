@@ -27,7 +27,7 @@ from icon4py.model.common.io import (
     writers,
     zarr_writers,
 )
-from icon4py.model.common.states import data, metadata
+from icon4py.model.common.states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
@@ -169,9 +169,7 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
     assert "air_density" in dataset.variables
 
     new_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    state["air_density"] = utils.to_data_array(
-        new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
-    )
+    state["air_density"] = utils.to_data_array(new_rho, test_io_utils.CF_ATTRIBUTES["air_density"])
 
     new_time = time + timedelta(hours=1)
     dataset.append(state, new_time)
@@ -257,9 +255,7 @@ def test_zarr_writer_append_timeslice_to_existing_var(
     writer.append(state, first_time)
 
     new_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    state["air_density"] = utils.to_data_array(
-        new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
-    )
+    state["air_density"] = utils.to_data_array(new_rho, test_io_utils.CF_ATTRIBUTES["air_density"])
     writer.append(state, first_time + timedelta(hours=1))
     writer.close()
     with xr.open_zarr(store_path) as ds:

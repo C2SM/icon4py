@@ -21,12 +21,8 @@ import serialbox  # type: ignore[import-untyped]
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import fields as fw_fields, states
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.common.states import (
-    nonhydro_states,
-    prognostic_state as prognostics,
-    tracer_states,
-)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -99,7 +95,7 @@ def _available_nonhydro_init_dates(serializer: serialbox.Serializer) -> str:
 
 
 def _read_prognostic_state(
-    prognostic_state: prognostics.PrognosticState,
+    prognostic_state: states.PrognosticState,
     read_cell_k: Callable[[str], data_alloc.NDArray],
     read_edge_k: Callable[[str], data_alloc.NDArray],
 ):
@@ -114,8 +110,8 @@ def read_initial_condition_from_file(
     *,
     config: ConfigContext,
     grid: icon_grid.IconGrid,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
+    prognostic_state_now: states.PrognosticState,
+    tracer_state_now: states.TracerState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
@@ -138,16 +134,16 @@ def read_initial_condition_from_file(
     ntracer = config.ntracer
     if ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
-        for i, tracer in enumerate(tracer_state_now.active_fields()):
-            tracer.field.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
+        for i, tracer in enumerate(fw_fields(tracer_state_now).values()):
+            tracer.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
 
 
 def read_restart_from_file(
     *,
     config: ConfigContext,
     grid: icon_grid.IconGrid,
-    prognostic_state_now: prognostics.PrognosticState,
-    solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
+    prognostic_state_now: states.PrognosticState,
+    dycore_diagnostics: states.DycoreDiagnostics,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
@@ -204,8 +200,8 @@ def read_restart_from_file(
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
-    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = (
-        read_cell_k("exner_pr")
+    dycore_diagnostics.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = read_cell_k(
+        "exner_pr"
     )
 
     normal_wind_tendency = _read_predictor_corrector_fields(
@@ -214,18 +210,12 @@ def read_restart_from_file(
     vertical_wind_tendency = _read_predictor_corrector_fields(
         serializer, velocity_savepoint, "ddt_w_adv_pc", grid.num_cells, array_ns
     )
-    solve_nonhydro_diagnostic_state.normal_wind_advective_tendency.predictor.ndarray[:, :] = (
-        normal_wind_tendency[0]
-    )
-    solve_nonhydro_diagnostic_state.normal_wind_advective_tendency.corrector.ndarray[:, :] = (
-        normal_wind_tendency[1]
-    )
+    normal_wind_pair = dycore_diagnostics.normal_wind_advective_tendency
+    normal_wind_pair.predictor.ndarray[:, :] = normal_wind_tendency[0]
+    normal_wind_pair.corrector.ndarray[:, :] = normal_wind_tendency[1]
     # The dycore swaps the vertical advective tendency at the first substep of a time step
     # that is not the initial one, and then consumes the predictor without recomputing it.
     # The two time levels are therefore stored swapped.
-    solve_nonhydro_diagnostic_state.vertical_wind_advective_tendency.predictor.ndarray[:, :] = (
-        vertical_wind_tendency[1]
-    )
-    solve_nonhydro_diagnostic_state.vertical_wind_advective_tendency.corrector.ndarray[:, :] = (
-        vertical_wind_tendency[0]
-    )
+    vertical_wind_pair = dycore_diagnostics.vertical_wind_advective_tendency
+    vertical_wind_pair.predictor.ndarray[:, :] = vertical_wind_tendency[1]
+    vertical_wind_pair.corrector.ndarray[:, :] = vertical_wind_tendency[0]

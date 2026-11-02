@@ -14,7 +14,7 @@ import xarray as xr
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.io import utils
-from icon4py.model.common.states import data
+from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 
@@ -33,6 +33,38 @@ global_grid = grid_utils.get_grid_manager_from_identifier(
 ).grid
 
 
+# CF attributes of the prognostic variables, keyed by output variable name
+CF_ATTRIBUTES: dict[str, model.FieldMetaData] = {
+    "air_density": model.FieldMetaData(
+        standard_name="air_density", long_name="density", units="kg m-3", icon_var_name="rho"
+    ),
+    "exner_function": model.FieldMetaData(
+        standard_name="dimensionless_exner_function",
+        long_name="exner function",
+        units="1",
+        icon_var_name="exner",
+    ),
+    "theta_v": model.FieldMetaData(
+        standard_name="virtual_potential_temperature",
+        long_name="virtual potential temperature",
+        units="K",
+        icon_var_name="theta_v",
+    ),
+    "upward_air_velocity": model.FieldMetaData(
+        standard_name="upward_air_velocity",
+        long_name="vertical air velocity component",
+        units="m s-1",
+        icon_var_name="w",
+    ),
+    "normal_velocity": model.FieldMetaData(
+        standard_name="normal_velocity",
+        long_name="velocity normal to edge",
+        units="m s-1",
+        icon_var_name="vn",
+    ),
+}
+
+
 def model_state(grid: base.Grid) -> dict[str, xr.DataArray]:
     rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
     exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
@@ -40,21 +72,17 @@ def model_state(grid: base.Grid) -> dict[str, xr.DataArray]:
     w = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=np.float32)
     vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=np.float32)
     return {
-        "air_density": utils.to_data_array(rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
-        "exner_function": utils.to_data_array(
-            exner, data.PROGNOSTIC_CF_ATTRIBUTES["exner_function"]
-        ),
+        "air_density": utils.to_data_array(rho, CF_ATTRIBUTES["air_density"]),
+        "exner_function": utils.to_data_array(exner, CF_ATTRIBUTES["exner_function"]),
         "theta_v": utils.to_data_array(
             theta_v,
-            data.PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"],
+            CF_ATTRIBUTES["theta_v"],
         ),
         "upward_air_velocity": utils.to_data_array(
             w,
-            data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"],
+            CF_ATTRIBUTES["upward_air_velocity"],
         ),
-        "normal_velocity": utils.to_data_array(
-            vn, data.PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"]
-        ),
+        "normal_velocity": utils.to_data_array(vn, CF_ATTRIBUTES["normal_velocity"]),
     }
 
 

@@ -36,7 +36,6 @@ from icon4py.model.common.io.io import (
     OutputMode,
     generate_name,
 )
-from icon4py.model.common.states import data
 from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils
 
 from ...fixtures import test_path

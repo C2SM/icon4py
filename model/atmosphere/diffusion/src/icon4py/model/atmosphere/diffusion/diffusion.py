@@ -19,7 +19,6 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
-import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     init_diffusion_local_fields_for_regular_timestep,
@@ -42,9 +41,16 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.common import constants, dimension as dims, model_backends, type_alias as ta
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    framework as fw,
+    model_backends,
+    type_alias as ta,
+)
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
@@ -451,8 +457,30 @@ class DiffusionParams:
         )
 
 
-class Diffusion:
-    """Class that configures diffusion and does one diffusion step."""
+class Diffusion(fw.Component):
+    """
+    Horizontal diffusion of the prognostics, in place: the caller passes the same buffers as
+    input and output; `run` copies the input into the output first when they differ.
+    """
+
+    class Input(fw.State):
+        vn: fw.Field[qty.VnOnEdgeK]
+        w: fw.Field[qty.WOnCellKHalf]
+        exner: fw.Field[qty.ExnerOnCellK]
+        theta_v: fw.Field[qty.ThetaVOnCellK]
+        dtime: float
+        #: the extra diffusion call before the first time step of a real-data run (linit in ICON)
+        initial_run: bool = False
+
+    class Output(fw.State):
+        vn: fw.Field[qty.VnOnEdgeK]
+        w: fw.Field[qty.WOnCellKHalf]
+        exner: fw.Field[qty.ExnerOnCellK]
+        theta_v: fw.Field[qty.ThetaVOnCellK]
+        hdef_ic: fw.Field[qty.HorizontalWindDeformationOnCellKHalf]
+        div_ic: fw.Field[qty.DivergenceOnCellKHalf]
+        dwdx: fw.Field[qty.ZonalGradientOfWOnCellKHalf]
+        dwdy: fw.Field[qty.MeridionalGradientOfWOnCellKHalf]
 
     def __init__(
         self,
@@ -473,7 +501,8 @@ class Diffusion:
         ndyn_substeps: int,
         max_nudging_coefficient: state_utils.FloatType,
     ) -> None:
-        self._allocator = model_backends.get_allocator(backend)
+        self.grid = grid
+        self.allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
         self.config = config
         self._params = params
@@ -796,13 +825,23 @@ class Diffusion:
 
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
 
-    def run(
-        self,
-        diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        prognostic_state: prognostics.PrognosticState,
-        dtime: wpfloat,
-        initial_run: bool = False,
-    ) -> None:
+    @staticmethod
+    def _continue_in_place(inputs: Input, outputs: Output) -> None:
+        """
+        Copy the prognostics from `inputs` into `outputs`, unless they already share a buffer.
+
+        The stencils diffuse `outputs` in place. The driver passes the same buffers on both
+        sides, so nothing is copied; a caller passing distinct buffers (the tests) gets
+        `inputs` copied over first, so the diffusion starts from them.
+        """
+        for name in ("vn", "w", "exner", "theta_v"):
+            source, target = getattr(inputs, name), getattr(outputs, name)
+            if target.ndarray is not source.ndarray:
+                target.ndarray[...] = source.ndarray
+
+    def run(  # noqa: PLR0915 [too-many-statements]
+        self, inputs: Input, outputs: Output
+    ) -> Output:
         """
         Do one diffusion step.
 
@@ -813,12 +852,14 @@ class Diffusion:
 
         The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
         """
-        if initial_run:
+        self._continue_in_place(inputs, outputs)
+        dtime = wpfloat(inputs.dtime)
+        if inputs.initial_run:
             diff_multfac_vn = data_alloc.zero_field(
-                self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
+                self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
             )
             smag_limit = data_alloc.zero_field(
-                self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
+                self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
             )
             self.setup_fields_for_initial_step(
                 self._params.K4,
@@ -836,7 +877,7 @@ class Diffusion:
 
         log.debug("rbf interpolation 1: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
-            p_e_in=prognostic_state.vn,
+            p_e_in=outputs.vn,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
         )
@@ -859,7 +900,7 @@ class Diffusion:
             diff_multfac_smag=self.diff_multfac_smag,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
-            vn=prognostic_state.vn,
+            vn=outputs.vn,
             smag_limit=smag_limit,
             kh_smag_e=self.kh_smag_e,
             kh_smag_ec=self.kh_smag_ec,
@@ -879,10 +920,10 @@ class Diffusion:
             )
             self.calculate_diagnostic_quantities_for_turbulence(
                 kh_smag_ec=self.kh_smag_ec,
-                vn=prognostic_state.vn,
+                vn=outputs.vn,
                 diff_multfac_smag=self.diff_multfac_smag,
-                div_ic=diagnostic_state.div_ic,
-                hdef_ic=diagnostic_state.hdef_ic,
+                div_ic=outputs.div_ic,
+                hdef_ic=outputs.hdef_ic,
             )
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
@@ -923,13 +964,13 @@ class Diffusion:
             z_nabla2_e=self.z_nabla2_e,
             kh_smag_e=self.kh_smag_e,
             diff_multfac_vn=diff_multfac_vn,
-            vn=prognostic_state.vn,
+            vn=outputs.vn,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
         log.debug("communication of prognostic.vn : start")
         handle_edge_comm = self._exchange(
-            prognostic_state.vn,
+            outputs.vn,
             dim=dims.EdgeDim,
             full_exchange=False,
             stream=decomposition.DEFAULT_STREAM,
@@ -939,13 +980,13 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
-        self.copy_field_on_cell_khalf(field=prognostic_state.w, output_field=self.w_tmp)
+        self.copy_field_on_cell_khalf(field=outputs.w, output_field=self.w_tmp)
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             w_old=self.w_tmp,
-            w=prognostic_state.w,
-            dwdx=diagnostic_state.dwdx,
-            dwdy=diagnostic_state.dwdy,
+            w=outputs.w,
+            dwdx=outputs.dwdx,
+            dwdy=outputs.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
         )
@@ -964,7 +1005,7 @@ class Diffusion:
                 "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
             )
             self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-                theta_v=prognostic_state.theta_v,
+                theta_v=outputs.theta_v,
                 kh_smag_e=self.kh_smag_e,
             )
             log.debug(
@@ -972,24 +1013,24 @@ class Diffusion:
             )
             log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
             self.copy_field_on_cell_k(
-                field=prognostic_state.theta_v, output_field=self.theta_v_tmp
+                field=outputs.theta_v, output_field=self.theta_v_tmp
             )  # TODO(): write in a way that we can avoid the copy
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
                 theta_v_in=self.theta_v_tmp,
-                theta_v=prognostic_state.theta_v,
-                exner=prognostic_state.exner,
+                theta_v=outputs.theta_v,
+                exner=outputs.exner,
             )
             # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
             # computations, which happen right after diffusion, do not require the halo lines to be correct and there
             # is another halo exchange after the physics are applied.
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
-            if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+            if inputs.initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
                 log.debug("communication of prognostic cell fields: theta and exner - start")
                 self._exchange.exchange(
                     dims.CellDim,
-                    prognostic_state.theta_v,
-                    prognostic_state.exner,
+                    outputs.theta_v,
+                    outputs.exner,
                     stream=decomposition.DEFAULT_STREAM,
                 )
                 log.debug("communication of prognostic cell fields: theta and exner - done")
@@ -997,11 +1038,12 @@ class Diffusion:
         # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
         # computations, which happen right after diffusion, do not require the halo lines to be correct and there
         # is another halo exchange after the physics are applied.
-        if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
+        if inputs.initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
             log.debug("communication of prognostic cell field: w - start")
             self._exchange.exchange(
                 dims.CellDim,
-                prognostic_state.w,
+                outputs.w,
                 stream=decomposition.DEFAULT_STREAM,
             )
             log.debug("communication of prognostic cell field: w - done")
+        return outputs
