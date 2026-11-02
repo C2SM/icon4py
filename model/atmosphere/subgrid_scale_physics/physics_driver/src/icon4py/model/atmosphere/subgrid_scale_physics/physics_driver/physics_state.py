@@ -25,6 +25,7 @@ from icon4py.model.common import (
     model_options,
     type_alias as ta,
 )
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
@@ -47,7 +48,6 @@ if TYPE_CHECKING:
 
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.common.states import (
         diagnostic_state,
@@ -92,12 +92,13 @@ class PhysicsState:
         geometry: factory.FieldSource,
         interpolation: factory.FieldSource,
         metrics: factory.FieldSource,
-        exchange: decomposition.ExchangeRuntime,
+        process_props: decomposition.ProcessProperties,
+        decomposition_info: decomposition.DecompositionInfo,
         backend: gtx_typing.Backend | None = None,
     ) -> None:
         self._grid = grid
         self._backend = backend
-        self._exchange = exchange
+        self._exchange = decomposition.create_exchange(process_props, decomposition_info)
         num_cells = grid.num_cells
         num_levels = grid.num_levels
         num_edges = grid.num_edges
@@ -249,6 +250,10 @@ class PhysicsState:
         `air_mass` is optional because only some processes need it; a process that does
         reports its absence.
 
+        At the end the halos of rho, u, v and w are synced for the horizontal operations
+        of the physics, as ICON's interface does before tmx (``mo_interface_iconam_aes``):
+        diffusion skips the cell sync of w under AES forcing.
+
         After this call the state is complete: every model-state field the physics
         may touch is reachable as ``state.<name>`` — the raw PrognosticState, DiagnosticState,
         and TracerState never appear below the PhysicsState layer.
@@ -301,6 +306,13 @@ class PhysicsState:
             p_e_in=prognostic.vn,
             p_u_out=self.diagnostics.u,
             p_v_out=self.diagnostics.v,
+        )
+
+        # 4. Halo sync for the horizontal operations of the physics, as ICON's dyn2phy
+        #    does for the Smagorinsky scheme: tmx interpolates w to the vertices and
+        #    edges of its owned cells, and diffusion left the halo of w stale.
+        self._exchange.exchange(
+            dims.CellDim, self.rho, self.diagnostics.u, self.diagnostics.v, self.w
         )
 
     def update(
@@ -412,7 +424,7 @@ class PhysicsState:
         ``update``; exner and theta_v follow from the final temperature and
         moisture, and vn from the summed wind tendencies ``sums``.
 
-        The halo exchanges of the interface happen here, as in ICON's
+        The exit halo exchanges of the interface happen here, as in ICON's
         ``mo_interface_iconam_aes``: the summed wind tendencies before their projection,
         since an owned edge reads the sums of a halo cell and the sync of vn only repairs
         halo edges, and at the end what the physics wrote: the advanced tracers and w, exner,
