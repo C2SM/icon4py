@@ -195,6 +195,33 @@ def owned_global_index(
     )
 
 
+def global_horizontal_size(
+    process_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+) -> base.HorizontalGridSize:
+    """Sizes of the undecomposed grid: the owned entries of all ranks, per horizontal dimension.
+
+    A rank's grid holds its halos too, so its sizes differ between the ranks of a
+    decomposed run; the owned entries summed over the communicator are the global
+    sizes, equal on every rank. Collective on the communicator (one allgather per
+    dimension); on a single-rank communicator it is the rank's owned counts.
+    """
+    info = decomposition_info.as_host()
+    counts = {
+        dim: int(
+            mpi_decomposition.allgather_entry_counts(
+                process_props, owned_global_index(info, dim).shape[0], array_ns=np
+            ).sum()
+        )
+        for dim in HORIZONTAL_DIM_NAMES
+    }
+    return base.HorizontalGridSize(
+        num_cells=counts[dims.CellDim],
+        num_edges=counts[dims.EdgeDim],
+        num_vertices=counts[dims.VertexDim],
+    )
+
+
 def owned_entries(
     dim_name: str, decomposition_info: decomposition.DecompositionInfo, field: xr.DataArray
 ) -> np.ndarray:

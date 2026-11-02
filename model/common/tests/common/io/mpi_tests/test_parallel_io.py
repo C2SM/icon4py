@@ -199,6 +199,24 @@ def assert_dataset_is_exact(
             assert np.all(np.isnan(values[..., ~valid])), f"'{name}' padding is not NaN"
 
 
+@pytest.mark.mpi
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_global_horizontal_size_sums_owned_entries_over_ranks(
+    process_props: decomp_defs.ProcessProperties,
+) -> None:
+    # the local grids differ (fake halos, one empty rank); the undecomposed sizes are
+    # the owned entries of all ranks and identical everywhere
+    size = distributed.global_horizontal_size(
+        process_props, synthetic_decomposition_info(process_props)
+    )
+    assert size == base.HorizontalGridSize(
+        num_cells=GLOBAL_SIZES[dims.CellDim],
+        num_edges=GLOBAL_SIZES[dims.EdgeDim],
+        num_vertices=GLOBAL_SIZES[dims.VertexDim],
+    )
+    assert process_props.comm.allgather(size) == [size] * process_props.comm_size
+
+
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(

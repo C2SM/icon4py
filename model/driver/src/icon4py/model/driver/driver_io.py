@@ -42,7 +42,7 @@ from icon4py.model.common.decomposition import (
     mpi_decomposition as mpi_decomp,
 )
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
-from icon4py.model.common.io import io as common_io, io_servers, utils as io_utils
+from icon4py.model.common.io import distributed, io as common_io, io_servers, utils as io_utils
 from icon4py.model.common.states import (
     data as state_data,
     diagnostic_state as diagnostics,
@@ -338,8 +338,10 @@ def create_io_monitor(
     With dedicated IO ranks (``io_ranks`` given, on a compute rank) the monitor is an
     ``IOClient`` shipping the fields to this rank's IO rank, which writes them with
     this very configuration (see ``run_io_server``); ``process_props`` are then the
-    compute ranks'. None: the ranks write themselves (``IOMonitor``). Either way the
-    split must agree with ``io_config.io_ranks_per_node``, the setting it was made for.
+    compute ranks', and the client ships the sizes of the undecomposed grid (summed
+    over the compute communicator, so this is collective on it). None: the ranks write
+    themselves (``IOMonitor``). Either way the split must agree with
+    ``io_config.io_ranks_per_node``, the setting it was made for.
     """
     if (io_ranks is None) != (io_config.io_ranks_per_node == 0):
         raise ValueError(
@@ -359,7 +361,9 @@ def create_io_monitor(
             config=io_config,
             dtime=dtime,
             grid_id=grid_id,
-            horizontal_size=grid.config.horizontal_config,
+            # the rank's grid holds its halos, so its sizes differ between the compute
+            # ranks; the IO rank gets the undecomposed sizes, equal on all of them
+            horizontal_size=distributed.global_horizontal_size(process_props, decomposition_info),
             decomposition_info=decomposition_info,
             intercomm=io_ranks.intercomm,
             io_rank=io_ranks.io_rank,

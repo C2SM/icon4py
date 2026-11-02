@@ -223,18 +223,20 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
     output_backend: common_io.OutputBackend,
     output_mode: common_io.OutputMode,
 ) -> None:
-    """Half of every node's ranks become IO ranks; the model runs on the others and ships to them.
+    """One rank per node becomes its IO rank; the model runs on the others and ships to it.
 
     The compute ranks run the driver on the compute communicator (``io_ranks`` given),
     the IO ranks run ``driver_io.run_io_server`` -- exactly the two branches of
-    ``main`` -- and the files must reproduce the single-rank reference.
+    ``main`` -- and the files must reproduce the single-rank reference. With more
+    than two ranks per node, an IO rank serves several compute ranks whose local
+    grids differ (halos) while their shipped setups must agree.
     """
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
     node_ids = mpi_decomposition.allgather_node_ids(process_props)
-    io_ranks_per_node = min(collections.Counter(node_ids).values()) // 2
-    if io_ranks_per_node == 0:
+    if min(collections.Counter(node_ids).values()) < 2:
         pytest.skip("needs at least two ranks per node")
+    io_ranks_per_node = 1
     num_io_ranks = io_ranks_per_node * len(set(node_ids))
     atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-10, rtol=0.0)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)

@@ -282,6 +282,7 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
         ) -> None:
             recorded["config"] = config
             recorded["grid_id"] = grid_id
+            recorded["horizontal_size"] = horizontal_size
             recorded["intercomm"] = intercomm
             recorded["decomposition_info"] = decomposition_info
             recorded["io_rank"] = io_rank
@@ -295,7 +296,21 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
         io_rank=3,
         served_compute_ranks=(),
     )
+    # a decomposed rank: two halo entries past the owned ones on every dimension
+    owned_counts = {dims.CellDim: 5, dims.EdgeDim: 7, dims.VertexDim: 3}
     decomposition_info = decomposition_defs.DecompositionInfo()
+    for dim, owned in owned_counts.items():
+        owner_mask = np.asarray([True] * owned + [False, False])
+        decomposition_info.set_dimension(
+            dim,
+            np.arange(owned + 2, dtype=np.int64),
+            owner_mask,
+            np.where(
+                owner_mask,
+                decomposition_defs.DecompositionFlag.OWNED.value,
+                decomposition_defs.DecompositionFlag.FIRST_HALO_LEVEL.value,
+            ),
+        )
     io_config = common_io.IOConfig(
         output_path=tmp_path,
         field_groups=[common_io.FieldGroupIOConfig(basename="a", variables=["air_density"])],
@@ -315,6 +330,12 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
     assert isinstance(io_monitor, _RecordingClient)
     assert recorded["config"] is io_config
     assert recorded["grid_id"] == uuid.UUID(grid.id)
+    # the IO rank gets the undecomposed sizes (the owned entries over the compute
+    # ranks), not this rank's halo-including grid sizes, which differ between ranks
+    assert recorded["horizontal_size"] == base.HorizontalGridSize(
+        num_cells=5, num_edges=7, num_vertices=3
+    )
+    assert recorded["horizontal_size"] != grid.config.horizontal_config
     assert recorded["intercomm"] is intercomm
     assert recorded["decomposition_info"] is decomposition_info
     # the client ships to the IO rank the split assigned to this compute rank
