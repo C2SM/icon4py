@@ -8,9 +8,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 #
-# mypy: ignore-errors
-# Root-level scripts CLI entry point is development infrastructure outside
-# the type-checked packages.
 
 """Wrapper for running the developments 'scripts' CLI within a valid venv by using a 'uv' shebang."""
 
@@ -40,4 +37,4 @@ if __name__ == "__main__":
         )
         sys.exit(127)
 
-    import scripts.__main__
+    import scripts.__main__  # type: ignore[import-not-found]  # module not present at type-check time

@@ -7,9 +7,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 """Check that all icon4py package and dependency versions are consistent."""
 
@@ -18,7 +15,10 @@ from __future__ import annotations
 import sys
 
 import typer
-from bump_versions import _find_package_dirs, _validate_package_versions
+from bump_versions import (  # type: ignore[import-not-found]  # sibling module in scripts/python
+    _find_package_dirs,
+    _validate_package_versions,
+)
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)

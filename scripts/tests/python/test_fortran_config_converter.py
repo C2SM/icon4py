@@ -5,9 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 """Tests for the Fortran namelist-to-ExperimentConfig converter."""
 
@@ -17,9 +14,10 @@ import copy
 import dataclasses
 import datetime
 import pathlib
+from typing import Any
 
-import f90nml
-import fortran_config_converter as fcc
+import f90nml  # type: ignore[import-untyped]  # Fortran namelist parser ships no stubs
+import fortran_config_converter as fcc  # type: ignore[import-not-found]  # sibling module in scripts/python
 import numpy as np
 import pytest
 
@@ -36,7 +34,7 @@ from icon4py.model.driver import config as driver_config
 
 # The subset of the exclaim_gauss3d namelists read by the converter. `max_dom`-sized
 # lists are shortened to two entries.
-ATM_NML = {
+ATM_NML: dict[str, Any] = {
     "diffusion_nml": {
         "hdiff_efdt_ratio": 36.0,
         "hdiff_order": 5,
@@ -283,8 +281,8 @@ def test_convert_experiment_from_file_paths_resolve_against_the_config_file(
     config_file.write_text(config_io.write_yaml_str(config))
     read_back = driver_config.read_experiment_config_from_yaml(config_file)
     resolved = tmp_path.resolve() / "ser_data"
-    assert read_back.topography.data_path == resolved
-    assert read_back.initial_condition.data_path == resolved
+    assert read_back.topography.data_path == resolved  # type: ignore[union-attr]  # narrowed by the isinstance asserts above
+    assert read_back.initial_condition.data_path == resolved  # type: ignore[union-attr]  # narrowed by the isinstance asserts above
     assert read_back.prescribed_tendencies.data_path == resolved
 
 

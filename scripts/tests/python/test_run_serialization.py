@@ -5,19 +5,18 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 """Tests for the serialization run driver."""
 
 from __future__ import annotations
 
 import pytest
-from run_serialization import run_command
+from run_serialization import (  # type: ignore[import-not-found]  # sibling module in scripts/python
+    run_command,
+)
 
 
-def test_run_command_reports_what_the_command_printed():
+def test_run_command_reports_what_the_command_printed() -> None:
     # 'CalledProcessError' names the exit status but not the captured output, which is
     # where sbatch says things like "the view 'debug' does not exist".
     with pytest.raises(RuntimeError, match="the view 'debug' does not exist"):
@@ -26,12 +25,12 @@ def test_run_command_reports_what_the_command_printed():
         )
 
 
-def test_run_command_reports_a_silent_failure():
+def test_run_command_reports_a_silent_failure() -> None:
     with pytest.raises(RuntimeError, match="printed nothing"):
         run_command(["sh", "-c", "exit 3"])
 
 
-def test_run_command_returns_the_result_when_not_checking():
+def test_run_command_returns_the_result_when_not_checking() -> None:
     result = run_command(["sh", "-c", "exit 3"], check=False)
 
     assert result.returncode == 3

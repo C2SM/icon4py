@@ -7,9 +7,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 """Bump the version of all icon4py namespace packages to a new version."""
 
@@ -23,7 +20,7 @@ import tomllib
 from typing import Annotated, Final
 
 import typer
-from helpers import common
+from helpers import common  # type: ignore[import-not-found]  # sibling module in scripts/python
 
 
 def _find_package_dirs() -> list[pathlib.Path]:

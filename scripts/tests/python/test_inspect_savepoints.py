@@ -5,21 +5,20 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 """Tests for the savepoint archive inspector."""
 
 from __future__ import annotations
 
 import types
+from typing import Any
 
 import numpy as np
 import pytest
 import typer
-from inspect_savepoints import (
+from inspect_savepoints import (  # type: ignore[import-not-found]  # sibling module in scripts/python
     ArchiveExplorer,
+    FieldStats,
     SavepointRef,
     _pair_by_metainfo,
     distinguishing_keys,
@@ -28,15 +27,15 @@ from inspect_savepoints import (
 )
 
 
-def _summarize(values: np.ndarray):
+def _summarize(values: np.ndarray) -> FieldStats:
     return summarize(values, savepoint="sp", date=None, field="f", component=None)
 
 
-def _ref(index: int, name: str, **metainfo) -> SavepointRef:
+def _ref(index: int, name: str, **metainfo: Any) -> SavepointRef:
     return SavepointRef(index, name, tuple(sorted(metainfo.items())))
 
 
-def test_summarize_reports_range_and_mean():
+def test_summarize_reports_range_and_mean() -> None:
     stats = _summarize(np.array([[1.0, 2.0], [3.0, 4.0]]))
 
     assert (stats.min, stats.max, stats.mean) == (1.0, 4.0, 2.5)
@@ -44,7 +43,7 @@ def test_summarize_reports_range_and_mean():
     assert stats.nonzero_fraction == 1.0
 
 
-def test_summarize_reports_the_shape_as_serialized():
+def test_summarize_reports_the_shape_as_serialized() -> None:
     # ICON writes most fields with singleton dimensions; the row shows what is in the
     # file rather than a compacted version of it, and the statistics do not depend on it
     stats = _summarize(np.ones((3, 1, 2)))
@@ -53,12 +52,12 @@ def test_summarize_reports_the_shape_as_serialized():
     assert (stats.min, stats.max, stats.mean) == (1.0, 1.0, 1.0)
 
 
-def test_summarize_flags_an_all_zero_field():
+def test_summarize_flags_an_all_zero_field() -> None:
     # The question the tool exists to answer: did this field get written at all?
     assert _summarize(np.zeros((3, 3))).all_zero
 
 
-def test_summarize_excludes_non_finite_values_from_the_range():
+def test_summarize_excludes_non_finite_values_from_the_range() -> None:
     # A single NaN would otherwise swallow the min and max of the whole field.
     stats = _summarize(np.array([1.0, np.nan, 3.0, np.inf]))
 
@@ -74,7 +73,7 @@ def _explorer(arrays: dict[tuple[int, str], np.ndarray]) -> ArchiveExplorer:
     return explorer
 
 
-def test_diff_stats_summarizes_the_change_between_two_savepoints():
+def test_diff_stats_summarizes_the_change_between_two_savepoints() -> None:
     before = _ref(0, "diffusion-init", date="2001-01-01T00:00:04.000")
     after = _ref(1, "diffusion-exit", date="2001-01-01T00:00:04.000")
     explorer = _explorer({(0, "theta_v"): np.zeros((2, 2)), (1, "theta_v"): np.full((2, 2), 0.5)})
@@ -88,7 +87,7 @@ def test_diff_stats_summarizes_the_change_between_two_savepoints():
     assert stats.date == "2001-01-01T00:00:04.000"
 
 
-def test_diff_stats_rejects_savepoints_of_different_shape():
+def test_diff_stats_rejects_savepoints_of_different_shape() -> None:
     before = _ref(0, "a")
     after = _ref(1, "b")
     explorer = _explorer({(0, "vn"): np.zeros((2, 2)), (1, "vn"): np.zeros((3, 3))})
@@ -97,7 +96,7 @@ def test_diff_stats_rejects_savepoints_of_different_shape():
         explorer.diff_stats(before, after, "vn")
 
 
-def test_diff_stats_reports_the_step_of_the_compared_savepoints():
+def test_diff_stats_reports_the_step_of_the_compared_savepoints() -> None:
     before = _ref(0, "solve-nonhydro-init", date="d", dyn_timestep=2, istep=1)
     after = _ref(1, "solve-nonhydro-exit", date="d", dyn_timestep=2, istep=1)
     explorer = _explorer({(0, "vn"): np.zeros((2, 2)), (1, "vn"): np.ones((2, 2))})
@@ -107,7 +106,7 @@ def test_diff_stats_reports_the_step_of_the_compared_savepoints():
     assert stats.step == "dyn_timestep=2 istep=1"
 
 
-def _substeps(name: str, **extra) -> list[SavepointRef]:
+def _substeps(name: str, **extra: Any) -> list[SavepointRef]:
     # what ICON writes for one date: one savepoint per dynamical substep and stage
     return [
         _ref(index, name, date="d", dyn_timestep=step, istep=stage, **extra)
@@ -115,20 +114,20 @@ def _substeps(name: str, **extra) -> list[SavepointRef]:
     ]
 
 
-def test_distinguishing_keys_ignores_what_a_savepoint_shares():
+def test_distinguishing_keys_ignores_what_a_savepoint_shares() -> None:
     assert distinguishing_keys(_substeps("solve-nonhydro-init", dtime=0.02)) == (
         "dyn_timestep",
         "istep",
     )
 
 
-def test_step_label_renders_only_the_requested_keys():
+def test_step_label_renders_only_the_requested_keys() -> None:
     reference = _ref(0, "sp", date="d", dyn_timestep=3, istep=2)
 
     assert step_label(reference, ("dyn_timestep", "istep")) == "dyn_timestep=3 istep=2"
 
 
-def test_pairing_matches_savepoints_of_the_same_substep():
+def test_pairing_matches_savepoints_of_the_same_substep() -> None:
     # a date is not an identifier: all four of these carry the same one, and pairing on
     # it alone would compare every 'init' against the last 'exit'
     initial = _substeps("solve-nonhydro-init", linit=False)
@@ -144,7 +143,7 @@ def test_pairing_matches_savepoints_of_the_same_substep():
     ]
 
 
-def test_pairing_keeps_only_the_steps_both_savepoints_recorded():
+def test_pairing_keeps_only_the_steps_both_savepoints_recorded() -> None:
     initial = _substeps("velocity-tendencies-init")
     final = [
         reference for reference in _substeps("velocity-tendencies-exit") if reference.index != 2
@@ -155,7 +154,7 @@ def test_pairing_keeps_only_the_steps_both_savepoints_recorded():
     assert [before.index for before, _ in pairs] == [0, 1, 3]
 
 
-def test_pairing_refuses_savepoints_it_cannot_tell_apart():
+def test_pairing_refuses_savepoints_it_cannot_tell_apart() -> None:
     # 'solve-nonhydro-final' is written once per substep and does not record 'istep',
     # so nothing says which of the two stages of 'solve-nonhydro-exit' it belongs to
     exits = _substeps("solve-nonhydro-exit")

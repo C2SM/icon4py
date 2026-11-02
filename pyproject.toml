@@ -50,6 +50,7 @@ scripts = [
 test = [
   # workspace members
   "icon4py-testing~=0.4.1",
+  "lazy-loader>=0.5",
   # external dependencies
   "black>=25.11",
   "clang-format>=22.1.0",

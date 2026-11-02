@@ -6,13 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 #
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 from __future__ import annotations
 
-import lazy_loader as lazy
+import lazy_loader as lazy  # type: ignore  # untyped or not installed: import-untyped / import-not-found  # noqa: PGH003
 
 
 submodules = ["common", "pyproject"]

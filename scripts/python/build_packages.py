@@ -7,9 +7,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 """Build Python distribution packages for icon4py and all its uv workspace members."""
 
@@ -23,7 +20,10 @@ import textwrap
 from typing import Annotated
 
 import typer
-from helpers import common, pyproject
+from helpers import (  # type: ignore[import-not-found]  # sibling module in scripts/python
+    common,
+    pyproject,
+)
 
 
 cli = typer.Typer(

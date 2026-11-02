@@ -22,7 +22,7 @@ resolution-markers = [
   "python_full_version < '3.13' and sys_platform == 'emscripten'",
   "python_full_version < '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'"
 ]
-revision = 3
+revision = 5
 version = 1
 
 [manifest]
@@ -1801,6 +1801,7 @@ dev = [
   { name = "coverage" },
   { name = "esbonio" },
   { name = "icon4py-testing" },
+  { name = "lazy-loader" },
   { name = "mypy", extra = ["faster-cache"] },
   { name = "myst-parser" },
   { name = "nox" },
@@ -1868,6 +1869,7 @@ test = [
   { name = "clang-format" },
   { name = "coverage" },
   { name = "icon4py-testing" },
+  { name = "lazy-loader" },
   { name = "nox" },
   { name = "pytest" },
   { name = "pytest-asyncio" },
@@ -1931,6 +1933,7 @@ dev = [
   { name = "coverage", extras = ["toml"], specifier = ">=7.5.0" },
   { name = "esbonio", specifier = ">=0.16.0" },
   { name = "icon4py-testing", editable = "model/testing" },
+  { name = "lazy-loader", specifier = ">=0.5" },
   { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
   { name = "myst-parser", specifier = ">=4.0.0" },
   { name = "nox", specifier = ">=2025.5.1" },
@@ -1998,6 +2001,7 @@ test = [
   { name = "clang-format", specifier = ">=22.1.0" },
   { name = "coverage", extras = ["toml"], specifier = ">=7.5.0" },
   { name = "icon4py-testing", editable = "model/testing" },
+  { name = "lazy-loader", specifier = ">=0.5" },
   { name = "nox", specifier = ">=2025.5.1" },
   { name = "pytest", specifier = ">=8.0.1" },
   { name = "pytest-asyncio", specifier = ">=1.4.0" },

@@ -6,9 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 #
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 """Shared helpers for Python dev-scripts."""
 
@@ -16,7 +13,7 @@ from __future__ import annotations
 
 import pathlib
 import subprocess
-from typing import Final
+from typing import Any, Final
 
 import rich
 import typer
@@ -27,7 +24,7 @@ SCRIPTS_DIR: Final[pathlib.Path] = PY_SCRIPTS_DIR.parent
 REPO_ROOT: Final[pathlib.Path] = SCRIPTS_DIR.parent
 
 
-def run_or_fail(cmd: list[str], **kwargs) -> subprocess.CompletedProcess[bytes]:
+def run_or_fail(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[bytes]:
     """
     Run *cmd* and exit with its return code on failure.
 

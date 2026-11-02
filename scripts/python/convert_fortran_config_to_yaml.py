@@ -7,9 +7,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 """Convert Fortran namelist files into a single YAML driver config.
 
@@ -70,7 +67,7 @@ def convert_fortran_config_to_yaml(
 ) -> None:
     """Convert the Fortran namelists in NAMELIST_DIR into a YAML config at OUTPUT."""
     # Import here to reduce startup time for the CLI.
-    import fortran_config_converter  # noqa: PLC0415 [import-outside-top-level]
+    import fortran_config_converter  # type: ignore[import-not-found]  # sibling module in scripts/python  # noqa: PLC0415 [import-outside-top-level]
 
     from icon4py.model.common.config import config_io  # noqa: PLC0415 [import-outside-top-level]
 

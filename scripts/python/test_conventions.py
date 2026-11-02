@@ -7,9 +7,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 """Manage test infrastructure."""
 
@@ -29,7 +26,7 @@ from typing import Annotated, NamedTuple
 import pytest
 import rich
 import typer
-from helpers import common
+from helpers import common  # type: ignore[import-not-found]  # sibling module in scripts/python
 
 
 class ExitCode(enum.IntEnum):
@@ -66,7 +63,7 @@ def check_layout(  # noqa: PLR0912 [too-many-branches]
     fix: Annotated[
         bool, typer.Option("--fix", "-f", help="Automatically create unknown __init__.py files.")
     ] = False,
-):
+) -> None:
     """Check if all 'tests' subpackages have proper '__init__.py' files."""
     root_dirs: list[pathlib.Path] = [common.REPO_ROOT / "model", common.REPO_ROOT / "tools"]
     violations = 0
@@ -147,16 +144,16 @@ def _collect_fixture_requests(
     collected_fixtures: RequestedFixturesPerFile = {}
 
     class CollectorPlugin:
-        def pytest_collection_finish(self, session):
+        def pytest_collection_finish(self, session: pytest.Session) -> None:
             for item in session.items:
-                item_fixtures = set(item.fixturenames)
+                item_fixtures = set(item.fixturenames)  # type: ignore[attr-defined]  # pytest Item stubs lack the runtime attribute
 
                 if item.path not in collected_fixtures:
                     collected_fixtures[item.path] = RequestedFixtures(set(), set())
                 all_, unknown = collected_fixtures[item.path]
                 all_.update(item_fixtures)
                 unknown.update(
-                    item_fixtures - (item._fixtureinfo.name2fixturedefs.keys() | {"request"})
+                    item_fixtures - (item._fixtureinfo.name2fixturedefs.keys() | {"request"})  # type: ignore[attr-defined]  # pytest private fixture info
                 )
 
     os.chdir(str(common.REPO_ROOT))
@@ -186,7 +183,7 @@ def _collect_fixtures_in_file(test_file_path: pathlib.Path) -> list[str]:
     except SyntaxError:
         return []
 
-    fixtures = []
+    fixtures: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
             fixtures.extend(
@@ -211,8 +208,8 @@ def _collect_fixtures_in_file(test_file_path: pathlib.Path) -> list[str]:
 
 def _collect_fixture_files(root_dir: pathlib.Path) -> list[pathlib.Path]:
     """Find all Python files in 'fixtures' folders or named 'fixtures.py'."""
-    fixture_pkgs = set()
-    fixture_files = []
+    fixture_pkgs: set[str] = set()
+    fixture_files: list[pathlib.Path] = []
     for dirpath, dirnames, filenames in os.walk(root_dir):
         if "/site-packages/" in dirpath:
             continue  # Skip virtual environments
@@ -230,7 +227,7 @@ def _collect_fixture_files(root_dir: pathlib.Path) -> list[pathlib.Path]:
 
 def _collect_fixtures(root_dir: pathlib.Path) -> dict[str, list[pathlib.Path]]:
     """Collect all pytest fixtures in the project."""
-    fixtures_dict = {}
+    fixtures_dict: dict[str, list[pathlib.Path]] = {}
     fixture_files = _collect_fixture_files(root_dir)
     for file_path in fixture_files:
         fixtures = _collect_fixtures_in_file(file_path)
@@ -270,13 +267,13 @@ def _find_closest_fixture_import_path(
 
 def _fix_fixture_requests(
     fixture_requests: RequestedFixturesPerFile,
-    test_path: pathlib.Path,
+    test_path: pathlib.Path | None,
 ) -> tuple[list[FixtureRequestLocation], list[FixtureRequestLocation]]:
     """Fix unknown fixture requests by adding explicit imports."""
     rich.print("[yellow]Adding missing fixture imports...[/yellow]")
 
-    fixed = []
-    errors = []
+    fixed: list[FixtureRequestLocation] = []
+    errors: list[FixtureRequestLocation] = []
     fixture_definitions = _collect_fixtures(common.REPO_ROOT)
 
     for path, (_all_fixtures, unknown_fixtures) in fixture_requests.items():
@@ -292,10 +289,10 @@ def _fix_fixture_requests(
             if fixture not in fixture_definitions or not (
                 import_path := _find_closest_fixture_import_path(path, fixture_definitions[fixture])
             ):
-                errors += (path, fixture)
+                errors += [(path, fixture)]
                 continue
             assert import_path
-            fixed += (path, fixture)
+            fixed += [(path, fixture)]
             new_imports.append(f"from {import_path} import {fixture}\n")
 
         lines = path.read_text().splitlines(keepends=True)
@@ -334,7 +331,7 @@ def fixture_requests(
             help="Automatically create explicit imports for missing fixtures in test files.",
         ),
     ] = False,
-):
+) -> None:
     fixture_requests: RequestedFixturesPerFile = _collect_fixture_requests(test_path, with_args)
 
     report = []

@@ -5,9 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# mypy: ignore-errors
-# Root-level nox session definitions are development infrastructure outside
-# the type-checked packages.
 
 from __future__ import annotations
 
@@ -65,22 +62,21 @@ type ModelSubpackagePath = Literal[
     "driver",
     "testing",
 ]
-MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
+MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.param]] = [
     nox.param(arg, id=arg.split("/")[-1]) for arg in get_args(ModelSubpackagePath.__value__)
 ]
-
 type ModelTestsSubset = Literal["datatest", "stencils", "basic"]
-MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
+MODEL_TESTS_SUBSETS: Final[Sequence[nox.param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in get_args(ModelTestsSubset.__value__)
 ]
 # Stencil tests are by definition serial
-MODEL_MPI_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
+MODEL_MPI_TESTS_SUBSETS: Final[Sequence[nox.param]] = [
     nox.param(arg, id=arg, tags=[arg])
     for arg in get_args(ModelTestsSubset.__value__)
     if arg != "stencils"
 ]
 type ToolsBindingsTestsSubset = Literal["datatest", "unittest"]
-TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
+TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[nox.param]] = [
     nox.param(arg, id=arg, tags=[arg]) for arg in get_args(ToolsBindingsTestsSubset.__value__)
 ]
 SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.12", "3.13", "3.14"]
@@ -499,10 +495,11 @@ def _install_session_venv(
     if env_extras := os.environ.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", ""):
         extras = [*extras, *re.split(r"\W+", env_extras)]
     env = dict(os.environ.items()) | {"UV_PROJECT_ENVIRONMENT": session.virtualenv.location}
+    session_python = str(session.python)
     session.run_install(
         "uv",
         "sync",
-        *("--python", session.python),
+        *("--python", session_python),
         "--no-dev",
         *(f"--extra={e}" for e in extras),
         *(f"--group={g}" for g in groups),

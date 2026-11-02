@@ -5,9 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# mypy: ignore-errors
-# Repository-infrastructure tooling that predates the type-checking rollout
-# and lives outside the type-checked packages.
 
 """Convert Fortran namelist files into an icon4py :class:`ExperimentConfig`.
 
@@ -29,7 +26,7 @@ import pathlib
 import typing
 from typing import Any
 
-import f90nml
+import f90nml  # type: ignore[import-untyped]  # Fortran namelist parser ships no stubs
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
