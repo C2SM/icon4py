@@ -23,6 +23,20 @@ from icon4py.tools.py2fgen import _definitions, _utils
 #   2 -> Python wrapper raised an exception
 CFFI_DECORATOR = "@ffi.def_extern(error=2)"
 
+# Every generated Fortran subroutine takes this optional OpenACC queue argument.
+# If present, the caller guarantees that the Python work is ordered on the stream of
+# this queue: the stream handle, derived via `acc_get_cuda_stream`, is passed to
+# Python as `Metadata.external_gpu_stream`. If absent, `NO_EXTERNAL_GPU_STREAM` is
+# passed instead and the Python wrapper synchronizes the device before returning.
+SYNC_QUEUE_PARAM_NAME: Final[str] = "sync_queue"
+
+# Runtime information passed from Fortran to Python in every call, after the
+# function arguments, see `_definitions.Metadata`.
+METADATA_PARAMS: Final[dict[str, _definitions.ScalarKind]] = {
+    "device_enabled": _definitions.BOOL,
+    "external_gpu_stream": _definitions.INT64,
+}
+
 BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "real(c_double)",
     _definitions.FLOAT32: "real(c_float)",
@@ -50,6 +64,7 @@ class Func(Node):
     name: str
     module_name: str
     args: dict[str, _definitions.ArrayParamDescriptor | _definitions.ScalarParamDescriptor]
+    with_metadata: bool = False
 
 
 class BindingsLibrary(Node):
@@ -119,7 +134,7 @@ class PythonWrapperGenerator(codegen.TemplatedGenerator):
                 params.append(name)
                 if is_array(param):
                     params.extend(_size_arg_name(name, i) for i in range(param.rank))
-            params.append("on_gpu")
+            params.extend(METADATA_PARAMS)
             return ", ".join(params)
 
         return self.generic_visit(
@@ -142,7 +157,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from {{ library_name }} import ffi
-from icon4py.tools.py2fgen import _runtime, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion, _definitions
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -169,6 +184,8 @@ def {{ func.name }}_wrapper(
             if __debug__:
                 logger.info("Python execution of {{ func.name }} started.")
 
+            use_device = _runtime.use_device(device_enabled)
+
             if __debug__:
                 if runtime_config.PROFILING:
                     unpack_start_time = _runtime.perf_counter()
@@ -176,7 +193,7 @@ def {{ func.name }}_wrapper(
             # ArrayInfos
             {% for name, arg in func.args.items() %}
             {% if is_array(arg) %}
-            {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == MemorySpace.HOST %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
+            {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == MemorySpace.HOST %}False{% else %}use_device{% endif %}, {{ arg.is_optional }})
             {% endif %}
             {% endfor %}
 
@@ -191,13 +208,20 @@ def {{ func.name }}_wrapper(
                 perf_counters = {}
             else:
                 perf_counters = None
-            {{ func.name }}(
+            with _runtime.gpu_stream(external_gpu_stream):
+                {{ func.name }}(
             ffi = ffi,
             perf_counters = perf_counters,
             {%- for name, arg in func.args.items() -%}
             {{ name }} = {{ name }}{{ "," }}
             {%- endfor -%}
+            {%- if func.with_metadata -%}
+            _metadata = _definitions.Metadata(use_device, external_gpu_stream),
+            {%- endif -%}
             )
+
+            if use_device and external_gpu_stream < 0:  # no external GPU stream
+                _runtime.device_synchronize()
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -242,7 +266,7 @@ class CHeaderGenerator(codegen.TemplatedGenerator):
             params.append(self.visit_Parameter(name, param))
             if is_array(param):
                 params.extend(f"int {_size_arg_name(name, i)}" for i in range(param.rank))
-        params.append(f"{to_c_type(_definitions.BOOL)} on_gpu")
+        params.extend(f"{to_c_type(dtype)} {name}" for name, dtype in METADATA_PARAMS.items())
 
         rendered_params = ", ".join(params)
         return self.generic_visit(func, rendered_params=rendered_params)
@@ -287,9 +311,9 @@ class FortranISOCBindingsGenerator(codegen.TemplatedGenerator):
                     param_names.append(size_name)
                     param_declarations.append(_size_param_declaration(size_name))
 
-        # on_gpu flag
-        param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)}, value :: on_gpu")
-        param_names.append("on_gpu")
+        for name, dtype in METADATA_PARAMS.items():
+            param_declarations.append(f"{to_iso_c_type(dtype)}, value :: {name}")
+            param_names.append(name)
 
         param_names_str = ", &\n ".join(param_names)
 
@@ -323,7 +347,7 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
                     return f"{name} = c_loc({name})"
             return f"{name} = {name}"
 
-        param_names = ", &\n ".join([name for name in func.args] + ["rc"])
+        param_names = ", &\n ".join([*func.args, SYNC_QUEUE_PARAM_NAME, "rc"])
         args = []
         for name, param in func.args.items():
             args.append(render_args(name, param))
@@ -333,8 +357,7 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
                     for i in range(param.rank)
                 )
 
-        # on_gpu flag
-        args.append("on_gpu = on_gpu")
+        args.extend(f"{name} = {name}" for name in METADATA_PARAMS)
         compiled_arg_names = ", &\n".join(args)
 
         param_declarations = [
@@ -353,8 +376,21 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
             for name, param in func.args.items()
         ]
 
-        # on_gpu flag
-        param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)} :: on_gpu")
+        # `sync_queue` uses a portable ISO C kind so the declaration compiles even
+        # when built without OpenACC (where `acc_handle_kind` is unavailable); it is
+        # converted to `acc_handle_kind` at the (OpenACC-guarded) call site below.
+        param_declarations.append(
+            _render_parameter_declaration(
+                name=SYNC_QUEUE_PARAM_NAME,
+                attributes=["integer(c_int)", "intent(in)", "optional"],
+            )
+        )
+
+        # the metadata are not caller-facing arguments: they are local variables
+        # filled in from the OpenACC runtime.
+        param_declarations.extend(
+            f"{to_iso_c_type(dtype)} :: {name}" for name, dtype in METADATA_PARAMS.items()
+        )
 
         def get_sizes_maker(name: str, param: _definitions.ArrayParamDescriptor) -> str:
             return "\n".join(
@@ -392,12 +428,17 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
             render_fortran_array_dimensions=render_fortran_array_dimensions,
             get_sizes_maker=get_sizes_maker,
             is_array=is_array,
+            sync_queue_param_name=SYNC_QUEUE_PARAM_NAME,
+            no_external_gpu_stream=_definitions.NO_EXTERNAL_GPU_STREAM,
         )
 
     Func = as_jinja(
         """
 subroutine {{name}}({{param_names}})
    use, intrinsic :: iso_c_binding
+   #ifdef _OPENACC
+   use openacc, only : acc_get_cuda_stream, acc_handle_kind
+   #endif
    {% for arg in param_declarations %}
    {{ arg }}
    {% endfor %}
@@ -419,9 +460,15 @@ subroutine {{name}}({{param_names}})
    {%- endfor %}
    
    #ifdef _OPENACC
-   on_gpu = .True.
+   device_enabled = .True.
+   if (present({{ sync_queue_param_name }})) then
+      external_gpu_stream = acc_get_cuda_stream(int({{ sync_queue_param_name }}, kind=acc_handle_kind))
+   else
+      external_gpu_stream = {{ no_external_gpu_stream }}_c_long
+   end if
    #else
-   on_gpu = .False.
+   device_enabled = .False.
+   external_gpu_stream = {{ no_external_gpu_stream }}_c_long
    #endif
 
    {% for name, param in _this_node.args.items() if is_array(param) and not param.is_optional %}

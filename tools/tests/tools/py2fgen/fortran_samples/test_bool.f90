@@ -20,7 +20,7 @@ program call_bool_wrapper_cffi_plugin
    flag = .true.
    mask = .false.
 
-   call fill_mask(flag, mask, rc)
+   call fill_mask(flag, mask, rc=rc)
    if (rc /= 1) then
       print *, "Python failed with exit code = ", rc
       stop 1

@@ -15,7 +15,10 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
-from gt4py.next.program_processors.runners.dace.workflow import common as gtx_wfdcommon
+from gt4py.next.program_processors.runners.dace.workflow import (
+    backend as gtx_wfdbackend,
+    common as gtx_wfdcommon,
+)
 
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
@@ -81,12 +84,13 @@ def make_custom_dace_backend(
     *,
     device: DeviceType,
     auto_optimize: bool = True,
-    async_sdfg_call: bool = True,
+    sync_sdfg_call: bool = False,
     optimization_args: dict[str, Any] | None = None,
     use_metrics: bool = True,
     use_zero_origin: bool = False,
     use_max_domain_range_on_unstructured_shift: bool | None = None,
     external_workspace: gtx_wfdcommon.ExternalWorkspace | None = None,
+    external_gpu_stream: gtx_wfdcommon.GPUStreamHandle | None = None,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
@@ -94,8 +98,8 @@ def make_custom_dace_backend(
     Args:
         device: The target device.
         auto_optimize: Enable the SDFG auto-optimize pipeline.
-        async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
-            of GPU kernel execution with the Python driver code.
+        sync_sdfg_call: Make a synchronous SDFG call on GPU to ensure that the GPU
+            kernel execution is completed before the Python driver code continues.
         optimization_args: A `dict` containing configuration parameters for
             the SDFG auto-optimize pipeline.
         use_metrics: Add SDFG instrumentation to collect the metric for stencil
@@ -106,6 +110,9 @@ def make_custom_dace_backend(
         external_workspace: The external workspace memory to use as storage for
             the transient arrays. If `None`, the transient arrays will be allocated
             inside the SDFG with scope lifetime.
+        external_gpu_stream: The GPU stream on which the SDFG launches its kernels,
+            either as the pointer value of the stream or as a stream object.
+            If `None`, the default stream is used.
 
     Returns:
         A dace backend with custom configuration for the target device.
@@ -129,14 +136,32 @@ def make_custom_dace_backend(
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
         auto_optimize=auto_optimize,
-        async_sdfg_call=async_sdfg_call,
+        sync_sdfg_call=sync_sdfg_call,
         external_workspace=external_workspace,
+        external_gpu_stream=external_gpu_stream,
         optimization_args=optimization_args,
         unstructured_horizontal_has_unit_stride=True,
         use_metrics=use_metrics,
         use_zero_origin=use_zero_origin,
         use_max_domain_range_on_unstructured_shift=use_max_domain_range_on_unstructured_shift,
     )
+
+
+def get_gpu_stream_ptr(backend: BackendLike) -> int:
+    """Return the pointer value of the GPU stream on which `backend` launches its kernels.
+
+    Only the dace backend supports an external GPU stream, all other backends
+    use the default stream, i.e. `gtx_wfdcommon.DEFAULT_GPU_STREAM`.
+    """
+    stream: gtx_wfdcommon.GPUStreamHandle | None = None
+    if isinstance(backend, gtx_wfdbackend.DaCeBackend):
+        stream = backend.external_gpu_stream
+    elif is_backend_descriptor(backend) and (
+        # A backend descriptor without factory selects the dace backend, see `model_options`.
+        backend.get("backend_factory", make_custom_dace_backend) is make_custom_dace_backend
+    ):
+        stream = backend.get("external_gpu_stream")
+    return gtx_wfdcommon.get_gpu_stream_ptr(stream)
 
 
 BACKENDS: dict[str, BackendLike] = {

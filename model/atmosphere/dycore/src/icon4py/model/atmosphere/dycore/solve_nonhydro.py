@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 import logging
 import typing
 from typing import Final
@@ -428,7 +429,11 @@ class SolveNonhydro:
         exchange: decomposition.ExchangeRuntime,
         max_nudging_coefficient: state_utils.FloatType,
     ):
-        self._exchange = exchange
+        # The halo exchanges synchronize with the GPU stream used by the backend.
+        self._exchange = functools.partial(
+            exchange.exchange,
+            stream=decomposition.Stream(model_backends.get_gpu_stream_ptr(backend)),
+        )
 
         self._grid = grid
         self._config = config
@@ -1278,11 +1283,10 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
-        self._exchange.exchange(
+        self._exchange(
             dims.EdgeDim,
             prognostic_states.next.vn,
             z_fields.rho_at_edges_on_model_levels,
-            stream=decomposition.DEFAULT_STREAM,
         )
 
         self._compute_horizontal_velocity_quantities_and_fluxes(
@@ -1355,18 +1359,16 @@ class SolveNonhydro:
             log.debug(
                 "exchanging prognostic field 'w' and local field 'dwdz_at_cells_on_model_levels'"
             )
-            self._exchange.exchange(
+            self._exchange(
                 dims.CellDim,
                 prognostic_states.next.w,
                 z_fields.dwdz_at_cells_on_model_levels,
-                stream=decomposition.DEFAULT_STREAM,
             )
         else:
             log.debug("exchanging prognostic field 'w'")
-            self._exchange.exchange(
+            self._exchange(
                 dims.CellDim,
                 prognostic_states.next.w,
-                stream=decomposition.DEFAULT_STREAM,
             )
 
     def run_corrector_step(
@@ -1485,10 +1487,9 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn'")
-        self._exchange.exchange(
+        self._exchange(
             dims.EdgeDim,
             prognostic_states.next.vn,
-            stream=decomposition.DEFAULT_STREAM,
         )
 
         self._compute_averaged_vn_and_fluxes(
@@ -1562,10 +1563,9 @@ class SolveNonhydro:
                 )
 
         log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
-        self._exchange.exchange(
+        self._exchange(
             dims.CellDim,
             prognostic_states.next.rho,
             prognostic_states.next.exner,
             prognostic_states.next.w,
-            stream=decomposition.DEFAULT_STREAM,
         )
