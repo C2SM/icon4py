@@ -299,17 +299,29 @@ class NETCDFWriter:
         half_levels.setncatts(metadata.HALF_LEVEL_ATTRIBUTES)
         heights = self.dataset.createVariable("height", np.float64, (writers.MODEL_HALF_LEVEL,))
         heights.setncatts(metadata.HEIGHT_ATTRIBUTES)
+        global_index = self._create_global_index()
+        if self._is_distributed():
+            # Leave define mode on every rank before any rank writes data. A data write
+            # in define mode ends it implicitly, and in parallel mode ending define mode
+            # creates the HDF5 datasets of the variables defined so far -- a collective
+            # operation. Without this the root rank's coordinate writes below would
+            # create the datasets alone, while the other ranks still define the
+            # global-index variables and only reach their (different) collective
+            # creation at their first write: the ranks deadlock or fail with
+            # "NetCDF: HDF error".
+            self.dataset._enddef()
         if self._is_root():
             # fixed-size coordinates, identical on all ranks: one writer suffices
             levels[:] = np.arange(self.num_levels, dtype=np.int32)
             half_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
             heights[:] = data_alloc.as_numpy(self._vertical_params.interface_physical_height)
-        self._write_global_index()
+        self._fill_global_index(global_index)
 
-    def _write_global_index(self) -> None:
-        """Create and fill the ``global_index_<dim>`` coordinates of a rank-block file."""
+    def _create_global_index(self) -> dict[str, Any]:
+        """Define the ``global_index_<dim>`` coordinates of a rank-block file (collective)."""
+        variables: dict[str, Any] = {}
         if self._rank_blocks is None:
-            return
+            return variables
         assert self.dataset is not None
         for dim_name, block in self._rank_blocks.items():
             chunk = self._horizontal_chunk(dim_name)
@@ -329,6 +341,14 @@ class NETCDFWriter:
                     ),
                 }
             )
+            variables[dim_name] = variable
+        return variables
+
+    def _fill_global_index(self, variables: dict[str, Any]) -> None:
+        """Fill this rank's blocks of the ``global_index_<dim>`` coordinates."""
+        assert self._rank_blocks is not None or not variables
+        for dim_name, variable in variables.items():
+            block = self._rank_blocks[dim_name]  # type: ignore[index]
             # each rank writes its whole block: the owned global indices followed by
             # explicit -1 padding. The zarr store encodes the -1 as the array's fill
             # value instead; a netCDF _FillValue attribute is decoded as a missing
