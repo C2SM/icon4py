@@ -411,10 +411,19 @@ class NETCDFWriter:
                 canonical_slice.shape[:-1], horizontal_chunk, canonical_slice.dtype.itemsize
             )
             create_kwargs["chunksizes"] = (1, *middle_chunks, max(horizontal_chunk, 1))
-        if self._rank_blocks is not None and np.issubdtype(canonical_slice.dtype, np.floating):
-            # the NaN fill makes any never-written entry of a floating variable read
-            # as missing (other dtypes read as the netCDF default fill values)
-            create_kwargs["fill_value"] = np.nan
+        if self._rank_blocks is not None:
+            if self._is_distributed():
+                # every rank writes its whole block, padding included (NaN for
+                # floating dtypes, see _pad_to_block), so no entry of the shared file
+                # is ever left unwritten: skip the library's fill (NC_NOFILL). Parallel
+                # HDF5 allocates the chunks early and would write the fill value into
+                # every one of them, to be overwritten right away -- the file system
+                # saw twice the file size.
+                create_kwargs["fill_value"] = False
+            elif np.issubdtype(canonical_slice.dtype, np.floating):
+                # a single writer may leave other ranks' regions unwritten (tests do);
+                # the NaN fill makes them read as missing
+                create_kwargs["fill_value"] = np.nan
         dimensions = (writers.TIME, *(str(d) for d in canonical_slice.dims))
         variable = self.dataset.createVariable(
             var_name, canonical_slice.dtype, dimensions, **create_kwargs
