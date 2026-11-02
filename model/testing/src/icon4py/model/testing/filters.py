@@ -64,6 +64,10 @@ item_marker_filters: dict[str, ItemFilter] = {
         ),
         action=functools.partial(pytest.skip, "GTFN compilation is too slow for this test."),
     ),
+    pytest.mark.dace_too_slow.name: ItemFilter(
+        condition=lambda item: test_utils.is_dace(test_utils.get_backend_fixture_value(item)),
+        action=functools.partial(pytest.skip, "DACE compilation is too slow for this test."),
+    ),
     pytest.mark.skip_value_error.name: ItemFilter(
         condition=lambda item: (
             (grid := test_utils.get_fixture_value("grid", item)).limited_area
