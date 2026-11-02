@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physic
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
-from icon4py.model.common import framework as fw
+from icon4py.model.common import framework as fw, quantity
 
 
 __all__ = ["PhysicsProcess"]
@@ -59,7 +59,7 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
         # It must not reach the caching branch below, which would run once on the first step.
         if not self.time_control.is_in_window(inputs.step_start):
             for field in fw.fields(outputs).values():
-                if issubclass(field.quantity, fw.Tendency):
+                if issubclass(field.quantity, quantity.Tendency):
                     # NDArrayObject declares no __setitem__
                     field.ndarray[...] = 0.0  # type: ignore[index]
             return outputs
