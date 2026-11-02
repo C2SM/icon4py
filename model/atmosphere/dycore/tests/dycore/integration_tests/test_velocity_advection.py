@@ -18,20 +18,24 @@ from icon4py.model.atmosphere.dycore.stencils import (
     velocity_advection_predictor,
 )
 from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import VerticalCflConstants
-from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
-from icon4py.model.common.grid import (
-    horizontal as h_grid,
-    icon,
-    states as grid_states,
-    vertical as v_grid,
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    type_alias as ta,
+    utils as common_utils,
 )
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
+from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, serialbox, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
+
+ATOL = 2 * constants.VP_EPS  # for double ≈ 4.44e-16, for single ≈ 2.38e-7
+RTOL = 20 * constants.WP_EPS  # for double ≈ 4.44e-15, for single ≈ 2.38e-6
 
 log = logging.getLogger(__name__)
 
@@ -45,6 +49,8 @@ def _compare_cfl(
     horizontal_end: int,
     vertical_start: int,
     vertical_end: int,
+    rtol: vpfloat = RTOL,
+    atol: vpfloat = ATOL,
 ) -> None:
     cfl_clipping_mask = np.where(np.abs(vertical_cfl) > 0.0, True, False)
     assert (
@@ -76,7 +82,7 @@ def create_vertical_params(
 )
 def test_extra_diffusion_constants_match_icon(experiment, step_date_init, savepoint_velocity_init):
     # ICON serializes both constants per second, divided by dtime.
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_velocity_init.dtime()
     assert VerticalCflConstants.W_LIMIT / dtime == savepoint_velocity_init.cfl_w_limit()
     assert VerticalCflConstants.EXTRA_DIFFUSION_SCALING / dtime == pytest.approx(
         savepoint_velocity_init.scalfac_exdiff(), rel=1e-14
@@ -117,7 +123,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = init_savepoint.dtime()
 
     diagnostic_state = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
@@ -359,7 +365,7 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 ):
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = init_savepoint.dtime()
 
     assert not vn_only
 

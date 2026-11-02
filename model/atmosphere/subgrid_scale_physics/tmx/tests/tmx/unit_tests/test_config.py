@@ -25,14 +25,21 @@ def test_config_rejects_negative_km_min() -> None:
 
 
 def test_config_coerces_enums_from_ints() -> None:
-    config = tmx_config.TmxConfig(solver_type=1, energy_type=1)
-    assert config.solver_type is tmx_config.SolverType.EXPLICIT
-    assert config.energy_type is tmx_config.EnergyType.DRY_STATIC
+    config = tmx_config.TmxConfig(solver_type=2, energy_type=2)
+    assert config.solver_type is tmx_config.SolverType.IMPLICIT
+    assert config.energy_type is tmx_config.EnergyType.INTERNAL
 
 
-def test_config_rejects_invalid_enum_values() -> None:
-    with pytest.raises(ValueError):
-        tmx_config.TmxConfig(solver_type=3)
+@pytest.mark.parametrize("solver_type", [1, 3])
+def test_config_rejects_unimplemented_solver_types(solver_type: int) -> None:
+    with pytest.raises(ValueError, match="solver_type"):
+        tmx_config.TmxConfig(solver_type=solver_type)
+
+
+@pytest.mark.parametrize("energy_type", [1, 3])
+def test_config_rejects_unimplemented_energy_types(energy_type: int) -> None:
+    with pytest.raises(ValueError, match="energy_type"):
+        tmx_config.TmxConfig(energy_type=energy_type)
 
 
 def test_config_round_trips_through_config_io() -> None:

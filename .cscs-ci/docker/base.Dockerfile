@@ -1,4 +1,4 @@
-FROM ubuntu:25.10
+FROM ubuntu:26.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -24,8 +24,7 @@ RUN apt-get update && \
         libhwloc-dev \
         libjson-c-dev \
         liblzma-dev \
-        libncurses5-dev \
-        libncursesw5-dev \
+        libncurses-dev \
         libnl-3-dev \
         libnuma-dev \
         libreadline-dev \
@@ -186,7 +185,7 @@ RUN set -eux; \
     tar -C /tmp -xzf /tmp/nccl.tar.gz; \
     cd "/tmp/nccl-${nccl_version}"; \
     # HPC SDK 24.11 (CUDA 12.6) declares cospi/sinpi/rsqrt without noexcept
-    # in crt/math_functions.h, but glibc >= 2.38 (>= 2.42 on Ubuntu 25.10)
+    # in crt/math_functions.h, but glibc >= 2.38 (>= 2.43 on Ubuntu 26.04)
     # declares them with noexcept(true) via bits/mathcalls.h. C++17 forbids
     # redeclaration with differing exception specs. Fixed in CUDA 13.2.
     # https://forums.developer.nvidia.com/t/323591

@@ -15,14 +15,14 @@ import icon4py.model.common.type_alias as types
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_vertex import (
-    _interpolate_cell_field_to_vertex,
+    _interpolate_cell_field_to_vertex_f64,
 )
 from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 @pytest.mark.skip_value_error
 class TestInterpolateCellFieldToVertex(stencil_tests.StencilTest):
-    PROGRAM = _interpolate_cell_field_to_vertex
+    PROGRAM = _interpolate_cell_field_to_vertex_f64
     OUTPUTS = ("out",)
 
     @stencil_tests.static_reference

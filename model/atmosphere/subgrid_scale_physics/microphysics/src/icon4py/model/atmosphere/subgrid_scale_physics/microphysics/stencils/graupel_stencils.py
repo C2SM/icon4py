@@ -230,7 +230,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         PhysicsConstants.lh_sublimate
         if use_constant_latent_heat
         else PhysicsConstants.lh_sublimate
-        + (MicrophysicsConstants.CP_V - PhysicsConstants.cpi)
+        + (MicrophysicsConstants.CP_V - PhysicsConstants.ci_thermo)
         * (temperature - PhysicsConstants.tmelt)
         - PhysicsConstants.rv * temperature
     )
@@ -510,6 +510,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
             cslam = exp(
                 MicrophysicsConstants.CCSLXP * log(MicrophysicsConstants.CCSLAM * n0s / rhoqs)
             )
+
             cslam = minimum(cslam, wpfloat("1.0e15"))
             csdep = wpfloat("4.0") * n0s * chlp
         else:

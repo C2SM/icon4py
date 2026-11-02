@@ -36,7 +36,7 @@ class TestComputeCurl(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         vec_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         geofac_rot = data_alloc.random_field(dims.VertexDim, dims.V2EDim, dtype=wpfloat)
         return dict(

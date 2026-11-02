@@ -21,6 +21,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
+import math
 import pathlib
 import typing
 from typing import Any
@@ -33,6 +34,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.subgrid_scale_physics.surface import config as surface_config
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, prescribed_tendencies, time
@@ -219,7 +221,7 @@ NONHYDROSTATIC = ConfigMapping(
 
 
 def _convert_nudge_max_coeff(nudge_max_coeff: float) -> float:
-    return constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * nudge_max_coeff
+    return float(constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * nudge_max_coeff)
 
 
 INTERPOLATION = ConfigMapping(
@@ -394,8 +396,10 @@ _TMX_USE_TMX_INDEX: typing.Final = 22
 TMX = ConfigMapping(
     tmx_config.TmxConfig,
     [
-        IconOption("solver_type", _TMX_VDIFF_PATH, unnamed_index=23),
-        IconOption("energy_type", _TMX_VDIFF_PATH, unnamed_index=24),
+        # read as plain ints so that `TmxConfig.__post_init__` reports the unimplemented
+        # option, instead of the bare enum conversion failing first
+        IconOption("solver_type", _TMX_VDIFF_PATH, unnamed_index=23, converter=int),
+        IconOption("energy_type", _TMX_VDIFF_PATH, unnamed_index=24, converter=int),
         IconOption("dissipation_factor", _TMX_VDIFF_PATH, unnamed_index=25),
         IconOption("use_louis", _TMX_VDIFF_PATH, unnamed_index=26),
         IconOption("use_louis_land", _TMX_VDIFF_PATH, unnamed_index=27),
@@ -409,6 +413,30 @@ TMX = ConfigMapping(
         IconOption("turb_prandtl", _TMX_VDIFF_PATH, unnamed_index=35),
         IconOption("km_min", _TMX_VDIFF_PATH, unnamed_index=37),
         IconOption("max_turb_scale", _TMX_VDIFF_PATH, unnamed_index=38),
+    ],
+)
+
+
+def _sst_in_kelvin(sst_in_celsius: float) -> float:
+    return float(constants.MELTING_TEMPERATURE + sst_in_celsius)
+
+
+# The surface scheme of tmx is configured by `nh_testcase_nml`, which ICON does not dump;
+# these are the defaults of mo_nh_testcases_nml.f90 for the members the namelist leaves out.
+_SURFACE_TESTCASE_DEFAULTS: typing.Final = {
+    "isrfc_type": 0,
+    "ape_sst_case": "sst1",
+    "ape_sst_val": 29.0,
+}
+
+SURFACE = ConfigMapping(
+    surface_config.SurfaceConfig,
+    [
+        # read as a plain int so that `SurfaceConfig.__post_init__` reports the unported schemes
+        IconOption("surface_flux_type", ("isrfc_type",), converter=int),
+        IconOption("kinematic_sensible_heat_flux", ("shflx",), required=False),
+        IconOption("kinematic_latent_heat_flux", ("lhflx",), required=False),
+        IconOption("sea_surface_temperature", ("ape_sst_val",), converter=_sst_in_kelvin),
     ],
 )
 
@@ -439,6 +467,57 @@ def _read_use_tmx(atm_dict: dict[str, Any]) -> bool:
 def tmx_is_active(atm_dict: dict[str, Any]) -> bool:
     """Whether the experiment ran the tmx turbulent mixing scheme."""
     return "aes_vdf_nml" in atm_dict and _read_use_tmx(atm_dict)
+
+
+def _check_tmx_positions(*, atm_dict: dict[str, Any], input_dict: dict[str, Any]) -> None:
+    """Check the pinned positions against the tmx members the input namelist sets by name.
+
+    The input namelist names the `t_vdiff_config` members it sets; each one read through a
+    pinned position must hold the same value in the echoed record. With tmx active the input
+    namelist sets at least `use_tmx`, which is `.FALSE.` by default (`vdiff_config_init`).
+    """
+    echoed = atm_dict["aes_vdf_nml"]["aes_vdf_config"]
+    # the first domain, the record the pinned positions read
+    named = input_dict["aes_vdf_nml"]["aes_vdf_config"][0]
+    positions = {"use_tmx": _TMX_USE_TMX_INDEX} | {
+        opt.field: opt.unnamed_index for opt in TMX.options
+    }
+    for name, value in named.items():
+        if name not in positions:
+            continue
+        echoed_value = echoed[positions[name]]
+        # the echo prints about 12 significant digits
+        if echoed_value != value and not math.isclose(echoed_value, value, rel_tol=1e-10):
+            raise ValueError(
+                f"'{name}' is {value!r} in the input namelist but {echoed_value!r} at "
+                f"position {positions[name]} of the echoed 'aes_vdf_config': the "
+                "t_vdiff_config member order changed and the pinned 'unnamed_index' "
+                "positions must be revised."
+            )
+
+
+def make_tmx_config(
+    *, atm_dict: dict[str, Any], input_dict: dict[str, Any]
+) -> tmx_config.TmxConfig | None:
+    """The tmx configuration, or None when the experiment does not run tmx."""
+    if not tmx_is_active(atm_dict):
+        return None
+    _check_tmx_positions(atm_dict=atm_dict, input_dict=input_dict)
+    return TMX.build(atm_dict)
+
+
+def make_surface_config(
+    *, atm_dict: dict[str, Any], input_dict: dict[str, Any]
+) -> surface_config.SurfaceConfig | None:
+    """The configuration of tmx's surface scheme, or None when the experiment does not run tmx."""
+    if not tmx_is_active(atm_dict):
+        return None
+    testcase_nml = _SURFACE_TESTCASE_DEFAULTS | input_dict.get("nh_testcase_nml", {})
+    if (sst_case := testcase_nml["ape_sst_case"]) != "sst_const":
+        raise NotImplementedError(
+            f"ape_sst_case = {sst_case!r}: only the constant SST ('sst_const') is ported."
+        )
+    return SURFACE.build(testcase_nml)
 
 
 # The analytical test cases are read from `nh_testcase_nml`, which ICON does not dump
@@ -536,9 +615,6 @@ def make_initial_condition_config(
     *,
     atm_dict: dict[str, Any],
     input_dict: dict[str, Any],
-    start_of_simulation: time.AbsoluteTime,
-    start_of_timestepping: time.AbsoluteTime,
-    dtime: time.RelativeTime,
 ) -> (
     from_file_ic.FromFileConfig
     | jw_ic.JablonowskiWilliamsonConfig
@@ -548,13 +624,7 @@ def make_initial_condition_config(
     run_nml = atm_dict["run_nml"]
     if not run_nml["ltestcase"]:
         log.info("Reading initial condition from file")
-        return from_file_ic.FromFileConfig(
-            data_path=SER_DATA_PATH,
-            start_of_simulation=start_of_simulation,
-            start_of_timestepping=start_of_timestepping,
-            dtime=dtime,
-            ntracer=list_to_value(run_nml["ntracer"]),
-        )
+        return from_file_ic.FromFileConfig(data_path=SER_DATA_PATH)
 
     testcase_nml = input_dict.get("nh_testcase_nml", {})
     test_name = testcase_nml.get("nh_test_name")
@@ -694,18 +764,14 @@ def convert_experiment(
     initial_condition_cfg = make_initial_condition_config(
         atm_dict=atm_dict,
         input_dict=input_dict,
-        start_of_simulation=driver_cfg.start_of_simulation,
-        start_of_timestepping=driver_cfg.start_of_timestepping,
-        dtime=driver_cfg.dtime,
     )
-    if not do_tracer_advection and isinstance(initial_condition_cfg, from_file_ic.FromFileConfig):
-        initial_condition_cfg = dataclasses.replace(initial_condition_cfg, ntracer=0)
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
     # tmx is configured by the AES vertical-diffusion namelist; the driver does not run
     # the granule yet (icon4py#1360), but the config travels with the experiment.
-    tmx_cfg = TMX.build(atm_dict) if tmx_is_active(atm_dict) else None
+    tmx_cfg = make_tmx_config(atm_dict=atm_dict, input_dict=input_dict)
+    surface_cfg = make_surface_config(atm_dict=atm_dict, input_dict=input_dict)
 
     return driver_config.ExperimentConfig(
         geometry=geometry_cfg,
@@ -719,6 +785,7 @@ def convert_experiment(
         graupel=graupel_cfg,
         muphys=muphys_cfg,
         tmx=tmx_cfg,
+        surface=surface_cfg,
         topography=topography_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=make_prescribed_tendencies_config(atm_dict),

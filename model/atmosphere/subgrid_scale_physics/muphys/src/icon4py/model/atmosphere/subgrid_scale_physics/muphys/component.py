@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import types
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, cast
 
@@ -73,7 +72,7 @@ class MuphysComponent:
     ) -> None:
         self._ncells = grid.num_cells
         self._nlev = grid.num_levels
-        self._dt_seconds = dtime.total_seconds()
+        self._dt_seconds = ta.wpfloat(dtime.total_seconds())
         self._qnc = qnc
         self._backend = model_options.customize_backend(program=None, backend=backend)
 
@@ -111,9 +110,9 @@ class MuphysComponent:
         allocator = model_backends.get_allocator(backend)
 
         if step is None:
-            sizes = types.SimpleNamespace(ncells=self._ncells, nlev=self._nlev)
             step = setup_muphys(
-                inp=sizes,  # type: ignore[arg-type]  # only .ncells/.nlev are read
+                ncells=self._ncells,
+                nlev=self._nlev,
                 dt=self._dt_seconds,
                 qnc=qnc,
                 backend=backend,

@@ -11,6 +11,7 @@ from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -19,7 +20,7 @@ def _compute_horizontal_tracer_flux_upwind(
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    p_out_e = where(p_vn > 0.0, p_cc(E2C[0]), p_cc(E2C[1])) * p_mass_flx_e
+    p_out_e = where(p_vn > wpfloat(0.0), p_cc(E2C[0]), p_cc(E2C[1])) * p_mass_flx_e
     return p_out_e
 
 

@@ -12,7 +12,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_cold_pools_enhancement import (
     temporary_field_for_grid_point_cold_pools_enhancement,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
@@ -59,7 +59,7 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(stencil_tests.StencilTe
         theta_ref_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         enh_diffu_3d = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         thresh_tdiff = wpfloat("5.0")
-        smallest_vpfloat = -np.finfo(vpfloat).max
+        smallest_vpfloat = constants.VP_NEG_HUGE
 
         return dict(
             theta_v=theta_v,

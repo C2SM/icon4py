@@ -9,6 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -20,7 +21,9 @@ def _compute_ppm_quadratic_face_values(
     hgt_m1 = p_cellhgt_mc_now(dims.KHalfDim - 0.5)
     cc = p_cc(dims.KHalfDim + 0.5)
     cc_m1 = p_cc(dims.KHalfDim - 0.5)
-    p_face = cc * (1.0 - (hgt / hgt_m1)) + (hgt / (hgt_m1 + hgt)) * ((hgt / hgt_m1) * cc + cc_m1)
+    p_face = cc * (wpfloat(1.0) - (hgt / hgt_m1)) + (hgt / (hgt_m1 + hgt)) * (
+        (hgt / hgt_m1) * cc + cc_m1
+    )
 
     return p_face
 

@@ -40,6 +40,11 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
+# TODO(yilu): check which of the datatests in this file only repeat a stencil test (the
+# heat capacity one was removed in favour of its stencil test and the tmx diagnostics
+# datatest) and clean them up.
+
+
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 

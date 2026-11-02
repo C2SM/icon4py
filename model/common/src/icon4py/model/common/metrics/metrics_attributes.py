@@ -23,6 +23,8 @@ DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on
 INV_DDQZ_Z_FULL: Final[str] = f"inverse_of_{DDQZ_Z_FULL}"
 INV_DDQZ_Z_HALF: Final[str] = f"inverse_of_{DDQZ_Z_HALF}"
 INV_DDQZ_Z_FULL_E: Final[str] = f"inverse_of_{DDQZ_Z_FULL_E}"
+INV_DDQZ_Z_HALF_E: Final[str] = f"{INV_DDQZ_Z_HALF}_on_edges"
+INV_DDQZ_Z_HALF_V: Final[str] = f"{INV_DDQZ_Z_HALF}_on_vertices"
 GEOPOT_AGL_IFC: Final[str] = "geopotential_above_ground_on_interface_levels"
 HEIGHT_ABOVE_GROUND: Final[str] = "height_above_ground"
 SCALING_FACTOR_FOR_3D_DIVDAMP: Final[str] = "scaling_factor_for_3d_divergence_damping"
@@ -216,7 +218,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="d2dexdz2_fac1_mc",
-        dtype=ta.wpfloat,
+        dtype=ta.vpfloat,
     ),
     D2DEXDZ2_FAC2_MC: model.FieldMetaData(
         standard_name=D2DEXDZ2_FAC2_MC,
@@ -224,7 +226,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="d2dexdz2_fac2_mc",
-        dtype=ta.wpfloat,
+        dtype=ta.vpfloat,
     ),
     DDXT_Z_HALF_E: model.FieldMetaData(
         standard_name=DDXT_Z_HALF_E,
@@ -304,7 +306,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.EdgeDim,),
         icon_var_name="flat_idx_max",
-        dtype=ta.wpfloat,
+        dtype=gtx.int32,
     ),
     PG_EXDIST_DSL: model.FieldMetaData(
         standard_name=PG_EXDIST_DSL,
@@ -384,6 +386,22 @@ attrs: dict[str, model.FieldMetaData] = {
         units="m-1",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="inv_ddqz_z_full_e",
+        dtype=ta.wpfloat,
+    ),
+    INV_DDQZ_Z_HALF_E: model.FieldMetaData(
+        standard_name=INV_DDQZ_Z_HALF_E,
+        long_name="inverse functional determinant at half level on edges",
+        units="m-1",
+        dims=(dims.EdgeDim, dims.KHalfDim),
+        icon_var_name="inv_ddqz_z_half_e",
+        dtype=ta.wpfloat,
+    ),
+    INV_DDQZ_Z_HALF_V: model.FieldMetaData(
+        standard_name=INV_DDQZ_Z_HALF_V,
+        long_name="inverse functional determinant at half level on vertices",
+        units="m-1",
+        dims=(dims.VertexDim, dims.KHalfDim),
+        icon_var_name="inv_ddqz_z_half_v",
         dtype=ta.wpfloat,
     ),
     WGTFACQ1_C: model.FieldMetaData(

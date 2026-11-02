@@ -12,7 +12,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.math.vertical_operations import (
     extrapolate_quadratically_to_surface_on_cells,
     extrapolate_quadratically_to_top_on_cells,
-    with_boundaries_on_half_levels_on_cells,
+    with_boundaries_on_half_levels_on_cells_wp,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -114,7 +114,7 @@ def _interpolate_cell_field_to_half_levels_with_boundaries(
     Returns:
         cell field on half levels
     """
-    return with_boundaries_on_half_levels_on_cells(
+    return with_boundaries_on_half_levels_on_cells_wp(
         top=extrapolate_quadratically_to_top_on_cells(interpolant=interpolant, weights=wgtfacq1_c),
         interior=_interpolate_cell_field_to_half_levels_wp(
             interpolant=interpolant, wgtfac_c=wgtfac_c

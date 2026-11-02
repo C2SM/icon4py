@@ -38,7 +38,7 @@ class TestInterpolateToHalfLevels(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.common.DomainLike]:
         return dict(
             wgtfac_e=data_alloc.random_field(
                 dims.EdgeDim, dims.KHalfDim, low=0.0, high=1.0, dtype=ta.vpfloat

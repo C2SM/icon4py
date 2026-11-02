@@ -23,6 +23,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.subgrid_scale_physics.surface import config as surface_config
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
@@ -36,7 +37,6 @@ from icon4py.model.common import (
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
-from icon4py.model.common.initial_condition import from_file
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
@@ -194,15 +194,23 @@ class DriverConfig:
                 f"the time loop cannot start at {self.start_of_timestepping}, before the "
                 f"beginning of the simulation ({self.start_of_simulation})."
             )
+        ta.dataclass_float_to_wp(self)
 
     @classmethod
     def make_initial(cls, **kwargs: Any) -> DriverConfig:
         kwargs["start_of_timestepping"] = kwargs["start_of_simulation"]
         return cls(**kwargs)
 
+    @property
+    def is_restart(self) -> bool:
+        """Whether the time loop starts at a later date than the simulation."""
+        return self.start_of_timestepping != self.start_of_simulation
+
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ExperimentConfig(config_io.ConfigWithShared):
+    """ICON4Py experiment configuration."""
+
     geometry: GeometryConfig
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
@@ -220,17 +228,10 @@ class ExperimentConfig(config_io.ConfigWithShared):
     #: Read from the AES vertical-diffusion namelist; the driver does not run the
     #: granule yet (icon4py#1360), so it is carried but unused.
     tmx: tmx_config.TmxConfig | None = None
+    #: The surface scheme: surface fluxes for tmx and, later, radiation; carried like `tmx`.
+    surface: surface_config.SurfaceConfig | None = None
 
     def __post_init__(self) -> None:
-        # The file-based initial condition needs the clock of the driver to know which
-        # savepoint to read: the initial state, or the state of a later time step when
-        # restarting. 'with_overrides' rebuilds the config, so the two stay in sync.
-        initial_condition_config = self.initial_condition
-        if isinstance(initial_condition_config, from_file.FromFileConfig):
-            initial_condition_config.start_of_simulation = self.driver.start_of_simulation
-            initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
-            initial_condition_config.dtime = self.driver.dtime
-
         if self.driver.diffuse_before_time_loop and not (
             self.nonhydrostatic is not None
             and self.diffusion is not None

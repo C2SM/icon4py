@@ -20,6 +20,7 @@ import fortran_config_converter as fcc
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.subgrid_scale_physics.surface import config as surface_config
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.common import constants, prescribed_tendencies
 from icon4py.model.common.config import config_io
@@ -329,8 +330,8 @@ def test_tmx_config() -> None:
     fortran_dict = {
         "aes_vdf_nml": {
             "aes_vdf_config": _echoed_vdf_record(
-                solver_type=1,
-                energy_type=1,
+                solver_type=2,
+                energy_type=2,
                 dissipation_factor=0.5,
                 use_louis=False,
                 use_louis_land=False,
@@ -349,8 +350,8 @@ def test_tmx_config() -> None:
     }
     assert fcc.tmx_is_active(fortran_dict)
     config = fcc.TMX.build(fortran_dict)
-    assert config.solver_type is tmx_config.SolverType.EXPLICIT
-    assert config.energy_type is tmx_config.EnergyType.DRY_STATIC
+    assert config.solver_type is tmx_config.SolverType.IMPLICIT
+    assert config.energy_type is tmx_config.EnergyType.INTERNAL
     assert config.dissipation_factor == 0.5
     assert config.use_louis is False
     assert config.use_louis_land is False
@@ -376,3 +377,89 @@ def test_tmx_is_inactive_when_use_tmx_is_false() -> None:
     record = _echoed_vdf_record()
     record[22] = False
     assert not fcc.tmx_is_active({"aes_vdf_nml": {"aes_vdf_config": record}})
+
+
+def test_tmx_rejects_the_explicit_solver() -> None:
+    fortran_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(solver_type=1, energy_type=2, turb_prandtl=0.5)
+        },
+    }
+    with pytest.raises(ValueError, match="only the implicit solver"):
+        fcc.TMX.build(fortran_dict)
+
+
+def test_tmx_rejects_dry_static_energy() -> None:
+    fortran_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(solver_type=2, energy_type=1, turb_prandtl=0.5)
+        },
+    }
+    with pytest.raises(ValueError, match="only internal energy"):
+        fcc.TMX.build(fortran_dict)
+
+
+def _input_vdf(**members: object) -> dict:
+    """The aes_vdf_nml of an input namelist, setting the first domain's members by name."""
+    return {"aes_vdf_nml": {"aes_vdf_config": [{"use_tmx": True, "turb": 2} | members]}}
+
+
+def test_tmx_config_agrees_with_the_input_namelist() -> None:
+    fortran_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(
+                solver_type=2, energy_type=2, dissipation_factor=0.5, turb_prandtl=0.5
+            )
+        }
+    }
+    config = fcc.make_tmx_config(
+        atm_dict=fortran_dict,
+        input_dict=_input_vdf(solver_type=2, energy_type=2, dissipation_factor=0.5),
+    )
+    assert config is not None
+    assert config.dissipation_factor == 0.5
+
+
+def test_tmx_rejects_positions_that_disagree_with_the_input_namelist() -> None:
+    # as if a member was inserted before dissipation_factor: its pinned position now holds
+    # the value of the member before it
+    fortran_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(
+                solver_type=2, energy_type=2, dissipation_factor=2, turb_prandtl=0.5
+            )
+        }
+    }
+    with pytest.raises(ValueError, match="member order changed"):
+        fcc.make_tmx_config(
+            atm_dict=fortran_dict,
+            input_dict=_input_vdf(solver_type=2, energy_type=2, dissipation_factor=0.5),
+        )
+
+
+def test_surface_config() -> None:
+    atm_dict = {"aes_vdf_nml": {"aes_vdf_config": _echoed_vdf_record()}}
+    input_dict = {
+        "nh_testcase_nml": {"ape_sst_case": "sst_const", "ape_sst_val": 30.0, "isrfc_type": 1}
+    }
+    config = fcc.make_surface_config(atm_dict=atm_dict, input_dict=input_dict)
+    assert config is not None
+    assert config.surface_flux_type is surface_config.SurfaceFluxType.FIXED_HEAT_FLUXES
+    assert config.sea_surface_temperature == pytest.approx(303.15)
+    # shflx and lhflx left out: the defaults of mo_nh_testcases_nml.f90
+    assert config.kinematic_sensible_heat_flux == 0.1
+    assert config.kinematic_latent_heat_flux == 0.0
+
+
+def test_surface_config_is_none_without_tmx() -> None:
+    input_dict = {"nh_testcase_nml": {"ape_sst_case": "sst_const", "isrfc_type": 1}}
+    assert fcc.make_surface_config(atm_dict={}, input_dict=input_dict) is None
+
+
+def test_surface_config_rejects_other_sst_cases() -> None:
+    """ICON's default `ape_sst_case` is 'sst1', a latitude-dependent SST."""
+    atm_dict = {"aes_vdf_nml": {"aes_vdf_config": _echoed_vdf_record()}}
+    with pytest.raises(NotImplementedError, match="ape_sst_case"):
+        fcc.make_surface_config(
+            atm_dict=atm_dict, input_dict={"nh_testcase_nml": {"isrfc_type": 1}}
+        )

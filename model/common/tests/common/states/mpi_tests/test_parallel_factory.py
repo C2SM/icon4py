@@ -75,7 +75,13 @@ def test_program_provider_exchange(
         data_={},
         backend=backend,
         grid=grid,
-    ).with_metadata({"out": model.FieldMetaData(standard_name="out", units="", dtype=gtx.int32)})
+    ).with_metadata(
+        {
+            "out": model.FieldMetaData(
+                standard_name="out", units="", dims=(dims.EdgeDim,), dtype=gtx.int32
+            )
+        }
+    )
     source._exchange = exchange
     edge_domain = h_grid.domain(dims.EdgeDim)
     provider = factory.ProgramFieldProvider(
@@ -142,6 +148,12 @@ def test_numpy_provider_exchange(
         data_={},
         backend=backend,
         grid=grid,
+    ).with_metadata(
+        {
+            "out": model.FieldMetaData(
+                standard_name="out", units="", dims=(dims.EdgeDim,), dtype=gtx.int32
+            )
+        }
     )
     source._exchange = exchange
 

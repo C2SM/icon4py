@@ -12,7 +12,7 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics_stencils import (
     compute_shear_and_viscosity_diagnostics,
     compute_smagorinsky_mixing_length,
     compute_thermodynamic_diagnostics,
@@ -23,6 +23,8 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import reference_funcs, stencil_tests
+
+from .utils import on_subdomain
 
 
 def compute_smagorinsky_mixing_length_numpy(
@@ -157,20 +159,6 @@ def interpolate_to_half_levels_with_boundaries_numpy(
     return interpolation
 
 
-def _on_subdomain(
-    initial: np.ndarray,
-    computed: np.ndarray,
-    horizontal: tuple[int, int],
-    vertical: tuple[int, int],
-) -> np.ndarray:
-    """The program's per-output domain: outside it the output keeps its initial value."""
-    out = initial.copy()
-    horizontal_slice = slice(*horizontal)
-    vertical_slice = slice(*vertical)
-    out[horizontal_slice, vertical_slice] = computed[horizontal_slice, vertical_slice]
-    return out
-
-
 class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
     """
     The four cell diagnostics ``Compute_diagnostics`` runs before the first halo
@@ -247,29 +235,29 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         )
 
         return dict(
-            dry_static_energy=_on_subdomain(
-                dry_static_energy,
+            dry_static_energy=on_subdomain(
                 dry_static_energy_full,
                 (cell_start_nudging, cell_end_local),
                 (0, nlev),
+                initial=dry_static_energy,
             ),
-            theta_v=_on_subdomain(
-                theta_v,
+            theta_v=on_subdomain(
                 theta_v_full,
                 (cell_start_lateral_boundary_level_3, cell_end_local),
                 (0, nlev),
+                initial=theta_v,
             ),
-            rho_ic=_on_subdomain(
-                rho_ic,
+            rho_ic=on_subdomain(
                 rho_ic_full,
                 (cell_start_lateral_boundary_level_2, cell_end_halo_level_2),
                 (0, nlev + 1),
+                initial=rho_ic,
             ),
-            bruvais=_on_subdomain(
-                bruvais,
+            bruvais=on_subdomain(
                 bruvais_full,
                 (cell_start_lateral_boundary_level_3, cell_end_local),
                 (1, nlev),
+                initial=bruvais,
             ),
         )
 
@@ -621,56 +609,59 @@ def shear_and_viscosity_reference(
     all_half_levels = (0, nlev + 1)
     all_full_levels = (0, nlev)
     return dict(
-        w_ie=_on_subdomain(
-            w_ie,
+        w_ie=on_subdomain(
             w_ie_full,
             (edge_start_lateral_boundary_level_2, edge_end_halo_level_2),
             all_half_levels,
+            initial=w_ie,
         ),
-        vn_ie=_on_subdomain(
-            vn_ie,
+        vn_ie=on_subdomain(
             vn_ie_full,
             (edge_start_lateral_boundary_level_2, edge_end_halo_level_3),
             all_half_levels,
+            initial=vn_ie,
         ),
-        vt_ie=_on_subdomain(
-            vt_ie,
+        vt_ie=on_subdomain(
             vt_ie_full,
             (edge_start_lateral_boundary_level_3, edge_end_halo_level_2),
             all_half_levels,
+            initial=vt_ie,
         ),
-        shear=_on_subdomain(
-            shear,
+        shear=on_subdomain(
             shear_full,
             (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
             all_full_levels,
+            initial=shear,
         ),
-        div_of_stress=_on_subdomain(
-            div_of_stress,
+        div_of_stress=on_subdomain(
             div_stress_full,
             (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
             all_full_levels,
+            initial=div_of_stress,
         ),
-        div_c=_on_subdomain(
-            div_c, div_c_full, (cell_start_nudging, cell_end_halo), all_full_levels
+        div_c=on_subdomain(
+            div_c_full,
+            (cell_start_nudging, cell_end_halo),
+            all_full_levels,
+            initial=div_c,
         ),
-        mech_prod=_on_subdomain(
-            mech_prod,
+        mech_prod=on_subdomain(
             mech_prod_full,
             (cell_start_lateral_boundary_level_3, cell_end_halo),
             (1, nlev),
+            initial=mech_prod,
         ),
-        km_ic=_on_subdomain(
-            km_ic,
+        km_ic=on_subdomain(
             km_ic_full,
             (cell_start_lateral_boundary_level_3, cell_end_local),
             all_half_levels,
+            initial=km_ic,
         ),
-        kh_ic=_on_subdomain(
-            kh_ic,
+        kh_ic=on_subdomain(
             kh_ic_full,
             (cell_start_lateral_boundary_level_3, cell_end_local),
             all_half_levels,
+            initial=kh_ic,
         ),
     )
 
