@@ -7,39 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next import astype, neighbor_sum
+from gt4py.next import astype
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E2CO
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import wpfloat
-
-
-@gtx.field_operator
-def _compute_nabla2_on_cell(
-    psi_c: fa.CellField[ta.wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-) -> fa.CellField[ta.wpfloat]:
-    """
-    Computes the Laplacian (nabla squared) of a scalar field defined on cell
-    centres.
-    """
-    nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=dims.C2E2CODim)
-
-    return nabla2_psi_c
-
-
-@gtx.field_operator
-def _compute_nabla2_on_cell_k(
-    psi_c: fa.CellKField[ta.wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
-    """
-    Computes the Laplacian (nabla squared) of a scalar field defined on cell
-    centres for all vertical levels.
-    """
-    nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=dims.C2E2CODim)
-
-    return nabla2_psi_c
 
 
 @gtx.field_operator
@@ -70,4 +41,9 @@ def _compute_field_a_plus_coeff_times_field_b_on_edge_k(
 
 @gtx.field_operator
 def _copy_field_on_cell_k(field: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
+    return field
+
+
+@gtx.field_operator
+def _copy_field_on_edge_k(field: fa.EdgeKField[ta.wpfloat]) -> fa.EdgeKField[ta.wpfloat]:
     return field
