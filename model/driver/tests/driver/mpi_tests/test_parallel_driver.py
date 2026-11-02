@@ -138,22 +138,16 @@ def _run_driver_compare_single_multi_rank(
 
     multi_rank_config_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    ic_override = (
-        {"initial_condition": {"data_path": single_rank_config.initial_condition.data_path}}
-        if hasattr(single_rank_config.initial_condition, "data_path")
-        else {}
-    )
-    topo_override = (
-        {"topography": {"data_path": single_rank_config.topography.data_path}}
-        if hasattr(single_rank_config.topography, "data_path")
-        else {}
-    )
+    data_overrides = {
+        section: {"data_path": getattr(single_rank_config, section).data_path}
+        for section in ("initial_condition", "topography", "prescribed_tendencies")
+        if hasattr(getattr(single_rank_config, section), "data_path")
+    }
 
     multi_rank_config = driver_config.read_experiment_config_from_yaml(
         multi_rank_config_path / "config.yml"
     ).with_overrides(
-        **ic_override,
-        **topo_override,
+        **data_overrides,
         driver={
             "output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
             "end_of_simulation": end_of_simulation,

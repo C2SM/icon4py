@@ -787,7 +787,7 @@ def initialize_driver(
                 config=config.prescribed_tendencies,
                 grid=grid_manager.grid,
                 backend=backend,
-                rank=process_props.rank,
+                decomposition_info=decomposition_info,
             )
             if config.prescribed_tendencies.data_path is not None
             else None

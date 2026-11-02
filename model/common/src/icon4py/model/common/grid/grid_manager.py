@@ -254,11 +254,18 @@ class GridManager:
         my_vertex_indices = data_alloc.as_numpy(
             self._decomposition_info.global_index(dims.VertexDim)
         )
-        vertex_edge_orientation = self._reader.int_variable(
-            gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
-            transpose=True,
-            apply_offset=False,
-            indices=my_vertex_indices,
+        vertex_to_edge = self._get_index_field(
+            gridfile.ConnectivityName.V2E, indices=my_vertex_indices
+        )
+        vertex_edge_orientation = np.where(
+            vertex_to_edge != gridfile.GridFile.INVALID_INDEX,
+            self._reader.int_variable(
+                gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
+                transpose=True,
+                apply_offset=False,
+                indices=my_vertex_indices,
+            ),
+            0,
         )
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:

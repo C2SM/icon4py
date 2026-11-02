@@ -64,9 +64,6 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     backend: gtx_typing.Backend,
     download_ser_data: None,
 ) -> None:
-    if experiment.description.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
-
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11
     # NOTE: actually vn, w, exner, theta_v, rho have delta = 0.0 also on
     # distributed GPU, u,v do not because they are computed with RBF

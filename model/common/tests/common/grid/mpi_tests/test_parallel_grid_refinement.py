@@ -56,6 +56,32 @@ def domain(dim: gtx.Dimension, zone: h_grid.Zone) -> h_grid.Domain:
     return h_grid.domain(dim)(zone)
 
 
+def _expected_bounds_with_halos_last(
+    domain: h_grid.Domain,
+    decomposition_info: decomp_defs.DecompositionInfo,
+    ref_start_index: int,
+    ref_end_index: int,
+) -> tuple[int, int]:
+    dim = domain.dim
+    flags = decomp_defs.DecompositionFlag
+    owned = int(decomposition_info.owner_mask(dim).sum())
+    halo_sizes = {
+        h_grid.Zone.HALO: decomposition_info.get_halo_size(dim, flags.FIRST_HALO_LEVEL),
+        h_grid.Zone.HALO_LEVEL_2: decomposition_info.get_halo_size(dim, flags.SECOND_HALO_LEVEL),
+        h_grid.Zone.HALO_LEVEL_3: decomposition_info.get_halo_size(dim, flags.THIRD_HALO_LEVEL),
+    }
+    match domain.zone:
+        case h_grid.Zone.LOCAL | h_grid.Zone.INTERIOR:
+            return ref_start_index, owned
+        case h_grid.Zone.HALO | h_grid.Zone.HALO_LEVEL_2 | h_grid.Zone.HALO_LEVEL_3:
+            start = owned
+            for zone in (h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2, h_grid.Zone.HALO_LEVEL_3):
+                if zone == domain.zone:
+                    return start, start + halo_sizes[zone]
+                start += halo_sizes[zone]
+    return ref_start_index, ref_end_index
+
+
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_compute_domain_bounds(  # noqa: PLR0917 [too-many-positional-arguments]
@@ -95,6 +121,10 @@ def test_compute_domain_bounds(  # noqa: PLR0917 [too-many-positional-arguments]
 
     ref_start_index = ref_grid.start_index(domain)
     ref_end_index = ref_grid.end_index(domain)
+    if decomposition_info.is_distributed():
+        ref_start_index, ref_end_index = _expected_bounds_with_halos_last(
+            domain, decomposition_info, ref_start_index, ref_end_index
+        )
     computed_start = start_indices[domain]
     computed_end = end_indices[domain]
     _log.info(
@@ -116,9 +146,6 @@ def test_bounds_decomposition(
     experiment: test_defs.Experiment,
     dim: gtx.Dimension,
 ) -> None:
-    if experiment.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
-
     file = dt_utils.get_grid_filepath(experiment.grid)
     _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
 
