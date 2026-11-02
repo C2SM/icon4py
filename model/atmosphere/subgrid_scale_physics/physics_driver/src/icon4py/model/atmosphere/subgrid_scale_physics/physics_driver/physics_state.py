@@ -8,9 +8,9 @@
 
 """The two-layer coupling pieces of the PhysicsDriver.
 
-The ``PhysicsState`` the processes read and advance in turn, as ICON AES does: each process
-sees the state the previous ones have already updated. The ``Tendencies`` are the sums over
-the processes; at the end exner, theta_v and vn are updated once.
+The ``PhysicsState`` is read and updated by the processes in turn, as ICON AES does: each
+process gets as input the state that the previous ones have already updated. The
+``Tendencies`` are accumulated over the processes.
 """
 
 from __future__ import annotations
@@ -72,23 +72,17 @@ class PhysicsState:
     TODO (Yilu): this state and ``Tendencies`` are the untyped stand-ins for the typed
     states of #1510; restructure them on top of it once it is merged.
 
-    1. Set pointers into the model state (``exner``, ``theta_v``, ``rho``, ``vn``,
+    1. Set pointers to the model state (``exner``, ``theta_v``, ``rho``, ``vn``,
        ``w``, ``tracers``, and ``air_mass``, the dycore's air mass per unit area that
        ICON hands to the physics as ``mair``).
     2. ``diagnostics``, the caller's ``DiagnosticState``, linked and diagnosed once at
-       ``PhysicsDriver.run`` entry. The virtual temperature and the pressure stay at
-       step start; ``update`` advances ``temperature``, ``u`` and ``v`` in place after
-       each process, as it does ``w`` and the moisture tracers.
+       ``PhysicsDriver.run`` entry.
     3. The diagnostic (non-tendency) output buffers of each
        process. They are allocated once, when the driver is built, and written in
        place by their component. They persist across steps, holding the values of
        the last computed step (zeros before the process has first run).
        ``compute_diagnostics`` never touches them. A process reads another's output
-       by name through ``diagnostic_output``, as tmx reads the surface fluxes.
-
-    ``compute_diagnostics`` binds and diagnoses at entry (dyn2phy); ``update`` adds each
-    process's tendencies in place; ``update_prognostics`` writes exner, theta_v and vn back
-    at exit (phy2dyn) and syncs the halos of what the physics wrote.
+       by name through ``diagnostic_output``.
     """
 
     def __init__(
@@ -315,14 +309,12 @@ class PhysicsState:
         outputs_properties: dict[str, model.FieldMetaData],
         dt_seconds: float,
     ) -> None:
-        """Add ``dt_seconds`` times a process's tendencies to the state in place.
+        """Update the state in place as ``field = field + dt_seconds * tend_field``.
 
-        This is the sequential coupling, as ICON AES (``fc_xxx = 1``): the next process
-        reads the advanced temperature, u, v, w and tracers, as ICON's AES physics
-        interfaces advance their physics state. Each tendency output must be the tendency
-        of temperature, u, v, w or a moisture tracer. ``update_prognostics`` does not add
-        them again: it only recomputes exner and theta_v from the final temperature and
-        moisture, and updates vn once from the summed (u, v) tendencies.
+        After each process the next one reads the advanced temperature, u, v, w and
+        moisture tracers (sequential coupling, ICON AES ``fc_xxx = 1``); the virtual
+        temperature and the pressure stay at step start. Each tendency output must be
+        the tendency of one of these fields.
         """
         if not outputs:
             return
