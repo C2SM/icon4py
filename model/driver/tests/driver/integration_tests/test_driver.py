@@ -148,7 +148,7 @@ def test_driver(
     fluxes and tmx the turbulent mixing of the v14 reference run. The tracer comparison
     carries residuals from gaps not yet ported:
 
-    - exner / theta_v: recomputed via the exact EOS in ``Tendencies.update_prognostics``.
+    - exner / theta_v: recomputed via the exact EOS in ``PhysicsState.update_prognostics``.
       Measured on v14 (gtfn_cpu, double precision): exner 4.8e-11 (atol=1e-8), theta_v 1.5e-10 relative
       (rtol=3e-8) -- essentially exact.
     - tracer transport: the driver runs MIURA/PPM advection on the dycore-accumulated
