@@ -194,22 +194,22 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
         [dims.EdgeDim, dims.E2C2EDim], xp.transpose(rbf_vec_coeff_e), allocator=allocator
     )
     interpolation_state = dycore_states.InterpolationState(
-        c_lin_e=c_lin_e,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        c_intp=c_intp,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        e_flx_avg=e_flx_avg,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        geofac_grdiv=geofac_grdiv,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        geofac_rot=geofac_rot,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        pos_on_tplane_e_1=pos_on_tplane_e_1[:, 0:2],  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        pos_on_tplane_e_2=pos_on_tplane_e_2[:, 0:2],  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        c_lin_e=c_lin_e,
+        c_intp=c_intp,
+        e_flx_avg=e_flx_avg,
+        geofac_grdiv=geofac_grdiv,
+        geofac_rot=geofac_rot,
+        pos_on_tplane_e_1=pos_on_tplane_e_1[:, 0:2],
+        pos_on_tplane_e_2=pos_on_tplane_e_2[:, 0:2],
         rbf_vec_coeff_e=rbf_vec_coeff_e_transposed,
-        e_bln_c_s=e_bln_c_s,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=geofac_div,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        geofac_n2s=geofac_n2s,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        geofac_grg_x=geofac_grg_x,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        geofac_grg_y=geofac_grg_y,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        nudgecoeff_e=nudgecoeff_e,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        geofac_div=geofac_div,
+        geofac_n2s=geofac_n2s,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
+        nudgecoeff_e=nudgecoeff_e,
     )
 
     nlev = wgtfac_c.domain[dims.KHalfDim].unit_range.stop - 1
@@ -238,37 +238,37 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
         mask_prog_halo_c=mask_prog_halo_c,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        rayleigh_w=rayleigh_w,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        time_extrapolation_parameter_for_exner=exner_exfac,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        reference_exner_at_cells_on_model_levels=exner_ref_mc,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        wgtfac_c=wgtfac_c,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        wgtfacq_c=wgtfacq_c,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        inv_ddqz_z_full=inv_ddqz_z_full,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        reference_rho_at_cells_on_model_levels=rho_ref_mc,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        reference_theta_at_cells_on_model_levels=theta_ref_mc,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        exner_w_explicit_weight_parameter=vwind_expl_wgt,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        ddz_of_reference_exner_at_cells_on_half_levels=d_exner_dz_ref_ic,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        ddqz_z_half=ddqz_z_half,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        reference_theta_at_cells_on_half_levels=theta_ref_ic,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        reference_rho_at_edges_on_model_levels=rho_ref_me,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        reference_theta_at_edges_on_model_levels=theta_ref_me,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        ddxn_z_full=ddxn_z_full,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        zdiff_gradp=zdiff_gradp,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        rayleigh_w=rayleigh_w,
+        time_extrapolation_parameter_for_exner=exner_exfac,
+        reference_exner_at_cells_on_model_levels=exner_ref_mc,
+        wgtfac_c=wgtfac_c,
+        wgtfacq_c=wgtfacq_c,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        reference_rho_at_cells_on_model_levels=rho_ref_mc,
+        reference_theta_at_cells_on_model_levels=theta_ref_mc,
+        exner_w_explicit_weight_parameter=vwind_expl_wgt,
+        ddz_of_reference_exner_at_cells_on_half_levels=d_exner_dz_ref_ic,
+        ddqz_z_half=ddqz_z_half,
+        reference_theta_at_cells_on_half_levels=theta_ref_ic,
+        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+        reference_rho_at_edges_on_model_levels=rho_ref_me,
+        reference_theta_at_edges_on_model_levels=theta_ref_me,
+        ddxn_z_full=ddxn_z_full,
+        zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
         nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
         pg_exdist=pg_exdist_dsl,
-        ddqz_z_full_e=ddqz_z_full_e,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        ddxt_z_full=ddxt_z_full,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        wgtfac_e=wgtfac_e,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        wgtfacq_e=wgtfacq_e,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        exner_w_implicit_weight_parameter=vwind_impl_wgt,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        horizontal_mask_for_3d_divdamp=hmask_dd3d,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        scaling_factor_for_3d_divdamp=scalfac_dd3d,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        coeff1_dwdz=coeff1_dwdz,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        coeff2_dwdz=coeff2_dwdz,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        coeff_gradekin=coeff_gradekin,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        ddqz_z_full_e=ddqz_z_full_e,
+        ddxt_z_full=ddxt_z_full,
+        wgtfac_e=wgtfac_e,
+        wgtfacq_e=wgtfacq_e,
+        exner_w_implicit_weight_parameter=vwind_impl_wgt,
+        horizontal_mask_for_3d_divdamp=hmask_dd3d,
+        scaling_factor_for_3d_divdamp=scalfac_dd3d,
+        coeff1_dwdz=coeff1_dwdz,
+        coeff2_dwdz=coeff2_dwdz,
+        coeff_gradekin=coeff_gradekin,
     )
 
     global granule  # noqa: PLW0603 [global-statement]
@@ -282,7 +282,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
             vertical_params=grid_wrapper.grid_state.vertical_grid,
             edge_geometry=grid_wrapper.grid_state.edge_geometry,
             cell_geometry=grid_wrapper.grid_state.cell_geometry,
-            owner_mask=c_owner_mask,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+            owner_mask=c_owner_mask,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
             max_nudging_coefficient=nudge_max_coeff,
@@ -370,10 +370,10 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         )
 
     prep_adv = dycore_states.PrepAdvection(
-        vn_traj=vn_traj,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        mass_flx_me=mass_flx_me,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=mass_flx_ic,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=vol_flx_ic,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        vn_traj=vn_traj,
+        mass_flx_me=mass_flx_me,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=mass_flx_ic,
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=vol_flx_ic,
     )
 
     # Make `max_vcfl` a 0-d array to avoid cupy synchronization, see `_update_max_vertical_cfl`.
@@ -382,46 +382,46 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
 
     diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=max_vcfl,
-        theta_v_at_cells_on_half_levels=theta_v_ic,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        perturbed_exner_at_cells_on_model_levels=exner_pr,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        rho_at_cells_on_half_levels=rho_ic,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        exner_tendency_due_to_slow_physics=ddt_exner_phy,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        grf_tend_rho=grf_tend_rho,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        grf_tend_thv=grf_tend_thv,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        grf_tend_w=grf_tend_w,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        mass_flux_at_edges_on_model_levels=mass_fl_e,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        normal_wind_tendency_due_to_slow_physics_process=ddt_vn_phy,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        grf_tend_vn=grf_tend_vn,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        theta_v_at_cells_on_half_levels=theta_v_ic,
+        perturbed_exner_at_cells_on_model_levels=exner_pr,
+        rho_at_cells_on_half_levels=rho_ic,
+        exner_tendency_due_to_slow_physics=ddt_exner_phy,
+        grf_tend_rho=grf_tend_rho,
+        grf_tend_thv=grf_tend_thv,
+        grf_tend_w=grf_tend_w,
+        mass_flux_at_edges_on_model_levels=mass_fl_e,
+        normal_wind_tendency_due_to_slow_physics_process=ddt_vn_phy,
+        grf_tend_vn=grf_tend_vn,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            ddt_vn_apc_ntl1,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-            ddt_vn_apc_ntl2,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+            ddt_vn_apc_ntl1,
+            ddt_vn_apc_ntl2,
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            ddt_w_adv_ntl1,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-            ddt_w_adv_ntl2,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+            ddt_w_adv_ntl1,
+            ddt_w_adv_ntl2,
         ),
-        tangential_wind=vt,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        vn_on_half_levels=vn_ie,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        contravariant_correction_at_cells_on_half_levels=w_concorr_c,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        rho_iau_increment=rho_incr,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        normal_wind_iau_increment=vn_incr,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        exner_iau_increment=exner_incr,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        exner_dynamical_increment=exner_dyn_incr,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        tangential_wind=vt,
+        vn_on_half_levels=vn_ie,
+        contravariant_correction_at_cells_on_half_levels=w_concorr_c,
+        rho_iau_increment=rho_incr,
+        normal_wind_iau_increment=vn_incr,
+        exner_iau_increment=exner_incr,
+        exner_dynamical_increment=exner_dyn_incr,
     )
 
     prognostic_state_nnow = PrognosticState(
-        w=w_now,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        vn=vn_now,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        theta_v=theta_v_now,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        rho=rho_now,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        exner=exner_now,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        w=w_now,
+        vn=vn_now,
+        theta_v=theta_v_now,
+        rho=rho_now,
+        exner=exner_now,
     )
     prognostic_state_nnew = PrognosticState(
-        w=w_new,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        vn=vn_new,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        theta_v=theta_v_new,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        rho=rho_new,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        exner=exner_new,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        w=w_new,
+        vn=vn_new,
+        theta_v=theta_v_new,
+        rho=rho_new,
+        exner=exner_new,
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 

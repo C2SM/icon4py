@@ -10,7 +10,7 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-import dace
+import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend

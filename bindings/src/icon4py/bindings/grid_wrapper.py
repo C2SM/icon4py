@@ -201,7 +201,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # Vertical parameters
     vertical_grid = vertical.VerticalGrid(
         config=vertical_config,
-        vct_a=vct_a,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        vct_a=vct_a,
         vct_b=None,
     )
 
@@ -211,19 +211,19 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert=(  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        primal_normal_vert=(
             primal_normal_vert_x,
             primal_normal_vert_y,
         ),
-        dual_normal_vert=(  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        dual_normal_vert=(
             dual_normal_vert_x,
             dual_normal_vert_y,
         ),
-        primal_normal_cell=(  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        primal_normal_cell=(
             primal_normal_cell_x,
             primal_normal_cell_y,
         ),
-        dual_normal_cell=(  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        dual_normal_cell=(
             dual_normal_cell_x,
             dual_normal_cell_y,
         ),
@@ -241,9 +241,9 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     # Cell geometry
     cell_params = grid_states.CellParams(
-        cell_center_lat=cell_center_lat,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        cell_center_lon=cell_center_lon,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        area=cell_areas,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        area=cell_areas,
         mean_cell_area=mean_cell_area,
     )
 

@@ -10,7 +10,7 @@ import copy
 from collections.abc import Sequence
 from typing import Any
 
-import dace
+import dace  # type: ignore[import-untyped]  # no stubs; 'import-not-found' if not installed
 from dace import (
     nodes as dace_nodes,
     sdfg as dace_sdfg,

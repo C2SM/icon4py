@@ -187,23 +187,6 @@ warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
 
-[[tool.mypy.overrides]]
-# Third-party dependencies that ship no type stubs and may or may not be
-# installed in a given environment: the mypy error code for their imports
-# differs between 'import-untyped' and 'import-not-found', so per-line
-# ignores at the import sites would not be stable. Treating them as 'Any'
-# lets the importing first-party code be checked consistently. All relief
-# for first-party modules is inline at the code site with a justification,
-# never in this config.
-ignore_missing_imports = true
-module = [
-  "dace",
-  "dace.*",
-  "ghex",
-  "ghex.*",
-  "viztracer"
-]
-
 # -- pytest --
 [tool.pytest]
 

@@ -25,7 +25,7 @@ import os
 import pathlib
 from types import TracebackType
 
-import viztracer  # optional profiling dependency, not in typing env
+import viztracer  # type: ignore  # untyped or not installed: import-untyped / import-not-found  # noqa: PGH003
 
 from icon4py.bindings import grid_wrapper
 from icon4py.tools.py2fgen import runtime_config
