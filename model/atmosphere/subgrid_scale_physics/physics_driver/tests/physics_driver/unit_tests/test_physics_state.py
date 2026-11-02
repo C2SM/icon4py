@@ -8,6 +8,8 @@
 
 """Tests of the PhysicsState layer (PhysicsState, process diagnostics, tendency sums, single update)."""
 
+import dataclasses
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -97,6 +99,25 @@ class _RecordingExchange:
         self.events.append((dim, [id(f) for f in fields]))
 
 
+@dataclasses.dataclass(frozen=True)
+class _RecordingProcessProperties(decomposition.ProcessProperties):
+    """Process properties that resolve to a given exchange, through the same dispatch as production."""
+
+    exchange: _RecordingExchange
+    comm: None = None
+    rank: int = 0
+    comm_name: str = ""
+    comm_size: int = 1
+
+
+@decomposition.create_exchange.register(_RecordingProcessProperties)
+def _create_recording_exchange(
+    process_props: _RecordingProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+) -> _RecordingExchange:
+    return process_props.exchange
+
+
 def _physics_state(grid, exchange=None) -> physics_state.PhysicsState:
     # neutral geometry: primal_normal_x = 1, primal_normal_y = 0, c_lin_e = 0.5
     # => two-neighbor projection of a uniform u-tendency is the identity
@@ -135,7 +156,12 @@ def _physics_state(grid, exchange=None) -> physics_state.PhysicsState:
         geometry=geometry,
         interpolation=interpolation,
         metrics=metrics,
-        exchange=exchange if exchange is not None else decomposition.SingleNodeExchange(),
+        process_props=(
+            _RecordingProcessProperties(exchange)
+            if exchange is not None
+            else decomposition.SingleNodeProcessProperties()
+        ),
+        decomposition_info=decomposition.DecompositionInfo(),
         backend=None,
     )
 
@@ -184,6 +210,21 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 # ---------------------------------------------------------------------------
 # Summing the tendencies
 # ---------------------------------------------------------------------------
+
+
+def test_compute_diagnostics_syncs_rho_u_v_and_w():
+    grid = simple.simple_grid()
+    exchange = _RecordingExchange()
+    ws = _physics_state(grid, exchange)
+    prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
+    diagnostics = _diagnostic_state(grid)
+
+    ws.compute_diagnostics(prognostic, _tracer_state(grid, qv=1e-3), diagnostics)
+
+    # ICON's dyn2phy sync for the horizontal operations of tmx: the very buffers, in that order
+    assert exchange.events == [
+        (dims.CellDim, [id(prognostic.rho), id(diagnostics.u), id(diagnostics.v), id(prognostic.w)])
+    ]
 
 
 def test_accumulate_sums_tendencies_and_skips_diagnostics():
@@ -286,9 +327,10 @@ def test_update_projects_accumulated_wind_tendency_to_vn():
     ws.update_prognostics(acc.sums, dt_seconds=dt)
 
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
-    # the summed wind tendencies are synced before the projection, the written cells and vn after it
-    assert [dim for dim, _ in exchange.events] == [dims.CellDim, dims.CellDim, dims.EdgeDim]
-    assert exchange.events[0][1] == [id(acc.sums["tend_u"]), id(acc.sums["tend_v"])]
+    # after the entry sync: the summed wind tendencies before the projection, the written
+    # cells and vn after it
+    assert [dim for dim, _ in exchange.events] == [dims.CellDim] * 3 + [dims.EdgeDim]
+    assert exchange.events[1][1] == [id(acc.sums["tend_u"]), id(acc.sums["tend_v"])]
     assert exchange.events[-1][1] == [id(prognostic.vn)]
 
 
@@ -458,8 +500,9 @@ def test_update_prognostics_syncs_the_written_fields():
     ws.update_prognostics(acc.sums, dt_seconds=_DT_SECONDS, perturbed_exner=perturbed_exner)
 
     # identity, not equality: the sync must target the very buffers that were written;
-    # no wind tendency was produced, so vn was neither written nor synced
-    assert exchange.events == [
+    # no wind tendency was produced, so vn was neither written nor synced. Event 0 is
+    # the entry sync of compute_diagnostics.
+    assert exchange.events[1:] == [
         (
             dims.CellDim,
             [
