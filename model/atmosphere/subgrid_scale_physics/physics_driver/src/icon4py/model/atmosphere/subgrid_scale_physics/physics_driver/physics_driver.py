@@ -173,10 +173,6 @@ class PhysicsDriver:
         self._state.compute_diagnostics(prognostic, tracers, diagnostics, air_mass)
         self._tendencies.zero()
         dt_seconds = dtime.total_seconds()
-        # TODO (Yilu): on an in-window step on which a process is not active, every process
-        # recycles its last tendencies, as ICON's microphysics does. ICON's tmx interface
-        # instead contributes nothing on such a step. No difference while every process runs
-        # every step; revisit when the tmx time step is read from the configuration.
         for process in self._processes:
             outputs = process.run(self._state, step_start_datetime, dtime)
             outputs_properties = process.component.outputs_properties
