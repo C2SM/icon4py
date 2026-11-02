@@ -22,6 +22,7 @@ import gt4py.next as gtx
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
+    model_backends,
     model_options,
     type_alias as ta,
 )
@@ -97,23 +98,27 @@ class PhysicsState:
         backend: gtx_typing.Backend | None = None,
     ) -> None:
         self._grid = grid
-        self._backend = backend
+        self._allocator = model_backends.get_allocator(backend)
         self._exchange = decomposition.create_exchange(process_props, decomposition_info)
         num_cells = grid.num_cells
         num_levels = grid.num_levels
         num_edges = grid.num_edges
 
-        full_horizontal = {
+        cell_domain = {
             "horizontal_start": gtx.int32(0),
             "horizontal_end": gtx.int32(num_cells),
         }
-        full_vertical = {
+        edge_domain = {
+            "horizontal_start": gtx.int32(0),
+            "horizontal_end": gtx.int32(num_edges),
+        }
+        k_domain = {
             "vertical_start": gtx.int32(0),
             "vertical_end": gtx.int32(num_levels),
         }
-        edge_horizontal = {
-            "horizontal_start": gtx.int32(0),
-            "horizontal_end": gtx.int32(num_edges),
+        khalf_domain = {
+            "vertical_start": gtx.int32(0),
+            "vertical_end": gtx.int32(num_levels + 1),
         }
 
         self._ddqz_z_full = metrics.get(metrics_attributes.DDQZ_Z_FULL)
@@ -121,15 +126,15 @@ class PhysicsState:
         self._diagnose_temperature = model_options.setup_program(
             program=compute_temperature.compute_virtual_temperature_and_temperature,
             backend=backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes=full_vertical,
+            horizontal_sizes=cell_domain,
+            vertical_sizes=k_domain,
             offset_provider={},
         )
         self._compute_surface_and_hydrostatic_pressure = model_options.setup_program(
             program=compute_pressure.compute_surface_and_hydrostatic_pressure,
             backend=backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes=full_vertical,
+            horizontal_sizes=cell_domain,
+            vertical_sizes=k_domain,
             offset_provider={},
         )
         # RBF reconstruction of cell-centre wind from edge-normal vn
@@ -140,8 +145,8 @@ class PhysicsState:
                 "ptr_coeff_1": interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C1),
                 "ptr_coeff_2": interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2),
             },
-            horizontal_sizes=full_horizontal,
-            vertical_sizes=full_vertical,
+            horizontal_sizes=cell_domain,
+            vertical_sizes=k_domain,
             offset_provider=grid.connectivities,
         )
 
@@ -149,54 +154,51 @@ class PhysicsState:
         # output domain, so the half-level result lands on model levels first and
         # compute_surface_and_hydrostatic_pressure copies it up (see that program).
         self._pressure_ifc_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
+            grid, dims.CellDim, dims.KDim, allocator=self._allocator
         )
 
         # ``update``: field += dt * tendency in place, on full and half levels
         self._apply_tendency = model_options.setup_program(
             program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
             backend=backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes=full_vertical,
+            horizontal_sizes=cell_domain,
+            vertical_sizes=k_domain,
             offset_provider={},
         )
         self._apply_tendency_on_half_levels = model_options.setup_program(
             program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_khalf,
             backend=backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
-            },
+            horizontal_sizes=cell_domain,
+            vertical_sizes=khalf_domain,
             offset_provider={},
         )
         # The exit (phy2dyn) programs of update_prognostics
         self._apply_tendency_vn = model_options.setup_program(
             program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_edge_k,
             backend=backend,
-            horizontal_sizes=edge_horizontal,
-            vertical_sizes=full_vertical,
+            horizontal_sizes=edge_domain,
+            vertical_sizes=k_domain,
             offset_provider={},
         )
         self._compute_virtual_temperature_tendency = model_options.setup_program(
             program=compute_tendencies.compute_virtual_temperature_tendency,
             backend=backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes=full_vertical,
+            horizontal_sizes=cell_domain,
+            vertical_sizes=k_domain,
             offset_provider={},
         )
         self._update_exner_and_theta_v = model_options.setup_program(
             program=compute_temperature.update_exner_and_theta_v,
             backend=backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes=full_vertical,
+            horizontal_sizes=cell_domain,
+            vertical_sizes=k_domain,
             offset_provider={},
         )
         self._update_exner_theta_v_and_perturbed_exner = model_options.setup_program(
             program=compute_temperature.update_exner_theta_v_and_perturbed_exner,
             backend=backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes=full_vertical,
+            horizontal_sizes=cell_domain,
+            vertical_sizes=k_domain,
             offset_provider={},
         )
         self._compute_vn_from_uv = model_options.setup_program(
@@ -207,16 +209,18 @@ class PhysicsState:
                 "primal_normal_cell_y": geometry.get(geometry_attributes.EDGE_NORMAL_CELL_V),
                 "c_lin_e": interpolation.get(interpolation_attributes.C_LIN_E),
             },
-            horizontal_sizes=edge_horizontal,
-            vertical_sizes=full_vertical,
+            horizontal_sizes=edge_domain,
+            vertical_sizes=k_domain,
             offset_provider=grid.connectivities,
         )
 
         # Scratch buffers — allocated once
         self._virtual_temperature_tendency = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
+            grid, dims.CellDim, dims.KDim, allocator=self._allocator
         )
-        self._vn_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
+        self._vn_tendency = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, allocator=self._allocator
+        )
 
         # Pointers into the model state — bound by every compute_diagnostics call
         self.exner: gtx.Field | None = None
@@ -390,7 +394,9 @@ class PhysicsState:
                     f"Diagnostic output '{name}' of process '{process_name}' declares no 'dims', "
                     "which are needed to allocate its buffer."
                 )
-            buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
+            buffers[name] = data_alloc.zero_field(
+                self._grid, *props.dims, allocator=self._allocator
+            )
         self._process_diagnostics[process_name] = buffers
         return buffers
 
@@ -523,7 +529,7 @@ class Tendencies:
     """
 
     def __init__(self, *, backend: gtx_typing.Backend | None = None) -> None:
-        self._backend = backend
+        self._allocator = model_backends.get_allocator(backend)
         self._sums: dict[str, gtx.Field] = {}
 
     @property
@@ -553,6 +559,6 @@ class Tendencies:
             field = outputs[name]
             if (buffer := self._sums.get(name)) is None:
                 buffer = self._sums[name] = gtx.zeros(
-                    field.domain, dtype=field.dtype, allocator=self._backend
+                    field.domain, dtype=field.dtype, allocator=self._allocator
                 )
             buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
