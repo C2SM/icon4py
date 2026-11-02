@@ -80,7 +80,7 @@ def as_exchangeable_field(field: state_utils.GTXFieldType) -> Iterator[state_uti
         original_shape = field.ndarray.shape
         tail_size = original_shape[1] * original_shape[2]
         field = gtx_common._field(
-            field.ndarray.reshape(original_shape[0], -1),
+            field.ndarray.reshape(original_shape[0], -1),  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
             domain={original_dims[0]: (0, original_shape[0]), original_dims[1]: (0, tail_size)},
         )
     yield field
@@ -380,7 +380,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
     def func(self) -> Callable:
         return self._func
 
-    def __call__(
+    def __call__(  # type: ignore[override]  # supertype return union rejected by mypy, accepted at runtime
         self,
         *,
         field_name: str,
@@ -406,31 +406,31 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         )
         dtypes = factory.dtypes_for_factory(self._fields)
         # the outputs live on the target backend's device: embedded computes in place on them
-        self._fields = self._allocate_fields(factory.backend, grid_provider, dtypes)
+        self._fields = self._allocate_fields(factory.backend, grid_provider, dtypes)  # type: ignore[assignment]  # GT4Py field/scalar union narrowing limitation
         # call field operator
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
         deps = {
-            k: data_alloc.reallocate(factory.get_full_precision(v), allocator=compute_backend)
+            k: data_alloc.reallocate(factory.get_full_precision(v), allocator=compute_backend)  # type: ignore[arg-type]  # GT4Py field/metadata type inference limitation
             for k, v in self._dependencies.items()
         }
 
         providers = self._get_offset_providers(grid_provider.grid)
-        self._func(**deps, out=self._unravel_output_fields(), offset_provider=providers)
+        self._func(**deps, out=self._unravel_output_fields(), offset_provider=providers)  # type: ignore[arg-type]  # GT4Py field/metadata type inference limitation
         # transfer to target backend, the fields might have been computed on a compute backend
         for k, v in self._fields.items():
             log.debug(
                 f"transferring result {k} to target backend: "
                 f"{data_alloc.backend_name(factory.backend)}"
             )
-            self._fields[k] = data_alloc.reallocate(v, allocator=factory.backend)
+            self._fields[k] = data_alloc.reallocate(v, allocator=factory.backend)  # type: ignore[arg-type]  # GT4Py field/metadata type inference limitation
 
     def _unravel_output_fields(
         self,
     ) -> tuple[state_utils.FieldType, ...] | state_utils.FieldType:
         out_fields = tuple(self._fields.values())
         if len(out_fields) == 1:
-            out_fields = out_fields[0]
+            out_fields = out_fields[0]  # type: ignore[assignment]  # GT4Py field/scalar union narrowing limitation
         return out_fields
 
     # TODO(): do we need that here?
@@ -561,8 +561,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 domain_args.update(
                     {
-                        "horizontal_start": grid.grid.start_index(self._domain[dim][0]),
-                        "horizontal_end": grid.grid.end_index(self._domain[dim][1]),
+                        "horizontal_start": grid.grid.start_index(self._domain[dim][0]),  # type: ignore[arg-type]  # GT4Py field/metadata type inference limitation
+                        "horizontal_end": grid.grid.end_index(self._domain[dim][1]),  # type: ignore[arg-type]  # GT4Py field/metadata type inference limitation
                     }
                 )
             elif dim.kind == gtx.DimensionKind.VERTICAL:
@@ -575,7 +575,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
     def needs_exchange(self) -> bool:
         return self._do_exchange
 
-    def __call__(
+    def __call__(  # type: ignore[override]  # supertype return union rejected by mypy, accepted at runtime
         self,
         *,
         field_name: str,
@@ -598,15 +598,15 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         backend: gtx_typing.Backend | None,
     ) -> None:
         dtypes = field_src.dtypes_for_factory(self._output.values())
-        self._fields = self._allocate(backend, grid, dtypes=dtypes)
+        self._fields = self._allocate(backend, grid, dtypes=dtypes)  # type: ignore[assignment]  # GT4Py field/scalar union narrowing limitation
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
         deps = {k: field_src.get_full_precision(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
-        deps.update({k: self._fields[v] for k, v in self._output.items()})
+        deps.update({k: self._fields[v] for k, v in self._output.items()})  # type: ignore[misc]  # GT4Py field/scalar union narrowing limitation
         dims = self._domain_args(grid)
         offset_providers = self._get_offset_providers(grid.grid)
         deps.update(dims)
-        self._func.with_backend(backend)(**deps, offset_provider=offset_providers)
+        self._func.with_backend(backend)(**deps, offset_provider=offset_providers)  # type: ignore[arg-type]  # GT4Py field/metadata type inference limitation
 
     @property
     def fields(self) -> Mapping[str, state_utils.FieldType]:
@@ -664,7 +664,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self._params = params if params is not None else {}
         self._do_exchange = do_exchange
 
-    def __call__(
+    def __call__(  # type: ignore[override]  # supertype return union rejected by mypy, accepted at runtime
         self,
         *,
         field_name: str,
@@ -721,11 +721,11 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         grid: GridProvider,
     ) -> state_utils.GTXFieldType:
         if self._domain is None:
-            return gtx.as_field(self._dims, value, allocator=backend, dtype=dtype)
+            return gtx.as_field(self._dims, value, allocator=backend, dtype=dtype)  # type: ignore[arg-type]  # GT4Py field/metadata type inference limitation
         field_domain = gtx.domain(
             {dim: _field_extent(dim, declared, grid) for dim, declared in self._domain.items()}
         )
-        return gtx.as_field(field_domain, value, allocator=backend, dtype=dtype)
+        return gtx.as_field(field_domain, value, allocator=backend, dtype=dtype)  # type: ignore[arg-type]  # GT4Py field/metadata type inference limitation
 
     def _validate_dependencies(self) -> None:
         # TODO(egparedes): dealing with type annotations at run-time is error prone

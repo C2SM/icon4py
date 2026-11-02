@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# mypy: ignore-errors
+# Root-level nox session definitions are development infrastructure outside
+# the type-checked packages.
 
 from __future__ import annotations
 

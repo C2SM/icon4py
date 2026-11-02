@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# mypy: ignore-errors
+# Wrappers for the untyped 'serialbox4py' C-extension package: the hand-written
+# savepoint declarations in this module cannot be checked against it.
 import functools
 import logging
 from collections.abc import Sequence

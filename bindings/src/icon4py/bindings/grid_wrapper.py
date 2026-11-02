@@ -157,15 +157,15 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
         vertex_ends=vertex_ends,
         edge_starts=edge_starts,
         edge_ends=edge_ends,
-        c2e=c2e.ndarray,
-        e2c=e2c.ndarray,
-        c2e2c=c2e2c.ndarray,
-        e2c2e=e2c2e.ndarray,
-        e2v=e2v.ndarray,
-        v2e=v2e.ndarray,
-        v2c=v2c.ndarray,
-        e2c2v=e2c2v.ndarray,
-        c2v=c2v.ndarray,
+        c2e=c2e.ndarray,  # type: ignore[arg-type]  # NDArrayObject connectivity accepted at runtime
+        e2c=e2c.ndarray,  # type: ignore[arg-type]  # NDArrayObject connectivity accepted at runtime
+        c2e2c=c2e2c.ndarray,  # type: ignore[arg-type]  # NDArrayObject connectivity accepted at runtime
+        e2c2e=e2c2e.ndarray,  # type: ignore[arg-type]  # NDArrayObject connectivity accepted at runtime
+        e2v=e2v.ndarray,  # type: ignore[arg-type]  # NDArrayObject connectivity accepted at runtime
+        v2e=v2e.ndarray,  # type: ignore[arg-type]  # NDArrayObject connectivity accepted at runtime
+        v2c=v2c.ndarray,  # type: ignore[arg-type]  # NDArrayObject connectivity accepted at runtime
+        e2c2v=e2c2v.ndarray,  # type: ignore[arg-type]  # NDArrayObject connectivity accepted at runtime
+        c2v=c2v.ndarray,  # type: ignore[arg-type]  # NDArrayObject connectivity accepted at runtime
         grid_id="icon_grid",
         num_vertices=num_vertices,
         num_cells=num_cells,
@@ -201,7 +201,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # Vertical parameters
     vertical_grid = vertical.VerticalGrid(
         config=vertical_config,
-        vct_a=vct_a,
+        vct_a=vct_a,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
         vct_b=None,
     )
 
@@ -211,19 +211,19 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert=(
+        primal_normal_vert=(  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
             primal_normal_vert_x,
             primal_normal_vert_y,
         ),
-        dual_normal_vert=(
+        dual_normal_vert=(  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
             dual_normal_vert_x,
             dual_normal_vert_y,
         ),
-        primal_normal_cell=(
+        primal_normal_cell=(  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
             primal_normal_cell_x,
             primal_normal_cell_y,
         ),
-        dual_normal_cell=(
+        dual_normal_cell=(  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
             dual_normal_cell_x,
             dual_normal_cell_y,
         ),
@@ -233,7 +233,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
             edge_center_lat,
             edge_center_lon,
         ),
-        primal_normal=(
+        primal_normal=(  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
             primal_normal_x,
             primal_normal_y,
         ),
@@ -241,9 +241,9 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     # Cell geometry
     cell_params = grid_states.CellParams(
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        area=cell_areas,
+        cell_center_lat=cell_center_lat,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        cell_center_lon=cell_center_lon,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        area=cell_areas,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
         mean_cell_area=mean_cell_area,
     )
 

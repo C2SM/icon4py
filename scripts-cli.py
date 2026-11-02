@@ -8,6 +8,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 #
+# mypy: ignore-errors
+# Root-level scripts CLI entry point is development infrastructure outside
+# the type-checked packages.
 
 """Wrapper for running the developments 'scripts' CLI within a valid venv by using a 'uv' shebang."""
 

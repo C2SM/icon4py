@@ -7,6 +7,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# mypy: ignore-errors
+# Repository-infrastructure tooling that predates the type-checking rollout
+# and lives outside the type-checked packages.
 
 """Convert Fortran namelist files into a single YAML driver config.
 
