@@ -38,7 +38,10 @@ class TmxComponent:
     The tmx diagnostic, tendency and new states are allocated once here and reused.
     """
 
-    # TODO (Yilu): inherit the Component protocol once it is formalized (deferred to a separate PR).
+    # TODO (Yilu): on an in-window step on which tmx is not active, ``PhysicsProcess`` recycles
+    # its last tendencies, as ICON's microphysics does; ICON's tmx interface instead contributes
+    # nothing on such a step. No difference while tmx runs every step; revisit when the tmx
+    # time step is read from the configuration.
     inputs_properties = tmx_data.INPUTS_PROPERTIES
     outputs_properties = tmx_data.OUTPUTS_PROPERTIES
 
