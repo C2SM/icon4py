@@ -40,49 +40,58 @@ misspelled key was a `KeyError` at run time.
 
 ## Decision
 
-### The pieces
+### Definitions and pieces
 
-- `Quantity` is a type-level tag. One subclass per quantity, never
-  instantiated, e.g. `VnOnEdgeK(Quantity, dims=EDGE_K,
-standard_name="normal_velocity", long_name="velocity normal to edge",
-units="m s-1"): ...`. The metadata is on the class: e.g. `dims`, `units`, the
-  CF `standard_name`, `long_name` and `precision` (`"wp"` or `"vp"`).
-  In this part01 of states and components dimensions/grid location are attached
-  to Quantity, as icon4py currently does with variable names. part03 will
-  separate the two.
-- Tendencies are special quantities that deserve their own tags. They are
-  identified with the `Tendency` marker, which replaces `FieldKind.TENDENCY`.
-  The physics driver accumulates them and updates the physics state with them;
-  this identification allows for checking and automation.
-- `Field[Q]` is a gt4py field with the additional quantity tag, e.g.
-  `Field(qty.VnOnEdgeK, data)`. It subclasses gt4py's `NdArrayField`, so the
-  stencils and program calls do not need to change. The tag is a phantom,
-  invariant type parameter: `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` are
-  different types to mypy, so icon4py errors out if they get swapped, but they
-  stay the same array to gt4py.
-- `State` is a frozen, keyword-only dataclass of typed variables (leaves). Not
-  necessarily only `Fields` (e.g. `ditme: float` is a plain leaf). Leaves can
-  be optional (tracers use this) and are annotated as `Field[Q] | None`.
-- `Component` is a `Protocol` of `Input`, `Output` and `run(inputs, outputs) ->
-Output`, the only method a component implements. A component that writes
+- A `Quantity` is anything that can be measured, i.e. that can be expressed as
+  a pair of numerical value and unit of measurement. In ICON4Py a `Quantity` is
+  a type-level tag. One subclass per quantity, never instantiated, e.g.
+  `VnOnEdgeK(Quantity, units="m s-1", standard_name="normal_velocity",
+long_name="velocity normal to edge", dims=EDGE_K): ...`. The metadata is on
+  the class: e.g. `units`, the CF `standard_name`, `long_name`, `precision` and
+  `dims`.
+  In the present Part01 of states and components `dims`, i.e. grid location,
+  are attached to `Quantity` to keep the diff small with current ICON4Py.
+  Part03 will separate the two.
+- A `Tendency` is the rate of change of a `Quantity` with respect to time. It
+  is a derived quantity, i.e. its definition is based on another quantity.
+  In ICON4Py they are identified with the `Tendency` marker, which replaces
+  `FieldKind.TENDENCY` used by the physics driver.
+  In the present Part01 of states and components nothing links a `Tendency` to
+  its `Quantity`, e.g. `TendencyOfTemperature` to `Temperature`, Part07 will
+  add this with `TendencyOf[Q]`: a quantity derived from its parent, e.g.
+  `Tendency[Temperature, ...]`.
+- A `Field` is a physical quantity, represented by a scalar, vector or tensor,
+  that has a value for each point in space and time. In ICON4Py a `Field` is a
+  GT4Py field with the additional `Quantity` tag, e.g. `Field(VnOnEdgeK,
+data)`. It subclasses GT4Py's `NdArrayField`, so the stencils and program
+  calls do not need to change. The tag is a phantom, invariant type parameter:
+  `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` are different types to mypy, so
+  they cannot be swapped, but they stay the same array to GT4Py.
+- A `State` is a named, typed record of the values that a `Component` reads or
+  writes. In ICON4Py it is a frozen, keyword-only dataclass whose leaves are
+  quantity-tagged fields (`Field[Q]`, optionally `| None`) or plain values
+  (e.g. `dtime: float`, `at_first_substep: bool`).
+- A `Component` is a `Protocol` of `Input`, `Output` and `run(Input, Output) ->
+  Output`. It is a computation (`run`) with a typed interface: it reads one
+  `Input` `State` and writes one `Output` `State`. A component that writes
   nothing declares `Output = fw.Empty`. The caller specifies where `run`
-  writes, like numpy's `out=`. Whether `outputs` may alias `inputs` is up to
-  the component.
+  writes, similarly to numpy's `out=`. Whether leaves of `Output` may alias
+  leaves of `Input` is up to the `Component`.
 
 ### Writing a component
 
 Example with a trimmed `Diffusion`:
 
 ```python
-class Diffusion(fw.Component):
-    class Input(fw.State):
-        vn: fw.Field[qty.VnOnEdgeK]
-        theta_v: fw.Field[qty.ThetaVOnCellK]
+class Diffusion(Component):
+    class Input(State):
+        vn: Field[VnOnEdgeK]
+        theta_v: Field[ThetaVOnCellK]
         dtime: float
 
-    class Output(fw.State):
-        vn: fw.Field[qty.VnOnEdgeK]
-        theta_v: fw.Field[qty.ThetaVOnCellK]
+    class Output(State):
+        vn: Field[VnOnEdgeK]
+        theta_v: Field[ThetaVOnCellK]
 
     def run(self, inputs: Input, outputs: Output) -> Output:
         ...  # stencils read inputs.vn and write outputs.vn
