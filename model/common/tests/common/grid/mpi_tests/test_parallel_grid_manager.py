@@ -872,7 +872,9 @@ def test_global_reductions_single_vs_multi_rank(
     # Also verify against plain NumPy as a sanity check.
     np_reference = getattr(np, reduction)(data_alloc.as_numpy(single_rank_field))
 
-    assert result == pytest.approx(expected, rel=1e-15), (
+    # min and max are exact by nature; sum and mean use the order-insensitive sum of
+    # ICON, so the multi-rank result reproduces the single-rank one bitwise
+    assert result == expected, (
         f"rank={process_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
         f"single-rank = {expected}"
     )
