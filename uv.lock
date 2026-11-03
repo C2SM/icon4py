@@ -1658,7 +1658,7 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-source = { git = "https://github.com/edopao/gt4py?branch=dace_mixed_ir#594183eca4c4fdbe77214087f1aa9ab0f4a60ce4" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace_mixed_ir#a5e81ebd9cb06b5cd71a6a15f291290ab4f85d95" }
 version = "1.2.3+unknown.version.details"
 
 [package.optional-dependencies]
