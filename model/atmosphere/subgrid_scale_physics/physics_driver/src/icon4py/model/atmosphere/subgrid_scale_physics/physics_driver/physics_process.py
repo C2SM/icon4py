@@ -34,7 +34,7 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     driver hands the same buffer back each step, so the values of the last run survive to the
     next. Outside its time-control window the process contributes no tendencies: it zeroes the
     tendencies: it zeroes the `Tendency` leaves of the outputs it is handed and returns them,
-    the other leaves (the muphys fluxes) as given. Inside the window it runs its wrapped
+    the other leaves as given. Inside the window it runs its wrapped
     component on the steps its time control fires and on its first step in the window; on the
     other steps it returns the outputs unchanged, caching the last run's values. Typed over
     the wrapped component's `Input` and `Output`: a `collect_input` that builds another
@@ -55,7 +55,7 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     def run(self, inputs: physics_state.EntryState, outputs: O) -> O:
         """This step's output: computed, cached from the last run, or zeroed outside the window."""
         # Outside its window the process contributes no tendencies: the `Tendency` leaves of the
-        # outputs it is handed are zeroed, the other leaves (the muphys fluxes) left as given.
+        # outputs it is handed are zeroed, the other leaves left as given.
         # It must not reach the caching branch below, which would run once on the first step.
         if not self.time_control.is_in_window(inputs.step_start):
             for field in fw.fields(outputs).values():
