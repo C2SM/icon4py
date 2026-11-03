@@ -14,6 +14,19 @@ import pathlib
 import types
 from typing import Any, Final, Self
 
+
+try:
+    import mpi4py
+except ImportError:  # serial installation
+    pass
+else:
+    # A netCDF4 built with parallel support imports mpi4py, whose default is to
+    # initialize MPI at import time (at the highest thread level). icon4py initializes
+    # MPI itself (``decomposition.mpi_decomposition.init_mpi``), so importing this module
+    # must leave that to it -- also inside GT4Py's spawned compile workers, which
+    # re-import the model's modules and would otherwise join the ranks' PMI bootstrap.
+    mpi4py.rc.initialize = False
+
 import netCDF4 as nc
 import numpy as np
 import xarray as xr
