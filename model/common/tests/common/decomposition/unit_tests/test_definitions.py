@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import math
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -121,3 +123,50 @@ def test_decomposition_info_as_host_copies_device_buffers() -> None:
         host.halo_levels(dims.CellDim),
     ):
         assert isinstance(array, np.ndarray)
+
+
+def _sum_on_emulated_ranks(values: np.ndarray, num_ranks: int) -> float:
+    """Sum ``values`` as ``GlobalReductions`` does: integer partial sums per rank, combined exactly."""
+    chunks = np.array_split(values, num_ranks)
+    abs_max = float(np.max(np.abs(values)))
+    shift = definitions.fixed_point_shift(abs_max)
+    other_partial_sums = [
+        definitions.fixed_point_partial_sums(chunk, shift) for chunk in chunks[1:]
+    ]
+
+    def combine(integer_sum: int, fraction_sum: int) -> tuple[int, int]:
+        return (
+            integer_sum + sum(partial[0] for partial in other_partial_sums),
+            fraction_sum + sum(partial[1] for partial in other_partial_sums),
+        )
+
+    return definitions.order_insensitive_sum(chunks[0], abs_max, combine_partial_sums=combine)
+
+
+@pytest.mark.parametrize("num_ranks", [1, 2, 3, 7])
+def test_order_insensitive_sum_does_not_depend_on_the_decomposition(num_ranks: int) -> None:
+    rng = np.random.default_rng(42)
+    size = 100_003
+    # magnitudes spread over many binades, both signs
+    values = rng.lognormal(mean=0.0, sigma=4.0, size=size) * rng.choice([-1.0, 1.0], size=size)
+
+    single_rank = definitions.SingleNodeReductions().sum(values)
+
+    assert _sum_on_emulated_ranks(values, num_ranks) == single_rank
+    # the only error is the truncation of every contribution below abs_max * 2**-60
+    abs_max = float(np.max(np.abs(values)))
+    assert abs(single_rank - math.fsum(values)) <= size * abs_max * 2.0**-59
+
+
+def test_single_node_sum_and_mean() -> None:
+    reductions = definitions.SingleNodeReductions()
+    rng = np.random.default_rng(7)
+    values = rng.random((37, 5)) - 0.25
+
+    assert reductions.sum(values) == pytest.approx(math.fsum(values.ravel()), rel=1e-15)
+    assert reductions.mean(values) == reductions.sum(values) / values.size
+    assert reductions.sum(np.array([-2.5, 1.25, 4.0])) == 2.75
+    assert reductions.sum(np.zeros(5)) == 0.0
+    assert reductions.sum(np.array([1, 2, 3])) == 6
+    assert math.isnan(reductions.sum(np.array([1.0, np.nan])))
+    assert reductions.sum(np.array([1.0, np.inf])) == np.inf
