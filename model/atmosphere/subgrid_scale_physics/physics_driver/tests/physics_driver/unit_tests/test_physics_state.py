@@ -24,7 +24,7 @@ def grid() -> base_grid.Grid:
 
 
 def test_entry_state_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Grid) -> None:
-    process, recorder = recording(fw.Empty(), time_control())
+    process, recorder = recording(fw.Empty, {}, time_control())
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
     driver_inputs = inputs(prognostic, tracer_state)
@@ -49,7 +49,7 @@ def test_diagnose_fills_the_diagnostics_and_leaves_the_inputs_untouched(
     Read-only-ness is the load-bearing invariant of parallel coupling: the prognostics and
     tracers stay bitwise identical until the driver's single apply step.
     """
-    process, _ = recording(fw.Empty(), time_control())
+    process, _ = recording(fw.Empty, {}, time_control())
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid, exner=0.95, theta_v=300.0), tracers(grid)
     before = {name: field.asnumpy().copy() for name, field in fw.fields(prognostic).items()}

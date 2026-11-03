@@ -117,8 +117,7 @@ def test_run_zeroes_the_tendency_leaves_of_the_outputs_outside_the_window(
     grid: base_grid.Grid,
 ) -> None:
     window_end = T0 + 4 * DT
-    outputs = filled(MoistOutput, grid)
-    process, recorder = recording(outputs, time_control(interval=2 * DT, end=window_end))
+    process, recorder = recording(MoistOutput, {}, time_control(interval=2 * DT, end=window_end))
     # the outputs handed to this step, with a tendency and a flux already in them
     given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
     entry = entry_state(grid, step_start=window_end)
@@ -140,7 +139,7 @@ def test_run_computes_on_the_first_in_window_step_even_when_not_triggered(
     # the process's first step in its window is not one its time control fires; it computes
     # anyway, because there is nothing cached yet
     outputs = filled(MoistOutput, grid)
-    process, recorder = recording(outputs, time_control(interval=2 * DT))
+    process, recorder = recording(MoistOutput, {}, time_control(interval=2 * DT))
     entry = entry_state(grid, step_start=T0 + DT)
 
     assert process.run(entry, outputs) is outputs
@@ -157,7 +156,7 @@ def test_run_returns_the_outputs_unchanged_on_a_non_computing_in_window_step(
     grid: base_grid.Grid,
 ) -> None:
     outputs = filled(MoistOutput, grid)
-    process, recorder = recording(outputs, time_control(interval=2 * DT))
+    process, recorder = recording(MoistOutput, {}, time_control(interval=2 * DT))
     # the first step computes; the second is in the window but does not fire
     process.run(entry_state(grid, step_start=T0), outputs)
 
@@ -174,12 +173,8 @@ def test_run_returns_the_outputs_unchanged_on_a_non_computing_in_window_step(
 def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
     grid: base_grid.Grid,
 ) -> None:
-    process_a, recorder_a = recording(
-        filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0), time_control()
-    )
-    process_b, recorder_b = recording(
-        filled(MoistOutput, grid, tend_qv=2e-7, pflx=7.0), time_control()
-    )
+    process_a, recorder_a = recording(MoistOutput, {"tend_qv": 1e-7, "pflx": 5.0}, time_control())
+    process_b, recorder_b = recording(MoistOutput, {"tend_qv": 2e-7, "pflx": 7.0}, time_control())
     physics = driver(grid, [process_a, process_b])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
@@ -198,7 +193,7 @@ def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
 
 
 def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:
-    process, _ = recording(filled(MoistOutput, grid, tend_qv=1e-7), time_control())
+    process, _ = recording(MoistOutput, {"tend_qv": 1e-7}, time_control())
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
@@ -215,7 +210,7 @@ def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
     # the window starts in the future: the step being integrated is before it
     future = T0 + datetime.timedelta(days=1)
     window = time_control(start=future, end=future + datetime.timedelta(hours=1))
-    process, recorder = recording(filled(MoistOutput, grid, tend_qv=1e-7), window)
+    process, recorder = recording(MoistOutput, {"tend_qv": 1e-7}, window)
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
@@ -229,9 +224,7 @@ def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
 
 
 def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> None:
-    process, recorder = recording(
-        filled(MoistOutput, grid, tend_qv=1e-7), time_control(interval=2 * DT)
-    )
+    process, recorder = recording(MoistOutput, {"tend_qv": 1e-7}, time_control(interval=2 * DT))
     # fires every other step
     physics = driver(
         grid,
@@ -258,9 +251,7 @@ def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> No
 def test_first_in_window_step_inactive_computes(grid: base_grid.Grid) -> None:
     # A process whose first step in its window is not active (interval = 2 dt, the first
     # step starts at T0 + DT) has no output to reuse yet: it computes instead.
-    process, recorder = recording(
-        filled(MoistOutput, grid, tend_qv=1e-7), time_control(interval=2 * DT)
-    )
+    process, recorder = recording(MoistOutput, {"tend_qv": 1e-7}, time_control(interval=2 * DT))
     physics = driver(
         grid,
         [process],
@@ -286,7 +277,7 @@ def test_run_requires_every_moisture_species(grid: base_grid.Grid) -> None:
 
 
 def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
-    process, _ = recording(filled(MoistOutput, grid, tend_qv=1e-7), time_control())
+    process, _ = recording(MoistOutput, {"tend_qv": 1e-7}, time_control())
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
     new_prognostic, new_tracers = prognostics(grid, theta_v=0.0), tracers(grid, qv=0.0)
@@ -301,7 +292,8 @@ def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
 
 def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -> None:
     process, _ = recording(
-        filled(ThermoOutput, grid, tend_qv=1e-7, tend_temperature=1e-3, tend_w=1e-4),
+        ThermoOutput,
+        {"tend_qv": 1e-7, "tend_temperature": 1e-3, "tend_w": 1e-4},
         time_control(),
     )
     physics = driver(grid, [process])
@@ -323,7 +315,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -
 def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> None:
     # uniform tend_u = 1e-4, tend_v = 0 with the neutral geometry of `driver`:
     # ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on every edge of the periodic simple grid
-    process, _ = recording(filled(WindOutput, grid, tend_u=1e-4), time_control())
+    process, _ = recording(WindOutput, {"tend_u": 1e-4}, time_control())
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
@@ -335,7 +327,7 @@ def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> Non
 def test_apply_rejects_a_lone_horizontal_wind_tendency(grid: base_grid.Grid) -> None:
     # vn is one projection of (u, v): a process emitting only one of the two would
     # silently lose the other half of the momentum, an error rather than a no-op
-    process, _ = recording(filled(LoneWindOutput, grid, tend_u=1e-4), time_control())
+    process, _ = recording(LoneWindOutput, {"tend_u": 1e-4}, time_control())
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
@@ -347,15 +339,14 @@ def _empty(entry: physics_state.EntryState) -> fw.Empty:
     return fw.Empty()
 
 
-def static_checks(outputs: MoistOutput) -> None:
+def static_checks() -> None:
     """
     A wiring error mypy reports; never run. With `warn_unused_ignores`, the check fails when
     it stops being an error.
     """
     # a collect_input that builds another component's Input
     physics_process.PhysicsProcess(
-        component=Recorder(),
+        component=Recorder({}),
         collect_input=_empty,  # type: ignore[arg-type]
         time_control=time_control(),
-        outputs=outputs,
     )

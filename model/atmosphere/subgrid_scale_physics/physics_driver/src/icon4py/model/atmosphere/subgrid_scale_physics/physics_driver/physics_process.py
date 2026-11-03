@@ -29,9 +29,10 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     """
     A component that gates its wrapped component by time control.
 
-    The process's input is the physics driver's entry state, its output the wrapped component's,
-    which it keeps in the buffer the driver hands back to `run` each step so the values of the
-    last run survive to the next. Outside its time-control window the process contributes no
+    The process's input is the physics driver's entry state, its output the wrapped component's.
+    It keeps no output buffers: the caller owns them, per the `fw.Component` contract, and the
+    driver hands the same buffer back each step, so the values of the last run survive to the
+    next. Outside its time-control window the process contributes no tendencies: it zeroes the
     tendencies: it zeroes the `Tendency` leaves of the outputs it is handed and returns them,
     the other leaves (the muphys fluxes) as given. Inside the window it runs its wrapped
     component on the steps its time control fires and on its first step in the window; on the
@@ -49,7 +50,6 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     # `Input` by quantity (`fw.collect`), and `collect_input` goes.
     collect_input: Callable[[physics_state.EntryState], I]
     time_control: ProcessTimeControl
-    outputs: O
     _has_run: bool = dataclasses.field(default=False, init=False)
 
     def run(self, inputs: physics_state.EntryState, outputs: O) -> O:

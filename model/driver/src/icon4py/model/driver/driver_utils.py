@@ -34,7 +34,6 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
-    framework as fw,
     model_backends,
     time,
     type_alias as ta,
@@ -104,9 +103,6 @@ def _muphys(
         component=muphys,
         collect_input=muphys_component.collect_input,
         time_control=time_control,
-        outputs=fw.allocate(
-            muphys_component.Muphys.Output, grid, model_backends.get_allocator(backend)
-        ),
     )
 
 

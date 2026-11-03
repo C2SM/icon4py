@@ -69,6 +69,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     same entry state and gates its wrapped component by its time control, the tendencies of
     their outputs are summed and the sum is applied to the prognostics once, at the end. The
     processes never write the prognostics.
+    The driver owns one output buffer per process and hands the same buffer back each step, so
+    the values of the last run survive to the next.
 
     Not implemented: ICON AES couples microphysics and turbulence sequentially (each process
     sees the previous one's provisional update), which would need per-process state advances.
@@ -116,6 +118,13 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self.grid = grid
         self.allocator = model_backends.get_allocator(backend)
         self.processes = tuple(processes)
+        # one output buffer per process, allocated once here and handed back each step: the
+        # values of the last run survive to the next
+        # TODO(msimberg): This should be keyed by process instead of relying on order?
+        self._buffers: tuple[fw.State, ...] = tuple(
+            fw.allocate(process.component.Output, self.grid, self.allocator)
+            for process in self.processes
+        )
         # the diagnostics the processes read, derived here each step
         self.diagnostics = fw.allocate(states.Diagnostics, grid, self.allocator)
         # one sum per tendency the processes emit, by output name, made when first seen
@@ -222,8 +231,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     def run(self, inputs: Input, outputs: Output) -> Output:
         entry = self._diagnose(inputs)
         self._zero_accumulators()
-        for process in self.processes:
-            self._accumulate(process.run(entry, process.outputs))
+        for process, buffer in zip(self.processes, self._buffers, strict=True):
+            self._accumulate(process.run(entry, buffer))
         self._apply(entry, inputs.dtime.total_seconds(), outputs)
         return outputs
 

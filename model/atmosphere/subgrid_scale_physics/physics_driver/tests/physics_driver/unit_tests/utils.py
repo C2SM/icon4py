@@ -134,31 +134,48 @@ def entry_state(grid: base_grid.Grid, *, step_start: datetime.datetime) -> physi
 
 
 class Recorder(fw.Component[physics_state.EntryState, fw.State]):
-    """A component returning its outputs as given and recording the entry states it ran on,
-    with a copy of the qv each one read."""
+    """
+    A component that writes fixed values into the leaves of its outputs and records the entry
+    states it ran on, with a copy of the qv each one read.
+
+    The driver allocates the process's output buffer from `Output`: the concrete state the
+    recorder writes, so `recording` declares a subclass per output shape.
+
+    """
 
     Input = physics_state.EntryState
     Output = fw.State
 
-    def __init__(self) -> None:
+    def __init__(self, values: dict[str, float]) -> None:
+        self.values = values
         self.entries: list[physics_state.EntryState] = []
         self.qv_read: list[np.ndarray] = []
 
     def run(self, inputs: physics_state.EntryState, outputs: fw.State) -> fw.State:
         self.entries.append(inputs)
         self.qv_read.append(inputs.qv.asnumpy().copy())
+        for name, value in self.values.items():
+            getattr(outputs, name).ndarray[...] = value
         return outputs
 
 
 def recording(
-    outputs: fw.State, time_control: process_time_control.ProcessTimeControl
+    output: type[fw.State],
+    values: dict[str, float],
+    time_control: process_time_control.ProcessTimeControl,
 ) -> tuple[physics_process.PhysicsProcess[physics_state.EntryState, fw.State], Recorder]:
-    """A process with a fixed output, running a `Recorder` on the whole entry state."""
-    recorder = Recorder()
+    """A process running a `Recorder` that writes `values` into its `output`-shaped outputs,
+    on the whole entry state."""
+
+    class _Recorder(Recorder):
+        """A `Recorder` whose outputs are `output`-shaped, so the driver can allocate them."""
+
+        Output = output
+
+    recorder = _Recorder(values)
     process = physics_process.PhysicsProcess(
         component=recorder,
         collect_input=lambda entry: entry,
         time_control=time_control,
-        outputs=outputs,
     )
     return process, recorder
