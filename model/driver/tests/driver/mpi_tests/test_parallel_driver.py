@@ -8,6 +8,7 @@
 
 import logging
 import pathlib
+from collections.abc import Mapping
 
 import gt4py.next.typing as gtx_typing
 import pytest
@@ -84,12 +85,56 @@ def test_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional
     )
 
 
-def _run_driver_compare_single_multi_rank(
+@pytest.mark.datatest
+@pytest.mark.embedded_remap_error
+@pytest.mark.mpi
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "experiment_description, end_of_simulation",
+    [
+        pytest.param(
+            test_defs.Experiments.EXCLAIM_APE_AES,
+            time.NumTimeSteps(1),
+            marks=[pytest.mark.level("integration")],
+            id="integration-exclaim-ape-aes-tracer-advection",
+        ),
+    ],
+)
+def test_tracer_advection_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
+    download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
     end_of_simulation: time.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
+) -> None:
+    """Tracer advection gives bitwise identical results on one and on many ranks.
+
+    The APE experiment advects six tracers with the Miura scheme and the
+    positive-definite limiter horizontally and with PPM and the semi-monotonic
+    limiter vertically. Microphysics is switched off, so that only the dynamical
+    core, diffusion and tracer advection act on the tracers. The water vapour of
+    the initial condition is rescaled by a global sum, which is why the global
+    reductions have to be order-insensitive for this comparison to be bitwise.
+    """
+    _run_driver_compare_single_multi_rank(
+        experiment_description=experiment_description,
+        end_of_simulation=end_of_simulation,
+        tmp_path=tmp_path,
+        process_props=process_props,
+        backend=backend,
+        config_overrides={"muphys": None},
+    )
+
+
+def _run_driver_compare_single_multi_rank(
+    *,
+    experiment_description: test_defs.ExperimentDescription,
+    end_of_simulation: time.EndOfSimulation,
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+    config_overrides: Mapping[str, object] | None = None,
 ) -> None:
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
@@ -112,6 +157,8 @@ def _run_driver_compare_single_multi_rank(
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
+    if config_overrides is not None:
+        config = config.with_overrides(**config_overrides)
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
     single_rank_config = config.with_overrides(
@@ -152,19 +199,29 @@ def _run_driver_compare_single_multi_rank(
         backend=backend,
     )
 
-    fields = ["vn", "w", "exner", "theta_v", "rho"]
+    prognostics = ["vn", "w", "exner", "theta_v", "rho"]
+    single_rank_fields = {
+        name: getattr(single_rank_ds.prognostics.current, name) for name in prognostics
+    }
+    multi_rank_fields = {
+        name: getattr(multi_rank_ds.prognostics.current, name) for name in prognostics
+    }
+    # experiments with tracers compare them as well
+    for tracer in single_rank_ds.tracers.current.active_fields():
+        single_rank_fields[tracer.name] = tracer.field
+    for tracer in multi_rank_ds.tracers.current.active_fields():
+        multi_rank_fields[tracer.name] = tracer.field
     single_rank_reference_fields: dict[str, object] = {
-        field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
-        for field_name in fields
+        name: field.asnumpy() for name, field in single_rank_fields.items()
     }
 
-    for field_name in fields:
+    for field_name in single_rank_fields:
         print(f"\nverifying field {field_name}")
         global_reference_field = process_props.comm.bcast(
             single_rank_reference_fields.get(field_name),
             root=0,
         )
-        local_field = getattr(multi_rank_ds.prognostics.current, field_name)
+        local_field = multi_rank_fields[field_name]
         dim = local_field.domain.dims[0]
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_driver.decomposition_info,
