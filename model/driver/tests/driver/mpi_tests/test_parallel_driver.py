@@ -107,6 +107,12 @@ def _run_driver_compare_single_multi_rank(
         atol = 1e-9
         rtol = 0.0
     atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=rtol)
+    if experiment_description is test_defs.Experiments.EXCLAIM_APE_AES:
+        # TODO (Yilu): tracer advection is not bit-reproducible across ranks yet: without any
+        # physics, qv differs by ~1e-14 relative after one step, and muphys amplifies that to
+        # ~2e-11 in qc, qi and qr (see the advection reproducibility issue). This tolerance
+        # still catches a missing halo exchange (1e-5 and more); drop it once advection is fixed.
+        atol, rtol = 1e-16, 1e-9
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
