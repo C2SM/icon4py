@@ -25,7 +25,6 @@ from icon4py.model.atmosphere.dycore.stencils import compute_airmass
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import (
     dimension as dims,
-    initial_condition,
     model_backends,
     model_options,
     prescribed_tendencies,
@@ -40,6 +39,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
@@ -550,7 +550,7 @@ class Icon4pyDriver:
 
         # reset max_vertical_cfl to zero
         solve_nonhydro_diagnostic_state.max_vertical_cfl = data_alloc.scalar_like_array(
-            0.0, self._allocator
+            ta.wpfloat(0.0), self._allocator
         )
 
     def _diffuse_before_time_loop(
@@ -614,7 +614,7 @@ class Icon4pyDriver:
             not self.config.driver.apply_extra_second_order_divdamp
             or elapsed_time_in_seconds > spinup_cutoff
         ):
-            return ta.wpfloat("0.0")
+            return ta.wpfloat(0.0)
 
         return driver_utils.spinup_second_order_divdamp_factor(
             elapsed_time_in_seconds=elapsed_time_in_seconds,
@@ -798,20 +798,16 @@ def initialize_driver(
     return icon4py_driver
 
 
-def run_driver(
-    *,
-    config: driver_config.ExperimentConfig,
-    grid_manager: gm.GridManager,
-    process_props: decomposition_defs.ProcessProperties,
-    backend: gtx.typing.Backend | None,
-) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
-    icon4py_driver = initialize_driver(
-        config=config,
-        grid_manager=grid_manager,
-        process_props=process_props,
-        backend=backend,
-    )
-    allocator = model_backends.get_allocator(backend)
+def initialize_driver_states(
+    icon4py_driver: Icon4pyDriver,
+    allocator: gtx.typing.Allocator,
+) -> driver_states.DriverStates:
+    """Build and validate the initial driver states from a freshly initialized driver.
+
+    This wraps the creation of the prognostic/tracer/nonhydro/diagnostic states, the
+    application of the initial condition, the assembly of ``DriverStates``, and the
+    consistency check that precedes the time loop.
+    """
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
         allocator=allocator,
@@ -835,9 +831,8 @@ def run_driver(
         if icon4py_driver.config.tracer_advection is not None
         else None
     )
-    initial_condition.create(
-        config=icon4py_driver.config.initial_condition,
-        vertical_config=icon4py_driver.config.vertical_grid,
+    ic_apply(
+        config=driver_utils.make_ic_config_ctx(icon4py_driver.config),
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
@@ -869,5 +864,23 @@ def run_driver(
         granules=icon4py_driver.granules,
         states=ds,
     )
+    return ds
+
+
+def run_driver(
+    *,
+    config: driver_config.ExperimentConfig,
+    grid_manager: gm.GridManager,
+    process_props: decomposition_defs.ProcessProperties,
+    backend: gtx.typing.Backend | None,
+) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
+    icon4py_driver = initialize_driver(
+        config=config,
+        grid_manager=grid_manager,
+        process_props=process_props,
+        backend=backend,
+    )
+    allocator = model_backends.get_allocator(backend)
+    ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
     icon4py_driver.time_integration(ds)
     return ds, icon4py_driver

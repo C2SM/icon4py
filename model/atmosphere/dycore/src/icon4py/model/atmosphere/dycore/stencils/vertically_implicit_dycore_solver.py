@@ -35,9 +35,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_
 from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_variables import (
     _compute_results_for_thermodynamic_variables,
 )
-from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_back_substitution import (
-    _solve_tridiagonal_matrix_for_w_back_substitution_scan,
-)
 from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     _solve_tridiagonal_matrix_for_w_forward_sweep,
 )
@@ -49,6 +46,9 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants, RayleighType
+from icon4py.model.common.math.tridiagonal import (
+    _solve_tridiagonal_matrix_back_substitution_on_half_levels_mixed_precision,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -197,9 +197,9 @@ def solve_w(
     )
     next_w = concat_where(
         dims.KHalfDim < last_inner_level,
-        _solve_tridiagonal_matrix_for_w_back_substitution_scan(
-            z_q=tridiagonal_intermediate_result,
-            w=next_w_intermediate_result,
+        _solve_tridiagonal_matrix_back_substitution_on_half_levels_mixed_precision(
+            q=tridiagonal_intermediate_result,
+            d_prime=next_w_intermediate_result,
         ),
         next_w,
     )
@@ -231,7 +231,7 @@ def _vertically_implicit_solver_at_predictor_step(
     rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
-    exner_dynamical_increment: fa.CellKField[ta.wpfloat],
+    exner_dynamical_increment: fa.CellKField[vpfloat],
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     rayleigh_damping_factor: fa.KHalfField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
@@ -548,7 +548,7 @@ def _vertically_implicit_solver_at_corrector_step(
     ],  # necessary input because the last vertical level is set outside this field operator
     dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
-    exner_dynamical_increment: fa.CellKField[ta.wpfloat],
+    exner_dynamical_increment: fa.CellKField[vpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -763,7 +763,7 @@ def vertically_implicit_solver_at_corrector_step(
     next_theta_v: fa.CellKField[ta.wpfloat],
     dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
-    exner_dynamical_increment: fa.CellKField[ta.wpfloat],
+    exner_dynamical_increment: fa.CellKField[vpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],

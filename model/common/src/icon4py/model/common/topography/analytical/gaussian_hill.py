@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.math import distance_array_ns
@@ -27,8 +27,6 @@ class GaussianHillConfig:
     mount_height: float = 100.0
     mount_width: float = 1000.0
     # The default values are from mo_nh_testcases.f90 and mo_nh_testcases_nml.f90
-
-    fortran_name_map: ClassVar[dict[str, str]] = {}
 
 
 def gaussian_hill(

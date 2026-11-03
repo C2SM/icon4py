@@ -9,6 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -27,16 +28,16 @@ def _compute_ppm_quartic_face_values(
     slope_below = z_slope(dims.KHalfDim + 0.5)
 
     zgeo1 = hgt_m1 / (hgt_m1 + hgt)
-    zgeo2 = 1.0 / (hgt_m2 + hgt_m1 + hgt + hgt_p1)
-    zgeo3 = (hgt_m2 + hgt_m1) / (2.0 * hgt_m1 + hgt)
-    zgeo4 = (hgt_p1 + hgt) / (2.0 * hgt + hgt_m1)
+    zgeo2 = wpfloat(1.0) / (hgt_m2 + hgt_m1 + hgt + hgt_p1)
+    zgeo3 = (hgt_m2 + hgt_m1) / (wpfloat(2.0) * hgt_m1 + hgt)
+    zgeo4 = (hgt_p1 + hgt) / (wpfloat(2.0) * hgt + hgt_m1)
 
     p_face = (
         cc_m1
         + zgeo1 * (cc - cc_m1)
         + zgeo2
         * (
-            (2.0 * hgt * zgeo1) * (zgeo3 - zgeo4) * (cc - cc_m1)
+            (wpfloat(2.0) * hgt * zgeo1) * (zgeo3 - zgeo4) * (cc - cc_m1)
             - zgeo3 * hgt_m1 * slope_below
             + zgeo4 * hgt * slope_above
         )

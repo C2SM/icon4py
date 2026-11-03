@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import dataclasses
 import itertools
-import json
+import os
 import pathlib
 import re
 import shlex
@@ -25,9 +25,8 @@ import tarfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Final
 
-import f90nml
 import typer
 
 
@@ -46,6 +45,7 @@ class SerializationSettings:
     comm_sizes: list[int]
     experiment_descriptions: list[test_defs.ExperimentDescription]
     sbatch_partition: str
+    sbatch_gpus_per_node: int
     sbatch_time: str
     sbatch_account: str
     sbatch_uenv: str
@@ -81,6 +81,10 @@ class SerializationSettings:
 
         # Slurm settings
         SBATCH_PARTITION = "normal"
+        # santis nodes carry 4 GH200s. "normal" allocates whole exclusive nodes, so the
+        # GPUs come with them, but shared partitions such as "debug" grant none unless
+        # asked - and this is a GPU build, so ask explicitly either way.
+        SBATCH_GPUS_PER_NODE = 4
         SBATCH_TIME = "00:20:00"
         SBATCH_ACCOUNT = "cwd01"
         SBATCH_UENV = "icon/26.7:v1"
@@ -111,6 +115,7 @@ class SerializationSettings:
             comm_sizes=COMM_SIZES,
             experiment_descriptions=EXPERIMENTS,
             sbatch_partition=SBATCH_PARTITION,
+            sbatch_gpus_per_node=SBATCH_GPUS_PER_NODE,
             sbatch_time=SBATCH_TIME,
             sbatch_account=SBATCH_ACCOUNT,
             sbatch_uenv=SBATCH_UENV,
@@ -128,6 +133,16 @@ class SerializationSettings:
         # ======================================
         # END DEFAULT USER CONFIGURATION
         # ======================================
+
+
+#: Set by the husk sandbox, whose slurm broker builds its own submission. It refuses a
+#: job that names a partition in the script body, or that chooses an account or a uenv at
+#: all: those come from the launching session.
+HUSK_SENTINEL_ENV_VAR: Final = "HUSK_SLURM_SPOOL"
+
+
+def running_under_husk() -> bool:
+    return bool(os.environ.get(HUSK_SENTINEL_ENV_VAR))
 
 
 def get_f90exp_name(experiment_description: test_defs.ExperimentDescription) -> str:
@@ -295,7 +310,11 @@ def parse_extra_mpi_ranks(script_path: pathlib.Path, comm_size: int) -> int:
 
 
 def update_slurm_variables(script_path: pathlib.Path, *, settings: SerializationSettings) -> None:
-    """Update SBATCH directives in the Slurm script (partition, account, time, uenv, view)."""
+    """Update SBATCH directives in the Slurm script (partition, account, time, uenv, view).
+
+    Under husk only ``--time`` survives here: the broker takes the partition from the
+    sbatch command line (see `submit_job`) and supplies the account and the uenv itself.
+    """
     content = script_path.read_text()
 
     # Find the position after #SBATCH --job-name= line
@@ -304,13 +323,19 @@ def update_slurm_variables(script_path: pathlib.Path, *, settings: Serialization
         raise RuntimeError("Could not find #SBATCH --job-name= line in script")
 
     # Prepare the new SBATCH lines to insert
-    new_lines = (
-        f"#SBATCH --partition={settings.sbatch_partition}\n"
-        f"#SBATCH --account={settings.sbatch_account}\n"
-        f"#SBATCH --time={settings.sbatch_time}\n"
-        f"#SBATCH --uenv='{settings.sbatch_uenv}'\n"
-        f"#SBATCH --view='{settings.sbatch_uenv_view}'"
-    )
+    directives = [
+        f"#SBATCH --time={settings.sbatch_time}",
+        f"#SBATCH --gpus-per-node={settings.sbatch_gpus_per_node}",
+    ]
+    if not running_under_husk():
+        directives = [
+            f"#SBATCH --partition={settings.sbatch_partition}",
+            f"#SBATCH --account={settings.sbatch_account}",
+            *directives,
+            f"#SBATCH --uenv='{settings.sbatch_uenv}'",
+            f"#SBATCH --view='{settings.sbatch_uenv_view}'",
+        ]
+    new_lines = "\n".join(directives)
 
     # Remove existing partition, account, time, uenv, and view lines if they exist
     content = re.sub(r"^#SBATCH\s+--partition=.*$\n?", "", content, flags=re.MULTILINE)
@@ -318,6 +343,7 @@ def update_slurm_variables(script_path: pathlib.Path, *, settings: Serialization
     content = re.sub(r"^#SBATCH\s+--time=.*$\n?", "", content, flags=re.MULTILINE)
     content = re.sub(r"^#SBATCH\s+--uenv=.*$\n?", "", content, flags=re.MULTILINE)
     content = re.sub(r"^#SBATCH\s+--view=.*$\n?", "", content, flags=re.MULTILINE)
+    content = re.sub(r"^#SBATCH\s+--gpus-per-node=.*$\n?", "", content, flags=re.MULTILINE)
 
     # Re-find job-name position in the cleaned text
     job_name_match = re.search(r"^(#SBATCH\s+--job-name=.*$)", content, flags=re.MULTILINE)
@@ -361,7 +387,10 @@ def update_slurm_ranks(script_path: pathlib.Path, mpi_ranks: int, extra_mpi_rank
 
 
 def submit_job(script_path: pathlib.Path, *, settings: SerializationSettings) -> str:
-    cmd = ["sbatch", str(script_path)]
+    cmd = ["sbatch"]
+    if running_under_husk():
+        cmd.append(f"--partition={settings.sbatch_partition}")
+    cmd.append(str(script_path))
     result = run_command(cmd, cwd=settings.runscript_dir)
     match = re.search(r"Submitted batch job\s+(\d+)", result.stdout)
     if not match:
@@ -451,28 +480,23 @@ def copy_ser_data(
     # Copy ser_data folder
     shutil.copytree(src_dir, dest_dir / test_defs.SERIALIZED_DATA_SUBDIR)
 
-    from icon4py.model.common.utils import (  # noqa: PLC0415 [import-outside-top-level]
-        fortran_config,
-    )
-
-    # Translate to json and copy NAMELIST_ICON_output_atm
-    nml = f90nml.read(exp_dir / fortran_config.NAMELIST_ATM_FNAME)
-    with (dest_dir / (fortran_config.ATM_DICT_FNAME)).open("w") as f:
-        json.dump(nml.todict(), f, indent=4)
-    # same for icon_master.namelist
-    nml = f90nml.read(exp_dir / fortran_config.NAMELIST_MASTER_FNAME)
-    with (dest_dir / (fortran_config.MASTER_DICT_FNAME)).open("w") as f:
-        json.dump(nml.todict(), f, indent=4)
-    # same for NAMELIST_expname
-    nml = f90nml.read(exp_dir / get_dumped_nmlfile_name(experiment_description))
-    with (dest_dir / (fortran_config.INPUT_DICT_FNAME)).open("w") as f:
-        json.dump(nml.todict(), f, indent=4)
-
     # Copy NAMELIST files
     namelist_files = sorted(itertools.chain(exp_dir.glob("NAMELIST_*"), exp_dir.glob("*.namelist")))
     for src_file in namelist_files:
         if src_file.is_file():
             shutil.copy2(src_file, dest_dir / src_file.name)
+
+    # Convert namelists to config.yml
+    import fortran_config_converter  # noqa: PLC0415 [import-outside-top-level]
+
+    from icon4py.model.common.config import config_io  # noqa: PLC0415 [import-outside-top-level]
+
+    namelist_expname = get_dumped_nmlfile_name(experiment_description)
+    config = fortran_config_converter.convert_experiment(
+        dest_dir,
+        namelist_expname=namelist_expname,
+    )
+    (dest_dir / "config.yml").write_text(config_io.write_yaml_str(config))
 
     # Copy LOG file if available
     if job_id is not None:

@@ -50,8 +50,8 @@ class TestInterpolateToSurface(stencil_tests.StencilTest):
         **kwargs: Any,
     ) -> dict:
         interpolation_to_surface = extrapolate_quadratically_to_surface_numpy(
-            wgtfacq_c=wgtfacq_c,
             interpolant=interpolant,
+            wgtfacq_c=wgtfacq_c,
             interpolation_to_surface=interpolation_to_surface,
         )
         return dict(interpolation_to_surface=interpolation_to_surface)

@@ -21,7 +21,7 @@ from icon4py.model.testing import stencil_tests
 
 
 def interpolate_vt_to_interface_edges_numpy(
-    wgtfac_e: np.ndarray, vt: np.ndarray, **kwargs: Any
+    vt: np.ndarray, wgtfac_e: np.ndarray, **kwargs: Any
 ) -> np.ndarray:
     nlev = vt.shape[1]
     z_vt_ie = np.zeros((vt.shape[0], nlev + 1))
@@ -50,7 +50,7 @@ class TestInterpolateVtToInterfaceEdges(stencil_tests.StencilTest):
     ) -> dict:
         subset = (slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end))
         z_vt_ie = z_vt_ie.copy()
-        z_vt_ie[subset] = interpolate_vt_to_interface_edges_numpy(wgtfac_e, vt)[subset]
+        z_vt_ie[subset] = interpolate_vt_to_interface_edges_numpy(vt, wgtfac_e)[subset]
         return dict(z_vt_ie=z_vt_ie)
 
     @stencil_tests.input_data_fixture

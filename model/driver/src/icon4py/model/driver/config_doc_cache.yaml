@@ -1,0 +1,3982 @@
+display_name: Config File
+type_name: <class 'icon4py.model.driver.config.ExperimentConfig'>
+description: ICON4Py experiment configuration.
+default: No default value.
+optional: false
+examples:
+  - "Config File:\n  geometry:\n    use_analytical_means: true\n  metrics:\n    exner_expol: 0.3333333333333333\n    vwind_offctr: 0.15\n    thslp_zdiffu: 0.025\n    thhgtd_zdiffu: 200.0\n    rayleigh_type: klemp\n    rayleigh_coeff: 0.05\n    divdamp_trans_start: 12500.0\n    divdamp_trans_end: 17500.0\n    divdamp_type: 3\n    igradp_method: 3\n  interpolation:\n    divergence_averaging_central_cell_weight: 0.5\n    max_nudging_coefficient: 0.375\n    nudge_efold_width: 2.0\n    nudge_zone_width: 10\n    rbf_kernel_cell: gaussian\n    rbf_kernel_edge: inverse_multiquadratic\n    rbf_kernel_vertex: gaussian\n    lsq_dim_unk: 2\n    lsq_dim_c: 3\n    lsq_wgt_exp: 2\n    lsq_high_ord: 1\n  vertical_grid:\n    num_levels: 0\n    maximal_layer_thickness: 0.0\n    top_height_limit_for_maximal_layer_thickness: 0.0\n    lowest_layer_thickness: 0.0\n    model_top_height: 0.0\n    flat_height: 0.0\n    stretch_factor: 0.0\n    rayleigh_damping_height: 0.0\n    htop_moist_proc: 0.0\n    file_path: .\n    SLEVE_decay_scale_1: 0.0\n    SLEVE_decay_scale_2: 0.0\n    SLEVE_decay_exponent: 0.0\n    _SLEVE_minimum_layer_thickness_1: 0.0\n    _SLEVE_minimum_layer_thickness_2: 0.0\n    _SLEVE_minimum_relative_layer_thickness_1: 0.0\n    _SLEVE_minimum_relative_layer_thickness_2: 0.0\n  initial_condition:\n    type: jablonowski_williamson\n    p_sfc: 100000.0\n    baroclinic_amplitude: 1.0\n    u0: 35.0\n    temp0: 288.0\n    eta_0: 0.252\n    eta_t: 0.2\n    gamma: 0.005\n    dtemp: 480000.0\n    lon_perturbation_center: 0.3490658503988659\n    lat_perturbation_center: 0.6981317007977318\n    rh_at_1000hpa: 0.7\n    qv_max: 0.02\n    moisture_init_iterations: 10\n    global_moisture_content: 25.006\n    normalize_global_moisture: false\n  topography:\n    type: flat\n  prescribed_tendencies:\n    data_path:\n  driver:\n    experiment_name: ''\n    profiling_options:\n      gt4py_metrics_level: 100\n      gt4py_metrics_output_file: gt4py_metrics.json\n      skip_first_timestep: true\n    dtime: 0 seconds\n    start_of_simulation: '2026-01-01T00:00:00'\n    start_of_timestepping: '2026-01-01T00:00:00'\n    end_of_simulation:\n      type: relative\n      value: 0 seconds\n    output_path: .\n    apply_extra_second_order_divdamp: false\n    diffuse_before_time_loop: false\n    vertical_cfl_threshold: 0.0\n    ndyn_substeps: 0\n    enable_statistics_logging: false\n    enable_output: false\n    backend_config:\n      workspace_size: 268435456\n    output_backend: netcdf\n    output_mode: gather\n  nonhydrostatic:\n    itime_scheme: most_efficient\n    iadv_rhotheta: miura\n    igradp_method: taylor_hydro\n    rayleigh_type: klemp\n    divdamp_order: combined\n    divdamp_type: three_dimensional\n    l_vert_nested: false\n    deepatmos_mode: false\n    iau_init: false\n    extra_diffu: true\n    rhotheta_offctr: -0.1\n    veladv_offctr: 0.25\n    fourth_order_divdamp_factor: 0.0025\n    fourth_order_divdamp_factor2: 0.004\n    fourth_order_divdamp_factor3: 0.004\n    fourth_order_divdamp_factor4: 0.004\n    fourth_order_divdamp_z: 32500.0\n    fourth_order_divdamp_z2: 40000.0\n    fourth_order_divdamp_z3: 60000.0\n    fourth_order_divdamp_z4: 80000.0\n  diffusion:\n    diffusion_type: smagorinsky_4th_order\n    apply_to_vertical_wind: true\n    apply_to_horizontal_wind: true\n    apply_to_temperature: true\n    apply_smag_diff_to_vertical_wind: false\n    compute_3d_smag_coeff: false\n    type_vn_diffu: diamond_vertices\n    type_t_diffu: heterogeneous\n    hdiff_efdt_ratio: 36.0\n    hdiff_w_efdt_ratio: 15.0\n    smagorinski_scaling_factor: 0.015\n    smagorinski_scaling_factor2: 0.07137250670656087\n    smagorinski_scaling_factor3: 0.0\n    smagorinski_scaling_factor4: 1.0\n    smagorinski_scaling_height: 32500.0\n    smagorinski_scaling_height2: 60686.25335328044\n    smagorinski_scaling_height3: 50000.0\n    smagorinski_scaling_height4: 90000.0\n    apply_zdiffusion_t: true\n    temperature_boundary_diffusion_denominator: 135.0\n    velocity_boundary_diffusion_denominator: 200.0\n    shear_type: vertical_of_horizontal_wind\n    iforcing: no_forcing\n    a_hshr: 1.0\n    loutshs: false\n  tracer_config:\n    qv: false\n    qc: false\n    qi: false\n    qr: false\n    qs: false\n    qg: false\n  tracer_advection:\n    horizontal_advection_type: no_advection\n    horizontal_advection_limiter: no_limiter\n    vertical_advection_type: no_advection\n    vertical_advection_limiter: no_limiter\n  graupel:\n    liquid_autoconversion_option: seifert_beheng\n    snow_intercept_option: field_general_moment_estimation\n    do_latent_heat_nudging: false\n    use_constant_latent_heat: true\n    ice_stickeff_min: 0.075\n    power_law_coeff_for_ice_mean_fall_speed: 1.25\n    exponent_for_density_factor_in_ice_sedimentation: 0.33\n    power_law_coeff_for_snow_fall_speed: 20.0\n    rain_mu: 0.0\n    rain_n0: 1.0\n    snow2graupel_riming_coeff: 0.5\n  muphys:\n    qnc: 50000000.0\n  tmx:\n    solver_type: implicit\n    energy_type: internal\n    dissipation_factor: 1.0\n    use_louis: true\n    use_louis_land: true\n    use_louis_ice: true\n    louis_constant_b: 4.2\n    use_km_const: false\n    km_const: 1.0\n    use_scale_turb_energy_flux: false\n    scale_turb_energy_flux: 1.0\n    smag_constant: 0.23\n    turb_prandtl: 0.33333333333\n    km_min: 0.001\n    max_turb_scale: 300.0\n"
+children:
+  - display_name: shared
+    type_name: list[icon4py.model.common.config.config_io.SharedOptionSet]
+    description: Option - value pairs which are shared between sibling sections.
+    default: '[]'
+    optional: true
+    examples:
+      - 'shared: []
+
+        '
+      - "shared:\n  - <option 1>: <value 1>\n    <option 2>: <value 2>\n    consumers:\n      - <section A>\n      - <section B>\n"
+    children: []
+    config_name_path:
+      - shared
+    module_path: builtins
+    is_union: false
+  - display_name: geometry
+    type_name: <class 'icon4py.model.common.grid.geometry_config.GeometryConfig'>
+    description: "\n    Contains parameters to configure the computation of grid geometry fields.\n    "
+    default: No default value.
+    optional: false
+    examples:
+      - "geometry:\n  use_analytical_means: true\n"
+    children:
+      - display_name: use_analytical_means
+        type_name: <class 'bool'>
+        description: If True, compute mean geometry values (mean cell area, mean dual area, mean edge length, mean dual edge length) analytically from the grid parameters instead of using global reductions.
+        default: 'True'
+        optional: true
+        examples:
+          - 'use_analytical_means: false
+
+            '
+        children: []
+        config_name_path:
+          - geometry
+          - use_analytical_means
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - geometry
+    module_path: icon4py.model.common.grid.geometry_config
+    is_union: false
+  - display_name: metrics
+    type_name: <class 'icon4py.model.common.metrics.metrics_factory.MetricsConfig'>
+    description: ??
+    default: No default value.
+    optional: false
+    examples:
+      - "metrics:\n  exner_expol: 0.3333333333333333\n  vwind_offctr: 0.15\n  thslp_zdiffu: 0.025\n  thhgtd_zdiffu: 200.0\n  rayleigh_type: klemp\n  rayleigh_coeff: 0.05\n  divdamp_trans_start: 12500.0\n  divdamp_trans_end: 17500.0\n  divdamp_type: 3\n  igradp_method: 3\n"
+    children:
+      - display_name: exner_expol
+        type_name: <class 'float'>
+        description: ??
+        default: '0.3333333333333333'
+        optional: true
+        examples:
+          - 'exner_expol: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - metrics
+          - exner_expol
+        module_path: builtins
+        is_union: false
+      - display_name: vwind_offctr
+        type_name: <class 'float'>
+        description: ??
+        default: '0.15'
+        optional: true
+        examples:
+          - 'vwind_offctr: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - metrics
+          - vwind_offctr
+        module_path: builtins
+        is_union: false
+      - display_name: thslp_zdiffu
+        type_name: <class 'float'>
+        description: ??
+        default: '0.025'
+        optional: true
+        examples:
+          - 'thslp_zdiffu: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - metrics
+          - thslp_zdiffu
+        module_path: builtins
+        is_union: false
+      - display_name: thhgtd_zdiffu
+        type_name: <class 'float'>
+        description: ??
+        default: '200.0'
+        optional: true
+        examples:
+          - 'thhgtd_zdiffu: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - metrics
+          - thhgtd_zdiffu
+        module_path: builtins
+        is_union: false
+      - display_name: rayleigh_type
+        type_name: <enum 'RayleighType'>
+        description: ??
+        default: RayleighType.KLEMP
+        optional: true
+        examples:
+          - 'rayleigh_type: classic
+
+            '
+          - 'rayleigh_type: klemp
+
+            '
+        children: []
+        config_name_path:
+          - metrics
+          - rayleigh_type
+        module_path: icon4py.model.common.constants
+        is_union: false
+      - display_name: rayleigh_coeff
+        type_name: <class 'float'>
+        description: ??
+        default: '0.05'
+        optional: true
+        examples:
+          - 'rayleigh_coeff: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - metrics
+          - rayleigh_coeff
+        module_path: builtins
+        is_union: false
+      - display_name: divdamp_trans_start
+        type_name: <class 'float'>
+        description: ??
+        default: '12500.0'
+        optional: true
+        examples:
+          - 'divdamp_trans_start: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - metrics
+          - divdamp_trans_start
+        module_path: builtins
+        is_union: false
+      - display_name: divdamp_trans_end
+        type_name: <class 'float'>
+        description: ??
+        default: '17500.0'
+        optional: true
+        examples:
+          - 'divdamp_trans_end: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - metrics
+          - divdamp_trans_end
+        module_path: builtins
+        is_union: false
+      - display_name: divdamp_type
+        type_name: <class 'int'>
+        description: ??
+        default: '3'
+        optional: true
+        examples:
+          - 'divdamp_type: 0
+
+            '
+        children: []
+        config_name_path:
+          - metrics
+          - divdamp_type
+        module_path: builtins
+        is_union: false
+      - display_name: igradp_method
+        type_name: <class 'int'>
+        description: ??
+        default: '3'
+        optional: true
+        examples:
+          - 'igradp_method: 0
+
+            '
+        children: []
+        config_name_path:
+          - metrics
+          - igradp_method
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - metrics
+    module_path: icon4py.model.common.metrics.metrics_factory
+    is_union: false
+  - display_name: interpolation
+    type_name: <class 'icon4py.model.common.interpolation.interpolation_factory.InterpolationConfig'>
+    description: ??
+    default: No default value.
+    optional: false
+    examples:
+      - "interpolation:\n  divergence_averaging_central_cell_weight: 0.5\n  max_nudging_coefficient: 0.375\n  nudge_efold_width: 2.0\n  nudge_zone_width: 10\n  rbf_kernel_cell: gaussian\n  rbf_kernel_edge: inverse_multiquadratic\n  rbf_kernel_vertex: gaussian\n  lsq_dim_unk: 2\n  lsq_dim_c: 3\n  lsq_wgt_exp: 2\n  lsq_high_ord: 1\n"
+    children:
+      - display_name: divergence_averaging_central_cell_weight
+        type_name: <class 'float'>
+        description: Central-cell weight used in divergence averaging.
+        default: '0.5'
+        optional: true
+        examples:
+          - 'divergence_averaging_central_cell_weight: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - divergence_averaging_central_cell_weight
+        module_path: builtins
+        is_union: false
+      - display_name: max_nudging_coefficient
+        type_name: <class 'float'>
+        description: Maximum nudging coefficient applied in the lateral nudging zone.
+        default: '0.375'
+        optional: true
+        examples:
+          - 'max_nudging_coefficient: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - max_nudging_coefficient
+        module_path: builtins
+        is_union: false
+      - display_name: nudge_efold_width
+        type_name: <class 'float'>
+        description: E-folding width controlling the exponential decay of nudging strength.
+        default: '2.0'
+        optional: true
+        examples:
+          - 'nudge_efold_width: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - nudge_efold_width
+        module_path: builtins
+        is_union: false
+      - display_name: nudge_zone_width
+        type_name: <class 'int'>
+        description: Width of the lateral nudging zone in grid refinement levels.
+        default: '10'
+        optional: true
+        examples:
+          - 'nudge_zone_width: 0
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - nudge_zone_width
+        module_path: builtins
+        is_union: false
+      - display_name: rbf_kernel_cell
+        type_name: <enum 'InterpolationKernel'>
+        description: Radial basis function kernel used for cell-based interpolation.
+        default: '1'
+        optional: true
+        examples:
+          - 'rbf_kernel_cell: gaussian
+
+            '
+          - 'rbf_kernel_cell: inverse_multiquadratic
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - rbf_kernel_cell
+        module_path: icon4py.model.common.interpolation.rbf_interpolation
+        is_union: false
+      - display_name: rbf_kernel_edge
+        type_name: <enum 'InterpolationKernel'>
+        description: Radial basis function kernel used for edge-based interpolation.
+        default: '3'
+        optional: true
+        examples:
+          - 'rbf_kernel_edge: gaussian
+
+            '
+          - 'rbf_kernel_edge: inverse_multiquadratic
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - rbf_kernel_edge
+        module_path: icon4py.model.common.interpolation.rbf_interpolation
+        is_union: false
+      - display_name: rbf_kernel_vertex
+        type_name: <enum 'InterpolationKernel'>
+        description: Radial basis function kernel used for vertex-based interpolation.
+        default: '1'
+        optional: true
+        examples:
+          - 'rbf_kernel_vertex: gaussian
+
+            '
+          - 'rbf_kernel_vertex: inverse_multiquadratic
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - rbf_kernel_vertex
+        module_path: icon4py.model.common.interpolation.rbf_interpolation
+        is_union: false
+      - display_name: lsq_dim_unk
+        type_name: <class 'int'>
+        description: Number of unknowns in the least-squares reconstruction. Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
+        default: '2'
+        optional: true
+        examples:
+          - 'lsq_dim_unk: 0
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - lsq_dim_unk
+        module_path: builtins
+        is_union: false
+      - display_name: lsq_dim_c
+        type_name: <class 'int'>
+        description: Dimension of the least-squares coefficient space. Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
+        default: '3'
+        optional: true
+        examples:
+          - 'lsq_dim_c: 0
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - lsq_dim_c
+        module_path: builtins
+        is_union: false
+      - display_name: lsq_wgt_exp
+        type_name: <class 'int'>
+        description: Exponent used in distance-based least-squares weighting. Derived in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
+        default: '2'
+        optional: true
+        examples:
+          - 'lsq_wgt_exp: 0
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - lsq_wgt_exp
+        module_path: builtins
+        is_union: false
+      - display_name: lsq_high_ord
+        type_name: <class 'int'>
+        description: Complexity of least-squares reconstruction in terms of the polynomial order and stencil size. This is not used in the current implementation, but is kept for higher-order reconstruction in the future.
+        default: '1'
+        optional: true
+        examples:
+          - 'lsq_high_ord: 0
+
+            '
+        children: []
+        config_name_path:
+          - interpolation
+          - lsq_high_ord
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - interpolation
+    module_path: icon4py.model.common.interpolation.interpolation_factory
+    is_union: false
+  - display_name: vertical_grid
+    type_name: <class 'icon4py.model.common.grid.vertical.VerticalGridConfig'>
+    description: "\n    Contains necessary parameter to configure vertical grid.\n\n    Encapsulates namelist parameters.\n    Values should be read from configuration.\n    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.\n    "
+    default: No default value.
+    optional: false
+    examples:
+      - "vertical_grid:\n  num_levels: 0\n  maximal_layer_thickness: 0.0\n  top_height_limit_for_maximal_layer_thickness: 0.0\n  lowest_layer_thickness: 0.0\n  model_top_height: 0.0\n  flat_height: 0.0\n  stretch_factor: 0.0\n  rayleigh_damping_height: 0.0\n  htop_moist_proc: 0.0\n  file_path: .\n  SLEVE_decay_scale_1: 0.0\n  SLEVE_decay_scale_2: 0.0\n  SLEVE_decay_exponent: 0.0\n  _SLEVE_minimum_layer_thickness_1: 0.0\n  _SLEVE_minimum_layer_thickness_2: 0.0\n  _SLEVE_minimum_relative_layer_thickness_1: 0.0\n  _SLEVE_minimum_relative_layer_thickness_2: 0.0\n"
+    children:
+      - display_name: num_levels
+        type_name: <class 'int'>
+        description: ??
+        default: No default value.
+        optional: false
+        examples:
+          - 'num_levels: 0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - num_levels
+        module_path: builtins
+        is_union: false
+      - display_name: maximal_layer_thickness
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '25000.0'
+        optional: true
+        examples:
+          - 'maximal_layer_thickness: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - maximal_layer_thickness
+        module_path: numpy
+        is_union: false
+      - display_name: top_height_limit_for_maximal_layer_thickness
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '15000.0'
+        optional: true
+        examples:
+          - 'top_height_limit_for_maximal_layer_thickness: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - top_height_limit_for_maximal_layer_thickness
+        module_path: numpy
+        is_union: false
+      - display_name: lowest_layer_thickness
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '50.0'
+        optional: true
+        examples:
+          - 'lowest_layer_thickness: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - lowest_layer_thickness
+        module_path: numpy
+        is_union: false
+      - display_name: model_top_height
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '23500.0'
+        optional: true
+        examples:
+          - 'model_top_height: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - model_top_height
+        module_path: numpy
+        is_union: false
+      - display_name: flat_height
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '16000.0'
+        optional: true
+        examples:
+          - 'flat_height: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - flat_height
+        module_path: numpy
+        is_union: false
+      - display_name: stretch_factor
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '1.0'
+        optional: true
+        examples:
+          - 'stretch_factor: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - stretch_factor
+        module_path: numpy
+        is_union: false
+      - display_name: rayleigh_damping_height
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '45000.0'
+        optional: true
+        examples:
+          - 'rayleigh_damping_height: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - rayleigh_damping_height
+        module_path: numpy
+        is_union: false
+      - display_name: htop_moist_proc
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '22500.0'
+        optional: true
+        examples:
+          - 'htop_moist_proc: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - htop_moist_proc
+        module_path: numpy
+        is_union: false
+      - display_name: 'file_path: one of the following'
+        type_name: pathlib.Path | None
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'file_path: .
+
+            '
+          - 'file_path:
+
+            '
+        children:
+          - display_name: 'type: Path'
+            type_name: <class 'pathlib.Path'>
+            description: ??
+            default: None
+            optional: true
+            examples:
+              - 'file_path: .
+
+                '
+            children: []
+            config_name_path:
+              - vertical_grid
+              - file_path
+              - 'type: Path'
+            module_path: pathlib
+            is_union: false
+          - display_name: 'type: NoneType'
+            type_name: <class 'NoneType'>
+            description: ??
+            default: None
+            optional: true
+            examples:
+              - 'file_path:
+
+                '
+            children: []
+            config_name_path:
+              - vertical_grid
+              - file_path
+              - 'type: NoneType'
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - vertical_grid
+          - file_path
+        module_path: types
+        is_union: true
+      - display_name: SLEVE_decay_scale_1
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '4000.0'
+        optional: true
+        examples:
+          - 'SLEVE_decay_scale_1: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - SLEVE_decay_scale_1
+        module_path: numpy
+        is_union: false
+      - display_name: SLEVE_decay_scale_2
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '2500.0'
+        optional: true
+        examples:
+          - 'SLEVE_decay_scale_2: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - SLEVE_decay_scale_2
+        module_path: numpy
+        is_union: false
+      - display_name: SLEVE_decay_exponent
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '1.2'
+        optional: true
+        examples:
+          - 'SLEVE_decay_exponent: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - SLEVE_decay_exponent
+        module_path: numpy
+        is_union: false
+      - display_name: _SLEVE_minimum_layer_thickness_1
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '100.0'
+        optional: true
+        examples:
+          - '_SLEVE_minimum_layer_thickness_1: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - _SLEVE_minimum_layer_thickness_1
+        module_path: numpy
+        is_union: false
+      - display_name: _SLEVE_minimum_layer_thickness_2
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '500.0'
+        optional: true
+        examples:
+          - '_SLEVE_minimum_layer_thickness_2: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - _SLEVE_minimum_layer_thickness_2
+        module_path: numpy
+        is_union: false
+      - display_name: _SLEVE_minimum_relative_layer_thickness_1
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '0.3333333333333333'
+        optional: true
+        examples:
+          - '_SLEVE_minimum_relative_layer_thickness_1: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - _SLEVE_minimum_relative_layer_thickness_1
+        module_path: numpy
+        is_union: false
+      - display_name: _SLEVE_minimum_relative_layer_thickness_2
+        type_name: <class 'numpy.float64'>
+        description: ??
+        default: '0.5'
+        optional: true
+        examples:
+          - '_SLEVE_minimum_relative_layer_thickness_2: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - vertical_grid
+          - _SLEVE_minimum_relative_layer_thickness_2
+        module_path: numpy
+        is_union: false
+    config_name_path:
+      - vertical_grid
+    module_path: icon4py.model.common.grid.vertical
+    is_union: false
+  - display_name: 'initial_condition: one of the following'
+    type_name: icon4py.model.common.initial_condition.analytical.jablonowski_williamson.JablonowskiWilliamsonConfig | icon4py.model.common.initial_condition.analytical.gauss3d.Gauss3DConfig | icon4py.model.common.initial_condition.analytical.weisman_klemp.WeismanKlempConfig | icon4py.model.common.initial_condition.analytical.linear_horizontal_tracer_advection.LinearHorizontalAdvectionConfig | icon4py.model.common.initial_condition.analytical.linear_vertical_tracer_advection.LinearVerticalAdvectionConfig | icon4py.model.common.initial_condition.from_file.FromFileConfig
+    description: ??
+    default: No default value.
+    optional: false
+    examples:
+      - "initial_condition:\n  type: jablonowski_williamson\n  p_sfc: 100000.0\n  baroclinic_amplitude: 1.0\n  u0: 35.0\n  temp0: 288.0\n  eta_0: 0.252\n  eta_t: 0.2\n  gamma: 0.005\n  dtemp: 480000.0\n  lon_perturbation_center: 0.3490658503988659\n  lat_perturbation_center: 0.6981317007977318\n  rh_at_1000hpa: 0.7\n  qv_max: 0.02\n  moisture_init_iterations: 10\n  global_moisture_content: 25.006\n  normalize_global_moisture: false\n"
+      - "initial_condition:\n  type: gauss_3d\n  u0: 0.0\n  t0: 300.0\n  brunt_vais: 0.01\n"
+      - "initial_condition:\n  type: weisman_klemp\n  h_min: 0.0\n  h_tropopause: 12000.0\n  theta_surface: 300.0\n  theta_tropopause: 343.0\n  exponent_theta: 1.25\n  exponent_relative_humidity: 1.25\n  t_tropopause: 213.0\n  rh_min: 0.1\n  rh_max: 0.95\n  wind_scale_height: 3000.0\n  max_wind_speed: 15.0\n  qv_max: 0.014\n  bubble_center_x: 0.0\n  bubble_center_y: 0.0\n  bubble_center_z: 1400.0\n  bubble_horizontal_width: 5000.0\n  bubble_vertical_width: 1400.0\n  bubble_amplitude: 2.0\n  bubble_radius: 1.0\n"
+      - "initial_condition:\n  type: linear_horizontal_adv\n  tracer_profile: gaussian_2d\n  velocity_field: uniform_xy\n  cfl_number: 0.8\n  initial_center:\n    - 0.5\n    - 0.5\n  decay_radius: 0.25\n"
+      - "initial_condition:\n  type: linear_vertical_adv\n  tracer_profile: gaussian\n  velocity_field: uniform_positive\n  cfl_number: 0.8\n  initial_center: 0.5\n  decay_radius: 0.25\n"
+      - "initial_condition:\n  type: from_file\n  data_path: .\n"
+    children:
+      - display_name: 'type: JablonowskiWilliamsonConfig'
+        type_name: <class 'icon4py.model.common.initial_condition.analytical.jablonowski_williamson.JablonowskiWilliamsonConfig'>
+        description: ??
+        default: No default value.
+        optional: false
+        examples:
+          - "initial_condition:\n  p_sfc: 100000.0\n  baroclinic_amplitude: 1.0\n  u0: 35.0\n  temp0: 288.0\n  eta_0: 0.252\n  eta_t: 0.2\n  gamma: 0.005\n  dtemp: 480000.0\n  lon_perturbation_center: 0.3490658503988659\n  lat_perturbation_center: 0.6981317007977318\n  rh_at_1000hpa: 0.7\n  qv_max: 0.02\n  moisture_init_iterations: 10\n  global_moisture_content: 25.006\n  normalize_global_moisture: false\n"
+        children:
+          - display_name: p_sfc
+            type_name: <class 'float'>
+            description: Surface pressure (Pa)
+            default: '100000.0'
+            optional: true
+            examples:
+              - 'p_sfc: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - p_sfc
+            module_path: builtins
+            is_union: false
+          - display_name: baroclinic_amplitude
+            type_name: <class 'float'>
+            description: Amplitude of the u-perturbation [m/s].
+            default: '1.0'
+            optional: true
+            examples:
+              - 'baroclinic_amplitude: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - baroclinic_amplitude
+            module_path: builtins
+            is_union: false
+          - display_name: u0
+            type_name: <class 'float'>
+            description: Maximum zonal wind (m/s)
+            default: '35.0'
+            optional: true
+            examples:
+              - 'u0: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - u0
+            module_path: builtins
+            is_union: false
+          - display_name: temp0
+            type_name: <class 'float'>
+            description: Horizontal mean surface temperature (K)
+            default: '288.0'
+            optional: true
+            examples:
+              - 'temp0: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - temp0
+            module_path: builtins
+            is_union: false
+          - display_name: eta_0
+            type_name: <class 'float'>
+            description: Offset of eta vertical coordinate, which is a normalised pressure coordinate.
+            default: '0.252'
+            optional: true
+            examples:
+              - 'eta_0: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - eta_0
+            module_path: builtins
+            is_union: false
+          - display_name: eta_t
+            type_name: <class 'float'>
+            description: eta coordinate of the tropopause.
+            default: '0.2'
+            optional: true
+            examples:
+              - 'eta_t: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - eta_t
+            module_path: builtins
+            is_union: false
+          - display_name: gamma
+            type_name: <class 'float'>
+            description: Temperature lapse rate (K/m)
+            default: '0.005'
+            optional: true
+            examples:
+              - 'gamma: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - gamma
+            module_path: builtins
+            is_union: false
+          - display_name: dtemp
+            type_name: <class 'float'>
+            description: Coefficient of the quintic function of eta coordinate for the temperature profile above the tropopause.
+            default: '480000.0'
+            optional: true
+            examples:
+              - 'dtemp: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - dtemp
+            module_path: builtins
+            is_union: false
+          - display_name: lon_perturbation_center
+            type_name: <class 'float'>
+            description: Longitude (rad) of the perturbation center in the baroclinic Jablonowski-Williamson experiment.
+            default: '0.3490658503988659'
+            optional: true
+            examples:
+              - 'lon_perturbation_center: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - lon_perturbation_center
+            module_path: builtins
+            is_union: false
+          - display_name: lat_perturbation_center
+            type_name: <class 'float'>
+            description: Latitude (rad) of the perturbation center in the baroclinic Jablonowski-Williamson experiment.
+            default: '0.6981317007977318'
+            optional: true
+            examples:
+              - 'lat_perturbation_center: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - lat_perturbation_center
+            module_path: builtins
+            is_union: false
+          - display_name: rh_at_1000hpa
+            type_name: <class 'float'>
+            description: Moist tracer initialization (inwp tracers). Relevant only when transport is active
+            default: '0.7'
+            optional: true
+            examples:
+              - 'rh_at_1000hpa: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - rh_at_1000hpa
+            module_path: builtins
+            is_union: false
+          - display_name: qv_max
+            type_name: <class 'float'>
+            description: Upper limit of the specific humidity (kg/kg) in the moist experiment
+            default: '0.02'
+            optional: true
+            examples:
+              - 'qv_max: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - qv_max
+            module_path: builtins
+            is_union: false
+          - display_name: moisture_init_iterations
+            type_name: <class 'int'>
+            description: Number of iterations to converge qv agains the moisture-dependent temperature.
+            default: '10'
+            optional: true
+            examples:
+              - 'moisture_init_iterations: 0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - moisture_init_iterations
+            module_path: builtins
+            is_union: false
+          - display_name: global_moisture_content
+            type_name: <class 'float'>
+            description: Target column-integrated moisture for APE cases [kg/m^2].
+            default: '25.006'
+            optional: true
+            examples:
+              - 'global_moisture_content: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - global_moisture_content
+            module_path: builtins
+            is_union: false
+          - display_name: normalize_global_moisture
+            type_name: <class 'bool'>
+            description: Rescale qv to global_moisture_content (APE only).
+            default: 'False'
+            optional: true
+            examples:
+              - 'normalize_global_moisture: false
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: JablonowskiWilliamsonConfig'
+              - normalize_global_moisture
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - initial_condition
+          - 'type: JablonowskiWilliamsonConfig'
+        module_path: icon4py.model.common.initial_condition.analytical.jablonowski_williamson
+        is_union: false
+      - display_name: 'type: Gauss3DConfig'
+        type_name: <class 'icon4py.model.common.initial_condition.analytical.gauss3d.Gauss3DConfig'>
+        description: ??
+        default: No default value.
+        optional: false
+        examples:
+          - "initial_condition:\n  u0: 0.0\n  t0: 300.0\n  brunt_vais: 0.01\n"
+        children:
+          - display_name: u0
+            type_name: <class 'float'>
+            description: Zonal wind speed (m/s)
+            default: '0.0'
+            optional: true
+            examples:
+              - 'u0: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: Gauss3DConfig'
+              - u0
+            module_path: builtins
+            is_union: false
+          - display_name: t0
+            type_name: <class 'float'>
+            description: Surface potential temperature (K)
+            default: '300.0'
+            optional: true
+            examples:
+              - 't0: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: Gauss3DConfig'
+              - t0
+            module_path: builtins
+            is_union: false
+          - display_name: brunt_vais
+            type_name: <class 'float'>
+            description: "Brunt-Väisälä frequency."
+            default: '0.01'
+            optional: true
+            examples:
+              - 'brunt_vais: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: Gauss3DConfig'
+              - brunt_vais
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - initial_condition
+          - 'type: Gauss3DConfig'
+        module_path: icon4py.model.common.initial_condition.analytical.gauss3d
+        is_union: false
+      - display_name: 'type: WeismanKlempConfig'
+        type_name: <class 'icon4py.model.common.initial_condition.analytical.weisman_klemp.WeismanKlempConfig'>
+        description: ??
+        default: No default value.
+        optional: false
+        examples:
+          - "initial_condition:\n  h_min: 0.0\n  h_tropopause: 12000.0\n  theta_surface: 300.0\n  theta_tropopause: 343.0\n  exponent_theta: 1.25\n  exponent_relative_humidity: 1.25\n  t_tropopause: 213.0\n  rh_min: 0.1\n  rh_max: 0.95\n  wind_scale_height: 3000.0\n  max_wind_speed: 15.0\n  qv_max: 0.014\n  bubble_center_x: 0.0\n  bubble_center_y: 0.0\n  bubble_center_z: 1400.0\n  bubble_horizontal_width: 5000.0\n  bubble_vertical_width: 1400.0\n  bubble_amplitude: 2.0\n  bubble_radius: 1.0\n"
+        children:
+          - display_name: h_min
+            type_name: <class 'float'>
+            description: Base height of the profile [m].
+            default: '0.0'
+            optional: true
+            examples:
+              - 'h_min: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - h_min
+            module_path: builtins
+            is_union: false
+          - display_name: h_tropopause
+            type_name: <class 'float'>
+            description: Height of the tropopause [m].
+            default: '12000.0'
+            optional: true
+            examples:
+              - 'h_tropopause: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - h_tropopause
+            module_path: builtins
+            is_union: false
+          - display_name: theta_surface
+            type_name: <class 'float'>
+            description: Potential temperature at the surface [K].
+            default: '300.0'
+            optional: true
+            examples:
+              - 'theta_surface: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - theta_surface
+            module_path: builtins
+            is_union: false
+          - display_name: theta_tropopause
+            type_name: <class 'float'>
+            description: Potential temperature at the tropopause [K].
+            default: '343.0'
+            optional: true
+            examples:
+              - 'theta_tropopause: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - theta_tropopause
+            module_path: builtins
+            is_union: false
+          - display_name: exponent_theta
+            type_name: <class 'float'>
+            description: Exponent of the potential-temperature profile below the tropopause.
+            default: '1.25'
+            optional: true
+            examples:
+              - 'exponent_theta: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - exponent_theta
+            module_path: builtins
+            is_union: false
+          - display_name: exponent_relative_humidity
+            type_name: <class 'float'>
+            description: Exponent of the relative-humidity profile below the tropopause.
+            default: '1.25'
+            optional: true
+            examples:
+              - 'exponent_relative_humidity: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - exponent_relative_humidity
+            module_path: builtins
+            is_union: false
+          - display_name: t_tropopause
+            type_name: <class 'float'>
+            description: Temperature of the tropopause [K].
+            default: '213.0'
+            optional: true
+            examples:
+              - 't_tropopause: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - t_tropopause
+            module_path: builtins
+            is_union: false
+          - display_name: rh_min
+            type_name: <class 'float'>
+            description: Relative humidity above the tropopause.
+            default: '0.1'
+            optional: true
+            examples:
+              - 'rh_min: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - rh_min
+            module_path: builtins
+            is_union: false
+          - display_name: rh_max
+            type_name: <class 'float'>
+            description: Maximum relative humidity below the tropopause.
+            default: '0.95'
+            optional: true
+            examples:
+              - 'rh_max: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - rh_max
+            module_path: builtins
+            is_union: false
+          - display_name: wind_scale_height
+            type_name: <class 'float'>
+            description: Scaling height of the wind profile (height of 70 % wind speed) [m].
+            default: '3000.0'
+            optional: true
+            examples:
+              - 'wind_scale_height: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - wind_scale_height
+            module_path: builtins
+            is_union: false
+          - display_name: max_wind_speed
+            type_name: <class 'float'>
+            description: Maximum horizontal wind speed [m/s].
+            default: '15.0'
+            optional: true
+            examples:
+              - 'max_wind_speed: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - max_wind_speed
+            module_path: builtins
+            is_union: false
+          - display_name: qv_max
+            type_name: <class 'float'>
+            description: Maximum moisture content below the tropopause [kg/kg].
+            default: '0.014'
+            optional: true
+            examples:
+              - 'qv_max: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - qv_max
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_center_x
+            type_name: <class 'float'>
+            description: X coordinate (torus) or longitude in degrees (sphere) of the bubble centre.
+            default: '0.0'
+            optional: true
+            examples:
+              - 'bubble_center_x: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - bubble_center_x
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_center_y
+            type_name: <class 'float'>
+            description: Y coordinate (torus) or latitude in degrees (sphere) of the bubble centre.
+            default: '0.0'
+            optional: true
+            examples:
+              - 'bubble_center_y: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - bubble_center_y
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_center_z
+            type_name: <class 'float'>
+            description: Altitude of the bubble centre [m].
+            default: '1400.0'
+            optional: true
+            examples:
+              - 'bubble_center_z: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - bubble_center_z
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_horizontal_width
+            type_name: <class 'float'>
+            description: Horizontal size of the warm bubble [m].
+            default: '5000.0'
+            optional: true
+            examples:
+              - 'bubble_horizontal_width: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - bubble_horizontal_width
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_vertical_width
+            type_name: <class 'float'>
+            description: Vertical size of the warm bubble [m].
+            default: '1400.0'
+            optional: true
+            examples:
+              - 'bubble_vertical_width: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - bubble_vertical_width
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_amplitude
+            type_name: <class 'float'>
+            description: Temperature amplitude of the warm bubble [K].
+            default: '2.0'
+            optional: true
+            examples:
+              - 'bubble_amplitude: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - bubble_amplitude
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_radius
+            type_name: <class 'float'>
+            description: Normalized radius below which the bubble perturbation is applied.
+            default: '1.0'
+            optional: true
+            examples:
+              - 'bubble_radius: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: WeismanKlempConfig'
+              - bubble_radius
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - initial_condition
+          - 'type: WeismanKlempConfig'
+        module_path: icon4py.model.common.initial_condition.analytical.weisman_klemp
+        is_union: false
+      - display_name: 'type: LinearHorizontalAdvectionConfig'
+        type_name: <class 'icon4py.model.common.initial_condition.analytical.linear_horizontal_tracer_advection.LinearHorizontalAdvectionConfig'>
+        description: ??
+        default: No default value.
+        optional: false
+        examples:
+          - "initial_condition:\n  tracer_profile: gaussian_2d\n  velocity_field: uniform_xy\n  cfl_number: 0.8\n  initial_center:\n    - 0.5\n    - 0.5\n  decay_radius: 0.25\n"
+        children:
+          - display_name: tracer_profile
+            type_name: <enum 'HorizontalTracerProfile'>
+            description: Initial tracer profile.
+            default: HorizontalTracerProfile.GAUSSIAN_2D
+            optional: true
+            examples:
+              - 'tracer_profile: gaussian_2d
+
+                '
+              - 'tracer_profile: gaussian_2d_offcenter
+
+                '
+              - 'tracer_profile: gaussian_1d_x
+
+                '
+              - 'tracer_profile: gaussian_1d_y
+
+                '
+              - 'tracer_profile: circle_2d
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: LinearHorizontalAdvectionConfig'
+              - tracer_profile
+            module_path: icon4py.model.common.initial_condition.analytical.linear_horizontal_tracer_advection
+            is_union: false
+          - display_name: velocity_field
+            type_name: <enum 'HorizontalVelocityField'>
+            description: Velocity field for transporting the tracer.
+            default: HorizontalVelocityField.UNIFORM_XY
+            optional: true
+            examples:
+              - 'velocity_field: uniform_xy
+
+                '
+              - 'velocity_field: uniform_x
+
+                '
+              - 'velocity_field: uniform_y
+
+                '
+              - 'velocity_field: vortex_2d
+
+                '
+              - 'velocity_field: increasing_2d
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: LinearHorizontalAdvectionConfig'
+              - velocity_field
+            module_path: icon4py.model.common.initial_condition.analytical.linear_horizontal_tracer_advection
+            is_union: false
+          - display_name: cfl_number
+            type_name: <class 'float'>
+            description: Maximum CFL number for determination of the time step.
+            default: '0.8'
+            optional: true
+            examples:
+              - 'cfl_number: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: LinearHorizontalAdvectionConfig'
+              - cfl_number
+            module_path: builtins
+            is_union: false
+          - display_name: initial_center
+            type_name: tuple[float, float]
+            description: Initial center of the tracer profile relative to the model domain size in x and y directions.
+            default: (0.5, 0.5)
+            optional: true
+            examples: []
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: LinearHorizontalAdvectionConfig'
+              - initial_center
+            module_path: builtins
+            is_union: false
+          - display_name: decay_radius
+            type_name: <class 'float'>
+            description: Decay radius for the Gaussian tracer profile (0.001 fraction), relative to the model domain size.
+            default: '0.25'
+            optional: true
+            examples:
+              - 'decay_radius: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: LinearHorizontalAdvectionConfig'
+              - decay_radius
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - initial_condition
+          - 'type: LinearHorizontalAdvectionConfig'
+        module_path: icon4py.model.common.initial_condition.analytical.linear_horizontal_tracer_advection
+        is_union: false
+      - display_name: 'type: LinearVerticalAdvectionConfig'
+        type_name: <class 'icon4py.model.common.initial_condition.analytical.linear_vertical_tracer_advection.LinearVerticalAdvectionConfig'>
+        description: ??
+        default: No default value.
+        optional: false
+        examples:
+          - "initial_condition:\n  tracer_profile: gaussian\n  velocity_field: uniform_positive\n  cfl_number: 0.8\n  initial_center: 0.5\n  decay_radius: 0.25\n"
+        children:
+          - display_name: tracer_profile
+            type_name: <enum 'VerticalTracerProfile'>
+            description: Initial tracer profile.
+            default: VerticalTracerProfile.GAUSSIAN
+            optional: true
+            examples:
+              - 'tracer_profile: gaussian
+
+                '
+              - 'tracer_profile: box
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: LinearVerticalAdvectionConfig'
+              - tracer_profile
+            module_path: icon4py.model.common.initial_condition.analytical.linear_vertical_tracer_advection
+            is_union: false
+          - display_name: velocity_field
+            type_name: <enum 'VerticalVelocityField'>
+            description: Velocity field for transporting the tracer.
+            default: VerticalVelocityField.UNIFORM_POSITIVE
+            optional: true
+            examples:
+              - 'velocity_field: uniform_positive
+
+                '
+              - 'velocity_field: uniform_negative
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: LinearVerticalAdvectionConfig'
+              - velocity_field
+            module_path: icon4py.model.common.initial_condition.analytical.linear_vertical_tracer_advection
+            is_union: false
+          - display_name: cfl_number
+            type_name: <class 'float'>
+            description: Maximum CFL number for determination of the time step.
+            default: '0.8'
+            optional: true
+            examples:
+              - 'cfl_number: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: LinearVerticalAdvectionConfig'
+              - cfl_number
+            module_path: builtins
+            is_union: false
+          - display_name: initial_center
+            type_name: <class 'float'>
+            description: Initial height of the tracer profile center relative to the model top height.
+            default: '0.5'
+            optional: true
+            examples:
+              - 'initial_center: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: LinearVerticalAdvectionConfig'
+              - initial_center
+            module_path: builtins
+            is_union: false
+          - display_name: decay_radius
+            type_name: <class 'float'>
+            description: Decay radius for the Gaussian tracer profile (0.001 fraction) relative to the model top height.
+            default: '0.25'
+            optional: true
+            examples:
+              - 'decay_radius: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: LinearVerticalAdvectionConfig'
+              - decay_radius
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - initial_condition
+          - 'type: LinearVerticalAdvectionConfig'
+        module_path: icon4py.model.common.initial_condition.analytical.linear_vertical_tracer_advection
+        is_union: false
+      - display_name: 'type: FromFileConfig'
+        type_name: <class 'icon4py.model.common.initial_condition.from_file.FromFileConfig'>
+        description: Parameters for the file-based initial condition.
+        default: No default value.
+        optional: false
+        examples:
+          - "initial_condition:\n  data_path: .\n"
+        children:
+          - display_name: data_path
+            type_name: <class 'pathlib.Path'>
+            description: Path to the serialised data directory (typically '<experiment>/ser_data').
+            default: No default value.
+            optional: false
+            examples:
+              - 'data_path: .
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: FromFileConfig'
+              - data_path
+            module_path: pathlib
+            is_union: false
+        config_name_path:
+          - initial_condition
+          - 'type: FromFileConfig'
+        module_path: icon4py.model.common.initial_condition.from_file
+        is_union: false
+    config_name_path:
+      - initial_condition
+    module_path: types
+    is_union: true
+  - display_name: 'topography: one of the following'
+    type_name: icon4py.model.common.topography.analytical.flat_topography.FlatTopographyConfig | icon4py.model.common.topography.analytical.jablonowski_williamson.JablonowskiWilliamsonConfig | icon4py.model.common.topography.analytical.gaussian_hill.GaussianHillConfig | icon4py.model.common.topography.from_file.FromFileConfig
+    description: ??
+    default: No default value.
+    optional: false
+    examples:
+      - "topography:\n  type: flat\n"
+      - "topography:\n  type: jablonowski_williamson\n  u0: 35.0\n  eta_0: 0.252\n"
+      - "topography:\n  type: gaussian_hill\n  mount_x: 0.0\n  mount_y: 0.0\n  mount_height: 100.0\n  mount_width: 1000.0\n"
+      - "topography:\n  type: from_file\n  data_path: .\n"
+    children:
+      - display_name: 'type: FlatTopographyConfig'
+        type_name: <class 'icon4py.model.common.topography.analytical.flat_topography.FlatTopographyConfig'>
+        description: ??
+        default: No default value.
+        optional: false
+        examples:
+          - 'topography: {}
+
+            '
+        children: []
+        config_name_path:
+          - topography
+          - 'type: FlatTopographyConfig'
+        module_path: icon4py.model.common.topography.analytical.flat_topography
+        is_union: false
+      - display_name: 'type: JablonowskiWilliamsonConfig'
+        type_name: <class 'icon4py.model.common.topography.analytical.jablonowski_williamson.JablonowskiWilliamsonConfig'>
+        description: ??
+        default: No default value.
+        optional: false
+        examples:
+          - "topography:\n  u0: 35.0\n  eta_0: 0.252\n"
+        children:
+          - display_name: u0
+            type_name: <class 'float'>
+            description: ??
+            default: '35.0'
+            optional: true
+            examples:
+              - 'u0: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - topography
+              - 'type: JablonowskiWilliamsonConfig'
+              - u0
+            module_path: builtins
+            is_union: false
+          - display_name: eta_0
+            type_name: <class 'float'>
+            description: ??
+            default: '0.252'
+            optional: true
+            examples:
+              - 'eta_0: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - topography
+              - 'type: JablonowskiWilliamsonConfig'
+              - eta_0
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - topography
+          - 'type: JablonowskiWilliamsonConfig'
+        module_path: icon4py.model.common.topography.analytical.jablonowski_williamson
+        is_union: false
+      - display_name: 'type: GaussianHillConfig'
+        type_name: <class 'icon4py.model.common.topography.analytical.gaussian_hill.GaussianHillConfig'>
+        description: ??
+        default: No default value.
+        optional: false
+        examples:
+          - "topography:\n  mount_x: 0.0\n  mount_y: 0.0\n  mount_height: 100.0\n  mount_width: 1000.0\n"
+        children:
+          - display_name: mount_x
+            type_name: <class 'float'>
+            description: ??
+            default: '0.0'
+            optional: true
+            examples:
+              - 'mount_x: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - topography
+              - 'type: GaussianHillConfig'
+              - mount_x
+            module_path: builtins
+            is_union: false
+          - display_name: mount_y
+            type_name: <class 'float'>
+            description: ??
+            default: '0.0'
+            optional: true
+            examples:
+              - 'mount_y: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - topography
+              - 'type: GaussianHillConfig'
+              - mount_y
+            module_path: builtins
+            is_union: false
+          - display_name: mount_height
+            type_name: <class 'float'>
+            description: ??
+            default: '100.0'
+            optional: true
+            examples:
+              - 'mount_height: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - topography
+              - 'type: GaussianHillConfig'
+              - mount_height
+            module_path: builtins
+            is_union: false
+          - display_name: mount_width
+            type_name: <class 'float'>
+            description: ??
+            default: '1000.0'
+            optional: true
+            examples:
+              - 'mount_width: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - topography
+              - 'type: GaussianHillConfig'
+              - mount_width
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - topography
+          - 'type: GaussianHillConfig'
+        module_path: icon4py.model.common.topography.analytical.gaussian_hill
+        is_union: false
+      - display_name: 'type: FromFileConfig'
+        type_name: <class 'icon4py.model.common.topography.from_file.FromFileConfig'>
+        description: Parameters for the file-based topography.
+        default: No default value.
+        optional: false
+        examples:
+          - "topography:\n  data_path: .\n"
+        children:
+          - display_name: data_path
+            type_name: <class 'pathlib.Path'>
+            description: ??
+            default: No default value.
+            optional: false
+            examples:
+              - 'data_path: .
+
+                '
+            children: []
+            config_name_path:
+              - topography
+              - 'type: FromFileConfig'
+              - data_path
+            module_path: pathlib
+            is_union: false
+        config_name_path:
+          - topography
+          - 'type: FromFileConfig'
+        module_path: icon4py.model.common.topography.from_file
+        is_union: false
+    config_name_path:
+      - topography
+    module_path: types
+    is_union: true
+  - display_name: prescribed_tendencies
+    type_name: <class 'icon4py.model.common.prescribed_tendencies.PrescribedTendenciesConfig'>
+    description: ??
+    default: No default value.
+    optional: false
+    examples:
+      - "prescribed_tendencies:\n  data_path:\n"
+    children:
+      - display_name: 'data_path: one of the following'
+        type_name: pathlib.Path | None
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'data_path: .
+
+            '
+          - 'data_path:
+
+            '
+        children:
+          - display_name: 'type: Path'
+            type_name: <class 'pathlib.Path'>
+            description: ??
+            default: None
+            optional: true
+            examples:
+              - 'data_path: .
+
+                '
+            children: []
+            config_name_path:
+              - prescribed_tendencies
+              - data_path
+              - 'type: Path'
+            module_path: pathlib
+            is_union: false
+          - display_name: 'type: NoneType'
+            type_name: <class 'NoneType'>
+            description: ??
+            default: None
+            optional: true
+            examples:
+              - 'data_path:
+
+                '
+            children: []
+            config_name_path:
+              - prescribed_tendencies
+              - data_path
+              - 'type: NoneType'
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - prescribed_tendencies
+          - data_path
+        module_path: types
+        is_union: true
+    config_name_path:
+      - prescribed_tendencies
+    module_path: icon4py.model.common.prescribed_tendencies
+    is_union: false
+  - display_name: driver
+    type_name: <class 'icon4py.model.driver.config.DriverConfig'>
+    description: "\n    Standalone driver configuration.\n\n    Default values should correspond to default values in ICON.\n    "
+    default: No default value.
+    optional: false
+    examples:
+      - "driver:\n  experiment_name: ''\n  profiling_options:\n    gt4py_metrics_level: 100\n    gt4py_metrics_output_file: gt4py_metrics.json\n    skip_first_timestep: true\n  dtime: 0 seconds\n  start_of_simulation: '2026-01-01T00:00:00'\n  start_of_timestepping: '2026-01-01T00:00:00'\n  end_of_simulation:\n    type: relative\n    value: 0 seconds\n  output_path: .\n  apply_extra_second_order_divdamp: false\n  diffuse_before_time_loop: false\n  vertical_cfl_threshold: 0.0\n  ndyn_substeps: 0\n  enable_statistics_logging: false\n  enable_output: false\n  backend_config:\n    workspace_size: 268435456\n  output_backend: netcdf\n  output_mode: gather\n"
+    children:
+      - display_name: experiment_name
+        type_name: <class 'str'>
+        description: Name of the experiment
+        default: No default value.
+        optional: false
+        examples:
+          - 'experiment_name: ''''
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - experiment_name
+        module_path: builtins
+        is_union: false
+      - display_name: 'profiling_options: one of the following'
+        type_name: icon4py.model.driver.config.ProfilingConfig | None
+        description: Performance profiling options.
+        default: No default value.
+        optional: false
+        examples:
+          - "profiling_options:\n  gt4py_metrics_level: 100\n  gt4py_metrics_output_file: gt4py_metrics.json\n  skip_first_timestep: true\n"
+          - 'profiling_options:
+
+            '
+        children:
+          - display_name: 'type: ProfilingConfig'
+            type_name: <class 'icon4py.model.driver.config.ProfilingConfig'>
+            description: Performance profiling options.
+            default: No default value.
+            optional: false
+            examples:
+              - "profiling_options:\n  gt4py_metrics_level: 100\n  gt4py_metrics_output_file: gt4py_metrics.json\n  skip_first_timestep: true\n"
+            children:
+              - display_name: gt4py_metrics_level
+                type_name: <class 'int'>
+                description: ??
+                default: '100'
+                optional: true
+                examples:
+                  - 'gt4py_metrics_level: 0
+
+                    '
+                children: []
+                config_name_path:
+                  - driver
+                  - profiling_options
+                  - 'type: ProfilingConfig'
+                  - gt4py_metrics_level
+                module_path: builtins
+                is_union: false
+              - display_name: gt4py_metrics_output_file
+                type_name: <class 'str'>
+                description: ??
+                default: gt4py_metrics.json
+                optional: true
+                examples:
+                  - 'gt4py_metrics_output_file: ''''
+
+                    '
+                children: []
+                config_name_path:
+                  - driver
+                  - profiling_options
+                  - 'type: ProfilingConfig'
+                  - gt4py_metrics_output_file
+                module_path: builtins
+                is_union: false
+              - display_name: skip_first_timestep
+                type_name: <class 'bool'>
+                description: ??
+                default: 'True'
+                optional: true
+                examples:
+                  - 'skip_first_timestep: false
+
+                    '
+                children: []
+                config_name_path:
+                  - driver
+                  - profiling_options
+                  - 'type: ProfilingConfig'
+                  - skip_first_timestep
+                module_path: builtins
+                is_union: false
+            config_name_path:
+              - driver
+              - profiling_options
+              - 'type: ProfilingConfig'
+            module_path: icon4py.model.driver.config
+            is_union: false
+          - display_name: 'type: NoneType'
+            type_name: <class 'NoneType'>
+            description: Performance profiling options.
+            default: No default value.
+            optional: false
+            examples:
+              - 'profiling_options:
+
+                '
+            children: []
+            config_name_path:
+              - driver
+              - profiling_options
+              - 'type: NoneType'
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - driver
+          - profiling_options
+        module_path: types
+        is_union: true
+      - display_name: dtime
+        type_name: <class 'datetime.timedelta'>
+        description: Time step duration.
+        default: No default value.
+        optional: false
+        examples:
+          - 'dtime: 0 seconds
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - dtime
+        module_path: datetime
+        is_union: false
+      - display_name: start_of_simulation
+        type_name: <class 'datetime.datetime'>
+        description: Start date and time of a simulation.
+        default: No default value.
+        optional: false
+        examples:
+          - 'start_of_simulation: ''2026-01-01T00:00:00''
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - start_of_simulation
+        module_path: datetime
+        is_union: false
+      - display_name: start_of_timestepping
+        type_name: <class 'datetime.datetime'>
+        description: 'Time from when to start or restart (initial run: equivalent to ''start_of_simulation'')'
+        default: No default value.
+        optional: false
+        examples:
+          - 'start_of_timestepping: ''2026-01-01T00:00:00''
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - start_of_timestepping
+        module_path: datetime
+        is_union: false
+      - display_name: 'end_of_simulation: one of the following'
+        type_name: datetime.timedelta | datetime.datetime | int
+        description: End date and time of a simulation.
+        default: No default value.
+        optional: false
+        examples:
+          - "end_of_simulation:\n  type: relative\n  value: 0 seconds\n"
+          - "end_of_simulation:\n  type: absolute\n  value: '2026-01-01T00:00:00'\n"
+          - "end_of_simulation:\n  type: numsteps\n  value: 0\n"
+        children:
+          - display_name: 'type: timedelta'
+            type_name: <class 'datetime.timedelta'>
+            description: End date and time of a simulation.
+            default: No default value.
+            optional: false
+            examples:
+              - 'end_of_simulation: 0 seconds
+
+                '
+            children: []
+            config_name_path:
+              - driver
+              - end_of_simulation
+              - 'type: timedelta'
+            module_path: datetime
+            is_union: false
+          - display_name: 'type: datetime'
+            type_name: <class 'datetime.datetime'>
+            description: End date and time of a simulation.
+            default: No default value.
+            optional: false
+            examples:
+              - 'end_of_simulation: ''2026-01-01T00:00:00''
+
+                '
+            children: []
+            config_name_path:
+              - driver
+              - end_of_simulation
+              - 'type: datetime'
+            module_path: datetime
+            is_union: false
+          - display_name: 'type: int'
+            type_name: <class 'int'>
+            description: End date and time of a simulation.
+            default: No default value.
+            optional: false
+            examples:
+              - 'end_of_simulation: 0
+
+                '
+            children: []
+            config_name_path:
+              - driver
+              - end_of_simulation
+              - 'type: int'
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - driver
+          - end_of_simulation
+        module_path: types
+        is_union: true
+      - display_name: output_path
+        type_name: <class 'pathlib.Path'>
+        description: Output directory path, relative to the working directory.
+        default: output
+        optional: true
+        examples:
+          - 'output_path: .
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - output_path
+        module_path: pathlib
+        is_union: false
+      - display_name: apply_extra_second_order_divdamp
+        type_name: <class 'bool'>
+        description: 'Whether or not to apply additional second order divergence damping. Not a namelist variable, coded as follows in mo_nh_stepping.f90: # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)'
+        default: 'False'
+        optional: true
+        examples:
+          - 'apply_extra_second_order_divdamp: false
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - apply_extra_second_order_divdamp
+        module_path: builtins
+        is_union: false
+      - display_name: diffuse_before_time_loop
+        type_name: <class 'bool'>
+        description: No description available yet.
+        default: 'False'
+        optional: true
+        examples:
+          - 'diffuse_before_time_loop: false
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - diffuse_before_time_loop
+        module_path: builtins
+        is_union: false
+      - display_name: vertical_cfl_threshold
+        type_name: <class 'numpy.float64'>
+        description: Threshold for vertical advection CFL number at which the adaptive time step reduction (increase of ndyn_substeps w.r.t. the fixed fast-physics time step) is triggered.
+        default: '0.85'
+        optional: true
+        examples:
+          - 'vertical_cfl_threshold: 0.0
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - vertical_cfl_threshold
+        module_path: numpy
+        is_union: false
+      - display_name: ndyn_substeps
+        type_name: <class 'int'>
+        description: Number of dynamics substeps per time step.
+        default: '5'
+        optional: true
+        examples:
+          - 'ndyn_substeps: 0
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - ndyn_substeps
+        module_path: builtins
+        is_union: false
+      - display_name: enable_statistics_logging
+        type_name: <class 'bool'>
+        description: Compute and log variable statistics.
+        default: 'False'
+        optional: true
+        examples:
+          - 'enable_statistics_logging: false
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - enable_statistics_logging
+        module_path: builtins
+        is_union: false
+      - display_name: enable_output
+        type_name: <class 'bool'>
+        description: Enable output to file. For now this is only documented in 'icon4py.model.driver.driver_io'.
+        default: 'False'
+        optional: true
+        examples:
+          - 'enable_output: false
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - enable_output
+        module_path: builtins
+        is_union: false
+      - display_name: 'backend_config: one of the following'
+        type_name: icon4py.model.common.backend_configuration.BackendConfig | None
+        description: Backend configuration options, which affect performance but not the scientific outcome. `None` falls back to environment variables, if set, otherwise the default configuration is used.
+        default: None
+        optional: true
+        examples:
+          - "backend_config:\n  workspace_size: 268435456\n"
+          - 'backend_config:
+
+            '
+        children:
+          - display_name: 'type: BackendConfig'
+            type_name: <class 'icon4py.model.common.backend_configuration.BackendConfig'>
+            description: Backend configuration options, which affect performance but not the scientific outcome. `None` falls back to environment variables, if set, otherwise the default configuration is used.
+            default: None
+            optional: true
+            examples:
+              - "backend_config:\n  workspace_size: 268435456\n"
+            children:
+              - display_name: workspace_size
+                type_name: <class 'int'>
+                description: Size of the workspace memory (in Bytes) for externally allocated temporary fields. This is a performance feature of the DaCe backend to avoid runtime allocation of temporary fields, for each program call. Note that the memory buffer is allocated once and shared across all compiled programs.
+                default: '268435456'
+                optional: true
+                examples:
+                  - 'workspace_size: 0
+
+                    '
+                children: []
+                config_name_path:
+                  - driver
+                  - backend_config
+                  - 'type: BackendConfig'
+                  - workspace_size
+                module_path: builtins
+                is_union: false
+            config_name_path:
+              - driver
+              - backend_config
+              - 'type: BackendConfig'
+            module_path: icon4py.model.common.backend_configuration
+            is_union: false
+          - display_name: 'type: NoneType'
+            type_name: <class 'NoneType'>
+            description: Backend configuration options, which affect performance but not the scientific outcome. `None` falls back to environment variables, if set, otherwise the default configuration is used.
+            default: None
+            optional: true
+            examples:
+              - 'backend_config:
+
+                '
+            children: []
+            config_name_path:
+              - driver
+              - backend_config
+              - 'type: NoneType'
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - driver
+          - backend_config
+        module_path: types
+        is_union: true
+      - display_name: output_backend
+        type_name: <enum 'OutputBackend'>
+        description: File format of the output field groups ('netcdf' or 'zarr').
+        default: zarr
+        optional: true
+        examples:
+          - 'output_backend: netcdf
+
+            '
+          - 'output_backend: zarr
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - output_backend
+        module_path: icon4py.model.common.io.io
+        is_union: false
+      - display_name: output_mode
+        type_name: <enum 'OutputMode'>
+        description: Write strategy of distributed runs ('gather' or 'distributed', see 'icon4py.model.common.io.OutputMode'); 'distributed' netCDF needs an MPI-parallel netCDF4 installation in multi-rank runs (see 'Parallel netCDF' in 'icon4py.model.common.io').
+        default: distributed
+        optional: true
+        examples:
+          - 'output_mode: gather
+
+            '
+          - 'output_mode: distributed
+
+            '
+        children: []
+        config_name_path:
+          - driver
+          - output_mode
+        module_path: icon4py.model.common.io.io
+        is_union: false
+    config_name_path:
+      - driver
+    module_path: icon4py.model.driver.config
+    is_union: false
+  - display_name: 'nonhydrostatic: one of the following'
+    type_name: icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig | None
+    description: ??
+    default: None
+    optional: true
+    examples:
+      - "nonhydrostatic:\n  itime_scheme: most_efficient\n  iadv_rhotheta: miura\n  igradp_method: taylor_hydro\n  rayleigh_type: klemp\n  divdamp_order: combined\n  divdamp_type: three_dimensional\n  l_vert_nested: false\n  deepatmos_mode: false\n  iau_init: false\n  extra_diffu: true\n  rhotheta_offctr: -0.1\n  veladv_offctr: 0.25\n  fourth_order_divdamp_factor: 0.0025\n  fourth_order_divdamp_factor2: 0.004\n  fourth_order_divdamp_factor3: 0.004\n  fourth_order_divdamp_factor4: 0.004\n  fourth_order_divdamp_z: 32500.0\n  fourth_order_divdamp_z2: 40000.0\n  fourth_order_divdamp_z3: 60000.0\n  fourth_order_divdamp_z4: 80000.0\n"
+      - 'nonhydrostatic:
+
+        '
+    children:
+      - display_name: 'type: NonHydrostaticConfig'
+        type_name: <class 'icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig'>
+        description: "\n    Contains necessary parameter to configure a nonhydro run.\n\n    Encapsulates namelist parameters and derived parameters.\n    TODO: (magdalena) values should be read from a configuration file.\n    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.\n    "
+        default: None
+        optional: true
+        examples:
+          - "nonhydrostatic:\n  itime_scheme: most_efficient\n  iadv_rhotheta: miura\n  igradp_method: taylor_hydro\n  rayleigh_type: klemp\n  divdamp_order: combined\n  divdamp_type: three_dimensional\n  l_vert_nested: false\n  deepatmos_mode: false\n  iau_init: false\n  extra_diffu: true\n  rhotheta_offctr: -0.1\n  veladv_offctr: 0.25\n  fourth_order_divdamp_factor: 0.0025\n  fourth_order_divdamp_factor2: 0.004\n  fourth_order_divdamp_factor3: 0.004\n  fourth_order_divdamp_factor4: 0.004\n  fourth_order_divdamp_z: 32500.0\n  fourth_order_divdamp_z2: 40000.0\n  fourth_order_divdamp_z3: 60000.0\n  fourth_order_divdamp_z4: 80000.0\n"
+        children:
+          - display_name: itime_scheme
+            type_name: <enum 'TimeSteppingScheme'>
+            description: Options for predictor-corrector time-stepping scheme.
+            default: '4'
+            optional: true
+            examples:
+              - 'itime_scheme: most_efficient
+
+                '
+              - 'itime_scheme: stable
+
+                '
+              - 'itime_scheme: expensive
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - itime_scheme
+            module_path: icon4py.model.atmosphere.dycore.dycore_states
+            is_union: false
+          - display_name: iadv_rhotheta
+            type_name: <enum 'RhoThetaAdvectionType'>
+            description: Advection method for rho and theta.
+            default: RhoThetaAdvectionType.MIURA
+            optional: true
+            examples:
+              - 'iadv_rhotheta: simple
+
+                '
+              - 'iadv_rhotheta: miura
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - iadv_rhotheta
+            module_path: icon4py.model.atmosphere.dycore.dycore_states
+            is_union: false
+          - display_name: igradp_method
+            type_name: <enum 'HorizontalPressureDiscretizationType'>
+            description: Discretization of horizontal pressure gradient.
+            default: HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+            optional: true
+            examples:
+              - 'igradp_method: conventional
+
+                '
+              - 'igradp_method: taylor
+
+                '
+              - 'igradp_method: taylor_hydro
+
+                '
+              - 'igradp_method: polynomial
+
+                '
+              - 'igradp_method: polynomial_hydro
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - igradp_method
+            module_path: icon4py.model.atmosphere.dycore.dycore_states
+            is_union: false
+          - display_name: rayleigh_type
+            type_name: <enum 'RayleighType'>
+            description: Type of Rayleigh damping.
+            default: RayleighType.KLEMP
+            optional: true
+            examples:
+              - 'rayleigh_type: classic
+
+                '
+              - 'rayleigh_type: klemp
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - rayleigh_type
+            module_path: icon4py.model.common.constants
+            is_union: false
+          - display_name: divdamp_order
+            type_name: <enum 'DivergenceDampingOrder'>
+            description: Order of divergence damping.
+            default: DivergenceDampingOrder.COMBINED
+            optional: true
+            examples:
+              - 'divdamp_order: second_order
+
+                '
+              - 'divdamp_order: fourth_order
+
+                '
+              - 'divdamp_order: combined
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - divdamp_order
+            module_path: icon4py.model.atmosphere.dycore.dycore_states
+            is_union: false
+          - display_name: divdamp_type
+            type_name: <enum 'DivergenceDampingType'>
+            description: Type of divergence damping.
+            default: '3'
+            optional: true
+            examples:
+              - 'divdamp_type: two_dimensional
+
+                '
+              - 'divdamp_type: three_dimensional
+
+                '
+              - 'divdamp_type: combined
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - divdamp_type
+            module_path: icon4py.model.atmosphere.dycore.dycore_states
+            is_union: false
+          - display_name: l_vert_nested
+            type_name: <class 'bool'>
+            description: Whether to use vertical nesting (variable number of vertical levels).
+            default: 'False'
+            optional: true
+            examples:
+              - 'l_vert_nested: false
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - l_vert_nested
+            module_path: builtins
+            is_union: false
+          - display_name: deepatmos_mode
+            type_name: <class 'bool'>
+            description: Deep atmosphere mode.
+            default: 'False'
+            optional: true
+            examples:
+              - 'deepatmos_mode: false
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - deepatmos_mode
+            module_path: builtins
+            is_union: false
+          - display_name: iau_init
+            type_name: <class 'bool'>
+            description: Start from DWD analysis with incremental analysis update.
+            default: 'False'
+            optional: true
+            examples:
+              - 'iau_init: false
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - iau_init
+            module_path: builtins
+            is_union: false
+          - display_name: extra_diffu
+            type_name: <class 'bool'>
+            description: Apply additional momentum diffusion at grid points close to the stability limit for vertical advection.
+            default: 'True'
+            optional: true
+            examples:
+              - 'extra_diffu: false
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - extra_diffu
+            module_path: builtins
+            is_union: false
+          - display_name: rhotheta_offctr
+            type_name: <class 'numpy.float64'>
+            description: Off-centering of density and potential temperature at interface level.Specifying a negative value here reduces the amount of vertical wind off-centering needed for stability of sound waves.
+            default: '-0.1'
+            optional: true
+            examples:
+              - 'rhotheta_offctr: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - rhotheta_offctr
+            module_path: numpy
+            is_union: false
+          - display_name: veladv_offctr
+            type_name: <class 'numpy.float64'>
+            description: Off-centering of velocity advection in corrector step.
+            default: '0.25'
+            optional: true
+            examples:
+              - 'veladv_offctr: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - veladv_offctr
+            module_path: numpy
+            is_union: false
+          - display_name: fourth_order_divdamp_factor
+            type_name: <class 'numpy.float64'>
+            description: Scaling factor for divergence damping at height 'fourth_order_divdamp_z' and below.
+            default: '0.0025'
+            optional: true
+            examples:
+              - 'fourth_order_divdamp_factor: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - fourth_order_divdamp_factor
+            module_path: numpy
+            is_union: false
+          - display_name: fourth_order_divdamp_factor2
+            type_name: <class 'numpy.float64'>
+            description: Scaling factor for divergence damping at height 'fourth_order_divdamp_z2'.
+            default: '0.004'
+            optional: true
+            examples:
+              - 'fourth_order_divdamp_factor2: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - fourth_order_divdamp_factor2
+            module_path: numpy
+            is_union: false
+          - display_name: fourth_order_divdamp_factor3
+            type_name: <class 'numpy.float64'>
+            description: Scaling factor for divergence damping at height 'fourth_order_divdamp_z3'.
+            default: '0.004'
+            optional: true
+            examples:
+              - 'fourth_order_divdamp_factor3: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - fourth_order_divdamp_factor3
+            module_path: numpy
+            is_union: false
+          - display_name: fourth_order_divdamp_factor4
+            type_name: <class 'numpy.float64'>
+            description: Scaling factor for divergence damping at height 'fourth_order_divdamp_z4 and higher'.
+            default: '0.004'
+            optional: true
+            examples:
+              - 'fourth_order_divdamp_factor4: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - fourth_order_divdamp_factor4
+            module_path: numpy
+            is_union: false
+          - display_name: fourth_order_divdamp_z
+            type_name: <class 'numpy.float64'>
+            description: Height up to which divdamp_fac is used, and where the linear profile up to height 'fourth_order_divdamp_z2' starts
+            default: '32500.0'
+            optional: true
+            examples:
+              - 'fourth_order_divdamp_z: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - fourth_order_divdamp_z
+            module_path: numpy
+            is_union: false
+          - display_name: fourth_order_divdamp_z2
+            type_name: <class 'numpy.float64'>
+            description: Height with scaling factor 'fourth_order_divdamp_factor2' where the linear profile starting at 'fourth_order_divdamp_z' ends, and where the quadratic profile up to 'fourth_order_divdamp_z4' starts.
+            default: '40000.0'
+            optional: true
+            examples:
+              - 'fourth_order_divdamp_z2: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - fourth_order_divdamp_z2
+            module_path: numpy
+            is_union: false
+          - display_name: fourth_order_divdamp_z3
+            type_name: <class 'numpy.float64'>
+            description: Height with scaling factor 'fourth_order_divdamp_factor3'. Needed to determine the quadratic function  between 'fourth_order_divdamp_z2' and 'fourth_order_divdamp_z4'.
+            default: '60000.0'
+            optional: true
+            examples:
+              - 'fourth_order_divdamp_z3: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - fourth_order_divdamp_z3
+            module_path: numpy
+            is_union: false
+          - display_name: fourth_order_divdamp_z4
+            type_name: <class 'numpy.float64'>
+            description: Height from which scaling factor 'fourth_order_divdamp_factor4' is used.
+            default: '80000.0'
+            optional: true
+            examples:
+              - 'fourth_order_divdamp_z4: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - nonhydrostatic
+              - 'type: NonHydrostaticConfig'
+              - fourth_order_divdamp_z4
+            module_path: numpy
+            is_union: false
+        config_name_path:
+          - nonhydrostatic
+          - 'type: NonHydrostaticConfig'
+        module_path: icon4py.model.atmosphere.dycore.solve_nonhydro
+        is_union: false
+      - display_name: 'type: NoneType'
+        type_name: <class 'NoneType'>
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'nonhydrostatic:
+
+            '
+        children: []
+        config_name_path:
+          - nonhydrostatic
+          - 'type: NoneType'
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - nonhydrostatic
+    module_path: types
+    is_union: true
+  - display_name: 'diffusion: one of the following'
+    type_name: icon4py.model.atmosphere.diffusion.diffusion.DiffusionConfig | None
+    description: ??
+    default: None
+    optional: true
+    examples:
+      - "diffusion:\n  diffusion_type: smagorinsky_4th_order\n  apply_to_vertical_wind: true\n  apply_to_horizontal_wind: true\n  apply_to_temperature: true\n  apply_smag_diff_to_vertical_wind: false\n  compute_3d_smag_coeff: false\n  type_vn_diffu: diamond_vertices\n  type_t_diffu: heterogeneous\n  hdiff_efdt_ratio: 36.0\n  hdiff_w_efdt_ratio: 15.0\n  smagorinski_scaling_factor: 0.015\n  smagorinski_scaling_factor2: 0.07137250670656087\n  smagorinski_scaling_factor3: 0.0\n  smagorinski_scaling_factor4: 1.0\n  smagorinski_scaling_height: 32500.0\n  smagorinski_scaling_height2: 60686.25335328044\n  smagorinski_scaling_height3: 50000.0\n  smagorinski_scaling_height4: 90000.0\n  apply_zdiffusion_t: true\n  temperature_boundary_diffusion_denominator: 135.0\n  velocity_boundary_diffusion_denominator: 200.0\n  shear_type: vertical_of_horizontal_wind\n  iforcing: no_forcing\n  a_hshr: 1.0\n  loutshs: false\n"
+      - 'diffusion:
+
+        '
+    children:
+      - display_name: 'type: DiffusionConfig'
+        type_name: <class 'icon4py.model.atmosphere.diffusion.diffusion.DiffusionConfig'>
+        description: "\n    Contains necessary parameter to configure a diffusion run.\n\n    Encapsulates namelist parameters and derived parameters.\n    Values should be read from configuration.\n    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.\n    "
+        default: None
+        optional: true
+        examples:
+          - "diffusion:\n  diffusion_type: smagorinsky_4th_order\n  apply_to_vertical_wind: true\n  apply_to_horizontal_wind: true\n  apply_to_temperature: true\n  apply_smag_diff_to_vertical_wind: false\n  compute_3d_smag_coeff: false\n  type_vn_diffu: diamond_vertices\n  type_t_diffu: heterogeneous\n  hdiff_efdt_ratio: 36.0\n  hdiff_w_efdt_ratio: 15.0\n  smagorinski_scaling_factor: 0.015\n  smagorinski_scaling_factor2: 0.07137250670656087\n  smagorinski_scaling_factor3: 0.0\n  smagorinski_scaling_factor4: 1.0\n  smagorinski_scaling_height: 32500.0\n  smagorinski_scaling_height2: 60686.25335328044\n  smagorinski_scaling_height3: 50000.0\n  smagorinski_scaling_height4: 90000.0\n  apply_zdiffusion_t: true\n  temperature_boundary_diffusion_denominator: 135.0\n  velocity_boundary_diffusion_denominator: 200.0\n  shear_type: vertical_of_horizontal_wind\n  iforcing: no_forcing\n  a_hshr: 1.0\n  loutshs: false\n"
+        children:
+          - display_name: diffusion_type
+            type_name: <enum 'DiffusionType'>
+            description: Order of Nabla operator for diffusion.
+            default: DiffusionType.SMAGORINSKY_4TH_ORDER
+            optional: true
+            examples:
+              - 'diffusion_type: no_diffusion
+
+                '
+              - 'diffusion_type: linear_2nd_order
+
+                '
+              - 'diffusion_type: smagorinsky_no_background
+
+                '
+              - 'diffusion_type: linear_4th_order
+
+                '
+              - 'diffusion_type: smagorinsky_4th_order
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - diffusion_type
+            module_path: icon4py.model.atmosphere.diffusion.diffusion
+            is_union: false
+          - display_name: apply_to_vertical_wind
+            type_name: <class 'bool'>
+            description: If True, apply diffusion to the vertical wind field.
+            default: 'True'
+            optional: true
+            examples:
+              - 'apply_to_vertical_wind: false
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - apply_to_vertical_wind
+            module_path: builtins
+            is_union: false
+          - display_name: apply_to_horizontal_wind
+            type_name: <class 'bool'>
+            description: If true, apply diffusion on the horizontal wind field.
+            default: 'True'
+            optional: true
+            examples:
+              - 'apply_to_horizontal_wind: false
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - apply_to_horizontal_wind
+            module_path: builtins
+            is_union: false
+          - display_name: apply_to_temperature
+            type_name: <class 'bool'>
+            description: If True, apply horizontal diffusion to temperature field.
+            default: 'True'
+            optional: true
+            examples:
+              - 'apply_to_temperature: false
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - apply_to_temperature
+            module_path: builtins
+            is_union: false
+          - display_name: apply_smag_diff_to_vertical_wind
+            type_name: <class 'bool'>
+            description: If True, apply Smagorinsky diffusion to vertical wind field.
+            default: 'False'
+            optional: true
+            examples:
+              - 'apply_smag_diff_to_vertical_wind: false
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - apply_smag_diff_to_vertical_wind
+            module_path: builtins
+            is_union: false
+          - display_name: compute_3d_smag_coeff
+            type_name: <class 'bool'>
+            description: If True, compute 3D Smagorinsky diffusion coefficient.
+            default: 'False'
+            optional: true
+            examples:
+              - 'compute_3d_smag_coeff: false
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - compute_3d_smag_coeff
+            module_path: builtins
+            is_union: false
+          - display_name: type_vn_diffu
+            type_name: <enum 'SmagorinskyStencilType'>
+            description: Reconstruction method used for Smagorinsky diffusion.
+            default: SmagorinskyStencilType.DIAMOND_VERTICES
+            optional: true
+            examples:
+              - 'type_vn_diffu: diamond_vertices
+
+                '
+              - 'type_vn_diffu: cells_and_vertices
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - type_vn_diffu
+            module_path: icon4py.model.atmosphere.diffusion.diffusion
+            is_union: false
+          - display_name: type_t_diffu
+            type_name: <enum 'TemperatureDiscretizationType'>
+            description: Options for discretizing the Smagorinsky temperature diffusion.
+            default: TemperatureDiscretizationType.HETEROGENEOUS
+            optional: true
+            examples:
+              - 'type_t_diffu: homogeneous
+
+                '
+              - 'type_t_diffu: heterogeneous
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - type_t_diffu
+            module_path: icon4py.model.atmosphere.diffusion.diffusion
+            is_union: false
+          - display_name: hdiff_efdt_ratio
+            type_name: <class 'numpy.float64'>
+            description: Ratio of e-folding time to (2*)time step.
+            default: '36.0'
+            optional: true
+            examples:
+              - 'hdiff_efdt_ratio: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - hdiff_efdt_ratio
+            module_path: numpy
+            is_union: false
+          - display_name: hdiff_w_efdt_ratio
+            type_name: <class 'numpy.float64'>
+            description: Ratio of e-folding time to time step for w diffusion (NH only).
+            default: '15.0'
+            optional: true
+            examples:
+              - 'hdiff_w_efdt_ratio: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - hdiff_w_efdt_ratio
+            module_path: numpy
+            is_union: false
+          - display_name: smagorinski_scaling_factor
+            type_name: <class 'numpy.float64'>
+            description: Smagorinsky factor for z <= smagorinski_scaling_height (constant base value).
+            default: '0.015'
+            optional: true
+            examples:
+              - 'smagorinski_scaling_factor: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - smagorinski_scaling_factor
+            module_path: numpy
+            is_union: false
+          - display_name: smagorinski_scaling_factor2
+            type_name: <class 'numpy.float64'>
+            description: 'Smagorinsky factor at z = smagorinski_scaling_height2: end of the linear segment andstart of the quadratic segment. The linear slope is (factor2-factor1)/(height2-height1).'
+            default: '0.07137250670656087'
+            optional: true
+            examples:
+              - 'smagorinski_scaling_factor2: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - smagorinski_scaling_factor2
+            module_path: numpy
+            is_union: false
+          - display_name: smagorinski_scaling_factor3
+            type_name: <class 'numpy.float64'>
+            description: 'Smagorinsky factor at z = smagorinski_scaling_height3: interior control point of thequadratic segment (height2 <= height3 <= height4), used to fit the quadratic coefficients.'
+            default: '0.0'
+            optional: true
+            examples:
+              - 'smagorinski_scaling_factor3: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - smagorinski_scaling_factor3
+            module_path: numpy
+            is_union: false
+          - display_name: smagorinski_scaling_factor4
+            type_name: <class 'numpy.float64'>
+            description: Smagorinsky factor for z >= smagorinski_scaling_height4 (constant asymptotic value).Also the third control point that defines the quadratic segment together with factor2 and factor3.
+            default: '1.0'
+            optional: true
+            examples:
+              - 'smagorinski_scaling_factor4: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - smagorinski_scaling_factor4
+            module_path: numpy
+            is_union: false
+          - display_name: smagorinski_scaling_height
+            type_name: <class 'numpy.float64'>
+            description: 'Lower boundary of the linear segment: factor is constant at smagorinski_scaling_factor below this height.'
+            default: '32500.0'
+            optional: true
+            examples:
+              - 'smagorinski_scaling_height: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - smagorinski_scaling_height
+            module_path: numpy
+            is_union: false
+          - display_name: smagorinski_scaling_height2
+            type_name: <class 'numpy.float64'>
+            description: Transition height between linear and quadratic segments.
+            default: '60686.25335328044'
+            optional: true
+            examples:
+              - 'smagorinski_scaling_height2: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - smagorinski_scaling_height2
+            module_path: numpy
+            is_union: false
+          - display_name: smagorinski_scaling_height3
+            type_name: <class 'numpy.float64'>
+            description: Interior control point height within the quadratic segment (height2 <= height3 <= height4).
+            default: '50000.0'
+            optional: true
+            examples:
+              - 'smagorinski_scaling_height3: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - smagorinski_scaling_height3
+            module_path: numpy
+            is_union: false
+          - display_name: smagorinski_scaling_height4
+            type_name: <class 'numpy.float64'>
+            description: 'Upper boundary of the quadratic segment: factor is constant at smagorinski_scaling_factor4 above this height.'
+            default: '90000.0'
+            optional: true
+            examples:
+              - 'smagorinski_scaling_height4: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - smagorinski_scaling_height4
+            module_path: numpy
+            is_union: false
+          - display_name: apply_zdiffusion_t
+            type_name: <class 'bool'>
+            description: If True, apply truly horizontal temperature diffusion over steep slopes.
+            default: 'True'
+            optional: true
+            examples:
+              - 'apply_zdiffusion_t: false
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - apply_zdiffusion_t
+            module_path: builtins
+            is_union: false
+          - display_name: temperature_boundary_diffusion_denominator
+            type_name: <class 'numpy.float64'>
+            description: Denominator for temperature boundary diffusion.
+            default: '135.0'
+            optional: true
+            examples:
+              - 'temperature_boundary_diffusion_denominator: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - temperature_boundary_diffusion_denominator
+            module_path: numpy
+            is_union: false
+          - display_name: velocity_boundary_diffusion_denominator
+            type_name: <class 'numpy.float64'>
+            description: Denominator for velocity boundary diffusion.
+            default: '200.0'
+            optional: true
+            examples:
+              - 'velocity_boundary_diffusion_denominator: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - velocity_boundary_diffusion_denominator
+            module_path: numpy
+            is_union: false
+          - display_name: shear_type
+            type_name: <enum 'TurbulenceShearForcingType'>
+            description: Type of shear forcing used in turbulence.
+            default: TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND
+            optional: true
+            examples:
+              - 'shear_type: vertical_of_horizontal_wind
+
+                '
+              - 'shear_type: vertical_horizontal_of_horizontal_wind
+
+                '
+              - 'shear_type: vertical_horizontal_of_horizontal_vertical_wind
+
+                '
+              - 'shear_type: vertical_horizontal_of_horizontal_wind_lthesh
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - shear_type
+            module_path: icon4py.model.atmosphere.diffusion.diffusion
+            is_union: false
+          - display_name: iforcing
+            type_name: <enum 'ForcingType'>
+            description: Type of physics forcing.
+            default: ForcingType.NO_FORCING
+            optional: true
+            examples:
+              - 'iforcing: no_forcing
+
+                '
+              - 'iforcing: aes
+
+                '
+              - 'iforcing: nwp
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - iforcing
+            module_path: icon4py.model.atmosphere.diffusion.diffusion
+            is_union: false
+          - display_name: a_hshr
+            type_name: <class 'numpy.float64'>
+            description: Scaling factor for horizontal shear production term.
+            default: '1.0'
+            optional: true
+            examples:
+              - 'a_hshr: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - a_hshr
+            module_path: numpy
+            is_union: false
+          - display_name: loutshs
+            type_name: <class 'bool'>
+            description: 'Output flag for horizontal shear.Called ''loutshs'' in mo_turbdiff_nml.f90, not a namelist parameter: its default is FALSE and only set to true in fortran `IF (.NOT. ldynamics)`.'
+            default: 'False'
+            optional: true
+            examples:
+              - 'loutshs: false
+
+                '
+            children: []
+            config_name_path:
+              - diffusion
+              - 'type: DiffusionConfig'
+              - loutshs
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - diffusion
+          - 'type: DiffusionConfig'
+        module_path: icon4py.model.atmosphere.diffusion.diffusion
+        is_union: false
+      - display_name: 'type: NoneType'
+        type_name: <class 'NoneType'>
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'diffusion:
+
+            '
+        children: []
+        config_name_path:
+          - diffusion
+          - 'type: NoneType'
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - diffusion
+    module_path: types
+    is_union: true
+  - display_name: 'tracer_config: one of the following'
+    type_name: icon4py.model.common.states.tracer_states.TracerConfig | None
+    description: ??
+    default: None
+    optional: true
+    examples:
+      - "tracer_config:\n  qv: false\n  qc: false\n  qi: false\n  qr: false\n  qs: false\n  qg: false\n"
+      - 'tracer_config:
+
+        '
+    children:
+      - display_name: 'type: TracerConfig'
+        type_name: <class 'icon4py.model.common.states.tracer_states.TracerConfig'>
+        description: "Which tracers are active in the model configuration.\n\n    Each boolean field indicates whether the corresponding tracer is active.\n    Used instead of a raw ``ntracer: int`` to provide type-safe tracer selection.\n    "
+        default: None
+        optional: true
+        examples:
+          - "tracer_config:\n  qv: false\n  qc: false\n  qi: false\n  qr: false\n  qs: false\n  qg: false\n"
+        children:
+          - display_name: qv
+            type_name: <class 'bool'>
+            description: ??
+            default: 'False'
+            optional: true
+            examples:
+              - 'qv: false
+
+                '
+            children: []
+            config_name_path:
+              - tracer_config
+              - 'type: TracerConfig'
+              - qv
+            module_path: builtins
+            is_union: false
+          - display_name: qc
+            type_name: <class 'bool'>
+            description: ??
+            default: 'False'
+            optional: true
+            examples:
+              - 'qc: false
+
+                '
+            children: []
+            config_name_path:
+              - tracer_config
+              - 'type: TracerConfig'
+              - qc
+            module_path: builtins
+            is_union: false
+          - display_name: qi
+            type_name: <class 'bool'>
+            description: ??
+            default: 'False'
+            optional: true
+            examples:
+              - 'qi: false
+
+                '
+            children: []
+            config_name_path:
+              - tracer_config
+              - 'type: TracerConfig'
+              - qi
+            module_path: builtins
+            is_union: false
+          - display_name: qr
+            type_name: <class 'bool'>
+            description: ??
+            default: 'False'
+            optional: true
+            examples:
+              - 'qr: false
+
+                '
+            children: []
+            config_name_path:
+              - tracer_config
+              - 'type: TracerConfig'
+              - qr
+            module_path: builtins
+            is_union: false
+          - display_name: qs
+            type_name: <class 'bool'>
+            description: ??
+            default: 'False'
+            optional: true
+            examples:
+              - 'qs: false
+
+                '
+            children: []
+            config_name_path:
+              - tracer_config
+              - 'type: TracerConfig'
+              - qs
+            module_path: builtins
+            is_union: false
+          - display_name: qg
+            type_name: <class 'bool'>
+            description: ??
+            default: 'False'
+            optional: true
+            examples:
+              - 'qg: false
+
+                '
+            children: []
+            config_name_path:
+              - tracer_config
+              - 'type: TracerConfig'
+              - qg
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - tracer_config
+          - 'type: TracerConfig'
+        module_path: icon4py.model.common.states.tracer_states
+        is_union: false
+      - display_name: 'type: NoneType'
+        type_name: <class 'NoneType'>
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'tracer_config:
+
+            '
+        children: []
+        config_name_path:
+          - tracer_config
+          - 'type: NoneType'
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - tracer_config
+    module_path: types
+    is_union: true
+  - display_name: 'tracer_advection: one of the following'
+    type_name: icon4py.model.atmosphere.tracer_advection.tracer_advection.AdvectionConfig | None
+    description: ??
+    default: None
+    optional: true
+    examples:
+      - "tracer_advection:\n  horizontal_advection_type: no_advection\n  horizontal_advection_limiter: no_limiter\n  vertical_advection_type: no_advection\n  vertical_advection_limiter: no_limiter\n"
+      - 'tracer_advection:
+
+        '
+    children:
+      - display_name: 'type: AdvectionConfig'
+        type_name: <class 'icon4py.model.atmosphere.tracer_advection.tracer_advection.AdvectionConfig'>
+        description: "\n    Contains necessary parameters to configure an tracer advection run.\n    "
+        default: None
+        optional: true
+        examples:
+          - "tracer_advection:\n  horizontal_advection_type: no_advection\n  horizontal_advection_limiter: no_limiter\n  vertical_advection_type: no_advection\n  vertical_advection_limiter: no_limiter\n"
+        children:
+          - display_name: horizontal_advection_type
+            type_name: <enum 'HorizontalAdvectionType'>
+            description: "\n    Horizontal operator scheme for tracer advection (originally ihadv_tracer).\n    "
+            default: No default value.
+            optional: false
+            examples:
+              - 'horizontal_advection_type: no_advection
+
+                '
+              - 'horizontal_advection_type: first_order_upwind
+
+                '
+              - 'horizontal_advection_type: second_order_linear_miura
+
+                '
+            children: []
+            config_name_path:
+              - tracer_advection
+              - 'type: AdvectionConfig'
+              - horizontal_advection_type
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
+            is_union: false
+          - display_name: horizontal_advection_limiter
+            type_name: <enum 'HorizontalAdvectionLimiter'>
+            description: "\n    Limiter for horizontal tracer advection operator (originally itype_hlimit).\n    "
+            default: No default value.
+            optional: false
+            examples:
+              - 'horizontal_advection_limiter: no_limiter
+
+                '
+              - 'horizontal_advection_limiter: positive_definite
+
+                '
+            children: []
+            config_name_path:
+              - tracer_advection
+              - 'type: AdvectionConfig'
+              - horizontal_advection_limiter
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
+            is_union: false
+          - display_name: vertical_advection_type
+            type_name: <enum 'VerticalAdvectionType'>
+            description: "\n    Vertical operator scheme for tracer advection (originally ivadv_tracer).\n    "
+            default: No default value.
+            optional: false
+            examples:
+              - 'vertical_advection_type: no_advection
+
+                '
+              - 'vertical_advection_type: first_order_upwind
+
+                '
+              - 'vertical_advection_type: third_order_ppm
+
+                '
+            children: []
+            config_name_path:
+              - tracer_advection
+              - 'type: AdvectionConfig'
+              - vertical_advection_type
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
+            is_union: false
+          - display_name: vertical_advection_limiter
+            type_name: <enum 'VerticalAdvectionLimiter'>
+            description: "\n    Limiter for vertical tracer advection operator (originally itype_vlimit).\n    "
+            default: No default value.
+            optional: false
+            examples:
+              - 'vertical_advection_limiter: no_limiter
+
+                '
+              - 'vertical_advection_limiter: semi_monotonic
+
+                '
+            children: []
+            config_name_path:
+              - tracer_advection
+              - 'type: AdvectionConfig'
+              - vertical_advection_limiter
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
+            is_union: false
+        config_name_path:
+          - tracer_advection
+          - 'type: AdvectionConfig'
+        module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
+        is_union: false
+      - display_name: 'type: NoneType'
+        type_name: <class 'NoneType'>
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'tracer_advection:
+
+            '
+        children: []
+        config_name_path:
+          - tracer_advection
+          - 'type: NoneType'
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - tracer_advection
+    module_path: types
+    is_union: true
+  - display_name: 'graupel: one of the following'
+    type_name: icon4py.model.atmosphere.subgrid_scale_physics.microphysics.single_moment_six_class_gscp_graupel.SingleMomentSixClassIconGraupelConfig | None
+    description: ??
+    default: None
+    optional: true
+    examples:
+      - "graupel:\n  liquid_autoconversion_option: seifert_beheng\n  snow_intercept_option: field_general_moment_estimation\n  do_latent_heat_nudging: false\n  use_constant_latent_heat: true\n  ice_stickeff_min: 0.075\n  power_law_coeff_for_ice_mean_fall_speed: 1.25\n  exponent_for_density_factor_in_ice_sedimentation: 0.33\n  power_law_coeff_for_snow_fall_speed: 20.0\n  rain_mu: 0.0\n  rain_n0: 1.0\n  snow2graupel_riming_coeff: 0.5\n"
+      - 'graupel:
+
+        '
+    children:
+      - display_name: 'type: SingleMomentSixClassIconGraupelConfig'
+        type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.microphysics.single_moment_six_class_gscp_graupel.SingleMomentSixClassIconGraupelConfig'>
+        description: "\n    Contains necessary parameters to configure icon graupel microphysics scheme.\n\n    Encapsulates namelist parameters.\n    Values should be read from configuration.\n    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.\n\n    lsedi_ice (option for whether ice sedimendation is performed), lstickeff (option for different empirical formulae of sticking efficiency), and lred_depgrow (option for reduced depositional growth) are removed because they are set to True in the original code gscp_graupel.f90.\n\n    lpres_pri is removed because it is a duplicated option for lsedi_ice.\n\n    ldiag_ttend, and ldiag_qtend are removed because default outputs in icon4py physics granules include tendencies.\n\n    l_cv is removed. This option is to swtich between whether the microphysical processes are isochoric or isobaric. Originally defined as  as input to the graupel in ICON. It is hardcoded to True in ICON.\n    The reason for its existence and isobaric may have a positive effect on reducing sound waves. In case it needs to be restored, is_isochoric is a better name.\n\n    The COSMO microphysics documentation \"A Description of the Nonhydrostatic Regional COSMO-Model Part II Physical Parameterizations\" can be downloaded via this link: https://www.cosmo-model.org/content/model/cosmo/coreDocumentation/cosmo_physics_6.00.pdf\n    "
+        default: None
+        optional: true
+        examples:
+          - "graupel:\n  liquid_autoconversion_option: seifert_beheng\n  snow_intercept_option: field_general_moment_estimation\n  do_latent_heat_nudging: false\n  use_constant_latent_heat: true\n  ice_stickeff_min: 0.075\n  power_law_coeff_for_ice_mean_fall_speed: 1.25\n  exponent_for_density_factor_in_ice_sedimentation: 0.33\n  power_law_coeff_for_snow_fall_speed: 20.0\n  rain_mu: 0.0\n  rain_n0: 1.0\n  snow2graupel_riming_coeff: 0.5\n"
+        children:
+          - display_name: liquid_autoconversion_option
+            type_name: <enum 'LiquidAutoConversionType'>
+            description: "\n    Options for computing liquid auto conversion rate\n    "
+            default: LiquidAutoConversionType.SEIFERT_BEHENG
+            optional: true
+            examples:
+              - 'liquid_autoconversion_option: kessler
+
+                '
+              - 'liquid_autoconversion_option: seifert_beheng
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - liquid_autoconversion_option
+            module_path: icon4py.model.atmosphere.subgrid_scale_physics.microphysics.microphysics_options
+            is_union: false
+          - display_name: snow_intercept_option
+            type_name: <enum 'SnowInterceptParameterization'>
+            description: "\n    Options for deriving snow intercept parameter\n    "
+            default: SnowInterceptParameterization.FIELD_GENERAL_MOMENT_ESTIMATION
+            optional: true
+            examples:
+              - 'snow_intercept_option: field_best_fit_estimation
+
+                '
+              - 'snow_intercept_option: field_general_moment_estimation
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - snow_intercept_option
+            module_path: icon4py.model.atmosphere.subgrid_scale_physics.microphysics.microphysics_options
+            is_union: false
+          - display_name: do_latent_heat_nudging
+            type_name: <class 'bool'>
+            description: ??
+            default: 'False'
+            optional: true
+            examples:
+              - 'do_latent_heat_nudging: false
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - do_latent_heat_nudging
+            module_path: builtins
+            is_union: false
+          - display_name: use_constant_latent_heat
+            type_name: <class 'bool'>
+            description: ??
+            default: 'True'
+            optional: true
+            examples:
+              - 'use_constant_latent_heat: false
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - use_constant_latent_heat
+            module_path: builtins
+            is_union: false
+          - display_name: ice_stickeff_min
+            type_name: <class 'numpy.float64'>
+            description: ??
+            default: '0.075'
+            optional: true
+            examples:
+              - 'ice_stickeff_min: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - ice_stickeff_min
+            module_path: numpy
+            is_union: false
+          - display_name: power_law_coeff_for_ice_mean_fall_speed
+            type_name: <class 'numpy.float64'>
+            description: ??
+            default: '1.25'
+            optional: true
+            examples:
+              - 'power_law_coeff_for_ice_mean_fall_speed: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - power_law_coeff_for_ice_mean_fall_speed
+            module_path: numpy
+            is_union: false
+          - display_name: exponent_for_density_factor_in_ice_sedimentation
+            type_name: <class 'numpy.float64'>
+            description: ??
+            default: '0.33'
+            optional: true
+            examples:
+              - 'exponent_for_density_factor_in_ice_sedimentation: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - exponent_for_density_factor_in_ice_sedimentation
+            module_path: numpy
+            is_union: false
+          - display_name: power_law_coeff_for_snow_fall_speed
+            type_name: <class 'numpy.float64'>
+            description: ??
+            default: '20.0'
+            optional: true
+            examples:
+              - 'power_law_coeff_for_snow_fall_speed: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - power_law_coeff_for_snow_fall_speed
+            module_path: numpy
+            is_union: false
+          - display_name: rain_mu
+            type_name: <class 'numpy.float64'>
+            description: ??
+            default: '0.0'
+            optional: true
+            examples:
+              - 'rain_mu: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - rain_mu
+            module_path: numpy
+            is_union: false
+          - display_name: rain_n0
+            type_name: <class 'numpy.float64'>
+            description: ??
+            default: '1.0'
+            optional: true
+            examples:
+              - 'rain_n0: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - rain_n0
+            module_path: numpy
+            is_union: false
+          - display_name: snow2graupel_riming_coeff
+            type_name: <class 'numpy.float64'>
+            description: ??
+            default: '0.5'
+            optional: true
+            examples:
+              - 'snow2graupel_riming_coeff: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - graupel
+              - 'type: SingleMomentSixClassIconGraupelConfig'
+              - snow2graupel_riming_coeff
+            module_path: numpy
+            is_union: false
+        config_name_path:
+          - graupel
+          - 'type: SingleMomentSixClassIconGraupelConfig'
+        module_path: icon4py.model.atmosphere.subgrid_scale_physics.microphysics.single_moment_six_class_gscp_graupel
+        is_union: false
+      - display_name: 'type: NoneType'
+        type_name: <class 'NoneType'>
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'graupel:
+
+            '
+        children: []
+        config_name_path:
+          - graupel
+          - 'type: NoneType'
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - graupel
+    module_path: types
+    is_union: true
+  - display_name: 'muphys: one of the following'
+    type_name: icon4py.model.atmosphere.subgrid_scale_physics.muphys.config.MuphysConfig | None
+    description: ??
+    default: None
+    optional: true
+    examples:
+      - "muphys:\n  qnc: 50000000.0\n"
+      - 'muphys:
+
+        '
+    children:
+      - display_name: 'type: MuphysConfig'
+        type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.muphys.config.MuphysConfig'>
+        description: Configuration for the muphys microphysics component.
+        default: None
+        optional: true
+        examples:
+          - "muphys:\n  qnc: 50000000.0\n"
+        children:
+          - display_name: qnc
+            type_name: <class 'float'>
+            description: ??
+            default: '50000000.0'
+            optional: true
+            examples:
+              - 'qnc: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - muphys
+              - 'type: MuphysConfig'
+              - qnc
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - muphys
+          - 'type: MuphysConfig'
+        module_path: icon4py.model.atmosphere.subgrid_scale_physics.muphys.config
+        is_union: false
+      - display_name: 'type: NoneType'
+        type_name: <class 'NoneType'>
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'muphys:
+
+            '
+        children: []
+        config_name_path:
+          - muphys
+          - 'type: NoneType'
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - muphys
+    module_path: types
+    is_union: true
+  - display_name: 'tmx: one of the following'
+    type_name: icon4py.model.atmosphere.subgrid_scale_physics.tmx.config.TmxConfig | None
+    description: ??
+    default: None
+    optional: true
+    examples:
+      - "tmx:\n  solver_type: implicit\n  energy_type: internal\n  dissipation_factor: 1.0\n  use_louis: true\n  use_louis_land: true\n  use_louis_ice: true\n  louis_constant_b: 4.2\n  use_km_const: false\n  km_const: 1.0\n  use_scale_turb_energy_flux: false\n  scale_turb_energy_flux: 1.0\n  smag_constant: 0.23\n  turb_prandtl: 0.33333333333\n  km_min: 0.001\n  max_turb_scale: 300.0\n"
+      - 'tmx:
+
+        '
+    children:
+      - display_name: 'type: TmxConfig'
+        type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.tmx.config.TmxConfig'>
+        description: "\n    Default values are taken from ``vdiff_config_init`` in the corresponding ICON\n    Fortran module ``mo_turb_vdiff_config.f90`` (namelist ``aes_vdf_nml``).\n    "
+        default: None
+        optional: true
+        examples:
+          - "tmx:\n  solver_type: implicit\n  energy_type: internal\n  dissipation_factor: 1.0\n  use_louis: true\n  use_louis_land: true\n  use_louis_ice: true\n  louis_constant_b: 4.2\n  use_km_const: false\n  km_const: 1.0\n  use_scale_turb_energy_flux: false\n  scale_turb_energy_flux: 1.0\n  smag_constant: 0.23\n  turb_prandtl: 0.33333333333\n  km_min: 0.001\n  max_turb_scale: 300.0\n"
+        children:
+          - display_name: solver_type
+            type_name: <enum 'SolverType'>
+            description: Type of the vertical diffusion solver (only the implicit solver is implemented).
+            default: SolverType.IMPLICIT
+            optional: true
+            examples:
+              - 'solver_type: implicit
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - solver_type
+            module_path: icon4py.model.atmosphere.subgrid_scale_physics.tmx.config
+            is_union: false
+          - display_name: energy_type
+            type_name: <enum 'EnergyType'>
+            description: Type of energy diffused by the heat diffusion (only internal energy is implemented).
+            default: EnergyType.INTERNAL
+            optional: true
+            examples:
+              - 'energy_type: internal
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - energy_type
+            module_path: icon4py.model.atmosphere.subgrid_scale_physics.tmx.config
+            is_union: false
+          - display_name: dissipation_factor
+            type_name: <class 'float'>
+            description: Scaling factor for the kinetic energy dissipation heating.
+            default: '1.0'
+            optional: true
+            examples:
+              - 'dissipation_factor: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - dissipation_factor
+            module_path: builtins
+            is_union: false
+          - display_name: use_louis
+            type_name: <class 'bool'>
+            description: If True, use the Louis (1979) stability correction function instead of the classic (Lilly 1962) one.
+            default: 'True'
+            optional: true
+            examples:
+              - 'use_louis: false
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - use_louis
+            module_path: builtins
+            is_union: false
+          - display_name: use_louis_land
+            type_name: <class 'bool'>
+            description: If False, exclude cells with more than 50% land fraction from the Louis stability correction.
+            default: 'True'
+            optional: true
+            examples:
+              - 'use_louis_land: false
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - use_louis_land
+            module_path: builtins
+            is_union: false
+          - display_name: use_louis_ice
+            type_name: <class 'bool'>
+            description: If False, exclude cells with more than 50% sea-ice fraction from the Louis stability correction.
+            default: 'True'
+            optional: true
+            examples:
+              - 'use_louis_ice: false
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - use_louis_ice
+            module_path: builtins
+            is_union: false
+          - display_name: louis_constant_b
+            type_name: <class 'float'>
+            description: Louis constant b of the Louis stability correction function.
+            default: '4.2'
+            optional: true
+            examples:
+              - 'louis_constant_b: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - louis_constant_b
+            module_path: builtins
+            is_union: false
+          - display_name: use_km_const
+            type_name: <class 'bool'>
+            description: If True, use a constant exchange coefficient instead of the Smagorinsky model.
+            default: 'False'
+            optional: true
+            examples:
+              - 'use_km_const: false
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - use_km_const
+            module_path: builtins
+            is_union: false
+          - display_name: km_const
+            type_name: <class 'float'>
+            description: Constant exchange coefficient used if 'use_km_const' is True [m^2/s].
+            default: '1.0'
+            optional: true
+            examples:
+              - 'km_const: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - km_const
+            module_path: builtins
+            is_union: false
+          - display_name: use_scale_turb_energy_flux
+            type_name: <class 'bool'>
+            description: If True, scale the turbulent energy flux by 'scale_turb_energy_flux'.
+            default: 'False'
+            optional: true
+            examples:
+              - 'use_scale_turb_energy_flux: false
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - use_scale_turb_energy_flux
+            module_path: builtins
+            is_union: false
+          - display_name: scale_turb_energy_flux
+            type_name: <class 'float'>
+            description: Scaling factor for the turbulent energy flux used if 'use_scale_turb_energy_flux' is True.
+            default: '1.0'
+            optional: true
+            examples:
+              - 'scale_turb_energy_flux: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - scale_turb_energy_flux
+            module_path: builtins
+            is_union: false
+          - display_name: smag_constant
+            type_name: <class 'float'>
+            description: Smagorinsky constant Cs of the Smagorinsky-Lilly eddy viscosity model.
+            default: '0.23'
+            optional: true
+            examples:
+              - 'smag_constant: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - smag_constant
+            module_path: builtins
+            is_union: false
+          - display_name: turb_prandtl
+            type_name: <class 'float'>
+            description: Turbulent Prandtl number.
+            default: '0.33333333333'
+            optional: true
+            examples:
+              - 'turb_prandtl: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - turb_prandtl
+            module_path: builtins
+            is_union: false
+          - display_name: km_min
+            type_name: <class 'float'>
+            description: Minimum mass-weighted turbulent viscosity [kg/(m s)].
+            default: '0.001'
+            optional: true
+            examples:
+              - 'km_min: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - km_min
+            module_path: builtins
+            is_union: false
+          - display_name: max_turb_scale
+            type_name: <class 'float'>
+            description: Maximum turbulence length scale [m].
+            default: '300.0'
+            optional: true
+            examples:
+              - 'max_turb_scale: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - tmx
+              - 'type: TmxConfig'
+              - max_turb_scale
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - tmx
+          - 'type: TmxConfig'
+        module_path: icon4py.model.atmosphere.subgrid_scale_physics.tmx.config
+        is_union: false
+      - display_name: 'type: NoneType'
+        type_name: <class 'NoneType'>
+        description: ??
+        default: None
+        optional: true
+        examples:
+          - 'tmx:
+
+            '
+        children: []
+        config_name_path:
+          - tmx
+          - 'type: NoneType'
+        module_path: builtins
+        is_union: false
+    config_name_path:
+      - tmx
+    module_path: types
+    is_union: true
+config_name_path:
+  - Config File
+module_path: icon4py.model.driver.config
+is_union: false

@@ -9,7 +9,7 @@
 from collections.abc import Sequence
 from typing import Any, Final, Literal, TypeGuard
 
-from gt4py.eve import Node, codegen
+from gt4py.eve import Node, codegen, formatting
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 
 from icon4py.tools.py2fgen import _definitions, _utils
@@ -490,7 +490,7 @@ def generate_c_header(bindings_library: BindingsLibrary) -> str:
         Formatted C header code as a string.
     """
     generated_code = CHeaderGenerator.apply(bindings_library)
-    return codegen.format_source("cpp", generated_code, style="LLVM")
+    return formatting.format_cpp_source(generated_code)
 
 
 def add_include_guard(c_header: str, library_name: str) -> str:
@@ -512,7 +512,7 @@ def generate_python_wrapper(bindings_library: BindingsLibrary) -> str:
         Formatted Python wrapper code as a string.
     """
     generated_code = PythonWrapperGenerator.apply(bindings_library)
-    return codegen.format_source("python", generated_code)
+    return formatting.format_python_source(generated_code)
 
 
 def generate_f90_interface(bindings_library: BindingsLibrary) -> str:

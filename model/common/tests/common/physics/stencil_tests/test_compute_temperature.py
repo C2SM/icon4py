@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 from typing import Any
 
 import gt4py.next as gtx
@@ -14,10 +15,13 @@ import pytest
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.physics.thermodynamics.compute_temperature import (
+    _compute_virtual_potential_temperature,
     compute_temperature_from_internal_energy_per_area,
     compute_virtual_temperature_and_temperature,
 )
-from icon4py.model.testing import stencil_tests
+from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 class TestComputeVirtualTemperatureAndTemperature(stencil_tests.StencilTest):
@@ -115,4 +119,42 @@ class TestComputeTemperatureFromInternalEnergyPerArea(stencil_tests.StencilTest)
                 dims.KDim: (0, gtx.int32(grid.num_levels)),
             },
             out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat),
+        )
+
+
+class TestComputeVirtualPotentialTemperature(stencil_tests.StencilTest):
+    PROGRAM = _compute_virtual_potential_temperature
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        virtual_temperature: np.ndarray,
+        pressure: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        theta_v = reference_funcs.compute_virtual_potential_temperature_numpy(
+            virtual_temperature, pressure
+        )
+        return dict(out=theta_v)
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        virtual_temperature = data_alloc.random_field(
+            dims.CellDim, dims.KDim, low=180.0, high=320.0, dtype=wpfloat
+        )
+        pressure = data_alloc.random_field(
+            dims.CellDim, dims.KDim, low=1.0e3, high=1.05e5, dtype=wpfloat
+        )
+        return dict(
+            virtual_temperature=virtual_temperature,
+            pressure=pressure,
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+            out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

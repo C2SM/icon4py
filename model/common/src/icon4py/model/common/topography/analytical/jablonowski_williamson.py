@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import math
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -25,8 +25,6 @@ class JablonowskiWilliamsonConfig:
     u0: float = 35.0
     eta_0: float = 0.252
     # The default values are from mo_nh_jabw_exp.f90 and mo_nh_testcases_nml.f90
-
-    fortran_name_map: ClassVar[dict[str, str]] = {"jw_u0": "u0"}
 
 
 def jablonowski_williamson(

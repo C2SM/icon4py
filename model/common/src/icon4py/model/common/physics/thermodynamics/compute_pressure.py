@@ -26,6 +26,7 @@ from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.math.vertical_operations import (
     _copy_model_level_below_to_half_levels_on_cells,
 )
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -48,13 +49,15 @@ def _compute_surface_pressure(
         * (
             ddqz_z_full(dims.KHalfDim - 0.5) / virtual_temperature(dims.KHalfDim - 0.5)
             + ddqz_z_full(dims.KHalfDim - 1.5) / virtual_temperature(dims.KHalfDim - 1.5)
-            + 0.5 * ddqz_z_full(dims.KHalfDim - 2.5) / virtual_temperature(dims.KHalfDim - 2.5)
+            + wpfloat(0.5)
+            * ddqz_z_full(dims.KHalfDim - 2.5)
+            / virtual_temperature(dims.KHalfDim - 2.5)
         )
     )
     return surface_pressure
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
+@gtx.scan_operator(axis=dims.KDim, forward=False, init=(wpfloat(0.0), wpfloat(0.0), True))
 def _scan_pressure(
     state: tuple[ta.wpfloat, ta.wpfloat, bool],
     ddqz_z_full: ta.wpfloat,
@@ -201,4 +204,14 @@ def sat_pres_ice(temperature: data_alloc.NDArray) -> data_alloc.NDArray:
         phy_const.TETENS_A_ICE
         * (temperature - phy_const.MELTING_TEMPERATURE)
         / (temperature - phy_const.TETENS_B_ICE)
+    )
+
+
+@gtx.field_operator
+def _sat_pres_water_on_cells(temperature: fa.CellField[ta.wpfloat]) -> fa.CellField[ta.wpfloat]:
+    """Saturation vapour pressure over liquid water [Pa] (Tetens formula), on a surface field."""
+    return PhysicsConstants.tetens_p0 * exp(
+        PhysicsConstants.tetens_a_water
+        * (temperature - PhysicsConstants.tmelt)
+        / (temperature - PhysicsConstants.tetens_b_water)
     )
