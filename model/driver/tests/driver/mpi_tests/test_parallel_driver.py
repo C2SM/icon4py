@@ -108,10 +108,12 @@ def _run_driver_compare_single_multi_rank(
         rtol = 0.0
     atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=rtol)
     if experiment_description is test_defs.Experiments.EXCLAIM_APE_AES:
-        # TODO (Yilu): tracer advection is not bit-reproducible across ranks yet: without any
-        # physics, qv differs by ~1e-14 relative after one step, and muphys amplifies that to
-        # ~2e-11 in qc, qi and qr (see the advection reproducibility issue). This tolerance
-        # still catches a missing halo exchange (1e-5 and more); drop it once advection is fixed.
+        # TODO (Yilu): drop this tolerance once #1535 is merged. The multi-rank global sum is
+        # order-dependent, so the moisture rescale of the APE initial condition makes qv differ
+        # by ~1e-14 relative from step 0, and muphys amplifies that to ~2e-11 in qc, qi and qr.
+        # #1535 ports ICON's order-insensitive sum, after which this experiment is bitwise
+        # reproducible (verified on #1534). The tolerance still catches a missing halo exchange
+        # (1e-5 and more).
         atol, rtol = 1e-16, 1e-9
 
     _log.info(
