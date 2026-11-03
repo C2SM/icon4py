@@ -95,7 +95,13 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     grid_file_path = grid_utils._download_grid_file(experiment.description.grid)
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
-    single_rank_config = experiment.config.with_overrides(
+    if process_props.rank == 0:
+        dt_utils.download_experiment(experiment.description, single_rank_process_props)
+    process_props.comm.Barrier()
+    single_rank_config = driver_config.read_experiment_config_from_yaml(
+        dt_utils.get_path_for_experiment(experiment.description, single_rank_process_props)
+        / "config.yml"
+    ).with_overrides(
         driver={"output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}"}
     )
     single_rank_grid_manager = driver_utils.create_grid_manager(
@@ -156,8 +162,15 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         tracer_prep_adv_state=single_rank_tracer_prep_adv_state,
     )
 
+    # Topography/prescribed tendencies are read from the global (single-rank) data.
+    data_overrides = {
+        section: {"data_path": getattr(single_rank_config, section).data_path}
+        for section in ("initial_condition", "topography", "prescribed_tendencies")
+        if hasattr(getattr(single_rank_config, section), "data_path")
+    }
     multi_rank_config = experiment.config.with_overrides(
-        driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"}
+        **data_overrides,
+        driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"},
     )
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
