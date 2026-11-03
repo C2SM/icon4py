@@ -590,11 +590,13 @@ class IOMonitor(monitor.Monitor):
     def _write_ugrid(self) -> None:
         # the UGRID file is derived from the (global) grid file, identical on all ranks:
         # written once by the root rank; the verdict is broadcast so all ranks raise
-        # together instead of hanging in the next collective
+        # together instead of hanging in the next collective. The uxarray validation of
+        # the patched mesh is not requested: it only checks the patching (covered by the
+        # unit tests) and takes minutes on large grids while every other rank waits.
         failure: Exception | None = None
         if self._process_props.rank == 0:
             try:
-                ugrid.IconUGridWriter(self._grid_file, self._output_path)(validate=True)
+                ugrid.IconUGridWriter(self._grid_file, self._output_path)()
             except Exception as err:
                 failure = err
         message = str(failure) if failure is not None else None
