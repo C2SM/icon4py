@@ -31,7 +31,6 @@ import pathlib
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
-import numpy as np
 import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common import dimension as dims, model_backends, time
@@ -126,9 +125,13 @@ class PrescribedTendencies:
         )
 
     def _fill(
-        self, field: gtx.Field, name: str, savepoint: serialbox.Savepoint, indices: np.ndarray
+        self,
+        field: gtx.Field,
+        name: str,
+        savepoint: serialbox.Savepoint,
+        indices: data_alloc.NDArray,
     ) -> None:
-        buffer = np.squeeze(self._serializer.read(name, savepoint).astype(float))
+        buffer = self._serializer.read(name, savepoint).astype(float).squeeze()
         field.ndarray[:, :] = self._array_ns.asarray(  # type: ignore[index] # NDArrayObject Protocol doesn't support this
             buffer[indices, :]
         )
