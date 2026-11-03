@@ -13,6 +13,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal as h_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures import backend, cpu_allocator, grid_description
 
@@ -157,9 +158,9 @@ def test_compute_domain_bounds_for_limited_area_grid(
     assert grid.limited_area, "Test expects limited area grid"
     refinement_field = grid.refinement_control
     decomposition_info = grid_manager.decomposition_info
-
+    xp = data_alloc.import_array_ns(cpu_allocator)
     start_index, end_index = refinement.compute_domain_bounds(
-        dim, refinement_field, decomposition_info=decomposition_info
+        dim, refinement_field, decomposition_info=decomposition_info, array_ns=xp
     )
 
     for d, v in start_index.items():
@@ -190,9 +191,12 @@ def test_compute_domain_bounds_for_global_grid(
     grid = grid_manager.grid
     refinement_fields = grid.refinement_control
     decomposition_info = grid_manager.decomposition_info
+
+    xp = data_alloc.import_array_ns(cpu_allocator)
     start_index, end_index = refinement.compute_domain_bounds(
-        dim, refinement_fields, decomposition_info
+        dim, refinement_fields, decomposition_info=decomposition_info, array_ns=xp
     )
+
     for k, v in start_index.items():
         assert isinstance(v, gtx.int32)
         if k.zone.is_halo() or k.zone is h_grid.Zone.END:

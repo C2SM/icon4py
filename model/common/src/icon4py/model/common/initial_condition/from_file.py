@@ -14,7 +14,6 @@ import pathlib
 import typing
 from typing import TYPE_CHECKING
 
-import numpy as np
 import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common import dimension as dims, model_backends, time
@@ -69,8 +68,8 @@ def _available_nonhydro_init_dates(serializer: serialbox.Serializer) -> str:
 def _read_prognostic_state(
     prognostic_state: prognostics.PrognosticState,
     read_hdim_k: typing.Callable[[str], data_alloc.NDArray],
-    edge_indices,
-    cell_indices,
+    edge_indices: data_alloc.NDArray,
+    cell_indices: data_alloc.NDArray,
 ):
     prognostic_state.rho.ndarray[:, :] = read_hdim_k("rho_now", cell_indices)
     prognostic_state.exner.ndarray[:, :] = read_hdim_k("exner_now", cell_indices)
@@ -106,14 +105,14 @@ def read_initial_condition_from_file(
     edge_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.EdgeDim))
 
     def read_hdim_k(name: str, dim_indices) -> data_alloc.NDArray:
-        buffer = np.squeeze(serializer.read(name, savepoint).astype(float))
+        buffer = serializer.read(name, savepoint).astype(float).squeeze()
         return array_ns.asarray(buffer[dim_indices, :])
 
     _read_prognostic_state(prognostic_state_now, read_hdim_k, edge_indices, cell_indices)
 
     ntracer = config.ntracer
     if ntracer > 0:
-        tracers = np.squeeze(serializer.read("tracers_now", savepoint).astype(float))
+        tracers = serializer.read("tracers_now", savepoint).astype(float).squeeze()
         for i, tracer in enumerate(tracer_state_now.active_fields()):
             tracer.field.ndarray[:, :] = array_ns.asarray(tracers[cell_indices, :, i])
 
@@ -180,14 +179,14 @@ def read_restart_from_file(
     cell_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.CellDim))
     edge_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.EdgeDim))
 
-    def read_hdim_k(name: str, dim_indices) -> data_alloc.NDArray:
-        buffer = np.squeeze(serializer.read(name, nonhydro_savepoint).astype(float))
+    def read_hdim_k(name: str, dim_indices: data_alloc.NDArray) -> data_alloc.NDArray:
+        buffer = serializer.read(name, nonhydro_savepoint).astype(float).squeeze()
         return array_ns.asarray(buffer[dim_indices, :])
 
     def read_predictor_corrector(
-        name: str, indices: np.ndarray
+        name: str, indices: data_alloc.NDArray
     ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-        buffer = np.squeeze(serializer.read(name, velocity_savepoint).astype(float))
+        buffer = serializer.read(name, velocity_savepoint).astype(float).squeeze()
         return array_ns.asarray(buffer[indices, :, 0]), array_ns.asarray(buffer[indices, :, 1])
 
     _read_prognostic_state(prognostic_state_now, read_hdim_k, edge_indices, cell_indices)

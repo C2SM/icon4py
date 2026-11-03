@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
+from types import ModuleType
 from typing import Final
 
 from gt4py import next as gtx
@@ -181,10 +182,10 @@ def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
 
 def _compute_halo_domain_bounds_for_distributed_grid(
     dim: gtx.Dimension,
-    refinement_ctrl: data_alloc.NDArray,
     decomposition_info: decomposition.DecompositionInfo,
     start_indices: dict,
     end_indices: dict,
+    array_ns: ModuleType,
 ) -> None:
     """
     Compute halo domain bounds for a distributed grid.
@@ -204,28 +205,21 @@ def _compute_halo_domain_bounds_for_distributed_grid(
     the owned count gives the exact start of the first halo level, and each
     subsequent level follows contiguously.
     """
-    array_ns = data_alloc.array_namespace(refinement_ctrl)
-    owned = decomposition_info.owner_mask(dim)
-    halo_level_1 = decomposition_info.halo_level_mask(
-        dim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL
-    )
-    halo_level_2 = decomposition_info.halo_level_mask(
-        dim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL
-    )
-    owned_count = int(array_ns.sum(owned).item())
-    halo_1_count = int(array_ns.sum(halo_level_1).item())
-    halo_2_count = int(array_ns.sum(halo_level_2).item())
+    owned_count = array_ns.sum(decomposition_info.owner_mask(dim)).item()
+    halo_1_count = array_ns.sum(
+        decomposition_info.halo_level_mask(dim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL)
+    ).item()
+    halo_2_count = array_ns.sum(
+        decomposition_info.halo_level_mask(dim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL)
+    ).item()
     halo_3_count = 0
     if dim == dims.EdgeDim:
-        halo_3_count = int(
-            array_ns.sum(
-                decomposition_info.halo_level_mask(
-                    dim, decomposition.DecompositionFlag.THIRD_HALO_LEVEL
-                )
-            ).item()
-        )
+        halo_3_count = array_ns.sum(
+            decomposition_info.halo_level_mask(
+                dim, decomposition.DecompositionFlag.THIRD_HALO_LEVEL
+            )
+        ).item()
 
-    h1_start = owned_count
     h1_end = owned_count + halo_1_count
     h2_end = h1_end + halo_2_count
     h3_end = h2_end + halo_3_count
@@ -233,7 +227,7 @@ def _compute_halo_domain_bounds_for_distributed_grid(
     h1 = h_grid.domain(dim)(h_grid.Zone.HALO)
     h2 = h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2)
 
-    start_indices[h1] = gtx.int32(h1_start)
+    start_indices[h1] = gtx.int32(owned_count)
     end_indices[h1] = gtx.int32(h1_end)
     start_indices[h2] = gtx.int32(h1_end)
     end_indices[h2] = gtx.int32(h2_end)
@@ -244,12 +238,13 @@ def _compute_halo_domain_bounds_for_distributed_grid(
         end_indices[h3] = gtx.int32(h3_end)
 
 
-def _compute_halo_domain_bounds_for_single_rank(
+def _compute_halo_domain_bounds_for_single_rank(  # noqa: PLR0917
     dim: gtx.Dimension,
     refinement_ctrl: data_alloc.NDArray,
     decomposition_info: decomposition.DecompositionInfo,
     start_indices: dict,
     end_indices: dict,
+    array_ns: ModuleType,
 ) -> None:
     """
     Compute halo domain bounds for a single-rank (non-distributed) grid.
@@ -257,7 +252,6 @@ def _compute_halo_domain_bounds_for_single_rank(
     Uses the original refinement-value scan which matches ICON's memory layout.
     On a single rank there are no halos so this produces empty domains.
     """
-    array_ns = data_alloc.array_namespace(refinement_ctrl)
     halo_level_1 = decomposition_info.halo_level_mask(
         dim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL
     )
@@ -268,13 +262,19 @@ def _compute_halo_domain_bounds_for_single_rank(
     upper_boundary_level_1 = _refinement_level_placed_with_halo(
         h_grid.domain(dim)(h_grid.Zone.HALO)
     )
-    not_lateral_boundary_1 = (refinement_ctrl < 1) | (refinement_ctrl > upper_boundary_level_1)
-    halo_region_1 = array_ns.nonzero(halo_level_1 & not_lateral_boundary_1)[0]
-    not_lateral_boundary_2 = (refinement_ctrl < 1) | (
-        refinement_ctrl
-        > _refinement_level_placed_with_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
-    )
-    halo_region_2 = array_ns.nonzero(halo_level_2 & not_lateral_boundary_2)[0]
+    halo_region_1 = array_ns.nonzero(
+        halo_level_1 & ((refinement_ctrl < 1) | (refinement_ctrl > upper_boundary_level_1))
+    )[0]
+    halo_region_2 = array_ns.nonzero(
+        halo_level_2
+        & (
+            (refinement_ctrl < 1)
+            | (
+                refinement_ctrl
+                > _refinement_level_placed_with_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
+            )
+        )
+    )[0]
     start_halo_2, end_halo_2 = (
         (array_ns.min(halo_region_2).item(), array_ns.max(halo_region_2).item() + 1)
         if halo_region_2.size > 0
@@ -313,6 +313,7 @@ def compute_domain_bounds(
     dim: gtx.Dimension,
     refinement_fields: dict[gtx.Dimension, gtx.Field],
     decomposition_info: decomposition.DecompositionInfo,
+    array_ns: ModuleType,
 ) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
     """
     Compute the domain bounds (start_index, end_index) based on a grid Domain.
@@ -343,7 +344,6 @@ def compute_domain_bounds(
         f"Dimension must be one of {list(dims.horizontal_dims())}"
     )
     refinement_ctrl = convert_to_non_nested_refinement_values(refinement_fields[dim].ndarray, dim)
-    array_ns = data_alloc.array_namespace(refinement_ctrl)
     owned = decomposition_info.owner_mask(dim)
 
     start_indices = {}
@@ -355,11 +355,11 @@ def compute_domain_bounds(
 
     if decomposition_info.is_distributed():
         _compute_halo_domain_bounds_for_distributed_grid(
-            dim, refinement_ctrl, decomposition_info, start_indices, end_indices
+            dim, decomposition_info, start_indices, end_indices, array_ns
         )
     else:
         _compute_halo_domain_bounds_for_single_rank(
-            dim, refinement_ctrl, decomposition_info, start_indices, end_indices
+            dim, refinement_ctrl, decomposition_info, start_indices, end_indices, array_ns
         )
 
     ordered_domains = h_grid.get_ordered_domains(dim)
