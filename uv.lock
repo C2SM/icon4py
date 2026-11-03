@@ -2151,7 +2151,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_noview_nested_sdfg" },
+  { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
