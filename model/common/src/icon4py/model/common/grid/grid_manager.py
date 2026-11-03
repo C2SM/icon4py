@@ -753,18 +753,19 @@ def _construct_butterfly_cells(
     """
     array_ns = data_alloc.array_namespace(c2e2c)
     n_cells = c2e2c.shape[0]
-    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
     # shape (n_cells, 3, 3): neighbors of each direct neighbor, one of which is the central cell
-    neighbors_of_neighbors = dummy_c2e2c[c2e2c, :]
-    central_cell = array_ns.arange(n_cells, dtype=c2e2c.dtype)[:, None, None]
-    is_central = neighbors_of_neighbors == central_cell
-    if not array_ns.all(array_ns.any(is_central, axis=-1) | (c2e2c < 0)):
-        raise ValueError("c2e2c is not symmetric: a neighbor does not list the central cell.")
-    # position of the central cell, 0 for a missing neighbor (its row is all -1)
-    central_pos = array_ns.argmax(is_central, axis=-1)
-    others = array_ns.asarray([[1, 2], [0, 2], [0, 1]])[central_pos]
-    second_ring = array_ns.take_along_axis(neighbors_of_neighbors, others, axis=-1)
-    c2e2c2e2c = array_ns.concatenate((c2e2c[:, :, None], second_ring), axis=-1)
+    neighbors_of_neighbors = _patch_with_dummy_lastline(c2e2c)[c2e2c]
+    central_cell_idx = array_ns.arange(n_cells, dtype=c2e2c.dtype)[:, None, None]
+    is_central = neighbors_of_neighbors == central_cell_idx
+    missing_neighbors = c2e2c < 0
+    if not array_ns.all((array_ns.sum(is_central, axis=-1) == 1) | missing_neighbors):
+        raise ValueError(
+            "c2e2c is not symmetric: a neighbor does not list the central cell exactly once."
+        )
+    # a missing neighbor's row is all -1: mark its first entry as central to keep two
+    is_central[:, :, 0] |= missing_neighbors
+    outer_neighbors = neighbors_of_neighbors[~is_central].reshape(n_cells, 3, 2)
+    c2e2c2e2c = array_ns.concatenate((c2e2c[:, :, None], outer_neighbors), axis=-1)
     return array_ns.reshape(c2e2c2e2c, (n_cells, 9))
 
 
