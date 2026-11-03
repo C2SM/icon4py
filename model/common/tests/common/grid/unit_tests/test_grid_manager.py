@@ -413,6 +413,8 @@ def test_grid_manager_eval_c2e2c2e(
     assert grid.get_connectivity("C2E2C2E").asnumpy().shape == (grid.num_cells, 9)
 
 
+# TODO (starkphi): compare C2E2C2E2C against serialized data instead, once it is serialized for
+#  the ported advection schemes that use the 9-point lsq stencil
 def _icon_stencil_c9(c2e2c: np.ndarray) -> np.ndarray:
     """Transcription of ICON's create_stencil_c9 (mo_intp_coeffs_lsq_bln.f90).
 
