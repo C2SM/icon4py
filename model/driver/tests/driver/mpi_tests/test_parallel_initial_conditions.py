@@ -83,7 +83,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
         # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
         # 0.0 is too strict.
-        rtol = 1e-15
+        # throwaway probe: with the order-insensitive global sum the initial condition
+        # should be bitwise identical on any number of ranks
+        rtol = 0.0
         atol = 0.0
     else:
         rtol = 0.0

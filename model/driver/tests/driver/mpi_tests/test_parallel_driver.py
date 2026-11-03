@@ -66,6 +66,12 @@ _log = logging.getLogger(__file__)
             id="integration-exclaim-ape-aes",
         ),
         pytest.param(
+            test_defs.Experiments.EXCLAIM_APE_AES,
+            time.NumTimeSteps(1),
+            marks=[pytest.mark.level("integration")],
+            id="integration-exclaim-ape-aes-no-moisture-rescale",
+        ),
+        pytest.param(
             test_defs.Experiments.JW,
             time.RelativeTime(days=7),
             marks=[pytest.mark.level("validation")],
@@ -80,22 +86,33 @@ def test_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
+    request: pytest.FixtureRequest,
 ) -> None:
+    # throwaway probe: the APE case once more without the global moisture rescale of the
+    # initial condition, to separate the global-sum seed from everything else
+    initial_condition_overrides = (
+        {"normalize_global_moisture": False}
+        if "no-moisture-rescale" in request.node.callspec.id
+        else None
+    )
     _run_driver_compare_single_multi_rank(
         experiment_description=experiment_description,
         end_of_simulation=end_of_simulation,
         tmp_path=tmp_path,
         process_props=process_props,
         backend=backend,
+        initial_condition_overrides=initial_condition_overrides,
     )
 
 
 def _run_driver_compare_single_multi_rank(
+    *,
     experiment_description: test_defs.ExperimentDescription,
     end_of_simulation: time.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
+    initial_condition_overrides: dict[str, object] | None = None,
 ) -> None:
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
@@ -107,12 +124,6 @@ def _run_driver_compare_single_multi_rank(
         atol = 1e-9
         rtol = 0.0
     atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=rtol)
-    if experiment_description is test_defs.Experiments.EXCLAIM_APE_AES:
-        # TODO (Yilu): tracer advection is not bit-reproducible across ranks yet: without any
-        # physics, qv differs by ~1e-14 relative after one step, and muphys amplifies that to
-        # ~2e-11 in qc, qi and qr (see the advection reproducibility issue). This tolerance
-        # still catches a missing halo exchange (1e-5 and more); drop it once advection is fixed.
-        atol, rtol = 1e-16, 1e-9
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
@@ -124,6 +135,8 @@ def _run_driver_compare_single_multi_rank(
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
+    if initial_condition_overrides is not None:
+        config = config.with_overrides(initial_condition=initial_condition_overrides)
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
     single_rank_config = config.with_overrides(
