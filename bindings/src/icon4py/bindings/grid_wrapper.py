@@ -120,10 +120,10 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     vertical_size: gtx.int32,
     limited_area: bool,
     backend: gtx.int32,
+    _metadata: py2fgen.Metadata,
 ) -> None:
-    on_gpu = c2e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
-        wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
+        wrapper_common.BackendIntEnum(backend), on_gpu=_metadata.use_device
     )
     allocator = model_backends.get_allocator(actual_backend)
 
