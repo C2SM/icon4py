@@ -18,7 +18,7 @@ import datetime
 class ProcessTimeControl:
     """ICON4Py analogue of the per-process time fields in AES `aes_phy_tc`.
 
-    - `interval`   (`dt_xxx`): compute interval, > 0
+    - `compute_interval`   (`dt_xxx`): compute interval, > 0
     - `start_date` (`sd_xxx`), `end_date` (`ed_xxx`): half-open
       `[start, end)` window during which the process exists.
     """
