@@ -38,11 +38,11 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     It keeps no output buffers: the caller owns them, per the `fw.Component` contract. It does
     cache the last computed output, in a state of its own it allocates on its `grid` with its
     `allocator`, lazily on its first computing step; the cache's details stay private. On a
-    non-computing step in its window it populates the outputs it is handed from that cache,
+    non-computing step in its window it populates the output it is handed from that cache,
     whatever buffer the caller passes, fresh or reused, and a caller mutating a returned buffer
     leaves the cache untouched. Outside its time-control window the process contributes no
-    tendencies: it zeroes the `Tendency` leaves of the outputs it is handed and returns them,
-    the other leaves as given. Inside the window it runs its wrapped component on the steps
+    tendencies: it zeroes the `Tendency` leaves of the output it is handed, leaves the others as
+    given, and returns it. Inside the window it runs its wrapped component on the steps
     its time control fires and on its first step in the window. Typed over the wrapped
     component's `Input` and `Output`: a `collect_input` that builds another component's
     `Input` is a type error.
@@ -61,25 +61,25 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     allocator: gtx_typing.Allocator | None
     cache: O | None = dataclasses.field(default=None, init=False)
 
-    def run(self, inputs: physics_state.EntryState, outputs: O) -> O:
+    def run(self, input: physics_state.EntryState, output: O) -> O:
         """This step's output: computed, populated from the cache, or zeroed outside the window."""
         # Outside its window the process contributes no tendencies: the `Tendency` leaves of the
-        # outputs it is handed are zeroed, the other leaves left as given.
-        if not self.time_control.is_in_window(inputs.step_start):
-            for field in fw.fields(outputs).values():
+        # output it is handed are zeroed, the other leaves left as given.
+        if not self.time_control.is_in_window(input.step_start):
+            for field in fw.fields(output).values():
                 if issubclass(field.quantity, quantity.Tendency):
                     # NDArrayObject declares no __setitem__
                     field.ndarray[...] = 0.0  # type: ignore[index]
-            return outputs
+            return output
         # Run on a computing step, and also on the first in-window step, when there is nothing
         # cached yet: the cache is allocated lazily, on the first computing step, and refreshed
-        # from the outputs the component just wrote, so the values survive to the steps that
+        # from the output the component just wrote, so the values survive to the steps that
         # do not compute.
-        if self.time_control.computes_at(inputs.step_start) or self.cache is None:
-            self.component.run(self.collect_input(inputs), outputs)
+        if self.time_control.computes_at(input.step_start) or self.cache is None:
+            self.component.run(self.collect_input(input), output)
             if self.cache is None:
                 self.cache = fw.allocate(self.component.Output, self.grid, self.allocator)
-            fw.copy(outputs, self.cache)
+            fw.copy(output, self.cache)
         else:
-            fw.copy(self.cache, outputs)
-        return outputs
+            fw.copy(self.cache, output)
+        return output

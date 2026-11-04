@@ -261,7 +261,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     forcing = fw.allocate(states.DycoreForcing, mesh, allocator)
     prep_adv = fw.allocate(states.PrepAdvection, mesh, allocator)
     dycore_diagnostics = states.DycoreDiagnostics.allocate(mesh, allocator)
-    inputs = solve_nh.SolveNonhydro.Input(
+    input = solve_nh.SolveNonhydro.Input(
         rho=current.rho,
         w=current.w,
         vn=current.vn,
@@ -284,7 +284,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
     )
-    out = solve_nh.SolveNonhydro.Output(
+    output = solve_nh.SolveNonhydro.Output(
         rho=next_.rho,
         w=next_.w,
         vn=next_.vn,
@@ -305,6 +305,6 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
 
     benchmark(
         device_utils.synchronized_function(solve_nonhydro.run, allocator=allocator),
-        inputs,
-        out,
+        input,
+        output,
     )

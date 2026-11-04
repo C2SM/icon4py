@@ -45,8 +45,7 @@ misspelled key was a `KeyError` at run time.
 - A `Quantity` is anything that can be measured, i.e. that can be expressed as
   a pair of numerical value and unit of measurement. In ICON4Py a `Quantity` is
   a type-level tag. One subclass per quantity, never instantiated, e.g.
-  `VnOnEdgeK(Quantity, units="m s-1", standard_name="normal_velocity",
-long_name="velocity normal to edge", dims=EDGE_K): ...`. The metadata is on
+  `VnOnEdgeK(Quantity, units="m s-1", standard_name="normal_velocity", long_name="velocity normal to edge", dims=EDGE_K): ...`. The metadata is on
   the class: e.g. `units`, the CF `standard_name`, `long_name`, `precision` and
   `dims`.
   In the present Part01 of states and components `dims`, i.e. grid location,
@@ -62,8 +61,7 @@ long_name="velocity normal to edge", dims=EDGE_K): ...`. The metadata is on
   `Tendency[Temperature, ...]`.
 - A `Field` is a physical quantity, represented by a scalar, vector or tensor,
   that has a value for each point in space and time. In ICON4Py a `Field` is a
-  GT4Py field with the additional `Quantity` tag, e.g. `Field(VnOnEdgeK,
-data)`. It subclasses GT4Py's `NdArrayField`, so the stencils and program
+  GT4Py field with the additional `Quantity` tag, e.g. `Field(VnOnEdgeK, data)`. It subclasses GT4Py's `NdArrayField`, so the stencils and program
   calls do not need to change. The tag is a phantom, invariant type parameter:
   `Field[VnOnEdgeK]` and `Field[ThetaVOnCellK]` are different types to mypy, so
   they cannot be swapped, but they stay the same array to GT4Py.
@@ -71,8 +69,7 @@ data)`. It subclasses GT4Py's `NdArrayField`, so the stencils and program
   writes. In ICON4Py it is a frozen, keyword-only dataclass whose leaves are
   quantity-tagged fields (`Field[Q]`, optionally `| None`) or plain values
   (e.g. `at_first_substep: bool`, `ndyn_substeps_var: int`).
-- A `Component` is a `Protocol` of `Input`, `Output` and `run(Input, Output) ->
-  Output`. It is a computation (`run`) with a typed interface: it reads one
+- A `Component` is a `Protocol` of `Input`, `Output` and `run(Input, Output) -> Output`. It is a computation (`run`) with a typed interface: it reads one
   `Input` `State` and writes one `Output` `State`. A component that writes
   nothing declares `Output = fw.Empty`. The caller specifies where `run`
   writes, similarly to numpy's `out=`. Whether leaves of `Output` may alias
@@ -93,9 +90,9 @@ class Diffusion(Component):
         vn: Field[VnOnEdgeK]
         theta_v: Field[ThetaVOnCellK]
 
-    def run(self, inputs: Input, outputs: Output) -> Output:
-        ...  # stencils read inputs.vn and write outputs.vn
-        return outputs
+    def run(self, input: Input, output: Output) -> Output:
+        ...  # stencils read input.vn and write output.vn
+        return output
 ```
 
 Things to note:
@@ -159,7 +156,7 @@ Negative:
   argument conversion accepts only that class), relies on gt4py building every
   derived field through `from_array`, and needs one subclass per array
   namespace (NumPy, CuPy).
-- Whether `outputs` may alias `inputs` is not checked (but that's by design).
+- Whether `output` may alias `input` is not checked (but that's by design).
 
 ## Alternatives Considered
 

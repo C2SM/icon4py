@@ -162,34 +162,34 @@ class Advection(fw.Component, ABC):
         self.grid = grid
         self.allocator = allocator
 
-    def run(self, inputs: Input, outputs: Output) -> Output:
-        self._prepare(inputs)
+    def run(self, input: Input, output: Output) -> Output:
+        self._prepare(input)
         for name in states.TRACERS:
-            tracer_now = getattr(inputs, name)
+            tracer_now = getattr(input, name)
             if tracer_now is None:
                 continue
-            tracer_new = getattr(outputs, name)
+            tracer_new = getattr(output, name)
             if tracer_new is None:
                 raise ValueError(
                     f"Tracer '{name}' is given at the current time level but not at the next one."
                 )
-            self._advect(inputs, outputs, p_tracer_now=tracer_now, p_tracer_new=tracer_new)
+            self._advect(input, output, p_tracer_now=tracer_now, p_tracer_new=tracer_new)
         self._finalize()
-        return outputs
+        return output
 
-    def _prepare(self, inputs: Input) -> None:
+    def _prepare(self, input: Input) -> None:
         """Before the tracers: the halo exchange of the vertical mass flux."""
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
         self._exchange.exchange(
-            dims.CellDim, inputs.mass_flx_ic, stream=decomposition.DEFAULT_STREAM
+            dims.CellDim, input.mass_flx_ic, stream=decomposition.DEFAULT_STREAM
         )
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
     @abstractmethod
     def _advect(
         self,
-        inputs: Input,
-        out: Output,
+        input: Input,
+        output: Output,
         *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
@@ -240,8 +240,8 @@ class NoAdvection(Advection):
 
     def _advect(
         self,
-        inputs: Advection.Input,
-        out: Advection.Output,
+        input: Advection.Input,
+        output: Advection.Output,
         *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
@@ -343,26 +343,26 @@ class GodunovSplittingAdvection(Advection):
 
     def _advect(
         self,
-        inputs: Advection.Input,
-        out: Advection.Output,
+        input: Advection.Input,
+        output: Advection.Output,
         *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
     ) -> None:
         log.debug("tracer_advection run - start")
-        dtime = ta.wpfloat(inputs.dtime)
+        dtime = ta.wpfloat(input.dtime)
 
         # reintegrate density for conservation of mass
         rhodz_in, horizontal_start = (
-            (inputs.airmass_now, self._start_cell_lateral_boundary_level_2)
+            (input.airmass_now, self._start_cell_lateral_boundary_level_2)
             if self._even_timestep
-            else (inputs.airmass_new, self._start_cell_lateral_boundary_level_3)
+            else (input.airmass_new, self._start_cell_lateral_boundary_level_3)
         )
 
         log.debug("running stencil apply_density_increment - start")
         self._apply_density_increment(
             rhodz_in=rhodz_in,
-            p_mflx_contra_v=inputs.mass_flx_ic,
+            p_mflx_contra_v=input.mass_flx_ic,
             rhodz_out=self._rhodz_ast2,
             p_dtime=dtime,
             even_timestep=self._even_timestep,
@@ -374,49 +374,49 @@ class GodunovSplittingAdvection(Advection):
         if self._even_timestep:
             # vertical transport
             self._vertical_advection.run(
-                mass_flx_ic=inputs.mass_flx_ic,
+                mass_flx_ic=input.mass_flx_ic,
                 p_tracer_now=p_tracer_now,
                 p_tracer_new=p_tracer_new,
-                rhodz_now=inputs.airmass_now,
+                rhodz_now=input.airmass_now,
                 rhodz_new=self._rhodz_ast2,
-                p_mflx_tracer_v=out.vfl_tracer,
+                p_mflx_tracer_v=output.vfl_tracer,
                 dtime=dtime,
                 even_timestep=self._even_timestep,
             )
 
             # horizontal transport
             self._horizontal_advection.run(
-                vn_traj=inputs.vn_traj,
-                mass_flx_me=inputs.mass_flx_me,
+                vn_traj=input.vn_traj,
+                mass_flx_me=input.mass_flx_me,
                 p_tracer_now=p_tracer_new,
                 p_tracer_new=p_tracer_new,
                 rhodz_now=self._rhodz_ast2,
-                rhodz_new=inputs.airmass_new,
-                p_mflx_tracer_h=out.hfl_tracer,
+                rhodz_new=input.airmass_new,
+                p_mflx_tracer_h=output.hfl_tracer,
                 dtime=dtime,
             )
 
         else:
             # horizontal transport
             self._horizontal_advection.run(
-                vn_traj=inputs.vn_traj,
-                mass_flx_me=inputs.mass_flx_me,
+                vn_traj=input.vn_traj,
+                mass_flx_me=input.mass_flx_me,
                 p_tracer_now=p_tracer_now,
                 p_tracer_new=p_tracer_new,
-                rhodz_now=inputs.airmass_now,
+                rhodz_now=input.airmass_now,
                 rhodz_new=self._rhodz_ast2,
-                p_mflx_tracer_h=out.hfl_tracer,
+                p_mflx_tracer_h=output.hfl_tracer,
                 dtime=dtime,
             )
 
             # vertical transport
             self._vertical_advection.run(
-                mass_flx_ic=inputs.mass_flx_ic,
+                mass_flx_ic=input.mass_flx_ic,
                 p_tracer_now=p_tracer_new,
                 p_tracer_new=p_tracer_new,
                 rhodz_now=self._rhodz_ast2,
-                rhodz_new=inputs.airmass_new,
-                p_mflx_tracer_v=out.vfl_tracer,
+                rhodz_new=input.airmass_new,
+                p_mflx_tracer_v=output.vfl_tracer,
                 dtime=dtime,
                 even_timestep=self._even_timestep,
             )
@@ -426,7 +426,7 @@ class GodunovSplittingAdvection(Advection):
             log.debug("running stencil apply_interpolated_tracer_time_tendency - start")
             self._apply_interpolated_tracer_time_tendency(
                 p_tracer_now=p_tracer_now,
-                p_grf_tend_tracer=inputs.grf_tend_tracer,
+                p_grf_tend_tracer=input.grf_tend_tracer,
                 p_tracer_new=p_tracer_new,
                 p_dtime=dtime,
             )

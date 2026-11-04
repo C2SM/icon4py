@@ -125,7 +125,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
     expected_prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    expected_inputs = diffusion.Diffusion.Input(
+    expected_input = diffusion.Diffusion.Input(
         vn=expected_prognostic_state.vn,
         w=expected_prognostic_state.w,
         exner=expected_prognostic_state.exner,
@@ -260,9 +260,9 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
 
         # Check input arguments to Diffusion.run
         _, captured_kwargs = mock_run.call_args
-        result, error_message = utils.compare_objects(captured_kwargs["inputs"], expected_inputs)
+        result, error_message = utils.compare_objects(captured_kwargs["input"], expected_input)
         assert result, f"Input comparison failed: {error_message}"
-        result, error_message = utils.compare_objects(captured_kwargs["outputs"], expected_out)
+        result, error_message = utils.compare_objects(captured_kwargs["output"], expected_out)
         assert result, f"Output comparison failed: {error_message}"
 
 

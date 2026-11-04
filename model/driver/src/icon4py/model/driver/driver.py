@@ -481,7 +481,7 @@ class Icon4pyDriver:
 
     # NOTE: temporary, components MWE part 02 (collect): the view is collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.
-    def _dycore_inputs(
+    def _dycore_input(
         self,
         prognostics_now: states.PrognosticState,
         forcing: states.DycoreForcing,
@@ -570,14 +570,14 @@ class Icon4pyDriver:
             with timer_solve_nh:
                 assert self.granules.solve_nonhydro is not None
                 self.granules.solve_nonhydro.run(
-                    self._dycore_inputs(
+                    self._dycore_input(
                         prognostic_states.current,
                         dycore_forcing,
                         second_order_divdamp_factor=second_order_divdamp_factor,
                         at_first_substep=self._is_first_substep(dyn_substep),
                         at_last_substep=self._is_last_substep(dyn_substep),
                     ),
-                    outputs=self._dycore_output(
+                    output=self._dycore_output(
                         prognostic_states.next, prep_adv, dycore_diagnostics
                     ),
                 )
@@ -688,7 +688,7 @@ class Icon4pyDriver:
     ) -> tuple[tracer_advection.Advection.Input, tracer_advection.Advection.Output]:
         """The advection's views: the tracers at `current` in, at `next` out, with the fluxes."""
         now, next_ = tracers.current, tracers.next
-        inputs = tracer_advection.Advection.Input(
+        input = tracer_advection.Advection.Input(
             qv=now.qv,
             qc=now.qc,
             qi=now.qi,
@@ -703,7 +703,7 @@ class Icon4pyDriver:
             mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
             dtime=self.model_time_variables.dtime_in_seconds,
         )
-        out = tracer_advection.Advection.Output(
+        output = tracer_advection.Advection.Output(
             qv=next_.qv,
             qc=next_.qc,
             qi=next_.qi,
@@ -713,7 +713,7 @@ class Icon4pyDriver:
             hfl_tracer=diagnostics.hfl_tracer,
             vfl_tracer=diagnostics.vfl_tracer,
         )
-        return inputs, out
+        return input, output
 
     # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.
@@ -721,7 +721,7 @@ class Icon4pyDriver:
         self, prognostic_state: states.PrognosticState, tracer_state: states.TracerState
     ) -> tuple[physics_driver.PhysicsDriver.Input, physics_driver.PhysicsDriver.Output]:
         """The physics' views: the tendencies are applied in place, so both sides share the states."""
-        inputs = physics_driver.PhysicsDriver.Input(
+        input = physics_driver.PhysicsDriver.Input(
             vn=prognostic_state.vn,
             w=prognostic_state.w,
             exner=prognostic_state.exner,
@@ -736,7 +736,7 @@ class Icon4pyDriver:
             dtime=self.config.driver.dtime,
             simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
         )
-        out = physics_driver.PhysicsDriver.Output(
+        output = physics_driver.PhysicsDriver.Output(
             vn=prognostic_state.vn,
             w=prognostic_state.w,
             exner=prognostic_state.exner,
@@ -748,7 +748,7 @@ class Icon4pyDriver:
             qs=tracer_state.qs,
             qg=tracer_state.qg,
         )
-        return inputs, out
+        return input, output
 
     # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.
@@ -766,7 +766,7 @@ class Icon4pyDriver:
             prognostic_state.exner,
             prognostic_state.theta_v,
         )
-        inputs = diffusion.Diffusion.Input(
+        input = diffusion.Diffusion.Input(
             vn=vn,
             w=w,
             exner=exner,
@@ -774,7 +774,7 @@ class Icon4pyDriver:
             dtime=dtime,
             initial_run=initial_run,
         )
-        out = diffusion.Diffusion.Output(
+        output = diffusion.Diffusion.Output(
             vn=vn,
             w=w,
             exner=exner,
@@ -784,7 +784,7 @@ class Icon4pyDriver:
             dwdx=diffusion_diagnostics.dwdx,
             dwdy=diffusion_diagnostics.dwdy,
         )
-        return inputs, out
+        return input, output
 
     def _diffuse_before_time_loop(
         self,

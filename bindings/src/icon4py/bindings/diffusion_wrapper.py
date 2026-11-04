@@ -292,7 +292,7 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     if dwdy is None:
         dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=w.dtype)
     # the prognostics are diffused in place in ICON's buffers
-    inputs = Diffusion.Input(
+    input = Diffusion.Input(
         vn=fw.Field(qty.VnOnEdgeK, vn),
         w=fw.Field(qty.WOnCellKHalf, w),
         exner=fw.Field(qty.ExnerOnCellK, exner),
@@ -300,14 +300,14 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dtime=dtime,
         initial_run=linit,
     )
-    out = Diffusion.Output(
-        vn=inputs.vn,
-        w=inputs.w,
-        exner=inputs.exner,
-        theta_v=inputs.theta_v,
+    output = Diffusion.Output(
+        vn=input.vn,
+        w=input.w,
+        exner=input.exner,
+        theta_v=input.theta_v,
         hdef_ic=fw.Field(qty.HorizontalWindDeformationOnCellKHalf, hdef_ic),
         div_ic=fw.Field(qty.DivergenceOnCellKHalf, div_ic),
         dwdx=fw.Field(qty.ZonalGradientOfWOnCellKHalf, dwdx),
         dwdy=fw.Field(qty.MeridionalGradientOfWOnCellKHalf, dwdy),
     )
-    granule.diffusion.run(inputs=inputs, outputs=out)
+    granule.diffusion.run(input=input, output=output)

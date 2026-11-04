@@ -41,18 +41,7 @@ if TYPE_CHECKING:
 
 class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
     """
-    The muphys microphysics granule as a component.
-
-    The granule and the component disagree in two ways, and this class settles both:
-
-    * The granule overwrites the fields it is given (its `t_out`/`q_out` arguments are the
-      same buffers as its `te`/`q_in` inputs), whereas the component reports tendencies. So
-      `run` runs it on private copies and derives `(new - old) / dt`, leaving the inputs alone.
-    * The granule also produces precipitation fluxes. Those are not tendencies and are never
-      applied to the model state; they are reported as they come.
-
-    The tendencies are computed on the prognostic subdomain only: outside it the output
-    buffers keep what they hold.
+    The Component interface to the muphys microphysics.
     """
 
     class Input(fw.State):
@@ -139,48 +128,48 @@ class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
             )
         )
 
-    def run(self, inputs: Input, outputs: Output) -> Output:
+    def run(self, input: Input, output: Output) -> Output:
         """
-        Run the granule on private copies of the inputs and report the tendencies.
+        Run the granule on private copies of `input` and report the tendencies.
 
         The temperature and the tracers are copied, because the granule overwrites whatever it
         is handed and the old values are still needed afterwards; the layer thickness, pressure
         and density go in as they are, since the granule only reads them.
         """
-        self._copy_field(field=inputs.te, output_field=self._te)
+        self._copy_field(field=input.te, output_field=self._te)
         for s in SPECIES:
-            self._copy_field(field=getattr(inputs, f"q{s}"), output_field=getattr(self._q, s))
+            self._copy_field(field=getattr(input, f"q{s}"), output_field=getattr(self._q, s))
 
         self._compute(
             dz=self._dz,
             te=self._te,
-            p=inputs.p,
-            rho=inputs.rho,
+            p=input.p,
+            rho=input.rho,
             q_in=self._q,
             q_out=self._q,
             t_out=self._te,
-            pflx=outputs.pflx,
-            pr=outputs.pr,
-            ps=outputs.ps,
-            pi=outputs.pi,
-            pg=outputs.pg,
-            pre=outputs.pre,
+            pflx=output.pflx,
+            pr=output.pr,
+            ps=output.ps,
+            pi=output.pi,
+            pg=output.pg,
+            pre=output.pre,
         )
 
         self._calculate_tendency(
             dtime=self._dt_seconds,
-            old_field=inputs.te,
+            old_field=input.te,
             new_field=self._te,
-            tendency=outputs.tend_temperature,
+            tendency=output.tend_temperature,
         )
         for s in SPECIES:
             self._calculate_tendency(
                 dtime=self._dt_seconds,
-                old_field=getattr(inputs, f"q{s}"),
+                old_field=getattr(input, f"q{s}"),
                 new_field=getattr(self._q, s),
-                tendency=getattr(outputs, f"tend_q{s}"),
+                tendency=getattr(output, f"tend_q{s}"),
             )
-        return outputs
+        return output
 
 
 # NOTE: temporary, components MWE part 02 (collect): replaced by `fw.collect(Muphys.Input, ...)`,

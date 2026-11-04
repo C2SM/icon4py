@@ -226,7 +226,9 @@ def create_prognostic_states(
     )
 
 
-def dycore_inputs(
+# NOTE: temporary, components MWE part 02 (collect): the view is collected by quantity
+# (`fw.collect`) instead of spelled out by keyword.
+def dycore_input(
     prognostics: states.PrognosticState, forcing: states.DycoreForcing, **scalars: Any
 ) -> solve_nonhydro.SolveNonhydro.Input:
     """The dycore's input view over the prognostics at `current` and the forcing."""

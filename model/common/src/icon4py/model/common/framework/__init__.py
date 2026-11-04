@@ -253,19 +253,19 @@ def copy[S1: State, S2: State](src: S1, dst: S2) -> S2:
 
 class Component[I: State, O: State](Protocol):
     """
-    `run(inputs, outputs) -> outputs`, the only method a component implements.
+    `run(input, output) -> output`, the only method a component implements.
 
     A component declares its two states on the class (`class Input(fw.State)`); a component
     that writes nothing declares `Output = fw.Empty`. The protocol has no implementation: the
     constructor is each component's own.
 
-    `component.run(inputs, outputs)` writes where the caller says, numpy `out=` style, and
-    returns `outputs`: the caller owns the buffers. Whether `outputs` may alias `inputs` is
+    `component.run(input, output)` writes where the caller says, numpy `out=` style, and
+    returns `output`: the caller owns the buffers. Whether `output` may alias `input` is
     the component's business; nothing checks it here.
     """
 
     Input: ClassVar[type[I]]
     Output: ClassVar[type[O]]
 
-    def run(self, inputs: I, outputs: O) -> O:
+    def run(self, input: I, output: O) -> O:
         raise NotImplementedError

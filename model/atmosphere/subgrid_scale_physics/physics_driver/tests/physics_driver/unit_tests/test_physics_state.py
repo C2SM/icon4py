@@ -15,7 +15,7 @@ from icon4py.model.common import framework as fw
 from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base as base_grid, simple
 
-from .utils import driver, inputs, output, prognostics, recording, time_control, tracers
+from .utils import driver, make_input, make_output, prognostics, recording, time_control, tracers
 
 
 @pytest.fixture
@@ -27,15 +27,15 @@ def test_entry_state_views_the_inputs_and_the_driver_diagnostics(grid: base_grid
     process, recorder = recording(fw.Empty, {}, time_control(), grid)
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
-    driver_inputs = inputs(prognostic, tracer_state)
+    driver_input = make_input(prognostic, tracer_state)
 
-    physics.run(driver_inputs, outputs=output(prognostic, tracer_state))
+    physics.run(driver_input, output=make_output(prognostic, tracer_state))
 
     (entry,) = recorder.entries
     assert isinstance(physics.diagnostics, states.Diagnostics)
     # no copies: the prognostics and tracers as given, the diagnostics in the driver's buffers
     for name in ("vn", "w", "exner", "theta_v", "rho", *states.TRACERS):
-        assert getattr(entry, name) is getattr(driver_inputs, name), name
+        assert getattr(entry, name) is getattr(driver_input, name), name
     for name, field in fw.fields(physics.diagnostics).items():
         assert getattr(entry, name) is field, name
 
@@ -54,7 +54,7 @@ def test_diagnose_fills_the_diagnostics_and_leaves_the_inputs_untouched(
     prognostic, tracer_state = prognostics(grid, exner=0.95, theta_v=300.0), tracers(grid)
     before = {name: field.asnumpy().copy() for name, field in fw.fields(prognostic).items()}
 
-    physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
+    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
 
     diagnostics = physics.diagnostics
     assert 200.0 < diagnostics.temperature.asnumpy().mean() < 320.0

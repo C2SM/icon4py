@@ -385,7 +385,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     # adjust for Fortran indexes
     idyn_timestep = idyn_timestep - 1
 
-    inputs = solve_nonhydro.SolveNonhydro.Input(
+    input = solve_nonhydro.SolveNonhydro.Input(
         rho=fw.Field(qty.RhoOnCellK, rho_now),
         w=fw.Field(qty.WOnCellKHalf, w_now),
         vn=fw.Field(qty.VnOnEdgeK, vn_now),
@@ -414,7 +414,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
     )
-    out = solve_nonhydro.SolveNonhydro.Output(
+    output = solve_nonhydro.SolveNonhydro.Output(
         rho=fw.Field(qty.RhoOnCellK, rho_new),
         w=fw.Field(qty.WOnCellKHalf, w_new),
         vn=fw.Field(qty.VnOnEdgeK, vn_new),
@@ -445,7 +445,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         max_vertical_cfl=max_vertical_cfl,
     )
 
-    granule.solve_nh.run(inputs=inputs, outputs=out)
+    granule.solve_nh.run(input=input, output=output)
 
     # TODO(havogt): create separate bindings for writing the timers
     if gtx_config.COLLECT_METRICS_LEVEL > 0:

@@ -405,18 +405,6 @@ def _update_max_vertical_cfl(
 
 
 class SolveNonhydro(fw.Component):
-    """
-    The nonhydrostatic dynamical core: one substep from the prognostics at `current` to `next`.
-
-    Besides the prognostics, `Output` holds what the next substep and the tracer advection read:
-    the fluxes prepared for the tracer advection, the perturbed exner function, the dynamical
-    exner increment and the advective tendencies, whose predictor/corrector time levels the
-    caller swaps between the substeps. `Diagnostics` is the dycore's own scratch, read and
-    written only here; it is an attribute so that tests can fill it and the Fortran bindings can
-    point it at ICON's buffers. `max_vertical_cfl` is the maximum vertical CFL number over the
-    substeps so far, a 0-d field so that updating it needs no device synchronization; the caller
-    reads and resets it.
-    """
 
     class Input(fw.State):
         rho: fw.Field[qty.RhoOnCellK]
@@ -1169,18 +1157,15 @@ class SolveNonhydro(fw.Component):
             self._dtime_previous_substep = dtime
         return self.rayleigh_damping_factor
 
-    def run(self, inputs: Input, outputs: Output) -> Output:
+    def run(self, input: Input, output: Output) -> Output:
         """
-        Update the prognostic variables (`outputs`) after the dynamical process over one substep.
-
-        `outputs` may not alias `inputs`: the step reads the prognostics at the current time level
-        while writing the next one.
+        Update the prognostic variables (`output`) after the dynamical process over one substep.
         """
-        dtime = ta.wpfloat(inputs.dtime)
-        at_initial_timestep = inputs.at_initial_timestep
-        at_first_substep = inputs.at_first_substep
-        at_last_substep = inputs.at_last_substep
-        prepare_fluxes_for_advection = inputs.prepare_fluxes_for_advection
+        dtime = ta.wpfloat(input.dtime)
+        at_initial_timestep = input.at_initial_timestep
+        at_first_substep = input.at_first_substep
+        at_last_substep = input.at_last_substep
+        prepare_fluxes_for_advection = input.prepare_fluxes_for_advection
         log.info(
             f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {prepare_fluxes_for_advection}"
         )
@@ -1193,35 +1178,35 @@ class SolveNonhydro(fw.Component):
                 self.intermediate_fields.horizontal_gradient_of_normal_wind_divergence,
             )
 
-        self.run_predictor_step(inputs, outputs, z_fields=self.intermediate_fields)
-        self.run_corrector_step(inputs, outputs, z_fields=self.intermediate_fields)
+        self.run_predictor_step(input, output, z_fields=self.intermediate_fields)
+        self.run_corrector_step(input, output, z_fields=self.intermediate_fields)
         if self._grid.limited_area:
             self._compute_exner_from_rhotheta_in_lateral_boundary(
-                rho=outputs.rho,
-                theta_v=outputs.theta_v,
-                exner=outputs.exner,
+                rho=output.rho,
+                theta_v=output.theta_v,
+                exner=output.exner,
             )
         self._update_theta_and_exner_in_halo(
-            rho_now=inputs.rho,
-            rho_new=outputs.rho,
-            theta_v_now=inputs.theta_v,
-            theta_v_new=outputs.theta_v,
-            exner_now=inputs.exner,
-            exner_new=outputs.exner,
+            rho_now=input.rho,
+            rho_new=output.rho,
+            theta_v_now=input.theta_v,
+            theta_v_new=output.theta_v,
+            exner_now=input.exner,
+            exner_new=output.exner,
         )
-        return outputs
+        return output
 
     def run_predictor_step(
-        self, inputs: Input, out: Output, *, z_fields: IntermediateFields
+        self, input: Input, output: Output, *, z_fields: IntermediateFields
     ) -> None:
         """
         Runs the predictor step of the non-hydrostatic solver.
         """
-        dtime = ta.wpfloat(inputs.dtime)
-        at_initial_timestep = inputs.at_initial_timestep
-        at_first_substep = inputs.at_first_substep
-        is_iau_active = inputs.is_iau_active
-        iau_wgt_dyn = ta.wpfloat(inputs.iau_wgt_dyn)
+        dtime = ta.wpfloat(input.dtime)
+        at_initial_timestep = input.at_initial_timestep
+        at_first_substep = input.at_first_substep
+        is_iau_active = input.is_iau_active
+        iau_wgt_dyn = ta.wpfloat(input.iau_wgt_dyn)
 
         log.info(
             f"running predictor step: dtime = {dtime}, initial_timestep = {at_initial_timestep} at_first_substep = {at_first_substep}"
@@ -1247,18 +1232,18 @@ class SolveNonhydro(fw.Component):
                 horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
                 contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
                 contravariant_correction_at_cells_on_half_levels=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
-                vertical_wind_advective_tendency=out.vertical_wind_advective_tendency_predictor,
+                vertical_wind_advective_tendency=output.vertical_wind_advective_tendency_predictor,
                 vertical_cfl=self._vertical_cfl,
-                normal_wind_advective_tendency=out.normal_wind_advective_tendency_predictor,
-                vn=inputs.vn,
-                w=inputs.w,
+                normal_wind_advective_tendency=output.normal_wind_advective_tendency_predictor,
+                vn=input.vn,
+                w=input.w,
                 dtime=dtime,
                 skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
                 apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
             )
 
             _update_max_vertical_cfl(
-                out.max_vertical_cfl.ndarray,
+                output.max_vertical_cfl.ndarray,
                 self._vertical_cfl,
                 self._start_cell_lateral_boundary_level_4,
                 self._end_cell_halo,
@@ -1268,20 +1253,20 @@ class SolveNonhydro(fw.Component):
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            perturbed_exner_at_cells_on_model_levels=out.perturbed_exner_at_cells_on_model_levels,
+            perturbed_exner_at_cells_on_model_levels=output.perturbed_exner_at_cells_on_model_levels,
             perturbed_rho_at_cells_on_model_levels=self.perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=self.perturbed_theta_v_at_cells_on_model_levels,
             rho_at_cells_on_half_levels=self.diagnostics.rho_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=self.diagnostics.theta_v_at_cells_on_half_levels,
-            current_rho=inputs.rho,
-            current_theta_v=inputs.theta_v,
+            current_rho=input.rho,
+            current_theta_v=input.theta_v,
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
-            current_exner=inputs.exner,
+            current_exner=input.exner,
         )
 
         log.debug("predictor: start stencil compute_rho_theta_pgrad_and_update_vn")
         self._compute_hydrostatic_correction_term(
-            theta_v=inputs.theta_v,
+            theta_v=input.theta_v,
             theta_v_ic=self.diagnostics.theta_v_at_cells_on_half_levels,
             z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
@@ -1290,8 +1275,8 @@ class SolveNonhydro(fw.Component):
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
-            next_vn=out.vn,
-            current_vn=inputs.vn,
+            next_vn=output.vn,
+            current_vn=input.vn,
             tangential_wind=self.diagnostics.tangential_wind,
             perturbed_rho_at_cells_on_model_levels=self.perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=self.perturbed_theta_v_at_cells_on_model_levels,
@@ -1299,10 +1284,10 @@ class SolveNonhydro(fw.Component):
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level_1d_view,
-            predictor_normal_wind_advective_tendency=out.normal_wind_advective_tendency_predictor,
-            normal_wind_tendency_due_to_slow_physics_process=inputs.normal_wind_tendency_due_to_slow_physics_process,
-            normal_wind_iau_increment=inputs.normal_wind_iau_increment,
-            grf_tend_vn=inputs.grf_tend_vn,
+            predictor_normal_wind_advective_tendency=output.normal_wind_advective_tendency_predictor,
+            normal_wind_tendency_due_to_slow_physics_process=input.normal_wind_tendency_due_to_slow_physics_process,
+            normal_wind_iau_increment=input.normal_wind_iau_increment,
+            grf_tend_vn=input.grf_tend_vn,
             is_iau_active=is_iau_active,
             iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
@@ -1311,7 +1296,7 @@ class SolveNonhydro(fw.Component):
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
         self._exchange.exchange(
             dims.EdgeDim,
-            out.vn,
+            output.vn,
             z_fields.rho_at_edges_on_model_levels,
             stream=decomposition.DEFAULT_STREAM,
         )
@@ -1326,34 +1311,34 @@ class SolveNonhydro(fw.Component):
             vn_on_half_levels=self.diagnostics.vn_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
-            vn=out.vn,
+            vn=output.vn,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
         )
 
         self._vertically_implicit_solver_at_predictor_step(
             contravariant_correction_at_cells_on_half_levels=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
-            next_w=out.w,
-            next_rho=out.rho,
-            next_exner=out.exner,
-            next_theta_v=out.theta_v,
+            next_w=output.w,
+            next_rho=output.rho,
+            next_exner=output.exner,
+            next_theta_v=output.theta_v,
             dwdz_at_cells_on_model_levels=z_fields.dwdz_at_cells_on_model_levels,
-            exner_dynamical_increment=out.exner_dynamical_increment,
+            exner_dynamical_increment=output.exner_dynamical_increment,
             mass_flux_at_edges_on_model_levels=self.diagnostics.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
-            predictor_vertical_wind_advective_tendency=out.vertical_wind_advective_tendency_predictor,
+            predictor_vertical_wind_advective_tendency=output.vertical_wind_advective_tendency_predictor,
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=self.diagnostics.rho_at_cells_on_half_levels,
             contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
-            current_exner=inputs.exner,
-            current_rho=inputs.rho,
-            current_theta_v=inputs.theta_v,
-            current_w=inputs.w,
+            current_exner=input.exner,
+            current_rho=input.rho,
+            current_theta_v=input.theta_v,
+            current_w=input.w,
             theta_v_at_cells_on_half_levels=self.diagnostics.theta_v_at_cells_on_half_levels,
-            perturbed_exner_at_cells_on_model_levels=out.perturbed_exner_at_cells_on_model_levels,
-            exner_tendency_due_to_slow_physics=inputs.exner_tendency_due_to_slow_physics,
-            rho_iau_increment=inputs.rho_iau_increment,
-            exner_iau_increment=inputs.exner_iau_increment,
+            perturbed_exner_at_cells_on_model_levels=output.perturbed_exner_at_cells_on_model_levels,
+            exner_tendency_due_to_slow_physics=input.exner_tendency_due_to_slow_physics,
+            rho_iau_increment=input.rho_iau_increment,
+            exner_iau_increment=input.exner_iau_increment,
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             dtime=dtime,
             at_first_substep=at_first_substep,
@@ -1363,21 +1348,21 @@ class SolveNonhydro(fw.Component):
 
         if self._grid.limited_area:
             self._stencils_61_62(
-                rho_now=inputs.rho,
-                grf_tend_rho=inputs.grf_tend_rho,
-                theta_v_now=inputs.theta_v,
-                grf_tend_thv=inputs.grf_tend_thv,
-                w_now=inputs.w,
-                grf_tend_w=inputs.grf_tend_w,
-                rho_new=out.rho,
-                exner_new=out.exner,
-                w_new=out.w,
+                rho_now=input.rho,
+                grf_tend_rho=input.grf_tend_rho,
+                theta_v_now=input.theta_v,
+                grf_tend_thv=input.grf_tend_thv,
+                w_now=input.w,
+                grf_tend_w=input.grf_tend_w,
+                rho_new=output.rho,
+                exner_new=output.exner,
+                w_new=output.w,
                 dtime=dtime,
             )
 
         if self._grid.limited_area and self._config.divdamp_type >= 3:
             self._compute_dwdz_for_divergence_damping(
-                w=out.w,
+                w=output.w,
                 w_concorr_c=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
             )
@@ -1388,7 +1373,7 @@ class SolveNonhydro(fw.Component):
             )
             self._exchange.exchange(
                 dims.CellDim,
-                out.w,
+                output.w,
                 z_fields.dwdz_at_cells_on_model_levels,
                 stream=decomposition.DEFAULT_STREAM,
             )
@@ -1396,21 +1381,21 @@ class SolveNonhydro(fw.Component):
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange(
                 dims.CellDim,
-                out.w,
+                output.w,
                 stream=decomposition.DEFAULT_STREAM,
             )
 
     def run_corrector_step(
-        self, inputs: Input, out: Output, *, z_fields: IntermediateFields
+        self, input: Input, output: Output, *, z_fields: IntermediateFields
     ) -> None:
-        second_order_divdamp_factor = inputs.second_order_divdamp_factor
-        dtime = ta.wpfloat(inputs.dtime)
-        ndyn_substeps_var = inputs.ndyn_substeps_var
-        prepare_fluxes_for_advection = inputs.prepare_fluxes_for_advection
-        at_first_substep = inputs.at_first_substep
-        at_last_substep = inputs.at_last_substep
-        is_iau_active = inputs.is_iau_active
-        iau_wgt_dyn = ta.wpfloat(inputs.iau_wgt_dyn)
+        second_order_divdamp_factor = input.second_order_divdamp_factor
+        dtime = ta.wpfloat(input.dtime)
+        ndyn_substeps_var = input.ndyn_substeps_var
+        prepare_fluxes_for_advection = input.prepare_fluxes_for_advection
+        at_first_substep = input.at_first_substep
+        at_last_substep = input.at_last_substep
+        is_iau_active = input.is_iau_active
+        iau_wgt_dyn = ta.wpfloat(input.iau_wgt_dyn)
         log.info(
             f"running corrector step: dtime = {dtime}, prep_adv = {prepare_fluxes_for_advection},  "
             f"second_order_divdamp_factor = {second_order_divdamp_factor}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
@@ -1437,11 +1422,11 @@ class SolveNonhydro(fw.Component):
         apply_extra_diffusion_on_vn = True
 
         self._compute_velocity_advection_in_corrector_step(
-            vertical_wind_advective_tendency=out.vertical_wind_advective_tendency_corrector,
+            vertical_wind_advective_tendency=output.vertical_wind_advective_tendency_corrector,
             vertical_cfl=self._vertical_cfl,
-            normal_wind_advective_tendency=out.normal_wind_advective_tendency_corrector,
-            vn=out.vn,
-            w=out.w,
+            normal_wind_advective_tendency=output.normal_wind_advective_tendency_corrector,
+            vn=output.vn,
+            w=output.w,
             tangential_wind=self.diagnostics.tangential_wind,
             tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
             vn_on_half_levels=self.diagnostics.vn_on_half_levels,
@@ -1452,7 +1437,7 @@ class SolveNonhydro(fw.Component):
         )
 
         _update_max_vertical_cfl(
-            out.max_vertical_cfl.ndarray,
+            output.max_vertical_cfl.ndarray,
             self._vertical_cfl,
             self._start_cell_lateral_boundary_level_4,
             self._end_cell_halo,
@@ -1462,13 +1447,13 @@ class SolveNonhydro(fw.Component):
             rho_at_cells_on_half_levels=self.diagnostics.rho_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=self.diagnostics.theta_v_at_cells_on_half_levels,
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
-            w=out.w,
+            w=output.w,
             contravariant_correction_at_cells_on_half_levels=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
-            current_rho=inputs.rho,
-            next_rho=out.rho,
-            current_theta_v=inputs.theta_v,
-            next_theta_v=out.theta_v,
-            perturbed_exner_at_cells_on_model_levels=out.perturbed_exner_at_cells_on_model_levels,
+            current_rho=input.rho,
+            next_rho=output.rho,
+            current_theta_v=input.theta_v,
+            next_theta_v=output.theta_v,
+            perturbed_exner_at_cells_on_model_levels=output.perturbed_exner_at_cells_on_model_levels,
             dtime=dtime,
         )
 
@@ -1491,13 +1476,13 @@ class SolveNonhydro(fw.Component):
 
         self._apply_divergence_damping_and_update_vn(
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
-            next_vn=out.vn,
-            current_vn=inputs.vn,
+            next_vn=output.vn,
+            current_vn=input.vn,
             dwdz_at_cells_on_model_levels=z_fields.dwdz_at_cells_on_model_levels,
-            predictor_normal_wind_advective_tendency=out.normal_wind_advective_tendency_predictor,
-            corrector_normal_wind_advective_tendency=out.normal_wind_advective_tendency_corrector,
-            normal_wind_tendency_due_to_slow_physics_process=inputs.normal_wind_tendency_due_to_slow_physics_process,
-            normal_wind_iau_increment=inputs.normal_wind_iau_increment,
+            predictor_normal_wind_advective_tendency=output.normal_wind_advective_tendency_predictor,
+            corrector_normal_wind_advective_tendency=output.normal_wind_advective_tendency_corrector,
+            normal_wind_tendency_due_to_slow_physics_process=input.normal_wind_tendency_due_to_slow_physics_process,
+            normal_wind_iau_increment=input.normal_wind_iau_increment,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
             interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
@@ -1513,7 +1498,7 @@ class SolveNonhydro(fw.Component):
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange(
             dims.EdgeDim,
-            out.vn,
+            output.vn,
             stream=decomposition.DEFAULT_STREAM,
         )
 
@@ -1521,9 +1506,9 @@ class SolveNonhydro(fw.Component):
             spatially_averaged_vn=self.z_vn_avg,
             mass_flux_at_edges_on_model_levels=self.diagnostics.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
-            substep_and_spatially_averaged_vn=out.vn_traj,
-            substep_averaged_mass_flux=out.mass_flx_me,
-            vn=out.vn,
+            substep_and_spatially_averaged_vn=output.vn_traj,
+            substep_averaged_mass_flux=output.mass_flx_me,
+            vn=output.vn,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             prepare_fluxes_for_advection=prepare_fluxes_for_advection,
@@ -1532,30 +1517,30 @@ class SolveNonhydro(fw.Component):
         )
 
         self._vertically_implicit_solver_at_corrector_step(
-            next_w=out.w,
-            next_rho=out.rho,
-            next_exner=out.exner,
-            next_theta_v=out.theta_v,
-            dynamical_vertical_mass_flux_at_cells_on_half_levels=out.dynamical_vertical_mass_flux_at_cells_on_half_levels,
-            dynamical_vertical_volumetric_flux_at_cells_on_half_levels=out.dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
-            exner_dynamical_increment=out.exner_dynamical_increment,
+            next_w=output.w,
+            next_rho=output.rho,
+            next_exner=output.exner,
+            next_theta_v=output.theta_v,
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=output.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels=output.dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+            exner_dynamical_increment=output.exner_dynamical_increment,
             geofac_div=self._interpolation_state.geofac_div,
             mass_flux_at_edges_on_model_levels=self.diagnostics.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
-            predictor_vertical_wind_advective_tendency=out.vertical_wind_advective_tendency_predictor,
-            corrector_vertical_wind_advective_tendency=out.vertical_wind_advective_tendency_corrector,
+            predictor_vertical_wind_advective_tendency=output.vertical_wind_advective_tendency_predictor,
+            corrector_vertical_wind_advective_tendency=output.vertical_wind_advective_tendency_corrector,
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=self.diagnostics.rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
-            current_exner=inputs.exner,
-            current_rho=inputs.rho,
-            current_theta_v=inputs.theta_v,
-            current_w=inputs.w,
+            current_exner=input.exner,
+            current_rho=input.rho,
+            current_theta_v=input.theta_v,
+            current_w=input.w,
             theta_v_at_cells_on_half_levels=self.diagnostics.theta_v_at_cells_on_half_levels,
-            perturbed_exner_at_cells_on_model_levels=out.perturbed_exner_at_cells_on_model_levels,
-            exner_tendency_due_to_slow_physics=inputs.exner_tendency_due_to_slow_physics,
-            rho_iau_increment=inputs.rho_iau_increment,
-            exner_iau_increment=inputs.exner_iau_increment,
+            perturbed_exner_at_cells_on_model_levels=output.perturbed_exner_at_cells_on_model_levels,
+            exner_tendency_due_to_slow_physics=input.exner_tendency_due_to_slow_physics,
+            rho_iau_increment=input.rho_iau_increment,
+            exner_iau_increment=input.exner_iau_increment,
             is_iau_active=is_iau_active,
             iau_wgt_dyn=iau_wgt_dyn,
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
@@ -1572,26 +1557,26 @@ class SolveNonhydro(fw.Component):
             if prepare_fluxes_for_advection:
                 if at_first_substep:
                     log.debug(
-                        "corrector step sets out.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+                        "corrector step sets output.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
                     )
                     self._set_constant_on_half_levels_on_cells(
-                        field=out.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                        field=output.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                         value=ta.wpfloat(0.0),
                     )
                 self._update_mass_flux_weighted(
                     rho_ic=self.diagnostics.rho_at_cells_on_half_levels,
-                    w_now=inputs.w,
-                    w_new=out.w,
+                    w_now=input.w,
+                    w_new=output.w,
                     w_concorr_c=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
-                    mass_flx_ic=out.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    mass_flx_ic=output.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                     r_nsubsteps=r_nsubsteps,
                 )
 
         log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
         self._exchange.exchange(
             dims.CellDim,
-            out.rho,
-            out.exner,
-            out.w,
+            output.rho,
+            output.exner,
+            output.w,
             stream=decomposition.DEFAULT_STREAM,
         )

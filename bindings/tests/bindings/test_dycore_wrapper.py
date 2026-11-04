@@ -491,7 +491,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         rho_at_cells_on_half_levels=fw.Field(qty.RhoOnCellKHalf, sp.rho_ic()),
         mass_flux_at_edges_on_model_levels=fw.Field(qty.HorizontalMassFluxOnEdgeK, sp.mass_fl_e()),
     )
-    expected_inputs = solve_nh.SolveNonhydro.Input(
+    expected_input = solve_nh.SolveNonhydro.Input(
         rho=fw.Field(qty.RhoOnCellK, sp.rho_now()),
         w=fw.Field(qty.WOnCellKHalf, sp.w_now()),
         vn=fw.Field(qty.VnOnEdgeK, sp.vn_now()),
@@ -743,9 +743,9 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
 
         # Check input arguments to SolveNonhydro.run
         _, captured_kwargs = mock_init.call_args
-        result, error_message = utils.compare_objects(captured_kwargs["inputs"], expected_inputs)
+        result, error_message = utils.compare_objects(captured_kwargs["input"], expected_input)
         assert result, f"Input comparison failed: {error_message}"
-        result, error_message = utils.compare_objects(captured_kwargs["outputs"], expected_out)
+        result, error_message = utils.compare_objects(captured_kwargs["output"], expected_out)
         assert result, f"Output comparison failed: {error_message}"
         result, error_message = utils.compare_objects(
             dycore_wrapper.granule.solve_nh.diagnostics, expected_diagnostics

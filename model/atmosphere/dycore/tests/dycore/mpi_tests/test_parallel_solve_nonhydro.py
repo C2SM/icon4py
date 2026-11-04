@@ -138,7 +138,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
 
     solve_nonhydro.diagnostics = utils.construct_diagnostics(savepoint_nonhydro_init)
     solve_nonhydro.run(
-        utils.dycore_inputs(
+        utils.dycore_input(
             prognostic_states.current,
             forcing,
             second_order_divdamp_factor=second_order_divdamp_factor,

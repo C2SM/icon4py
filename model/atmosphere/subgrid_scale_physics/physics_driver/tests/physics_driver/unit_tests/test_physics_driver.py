@@ -30,8 +30,8 @@ from .utils import (
     driver,
     entry_state,
     filled,
-    inputs,
-    output,
+    make_input,
+    make_output,
     prognostics,
     recording,
     time_control,
@@ -121,13 +121,13 @@ def test_run_zeroes_the_tendency_leaves_of_the_outputs_outside_the_window(
     process, recorder = recording(
         MoistOutput, {}, time_control(interval=2 * DT, end=window_end), grid
     )
-    # the outputs handed to this step, with a tendency and a flux already in them
+    # the output handed to this step, with a tendency and a flux already in them
     given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
     entry = entry_state(grid, step_start=window_end)
 
     result = process.run(entry, given)
 
-    # the zeroing happens in place: the outputs handed in are the outputs handed back
+    # the zeroing happens in place: the output handed in is the output handed back
     assert result is given
     # the tendency leaves are zeroed, the non-tendency leaves (the muphys fluxes) are not
     np.testing.assert_array_equal(given.tend_qv.asnumpy(), 0.0)
@@ -141,48 +141,48 @@ def test_run_computes_on_the_first_in_window_step_even_when_not_triggered(
 ) -> None:
     # the process's first step in its window is not one its time control fires; it computes
     # anyway, because there is nothing cached yet
-    outputs = filled(MoistOutput, grid)
+    output = filled(MoistOutput, grid)
     process, recorder = recording(MoistOutput, {}, time_control(interval=2 * DT), grid)
     entry = entry_state(grid, step_start=T0 + DT)
 
-    assert process.run(entry, outputs) is outputs
+    assert process.run(entry, output) is output
     assert len(recorder.entries) == 1
 
     # the next step fires the time control again, over the cached values: it computes again
     again = entry_state(grid, step_start=T0 + 2 * DT)
 
-    assert process.run(again, outputs) is outputs
+    assert process.run(again, output) is output
     assert len(recorder.entries) == 2
 
 
 def test_run_populates_the_given_outputs_from_its_cache_on_a_non_computing_step(
     grid: base_grid.Grid,
 ) -> None:
-    outputs = filled(MoistOutput, grid)
+    output = filled(MoistOutput, grid)
     process, recorder = recording(
         MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(interval=2 * DT), grid
     )
     # the first step computes and fills the cache
-    process.run(entry_state(grid, step_start=T0), outputs)
+    process.run(entry_state(grid, step_start=T0), output)
     # the caller owns its buffer: other values are in it when it is handed back
-    scribble: Any = outputs.tend_qv.ndarray  # NDArrayObject declares no __setitem__
+    scribble: Any = output.tend_qv.ndarray  # NDArrayObject declares no __setitem__
     scribble[...] = 1e-7
 
-    result = process.run(entry_state(grid, step_start=T0 + DT), outputs)
+    result = process.run(entry_state(grid, step_start=T0 + DT), output)
 
     # the given buffer receives the values the computing run produced
-    assert result is outputs
-    np.testing.assert_array_equal(outputs.tend_qv.asnumpy(), 2e-7)
-    np.testing.assert_array_equal(outputs.pflx.asnumpy(), 3.0)
+    assert result is output
+    np.testing.assert_array_equal(output.tend_qv.asnumpy(), 2e-7)
+    np.testing.assert_array_equal(output.pflx.asnumpy(), 3.0)
     assert len(recorder.entries) == 1
 
 
 def test_a_mutated_buffer_does_not_touch_the_cache(grid: base_grid.Grid) -> None:
-    outputs = filled(MoistOutput, grid)
+    output = filled(MoistOutput, grid)
     process, recorder = recording(
         MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(interval=2 * DT), grid
     )
-    process.run(entry_state(grid, step_start=T0), outputs)
+    process.run(entry_state(grid, step_start=T0), output)
     given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
     process.run(entry_state(grid, step_start=T0 + DT), given)
     # the caller mutates the buffer it was handed back
@@ -198,11 +198,11 @@ def test_a_mutated_buffer_does_not_touch_the_cache(grid: base_grid.Grid) -> None
 
 
 def test_a_fresh_buffer_is_populated_from_the_cache(grid: base_grid.Grid) -> None:
-    outputs = filled(MoistOutput, grid)
+    output = filled(MoistOutput, grid)
     process, recorder = recording(
         MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(interval=2 * DT), grid
     )
-    process.run(entry_state(grid, step_start=T0), outputs)
+    process.run(entry_state(grid, step_start=T0), output)
 
     # a differently-allocated buffer, holding other values
     given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
@@ -226,7 +226,7 @@ def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
     physics = driver(grid, [process_a, process_b])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
-    physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
+    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
 
     # parallel coupling: one entry state, diagnosed once, read by both processes
     assert len(recorder_a.entries) == 1
@@ -245,10 +245,10 @@ def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
-    physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
+    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
     physics.run(
-        inputs(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        outputs=output(prognostic, tracer_state),
+        make_input(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
+        output=make_output(prognostic, tracer_state),
     )
 
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 2 * DT.total_seconds() * 1e-7, rtol=1e-12)
@@ -263,8 +263,8 @@ def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
     physics.run(
-        inputs(prognostic, tracer_state, simulation_current_datetime=T0),
-        outputs=output(prognostic, tracer_state),
+        make_input(prognostic, tracer_state, simulation_current_datetime=T0),
+        output=make_output(prognostic, tracer_state),
     )
 
     assert recorder.entries == []
@@ -284,13 +284,13 @@ def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> No
 
     # step 1: active (step start == T0), computes
     physics.run(
-        inputs(prognostic, tracer_state, simulation_current_datetime=T0 + DT),
-        outputs=output(prognostic, tracer_state),
+        make_input(prognostic, tracer_state, simulation_current_datetime=T0 + DT),
+        output=make_output(prognostic, tracer_state),
     )
     # step 2: in the window but not active (step start == T0 + DT), reuses the last output
     physics.run(
-        inputs(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        outputs=output(prognostic, tracer_state),
+        make_input(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
+        output=make_output(prognostic, tracer_state),
     )
 
     # the entry state reaches the process only on the step it computes
@@ -311,8 +311,8 @@ def test_first_in_window_step_inactive_computes(grid: base_grid.Grid) -> None:
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
     physics.run(
-        inputs(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        outputs=output(prognostic, tracer_state),
+        make_input(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
+        output=make_output(prognostic, tracer_state),
     )
 
     assert len(recorder.entries) == 1
@@ -325,7 +325,7 @@ def test_run_requires_every_moisture_species(grid: base_grid.Grid) -> None:
     without_qc = dataclasses.replace(tracer_state, qc=None)
 
     with pytest.raises(ValueError, match="qc"):
-        physics.run(inputs(prognostic, without_qc), outputs=output(prognostic, without_qc))
+        physics.run(make_input(prognostic, without_qc), output=make_output(prognostic, without_qc))
 
 
 def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
@@ -334,9 +334,11 @@ def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
     new_prognostic, new_tracers = prognostics(grid, theta_v=0.0), tracers(grid, qv=0.0)
 
-    physics.run(inputs(prognostic, tracer_state), outputs=output(new_prognostic, new_tracers))
+    physics.run(
+        make_input(prognostic, tracer_state), output=make_output(new_prognostic, new_tracers)
+    )
 
-    # the inputs are read only; out continues them, with the tendencies applied
+    # The input is read only, `output` continues it, with the tendencies applied
     np.testing.assert_array_equal(_qv(tracer_state), 1e-3)
     np.testing.assert_allclose(_qv(new_tracers), 1e-3 + DT.total_seconds() * 1e-7, rtol=1e-12)
     np.testing.assert_array_equal(new_prognostic.theta_v.asnumpy(), 300.0)
@@ -354,7 +356,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -
     exner_before = prognostic.exner.asnumpy().copy()
     theta_v_before = prognostic.theta_v.asnumpy().copy()
 
-    physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
+    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
 
     dt = DT.total_seconds()
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 1e-7 * dt, rtol=1e-12)
@@ -372,7 +374,7 @@ def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> Non
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
-    physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
+    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
 
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * DT.total_seconds(), rtol=1e-12)
 
@@ -385,7 +387,9 @@ def test_apply_rejects_a_lone_horizontal_wind_tendency(grid: base_grid.Grid) -> 
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
     with pytest.raises(ValueError, match="applied as a pair"):
-        physics.run(inputs(prognostic, tracer_state), outputs=output(prognostic, tracer_state))
+        physics.run(
+            make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state)
+        )
 
 
 def _empty(entry: physics_state.EntryState) -> fw.Empty:

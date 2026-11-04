@@ -384,6 +384,10 @@ extend-immutable-calls = [
   "icon4py.model.common.time.RelativeTime"
 ]
 
+[tool.ruff.lint.flake8-builtins]
+# Components read `input` and write `output`, nothing calls the builtin `input()`
+ignorelist = ["input"]
+
 [tool.ruff.lint.isort]
 combine-as-imports = true
 known-first-party = ['icon4py']

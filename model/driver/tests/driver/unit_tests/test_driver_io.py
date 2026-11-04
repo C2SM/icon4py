@@ -76,7 +76,7 @@ def make_monitor(
     )
 
 
-def make_inputs(
+def make_input(
     grid: base.Grid,
     allocator: gtx_typing.Allocator | None = None,
     simulation_time: datetime.datetime = START,
@@ -100,7 +100,7 @@ def make_inputs(
 
 def stored_state(grid: base.Grid, allocator: gtx_typing.Allocator | None = None) -> Any:
     writer = StubWriter()
-    make_monitor(grid, writer).run(make_inputs(grid, allocator))
+    make_monitor(grid, writer).run(make_input(grid, allocator))
     ((state, _),) = writer.stored
     return state
 
@@ -124,7 +124,7 @@ def test_variables_subset(grid: base.Grid) -> None:
     writer = StubWriter()
     monitor = make_monitor(grid, writer, ["air_density", "normal_velocity"])
 
-    monitor.run(make_inputs(grid))
+    monitor.run(make_input(grid))
 
     assert monitor.selected == {"air_density": "rho", "normal_velocity": "vn"}
     assert set(writer.stored[0][0]) == {"air_density", "normal_velocity"}
@@ -148,11 +148,11 @@ def test_dataarrays_carry_the_dims_of_their_leaf(grid: base.Grid) -> None:
 
 def test_written_attributes_are_those_of_the_leaf_quantity(grid: base.Grid) -> None:
     """The file attributes are the quantity's CF attributes plus the UGRID association."""
-    inputs = make_inputs(grid)
+    input = make_input(grid)
     state = stored_state(grid)
 
     for name, leaf in EXPECTED_LEAVES.items():
-        quantity = getattr(inputs, leaf).quantity
+        quantity = getattr(input, leaf).quantity
         attrs = writers.data_variable_attributes(state[name])
         assert set(state[name].attrs) == {*writers.DATA_VARIABLE_ATTRIBUTES}
         assert (attrs["standard_name"], attrs["long_name"], attrs["units"]) == (
@@ -178,8 +178,8 @@ def test_run_stores_every_call_and_assembles_at_capture_time_only(grid: base.Gri
     times = [START + datetime.timedelta(seconds=s) for s in (0, 10, 20)]
 
     for t in times:
-        out = monitor.run(make_inputs(grid, simulation_time=t))
-        assert isinstance(out, fw.Empty)
+        result = monitor.run(make_input(grid, simulation_time=t))
+        assert isinstance(result, fw.Empty)
 
     assert [t for _, t in writer.stored] == times
     assert [set(state) for state, _ in writer.stored] == [
@@ -191,11 +191,11 @@ def test_run_stores_every_call_and_assembles_at_capture_time_only(grid: base.Gri
 
 def test_stored_data_is_the_leaf_at_store_time(grid: base.Grid) -> None:
     writer = StubWriter()
-    inputs = make_inputs(grid)
-    rho: Any = inputs.rho.ndarray
+    input = make_input(grid)
+    rho: Any = input.rho.ndarray
     rho[...] = 1.5
 
-    make_monitor(grid, writer).run(inputs)
+    make_monitor(grid, writer).run(input)
 
     np.testing.assert_array_equal(writer.stored[0][0]["air_density"].data, rho)
 

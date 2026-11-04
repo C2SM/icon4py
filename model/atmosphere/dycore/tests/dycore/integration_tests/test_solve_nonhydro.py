@@ -226,7 +226,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         dycore_diagnostics.normal_wind_advective_tendency.swap()
 
     solve_nonhydro.run_predictor_step(
-        utils.dycore_inputs(
+        utils.dycore_input(
             prognostic_states.current,
             forcing,
             second_order_divdamp_factor=sp.divdamp_fac_o2(),
@@ -566,7 +566,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         dycore_diagnostics.normal_wind_advective_tendency.swap()
 
     solve_nonhydro.run_corrector_step(
-        utils.dycore_inputs(
+        utils.dycore_input(
             prognostic_states.current,
             forcing,
             second_order_divdamp_factor=second_order_divdamp_factor,
@@ -745,7 +745,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
 
     second_order_divdamp_factor = sp.divdamp_fac_o2()
     solve_nonhydro.run(
-        utils.dycore_inputs(
+        utils.dycore_input(
             prognostic_states.current,
             forcing,
             second_order_divdamp_factor=second_order_divdamp_factor,
@@ -875,7 +875,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
             dycore_diagnostics.normal_wind_advective_tendency.swap()
 
         solve_nonhydro.run(
-            utils.dycore_inputs(
+            utils.dycore_input(
                 prognostic_states.current,
                 forcing,
                 second_order_divdamp_factor=sp.divdamp_fac_o2(),

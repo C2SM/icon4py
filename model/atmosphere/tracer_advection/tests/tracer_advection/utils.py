@@ -118,6 +118,8 @@ def construct_prep_adv(
     )
 
 
+# NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
+# (`fw.collect`) instead of spelled out by keyword.
 def advection_views(
     diagnostic_state: states.AdvectionDiagnostics,
     prep_adv: states.PrepAdvection,
@@ -126,7 +128,7 @@ def advection_views(
     dtime: ta.wpfloat,
 ) -> tuple[tracer_advection.Advection.Input, tracer_advection.Advection.Output]:
     """The advection's views over one tracer (in the qv slot), the diagnostics and the fluxes."""
-    inputs = tracer_advection.Advection.Input(
+    input = tracer_advection.Advection.Input(
         qv=fw.Field(qty.QvOnCellK, p_tracer_now),
         airmass_now=diagnostic_state.airmass_now,
         airmass_new=diagnostic_state.airmass_new,
@@ -136,12 +138,12 @@ def advection_views(
         mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
         dtime=dtime,
     )
-    out = tracer_advection.Advection.Output(
+    output = tracer_advection.Advection.Output(
         qv=fw.Field(qty.QvOnCellK, p_tracer_new),
         hfl_tracer=diagnostic_state.hfl_tracer,
         vfl_tracer=diagnostic_state.vfl_tracer,
     )
-    return inputs, out
+    return input, output
 
 
 def log_dbg(field, name=""):

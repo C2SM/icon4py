@@ -60,7 +60,7 @@ def _component(
     return component, dz
 
 
-def _inputs(grid: base_grid.Grid) -> muphys_component.Muphys.Input:
+def _input(grid: base_grid.Grid) -> muphys_component.Muphys.Input:
     values = {"te": 280.0, "p": 9e4, "rho": 1.1, "qv": 1e-3}
     return fw.allocate(
         muphys_component.Muphys.Input,
@@ -73,34 +73,34 @@ def _inputs(grid: base_grid.Grid) -> muphys_component.Muphys.Input:
 def test_collect_input_views_the_entry_state(grid: base_grid.Grid) -> None:
     entry = fw.allocate(physics_state.EntryState, grid, None)
 
-    inputs = muphys_component.collect_input(entry)
+    input = muphys_component.collect_input(entry)
 
-    assert inputs.te is entry.temperature
-    assert inputs.p is entry.pressure
-    assert inputs.rho is entry.rho
+    assert input.te is entry.temperature
+    assert input.p is entry.pressure
+    assert input.rho is entry.rho
     for name in ("qv", "qc", "qi", "qr", "qs", "qg"):
-        assert getattr(inputs, name) is getattr(entry, name), name
+        assert getattr(input, name) is getattr(entry, name), name
 
 
 def test_run_reports_tendencies_and_leaves_the_inputs_untouched(grid: base_grid.Grid) -> None:
     compute = GranuleStandIn()
     component, dz = _component(grid, compute)
-    inputs = _inputs(grid)
-    outputs = fw.allocate(muphys_component.Muphys.Output, grid, None)
+    input = _input(grid)
+    output = fw.allocate(muphys_component.Muphys.Output, grid, None)
 
-    out = component.run(inputs, outputs)
+    result = component.run(input, output)
 
-    assert out is outputs
+    assert result is output
     dt = DTIME.total_seconds()
-    np.testing.assert_allclose(out.tend_temperature.asnumpy(), 1.0 / dt, rtol=1e-12)
-    np.testing.assert_allclose(out.tend_qv.asnumpy(), 2.0 / dt, rtol=1e-12)
-    np.testing.assert_array_equal(out.tend_qc.asnumpy(), 0.0)
-    np.testing.assert_array_equal(out.pflx.asnumpy(), 3.0)
+    np.testing.assert_allclose(result.tend_temperature.asnumpy(), 1.0 / dt, rtol=1e-12)
+    np.testing.assert_allclose(result.tend_qv.asnumpy(), 2.0 / dt, rtol=1e-12)
+    np.testing.assert_array_equal(result.tend_qc.asnumpy(), 0.0)
+    np.testing.assert_array_equal(result.pflx.asnumpy(), 3.0)
     # the granule ran on private copies; the static and read-only fields went in as given
-    np.testing.assert_array_equal(inputs.te.asnumpy(), 280.0)
-    np.testing.assert_array_equal(inputs.qv.asnumpy(), 1e-3)
+    np.testing.assert_array_equal(input.te.asnumpy(), 280.0)
+    np.testing.assert_array_equal(input.qv.asnumpy(), 1e-3)
     (call,) = compute.calls
-    assert call["te"] is not inputs.te
+    assert call["te"] is not input.te
     assert call["dz"] is dz
-    assert call["p"] is inputs.p
-    assert call["rho"] is inputs.rho
+    assert call["p"] is input.p
+    assert call["rho"] is input.rho

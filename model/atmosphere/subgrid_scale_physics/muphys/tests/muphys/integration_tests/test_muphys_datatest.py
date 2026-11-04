@@ -115,7 +115,7 @@ def test_muphys_granule(
     temperature_tend_atol = temperature_atol / dtime if test_utils.wp_is_dp else 1e-7
 
     muphys_configuration = muphys_config.MuphysConfig()
-    inputs = muphys_component.Muphys.Input(
+    input = muphys_component.Muphys.Input(
         te=fw.Field(qty.TemperatureOnCellK, init_savepoint.temperature()),
         p=fw.Field(qty.PressureOnCellK, init_savepoint.pressure()),
         rho=fw.Field(qty.RhoOnCellK, init_savepoint.rho()),
@@ -126,7 +126,7 @@ def test_muphys_granule(
         qs=fw.Field(qty.QsOnCellK, init_savepoint.qs()),
         qg=fw.Field(qty.QgOnCellK, init_savepoint.qg()),
     )
-    state = {"dz": init_savepoint.dz(), **fw.fields(inputs)}
+    state = {"dz": init_savepoint.dz(), **fw.fields(input)}
     initial_state = {name: field.asnumpy().copy() for name, field in state.items()}
     muphys_program = run_full_muphys.setup_muphys(
         ncells=icon_grid.num_cells,
@@ -146,14 +146,14 @@ def test_muphys_granule(
         compute=muphys_program if single_program else None,
     )
     allocator = model_backends.get_allocator(backend)
-    outputs = fw.fields(
-        component.run(inputs, fw.allocate(muphys_component.Muphys.Output, icon_grid, allocator))
+    output = fw.fields(
+        component.run(input, fw.allocate(muphys_component.Muphys.Output, icon_grid, allocator))
     )
     for name, field in state.items():
         np.testing.assert_array_equal(field.asnumpy(), initial_state[name], err_msg=name)
 
     # Keep the required in-place aliasing, but use independent buffers so the
-    # direct run cannot change the Component's inputs or outputs.
+    # direct run cannot change the Component's input or output.
     cell_k_dims = (dims.CellDim, dims.KDim)
     direct_t = gtx.as_field(cell_k_dims, initial_state["te"], allocator=allocator)
     direct_q = Q(
@@ -189,14 +189,14 @@ def test_muphys_granule(
         old = initial_state["te" if name == "temperature" else name]
         expected = np.zeros_like(old)
         expected[cells, :] = (updated.asnumpy()[cells, :] - old[cells, :]) / dtime
-        np.testing.assert_array_equal(outputs[f"tend_{name}"].asnumpy(), expected, err_msg=name)
+        np.testing.assert_array_equal(output[f"tend_{name}"].asnumpy(), expected, err_msg=name)
 
     # ICON saves only aggregate surface diagnostics. Verify the full pflx
     # profile and each surface diagnostic against the direct muphys call.
-    np.testing.assert_array_equal(outputs["pflx"].asnumpy(), direct_precip["pflx"].asnumpy())
+    np.testing.assert_array_equal(output["pflx"].asnumpy(), direct_precip["pflx"].asnumpy())
     for name in ("pr", "ps", "pi", "pg", "pre"):
         np.testing.assert_array_equal(
-            outputs[name].asnumpy()[:, -1],
+            output[name].asnumpy()[:, -1],
             direct_precip[name].asnumpy()[:, -1],
         )
 
@@ -214,7 +214,7 @@ def test_muphys_granule(
             atol=tracer_atol,
             err_msg=f"{name.removeprefix('tend_')} in cloud",
         )
-        actual = outputs[name].asnumpy()
+        actual = output[name].asnumpy()
         # above the cloudy region ICON does not run the scheme; the full-column
         # granule must produce (near-)zero tendencies there
         test_utils.assert_dallclose(
@@ -227,7 +227,7 @@ def test_muphys_granule(
         atol=temperature_atol,
         err_msg="temperature in cloud",
     )
-    tend_ta_actual = outputs["tend_temperature"].asnumpy()
+    tend_ta_actual = output["tend_temperature"].asnumpy()
     test_utils.assert_dallclose(
         tend_ta_actual[cells, :jks],
         0.0,
@@ -238,11 +238,11 @@ def test_muphys_granule(
     # surface precip: the granule keeps the surface value in the last level; ICON
     # only stores the aggregated prm_field diagnostics (rsfl = rain,
     # ssfl = ice + snow + graupel, pr = total, ufcs = energy flux)
-    rain = outputs["pr"].asnumpy()[:, -1]
-    ice = outputs["pi"].asnumpy()[:, -1]
-    snow = outputs["ps"].asnumpy()[:, -1]
-    graupel = outputs["pg"].asnumpy()[:, -1]
-    energy_flux = outputs["pre"].asnumpy()[:, -1]
+    rain = output["pr"].asnumpy()[:, -1]
+    ice = output["pi"].asnumpy()[:, -1]
+    snow = output["ps"].asnumpy()[:, -1]
+    graupel = output["pg"].asnumpy()[:, -1]
+    energy_flux = output["pre"].asnumpy()[:, -1]
 
     test_utils.assert_dallclose(
         rain,

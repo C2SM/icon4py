@@ -45,9 +45,9 @@ class Halve(fw.Component["Halve.Input", "Halve.Output"]):
     class Output(fw.State):
         pressure: fw.Field[Pressure]
 
-    def run(self, inputs: Input, outputs: Output) -> Output:
-        np.asarray(outputs.pressure.ndarray)[...] = 0.5 * np.asarray(inputs.pressure.ndarray)
-        return outputs
+    def run(self, input: Input, output: Output) -> Output:
+        np.asarray(output.pressure.ndarray)[...] = 0.5 * np.asarray(input.pressure.ndarray)
+        return output
 
 
 @pytest.fixture
@@ -181,10 +181,10 @@ def test_component_writes_the_callers_buffers(grid: base_grid.Grid) -> None:
     pressure = fw.zeros(Pressure, grid, allocator=None)
     np.asarray(pressure.ndarray)[...] = 8.0
     given = fw.allocate(Halve.Output, grid, allocator=None)
-    assert Halve().run(Halve.Input(pressure=pressure), outputs=given) is given
+    assert Halve().run(Halve.Input(pressure=pressure), output=given) is given
     assert np.all(np.asarray(given.pressure.ndarray) == 4.0)
     # in place: the caller passes the input's buffers as the output
-    Halve().run(Halve.Input(pressure=pressure), outputs=Halve.Output(pressure=pressure))
+    Halve().run(Halve.Input(pressure=pressure), output=Halve.Output(pressure=pressure))
     assert np.all(np.asarray(pressure.ndarray) == 4.0)
 
 
@@ -193,8 +193,8 @@ def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid
         Input = Halve.Input
         Output = fw.Empty
 
-        def run(self, inputs: Halve.Input, outputs: fw.Empty) -> fw.Empty:
-            return outputs
+        def run(self, input: Halve.Input, output: fw.Empty) -> fw.Empty:
+            return output
 
     assert list(fw.fields(fw.Empty())) == []
     empty = fw.Empty()

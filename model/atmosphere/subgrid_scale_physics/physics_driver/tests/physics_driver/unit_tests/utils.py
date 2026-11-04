@@ -81,7 +81,7 @@ def tracers(grid: base_grid.Grid, *, qv: float = 1e-3) -> states.TracerState:
     )
 
 
-def inputs(
+def make_input(
     prognostic: states.PrognosticState,
     tracer_state: states.TracerState,
     *,
@@ -104,7 +104,7 @@ def inputs(
     )
 
 
-def output(
+def make_output(
     prognostic: states.PrognosticState, tracer_state: states.TracerState
 ) -> physics_driver.PhysicsDriver.Output:
     return physics_driver.PhysicsDriver.Output(
@@ -135,7 +135,7 @@ def entry_state(grid: base_grid.Grid, *, step_start: datetime.datetime) -> physi
 
 class Recorder(fw.Component[physics_state.EntryState, fw.State]):
     """
-    A component that writes fixed values into the leaves of its outputs and records the entry
+    A component that writes fixed values into the leaves of its output and records the entry
     states it ran on, with a copy of the qv each one read.
 
     The driver allocates the process's output buffer from `Output`: the concrete state the
@@ -151,12 +151,12 @@ class Recorder(fw.Component[physics_state.EntryState, fw.State]):
         self.entries: list[physics_state.EntryState] = []
         self.qv_read: list[np.ndarray] = []
 
-    def run(self, inputs: physics_state.EntryState, outputs: fw.State) -> fw.State:
-        self.entries.append(inputs)
-        self.qv_read.append(inputs.qv.asnumpy().copy())
+    def run(self, input: physics_state.EntryState, output: fw.State) -> fw.State:
+        self.entries.append(input)
+        self.qv_read.append(input.qv.asnumpy().copy())
         for name, value in self.values.items():
-            getattr(outputs, name).ndarray[...] = value
-        return outputs
+            getattr(output, name).ndarray[...] = value
+        return output
 
 
 def recording(

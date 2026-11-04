@@ -23,6 +23,8 @@ def construct_diagnostics(savepoint: sb.IconDiffusionInitSavepoint) -> states.Di
     )
 
 
+# NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
+# (`fw.collect`) instead of spelled out by keyword.
 def diffusion_views(
     prognostic_state: states.PrognosticState,
     diagnostic_state: states.DiffusionDiagnostics,
@@ -30,7 +32,7 @@ def diffusion_views(
     initial_run: bool = False,
 ) -> tuple[diffusion.Diffusion.Input, diffusion.Diffusion.Output]:
     """The diffusion's views over the prognostics (diffused in place) and its diagnostics."""
-    inputs = diffusion.Diffusion.Input(
+    input = diffusion.Diffusion.Input(
         vn=prognostic_state.vn,
         w=prognostic_state.w,
         exner=prognostic_state.exner,
@@ -38,7 +40,7 @@ def diffusion_views(
         dtime=dtime,
         initial_run=initial_run,
     )
-    out = diffusion.Diffusion.Output(
+    output = diffusion.Diffusion.Output(
         vn=prognostic_state.vn,
         w=prognostic_state.w,
         exner=prognostic_state.exner,
@@ -48,7 +50,7 @@ def diffusion_views(
         dwdx=diagnostic_state.dwdx,
         dwdy=diagnostic_state.dwdy,
     )
-    return inputs, out
+    return input, output
 
 
 def verify_diffusion_fields(

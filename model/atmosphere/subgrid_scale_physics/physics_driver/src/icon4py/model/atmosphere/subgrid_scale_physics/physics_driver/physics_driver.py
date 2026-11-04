@@ -6,8 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""The ``PhysicsDriver`` and its processes."""
-
 from __future__ import annotations
 
 import datetime
@@ -77,7 +75,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     sees the previous one's provisional update), which would need per-process state advances.
 
     In place like the diffusion: the caller passes the same buffers as input and output; `run`
-    copies the input into `outputs` first where they differ. `rho` is read only.
+    copies `input` into `output` first where they differ. `rho` is read only.
     """
 
     class Input(fw.State):
@@ -229,44 +227,44 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             grid, dims.EdgeDim, dims.KDim, allocator=self.allocator
         )
 
-    def run(self, inputs: Input, outputs: Output) -> Output:
-        entry = self._diagnose(inputs)
+    def run(self, input: Input, output: Output) -> Output:
+        entry = self._diagnose(input)
         self._zero_accumulators()
         for process, buffer in zip(self.processes, self._buffers, strict=True):
             self._accumulate(process.run(entry, buffer))
-        self._apply(entry, inputs.dtime.total_seconds(), outputs)
-        return outputs
+        self._apply(entry, input.dtime.total_seconds(), output)
+        return output
 
     # NOTE: temporary, components MWE parts 04 (recipes) and 05 (derived inputs): the
-    # diagnostics become recipes, which the processes name on their `Input`, and `_diagnose` goes.
-    def _diagnose(self, inputs: Input) -> physics_state.EntryState:
-        """The entry state: the inputs as given and the diagnostics derived from them (dyn2phy)."""
+    # diagnostics become recipes, which the processes define on their `Input`, and `_diagnose` goes.
+    def _diagnose(self, input: Input) -> physics_state.EntryState:
+        """The entry state: `input` as given and the diagnostics derived from it (dyn2phy)."""
         # The tracers are optional leaves (a tracer may be inactive in the TracerConfig): fail
         # here rather than feed None to the physics.
-        if missing := [name for name in states.TRACERS if getattr(inputs, name) is None]:
+        if missing := [name for name in states.TRACERS if getattr(input, name) is None]:
             raise ValueError(
                 f"physics requires all moisture species active in the TracerState; missing: {missing}"
             )
         diagnostics = self.diagnostics
         entry = physics_state.EntryState(
-            vn=inputs.vn,
-            w=inputs.w,
-            exner=inputs.exner,
-            theta_v=inputs.theta_v,
-            rho=inputs.rho,
-            qv=_present(inputs.qv),
-            qc=_present(inputs.qc),
-            qi=_present(inputs.qi),
-            qr=_present(inputs.qr),
-            qs=_present(inputs.qs),
-            qg=_present(inputs.qg),
+            vn=input.vn,
+            w=input.w,
+            exner=input.exner,
+            theta_v=input.theta_v,
+            rho=input.rho,
+            qv=_present(input.qv),
+            qc=_present(input.qc),
+            qi=_present(input.qi),
+            qr=_present(input.qr),
+            qs=_present(input.qs),
+            qg=_present(input.qg),
             temperature=diagnostics.temperature,
             virtual_temperature=diagnostics.virtual_temperature,
             pressure=diagnostics.pressure,
             pressure_ifc=diagnostics.pressure_ifc,
             u=diagnostics.u,
             v=diagnostics.v,
-            step_start=inputs.simulation_current_datetime - inputs.dtime,
+            step_start=input.simulation_current_datetime - input.dtime,
         )
         # 1. virtual temperature and temperature
         self._diagnose_temperature(
@@ -317,28 +315,28 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             _array(accumulator)[...] += field.ndarray
 
     @staticmethod
-    def _continue_in_place(entry: physics_state.EntryState, out: Output) -> None:
-        """`out` continues the entry's prognostics: they are updated in place."""
-        for name, target in fw.fields(out).items():
+    def _continue_in_place(entry: physics_state.EntryState, output: Output) -> None:
+        """`output` continues the entry's prognostics: they are updated in place."""
+        for name, target in fw.fields(output).items():
             source: fw.Field[Any] = getattr(entry, name)
             if target.ndarray is not source.ndarray:
                 _array(target)[...] = source.ndarray
 
-    def _apply(self, entry: physics_state.EntryState, dt_seconds: float, out: Output) -> None:
+    def _apply(self, entry: physics_state.EntryState, dt_seconds: float, output: Output) -> None:
         """
-        The summed tendencies into `out`, once (ICON's phy2dyn).
+        The summed tendencies into `output`, once (ICON's phy2dyn).
 
         The order matters: the tracers first, because the exner/theta_v update uses the final
         moisture, then the temperature, then the winds. A tendency no process produced is not
         applied.
         """
-        self._continue_in_place(entry, out)
+        self._continue_in_place(entry, output)
         acc = self.accumulators
 
         # 1. tracers: q += dt * sum of the tendencies (mo_interface_iconam_aes:513)
         for name in states.TRACERS:
             if (tendency := acc.get(f"tend_{name}")) is not None:
-                tracer = _present(getattr(out, name))
+                tracer = _present(getattr(output, name))
                 self._apply_tendency(
                     field_a=tracer, coeff=dt_seconds, field_b=tendency, output_field=tracer
                 )
@@ -354,12 +352,12 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             )
             self._compute_virtual_temperature_tendency(
                 dtime=dt_seconds,
-                qv=_present(out.qv),
-                qc=_present(out.qc),
-                qi=_present(out.qi),
-                qr=_present(out.qr),
-                qs=_present(out.qs),
-                qg=_present(out.qg),
+                qv=_present(output.qv),
+                qc=_present(output.qc),
+                qi=_present(output.qi),
+                qr=_present(output.qr),
+                qs=_present(output.qs),
+                qg=_present(output.qg),
                 temperature=self._new_temperature,
                 virtual_temperature=entry.virtual_temperature,
                 virtual_temperature_tendency=self._virtual_temperature_tendency,
@@ -369,8 +367,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
                 virtual_temperature=entry.virtual_temperature,
                 virtual_temperature_tendency=self._virtual_temperature_tendency,
                 dtime=dt_seconds,
-                exner=out.exner,
-                theta_v=out.theta_v,
+                exner=output.exner,
+                theta_v=output.theta_v,
             )
 
         # 3. winds: one projection of the summed (u, v) tendencies onto the edge normals
@@ -383,17 +381,17 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         if wind_tendencies:
             self._compute_vn_from_uv(u=acc["tend_u"], v=acc["tend_v"], vn=self._vn_tendency)
             self._apply_tendency_vn(
-                field_a=out.vn,
+                field_a=output.vn,
                 coeff=dt_seconds,
                 field_b=self._vn_tendency,
-                output_field=out.vn,
+                output_field=output.vn,
             )
 
         # 4. w, on half levels
         if "tend_w" in acc:
             self._apply_tendency_w(
-                field_a=out.w,
+                field_a=output.w,
                 coeff=dt_seconds,
                 field_b=acc["tend_w"],
-                output_field=out.w,
+                output_field=output.w,
             )
