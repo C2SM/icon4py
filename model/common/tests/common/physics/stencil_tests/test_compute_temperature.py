@@ -99,12 +99,14 @@ class TestComputeTemperatureFromInternalEnergyPerArea(stencil_tests.StencilTest)
         qice: np.ndarray,
         rho: np.ndarray,
         dz: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(out=np.full(internal_energy_per_area.shape, 255.75599999999997))
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         return dict(
             internal_energy_per_area=data_alloc.constant_field(
                 38265357.270336017, dims.CellDim, dims.KDim, dtype=ta.wpfloat
@@ -132,7 +134,7 @@ class TestComputeVirtualPotentialTemperature(stencil_tests.StencilTest):
         *,
         virtual_temperature: np.ndarray,
         pressure: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         theta_v = reference_funcs.compute_virtual_potential_temperature_numpy(
             virtual_temperature, pressure
@@ -152,7 +154,7 @@ class TestComputeVirtualPotentialTemperature(stencil_tests.StencilTest):
         return dict(
             virtual_temperature=virtual_temperature,
             pressure=pressure,
-            domain={
+            domain={  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
                 dims.KDim: (0, gtx.int32(grid.num_levels)),
             },

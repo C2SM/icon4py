@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections.abc import Mapping
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -50,9 +51,9 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         p_cc: np.ndarray,
         p_rhodz_now: np.ndarray,
         p_mflx_tracer_h: np.ndarray,
-        p_dtime,
-        wp_eps,
-        **kwargs,
+        p_dtime: float,
+        wp_eps: float,
+        **kwargs: Any,  # framework pattern: reference receives arbitrary stencil params
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         r_m = compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(

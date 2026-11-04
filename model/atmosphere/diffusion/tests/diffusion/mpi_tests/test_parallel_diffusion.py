@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
-from typing import Any
 
 import pytest
 from gt4py.next import typing as gtx_typing
@@ -54,7 +53,7 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_savepoint: serialbox.IconGridSavepoint,
     metric_state: diffusion_states.DiffusionMetricState,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
-    caplog: Any,
+    caplog: pytest.LogCaptureFixture,
     backend: gtx_typing.Backend,
 ) -> None:
     caplog.set_level("INFO")
@@ -81,14 +80,14 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
     )
     vertical_config = experiment.config.vertical_grid
 
-    diffusion_params = diffusion_.DiffusionParams(config)
+    diffusion_params = diffusion_.DiffusionParams(config)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
     exchange = decomp_defs.create_exchange(process_props, decomposition_info)
     assert experiment.config.interpolation.max_nudging_coefficient is not None
     diffusion = diffusion_.Diffusion(
         grid=icon_grid,
-        config=config,
+        config=config,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         params=diffusion_params,
         vertical_grid=v_grid.VerticalGrid(
             vertical_config,
@@ -124,7 +123,7 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: diffusion run ")
 
     utils.verify_diffusion_fields(
-        config=config,
+        config=config,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         diffusion_savepoint=savepoint_diffusion_exit,

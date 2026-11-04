@@ -17,12 +17,12 @@ from icon4py.tools.py2fgen.test_utils import array_to_array_info
 
 
 @pytest.fixture
-def ffi():
+def ffi() -> cffi.FFI:
     return cffi.FFI()
 
 
 @pytest.mark.parametrize("dtype", [np.bool_, np.int32, np.int64, np.float32, np.float64])
-def test_array_as_array_info(ffi, dtype):
+def test_array_as_array_info(ffi: cffi.FFI, dtype: type[np.generic]) -> None:
     testee = np.array([0, 1, 2, 3, 4], dtype=dtype)
 
     result = array_to_array_info(testee, ffi=ffi)
@@ -33,7 +33,7 @@ def test_array_as_array_info(ffi, dtype):
     assert np.array_equal(arr, testee)
 
 
-def test_array_as_array_info_lifetime(ffi):
+def test_array_as_array_info_lifetime(ffi: cffi.FFI) -> None:
     """
     Test that the passed array is kept alive by the 'array_to_array_info' function.
     """

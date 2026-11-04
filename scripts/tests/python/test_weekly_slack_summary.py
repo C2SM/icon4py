@@ -17,13 +17,13 @@ import urllib.parse
 from typing import Any
 from unittest import mock
 
-import generate_weekly_summary_opencode_config
+import generate_weekly_summary_opencode_config  # type: ignore[import-not-found]  # sibling module in scripts/python
 import pytest
 import typer
-import weekly_slack_summary
+import weekly_slack_summary  # type: ignore[import-not-found]  # sibling module in scripts/python
 
 
-def test_previous_week_bounds_returns_monday_to_sunday():
+def test_previous_week_bounds_returns_monday_to_sunday() -> None:
     # 2024-07-08 is a Monday
     monday = datetime.datetime(2024, 7, 8, 12, 0, tzinfo=datetime.UTC)
     start, end = weekly_slack_summary._previous_week_bounds(monday)
@@ -31,7 +31,7 @@ def test_previous_week_bounds_returns_monday_to_sunday():
     assert end == datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
 
 
-def test_previous_week_bounds_sunday_boundary():
+def test_previous_week_bounds_sunday_boundary() -> None:
     # 2024-07-14 is a Sunday; the most recently completed week is still
     # 2024-07-01 to 2024-07-07 because the current week has not finished.
     sunday = datetime.datetime(2024, 7, 14, 23, 0, tzinfo=datetime.UTC)
@@ -40,7 +40,7 @@ def test_previous_week_bounds_sunday_boundary():
     assert end == datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
 
 
-def test_current_week_bounds_from_thursday():
+def test_current_week_bounds_from_thursday() -> None:
     # 2024-07-11 is a Thursday; the current week is Mon 2024-07-08 to
     # Sun 2024-07-14.
     thursday = datetime.datetime(2024, 7, 11, 12, 0, tzinfo=datetime.UTC)
@@ -50,7 +50,7 @@ def test_current_week_bounds_from_thursday():
 
 
 @pytest.fixture
-def sample_closed_pr():
+def sample_closed_pr() -> dict[str, Any]:
     return {
         "number": 42,
         "title": "Fix boundary handling",
@@ -64,7 +64,7 @@ def sample_closed_pr():
 
 
 @pytest.fixture
-def sample_open_pr():
+def sample_open_pr() -> dict[str, Any]:
     return {
         "number": 43,
         "title": "Add new stencil",
@@ -75,7 +75,7 @@ def sample_open_pr():
 
 
 @pytest.fixture
-def sample_inactive_pr():
+def sample_inactive_pr() -> dict[str, Any]:
     return {
         "number": 44,
         "title": "Refactor old module",
@@ -86,7 +86,7 @@ def sample_inactive_pr():
 
 
 @pytest.fixture
-def sample_issue_opened():
+def sample_issue_opened() -> dict[str, Any]:
     return {
         "number": 101,
         "title": "Bug report",
@@ -98,7 +98,7 @@ def sample_issue_opened():
 
 
 @pytest.fixture
-def sample_issue_closed():
+def sample_issue_closed() -> dict[str, Any]:
     return {
         "number": 100,
         "title": "Resolved issue",
@@ -112,11 +112,11 @@ def sample_issue_closed():
 class TestCollectGitHubPRs:
     def test_collects_closed_and_open_prs(
         self,
-        sample_closed_pr,
-        sample_open_pr,
-        sample_inactive_pr,
-    ):
-        def fake_request(url: str, **kwargs):
+        sample_closed_pr: dict[str, Any],
+        sample_open_pr: dict[str, Any],
+        sample_inactive_pr: dict[str, Any],
+    ) -> None:
+        def fake_request(url: str, **kwargs: Any) -> Any:
             decoded = urllib.parse.unquote(url)
             if "/search/issues" in decoded:
                 if "is:pr is:closed" in decoded:
@@ -186,10 +186,10 @@ class TestCollectGitHubPRs:
 class TestCollectGitHubIssues:
     def test_collects_opened_and_closed_issues(
         self,
-        sample_issue_opened,
-        sample_issue_closed,
-    ):
-        def fake_request(url: str, **kwargs):
+        sample_issue_opened: dict[str, Any],
+        sample_issue_closed: dict[str, Any],
+    ) -> None:
+        def fake_request(url: str, **kwargs: Any) -> Any:
             decoded = urllib.parse.unquote(url)
             assert "/search/issues" in decoded
             if "is:issue " in decoded and "created:" in decoded:
@@ -212,8 +212,8 @@ class TestCollectGitHubIssues:
 
 
 class TestCollectGitLabCI:
-    def test_no_recent_pipeline(self):
-        def fake_request(url: str):
+    def test_no_recent_pipeline(self) -> None:
+        def fake_request(url: str) -> Any:
             assert "/pipelines" in url
             return []
 
@@ -228,8 +228,8 @@ class TestCollectGitLabCI:
         assert result["failed_jobs"] == []
         assert result["running_jobs"] == []
 
-    def test_failed_pipeline_lists_failed_jobs(self):
-        def fake_request(url: str):
+    def test_failed_pipeline_lists_failed_jobs(self) -> None:
+        def fake_request(url: str) -> Any:
             if "/jobs" in url:
                 return [
                     {
@@ -279,8 +279,8 @@ class TestCollectGitLabCI:
         assert result["failed_jobs"][0]["name"] == "test-dycore"
         assert result["failed_jobs"][0]["log_snippet"] == "ERROR: test-dycore failed"
 
-    def test_running_pipeline_lists_running_jobs(self):
-        def fake_request(url: str):
+    def test_running_pipeline_lists_running_jobs(self) -> None:
+        def fake_request(url: str) -> Any:
             if "/jobs" in url:
                 return [
                     {
@@ -318,7 +318,7 @@ class TestCollectGitLabCI:
 
 
 class TestFormatContextMarkdown:
-    def test_contains_all_sections(self):
+    def test_contains_all_sections(self) -> None:
         start = datetime.datetime(2024, 7, 1, 0, 0, tzinfo=datetime.UTC)
         end = datetime.datetime(2024, 7, 7, 23, 59, 59, tzinfo=datetime.UTC)
         ci_start = datetime.datetime(2024, 7, 8, 0, 0, tzinfo=datetime.UTC)
@@ -390,7 +390,7 @@ class TestFormatContextMarkdown:
                 }
             ],
         }
-        gitlab_ci = {
+        gitlab_ci: dict[str, Any] = {
             "status": "success",
             "url": "https://gitlab.com/pipelines/123",
             "message": None,
@@ -427,7 +427,7 @@ class TestFormatContextMarkdown:
 
 
 class TestInactivePRHighlights:
-    def test_selects_newest_oldest_most_active_and_deduplicates(self):
+    def test_selects_newest_oldest_most_active_and_deduplicates(self) -> None:
         prs = [
             {
                 "number": 1,
@@ -510,7 +510,7 @@ class TestInactivePRHighlights:
         assert set(highlights[4]["reasons"]) == {"oldest inactive", "most active inactive"}
         assert highlights[5]["reasons"] == ["oldest inactive"]
 
-    def test_empty_inactive_prs_returns_empty_highlights(self):
+    def test_empty_inactive_prs_returns_empty_highlights(self) -> None:
         assert weekly_slack_summary._select_inactive_pr_highlights([]) == []
 
 
@@ -527,12 +527,12 @@ class TestIsNoiseComment:
             ("user", "regular discussion", False),
         ],
     )
-    def test_noise_comment_filtering(self, author, body, expected):
+    def test_noise_comment_filtering(self, author: str, body: str, expected: bool) -> None:
         assert weekly_slack_summary._is_noise_comment(author, body) is expected
 
 
 class TestRunOpenCode:
-    def test_fails_when_opencode_missing(self, monkeypatch):
+    def test_fails_when_opencode_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(weekly_slack_summary.shutil, "which", lambda _name: None)
         with pytest.raises(RuntimeError, match="opencode"):
             weekly_slack_summary._run_opencode(
@@ -541,7 +541,9 @@ class TestRunOpenCode:
                 pathlib.Path("out.md"),
             )
 
-    def test_runs_opencode_and_writes_file(self, tmp_path, monkeypatch):
+    def test_runs_opencode_and_writes_file(
+        self, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         instructions = tmp_path / "instructions.md"
         context = tmp_path / "context.md"
         output = tmp_path / "out.md"
@@ -550,7 +552,7 @@ class TestRunOpenCode:
 
         monkeypatch.setattr(weekly_slack_summary.shutil, "which", lambda _name: "/usr/bin/opencode")
 
-        def fake_run(cmd, *, capture_output, check, text):
+        def fake_run(cmd: list[str], *, capture_output: bool, check: bool, text: bool) -> Any:
             assert cmd == [
                 "opencode",
                 "run",
@@ -577,7 +579,7 @@ class TestRunOpenCode:
 
 class TestGenerateCommand:
     @pytest.fixture
-    def output_dir(self, tmp_path, monkeypatch):
+    def output_dir(self, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.Path:
         monkeypatch.setattr(
             weekly_slack_summary.tempfile,
             "mkdtemp",
@@ -585,8 +587,10 @@ class TestGenerateCommand:
         )
         return tmp_path
 
-    def test_dummy_output_writes_files(self, output_dir, monkeypatch):
-        def fake_collect_all(*args, **kwargs):
+    def test_dummy_output_writes_files(
+        self, output_dir: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fake_collect_all(*args: Any, **kwargs: Any) -> Any:
             return {
                 "week_start": "2024-07-01T00:00:00+00:00",
                 "week_end": "2024-07-07T23:59:59+00:00",
@@ -636,7 +640,7 @@ class TestGenerateCommand:
         data = json.loads(context_json.read_text())
         assert data["repository"] == "C2SM/icon4py"
 
-    def test_dummy_input_data_and_output_writes_files(self, output_dir):
+    def test_dummy_input_data_and_output_writes_files(self, output_dir: pathlib.Path) -> None:
         with pytest.raises(typer.Exit) as exc_info:
             weekly_slack_summary.generate_cmd(
                 dummy_input_data=True,
@@ -669,7 +673,9 @@ class TestGenerateCommand:
         assert "Closed Issues" in markdown
         assert "GitLab Weekly CI" in markdown
 
-    def test_dummy_output_prints_summary(self, output_dir, capsys):
+    def test_dummy_output_prints_summary(
+        self, output_dir: pathlib.Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         with pytest.raises(typer.Exit) as exc_info:
             weekly_slack_summary.generate_cmd(
                 dummy_input_data=True,
@@ -684,8 +690,10 @@ class TestGenerateCommand:
         captured = capsys.readouterr()
         assert summary_md.read_text(encoding="utf-8") in captured.out
 
-    def test_default_mode_calls_opencode_and_posts(self, output_dir, monkeypatch):
-        def fake_collect_all(*args, **kwargs):
+    def test_default_mode_calls_opencode_and_posts(
+        self, output_dir: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fake_collect_all(*args: Any, **kwargs: Any) -> Any:
             return {
                 "week_start": "2024-07-01T00:00:00+00:00",
                 "week_end": "2024-07-07T23:59:59+00:00",
@@ -719,7 +727,7 @@ class TestGenerateCommand:
 
         opencode_calls: list[pathlib.Path] = []
 
-        def fake_run_opencode(instructions, context, output):
+        def fake_run_opencode(instructions: str, context: str, output: pathlib.Path) -> Any:
             opencode_calls.append(output)
             output.write_text("polished summary", encoding="utf-8")
 
@@ -727,7 +735,7 @@ class TestGenerateCommand:
 
         slack_calls: list[tuple[str, str]] = []
 
-        def fake_post_to_slack(webhook_url, markdown):
+        def fake_post_to_slack(webhook_url: str, markdown: str) -> Any:
             slack_calls.append((webhook_url, markdown))
 
         monkeypatch.setattr(weekly_slack_summary, "_post_to_slack", fake_post_to_slack)
@@ -743,9 +751,12 @@ class TestGenerateCommand:
         assert slack_calls == [("https://hooks.slack.com/test", "polished summary")]
 
     def test_over_limit_summary_posts_with_warning_and_oversized_file(
-        self, output_dir, monkeypatch, capsys
-    ):
-        def fake_collect_all(*args, **kwargs):
+        self,
+        output_dir: pathlib.Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        def fake_collect_all(*args: Any, **kwargs: Any) -> Any:
             return {
                 "week_start": "2024-07-01T00:00:00+00:00",
                 "week_end": "2024-07-07T23:59:59+00:00",
@@ -779,14 +790,14 @@ class TestGenerateCommand:
 
         long_summary = "x" * 3801
 
-        def fake_run_opencode(instructions, context, output):
+        def fake_run_opencode(instructions: str, context: str, output: pathlib.Path) -> Any:
             output.write_text(long_summary, encoding="utf-8")
 
         monkeypatch.setattr(weekly_slack_summary, "_run_opencode", fake_run_opencode)
 
         slack_calls: list[tuple[str, str]] = []
 
-        def fake_post_to_slack(webhook_url, markdown):
+        def fake_post_to_slack(webhook_url: str, markdown: str) -> Any:
             slack_calls.append((webhook_url, markdown))
 
         monkeypatch.setattr(weekly_slack_summary, "_post_to_slack", fake_post_to_slack)
@@ -807,10 +818,12 @@ class TestGenerateCommand:
         captured = capsys.readouterr()
         assert "Warning: generated summary exceeds recommended limits" in captured.err
 
-    def test_missing_webhook_exits_nonzero(self, output_dir, monkeypatch):
+    def test_missing_webhook_exits_nonzero(
+        self, output_dir: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
 
-        def fake_collect_all(*args, **kwargs):
+        def fake_collect_all(*args: Any, **kwargs: Any) -> Any:
             return {
                 "week_start": "2024-07-01T00:00:00+00:00",
                 "week_end": "2024-07-07T23:59:59+00:00",
@@ -855,13 +868,17 @@ class TestGenerateCommand:
 
 
 class TestVerifySummaryLength:
-    def test_under_limit_does_not_warn_or_write_oversized_file(self, tmp_path, capsys):
+    def test_under_limit_does_not_warn_or_write_oversized_file(
+        self, tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         weekly_slack_summary._verify_summary_length("short summary", tmp_path)
         captured = capsys.readouterr()
         assert captured.err == ""
         assert not (tmp_path / "weekly_slack_summary_oversized.md").exists()
 
-    def test_over_limit_warns_and_writes_oversized_file(self, tmp_path, capsys):
+    def test_over_limit_warns_and_writes_oversized_file(
+        self, tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         long_summary = "x" * 3801
         weekly_slack_summary._verify_summary_length(long_summary, tmp_path)
         captured = capsys.readouterr()
@@ -871,7 +888,9 @@ class TestVerifySummaryLength:
         assert oversized_path.exists()
         assert oversized_path.read_text(encoding="utf-8") == long_summary
 
-    def test_trailing_newline_does_not_overcount_lines(self, tmp_path, capsys):
+    def test_trailing_newline_does_not_overcount_lines(
+        self, tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         # Two real lines followed by a trailing newline must report 2 lines.
         summary = "line1\nline2\n"
         weekly_slack_summary._verify_summary_length(summary, tmp_path)
@@ -881,7 +900,7 @@ class TestVerifySummaryLength:
 
 
 class TestGenerateOpenCodeConfig:
-    def test_writes_config_with_model_and_base_url(self, tmp_path):
+    def test_writes_config_with_model_and_base_url(self, tmp_path: pathlib.Path) -> None:
         output = tmp_path / "opencode-config.json"
         generate_weekly_summary_opencode_config.generate_cmd(
             output_path=output,

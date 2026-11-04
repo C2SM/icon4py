@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 
@@ -29,7 +31,7 @@ class TestComputeHorizontalTracerFluxUpwind(stencil_tests.StencilTest):
         p_cc: np.ndarray,
         p_mass_flx_e: np.ndarray,
         p_vn: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         e2c = connectivities[dims.E2C]

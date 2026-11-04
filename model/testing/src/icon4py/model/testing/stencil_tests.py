@@ -135,7 +135,7 @@ def _reject_direct_data_allocation(func: types.FunctionType, tree: ast.AST) -> N
     }
     # A parameter shadows any global of the same name, `data_alloc` above all: the fixture
     # receives the wrapper under exactly the name test modules bind the wrapped module to.
-    definition = tree.body[0]
+    definition = tree.body[0]  # type: ignore[attr-defined]  # AST node shape not modeled in types
     if isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef)):
         args = definition.args
         referenced -= {
@@ -469,7 +469,7 @@ def _collect_compute_samples(
             f"Metrics key ({metrics_key}) does not start with the program name"
             f" ({configured_program.__name__})"
         )
-    if len(configured_program._compiled_programs.compiled_programs) != 1:
+    if len(configured_program._compiled_programs.compiled_programs) != 1:  # type: ignore[attr-defined]  # framework attaches _compiled_programs at runtime
         raise RuntimeError("Multiple compiled programs found, cannot extract metrics.")
 
     samples = gtx_metrics.sources[metrics_key].metrics["compute"].samples

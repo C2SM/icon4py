@@ -28,7 +28,9 @@ from .utils import (
 )
 
 
-def edge_projection(field: np.ndarray, neighbors: np.ndarray, x: np.ndarray, y: np.ndarray):
+def edge_projection(
+    field: tuple[np.ndarray, np.ndarray], neighbors: np.ndarray, x: np.ndarray, y: np.ndarray
+) -> np.ndarray:
     """Projection of the vector field (field_x, field_y) at each neighbor onto (x, y)."""
     field_x, field_y = field
     return field_x[neighbors] * x[..., np.newaxis] + field_y[neighbors] * y[..., np.newaxis]

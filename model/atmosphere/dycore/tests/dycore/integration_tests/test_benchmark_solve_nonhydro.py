@@ -9,10 +9,11 @@
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
+from pytest_benchmark.fixture import BenchmarkFixture
 
 
 if TYPE_CHECKING:
@@ -232,7 +233,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     at_first_substep: bool,
     at_last_substep: bool,
     backend_like: model_backends.BackendLike,
-    benchmark: Any,
+    benchmark: BenchmarkFixture,
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)
     mesh = grid_manager.grid

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -26,14 +28,14 @@ class TestSnowLambda(stencil_tests.StencilTest):
         *,
         rho_s: np.ndarray,
         ns: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         # mirrors ICON mo_aes_graupel.f90 snow_lambda
         lam = np.where(rho_s > 1.0e-15, (2.0 * 0.069 * ns / rho_s) ** (1.0 / 3.0), 1.0e10)
         return dict(riming_snow_rate=lam)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
             rho_s=data_alloc.constant_field(
                 1.12204 * 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat

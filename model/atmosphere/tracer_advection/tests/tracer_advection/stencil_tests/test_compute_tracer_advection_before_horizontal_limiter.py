@@ -15,6 +15,7 @@ Two test classes cover the two modes controlled by even_timestep:
     the current tracer and rhodz_now.
 """
 
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
@@ -50,7 +51,7 @@ def compute_horizontal_tracer_flux_upwind_numpy(
     p_cc: np.ndarray,
     p_mass_flx_e: np.ndarray,
     p_vn: np.ndarray,
-    connectivities: dict[gtx.FieldOffset, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
 ) -> np.ndarray:
     e2c = connectivities[dims.E2C]
     return np.where(p_vn > 0.0, p_cc[e2c[:, 0]], p_cc[e2c[:, 1]]) * p_mass_flx_e

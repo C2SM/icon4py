@@ -8,9 +8,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
 import pytest
+from pytest_benchmark.fixture import BenchmarkFixture
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
@@ -46,7 +45,7 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend_like: model_backends.BackendLike,
-    benchmark: Any,
+    benchmark: BenchmarkFixture,
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)
     dtime = 10.0

@@ -31,6 +31,7 @@ import typer
 
 
 if TYPE_CHECKING:
+    import icon4py.model.testing.datatest_utils as dt_utils
     from icon4py.model.testing import definitions as test_defs
 else:
     test_defs = None
@@ -292,16 +293,16 @@ def parse_extra_mpi_ranks(script_path: pathlib.Path, comm_size: int) -> int:
             continue
         # Try to match direct integer value
         pattern_direct = rf"{var_name}\s*=\s*(\d+)"
-        match = re.search(pattern_direct, section)
-        if match:
-            extra_ranks += int(match.group(1))
+        direct_match = re.search(pattern_direct, section)
+        if direct_match:
+            extra_ranks += int(direct_match.group(1))
             continue
 
         # Try to match variable reference ${var_name}
         pattern_ref = rf"{var_name}\s*=\s*\$\{{([a-zA-Z_][a-zA-Z0-9_]*)\}}"
-        match = re.search(pattern_ref, section)
-        if match:
-            ref_var_name = match.group(1)
+        ref_match = re.search(pattern_ref, section)
+        if ref_match:
+            ref_var_name = ref_match.group(1)
             if ref_var_name in var_definitions:
                 extra_ranks += var_definitions[ref_var_name]
             # If variable not found, silently ignore (value is 0)
@@ -487,7 +488,7 @@ def copy_ser_data(
             shutil.copy2(src_file, dest_dir / src_file.name)
 
     # Convert namelists to config.yml
-    import fortran_config_converter  # noqa: PLC0415 [import-outside-top-level]
+    import fortran_config_converter  # type: ignore[import-not-found]  # sibling module in scripts/python  # noqa: PLC0415 [import-outside-top-level]
 
     from icon4py.model.common.config import config_io  # noqa: PLC0415 [import-outside-top-level]
 

@@ -15,7 +15,7 @@ from icon4py.model.common.states import data, model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def test_data_array_has_ugrid_and_cf_attributes():
+def test_data_array_has_ugrid_and_cf_attributes() -> None:
     grid = simple_grid.simple_grid()
     buffer = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
     data_array = utils.to_data_array(buffer, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"])
@@ -29,7 +29,7 @@ def test_data_array_has_ugrid_and_cf_attributes():
     assert data_array.attrs["mesh"] == ugrid.MESH
 
 
-def test_type_check_for_datafields():
+def test_type_check_for_datafields() -> None:
     grid = simple_grid.simple_grid()
     field = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
     model_field = model.ModelField(data=field, attrs=data.DIAGNOSTIC_CF_ATTRIBUTES["eastward_wind"])

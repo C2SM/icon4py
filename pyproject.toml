@@ -50,6 +50,8 @@ scripts = [
 test = [
   # workspace members
   "icon4py-testing~=0.5.0",
+  "f90nml>=1.5",
+  "lazy-loader>=0.5",
   # external dependencies
   "black>=25.11",
   "clang-format>=22.1.0",
@@ -156,49 +158,7 @@ disallow_incomplete_defs = true
 disallow_untyped_defs = true
 explicit_package_bases = true
 files = [
-  # TODO(egparedes): activate for all sources and tests
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/tracer_advection/src',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/tracer_advection/tests',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/tests/',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/tests',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/src',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/tests',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/surface/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/state.py',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/data.py',
-  # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
-  # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/config/unit_tests/test_options.py',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/config/unit_tests/test_config_doc.py',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/config/unit_tests/test_config_io.py',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/grid',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/metrics',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/states',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
-  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/io/unit_tests/test_io.py',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/config',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/topography',
-  # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
-  # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
-  '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
-  # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
-  '$MYPY_CONFIG_FILE_DIR/tools/src/',
-  '$MYPY_CONFIG_FILE_DIR/bindings/src/',
-  '$MYPY_CONFIG_FILE_DIR/model/driver/src',
-  '$MYPY_CONFIG_FILE_DIR/model/driver/tests'
+  '$MYPY_CONFIG_FILE_DIR'
 ]
 ignore_missing_imports = false
 implicit_reexport = true
@@ -217,9 +177,10 @@ $MYPY_CONFIG_FILE_DIR/model/driver/tests:
 $MYPY_CONFIG_FILE_DIR/model/testing/src:
 $MYPY_CONFIG_FILE_DIR/tools/src:
 $MYPY_CONFIG_FILE_DIR/bindings/src:
+$MYPY_CONFIG_FILE_DIR/tools:
 '''
 namespace_packages = true
-plugins = ["gt4py.next.type_system.mypy_plugin"]
+plugins = ["gt4py.next.type_system.mypy_plugin", "icon4py.model.common.type_system.mypy_plugin"]
 # install_types = true
 # non_interactive = true
 show_column_numbers = true
@@ -227,39 +188,6 @@ show_error_codes = true
 warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
-
-[[tool.mypy.overrides]]
-disable_error_code = ["attr-defined"]
-module = ['*.stencil_tests.*', '*.unit_tests.*']
-
-[[tool.mypy.overrides]]
-ignore_errors = true
-module = [
-  'icon4py.model.testing.pytest_hooks',
-  'icon4py.model.testing.serialbox',
-  'icon4py.bindings.diffusion_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
-  'icon4py.bindings.dycore_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
-  'icon4py.bindings.grid_wrapper'
-]
-
-[[tool.mypy.overrides]]
-disallow_untyped_defs = false
-module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
-
-[[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
-disable_error_code = ["index", "misc"]
-module = ["icon4py.model.common.initial_condition.*"]
-
-[[tool.mypy.overrides]]
-disable_error_code = [
-  "valid-type"  # vfloat is not a valid type
-]
-module = [
-  "icon4py.model.atmosphere.tracer_advection.stencils.*",
-  "icon4py.model.atmosphere.diffusion.stencils.*",
-  "icon4py.model.atmosphere.dycore.dycore_states",
-  "icon4py.model.atmosphere.dycore.stencils.*"
-]
 
 # -- pytest --
 [tool.pytest]

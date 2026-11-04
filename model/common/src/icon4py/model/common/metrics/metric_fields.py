@@ -70,7 +70,7 @@ def compute_ddqz_z_half(  # noqa: PLR0917 [too-many-positional-arguments]
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Compute functional determinant of the metrics (is positive) on half levels.
 
@@ -117,7 +117,7 @@ def compute_ddqz_z_full_and_inverse(  # noqa: PLR0917 [too-many-positional-argum
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Compute ddqz_z_full and its inverse inv_ddqz_z_full.
 
@@ -176,7 +176,7 @@ def compute_scaling_factor_for_3d_divdamp(  # noqa: PLR0917 [too-many-positional
     divdamp_type: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Compute scaling factor for 3D divergence damping terms (declared as scalfac_dd3d in ICON).
 
@@ -240,7 +240,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
     end_index_of_damping_layer: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Compute rayleigh_w factor.
 
@@ -304,7 +304,7 @@ def compute_coeff_dwdz(  # noqa: PLR0917 [too-many-positional-arguments]
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Compute coeff1_dwdz and coeff2_dwdz factors.
 
@@ -341,7 +341,7 @@ def compute_ddxn_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     grad_fd_norm(
         z_ifc,
         inv_dual_edge_length,
@@ -359,7 +359,7 @@ def _compute_ddxt_z_half_e(
     c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     inv_primal_edge_length: fa.EdgeField[gtx.float64],
     tangent_orientation: fa.EdgeField[gtx.float64],
-):
+) -> fa.EdgeKHalfField[gtx.float64]:
     z_ifv = _interpolate_cell_field_to_vertex_f64(cell_in, c_int)
     ddxt_z_half_e = _grad_fd_tang(
         z_ifv,
@@ -380,7 +380,7 @@ def compute_ddxt_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_ddxt_z_half_e(
         cell_in,
         c_int,
@@ -407,7 +407,7 @@ def compute_exner_w_explicit_weight_parameter(
     exner_w_explicit_weight_parameter: fa.CellField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     """
     Compute exner_w_explicit_weight_parameter.
 
@@ -451,7 +451,7 @@ def compute_maxslp_maxhgtd(  # noqa: PLR0917 [too-many-positional-arguments]
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Compute z_maxslp and z_maxhgtd.
 
@@ -507,7 +507,7 @@ def compute_exner_exfac(  # noqa: PLR0917 [too-many-positional-arguments]
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Compute exner_exfac.
 
@@ -546,7 +546,7 @@ def compute_wgtfac_e(  # noqa: PLR0917 [too-many-positional-arguments]
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Compute wgtfac_e.
 
@@ -619,7 +619,7 @@ def compute_nflat_gradp(
         nlev,
     )
     nflat_gradp = min_reduction(mask_array)
-    return nflat_gradp
+    return nflat_gradp  # type: ignore[return-value]  # GT4Py backend/field inference limitation
 
 
 @gtx.field_operator
@@ -699,7 +699,7 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(  # noqa: PLR
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_pressure_gradient_downward_extrapolation_mask_distance(
         z_mc=z_mc,
         c_lin_e=c_lin_e,
@@ -732,7 +732,7 @@ def compute_mask_prog_halo_c(
     mask_prog_halo_c: fa.CellField[bool],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     """
     Compute mask_prog_halo_c.
 
@@ -780,7 +780,7 @@ def compute_horizontal_mask_for_3d_divdamp(  # noqa: PLR0917 [too-many-positiona
     grf_nudgezone_width: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     """
     Compute horizontal_mask_for_3d_divdamp (declared as hmask_dd3d in ICON).
 
@@ -823,7 +823,7 @@ def compute_weighted_cell_neighbor_sum(  # noqa: PLR0917 [too-many-positional-ar
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Compute maxslp_avg and maxhgtd_avg.
 
@@ -895,7 +895,7 @@ def compute_max_nbhgt(
     )
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0, False))
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0, False))  # type: ignore[call-overload]  # GT4Py scan_operator stub limitation
 def _compute_param(  # noqa: PLR0917 [too-many-positional-arguments]
     param: tuple[gtx.int32, bool],
     z_me_jk: float,

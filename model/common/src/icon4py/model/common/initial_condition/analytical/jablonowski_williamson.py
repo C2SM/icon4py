@@ -169,24 +169,24 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     metrics = static_fields.metrics
     interpolation = static_fields.interpolation
 
-    cell_lat = geometry.get_full_precision(geometry_meta.CELL_LAT).ndarray
-    edge_lat = geometry.get_full_precision(geometry_meta.EDGE_LAT).ndarray
-    edge_lon = geometry.get_full_precision(geometry_meta.EDGE_LON).ndarray
-    primal_normal_x = geometry.get_full_precision(geometry_meta.EDGE_NORMAL_U).ndarray
-    inv_dual_edge_length = geometry.get_full_precision(
+    cell_lat = geometry.get_full_precision(geometry_meta.CELL_LAT).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    edge_lat = geometry.get_full_precision(geometry_meta.EDGE_LAT).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    edge_lon = geometry.get_full_precision(geometry_meta.EDGE_LON).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    primal_normal_x = geometry.get_full_precision(geometry_meta.EDGE_NORMAL_U).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    inv_dual_edge_length = geometry.get_full_precision(  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
         f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
     ).ndarray
-    edge_cell_distance = geometry.get_full_precision(geometry_meta.EDGE_CELL_DISTANCE).ndarray
-    primal_edge_length = geometry.get_full_precision(geometry_meta.EDGE_LENGTH).ndarray
-    cell_area = geometry.get_full_precision(geometry_meta.CELL_AREA).ndarray
-    geopot = phy_const.GRAV * metrics.get_full_precision(metrics_attributes.Z_MC).ndarray
+    edge_cell_distance = geometry.get_full_precision(geometry_meta.EDGE_CELL_DISTANCE).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    primal_edge_length = geometry.get_full_precision(geometry_meta.EDGE_LENGTH).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    cell_area = geometry.get_full_precision(geometry_meta.CELL_AREA).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    geopot = phy_const.GRAV * metrics.get_full_precision(metrics_attributes.Z_MC).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
     z_ifc = metrics.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
-    exner_ref_mc = metrics.get_full_precision(metrics_attributes.EXNER_REF_MC).ndarray
-    d_exner_dz_ref_ic = metrics.get_full_precision(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
-    theta_ref_mc = metrics.get_full_precision(metrics_attributes.THETA_REF_MC).ndarray
-    theta_ref_ic = metrics.get_full_precision(metrics_attributes.THETA_REF_IC).ndarray
-    wgtfac_c = metrics.get_full_precision(metrics_attributes.WGTFAC_C).ndarray
-    ddqz_z_half = metrics.get_full_precision(metrics_attributes.DDQZ_Z_HALF).ndarray
+    exner_ref_mc = metrics.get_full_precision(metrics_attributes.EXNER_REF_MC).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    d_exner_dz_ref_ic = metrics.get_full_precision(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    theta_ref_mc = metrics.get_full_precision(metrics_attributes.THETA_REF_MC).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    theta_ref_ic = metrics.get_full_precision(metrics_attributes.THETA_REF_IC).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    wgtfac_c = metrics.get_full_precision(metrics_attributes.WGTFAC_C).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
+    ddqz_z_half = metrics.get_full_precision(metrics_attributes.DDQZ_Z_HALF).ndarray  # type: ignore[union-attr]  # NDArrayObject/None handling limitation
     ddqz_z_full_field = metrics.get(metrics_attributes.DDQZ_Z_FULL)
     c_lin_e = interpolation.get_full_precision(interpolation_attributes.C_LIN_E)
     zone_idx = testcases_utils.zone_indices(grid)
@@ -231,7 +231,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         eta_old = array_ns.full(num_cells, fill_value=1e-7, dtype=gtx.float64)
         log.info(f"In Newton iteration, k = {k_index}")
         for _ in range(100):
-            eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
+            eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
             cos_etav = array_ns.cos(eta_v_ndarray[:, k_index])
             sin_etav = array_ns.sin(eta_v_ndarray[:, k_index])
 
@@ -267,7 +267,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
             eta_old = eta_old - newton_function / newton_function_prime
 
-        eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
+        eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
         exner_dp[:, k_index] = (eta_old * p_sfc / gtx.float64(phy_const.P0REF)) ** gtx.float64(
             phy_const.RD_O_CPD
         )
@@ -304,12 +304,12 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         primal_normal_x=primal_normal_x,
         eta_v_at_edge=eta_v_at_edge_dp.ndarray,
     )
-    prognostic_state_now.vn.ndarray[:, :] = vn_dp.astype(ta.wpfloat)
+    prognostic_state_now.vn.ndarray[:, :] = vn_dp.astype(ta.wpfloat)  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
     log.info("U2vn computation completed.")
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
 
-    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
         grid=grid,
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,
@@ -336,9 +336,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    prognostic_state_now.exner.ndarray[:] = exner_dp.astype(ta.wpfloat)
-    prognostic_state_now.rho.ndarray[:] = rho_dp.astype(ta.wpfloat)
-    prognostic_state_now.theta_v.ndarray[:] = theta_v_dp.astype(ta.wpfloat)
+    prognostic_state_now.exner.ndarray[:] = exner_dp.astype(ta.wpfloat)  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    prognostic_state_now.rho.ndarray[:] = rho_dp.astype(ta.wpfloat)  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
+    prognostic_state_now.theta_v.ndarray[:] = theta_v_dp.astype(ta.wpfloat)  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
 
     # Moist initialization only runs when transport is active. The only tracer we
     # need to set is qv; the hydrometeors (qc, qi, ...) keep their zero-initialized

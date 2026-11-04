@@ -219,7 +219,7 @@ class ArchiveExplorer:
         if not self.path.is_dir():
             raise FileNotFoundError(f"No serialized data directory at '{self.path}'.")
 
-        import serialbox  # noqa: PLC0415 [import-outside-top-level]
+        import serialbox  # type: ignore[import-untyped]  # serialbox ships no stubs  # noqa: PLC0415 [import-outside-top-level]
 
         self.prefix = prefix
         self.rank = rank
@@ -470,6 +470,8 @@ def open_archive(
         raise typer.BadParameter("Pass either '--experiment' or '--path', but not both.")
     try:
         if experiment is None:
+            if path is None:  # impossible given the xor check above
+                raise typer.BadParameter("Pass either '--experiment' or '--path', but not both.")
             return ArchiveExplorer(path, rank=rank)
         return ArchiveExplorer.for_experiment(
             experiment, version=version, comm_size=comm_size, rank=rank
@@ -684,7 +686,7 @@ def shell(
     )
     print(banner)
     try:
-        import IPython  # noqa: PLC0415 [import-outside-top-level]
+        import IPython  # type: ignore[import-not-found]  # interactive shell, not a typing dependency  # noqa: PLC0415 [import-outside-top-level]
     except ImportError:
         import code  # noqa: PLC0415 [import-outside-top-level]
 

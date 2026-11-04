@@ -7,7 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
+import types
+from typing import Any
 
+import cffi
 import numpy as np
 import pytest
 
@@ -16,15 +19,13 @@ from icon4py.tools.py2fgen import _conversion, test_utils
 
 
 try:
-    import cupy as cp
+    import cupy as cp  # type: ignore[import-not-found]  # optional dependency without stubs
 except ImportError:
     cp = None
 
 
 @pytest.fixture
-def ffi():
-    import cffi  # noqa: PLC0415 [import-outside-top-level]
-
+def ffi() -> cffi.FFI:
     return cffi.FFI()
 
 
@@ -41,11 +42,11 @@ def ffi():
     ],
     ids=["numpy", "cupy"],
 )
-def xp(request):
+def xp(request: pytest.FixtureRequest) -> types.ModuleType:
     return request.param
 
 
-def _get_ptr(xp, arr):
+def _get_ptr(xp: types.ModuleType, arr: Any) -> int:
     if xp == np:
         return arr.ctypes.data
     else:
@@ -59,7 +60,9 @@ def _get_ptr(xp, arr):
         ("long", [1, 2, 3, 4], [[1, 3], [2, 4]]),
     ],
 )
-def test_unpack_column_major(xp, ctype, rawdata, expected, ffi):
+def test_unpack_column_major(
+    xp: types.ModuleType, ctype: str, rawdata: list[Any], expected: list[Any], ffi: cffi.FFI
+) -> None:
     expected_result = xp.array(expected)
 
     arr = xp.array(rawdata)
@@ -85,7 +88,14 @@ def test_unpack_column_major(xp, ctype, rawdata, expected, ffi):
         ),
     ],
 )
-def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):  # noqa: PLR0917 [too-many-positional-arguments]
+def test_as_array(  # noqa: PLR0917 [too-many-positional-arguments]
+    xp: types.ModuleType,
+    ctype: str,
+    rawdtype: type[np.generic],
+    rawdata: list[Any],
+    expected: list[Any],
+    ffi: cffi.FFI,
+) -> None:
     expected_result = xp.array(expected)
 
     arr = xp.array(rawdata, dtype=rawdtype)
@@ -100,7 +110,7 @@ def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):  # noqa: PLR0917
     assert xp.array_equal(result, expected_result)
 
 
-def test_default_mapping_hook_array(ffi):
+def test_default_mapping_hook_array(ffi: cffi.FFI) -> None:
     array_ptr = ffi.new("int[10]")
 
     array_mapper = _conversion.default_mapping(
@@ -109,6 +119,7 @@ def test_default_mapping_hook_array(ffi):
             rank=1, dtype=py2fgen.INT32, memory_space=py2fgen.MemorySpace.HOST, is_optional=False
         ),
     )
+    assert array_mapper is not None
     result = array_mapper(
         test_utils.array_info(ptr=array_ptr, shape=(10,), on_gpu=False, is_optional=False),
         ffi=ffi,
@@ -117,7 +128,7 @@ def test_default_mapping_hook_array(ffi):
     assert isinstance(result, np.ndarray)
 
 
-def test_default_mapping_hook_bool(ffi):
+def test_default_mapping_hook_bool(ffi: cffi.FFI) -> None:
     # Scalar BOOL is `unsigned char` on the C side, so CFFI delivers a Python `int`
     # which the mapper converts to `bool`.
     mapper = _conversion.default_mapping(None, py2fgen.ScalarParamDescriptor(dtype=py2fgen.BOOL))

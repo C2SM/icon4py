@@ -13,7 +13,7 @@ import pytest
 
 
 @pytest.fixture
-def samples_path():
+def samples_path() -> pathlib.Path:
     return pathlib.Path(__file__).parent / "fortran_samples"
 
 

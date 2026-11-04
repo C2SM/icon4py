@@ -41,24 +41,20 @@ def is_backend_descriptor(
 def is_cpu_backend(
     backend: BackendLike,
 ) -> bool:
-    if isinstance(backend, gtx_backend.Backend):
-        return backend.allocator.device_type == CPU
-    return get_allocator(backend).device_type == CPU
+    return get_allocator(backend).__gt_device_type__ == CPU
 
 
 def is_gpu_backend(
     backend: BackendLike,
 ) -> bool:
-    if isinstance(backend, gtx_backend.Backend):
-        return backend.allocator.device_type == GPU
-    return get_allocator(backend).device_type == GPU
+    return get_allocator(backend).__gt_device_type__ == GPU
 
 
 def get_allocator(
     backend: BackendLike,
-) -> gtx_typing.Backend:
+) -> gtx_allocators.FieldBufferAllocatorProtocol[Any]:
     if isinstance(backend, gtx_backend.Backend):
-        return backend
+        return backend.allocator
     if backend is None:
         # TODO(havogt): currently the testing infrastructure doesn't allow to specify
         # embedded backend aka `None` for cupy, as there is no separation
@@ -72,7 +68,7 @@ def get_allocator(
     raise ValueError(f"Cannot get allocator from {backend}")
 
 
-def make_custom_gtfn_backend(device: DeviceType, **_) -> gtx_typing.Backend:
+def make_custom_gtfn_backend(device: DeviceType, **_: Any) -> gtx_typing.Backend:
     on_gpu = device == GPU
     return gtfn.make_gtfn_toolchain(gtfn.GTFNConfig(gpu=on_gpu))
 
@@ -87,7 +83,7 @@ def make_custom_dace_backend(
     use_zero_origin: bool = False,
     use_max_domain_range_on_unstructured_shift: bool | None = None,
     external_workspace: gtx_wfdcommon.ExternalWorkspace | None = None,
-    **_,
+    **_: Any,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
 

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -30,7 +32,7 @@ class TestRainToVapor(stencil_tests.StencilTest):
         qr: np.ndarray,
         dvsw: np.ndarray,
         dt: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         # mirrors ICON mo_aes_graupel.f90 rain_to_vapor
         a_ev = [-5.532194e00, 2.432848e-01, -4.145391e-02, -1.798439e-03, -1.405764e-05]
@@ -42,7 +44,7 @@ class TestRainToVapor(stencil_tests.StencilTest):
         return dict(conversion_rate=rate)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
             t=data_alloc.constant_field(258.542, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho=data_alloc.constant_field(0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),

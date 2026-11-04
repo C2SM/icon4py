@@ -18,14 +18,14 @@ from icon4py.tools.py2fgen import _codegen, _definitions, _generator
 from tests.tools.py2fgen.wrappers import simple
 
 
-def test_parse_functions_on_wrapper():
+def test_parse_functions_on_wrapper() -> None:
     plugin = _generator.get_cffi_description(
         [simple.square_from_function, simple.square_error], "square_plugin"
     )
     assert isinstance(plugin, _codegen.BindingsLibrary)
 
 
-def test_compile_and_run_cffi_plugin_from_C():
+def test_compile_and_run_cffi_plugin_from_C() -> None:
     library_name = "test_plugin"
     c_header = "int test_function();"
     c_source_code = f"""
@@ -104,11 +104,11 @@ def test_compile_and_run_cffi_plugin_from_C():
 
 
 @pytest.fixture
-def square_plugin():
+def square_plugin() -> _codegen.BindingsLibrary:
     return _generator.get_cffi_description([simple.square_from_function], "square_plugin")
 
 
-def test_render_returns_all_four_sources(square_plugin):
+def test_render_returns_all_four_sources(square_plugin: _codegen.BindingsLibrary) -> None:
     sources = _generator.render(square_plugin)
     assert sources.py
     assert sources.f90
@@ -116,21 +116,27 @@ def test_render_returns_all_four_sources(square_plugin):
     assert sources.c
 
 
-def test_render_python_wrapper_contains_user_function(square_plugin):
+def test_render_python_wrapper_contains_user_function(
+    square_plugin: _codegen.BindingsLibrary,
+) -> None:
     sources = _generator.render(square_plugin)
     # The Python wrapper drives CFFI's @ffi.def_extern bindings.
     assert "square_from_function" in sources.py
     assert "@ffi.def_extern" in sources.py
 
 
-def test_render_python_wrapper_imports_from_definition_module(square_plugin):
+def test_render_python_wrapper_imports_from_definition_module(
+    square_plugin: _codegen.BindingsLibrary,
+) -> None:
     sources = _generator.render(square_plugin)
     # The wrapper's embedded init code must import the function from its
     # actual definition module, not from the caller's namespace.
     assert "from tests.tools.py2fgen.wrappers.simple import square_from_function" in sources.py
 
 
-def test_render_c_source_embeds_python_wrapper_and_header(square_plugin):
+def test_render_c_source_embeds_python_wrapper_and_header(
+    square_plugin: _codegen.BindingsLibrary,
+) -> None:
     sources = _generator.render(square_plugin)
     # CFFI bakes the Python wrapper into the .c via embedding_init_code.
     assert "@ffi.def_extern" in sources.c
@@ -139,7 +145,9 @@ def test_render_c_source_embeds_python_wrapper_and_header(square_plugin):
     assert "extern int square_from_function_wrapper(" in sources.c
 
 
-def test_render_fortran_module_is_named_after_library(square_plugin):
+def test_render_fortran_module_is_named_after_library(
+    square_plugin: _codegen.BindingsLibrary,
+) -> None:
     sources = _generator.render(square_plugin)
     # The generated F90 must declare a module whose name matches library_name —
     # check the actual ``module <library_name>`` line, not just any occurrence
@@ -147,19 +155,19 @@ def test_render_fortran_module_is_named_after_library(square_plugin):
     assert re.search(r"(?im)^\s*module\s+square_plugin\b", sources.f90)
 
 
-def test_render_c_header_declares_user_function(square_plugin):
+def test_render_c_header_declares_user_function(square_plugin: _codegen.BindingsLibrary) -> None:
     sources = _generator.render(square_plugin)
     assert "square_from_function" in sources.h
 
 
-def test_render_is_pure(square_plugin):
+def test_render_is_pure(square_plugin: _codegen.BindingsLibrary) -> None:
     """Rendering twice with identical inputs must be deterministic."""
     a = _generator.render(square_plugin)
     b = _generator.render(square_plugin)
     assert a == b
 
 
-def test_render_mixed_modules():
+def test_render_mixed_modules() -> None:
     """Functions from different modules each get a per-function ``from X import Y`` line."""
     args = {
         "arr": _definitions.ArrayParamDescriptor(

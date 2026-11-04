@@ -14,7 +14,7 @@ def snapshot_fail_msg() -> str:
     return "Something has changed the output of the config explorer app, visual inspection required. See summary section."
 
 
-def pytest_terminal_summary(terminalreporter):
+def pytest_terminal_summary(terminalreporter: pytest.TerminalReporter) -> None:
     if any(bool("snapshots" in rep.keywords) for rep in terminalreporter.getreports("failed")):
         terminalreporter.section(
             title="Config Doc App Snapshots Failed - Visual Inspection Required"

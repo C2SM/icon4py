@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -32,12 +34,12 @@ class TestVaporXGraupelDefault(stencil_tests.StencilTest):
         dvsi: np.ndarray,
         dvsw0: np.ndarray,
         dt: wpfloat,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(exchange_rate=np.full(t.shape, 0.0))
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
             t=data_alloc.constant_field(278.026, dims.CellDim, dims.KDim, dtype=wpfloat),
             p=data_alloc.constant_field(95987.1, dims.CellDim, dims.KDim, dtype=wpfloat),

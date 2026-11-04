@@ -19,16 +19,16 @@ from icon4py.model.common.states import model
 
 
 class _StubFieldSource:
-    def __init__(self, fields):
+    def __init__(self, fields: dict[str, object]) -> None:
         self._fields = fields
 
-    def get(self, name, *args, **kwargs):
+    def get(self, name: str, *args: object, **kwargs: object) -> object:
         return self._fields[name]
 
 
-def test_as_component_input_maps_the_facade_without_copies():
+def test_as_component_input_maps_the_facade_without_copies() -> None:
     dz = object()
-    state = muphys_state.State(metrics=_StubFieldSource({metrics_attributes.DDQZ_Z_FULL: dz}))
+    state = muphys_state.State(metrics=_StubFieldSource({metrics_attributes.DDQZ_Z_FULL: dz}))  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     tracers = types.SimpleNamespace(qv="QV", qc="QC", qi="QI", qr="QR", qs="QS", qg="QG")
     entry = types.SimpleNamespace(
         diagnostics=types.SimpleNamespace(temperature="TA", pressure="P"),
@@ -53,7 +53,7 @@ def test_as_component_input_maps_the_facade_without_copies():
     assert inputs["dz"] is dz  # the metrics field itself, not a copy
 
 
-def test_diagnostic_outputs_declare_dims():
+def test_diagnostic_outputs_declare_dims() -> None:
     """Every non-tendency output must declare dims -- the DiagnosticsStore allocates from it."""
     for name, props in muphys_data.OUTPUTS_PROPERTIES.items():
         if props.kind == model.FieldKind.TENDENCY:

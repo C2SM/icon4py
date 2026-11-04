@@ -67,7 +67,7 @@ def convert_fortran_config_to_yaml(
 ) -> None:
     """Convert the Fortran namelists in NAMELIST_DIR into a YAML config at OUTPUT."""
     # Import here to reduce startup time for the CLI.
-    import fortran_config_converter  # noqa: PLC0415 [import-outside-top-level]
+    import fortran_config_converter  # type: ignore[import-not-found]  # sibling module in scripts/python  # noqa: PLC0415 [import-outside-top-level]
 
     from icon4py.model.common.config import config_io  # noqa: PLC0415 [import-outside-top-level]
 

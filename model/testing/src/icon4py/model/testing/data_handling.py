@@ -13,7 +13,7 @@ import os
 import pathlib
 import shutil
 
-import pooch  # type: ignore[import-untyped]
+import pooch  # type: ignore[import-untyped]  # optional dependency without stubs
 
 from icon4py.model.testing import config, locking
 

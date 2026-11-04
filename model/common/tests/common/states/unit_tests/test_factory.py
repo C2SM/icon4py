@@ -180,7 +180,9 @@ def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> N
 @pytest.mark.datatest
 def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     program = vertical_ops.average_two_vertical_levels_downwards_on_cells
-    domain = {
+    domain: dict[
+        gtx.Dimension, tuple[h_grid.Domain | v_grid.Domain, h_grid.Domain | v_grid.Domain]
+    ] = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }
@@ -279,7 +281,9 @@ def test_provider_vertical_extent_is_declared_domain(
 @pytest.mark.datatest
 def test_field_source_raise_error_on_register(cell_coordinate_source: SimpleFieldSource) -> None:
     program = vertical_ops.average_two_vertical_levels_downwards_on_cells
-    domain = {
+    domain: dict[
+        gtx.Dimension, tuple[h_grid.Domain | v_grid.Domain, h_grid.Domain | v_grid.Domain]
+    ] = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }

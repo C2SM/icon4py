@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -29,12 +31,12 @@ class TestDepositionAutoConversionDefault(stencil_tests.StencilTest):
         qi: np.ndarray,
         m_ice: np.ndarray,
         ice_dep: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 0.0))
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
             qi=data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
             m_ice=data_alloc.constant_field(1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),

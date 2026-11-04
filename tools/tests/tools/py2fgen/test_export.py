@@ -15,7 +15,7 @@ from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import _export
 
 
-def test_from_annotated():
+def test_from_annotated() -> None:
     testee = Annotated[int, py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32)]
 
     result = _export._from_annotated(testee)
@@ -40,8 +40,8 @@ def test_from_annotated():
         ),
     ],
 )
-def test_get_param_descriptor_from_annotation(testee, expected):
-    def float_param_descriptor_hook(annotation: Any):
+def test_get_param_descriptor_from_annotation(testee: Any, expected: Any) -> None:
+    def float_param_descriptor_hook(annotation: Any) -> py2fgen.ScalarParamDescriptor | None:
         if annotation in (float, np.float32):
             return py2fgen.ScalarParamDescriptor(dtype=py2fgen.FLOAT32)
         return None

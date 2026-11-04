@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# mypy: ignore-errors
+# Sphinx build configuration and extensions, outside the type-checked packages.
 
 import ast
 import inspect

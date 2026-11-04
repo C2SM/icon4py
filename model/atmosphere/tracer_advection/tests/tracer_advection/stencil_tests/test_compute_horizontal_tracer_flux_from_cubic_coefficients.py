@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -29,7 +31,7 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(stencil_tests.Stencil
         p_out_e_hybrid_2: np.ndarray,
         p_mass_flx_e: np.ndarray,
         z_dreg_area: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area
 

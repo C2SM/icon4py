@@ -127,11 +127,11 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     divdamp_z4: gtx.float64,
     nflat_gradp: gtx.int32,
     backend: gtx.int32,
-):
+) -> None:
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    xp = c_lin_e.array_ns
+    xp = data_alloc.array_namespace(c_lin_e.ndarray)
     on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
@@ -145,7 +145,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
         assert all(field is None for field in [pg_edgeidx, pg_vertidx, pg_exdist])
         pg_exdist_dsl = gtx.zeros(pg_exdist_domain, dtype=gtx.float64, allocator=allocator)
     else:
-        pg_exdist_dsl = data_alloc.scattered_field(
+        pg_exdist_dsl = data_alloc.scattered_field(  # type: ignore[assignment]  # GT4Py field type inference limitation
             domain=pg_exdist_domain,
             values=pg_exdist,
             indices=(
@@ -157,12 +157,12 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
         )
 
     config = solve_nonhydro.NonHydrostaticConfig(
-        itime_scheme=itime_scheme,
-        iadv_rhotheta=iadv_rhotheta,
-        igradp_method=igradp_method,
-        rayleigh_type=rayleigh_type,
-        divdamp_order=divdamp_order,
-        divdamp_type=divdamp_type,
+        itime_scheme=itime_scheme,  # type: ignore[arg-type]  # int config value accepted at runtime
+        iadv_rhotheta=iadv_rhotheta,  # type: ignore[arg-type]  # int config value accepted at runtime
+        igradp_method=igradp_method,  # type: ignore[arg-type]  # int config value accepted at runtime
+        rayleigh_type=rayleigh_type,  # type: ignore[arg-type]  # int config value accepted at runtime
+        divdamp_order=divdamp_order,  # type: ignore[arg-type]  # int config value accepted at runtime
+        divdamp_type=divdamp_type,  # type: ignore[arg-type]  # int config value accepted at runtime
         l_vert_nested=l_vert_nested,
         deepatmos_mode=ldeepatmo,
         iau_init=iau_init,
@@ -231,11 +231,13 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # When we translate to offsets we just subtract the current index, therefore these values will be negative.
     # Since in Fortran accessing index `0` would be out-of-bounds, we should be safe.
     vertoffset_gradp = field_utils.index2offset(
-        data_alloc.adjust_fortran_indices(vertidx_gradp), dims.KDim, allocator
+        data_alloc.adjust_fortran_indices(vertidx_gradp),  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        dims.KDim,
+        allocator,
     )
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
-        mask_prog_halo_c=mask_prog_halo_c,
+        mask_prog_halo_c=mask_prog_halo_c,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
         rayleigh_w=rayleigh_w,
         time_extrapolation_parameter_for_exner=exner_exfac,
         reference_exner_at_cells_on_model_levels=exner_ref_mc,
@@ -348,11 +350,11 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     idyn_timestep: gtx.int32,
     is_iau_active: bool,
     iau_wgt_dyn: gtx.float64,
-):
+) -> None:
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 
-    xp = rho_now.array_ns
+    xp = data_alloc.array_namespace(rho_now.ndarray)
 
     if vn_incr is None:
         vn_incr = granule.dummy_field_factory("vn_incr", domain=vn_now.domain, dtype=vn_now.dtype)
@@ -391,10 +393,12 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         normal_wind_tendency_due_to_slow_physics_process=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            ddt_vn_apc_ntl1, ddt_vn_apc_ntl2
+            ddt_vn_apc_ntl1,
+            ddt_vn_apc_ntl2,
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            ddt_w_adv_ntl1, ddt_w_adv_ntl2
+            ddt_w_adv_ntl1,
+            ddt_w_adv_ntl2,
         ),
         tangential_wind=vt,
         vn_on_half_levels=vn_ie,

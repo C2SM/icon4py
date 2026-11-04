@@ -8,6 +8,7 @@
 import itertools
 import math
 from collections.abc import Mapping
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -49,7 +50,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     vcoef: np.ndarray,
     theta_v: np.ndarray,
     z_temp: np.ndarray,
-    **kwargs,
+    **kwargs: Any,  # framework pattern: reference receives arbitrary stencil params
 ) -> np.ndarray:
     c2e2c = connectivities[dims.C2E2C]
     full_shape = vcoef.shape
@@ -331,7 +332,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         cell_horizontal_end: int,
         vertical_start: int,
         vertical_end: int,
-        **kwargs,
+        **kwargs: Any,  # framework pattern: reference receives arbitrary stencil params
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         c2e = connectivities[dims.C2E]

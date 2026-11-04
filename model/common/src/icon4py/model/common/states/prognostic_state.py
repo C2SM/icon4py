@@ -39,7 +39,7 @@ class PrognosticState:
     theta_v: fa.CellKField[ta.wpfloat]  # virtual temperature, (nproma, nlev, nlbks_c) [K]
 
     @property
-    def w_1(self) -> fa.CellField[ta.wpfloat]:
+    def w_1(self) -> fa.CellKHalfField[ta.wpfloat]:
         return self.w[dims.KDim(0)]
 
 

@@ -38,7 +38,7 @@ def compute_inverse_on_edges(
     f_inverse: fa.EdgeField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     invert_edge_field(f, out=f_inverse, domain={dims.EdgeDim: (horizontal_start, horizontal_end)})
 
 
@@ -57,7 +57,7 @@ def compute_inverse_on_cell_khalf(  # noqa: PLR0917 [too-many-positional-argumen
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_inverse_on_cell_khalf(
         f,
         out=f_inverse,
@@ -81,7 +81,7 @@ def compute_inverse_on_edge_k(  # noqa: PLR0917 [too-many-positional-arguments]
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_inverse_on_edge_k(
         f,
         out=f_inverse,

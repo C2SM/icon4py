@@ -34,7 +34,7 @@ def arc_length_on_edges(  # noqa: PLR0917 [too-many-positional-arguments]
     z0: fa.EdgeField[gtx.float64],
     z1: fa.EdgeField[gtx.float64],
     radius: gtx.float64,
-):
+) -> fa.EdgeField[gtx.float64]:
     """
     Compute the arc length between two points on the sphere.
 

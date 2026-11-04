@@ -67,7 +67,7 @@ def gather_field(field: np.ndarray, process_props: decomp_defs.ProcessProperties
         _log.info(
             f" gather_field on rank = 0: computed local dims {local_first_dim} - constant dims {constant_dims}"
         )
-        gathered_field = recv_buffer.reshape((-1, *constant_dims))  # type: ignore [union-attr]
+        gathered_field = recv_buffer.reshape((-1, *constant_dims))  # type: ignore[union-attr]  # recv_buffer is allocated on rank 0
     else:
         gathered_field = None
         local_first_dim = field.shape

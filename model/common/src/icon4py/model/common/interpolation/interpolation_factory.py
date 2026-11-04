@@ -149,7 +149,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
+        self._allocator = functools.partial(gtx.constructors.zeros, allocator=backend)
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
@@ -166,10 +166,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         log.debug(f"using array_ns {self._xp} ")
 
+        refinement_control = self._grid.refinement_control
+        assert refinement_control is not None
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 fields={
-                    "refinement_control_at_edges": self._grid.refinement_control[dims.EdgeDim],
+                    "refinement_control_at_edges": refinement_control[dims.EdgeDim],
                 }
             )
         )
@@ -281,7 +283,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.grid_params.geometry_type.value,
+                "geometry_type": self._geometry_type_value,
             },
             fields=(attrs.RBF_SCALE_CELL,),
         )
@@ -295,7 +297,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.grid_params.geometry_type.value,
+                "geometry_type": self._geometry_type_value,
             },
             fields=(attrs.RBF_SCALE_EDGE,),
         )
@@ -309,7 +311,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
             },
             params={
-                "geometry_type": self.grid.grid_params.geometry_type.value,
+                "geometry_type": self._geometry_type_value,
             },
             fields=(attrs.RBF_SCALE_VERTEX,),
         )
@@ -341,7 +343,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
                 "min_rlcell_int": self.grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2)),
-                "geometry_type": self.grid.grid_params.geometry_type.value,
+                "geometry_type": self._geometry_type_value,
             },
         )
         self.register_provider(lsq_pseudoinv)
@@ -584,7 +586,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.C2E2C2EDim},
             params={
                 "rbf_kernel": self._config.rbf_kernel_cell.value,
-                "geometry_type": self._grid.grid_params.geometry_type.value,
+                "geometry_type": self._geometry_type_value,
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -620,7 +622,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.E2C2EDim},
             params={
                 "rbf_kernel": self._config.rbf_kernel_edge.value,
-                "geometry_type": self._grid.grid_params.geometry_type.value,
+                "geometry_type": self._geometry_type_value,
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -657,7 +659,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.V2EDim},
             params={
                 "rbf_kernel": self._config.rbf_kernel_vertex.value,
-                "geometry_type": self._grid.grid_params.geometry_type.value,
+                "geometry_type": self._geometry_type_value,
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -688,3 +690,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     @property
     def vertical_grid(self) -> None:
         return None
+
+    @property
+    def _geometry_type_value(self) -> int:
+        geometry_type = self.grid.grid_params.geometry_type
+        assert geometry_type is not None
+        return geometry_type.value

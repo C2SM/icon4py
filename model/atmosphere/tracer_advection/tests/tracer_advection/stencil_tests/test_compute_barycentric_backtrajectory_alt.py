@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -37,10 +39,10 @@ def compute_barycentric_backtrajectory_alt_numpy(  # noqa: PLR0917
     primal_normal_cell_2 = np.expand_dims(primal_normal_cell_2, axis=-1)
     dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
-    z_ntdistv_bary_1 = -(
+    z_ntdistv_bary_1 = -(  # type: ignore[misc]  # numpy stubs: ndarray.__neg__ self-type limitation
         p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
     )
-    z_ntdistv_bary_2 = -(
+    z_ntdistv_bary_2 = -(  # type: ignore[misc]  # numpy stubs: ndarray.__neg__ self-type limitation
         p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
     )
     p_distv_bary_1 = np.where(
@@ -73,7 +75,7 @@ class TestComputeBarycentricBacktrajectoryAlt(stencil_tests.StencilTest):
         primal_normal_cell_2: np.ndarray,
         dual_normal_cell_2: np.ndarray,
         p_dthalf: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         p_distv_bary_1, p_distv_bary_2 = compute_barycentric_backtrajectory_alt_numpy(
             p_vn,

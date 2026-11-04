@@ -11,9 +11,10 @@ import os
 import pathlib
 import subprocess
 import types
+from collections.abc import Iterable, Mapping
 
 import pytest
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
 
 import icon4py.tools.py2fgen._utils as utils
 from icon4py.tools.py2fgen._cli import main
@@ -22,7 +23,7 @@ from tests.tools.py2fgen.wrappers import simple
 
 
 @pytest.fixture
-def cli_runner():
+def cli_runner() -> CliRunner:
     return CliRunner()
 
 
@@ -32,8 +33,12 @@ def square_wrapper_module() -> types.ModuleType:
 
 
 def compile_fortran_code(
-    library_name, samples_path, fortran_driver, compiler, extra_compiler_flags
-):
+    library_name: str,
+    samples_path: pathlib.Path,
+    fortran_driver: str,
+    compiler: str,
+    extra_compiler_flags: Iterable[str],
+) -> None:
     shared_library = f"{library_name}"
     command = [
         f"{compiler}",
@@ -51,9 +56,11 @@ def compile_fortran_code(
     subprocess.run(command, check=True, capture_output=True, text=True)
 
 
-def run_fortran_executable(library_name, env):
+def run_fortran_executable(
+    library_name: str, env: dict[str, str]
+) -> subprocess.CompletedProcess[str] | subprocess.CalledProcessError:
     try:
-        result = subprocess.run(
+        result: subprocess.CompletedProcess[str] | subprocess.CalledProcessError = subprocess.run(
             [f"./{library_name}"], capture_output=True, text=True, check=True, env=env
         )
     except subprocess.CalledProcessError as e:
@@ -64,18 +71,18 @@ def run_fortran_executable(library_name, env):
 
 def run_test_case(
     *,
-    cli,
-    module,
-    function,
-    library_name,
-    samples_path,
-    fortran_driver,
-    test_temp_dir,
-    compiler="gfortran",  # TODO(havogt): don't use hard-coded compiler, see gt4py.cartesian setuptools approach
-    extra_compiler_flags=(),
-    expected_error_code=0,
-    env_vars=None,
-):
+    cli: CliRunner,
+    module: types.ModuleType,
+    function: str,
+    library_name: str,
+    samples_path: pathlib.Path,
+    fortran_driver: str,
+    test_temp_dir: str | None,
+    compiler: str = "gfortran",  # TODO(havogt): don't use hard-coded compiler, see gt4py.cartesian setuptools approach
+    extra_compiler_flags: Iterable[str] = (),
+    expected_error_code: int = 0,
+    env_vars: Mapping[str, str] | None = None,
+) -> None:
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
         invoke_cli(cli, module, function, library_name)
         compile_and_run_fortran(
@@ -89,7 +96,13 @@ def run_test_case(
         )
 
 
-def invoke_cli(cli, module: types.ModuleType, function, library_name, extra_args=None):
+def invoke_cli(
+    cli: CliRunner,
+    module: types.ModuleType,
+    function: str,
+    library_name: str,
+    extra_args: list[str] | None = None,
+) -> Result:
     rpath = utils.get_prefix_lib_path()
 
     cli_args = [module.__name__, function, library_name, "-r", rpath]
@@ -102,14 +115,14 @@ def invoke_cli(cli, module: types.ModuleType, function, library_name, extra_args
 
 def compile_and_run_fortran(
     *,
-    library_name,
-    samples_path,
-    fortran_driver,
-    compiler,
-    extra_compiler_flags,
-    expected_error_code,
-    env_vars,
-):
+    library_name: str,
+    samples_path: pathlib.Path,
+    fortran_driver: str,
+    compiler: str,
+    extra_compiler_flags: Iterable[str],
+    expected_error_code: int,
+    env_vars: Mapping[str, str] | None,
+) -> None:
     try:
         compile_fortran_code(
             library_name=library_name,
@@ -141,14 +154,14 @@ def compile_and_run_fortran(
     ],
 )
 def test_py2fgen_compilation_and_execution_square_cpu(  # noqa: PLR0917 [too-many-positional-arguments]
-    cli_runner,
-    run_backend,
-    samples_path,
-    square_wrapper_module,
-    extra_flags,
-    test_temp_dir,
-    fortran_subprocess_env,
-):
+    cli_runner: CliRunner,
+    run_backend: str,
+    samples_path: pathlib.Path,
+    square_wrapper_module: types.ModuleType,
+    extra_flags: tuple[str, ...],
+    test_temp_dir: str | None,
+    fortran_subprocess_env: None,
+) -> None:
     """Tests embedding Python functions, and GT4Py program directly.
     Also tests embedding multiple functions in one shared library.
     """
@@ -165,8 +178,12 @@ def test_py2fgen_compilation_and_execution_square_cpu(  # noqa: PLR0917 [too-man
 
 
 def test_py2fgen_python_error_propagation_to_fortran(
-    cli_runner, samples_path, square_wrapper_module, test_temp_dir, fortran_subprocess_env
-):
+    cli_runner: CliRunner,
+    samples_path: pathlib.Path,
+    square_wrapper_module: types.ModuleType,
+    test_temp_dir: str | None,
+    fortran_subprocess_env: None,
+) -> None:
     """Tests that Exceptions triggered in Python propagate an error code (1) up to Fortran."""
     run_test_case(
         cli=cli_runner,
@@ -182,8 +199,12 @@ def test_py2fgen_python_error_propagation_to_fortran(
 
 
 def test_py2fgen_compilation_and_execution_bool_cpu(
-    cli_runner, samples_path, square_wrapper_module, test_temp_dir, fortran_subprocess_env
-):
+    cli_runner: CliRunner,
+    samples_path: pathlib.Path,
+    square_wrapper_module: types.ModuleType,
+    test_temp_dir: str | None,
+    fortran_subprocess_env: None,
+) -> None:
     """Tests boolean scalar passing and boolean-array writeback end-to-end."""
     run_test_case(
         cli=cli_runner,
@@ -209,16 +230,16 @@ def test_py2fgen_compilation_and_execution_bool_cpu(
     ],
 )
 def test_py2fgen_compilation_and_execution_gpu(  # noqa: PLR0917 [too-many-positional-arguments]
-    cli_runner,
-    function_name,
-    library_name,
-    test_name,
-    samples_path,
-    square_wrapper_module,
-    extra_flags,
-    test_temp_dir,
-    fortran_subprocess_env,
-):
+    cli_runner: CliRunner,
+    function_name: str,
+    library_name: str,
+    test_name: str,
+    samples_path: pathlib.Path,
+    square_wrapper_module: types.ModuleType,
+    extra_flags: tuple[str, ...],
+    test_temp_dir: str | None,
+    fortran_subprocess_env: None,
+) -> None:
     run_test_case(
         cli=cli_runner,
         module=square_wrapper_module,
@@ -240,14 +261,14 @@ def test_py2fgen_compilation_and_execution_gpu(  # noqa: PLR0917 [too-many-posit
     ],
 )
 def test_py2fgen_compilation_and_profiling(  # noqa: PLR0917 [too-many-positional-arguments]
-    cli_runner,
-    samples_path,
-    square_wrapper_module,
-    extra_flags,
-    test_temp_dir,
-    tmp_path,
-    fortran_subprocess_env,
-):
+    cli_runner: CliRunner,
+    samples_path: pathlib.Path,
+    square_wrapper_module: types.ModuleType,
+    extra_flags: tuple[str, ...],
+    test_temp_dir: str | None,
+    tmp_path: pathlib.Path,
+    fortran_subprocess_env: None,
+) -> None:
     """Test profiling using cProfile of the generated wrapper."""
 
     # TODO(havogt):
@@ -278,8 +299,11 @@ def test_py2fgen_compilation_and_profiling(  # noqa: PLR0917 [too-many-positiona
 
 
 def test_py2fgen_incremental_skips_compilation_when_unchanged(
-    cli_runner, square_wrapper_module, test_temp_dir, caplog
-):
+    cli_runner: CliRunner,
+    square_wrapper_module: types.ModuleType,
+    test_temp_dir: str | None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Test that running py2fgen twice without changes skips compilation on the second run."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
         # First run: should generate and compile
@@ -301,8 +325,11 @@ def test_py2fgen_incremental_skips_compilation_when_unchanged(
 
 
 def test_py2fgen_regenerate_forces_recompilation(
-    cli_runner, square_wrapper_module, test_temp_dir, caplog
-):
+    cli_runner: CliRunner,
+    square_wrapper_module: types.ModuleType,
+    test_temp_dir: str | None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Test that --regenerate forces recompilation even if files are up to date."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
         # First run: generate and compile
@@ -325,8 +352,11 @@ def test_py2fgen_regenerate_forces_recompilation(
 
 
 def test_py2fgen_skip_compilation_generates_c(
-    cli_runner, square_wrapper_module, test_temp_dir, caplog
-):
+    cli_runner: CliRunner,
+    square_wrapper_module: types.ModuleType,
+    test_temp_dir: str | None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Test that --skip-compilation writes .c, .py, .f90 but no shared library."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
         with caplog.at_level(logging.INFO, logger="py2fgen"):
@@ -350,8 +380,11 @@ def test_py2fgen_skip_compilation_generates_c(
 
 
 def test_py2fgen_skip_compilation_skips_when_up_to_date(
-    cli_runner, square_wrapper_module, test_temp_dir, caplog
-):
+    cli_runner: CliRunner,
+    square_wrapper_module: types.ModuleType,
+    test_temp_dir: str | None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Test that --skip-compilation skips regeneration when all files are up to date."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
         # First run: generate files
@@ -379,8 +412,11 @@ def test_py2fgen_skip_compilation_skips_when_up_to_date(
 
 
 def test_py2fgen_skip_compilation_regenerates_if_c_file_deleted(
-    cli_runner, square_wrapper_module, test_temp_dir, caplog
-):
+    cli_runner: CliRunner,
+    square_wrapper_module: types.ModuleType,
+    test_temp_dir: str | None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Test that --skip-compilation regenerates if .c file is missing."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
         # First run

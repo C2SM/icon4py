@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -29,7 +31,7 @@ class TestCloudToRain(stencil_tests.StencilTest):
         qc: np.ndarray,
         qr: np.ndarray,
         nc: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         # independent numpy reference mirroring ICON mo_aes_graupel.f90 cloud_to_rain;
         # the magic constants are hardcoded PARAMETERs there in the same way
@@ -46,7 +48,7 @@ class TestCloudToRain(stencil_tests.StencilTest):
         return dict(conversion_rate=rate)
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
             t=data_alloc.constant_field(267.25, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho=data_alloc.constant_field(0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),

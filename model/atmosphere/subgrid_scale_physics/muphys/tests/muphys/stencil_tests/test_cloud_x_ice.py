@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -28,12 +30,12 @@ class TestCloudXIce(stencil_tests.StencilTest):
         qc: np.ndarray,
         qi: np.ndarray,
         dt: wpfloat,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(freezing_rate=np.full(t.shape, -1.5008166666666666e-08))
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
             t=data_alloc.constant_field(
                 274.15, dims.CellDim, dims.KDim, dtype=wpfloat
