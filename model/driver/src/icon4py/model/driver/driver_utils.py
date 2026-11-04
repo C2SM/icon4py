@@ -25,6 +25,15 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     state as muphys_state,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
+from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
+    component as surface_component,
+    state as surface_state,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
+    component as tmx_component,
+    state as tmx_state,
+    static_fields as tmx_static_fields,
+)
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
     constants,
@@ -224,6 +233,8 @@ def initialize_granules(
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
+    process_props: decomposition_defs.ProcessProperties,
+    decomposition_info: decomposition_defs.DecompositionInfo,
 ) -> Granules:
     geometry_field_source = static_field_factories.geometry
     interpolation_field_source = static_field_factories.interpolation
@@ -463,30 +474,77 @@ def initialize_granules(
             exchange=exchange,
         )
 
-    physics_granule: physics_driver.PhysicsDriver | None = None
+    # Every process runs on every time step, as ICON does with dt_mig = dt_vdf = dtime; the
+    # converter does not carry these intervals.
+    every_step = physics_driver.ProcessTimeControl(
+        interval=config.driver.dtime,
+        start_date=config.driver.start_of_simulation,
+        end_date=model_time_variables.simulation_end_datetime,
+    )
+    # in ICON's AES order: microphysics, then the surface scheme and the turbulent mixing it feeds
+    processes: list[physics_driver.PhysicsProcess] = []
     if config.muphys is not None:
-        muphys_process = physics_driver.PhysicsProcess(
-            name="muphys",
-            component=muphys_component.MuphysComponent(
-                grid=grid,
-                dtime=config.driver.dtime,
-                qnc=config.muphys.qnc,
-                backend=backend,
-            ),
-            state=muphys_state.State(metrics=metrics_field_source),
-            time_control=physics_driver.ProcessTimeControl(
-                interval=config.driver.dtime,
-                start_date=config.driver.start_of_simulation,
-                end_date=model_time_variables.simulation_end_datetime,
-            ),
+        processes.append(
+            physics_driver.PhysicsProcess(
+                name="muphys",
+                component=muphys_component.MuphysComponent(
+                    grid=grid, dtime=config.driver.dtime, qnc=config.muphys.qnc, backend=backend
+                ),
+                state=muphys_state.State(metrics=metrics_field_source),
+                time_control=every_step,
+            )
         )
+    if config.surface is not None:
+        processes.append(
+            physics_driver.PhysicsProcess(
+                name="surface",
+                component=surface_component.SurfaceComponent(
+                    grid=grid, config=config.surface, backend=backend
+                ),
+                state=surface_state.State(grid=grid),
+                time_control=every_step,
+            )
+        )
+    if config.tmx is not None:
+        if config.surface is None:
+            raise ValueError(
+                "tmx needs the surface fluxes: configure 'surface' together with 'tmx'."
+            )
+        processes.append(
+            physics_driver.PhysicsProcess(
+                name="tmx",
+                component=tmx_component.TmxComponent(
+                    grid=grid,
+                    config=config.tmx,
+                    metric_state=tmx_static_fields.build_metric_state(metrics_field_source),
+                    interpolation_state=tmx_static_fields.build_interpolation_state(
+                        interpolation_field_source
+                    ),
+                    edge_params=edge_geometry,
+                    cell_params=cell_geometry,
+                    dtime=config.driver.dtime,
+                    backend=backend,
+                    exchange=exchange,
+                ),
+                state=tmx_state.State(),
+                time_control=every_step,
+            )
+        )
+    # TODO (Yilu): let the driver do nothing without processes and build it unconditionally,
+    # so that neither this guard nor the one in the time loop is needed. Today its
+    # construction compiles the state's programs, and its `run` would still diagnose at
+    # entry and rewrite exner and theta_v at exit, which a dynamics-only run should not pay.
+    physics_granule: physics_driver.PhysicsDriver | None = None
+    if processes:
         physics_granule = physics_driver.PhysicsDriver.from_sources(
-            [muphys_process],
+            processes,
             grid=grid,
             geometry=geometry_field_source,
             interpolation=interpolation_field_source,
             metrics=metrics_field_source,
             backend=backend,
+            process_props=process_props,
+            decomposition_info=decomposition_info,
         )
 
     return Granules(
