@@ -193,14 +193,14 @@ def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid
         Input = Halve.Input
         Output = fw.Empty
 
-        def run(self, input: Halve.Input, output: fw.Empty) -> fw.Empty:
-            return output
+        def run(self, input: Halve.Input, output: fw.Empty | None = None) -> fw.Empty:
+            return output if output is not None else fw.Empty()
 
     assert list(fw.fields(fw.Empty())) == []
+    input = Halve.Input(pressure=fw.zeros(Pressure, grid, allocator=None))
     empty = fw.Empty()
-    assert (
-        Sink().run(Halve.Input(pressure=fw.zeros(Pressure, grid, allocator=None)), empty) is empty
-    )
+    assert Sink().run(input, empty) is empty
+    assert isinstance(Sink().run(input), fw.Empty)
 
 
 def test_pairs_swap(grid: base_grid.Grid) -> None:
