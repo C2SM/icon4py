@@ -532,26 +532,16 @@ class GlobalReductions(Reductions):
         )
 
     def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        buffer = self._prepare_buffer(buffer)
-        if self._calc_buffer_size(buffer) == 0:
-            raise ValueError("global_sum requires a non-empty buffer")
-        return self._sum_owned(buffer)
-
-    def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        buffer = self._prepare_buffer(buffer)
-        global_buffer_size = self._calc_buffer_size(buffer)
-        if global_buffer_size == 0:
-            raise ValueError("global_mean requires a non-empty buffer")
-        return self._sum_owned(buffer) / global_buffer_size
-
-    def _sum_owned(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         """Sum of the owned entries over all ranks.
 
         Floating-point buffers are summed with the order-insensitive sum of ICON
         (``decomp_defs.order_insensitive_sum``), so that the result is bitwise identical
         to the single-rank sum of the same values, whatever the decomposition.
         """
+        buffer = self._prepare_buffer(buffer)
         array_ns = data_alloc.array_namespace(buffer)
+        if self._calc_buffer_size(buffer) == 0:
+            raise ValueError("global_sum requires a non-empty buffer")
         plain_sum = functools.partial(
             self._reduce,
             buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
@@ -573,6 +563,12 @@ class GlobalReductions(Reductions):
         return decomp_defs.order_insensitive_sum(
             buffer, abs_max, combine_partial_sums=self._combine_partial_sums
         )
+
+    def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        global_buffer_size = self._calc_buffer_size(self._prepare_buffer(buffer))
+        if global_buffer_size == 0:
+            raise ValueError("global_mean requires a non-empty buffer")
+        return self.sum(buffer) / global_buffer_size
 
     def _combine_partial_sums(self, integer_sum: int, fraction_sum: int) -> tuple[int, int]:
         # Python integers stay exact and cannot overflow, unlike an int64 ``Allreduce``
