@@ -40,7 +40,7 @@ def time_control(
     end: datetime.datetime = T0 + datetime.timedelta(days=1),
 ) -> process_time_control.ProcessTimeControl:
     return process_time_control.ProcessTimeControl(
-        interval=interval, start_date=start, end_date=end
+        compute_interval=interval, start_date=start, end_date=end
     )
 
 

@@ -18,7 +18,7 @@ import datetime
 class ProcessTimeControl:
     """ICON4Py analogue of the per-process time fields in AES `aes_phy_tc`.
 
-    - `compute_interval`   (`dt_xxx`): compute interval, > 0
+    - `compute_interval` (`dt_xxx`): compute interval, > 0
     - `start_date` (`sd_xxx`), `end_date` (`ed_xxx`): half-open
       `[start, end)` window during which the process exists.
     """
@@ -29,7 +29,9 @@ class ProcessTimeControl:
 
     def __post_init__(self) -> None:
         if self.compute_interval <= datetime.timedelta(0):
-            raise ValueError(f"time-control compute_interval must be positive, got {self.compute_interval}")
+            raise ValueError(
+                f"time-control compute_interval must be positive, got {self.compute_interval}"
+            )
 
     def is_in_window(self, step_start: datetime.datetime) -> bool:
         return self.start_date <= step_start < self.end_date

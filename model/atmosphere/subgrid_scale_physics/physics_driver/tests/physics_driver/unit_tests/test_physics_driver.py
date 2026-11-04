@@ -111,7 +111,7 @@ class TestProcessTimeControl:
     def test_frozen_dataclass(self) -> None:
         tc = time_control()
         with pytest.raises(dataclasses.FrozenInstanceError):
-            tc.interval = datetime.timedelta(seconds=1)  # type: ignore[misc]
+            tc.compute_interval = datetime.timedelta(seconds=1)  # type: ignore[misc]
 
 
 def test_run_zeroes_the_tendency_leaves_of_the_outputs_outside_the_window(
