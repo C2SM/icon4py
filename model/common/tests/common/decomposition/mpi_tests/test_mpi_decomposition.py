@@ -449,11 +449,18 @@ def test_split_io_ranks_roles_and_intercomm(
     assert split.intercomm.Get_size() == len(role_ranks)
     assert split.intercomm.Get_remote_size() == process_props.comm_size - len(role_ranks)
     # ...and carries messages between them: every compute rank tells its rank to its IO rank
+    # (buffered messages, as the output protocol uses: mpi4py's object receive goes
+    # through a matched probe, which hangs under Open MPI 5 with libfabric's CXI provider)
     if split.is_io_rank:
-        received = [split.intercomm.recv(source=rank, tag=7) for rank in split.served_compute_ranks]
+        received = []
+        for rank in split.served_compute_ranks:
+            message = np.empty(1, dtype=np.int64)
+            split.intercomm.Recv(message, source=rank, tag=7)
+            received.append(int(message[0]))
         assert received == list(split.served_compute_ranks)
     else:
-        split.intercomm.send(split.process_props.rank, dest=split.io_rank, tag=7)
+        message = np.array([split.process_props.rank], dtype=np.int64)
+        split.intercomm.Send(message, dest=split.io_rank, tag=7)
     process_props.comm.Barrier()
 
 
