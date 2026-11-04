@@ -13,6 +13,7 @@ from collections.abc import Mapping
 import gt4py.next.typing as gtx_typing
 import pytest
 
+from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.driver import config as driver_config, driver, driver_utils
@@ -112,9 +113,11 @@ def test_tracer_advection_compare_single_multi_rank(  # noqa: PLR0917 [too-many-
 
     The APE experiment advects six tracers with the Miura scheme and the
     positive-definite limiter horizontally and with PPM and the semi-monotonic
-    limiter vertically. Microphysics is switched off, so that only the dynamical
-    core, diffusion and tracer advection act on the tracers. The water vapour of
-    the initial condition is rescaled by a global sum, which is why the global
+    limiter vertically. Microphysics and the physics forcing are switched off
+    (ICON's ``iforcing = inone``), so that only the dynamical core, diffusion and
+    tracer advection act on the tracers, and diffusion performs the halo exchange
+    of w itself instead of leaving it to the physics interface. The water vapour
+    of the initial condition is rescaled by a global sum, which is why the global
     reductions have to be order-insensitive for this comparison to be bitwise.
     """
     _run_driver_compare_single_multi_rank(
@@ -123,7 +126,10 @@ def test_tracer_advection_compare_single_multi_rank(  # noqa: PLR0917 [too-many-
         tmp_path=tmp_path,
         process_props=process_props,
         backend=backend,
-        config_overrides={"muphys": None},
+        config_overrides={
+            "muphys": None,
+            "diffusion": {"iforcing": diffusion.ForcingType.NO_FORCING},
+        },
     )
 
 
