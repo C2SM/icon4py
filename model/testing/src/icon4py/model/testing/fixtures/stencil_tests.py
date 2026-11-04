@@ -40,9 +40,15 @@ VALID_GRID_PRESETS: tuple[str, ...] = (
 def _get_grid_manager_from_preset(
     grid_preset: str,
     *,
-    num_levels: int = DEFAULT_NUM_LEVELS,
+    num_levels: int | None = None,
     allocator: gtx_typing.Allocator,
 ) -> gm.GridManager | None:
+    if num_levels is None:
+        num_levels = (
+            BENCHMARK_DEFAULT_LEVELS
+            if grid_preset.startswith("icon_benchmark_")
+            else DEFAULT_NUM_LEVELS
+        )
     match grid_preset:
         case "icon_regional":
             return grid_utils.get_grid_manager_from_identifier(
@@ -61,7 +67,7 @@ def _get_grid_manager_from_preset(
         case "icon_benchmark_regional":
             return grid_utils.get_grid_manager_from_identifier(
                 test_defs.Grids.MCH_OPR_R19B08_DOMAIN01,
-                num_levels=BENCHMARK_DEFAULT_LEVELS,
+                num_levels=num_levels,
                 keep_skip_values=False,
                 allocator=allocator,
             )
@@ -75,7 +81,7 @@ def _get_grid_manager_from_preset(
         case "icon_benchmark_global":
             return grid_utils.get_grid_manager_from_identifier(
                 test_defs.Grids.R02B06_GLOBAL,
-                num_levels=BENCHMARK_DEFAULT_LEVELS,
+                num_levels=num_levels,
                 keep_skip_values=False,
                 allocator=allocator,
             )
@@ -107,7 +113,10 @@ def grid_manager(
         try:
             grid_file = pathlib.Path(name).resolve(strict=True)
             grid_manager = grid_utils.get_grid_manager(
-                grid_file, num_levels=num_levels, keep_skip_values=False, allocator=allocator
+                grid_file,
+                num_levels=num_levels if num_levels is not None else DEFAULT_NUM_LEVELS,
+                keep_skip_values=False,
+                allocator=allocator,
             )
         except OSError as e:
             raise ValueError(
@@ -118,7 +127,7 @@ def grid_manager(
     return grid_manager
 
 
-def _evaluate_grid_option(request: pytest.FixtureRequest) -> tuple[str, int]:
+def _evaluate_grid_option(request: pytest.FixtureRequest) -> tuple[str, int | None]:
     spec = request.config.getoption("grid")
     if spec is None:
         spec = DEFAULT_GRID
@@ -127,7 +136,7 @@ def _evaluate_grid_option(request: pytest.FixtureRequest) -> tuple[str, int]:
         raise ValueError("Invalid grid spec in '--grid' option (spec: <grid_name>:<grid_levels>)")
 
     name, *levels = spec.split(":")
-    num_levels = int(levels[0]) if levels and levels[0].strip() else DEFAULT_NUM_LEVELS
+    num_levels = int(levels[0]) if levels and levels[0].strip() else None
     return name, num_levels
 
 
@@ -140,7 +149,8 @@ def grid(
     name, num_levels = _evaluate_grid_option(request)
     if name == "simple":
         return simple_grid.simple_grid(
-            allocator=model_backends.get_allocator(backend_like), num_levels=num_levels
+            allocator=model_backends.get_allocator(backend_like),
+            num_levels=num_levels if num_levels is not None else DEFAULT_NUM_LEVELS,
         )
     else:
         return grid_manager.grid
