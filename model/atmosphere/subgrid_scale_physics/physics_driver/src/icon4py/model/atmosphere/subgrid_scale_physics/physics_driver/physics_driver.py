@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import datetime
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -25,6 +24,7 @@ from icon4py.model.common import (
     model_backends,
     model_options,
     quantity,
+    time,
 )
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
@@ -90,9 +90,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         qr: fw.Field[qty.QrOnCellK] | None = None
         qs: fw.Field[qty.QsOnCellK] | None = None
         qg: fw.Field[qty.QgOnCellK] | None = None
-        dtime: datetime.timedelta
         # the end of the step being integrated
-        simulation_current_datetime: datetime.datetime
+        simulation_current_datetime: time.AbsoluteTime
 
     class Output(fw.State):
         vn: fw.Field[qty.VnOnEdgeK]
@@ -110,10 +109,18 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self,
         processes: Sequence[physics_process.PhysicsProcess[Any, Any]],
         *,
+        dtime: time.RelativeTime,
         grid: base_grid.Grid,
         static_state: static_fields.PhysicsDriverStaticState,
         backend: model_backends.BackendLike = None,
     ) -> None:
+        if mismatched := [
+            p.time_control.driver_dtime for p in processes if p.time_control.driver_dtime != dtime
+        ]:
+            raise ValueError(
+                f"the processes' time controls must use the driver's dtime {dtime}, got {mismatched}"
+            )
+        self.dtime = dtime
         self.grid = grid
         self.allocator = model_backends.get_allocator(backend)
         self.processes = tuple(processes)
@@ -232,7 +239,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self._zero_accumulators()
         for process, buffer in zip(self.processes, self._buffers, strict=True):
             self._accumulate(process.run(entry, buffer))
-        self._apply(entry, input.dtime.total_seconds(), output)
+        self._apply(entry, self.dtime.total_seconds(), output)
         return output
 
     # NOTE: temporary, components MWE parts 04 (recipes) and 05 (derived inputs): the
@@ -264,7 +271,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             pressure_ifc=diagnostics.pressure_ifc,
             u=diagnostics.u,
             v=diagnostics.v,
-            step_start=input.simulation_current_datetime - input.dtime,
+            step_start=input.simulation_current_datetime - self.dtime,
         )
         # 1. virtual temperature and temperature
         self._diagnose_temperature(

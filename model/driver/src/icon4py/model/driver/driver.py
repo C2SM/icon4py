@@ -733,7 +733,6 @@ class Icon4pyDriver:
             qr=tracer_state.qr,
             qs=tracer_state.qs,
             qg=tracer_state.qg,
-            dtime=self.config.driver.dtime,
             simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
         )
         output = physics_driver.PhysicsDriver.Output(

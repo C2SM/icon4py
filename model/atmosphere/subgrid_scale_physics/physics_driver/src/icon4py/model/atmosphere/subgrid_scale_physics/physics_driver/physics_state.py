@@ -8,9 +8,7 @@
 
 """What the physics driver offers its processes each step."""
 
-import datetime
-
-from icon4py.model.common import framework as fw
+from icon4py.model.common import framework as fw, time
 from icon4py.model.common.framework import quantities as qty
 
 
@@ -46,4 +44,4 @@ class EntryState(fw.State):
     pressure_ifc: fw.Field[qty.PressureOnCellKHalf]
     u: fw.Field[qty.UOnCellK]
     v: fw.Field[qty.VOnCellK]
-    step_start: datetime.datetime = datetime.datetime.min
+    step_start: time.AbsoluteTime = time.AbsoluteTime.min

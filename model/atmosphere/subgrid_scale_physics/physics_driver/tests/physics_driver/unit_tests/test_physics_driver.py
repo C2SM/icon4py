@@ -72,15 +72,13 @@ def _qv(tracer_state: states.TracerState) -> np.ndarray:
 
 
 class TestProcessTimeControl:
-    @pytest.mark.parametrize("dtime", [datetime.timedelta(0), -DT])
-    @pytest.mark.parametrize("name", ["process_dtime", "driver_dtime"])
-    def test_rejects_a_non_positive_dtime(self, name: str, dtime: datetime.timedelta) -> None:
-        kwargs: dict[str, Any] = {name: dtime}
-        with pytest.raises(ValueError, match=f"{name} must be positive"):
-            time_control(**kwargs)
+    @pytest.mark.parametrize("process_dtime", [datetime.timedelta(0), -DT])
+    def test_rejects_a_non_positive_process_dtime(self, process_dtime: datetime.timedelta) -> None:
+        with pytest.raises(ValueError, match="positive"):
+            time_control(process_dtime=process_dtime)
 
     def test_rejects_a_process_dtime_not_a_multiple_of_driver_dtime(self) -> None:
-        with pytest.raises(ValueError, match="multiple"):
+        with pytest.raises(ValueError, match="positive multiple"):
             time_control(process_dtime=DT * 3 / 2)
 
     def test_skips_steps_only_when_process_dtime_exceeds_driver_dtime(self) -> None:
@@ -259,6 +257,14 @@ def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
     # the tendencies are summed and applied once; the diagnostics are not accumulated
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + DT.total_seconds() * 3e-7, rtol=1e-12)
     assert set(physics.accumulators) == {"tend_qv"}
+
+
+def test_driver_rejects_a_process_timed_for_another_dtime(grid: base_grid.Grid) -> None:
+    process, _ = recording(
+        MoistOutput, {}, time_control(process_dtime=4 * DT, driver_dtime=2 * DT), grid
+    )
+    with pytest.raises(ValueError, match="driver's dtime"):
+        driver(grid, [process])
 
 
 def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:

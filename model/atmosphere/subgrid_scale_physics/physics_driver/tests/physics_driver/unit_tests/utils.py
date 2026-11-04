@@ -41,7 +41,7 @@ def time_control(
     driver_dtime: datetime.timedelta = DT,
 ) -> process_time_control.ProcessTimeControl:
     return process_time_control.ProcessTimeControl(
-        driver_dtime=driver_dtime, process_dtime=process_dtime, start_date=start, end_date=end
+        driver_dtime=driver_dtime, process_dtime=process_dtime, window_start=start, window_end=end
     )
 
 
@@ -52,6 +52,7 @@ def driver(
     # the two-neighbour projection of a uniform u-tendency onto the edges is the identity
     return physics_driver.PhysicsDriver(
         processes,
+        dtime=DT,
         grid=grid,
         static_state=static_fields.PhysicsDriverStaticState(
             ddqz_z_full=data_alloc.constant_field(grid, 100.0, dims.CellDim, dims.KDim),
@@ -100,7 +101,6 @@ def make_input(
         qr=tracer_state.qr,
         qs=tracer_state.qs,
         qg=tracer_state.qg,
-        dtime=DT,
         simulation_current_datetime=simulation_current_datetime,
     )
 
