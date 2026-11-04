@@ -69,8 +69,9 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     same entry state and gates its wrapped component by its time control, the tendencies of
     their outputs are summed and the sum is applied to the prognostics once, at the end. The
     processes never write the prognostics.
-    The driver owns one output buffer per process and hands the same buffer back each step, so
-    the values of the last run survive to the next.
+    The driver hands each process a buffer each step, and the process populates that buffer
+    from its own cache; the buffer bookkeeping here is a scratch convenience for the driver,
+    not a correctness contract.
 
     Not implemented: ICON AES couples microphysics and turbulence sequentially (each process
     sees the previous one's provisional update), which would need per-process state advances.
@@ -118,8 +119,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self.grid = grid
         self.allocator = model_backends.get_allocator(backend)
         self.processes = tuple(processes)
-        # one output buffer per process, allocated once here and handed back each step: the
-        # values of the last run survive to the next
+        # one scratch buffer per process, handed to it each step; the process populates it
+        # from its own cache, so the bookkeeping here is convenience, not correctness
         # TODO(msimberg): This should be keyed by process instead of relying on order?
         self._buffers: tuple[fw.State, ...] = tuple(
             fw.allocate(process.component.Output, self.grid, self.allocator)

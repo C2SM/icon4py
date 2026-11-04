@@ -223,14 +223,27 @@ def allocate[S: State](
     return cls(**values)
 
 
-def copy[S: State](state: S, allocator: gtx_typing.Allocator | None) -> S:
-    """A new state with a copy of each present leaf on the allocator; the plain leaves are shared."""
-    copies: dict[str, Any] = {
-        name: Field(field.quantity, data_allocation.reallocate(field, allocator=allocator))
-        for name, field in fields(state).items()
-    }
-    copied: S = dataclasses.replace(typing.cast(Any, state), **copies)
-    return copied
+def copy[S1: State, S2: State](src: S1, dst: S2) -> S2:
+    """
+    The present leaves of `src` written into `dst`, in place.
+
+    NumPy `out=` style: `dst`'s buffers are written and returned; the caller owns them. The
+    present leaves of the two states must match exactly, in both directions: a leaf present on
+    either side without a counterpart on the other raises, naming the leaves.
+    """
+    src_fields, dst_fields = fields(src), fields(dst)
+    missing = sorted(src_fields.keys() - dst_fields.keys())
+    unexpected = sorted(dst_fields.keys() - src_fields.keys())
+    if missing or unexpected:
+        raise ValueError(
+            "the states' present leaves must match on both sides; "
+            f"missing in the destination: {missing}; unexpected in it: {unexpected}"
+        )
+    for name, field in src_fields.items():
+        # NDArrayObject declares no __setitem__
+        buffer: Any = dst_fields[name].ndarray
+        buffer[...] = field.ndarray
+    return dst
 
 
 # ------------------------------------------------------------------------------

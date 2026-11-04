@@ -263,12 +263,14 @@ def assemble_driver_states(
     dycore_diagnostics: states.DycoreDiagnostics | None,
     prep_adv: states.PrepAdvection | None,
 ) -> DriverStates:
-    prognostic_states = common_utils.TimeStepPair(
-        prognostic_state_now, fw.copy(prognostic_state_now, allocator)
+    prognostic_state_next = fw.allocate(states.PrognosticState, grid, allocator)
+    fw.copy(prognostic_state_now, prognostic_state_next)
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+    tracer_state_next = fw.allocate(
+        states.TracerState, grid, allocator, only=tuple(fw.fields(tracer_state_now))
     )
-    tracer_states = common_utils.TimeStepPair(
-        tracer_state_now, fw.copy(tracer_state_now, allocator)
-    )
+    fw.copy(tracer_state_now, tracer_state_next)
+    tracer_states = common_utils.TimeStepPair(tracer_state_now, tracer_state_next)
 
     cell_domain = h_grid.domain(dims.CellDim)
     end_cell_lateral_boundary_level_2 = grid.end_index(

@@ -103,6 +103,8 @@ def _muphys(
         component=muphys,
         collect_input=muphys_component.collect_input,
         time_control=time_control,
+        grid=grid,
+        allocator=model_backends.get_allocator(backend),
     )
 
 

@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import dataclasses
+import typing
 from collections.abc import Callable
 from typing import ClassVar
 
@@ -19,7 +20,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_
     ProcessTimeControl,
 )
 from icon4py.model.common import framework as fw, quantity
+from icon4py.model.common.grid import base as base_grid
 
+
+if typing.TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
 
 __all__ = ["PhysicsProcess"]
 
@@ -30,15 +35,17 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     A component that gates its wrapped component by time control.
 
     The process's input is the physics driver's entry state, its output the wrapped component's.
-    It keeps no output buffers: the caller owns them, per the `fw.Component` contract, and the
-    driver hands the same buffer back each step, so the values of the last run survive to the
-    next. Outside its time-control window the process contributes no tendencies: it zeroes the
+    It keeps no output buffers: the caller owns them, per the `fw.Component` contract. It does
+    cache the last computed output, in a state of its own it allocates on its `grid` with its
+    `allocator`, lazily on its first computing step; the cache's details stay private. On a
+    non-computing step in its window it populates the outputs it is handed from that cache,
+    whatever buffer the caller passes, fresh or reused, and a caller mutating a returned buffer
+    leaves the cache untouched. Outside its time-control window the process contributes no
     tendencies: it zeroes the `Tendency` leaves of the outputs it is handed and returns them,
-    the other leaves as given. Inside the window it runs its wrapped
-    component on the steps its time control fires and on its first step in the window; on the
-    other steps it returns the outputs unchanged, caching the last run's values. Typed over
-    the wrapped component's `Input` and `Output`: a `collect_input` that builds another
-    component's `Input` is a type error.
+    the other leaves as given. Inside the window it runs its wrapped component on the steps
+    its time control fires and on its first step in the window. Typed over the wrapped
+    component's `Input` and `Output`: a `collect_input` that builds another component's
+    `Input` is a type error.
     """
 
     Input = physics_state.EntryState
@@ -50,13 +57,14 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     # `Input` by quantity (`fw.collect`), and `collect_input` goes.
     collect_input: Callable[[physics_state.EntryState], I]
     time_control: ProcessTimeControl
-    _has_run: bool = dataclasses.field(default=False, init=False)
+    grid: base_grid.Grid
+    allocator: gtx_typing.Allocator | None
+    cache: O | None = dataclasses.field(default=None, init=False)
 
     def run(self, inputs: physics_state.EntryState, outputs: O) -> O:
-        """This step's output: computed, cached from the last run, or zeroed outside the window."""
+        """This step's output: computed, populated from the cache, or zeroed outside the window."""
         # Outside its window the process contributes no tendencies: the `Tendency` leaves of the
         # outputs it is handed are zeroed, the other leaves left as given.
-        # It must not reach the caching branch below, which would run once on the first step.
         if not self.time_control.is_in_window(inputs.step_start):
             for field in fw.fields(outputs).values():
                 if issubclass(field.quantity, quantity.Tendency):
@@ -64,8 +72,14 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
                     field.ndarray[...] = 0.0  # type: ignore[index]
             return outputs
         # Run on a computing step, and also on the first in-window step, when there is nothing
-        # cached yet. Otherwise the values of the last run are still in the outputs.
-        if self.time_control.computes_at(inputs.step_start) or not self._has_run:
+        # cached yet: the cache is allocated lazily, on the first computing step, and refreshed
+        # from the outputs the component just wrote, so the values survive to the steps that
+        # do not compute.
+        if self.time_control.computes_at(inputs.step_start) or self.cache is None:
             self.component.run(self.collect_input(inputs), outputs)
-            self._has_run = True
+            if self.cache is None:
+                self.cache = fw.allocate(self.component.Output, self.grid, self.allocator)
+            fw.copy(outputs, self.cache)
+        else:
+            fw.copy(self.cache, outputs)
         return outputs

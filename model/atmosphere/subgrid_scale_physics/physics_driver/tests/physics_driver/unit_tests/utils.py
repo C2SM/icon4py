@@ -163,9 +163,10 @@ def recording(
     output: type[fw.State],
     values: dict[str, float],
     time_control: process_time_control.ProcessTimeControl,
+    grid: base_grid.Grid,
 ) -> tuple[physics_process.PhysicsProcess[physics_state.EntryState, fw.State], Recorder]:
     """A process running a `Recorder` that writes `values` into its `output`-shaped outputs,
-    on the whole entry state."""
+    on the whole entry state. The process's cache is allocated on `grid`."""
 
     class _Recorder(Recorder):
         """A `Recorder` whose outputs are `output`-shaped, so the driver can allocate them."""
@@ -177,5 +178,7 @@ def recording(
         component=recorder,
         collect_input=lambda entry: entry,
         time_control=time_control,
+        grid=grid,
+        allocator=None,
     )
     return process, recorder

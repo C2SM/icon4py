@@ -10,6 +10,7 @@
 
 import dataclasses
 import datetime
+from typing import Any
 
 import numpy as np
 import pytest
@@ -117,7 +118,9 @@ def test_run_zeroes_the_tendency_leaves_of_the_outputs_outside_the_window(
     grid: base_grid.Grid,
 ) -> None:
     window_end = T0 + 4 * DT
-    process, recorder = recording(MoistOutput, {}, time_control(interval=2 * DT, end=window_end))
+    process, recorder = recording(
+        MoistOutput, {}, time_control(interval=2 * DT, end=window_end), grid
+    )
     # the outputs handed to this step, with a tendency and a flux already in them
     given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
     entry = entry_state(grid, step_start=window_end)
@@ -139,7 +142,7 @@ def test_run_computes_on_the_first_in_window_step_even_when_not_triggered(
     # the process's first step in its window is not one its time control fires; it computes
     # anyway, because there is nothing cached yet
     outputs = filled(MoistOutput, grid)
-    process, recorder = recording(MoistOutput, {}, time_control(interval=2 * DT))
+    process, recorder = recording(MoistOutput, {}, time_control(interval=2 * DT), grid)
     entry = entry_state(grid, step_start=T0 + DT)
 
     assert process.run(entry, outputs) is outputs
@@ -152,29 +155,74 @@ def test_run_computes_on_the_first_in_window_step_even_when_not_triggered(
     assert len(recorder.entries) == 2
 
 
-def test_run_returns_the_outputs_unchanged_on_a_non_computing_in_window_step(
+def test_run_populates_the_given_outputs_from_its_cache_on_a_non_computing_step(
     grid: base_grid.Grid,
 ) -> None:
     outputs = filled(MoistOutput, grid)
-    process, recorder = recording(MoistOutput, {}, time_control(interval=2 * DT))
-    # the first step computes; the second is in the window but does not fire
+    process, recorder = recording(
+        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(interval=2 * DT), grid
+    )
+    # the first step computes and fills the cache
+    process.run(entry_state(grid, step_start=T0), outputs)
+    # the caller owns its buffer: other values are in it when it is handed back
+    scribble: Any = outputs.tend_qv.ndarray  # NDArrayObject declares no __setitem__
+    scribble[...] = 1e-7
+
+    result = process.run(entry_state(grid, step_start=T0 + DT), outputs)
+
+    # the given buffer receives the values the computing run produced
+    assert result is outputs
+    np.testing.assert_array_equal(outputs.tend_qv.asnumpy(), 2e-7)
+    np.testing.assert_array_equal(outputs.pflx.asnumpy(), 3.0)
+    assert len(recorder.entries) == 1
+
+
+def test_a_mutated_buffer_does_not_touch_the_cache(grid: base_grid.Grid) -> None:
+    outputs = filled(MoistOutput, grid)
+    process, recorder = recording(
+        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(interval=2 * DT), grid
+    )
+    process.run(entry_state(grid, step_start=T0), outputs)
+    given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
+    process.run(entry_state(grid, step_start=T0 + DT), given)
+    # the caller mutates the buffer it was handed back
+    scribble: Any = given.tend_qv.ndarray  # NDArrayObject declares no __setitem__
+    scribble[...] = 42.0
+
+    process.run(entry_state(grid, step_start=T0 + 3 * DT), given)
+
+    # the next non-computing step restores the cached values
+    np.testing.assert_array_equal(given.tend_qv.asnumpy(), 2e-7)
+    np.testing.assert_array_equal(given.pflx.asnumpy(), 3.0)
+    assert len(recorder.entries) == 1
+
+
+def test_a_fresh_buffer_is_populated_from_the_cache(grid: base_grid.Grid) -> None:
+    outputs = filled(MoistOutput, grid)
+    process, recorder = recording(
+        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(interval=2 * DT), grid
+    )
     process.run(entry_state(grid, step_start=T0), outputs)
 
+    # a differently-allocated buffer, holding other values
     given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
-    before = given.tend_qv.asnumpy().tobytes()
     result = process.run(entry_state(grid, step_start=T0 + DT), given)
 
-    # the given outputs come back unchanged: the very same object, bitwise the same tendency
     assert result is given
-    assert given.tend_qv.asnumpy().tobytes() == before
+    np.testing.assert_array_equal(given.tend_qv.asnumpy(), 2e-7)
+    np.testing.assert_array_equal(given.pflx.asnumpy(), 3.0)
     assert len(recorder.entries) == 1
 
 
 def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
     grid: base_grid.Grid,
 ) -> None:
-    process_a, recorder_a = recording(MoistOutput, {"tend_qv": 1e-7, "pflx": 5.0}, time_control())
-    process_b, recorder_b = recording(MoistOutput, {"tend_qv": 2e-7, "pflx": 7.0}, time_control())
+    process_a, recorder_a = recording(
+        MoistOutput, {"tend_qv": 1e-7, "pflx": 5.0}, time_control(), grid
+    )
+    process_b, recorder_b = recording(
+        MoistOutput, {"tend_qv": 2e-7, "pflx": 7.0}, time_control(), grid
+    )
     physics = driver(grid, [process_a, process_b])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
@@ -193,7 +241,7 @@ def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
 
 
 def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:
-    process, _ = recording(MoistOutput, {"tend_qv": 1e-7}, time_control())
+    process, _ = recording(MoistOutput, {"tend_qv": 1e-7}, time_control(), grid)
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
@@ -210,7 +258,7 @@ def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
     # the window starts in the future: the step being integrated is before it
     future = T0 + datetime.timedelta(days=1)
     window = time_control(start=future, end=future + datetime.timedelta(hours=1))
-    process, recorder = recording(MoistOutput, {"tend_qv": 1e-7}, window)
+    process, recorder = recording(MoistOutput, {"tend_qv": 1e-7}, window, grid)
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
@@ -224,7 +272,9 @@ def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
 
 
 def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> None:
-    process, recorder = recording(MoistOutput, {"tend_qv": 1e-7}, time_control(interval=2 * DT))
+    process, recorder = recording(
+        MoistOutput, {"tend_qv": 1e-7}, time_control(interval=2 * DT), grid
+    )
     # fires every other step
     physics = driver(
         grid,
@@ -251,7 +301,9 @@ def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> No
 def test_first_in_window_step_inactive_computes(grid: base_grid.Grid) -> None:
     # A process whose first step in its window is not active (interval = 2 dt, the first
     # step starts at T0 + DT) has no output to reuse yet: it computes instead.
-    process, recorder = recording(MoistOutput, {"tend_qv": 1e-7}, time_control(interval=2 * DT))
+    process, recorder = recording(
+        MoistOutput, {"tend_qv": 1e-7}, time_control(interval=2 * DT), grid
+    )
     physics = driver(
         grid,
         [process],
@@ -277,7 +329,7 @@ def test_run_requires_every_moisture_species(grid: base_grid.Grid) -> None:
 
 
 def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
-    process, _ = recording(MoistOutput, {"tend_qv": 1e-7}, time_control())
+    process, _ = recording(MoistOutput, {"tend_qv": 1e-7}, time_control(), grid)
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
     new_prognostic, new_tracers = prognostics(grid, theta_v=0.0), tracers(grid, qv=0.0)
@@ -295,6 +347,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -
         ThermoOutput,
         {"tend_qv": 1e-7, "tend_temperature": 1e-3, "tend_w": 1e-4},
         time_control(),
+        grid,
     )
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
@@ -315,7 +368,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -
 def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> None:
     # uniform tend_u = 1e-4, tend_v = 0 with the neutral geometry of `driver`:
     # ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on every edge of the periodic simple grid
-    process, _ = recording(WindOutput, {"tend_u": 1e-4}, time_control())
+    process, _ = recording(WindOutput, {"tend_u": 1e-4}, time_control(), grid)
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
@@ -327,7 +380,7 @@ def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> Non
 def test_apply_rejects_a_lone_horizontal_wind_tendency(grid: base_grid.Grid) -> None:
     # vn is one projection of (u, v): a process emitting only one of the two would
     # silently lose the other half of the momentum, an error rather than a no-op
-    process, _ = recording(LoneWindOutput, {"tend_u": 1e-4}, time_control())
+    process, _ = recording(LoneWindOutput, {"tend_u": 1e-4}, time_control(), grid)
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
@@ -349,4 +402,6 @@ def static_checks() -> None:
         component=Recorder({}),
         collect_input=_empty,  # type: ignore[arg-type]
         time_control=time_control(),
+        grid=simple.simple_grid(),
+        allocator=None,
     )
