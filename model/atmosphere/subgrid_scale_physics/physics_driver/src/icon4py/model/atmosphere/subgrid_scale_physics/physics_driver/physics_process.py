@@ -34,15 +34,11 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     """
     A component that gates its wrapped component by time control.
 
-    Outside the time-controlled window the process is inactive and contributes
-    nothing: the `Tendency` leaves of the output State it is handed are zeroed,
-    the other leaves left untouched.
-
+    Outside the time-controlled window the process is inactive: the `Tendency`
+    leaves of the output State are zeroed, the other leaves left untouched.
     Inside the time-controlled window there are two options selected by
-    `computes_at`: compute (i.e. run the wrapped component) or reuse the cached
-    output from the previous compute run.
-
-    The cache is an internal State allocated lazily on the first compute step.
+    `ProcessTimeControl.computes_at()`: compute (i.e. run the wrapped
+    component) or reuse the cached tendencies from the previous compute run.
     """
 
     Input = physics_state.EntryState
