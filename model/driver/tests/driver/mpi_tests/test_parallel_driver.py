@@ -99,6 +99,12 @@ def test_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional
             marks=[pytest.mark.level("integration")],
             id="integration-exclaim-ape-aes-tracer-advection",
         ),
+        pytest.param(
+            test_defs.Experiments.EXCLAIM_APE_AES,
+            time.RelativeTime(days=7),
+            marks=[pytest.mark.level("validation")],
+            id="validation-exclaim-ape-aes-tracer-advection",
+        ),
     ],
 )
 def test_tracer_advection_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
