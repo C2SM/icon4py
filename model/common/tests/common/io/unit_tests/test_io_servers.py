@@ -17,7 +17,6 @@ the store must not be written as if it were the undecomposed grid.
 """
 
 import collections
-import copy
 import dataclasses
 import datetime as dt
 import itertools
@@ -102,18 +101,11 @@ class _FakeIntercomm:
     def _inbox(self, source: int, tag: int) -> queue.Queue:
         return self._mailboxes[(self._role, self._rank, source, tag)]
 
-    def send(self, obj: object, dest: int, tag: int) -> None:
-        self._outbox(dest, tag).put(copy.deepcopy(obj))
-
-    def isend(self, obj: object, dest: int, tag: int) -> _CompletedRequest:
-        self.send(obj, dest, tag)
-        return _CompletedRequest()
-
-    def recv(self, source: int, tag: int) -> object:
-        return self._inbox(source, tag).get()
+    def Send(self, buffer: np.ndarray, dest: int, tag: int) -> None:
+        self._outbox(dest, tag).put(np.array(buffer, copy=True))
 
     def Isend(self, buffer: np.ndarray, dest: int, tag: int) -> _CompletedRequest:
-        self._outbox(dest, tag).put(np.array(buffer, copy=True))
+        self.Send(buffer, dest, tag)
         return _CompletedRequest()
 
     def Recv(self, buffer: np.ndarray, source: int, tag: int) -> None:

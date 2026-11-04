@@ -41,7 +41,11 @@ capture step it sends a :class:`CaptureHeader` followed by one message per outpu
 variable, in header order; the messages of one source arrive in order, so the IO rank
 receives them deterministically without any tags beyond the three message kinds.
 ``IOClient.close`` completes the transfers and sends an empty header, which ends the
-IO rank's ``serve`` loop.
+IO rank's ``serve`` loop. Every message is a buffered send and receive: the setup and
+the headers travel as a size message followed by their pickled bytes (``_send_object``
+and friends) rather than through mpi4py's object send and receive, whose receive goes
+through a matched probe (``MPI_Mprobe``) that hung under Open MPI 5 with libfabric's
+CXI provider on the CI machines (2026-11).
 
 Failure envelope: neither role can observe the other's failure. An IO rank waits for
 the setup or the next capture of its compute ranks, so a compute rank that fails
@@ -60,6 +64,7 @@ import collections
 import dataclasses
 import datetime as dt
 import logging
+import pickle
 import timeit
 import uuid
 from collections.abc import Sequence
@@ -91,6 +96,35 @@ MAX_IN_FLIGHT_CAPTURES: Final[int] = 2
 _SETUP_TAG: Final[int] = 1
 _HEADER_TAG: Final[int] = 2
 _DATA_TAG: Final[int] = 3
+
+
+def _object_messages(obj: Any) -> list[np.ndarray]:
+    """The two buffers an object travels in: its pickled size (int64), then the bytes."""
+    payload = np.frombuffer(pickle.dumps(obj), dtype=np.uint8)
+    return [np.array([payload.size], dtype=np.int64), payload]
+
+
+def _send_object(comm: mpi4py.MPI.Intercomm, obj: Any, dest: int, tag: int) -> None:
+    """Send a picklable object as buffered messages (blocking)."""
+    for buffer in _object_messages(obj):
+        comm.Send(buffer, dest=dest, tag=tag)
+
+
+def _isend_object(
+    comm: mpi4py.MPI.Intercomm, obj: Any, dest: int, tag: int
+) -> tuple[list[mpi4py.MPI.Request], list[np.ndarray]]:
+    """Post the sends of a picklable object; the buffers must outlive the requests."""
+    buffers = _object_messages(obj)
+    return [comm.Isend(buffer, dest=dest, tag=tag) for buffer in buffers], buffers
+
+
+def _recv_object(comm: mpi4py.MPI.Intercomm, source: int, tag: int) -> Any:
+    """Receive an object sent by ``_send_object`` or ``_isend_object`` (blocking)."""
+    size = np.empty(1, dtype=np.int64)
+    comm.Recv(size, source=source, tag=tag)
+    payload = np.empty(int(size[0]), dtype=np.uint8)
+    comm.Recv(payload, source=source, tag=tag)
+    return pickle.loads(payload.tobytes())
 
 
 @dataclasses.dataclass(frozen=True)
@@ -227,7 +261,7 @@ class IOClient(monitor.Monitor):
                 for dim, dim_name in distributed.HORIZONTAL_DIM_NAMES.items()
             },
         )
-        self._intercomm.send(setup, dest=self._io_rank, tag=_SETUP_TAG)
+        _send_object(self._intercomm, setup, self._io_rank, _SETUP_TAG)
 
     @property
     def io_rank(self) -> int:
@@ -289,11 +323,13 @@ class IOClient(monitor.Monitor):
         start = timeit.default_timer()
         self._wait_for_slot()
         header = CaptureHeader(model_time=model_time, groups=groups, variables=variables)
-        requests = [self._intercomm.isend(header, dest=self._io_rank, tag=_HEADER_TAG)]
+        requests, header_buffers = _isend_object(
+            self._intercomm, header, self._io_rank, _HEADER_TAG
+        )
         requests.extend(
             self._intercomm.Isend(buffer, dest=self._io_rank, tag=_DATA_TAG) for buffer in buffers
         )
-        self._in_flight.append(_Transfer(requests, buffers))
+        self._in_flight.append(_Transfer(requests, header_buffers + buffers))
         self._phase_seconds[io.PHASE_SEND].append(timeit.default_timer() - start)
 
     def _wait_for_slot(self) -> None:
@@ -338,7 +374,7 @@ class IOClient(monitor.Monitor):
         self._closed = True
         while self._in_flight:
             self._in_flight.popleft().wait()
-        self._intercomm.send(None, dest=self._io_rank, tag=_HEADER_TAG)
+        _send_object(self._intercomm, None, self._io_rank, _HEADER_TAG)
 
 
 class IOServer:
@@ -377,7 +413,7 @@ class IOServer:
                 or the grid.
         """
         setups: list[ClientSetup] = [
-            self._intercomm.recv(source=rank, tag=_SETUP_TAG) for rank in self._served_ranks
+            _recv_object(self._intercomm, rank, _SETUP_TAG) for rank in self._served_ranks
         ]
         first = setups[0]
         for rank, setup in zip(self._served_ranks, setups, strict=True):
@@ -435,7 +471,7 @@ class IOServer:
             RuntimeError: if the served ranks are not at the same capture step.
         """
         headers: list[CaptureHeader | None] = [
-            self._intercomm.recv(source=rank, tag=_HEADER_TAG) for rank in self._served_ranks
+            _recv_object(self._intercomm, rank, _HEADER_TAG) for rank in self._served_ranks
         ]
         first = headers[0]
         for rank, header in zip(self._served_ranks, headers, strict=True):
