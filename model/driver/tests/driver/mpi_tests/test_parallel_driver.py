@@ -126,6 +126,7 @@ def _run_driver_compare_single_multi_rank(
         grid_manager=single_rank_grid_manager,
         process_props=single_rank_process_props,
         backend=backend,
+        io_ranks=None,
     )
 
     multi_rank_config = config.with_overrides(driver={"end_of_simulation": end_of_simulation})
@@ -140,6 +141,7 @@ def _run_driver_compare_single_multi_rank(
         grid_manager=multi_rank_grid_manager,
         process_props=process_props,
         backend=backend,
+        io_ranks=None,
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]

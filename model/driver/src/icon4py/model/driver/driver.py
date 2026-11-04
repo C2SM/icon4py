@@ -32,7 +32,10 @@ from icon4py.model.common import (
     topography,
     type_alias as ta,
 )
-from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.decomposition import (
+    definitions as decomposition_defs,
+    mpi_decomposition as mpi_decomp,
+)
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
     grid_manager as gm,
@@ -76,7 +79,7 @@ class Icon4pyDriver:
         model_time_variables: driver_states.ModelTimeVariables,
         vertical_grid_config: v_grid.VerticalGridConfig,
         process_props: decomposition_defs.ProcessProperties,
-        io_monitor: common_io.IOMonitor | None = None,
+        io_monitor: common_io.OutputMonitor | None = None,
         output_assembler: driver_io.OutputStateAssembler | None = None,
         tendencies: prescribed_tendencies.PrescribedTendencies | None = None,
     ):
@@ -700,7 +703,14 @@ def initialize_driver(
     grid_manager: gm.GridManager,
     process_props: decomposition_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
+    io_ranks: mpi_decomp.IORankSplit | None,
 ) -> Icon4pyDriver:
+    """Set up the model on this (compute) rank.
+
+    ``process_props`` are the compute ranks' process properties: with dedicated IO
+    ranks (``io_ranks`` given, see ``main``) the compute communicator, otherwise the
+    run's; the output monitor then ships to the IO ranks instead of writing.
+    """
     if config.io is not None:
         # an existing output directory is never reused: a timestamped one is created
         output_path = driver_config.prepare_output_directory(
@@ -782,6 +792,7 @@ def initialize_driver(
             dtime=config.driver.dtime,
             process_props=process_props,
             decomposition_info=decomposition_info,
+            io_ranks=io_ranks,
         )
 
     icon4py_driver = Icon4pyDriver(
@@ -886,12 +897,14 @@ def run_driver(
     grid_manager: gm.GridManager,
     process_props: decomposition_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
+    io_ranks: mpi_decomp.IORankSplit | None,
 ) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
     icon4py_driver = initialize_driver(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,
         backend=backend,
+        io_ranks=io_ranks,
     )
     allocator = model_backends.get_allocator(backend)
     ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)

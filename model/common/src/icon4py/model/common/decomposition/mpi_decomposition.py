@@ -11,15 +11,15 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from types import ModuleType
-from typing import Any, Union
+from typing import Any, Final, Union
 
 import numpy as np
 from gt4py import next as gtx
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.decomposition.definitions import (
     Reductions,
@@ -205,6 +205,188 @@ class MPICommProcessProperties(decomp_defs.ProcessProperties):
     @functools.cached_property
     def comm_size(self) -> int:  # type: ignore [override]
         return self.comm.Get_size()
+
+
+#: Names of the role communicators of ``split_io_ranks``, shown in the rank prefix of
+#: distributed log records (``ProcessProperties.comm_name``).
+COMPUTE_COMM_NAME: Final[str] = "compute"
+IO_COMM_NAME: Final[str] = "io"
+
+
+def _balanced_blocks(items: Sequence[int], num_blocks: int) -> list[tuple[int, ...]]:
+    """Split ``items`` into ``num_blocks`` contiguous blocks whose sizes differ by at most one.
+
+    The first ``len(items) % num_blocks`` blocks are the larger ones.
+    """
+    size, extra = divmod(len(items), num_blocks)
+    blocks: list[tuple[int, ...]] = []
+    start = 0
+    for index in range(num_blocks):
+        stop = start + size + (1 if index < extra else 0)
+        blocks.append(tuple(items[start:stop]))
+        start = stop
+    return blocks
+
+
+@dataclass(frozen=True)
+class IORankAssignment:
+    """The dedicated IO ranks of a communicator and the compute ranks each one serves.
+
+    ``compute_ranks`` and ``io_ranks`` hold the ranks of the split communicator in
+    increasing order. ``split_io_ranks`` builds the role communicators in that order,
+    so a rank's position in its tuple is its rank in the role communicator;
+    ``io_rank_of`` and ``served_compute_ranks`` speak in those role ranks.
+
+    Attributes:
+        compute_ranks: the compute ranks, as ranks of the split communicator.
+        io_ranks: the IO ranks, as ranks of the split communicator.
+        io_rank_of_compute_rank: per compute rank (compute-communicator numbering), the
+            IO rank (IO-communicator numbering) it ships to.
+    """
+
+    compute_ranks: tuple[int, ...]
+    io_ranks: tuple[int, ...]
+    io_rank_of_compute_rank: tuple[int, ...]
+
+    def io_rank_of(self, compute_rank: int) -> int:
+        """The IO rank (IO communicator) serving a compute rank (compute communicator)."""
+        return self.io_rank_of_compute_rank[compute_rank]
+
+    def served_compute_ranks(self, io_rank: int) -> tuple[int, ...]:
+        """The compute ranks (compute communicator) served by an IO rank (IO communicator)."""
+        return tuple(
+            compute_rank
+            for compute_rank, served_by in enumerate(self.io_rank_of_compute_rank)
+            if served_by == io_rank
+        )
+
+
+def assign_io_ranks(node_ids: Sequence[int], io_ranks_per_node: int) -> IORankAssignment:
+    """Choose the dedicated IO ranks: the last ``io_ranks_per_node`` ranks of every node.
+
+    ``node_ids[rank]`` identifies the node of every rank of the communicator (see
+    ``allgather_node_ids``). The other ranks of a node are its compute ranks; in rank
+    order, they are shared evenly among the node's IO ranks. A compute rank thus
+    always ships to an IO rank on its own node, whatever the placement of the ranks on
+    the nodes, and the transfer never crosses the network.
+
+    Raises:
+        InvalidConfigError: if ``io_ranks_per_node`` is not positive, or a node has
+            fewer compute ranks than IO ranks (every IO rank serves at least one).
+    """
+    if io_ranks_per_node < 1:
+        raise exceptions.InvalidConfigError(
+            f"Invalid number of IO ranks per node {io_ranks_per_node}: must be at least 1."
+        )
+    ranks_of_node: dict[int, list[int]] = {}
+    for rank, node in enumerate(node_ids):
+        ranks_of_node.setdefault(node, []).append(rank)
+    io_ranks: list[int] = []
+    ships_to: dict[int, int] = {}
+    for ranks in ranks_of_node.values():
+        if len(ranks) < 2 * io_ranks_per_node:
+            raise exceptions.InvalidConfigError(
+                f"The node of rank {ranks[0]} has {len(ranks)} ranks: with {io_ranks_per_node} "
+                f"IO rank(s) per node it needs at least {2 * io_ranks_per_node} (every IO rank "
+                f"serves at least one compute rank)."
+            )
+        node_io_ranks = ranks[-io_ranks_per_node:]
+        io_ranks.extend(node_io_ranks)
+        blocks = _balanced_blocks(ranks[:-io_ranks_per_node], io_ranks_per_node)
+        for block, io_rank in zip(blocks, node_io_ranks, strict=True):
+            for compute_rank in block:
+                ships_to[compute_rank] = io_rank
+    compute_ranks = tuple(sorted(ships_to))
+    io_ranks.sort()
+    io_index = {rank: index for index, rank in enumerate(io_ranks)}
+    return IORankAssignment(
+        compute_ranks=compute_ranks,
+        io_ranks=tuple(io_ranks),
+        io_rank_of_compute_rank=tuple(io_index[ships_to[rank]] for rank in compute_ranks),
+    )
+
+
+def allgather_node_ids(process_props: decomp_defs.ProcessProperties) -> list[int]:
+    """The node of every rank of the communicator, identified by the lowest rank on it.
+
+    The nodes are found through MPI's shared-memory split (``MPI_COMM_TYPE_SHARED``):
+    the ranks that can share memory are on one node. Collective on the communicator.
+    """
+    comm = process_props.comm
+    node_comm = comm.Split_type(mpi4py.MPI.COMM_TYPE_SHARED, key=process_props.rank)
+    try:
+        node_id: int = node_comm.bcast(process_props.rank, root=0)
+    finally:
+        node_comm.Free()
+    return comm.allgather(node_id)
+
+
+@dataclass(frozen=True)
+class IORankSplit:
+    """A communicator split into compute ranks and dedicated IO ranks.
+
+    Every rank belongs to exactly one role; the roles talk through an
+    inter-communicator (``io.io_servers``: compute ranks ship their output fields to
+    the IO ranks, which write them). Everything else the model does -- halo exchanges,
+    reductions, the grid decomposition -- runs on the compute role's communicator, i.e.
+    on the ``process_props`` of a compute rank; nothing but the output layer knows the
+    IO ranks exist.
+
+    Attributes:
+        is_io_rank: whether this rank is a dedicated IO rank.
+        process_props: process properties of this rank's role communicator (compute or
+            IO); named ``COMPUTE_COMM_NAME`` / ``IO_COMM_NAME``.
+        intercomm: inter-communicator whose remote group is the other role. Ranks are
+            addressed by their rank in that role's communicator.
+        io_rank: on a compute rank, the IO rank (in the IO communicator) it ships to;
+            None on an IO rank.
+        served_compute_ranks: on an IO rank, the compute ranks (in the compute
+            communicator) it serves, in increasing order; empty on a compute rank.
+    """
+
+    is_io_rank: bool
+    process_props: MPICommProcessProperties
+    intercomm: mpi4py.MPI.Intercomm
+    io_rank: int | None
+    served_compute_ranks: tuple[int, ...]
+
+
+def split_io_ranks(
+    process_props: decomp_defs.ProcessProperties, io_ranks_per_node: int
+) -> IORankSplit:
+    """Split the communicator into compute ranks and ``io_ranks_per_node`` IO ranks per node.
+
+    Collective on the communicator of ``process_props``. The IO ranks are the last
+    ranks of every node (``assign_io_ranks``), so every compute rank ships to an IO
+    rank on its own node.
+
+    Raises:
+        InvalidConfigError: on a single-node run (no MPI communicator), or if a node
+            has fewer compute ranks than IO ranks (see ``assign_io_ranks``).
+    """
+    if process_props.comm is None:
+        raise exceptions.InvalidConfigError(
+            "Dedicated IO ranks require an MPI run: the process properties carry no communicator."
+        )
+    assignment = assign_io_ranks(allgather_node_ids(process_props), io_ranks_per_node)
+    is_io_rank = process_props.rank in assignment.io_ranks
+    # the role communicators keep the order of the split communicator
+    role_comm = process_props.comm.Split(color=int(is_io_rank), key=process_props.rank)
+    role_comm.Set_name(IO_COMM_NAME if is_io_rank else COMPUTE_COMM_NAME)
+    # the leaders are rank 0 of each role: the lowest compute rank and the lowest IO
+    # rank of the split communicator
+    remote_leader = assignment.compute_ranks[0] if is_io_rank else assignment.io_ranks[0]
+    intercomm = role_comm.Create_intercomm(
+        local_leader=0, peer_comm=process_props.comm, remote_leader=remote_leader, tag=0
+    )
+    role_props = MPICommProcessProperties(role_comm)
+    return IORankSplit(
+        is_io_rank=is_io_rank,
+        process_props=role_props,
+        intercomm=intercomm,
+        io_rank=None if is_io_rank else assignment.io_rank_of(role_props.rank),
+        served_compute_ranks=assignment.served_compute_ranks(role_props.rank) if is_io_rank else (),
+    )
 
 
 class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):

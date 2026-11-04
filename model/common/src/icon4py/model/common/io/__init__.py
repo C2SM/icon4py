@@ -41,6 +41,7 @@ The IO module is configured with an `IOConfig` holding
 - `field_groups`: list of field group configurations (see below); at least one, with unique `basename`s.
 - `time_units` (optional, default is "seconds since 1970-01-01 00:00:00"): unit of the time coordinate in the data files.
 - `calendar` (optional, default is "proleptic_gregorian"): calendar of the time coordinate in the data files.
+- `io_ranks_per_node` (optional, default is 0): number of MPI ranks per node dedicated to output, see "Dedicated IO ranks" below. The program running the model splits the communicator accordingly (the driver's `main` does); the module itself only carries the value.
 
 A field group is a set of variables written on the same schedule into the same file series; it is configured with
 
@@ -158,6 +159,44 @@ shared netCDF file, which the installed `netCDF4` package must support:
 - **Without a parallel installation**: use the `"zarr"` backend (parallel with any
   installation) or `mode="gather"`.
 
+### Dedicated IO ranks
+
+Instead of writing themselves, the ranks running the model can ship their output to
+dedicated IO ranks (`io_servers`): the run's communicator is split
+(`decomposition.mpi_decomposition.split_io_ranks`) into compute ranks and IO ranks --
+on every node the last `io_ranks_per_node` ranks of the `IOConfig` -- and the two roles
+talk through an inter-communicator. The nodes are found through MPI's shared-memory
+split, so the choice does not depend on how the launcher places the ranks: a compute
+rank always ships to an IO rank on its own node, and the node's compute ranks are
+shared evenly among its IO ranks. With the launcher's usual block placement and one
+task per node more than compute ranks (e.g. five tasks on a node with four GPUs and
+`io_ranks_per_node: 1`), the IO rank is the node's last task and every compute rank
+keeps a GPU of its own.
+
+- The compute ranks use an `IOClient` as their output monitor; it offers the interface
+  of the `IOMonitor` (`store`, `variables_at_capture_time`, `close`, see
+  `OutputMonitor`). At a capture step it strips the halos of the capturing groups'
+  fields into host buffers, posts nonblocking sends to its IO rank and returns: the
+  transfer overlaps the following model steps. At most
+  `io_servers.MAX_IN_FLIGHT_CAPTURES` capture steps are in flight per compute rank;
+  at that bound `store` blocks until the oldest transfer completed (timed as the phase
+  `"send_wait"`, the signal that the IO ranks do not keep up).
+- Every IO rank serves a contiguous block of compute ranks and holds the concatenation
+  of their owned entries as its local state -- a decomposition without halos. It writes
+  through the ordinary stack on the IO ranks' communicator (an `IOServer` feeding an
+  `IOMonitor`): `mode`, `backend` and the chunking options apply unchanged, the rank
+  blocks of a `"distributed"` store being those of the IO ranks. A single IO rank thus
+  writes a one-block rank-block store, or -- in `"gather"` mode -- a plain serial file
+  in global order. Distributed netCDF still needs the parallel installation, on the IO
+  ranks, once there is more than one.
+- The compute ranks define the output: their configuration is shipped to the IO ranks
+  at setup, so the two sides cannot diverge. The IO ranks need nothing but the
+  vertical grid and the grid file (for the UGRID topology).
+- Failure envelope: neither role can observe the other's failure (an IO rank waits for
+  its compute ranks, compute ranks wait at the in-flight bound for their IO rank), so a
+  program using dedicated IO ranks must abort the run when any rank fails; the driver's
+  `main` does.
+
 ### Restrictions
 
 - We support NETCDF4 files and zarr stores (zarr format 3).
@@ -165,7 +204,7 @@ shared netCDF file, which the installed `netCDF4` package must support:
 - Fields need a horizontal dimension (`cell`, `edge` or `vertex`); a vertical dimension (model or half levels) is optional, so a purely horizontal (surface) field is written as `(time, cell)`.
 - Horizontal coordinates the latitude and longitude in radians as provided by the ICON grid file.
 - Vertical coordinates are the model levels, there is no transformation to pressure levels.
-- Writing is synchronous: `store` returns once the data is written.
+- Writing is synchronous: `store` returns once the data is written. With dedicated IO ranks the compute ranks' `store` returns once the transfer to the IO rank is posted (see "Dedicated IO ranks" above); the IO ranks then write synchronously.
 - Distributed (MPI) runs write either gathered on the root rank (any backend) or with every rank writing its own block of a shared store (zarr with any installation; netCDF with an MPI-parallel netCDF4 installation, see "Parallel netCDF" above).
 - Global attributes of the datafiles and field metadata is only scarcely available and needs to be augmented.
 
