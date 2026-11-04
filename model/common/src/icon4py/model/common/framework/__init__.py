@@ -140,17 +140,17 @@ class State:
         dataclasses.dataclass(frozen=True, eq=False, kw_only=True)(cls)
 
 
-def fields(state: State) -> dict[str, Field[Any]]:
+def fields(state: State, kind: type[Quantity] = Quantity) -> dict[str, Field[Any]]:
     """
-    The present leaves of a state, by name, in declaration order.
+    The present leaves of a state whose quantity is a `kind`, by name, in declaration order.
 
     One level of `Field` leaves, the optional ones skipped while None. `copy`, the
     physics driver and the IO walk a state through it.
     """
     return {
         name: field
-        for name, _, _ in _declarations(type(state))  # type: ignore[arg-type]
-        if (field := getattr(state, name)) is not None
+        for name, quantity, _ in _declarations(type(state))  # type: ignore[arg-type]
+        if issubclass(quantity, kind) and (field := getattr(state, name)) is not None
     }
 
 
@@ -223,15 +223,16 @@ def allocate[S: State](
     return cls(**values)
 
 
-def copy[S1: State, S2: State](src: S1, dst: S2) -> S2:
+def copy[S1: State, S2: State](src: S1, dst: S2, kind: type[Quantity] = Quantity) -> S2:
     """
-    The present leaves of `src` written into `dst`, in place.
+    The present leaves of `src` whose quantity is a `kind` written into `dst`, in place.
 
     NumPy `out=` style: `dst`'s buffers are written and returned; the caller owns them. The
-    present leaves of the two states must match exactly, in both directions: a leaf present on
-    either side without a counterpart on the other raises, naming the leaves.
+    present `kind` leaves of the two states must match exactly, in both directions: a leaf
+    present on either side without a counterpart on the other raises, naming the leaves. The
+    other leaves are neither compared nor written.
     """
-    src_fields, dst_fields = fields(src), fields(dst)
+    src_fields, dst_fields = fields(src, kind), fields(dst, kind)
     missing = sorted(src_fields.keys() - dst_fields.keys())
     unexpected = sorted(dst_fields.keys() - src_fields.keys())
     if missing or unexpected:

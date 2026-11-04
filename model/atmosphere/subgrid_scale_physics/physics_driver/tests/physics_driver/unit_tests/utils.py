@@ -46,7 +46,7 @@ def time_control(
         process_dtime=process_dtime,
         window_start=start,
         window_end=end,
-        simulation_start=simulation_start,
+        start_of_simulation=simulation_start,
     )
 
 

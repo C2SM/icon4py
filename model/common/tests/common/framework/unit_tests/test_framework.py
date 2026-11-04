@@ -19,11 +19,12 @@ from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
     framework as fw,
+    quantity,
     type_alias as ta,
 )
 from icon4py.model.common.grid import base as base_grid, simple
 
-from tests.common.unit_tests.utils import CELL_K, Pressure, Salt, Vt
+from tests.common.unit_tests.utils import CELL_K, Pressure, Salt, TendencyOfPressure, Vt
 
 
 class Column(fw.State):
@@ -36,6 +37,12 @@ class Tracers(fw.State):
     pressure: fw.Field[Pressure]
     salt: fw.Field[Salt] | None = None
     vt: fw.Field[Vt] | None = None
+
+
+class Budget(fw.State):
+    pressure: fw.Field[Pressure]
+    tend_pressure: fw.Field[TendencyOfPressure]
+    salt: fw.Field[Salt] | None = None
 
 
 class Halve(fw.Component["Halve.Input", "Halve.Output"]):
@@ -117,6 +124,23 @@ def test_state_fields_list_the_field_leaves_only(grid: base_grid.Grid) -> None:
     assert list(fw.fields(column)) == ["pressure", "salt"]
     with pytest.raises(dataclasses.FrozenInstanceError):
         column.dtime = 2.0  # type: ignore[misc]
+
+
+def test_fields_of_a_kind_are_the_leaves_whose_quantity_is_one(grid: base_grid.Grid) -> None:
+    budget = fw.allocate(Budget, grid, None)
+    assert list(fw.fields(budget, kind=quantity.Tendency)) == ["tend_pressure"]
+    assert list(fw.fields(budget, kind=Pressure)) == ["pressure"]
+
+
+def test_copy_of_a_kind_writes_and_compares_only_those_leaves(grid: base_grid.Grid) -> None:
+    src = fw.allocate(Budget, grid, None, fill=lambda name, _: 1.0)
+    # `salt` is present on one side only, and not a tendency: it is not compared
+    dst = fw.allocate(Budget, grid, None, only=("pressure", "tend_pressure"))
+
+    fw.copy(src, dst, kind=quantity.Tendency)
+
+    np.testing.assert_array_equal(dst.tend_pressure.asnumpy(), 1.0)
+    np.testing.assert_array_equal(dst.pressure.asnumpy(), 0.0)
 
 
 def test_state_maps_present_leaf_names_to_fields(grid: base_grid.Grid) -> None:

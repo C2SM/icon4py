@@ -188,13 +188,16 @@ def test_run_populates_the_given_outputs_from_its_cache_on_a_non_computing_step(
     # the caller owns its buffer: other values are in it when it is handed back
     scribble: Any = output.tend_qv.ndarray  # NDArrayObject declares no __setitem__
     scribble[...] = 1e-7
+    flux: Any = output.pflx.ndarray
+    flux[...] = 9.0
 
     result = process.run(entry_state(grid, step_start=T0 + DT), output)
 
-    # the given buffer receives the values the computing run produced
+    # the given buffer receives the tendencies the computing run produced, the other leaves
+    # stay as the caller left them
     assert result is output
     np.testing.assert_array_equal(output.tend_qv.asnumpy(), 2e-7)
-    np.testing.assert_array_equal(output.pflx.asnumpy(), 3.0)
+    np.testing.assert_array_equal(output.pflx.asnumpy(), 9.0)
     assert len(recorder.entries) == 1
 
 
@@ -212,13 +215,13 @@ def test_a_mutated_buffer_does_not_touch_the_cache(grid: base_grid.Grid) -> None
 
     process.run(entry_state(grid, step_start=T0 + 3 * DT), given)
 
-    # the next non-computing step restores the cached values
+    # the next non-computing step restores the cached tendencies only
     np.testing.assert_array_equal(given.tend_qv.asnumpy(), 2e-7)
-    np.testing.assert_array_equal(given.pflx.asnumpy(), 3.0)
+    np.testing.assert_array_equal(given.pflx.asnumpy(), 5.0)
     assert len(recorder.entries) == 1
 
 
-def test_a_fresh_buffer_is_populated_from_the_cache(grid: base_grid.Grid) -> None:
+def test_a_fresh_buffer_gets_the_cached_tendencies_only(grid: base_grid.Grid) -> None:
     output = filled(MoistOutput, grid)
     process, recorder = recording(
         MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(process_dtime=2 * DT), grid
@@ -231,7 +234,7 @@ def test_a_fresh_buffer_is_populated_from_the_cache(grid: base_grid.Grid) -> Non
 
     assert result is given
     np.testing.assert_array_equal(given.tend_qv.asnumpy(), 2e-7)
-    np.testing.assert_array_equal(given.pflx.asnumpy(), 3.0)
+    np.testing.assert_array_equal(given.pflx.asnumpy(), 5.0)
     assert len(recorder.entries) == 1
 
 

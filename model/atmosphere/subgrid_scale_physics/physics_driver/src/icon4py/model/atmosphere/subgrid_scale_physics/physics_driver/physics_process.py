@@ -52,13 +52,15 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     time_control: ProcessTimeControl
     grid: base_grid.Grid
     allocator: gtx_typing.Allocator | None
+    # the last computed output, of which only the `Tendency` leaves are used
+    # NOTE: temporary, components MWE part 08 (updates): the cache holds the process's `Update`
+    # state, the tendencies it contributes, instead of its whole `Output`.
     _cache: O | None = dataclasses.field(default=None, init=False)
 
     def run(self, input: physics_state.EntryState, output: O) -> O:
         if not self.time_control.is_in_window(input.step_start):
-            for field in fw.fields(output).values():
-                if issubclass(field.quantity, quantity.Tendency):
-                    field.ndarray[...] = 0.0  # type: ignore[index]
+            for field in fw.fields(output, kind=quantity.Tendency).values():
+                field.ndarray[...] = 0.0  # type: ignore[index]
             return output
 
         # NOTE: different from ICON when the first step in the window does not compute, i.e. a
@@ -72,7 +74,7 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
                 # every step of the driver
                 if self._cache is None:
                     self._cache = fw.allocate(self.component.Output, self.grid, self.allocator)
-                fw.copy(output, self._cache)
+                fw.copy(output, self._cache, kind=quantity.Tendency)
         else:
-            fw.copy(self._cache, output)
+            fw.copy(self._cache, output, kind=quantity.Tendency)
         return output

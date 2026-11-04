@@ -312,9 +312,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
 
         Element-wise with no neighbour access, so a plain array operation rather than a stencil.
         """
-        for name, field in fw.fields(output).items():
-            if not issubclass(field.quantity, quantity.Tendency):
-                continue
+        for name, field in fw.fields(output, kind=quantity.Tendency).items():
             if (accumulator := self.accumulators.get(name)) is None:
                 accumulator = self.accumulators[name] = fw.zeros(
                     field.quantity, self.grid, self.allocator
