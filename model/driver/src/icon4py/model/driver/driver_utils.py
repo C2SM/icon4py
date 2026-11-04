@@ -515,6 +515,7 @@ def initialize_granules(
         process_dtime=config.driver.dtime,
         window_start=config.driver.start_of_simulation,
         window_end=model_time_variables.simulation_end_datetime,
+        start_of_simulation=config.driver.start_of_simulation,
     )
     physics_processes = [
         build(config, grid, static_field_factories, time_control, backend)

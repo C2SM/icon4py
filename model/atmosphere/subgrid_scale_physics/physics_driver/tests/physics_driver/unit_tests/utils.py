@@ -39,9 +39,14 @@ def time_control(
     start: datetime.datetime = T0,
     end: datetime.datetime = T0 + datetime.timedelta(days=1),
     driver_dtime: datetime.timedelta = DT,
+    simulation_start: datetime.datetime = T0,
 ) -> process_time_control.ProcessTimeControl:
     return process_time_control.ProcessTimeControl(
-        driver_dtime=driver_dtime, process_dtime=process_dtime, window_start=start, window_end=end
+        driver_dtime=driver_dtime,
+        process_dtime=process_dtime,
+        window_start=start,
+        window_end=end,
+        simulation_start=simulation_start,
     )
 
 

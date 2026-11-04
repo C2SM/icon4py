@@ -81,6 +81,19 @@ class TestProcessTimeControl:
         with pytest.raises(ValueError, match="positive multiple"):
             time_control(process_dtime=DT * 3 / 2)
 
+    @pytest.mark.parametrize("offset", [DT / 2, -DT / 2])
+    def test_rejects_a_window_start_between_two_driver_steps(
+        self, offset: datetime.timedelta
+    ) -> None:
+        with pytest.raises(ValueError, match="window_start"):
+            time_control(start=T0 + offset)
+
+    def test_accepts_a_window_start_on_a_driver_step_before_the_simulation_start(self) -> None:
+        tc = time_control(start=T0 - 3 * DT, process_dtime=2 * DT)
+        # the process grid is anchored at `window_start`, not at the simulation start
+        assert tc.computes_at(T0) is False
+        assert tc.computes_at(T0 + DT) is True
+
     def test_skips_steps_only_when_process_dtime_exceeds_driver_dtime(self) -> None:
         assert time_control().skips_steps is False
         assert time_control(process_dtime=2 * DT).skips_steps is True

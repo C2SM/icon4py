@@ -61,6 +61,10 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
                     field.ndarray[...] = 0.0  # type: ignore[index]
             return output
 
+        # NOTE: different from ICON when the first step in the window does not compute, i.e. a
+        # window opening before the simulation start off the `process_dtime` grid, or a restart
+        # in the window: ICON recycles its zero-initialized memory until the next compute step,
+        # here the process computes on that first step.
         if self.time_control.computes_at(input.step_start) or self._cache is None:
             self.component.run(self.collect_input(input), output)
             if self.time_control.skips_steps:
