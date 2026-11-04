@@ -405,7 +405,6 @@ def _update_max_vertical_cfl(
 
 
 class SolveNonhydro(fw.Component):
-
     class Input(fw.State):
         rho: fw.Field[qty.RhoOnCellK]
         w: fw.Field[qty.WOnCellKHalf]
