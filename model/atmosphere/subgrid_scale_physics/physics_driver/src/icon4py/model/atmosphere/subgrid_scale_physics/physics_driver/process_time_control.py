@@ -16,29 +16,42 @@ import datetime
 
 @dataclasses.dataclass(frozen=True)
 class ProcessTimeControl:
-    """ICON4Py analogue of the per-process time fields in AES `aes_phy_tc`.
+    """
+    ICON4Py analogue of the per-process time fields in AES `aes_phy_tc`.
 
-    - `compute_interval` (`dt_xxx`): compute interval, > 0
-    - `start_date` (`sd_xxx`), `end_date` (`ed_xxx`): half-open
-      `[start, end)` window during which the process exists.
+    - `driver_dtime`: time step of the driver calling the process
+    - `process_dtime`: time step of the process, must be a multiple of `driver_dtime`
+    - `start_date`, `end_date`: half-open `[start, end)` window
+      during which the process is active
     """
 
-    compute_interval: datetime.timedelta
+    driver_dtime: datetime.timedelta
+    process_dtime: datetime.timedelta
     start_date: datetime.datetime
     end_date: datetime.datetime
 
     def __post_init__(self) -> None:
-        if self.compute_interval <= datetime.timedelta(0):
+        for name in ("driver_dtime", "process_dtime"):
+            if (value := getattr(self, name)) <= datetime.timedelta(0):
+                raise ValueError(f"time-control {name} must be positive, got {value}")
+        if self.process_dtime % self.driver_dtime != datetime.timedelta(0):
             raise ValueError(
-                f"time-control compute_interval must be positive, got {self.compute_interval}"
+                f"time-control process_dtime {self.process_dtime} must be a multiple of "
+                f"driver_dtime {self.driver_dtime}"
             )
 
-    def is_in_window(self, step_start: datetime.datetime) -> bool:
-        return self.start_date <= step_start < self.end_date
+    @property
+    def skips_steps(self) -> bool:
+        """True when the process does not compute on every driver step."""
+        return self.process_dtime > self.driver_dtime
 
-    def computes_at(self, step_start: datetime.datetime) -> bool:
+    def is_in_window(self, driver_step_start_datetime: datetime.datetime) -> bool:
+        """True when the driver's datetime is within the process' window."""
+        return self.start_date <= driver_step_start_datetime < self.end_date
+
+    def computes_at(self, driver_step_start_datetime: datetime.datetime) -> bool:
         """True on a whole number of intervals after `start_date` (AES `isCurrentEventActive`)."""
-        if step_start < self.start_date:
+        if driver_step_start_datetime < self.start_date:
             return False
-        elapsed = step_start - self.start_date
-        return elapsed % self.compute_interval == datetime.timedelta(0)
+        elapsed = driver_step_start_datetime - self.start_date
+        return elapsed % self.process_dtime == datetime.timedelta(0)

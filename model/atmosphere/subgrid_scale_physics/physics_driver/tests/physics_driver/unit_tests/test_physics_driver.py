@@ -72,10 +72,20 @@ def _qv(tracer_state: states.TracerState) -> np.ndarray:
 
 
 class TestProcessTimeControl:
-    @pytest.mark.parametrize("interval", [datetime.timedelta(0), -DT])
-    def test_rejects_a_non_positive_interval(self, interval: datetime.timedelta) -> None:
-        with pytest.raises(ValueError, match="positive"):
-            time_control(interval=interval)
+    @pytest.mark.parametrize("dtime", [datetime.timedelta(0), -DT])
+    @pytest.mark.parametrize("name", ["process_dtime", "driver_dtime"])
+    def test_rejects_a_non_positive_dtime(self, name: str, dtime: datetime.timedelta) -> None:
+        kwargs: dict[str, Any] = {name: dtime}
+        with pytest.raises(ValueError, match=f"{name} must be positive"):
+            time_control(**kwargs)
+
+    def test_rejects_a_process_dtime_not_a_multiple_of_driver_dtime(self) -> None:
+        with pytest.raises(ValueError, match="multiple"):
+            time_control(process_dtime=DT * 3 / 2)
+
+    def test_skips_steps_only_when_process_dtime_exceeds_driver_dtime(self) -> None:
+        assert time_control().skips_steps is False
+        assert time_control(process_dtime=2 * DT).skips_steps is True
 
     def test_is_in_window_at_start_is_true(self) -> None:
         assert time_control().is_in_window(T0) is True
@@ -111,7 +121,7 @@ class TestProcessTimeControl:
     def test_frozen_dataclass(self) -> None:
         tc = time_control()
         with pytest.raises(dataclasses.FrozenInstanceError):
-            tc.compute_interval = datetime.timedelta(seconds=1)  # type: ignore[misc]
+            tc.process_dtime = datetime.timedelta(seconds=1)  # type: ignore[misc]
 
 
 def test_run_zeroes_the_tendency_leaves_of_the_outputs_outside_the_window(
@@ -119,7 +129,7 @@ def test_run_zeroes_the_tendency_leaves_of_the_outputs_outside_the_window(
 ) -> None:
     window_end = T0 + 4 * DT
     process, recorder = recording(
-        MoistOutput, {}, time_control(interval=2 * DT, end=window_end), grid
+        MoistOutput, {}, time_control(process_dtime=2 * DT, end=window_end), grid
     )
     # the output handed to this step, with a tendency and a flux already in them
     given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
@@ -142,7 +152,7 @@ def test_run_computes_on_the_first_in_window_step_even_when_not_triggered(
     # the process's first step in its window is not one its time control fires; it computes
     # anyway, because there is nothing cached yet
     output = filled(MoistOutput, grid)
-    process, recorder = recording(MoistOutput, {}, time_control(interval=2 * DT), grid)
+    process, recorder = recording(MoistOutput, {}, time_control(process_dtime=2 * DT), grid)
     entry = entry_state(grid, step_start=T0 + DT)
 
     assert process.run(entry, output) is output
@@ -160,7 +170,7 @@ def test_run_populates_the_given_outputs_from_its_cache_on_a_non_computing_step(
 ) -> None:
     output = filled(MoistOutput, grid)
     process, recorder = recording(
-        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(interval=2 * DT), grid
+        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(process_dtime=2 * DT), grid
     )
     # the first step computes and fills the cache
     process.run(entry_state(grid, step_start=T0), output)
@@ -180,7 +190,7 @@ def test_run_populates_the_given_outputs_from_its_cache_on_a_non_computing_step(
 def test_a_mutated_buffer_does_not_touch_the_cache(grid: base_grid.Grid) -> None:
     output = filled(MoistOutput, grid)
     process, recorder = recording(
-        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(interval=2 * DT), grid
+        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(process_dtime=2 * DT), grid
     )
     process.run(entry_state(grid, step_start=T0), output)
     given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
@@ -200,7 +210,7 @@ def test_a_mutated_buffer_does_not_touch_the_cache(grid: base_grid.Grid) -> None
 def test_a_fresh_buffer_is_populated_from_the_cache(grid: base_grid.Grid) -> None:
     output = filled(MoistOutput, grid)
     process, recorder = recording(
-        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(interval=2 * DT), grid
+        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(process_dtime=2 * DT), grid
     )
     process.run(entry_state(grid, step_start=T0), output)
 
@@ -212,6 +222,17 @@ def test_a_fresh_buffer_is_populated_from_the_cache(grid: base_grid.Grid) -> Non
     np.testing.assert_array_equal(given.tend_qv.asnumpy(), 2e-7)
     np.testing.assert_array_equal(given.pflx.asnumpy(), 3.0)
     assert len(recorder.entries) == 1
+
+
+def test_a_process_computing_every_step_keeps_no_cache(grid: base_grid.Grid) -> None:
+    output = filled(MoistOutput, grid)
+    process, recorder = recording(MoistOutput, {"tend_qv": 2e-7}, time_control(), grid)
+
+    for step in range(3):
+        process.run(entry_state(grid, step_start=T0 + step * DT), output)
+
+    assert len(recorder.entries) == 3
+    assert process._cache is None
 
 
 def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
@@ -273,7 +294,7 @@ def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
 
 def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> None:
     process, recorder = recording(
-        MoistOutput, {"tend_qv": 1e-7}, time_control(interval=2 * DT), grid
+        MoistOutput, {"tend_qv": 1e-7}, time_control(process_dtime=2 * DT), grid
     )
     # fires every other step
     physics = driver(
@@ -302,7 +323,7 @@ def test_first_in_window_step_inactive_computes(grid: base_grid.Grid) -> None:
     # A process whose first step in its window is not active (interval = 2 dt, the first
     # step starts at T0 + DT) has no output to reuse yet: it computes instead.
     process, recorder = recording(
-        MoistOutput, {"tend_qv": 1e-7}, time_control(interval=2 * DT), grid
+        MoistOutput, {"tend_qv": 1e-7}, time_control(process_dtime=2 * DT), grid
     )
     physics = driver(
         grid,

@@ -63,9 +63,12 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
 
         if self.time_control.computes_at(input.step_start) or self._cache is None:
             self.component.run(self.collect_input(input), output)
-            if self._cache is None:
-                self._cache = fw.allocate(self.component.Output, self.grid, self.allocator)
-            fw.copy(output, self._cache)
+            if self.time_control.skips_steps:
+                # The cache is needed iff the process does not compute at
+                # every step of the driver
+                if self._cache is None:
+                    self._cache = fw.allocate(self.component.Output, self.grid, self.allocator)
+                fw.copy(output, self._cache)
         else:
             fw.copy(self._cache, output)
         return output

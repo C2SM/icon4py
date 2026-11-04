@@ -35,12 +35,13 @@ DT = datetime.timedelta(seconds=300)
 
 
 def time_control(
-    interval: datetime.timedelta = DT,
+    process_dtime: datetime.timedelta = DT,
     start: datetime.datetime = T0,
     end: datetime.datetime = T0 + datetime.timedelta(days=1),
+    driver_dtime: datetime.timedelta = DT,
 ) -> process_time_control.ProcessTimeControl:
     return process_time_control.ProcessTimeControl(
-        compute_interval=interval, start_date=start, end_date=end
+        driver_dtime=driver_dtime, process_dtime=process_dtime, start_date=start, end_date=end
     )
 
 

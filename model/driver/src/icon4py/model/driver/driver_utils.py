@@ -511,7 +511,8 @@ def initialize_granules(
 
     physics_granule: physics_driver.PhysicsDriver | None = None
     time_control = process_time_control.ProcessTimeControl(
-        compute_interval=config.driver.dtime,
+        driver_dtime=config.driver.dtime,
+        process_dtime=config.driver.dtime,
         start_date=config.driver.start_of_simulation,
         end_date=model_time_variables.simulation_end_datetime,
     )
