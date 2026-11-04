@@ -10,7 +10,7 @@ from gt4py.next import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
-from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss_method import (
+from icon4py.model.common.math.differential_operators import (
     cell_horizontal_gradients_by_green_gauss_method,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat

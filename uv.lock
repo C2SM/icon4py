@@ -1784,7 +1784,7 @@ dependencies = [
 ]
 name = "icon4py"
 source = { editable = "." }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.dev-dependencies]
 build = [
@@ -1800,6 +1800,7 @@ dev = [
   { name = "clang-format" },
   { name = "coverage" },
   { name = "esbonio" },
+  { name = "f90nml" },
   { name = "icon4py-testing" },
   { name = "lazy-loader" },
   { name = "mypy", extra = ["faster-cache"] },
@@ -1868,6 +1869,7 @@ test = [
   { name = "black" },
   { name = "clang-format" },
   { name = "coverage" },
+  { name = "f90nml" },
   { name = "icon4py-testing" },
   { name = "lazy-loader" },
   { name = "nox" },
@@ -1932,6 +1934,7 @@ dev = [
   { name = "clang-format", specifier = ">=22.1.0" },
   { name = "coverage", extras = ["toml"], specifier = ">=7.5.0" },
   { name = "esbonio", specifier = ">=0.16.0" },
+  { name = "f90nml", specifier = ">=1.5" },
   { name = "icon4py-testing", editable = "model/testing" },
   { name = "lazy-loader", specifier = ">=0.5" },
   { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
@@ -2000,6 +2003,7 @@ test = [
   { name = "black", specifier = ">=25.11" },
   { name = "clang-format", specifier = ">=22.1.0" },
   { name = "coverage", extras = ["toml"], specifier = ">=7.5.0" },
+  { name = "f90nml", specifier = ">=1.5" },
   { name = "icon4py-testing", editable = "model/testing" },
   { name = "lazy-loader", specifier = ">=0.5" },
   { name = "nox", specifier = ">=2025.5.1" },
@@ -2066,7 +2070,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-diffusion"
 source = { editable = "model/atmosphere/diffusion" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
@@ -2083,7 +2087,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-dycore"
 source = { editable = "model/atmosphere/dycore" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
@@ -2100,7 +2104,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-microphysics"
 source = { editable = "model/atmosphere/subgrid_scale_physics/microphysics" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
@@ -2117,7 +2121,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-muphys"
 source = { editable = "model/atmosphere/subgrid_scale_physics/muphys" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
@@ -2134,7 +2138,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-physics-driver"
 source = { editable = "model/atmosphere/subgrid_scale_physics/physics_driver" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
@@ -2151,7 +2155,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-surface"
 source = { editable = "model/atmosphere/subgrid_scale_physics/surface" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
@@ -2168,7 +2172,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-tmx"
 source = { editable = "model/atmosphere/subgrid_scale_physics/tmx" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
@@ -2185,7 +2189,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-tracer-advection"
 source = { editable = "model/atmosphere/tracer_advection" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
@@ -2208,7 +2212,7 @@ dependencies = [
 ]
 name = "icon4py-bindings"
 source = { editable = "bindings" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 provides-extras = ["cuda12", "cuda13", "profiling"]
@@ -2255,7 +2259,7 @@ dependencies = [
 ]
 name = "icon4py-common"
 source = { editable = "model/common" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 provides-extras = ["all", "cuda12", "cuda13", "distributed", "io", "rocm7"]
@@ -2355,7 +2359,7 @@ dependencies = [
 ]
 name = "icon4py-driver"
 source = { editable = "model/driver" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
@@ -2389,7 +2393,7 @@ dependencies = [
 ]
 name = "icon4py-testing"
 source = { editable = "model/testing" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
@@ -2416,7 +2420,7 @@ dependencies = [
 ]
 name = "icon4py-tools"
 source = { editable = "tools" }
-version = "0.4.1"
+version = "0.5.0"
 
 [package.metadata]
 provides-extras = ["cuda12", "cuda13", "profiling", "rocm7"]
