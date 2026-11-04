@@ -56,7 +56,7 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     time_control: ProcessTimeControl
     grid: base_grid.Grid
     allocator: gtx_typing.Allocator | None
-    cache: O | None = dataclasses.field(default=None, init=False)
+    _cache: O | None = dataclasses.field(default=None, init=False)
 
     def run(self, input: physics_state.EntryState, output: O) -> O:
         if not self.time_control.is_in_window(input.step_start):
@@ -65,11 +65,11 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
                     field.ndarray[...] = 0.0  # type: ignore[index]
             return output
 
-        if self.time_control.computes_at(input.step_start) or self.cache is None:
+        if self.time_control.computes_at(input.step_start) or self._cache is None:
             self.component.run(self.collect_input(input), output)
-            if self.cache is None:
-                self.cache = fw.allocate(self.component.Output, self.grid, self.allocator)
-            fw.copy(output, self.cache)
+            if self._cache is None:
+                self._cache = fw.allocate(self.component.Output, self.grid, self.allocator)
+            fw.copy(output, self._cache)
         else:
-            fw.copy(self.cache, output)
+            fw.copy(self._cache, output)
         return output
