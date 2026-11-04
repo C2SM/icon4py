@@ -31,8 +31,8 @@ class ProcessTimeControl:
         if self.compute_interval <= datetime.timedelta(0):
             raise ValueError(f"time-control compute_interval must be positive, got {self.compute_interval}")
 
-    def is_in_window(self, simulation_current_datetime: datetime.datetime) -> bool:
-        return self.start_date <= simulation_current_datetime < self.end_date
+    def is_in_window(self, step_start: datetime.datetime) -> bool:
+        return self.start_date <= step_start < self.end_date
 
     def computes_at(self, step_start: datetime.datetime) -> bool:
         """True on a whole number of intervals after `start_date` (AES `isCurrentEventActive`)."""
