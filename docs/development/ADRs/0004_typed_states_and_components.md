@@ -70,7 +70,7 @@ data)`. It subclasses GT4Py's `NdArrayField`, so the stencils and program
 - A `State` is a named, typed record of the values that a `Component` reads or
   writes. In ICON4Py it is a frozen, keyword-only dataclass whose leaves are
   quantity-tagged fields (`Field[Q]`, optionally `| None`) or plain values
-  (e.g. `dtime: float`, `at_first_substep: bool`).
+  (e.g. `at_first_substep: bool`, `ndyn_substeps_var: int`).
 - A `Component` is a `Protocol` of `Input`, `Output` and `run(Input, Output) ->
   Output`. It is a computation (`run`) with a typed interface: it reads one
   `Input` `State` and writes one `Output` `State`. A component that writes
