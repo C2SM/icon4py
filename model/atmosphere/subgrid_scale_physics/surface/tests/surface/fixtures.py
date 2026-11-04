@@ -15,5 +15,6 @@ from icon4py.model.testing.fixtures.datatest import (
     experiment_description,
     grid_savepoint,
     icon_grid,
+    metrics_savepoint,
     process_props,
 )

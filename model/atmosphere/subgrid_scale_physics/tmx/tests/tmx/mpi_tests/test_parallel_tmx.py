@@ -93,6 +93,9 @@ def test_parallel_tmx_run_single_step(
     tendency_state = tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator)
 
     tmx_entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
+    exit_savepoint = data_provider.from_savepoint_tmx_exit(date=date)
+    # the surface exchange coefficients of ICON's surface scheme: the lowest level of km and kh
+    surface_level = dims.KDim(icon_grid.num_levels - 1)
     component.run(
         input_state=construct_input_state(tmx_entry_savepoint),
         surface_flux_state=construct_surface_flux_state(
@@ -100,6 +103,8 @@ def test_parallel_tmx_run_single_step(
             tmx_entry_savepoint,
             allocator=allocator,
         ),
+        surface_exchange_coefficient_momentum=exit_savepoint.km()[surface_level],
+        surface_exchange_coefficient_heat=exit_savepoint.kh()[surface_level],
         diagnostic_state=diagnostic_state,
         tendency_state=tendency_state,
         new_state=tmx_states.TmxNewState.allocate(icon_grid, allocator=allocator),
@@ -110,7 +115,6 @@ def test_parallel_tmx_run_single_step(
     assert_tmx_exit_fields(
         tendency_state=tendency_state,
         diagnostic_state=diagnostic_state,
-        exit_savepoint=data_provider.from_savepoint_tmx_exit(date=date),
-        use_km_const=tmx_config.use_km_const,
+        exit_savepoint=exit_savepoint,
         owner_mask=data_alloc.as_numpy(decomposition_info.owner_mask(dims.CellDim)),
     )
