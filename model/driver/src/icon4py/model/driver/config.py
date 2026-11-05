@@ -187,9 +187,15 @@ class ExperimentConfig(config_io.ConfigWithShared):
     topography: topography.TOPO_CONFIG
     prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig
     driver: DriverConfig
-    #: The output: directory and field groups (see 'icon4py.model.common.io'); without
-    #: this section no output is written.
-    io: common_io.IOConfig | None = None
+    io: typing.Annotated[
+        common_io.IOConfig | None,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Output configuration: the output directory and the field groups (see "
+                "'icon4py.model.common.io'); without it no output is written."
+            ),
+        ),
+    ] = None
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
     tracer_config: tracer_states.TracerConfig | None = None

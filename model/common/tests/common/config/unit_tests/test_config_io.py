@@ -76,7 +76,6 @@ class EndtimeConfig:
     endtime: time.EndOfSimulation
 
 
-# a union of time types of its own: registered independently of ``time.EndOfSimulation``
 type ABS_OR_STEPS = time.AbsoluteTime | time.NumTimeSteps
 config_io.register_time_union(
     ABS_OR_STEPS.__value__, {"absolute": time.AbsoluteTime, "numsteps": time.NumTimeSteps}

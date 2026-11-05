@@ -301,14 +301,7 @@ class NETCDFWriter:
         heights.setncatts(metadata.HEIGHT_ATTRIBUTES)
         global_index = self._create_global_index()
         if self._is_distributed():
-            # Leave define mode on every rank before any rank writes data. A data write
-            # in define mode ends it implicitly, and in parallel mode ending define mode
-            # creates the HDF5 datasets of the variables defined so far -- a collective
-            # operation. Without this the root rank's coordinate writes below would
-            # create the datasets alone, while the other ranks still define the
-            # global-index variables and only reach their (different) collective
-            # creation at their first write: the ranks deadlock or fail with
-            # "NetCDF: HDF error".
+            # collective: leave define mode on all ranks before the root rank writes data
             self.dataset._enddef()
         if self._is_root():
             # fixed-size coordinates, identical on all ranks: one writer suffices
@@ -413,12 +406,7 @@ class NETCDFWriter:
             create_kwargs["chunksizes"] = (1, *middle_chunks, max(horizontal_chunk, 1))
         if self._rank_blocks is not None:
             if self._is_distributed():
-                # every rank writes its whole block, padding included (NaN for
-                # floating dtypes, see _pad_to_block), so no entry of the shared file
-                # is ever left unwritten: skip the library's fill (NC_NOFILL). Parallel
-                # HDF5 allocates the chunks early and would write the fill value into
-                # every one of them, to be overwritten right away -- the file system
-                # saw twice the file size.
+                # every entry of the block is written, padding included: no fill (NC_NOFILL)
                 create_kwargs["fill_value"] = False
             elif np.issubdtype(canonical_slice.dtype, np.floating):
                 # a single writer may leave other ranks' regions unwritten (tests do);

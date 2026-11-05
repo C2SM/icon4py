@@ -30,18 +30,7 @@ __version_info__: Final = pkg_version.parse(__version__)
 
 
 def _disable_mpi4py_auto_initialization() -> None:
-    """Leave the initialization of MPI to icon4py, whatever gets imported first.
-
-    icon4py initializes MPI itself (``decomposition.mpi_decomposition.init_mpi``,
-    funneled). mpi4py's default is to initialize MPI when ``mpi4py.MPI`` is first
-    imported, at the highest thread level -- and that import happens behind the
-    model's back as soon as a netCDF4 built with parallel support is loaded, which
-    the model's own import graph does before ``mpi_decomposition`` runs. The flag is
-    turned off here, before any other module of the model loads, so that it cannot
-    happen in any import order: also in GT4Py's spawned compile workers, which
-    re-import the model's modules and would otherwise join the real ranks' PMI
-    bootstrap and break it.
-    """
+    """Leave MPI initialization to icon4py; see "Parallel netCDF" in the ``io`` docs."""
     try:
         import mpi4py  # noqa: PLC0415 [import-outside-top-level]
     except ImportError:  # serial installation

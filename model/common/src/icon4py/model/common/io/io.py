@@ -42,8 +42,7 @@ log = logging.getLogger(__name__)
 #: A time delta is normalized to a number of steps internally (using the model time step),
 #: so the schedule is always evaluated in steps.
 OutputInterval: TypeAlias = time.RelativeTime | time.NumTimeSteps  # noqa: UP040
-# YAML form, tagged like ``time.EndOfSimulation``: ``{type: numsteps, value: 10}`` or
-# ``{type: relative, value: 30 minutes}``.
+# YAML: ``{type: numsteps, value: 10}`` or ``{type: relative, value: 30 minutes}``.
 config_io.register_time_union(
     OutputInterval, {"relative": time.RelativeTime, "numsteps": time.NumTimeSteps}
 )

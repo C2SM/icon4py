@@ -35,6 +35,13 @@ def grid() -> base.Grid:
     return simple.simple_grid()
 
 
+#: Uniform wind-program inputs: with constant ``vn`` and RBF coefficients the reconstructed
+#: cell winds are the coefficient times ``vn``, summed over the C2E2C2E neighbors.
+VN = 10.0
+RBF_COEFF_C1 = 0.1
+RBF_COEFF_C2 = 0.2
+
+
 class _StubFieldSource:
     """Minimal FieldSource stand-in: serves pre-built fields by name."""
 
@@ -58,11 +65,11 @@ class StubStaticFields:
         )
         self.interpolation = _StubFieldSource(
             {
-                intp_attr.RBF_VEC_COEFF_C1: data_alloc.zero_field(
-                    grid, dims.CellDim, dims.C2E2C2EDim
+                intp_attr.RBF_VEC_COEFF_C1: data_alloc.constant_field(
+                    grid, RBF_COEFF_C1, dims.CellDim, dims.C2E2C2EDim
                 ),
-                intp_attr.RBF_VEC_COEFF_C2: data_alloc.zero_field(
-                    grid, dims.CellDim, dims.C2E2C2EDim
+                intp_attr.RBF_VEC_COEFF_C2: data_alloc.constant_field(
+                    grid, RBF_COEFF_C2, dims.CellDim, dims.C2E2C2EDim
                 ),
             }
         )
@@ -90,8 +97,8 @@ def uniform_prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
     """A thermodynamically plausible uniform state (the zero state gives no pressure)."""
     return prognostics.PrognosticState(
         rho=data_alloc.constant_field(grid, 1.2, dims.CellDim, dims.KDim),
-        w=data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat),
-        vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat),
+        w=data_alloc.constant_field(grid, 0.5, dims.CellDim, dims.KHalfDim),
+        vn=data_alloc.constant_field(grid, VN, dims.EdgeDim, dims.KDim),
         exner=data_alloc.constant_field(grid, 0.95, dims.CellDim, dims.KDim),
         theta_v=data_alloc.constant_field(grid, 300.0, dims.CellDim, dims.KDim),
     )
@@ -135,6 +142,20 @@ def test_diagnostics_computer_returns_only_the_requested_variables(grid: base.Gr
         computer.compute(
             prognostic_state, tracer_states.TracerState(), diagnostic_state, ["temperature"]
         )
+
+
+def test_diagnostics_computer_winds(grid: base.Grid) -> None:
+    """Constant ``vn`` and coefficients: each wind is their product summed over the neighbors."""
+    requested = ["eastward_wind", "northward_wind"]
+    fields = _diagnostics_computer(grid, requested).compute(
+        uniform_prognostic_state(grid),
+        tracer_states.TracerState(),
+        make_diagnostic_state(grid),
+        requested,
+    )
+    neighbors = grid.get_connectivity(dims.C2E2C2E).asnumpy().shape[1]
+    test_utils.assert_dallclose(fields["eastward_wind"].asnumpy(), neighbors * RBF_COEFF_C1 * VN)
+    test_utils.assert_dallclose(fields["northward_wind"].asnumpy(), neighbors * RBF_COEFF_C2 * VN)
 
 
 def test_diagnostics_computer_rejects_unknown_variables(grid: base.Grid) -> None:

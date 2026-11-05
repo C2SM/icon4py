@@ -44,7 +44,7 @@ The IO module is configured with an `IOConfig` holding
 
 A field group is a set of variables written on the same schedule into the same file series; it is configured with
 
-- `output_interval`: the output schedule, given as either a positive integer N (write every N model steps, i.e. every N calls to `store`) or a `datetime.timedelta` (a simulation-time delta, e.g. `timedelta(hours=2)`, must be a multiple of the model time step). A time delta is normalized to a number of steps using the model time step, so the schedule is always evaluated in steps. Defaults to every step. In YAML the interval is tagged like the driver's `end_of_simulation`: `{type: numsteps, value: 10}` or `{type: relative, value: 30 minutes}`.
+- `output_interval`: the output schedule, given as either a positive integer N (write every N model steps, i.e. every N calls to `store`) or a `datetime.timedelta` (a simulation-time delta, e.g. `timedelta(hours=2)`, must be a multiple of the model time step). A time delta is normalized to a number of steps using the model time step, so the schedule is always evaluated in steps. Defaults to every step. In YAML: `{type: numsteps, value: 10}` or `{type: relative, value: 30 minutes}`.
 - `basename`: Base name of the datafiles, without an extension (the backend's extension and a roll-over counter are appended, see `timesteps_per_file`); it may contain a _relative_ path which is appended to the output directory.
 - `timesteps_per_file` (default=10): Number of captured time steps recorded in one file before the next one is started; a value `<= 0` writes all captures of the run into the same file.
 - `variables`: List of variables names to be output. Variable names are the keys of the model state handed to `store` (the CF names of [data.py](../states/data.py), e.g. `exner_function`, `temperature`, or `qv` for a tracer).
@@ -157,6 +157,14 @@ shared netCDF file, which the installed `netCDF4` package must support:
   the steps above -- never by writing corrupt files.
 - **Without a parallel installation**: use the `"zarr"` backend (parallel with any
   installation) or `mode="gather"`.
+- **Implementation notes**: a parallel `netCDF4` imports `mpi4py`, which would initialize
+  MPI on import; `icon4py.model.common` turns that off (`mpi4py.rc.initialize = False`) so
+  that `mpi_decomposition.init_mpi` initializes MPI in any import order, also in GT4Py's
+  compile workers. The writer leaves define mode collectively before any rank writes data,
+  because ending it creates the HDF5 datasets, a collective operation that a single rank's
+  write would otherwise trigger alone (deadlock or "NetCDF: HDF error"). Rank-block
+  variables are created with `fill_value=False` (NC_NOFILL): every entry is written anyway,
+  and parallel HDF5 would otherwise write every chunk twice.
 
 ### Restrictions
 

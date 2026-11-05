@@ -6,43 +6,23 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Unit tests for the driver-side IO bridge (``driver_io``).
+"""Unit tests for the driver-side IO bridge (``driver_io``), data-free on the simple grid."""
 
-These tests are data-free: they use the ``simple_grid`` and a zero-initialised
-``PrognosticState`` so they need no serialized/grid test data.
-"""
-
-import copy
-import dataclasses
 import datetime
 import pathlib
 import uuid
 
-import gt4py.next as gtx
-import numpy as np
 import pytest
-import xarray as xr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
-from icon4py.model.common import dimension as dims, time, type_alias as ta
-from icon4py.model.common.config import config_io
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base, simple, vertical as v_grid
-from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import io as common_io
-from icon4py.model.common.metrics import metrics_attributes as metrics_attr
-from icon4py.model.common.states import (
-    data as state_data,
-    diagnostic_state as diagnostics,
-    model as state_model,
-    prognostic_state as prognostics,
-    tracer_states,
-)
+from icon4py.model.common.states import model as state_model, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import driver_diagnostics, driver_io
-from icon4py.model.testing import test_utils
-from icon4py.model.testing.fixtures import backend
+from icon4py.model.driver import driver_diagnostics, driver_io, driver_output_sources
 
 from ..fixtures import ALL_OUTPUT_VARIABLES
 from .test_driver_diagnostics import (
@@ -50,165 +30,12 @@ from .test_driver_diagnostics import (
     make_diagnostic_state,
     uniform_prognostic_state,
 )
+from .test_driver_output_sources import physics_diagnostics_store, rainfall_outputs
 
 
 @pytest.fixture
 def grid() -> base.Grid:
     return simple.simple_grid()
-
-
-def _make_prognostic_state(
-    grid: base.Grid, allocator: gtx.typing.Backend | None = None
-) -> prognostics.PrognosticState:
-    # Constructed directly (instead of `initialize_prognostic_state`) so it works with
-    # the generic `simple_grid`.
-    def _cell_k() -> gtx.Field:
-        return data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        )
-
-    def _cell_khalf() -> gtx.Field:
-        return data_alloc.zero_field(
-            grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat, allocator=allocator
-        )
-
-    return prognostics.PrognosticState(
-        rho=_cell_k(),
-        w=_cell_khalf(),
-        vn=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        ),
-        exner=_cell_k(),
-        theta_v=_cell_k(),
-    )
-
-
-@pytest.fixture
-def prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
-    return _make_prognostic_state(grid)
-
-
-def _expected(
-    cf_key: str, horizontal_dim: gtx.Dimension, *, vertical_dim: gtx.Dimension = dims.KDim
-) -> state_model.FieldMetaData:
-    """Expected output metadata: the shared CF entry plus the expected dims.
-    ``standard_name``/``units`` come from the shared table rather than being
-    re-spelled here; ``dims`` is stated independently of the production code so
-    the assertions stay a genuine check. A field on interface levels is expected
-    on ``KHalfDim``, which is what decides the netCDF vertical dimension name."""
-    return dataclasses.replace(
-        state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_key],
-        dims=(horizontal_dim, vertical_dim),
-    )
-
-
-#: Expected output metadata per output variable (keyed by CF name).
-_EXPECTED: dict[str, state_model.FieldMetaData] = {
-    "air_density": _expected("air_density", dims.CellDim),
-    "exner_function": _expected("exner_function", dims.CellDim),
-    "virtual_potential_temperature": _expected("virtual_potential_temperature", dims.CellDim),
-    "upward_air_velocity": _expected(
-        "upward_air_velocity", dims.CellDim, vertical_dim=dims.KHalfDim
-    ),
-    "normal_velocity": _expected("normal_velocity", dims.EdgeDim),
-}
-
-#: UGRID dimension names of the horizontal dimensions.
-_UGRID_DIM_NAMES: dict[gtx.Dimension, str] = {
-    dims.CellDim: "cell",
-    dims.EdgeDim: "edge",
-    dims.VertexDim: "vertex",
-}
-
-
-def _horizontal_size(grid: base.Grid, dim: gtx.Dimension) -> int:
-    return {
-        dims.CellDim: grid.num_cells,
-        dims.EdgeDim: grid.num_edges,
-        dims.VertexDim: grid.num_vertices,
-    }[dim]
-
-
-def test_assembles_all_default_variables(
-    prognostic_state: prognostics.PrognosticState, grid: base.Grid
-) -> None:
-    state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-
-    assert set(state.keys()) == set(driver_io.PROGNOSTIC_VARIABLES)
-    for name, da in state.items():
-        assert isinstance(da, xr.DataArray)
-        expected = _EXPECTED[name]
-        assert expected.dims is not None
-        horizontal_dim = next(d for d in expected.dims if d.kind == gtx.DimensionKind.HORIZONTAL)
-        on_half_levels = dims.KHalfDim in expected.dims
-
-        vertical_name = "half_level" if on_half_levels else "level"
-        assert da.dims == (_UGRID_DIM_NAMES[horizontal_dim], vertical_name)
-
-        vertical_size = grid.num_levels + 1 if on_half_levels else grid.num_levels
-        assert da.shape == (_horizontal_size(grid, horizontal_dim), vertical_size)
-
-
-def test_dataarrays_carry_cf_and_ugrid_metadata(
-    prognostic_state: prognostics.PrognosticState,
-) -> None:
-    state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-
-    air_density = state["air_density"]
-    # CF metadata from states.data
-    assert air_density.attrs["standard_name"] == "air_density"
-    assert air_density.attrs["units"] == "kg m-3"
-    # UGRID metadata added by io.utils.to_data_array for the horizontal dimension
-    assert air_density.attrs["location"] == "face"
-    assert air_density.attrs["mesh"] == "mesh"
-    assert air_density.attrs["coordinates"] == "clon clat"
-
-    # edge field gets the edge location mapping
-    assert state["normal_velocity"].attrs["location"] == "edge"
-
-
-def test_does_not_mutate_shared_cf_attributes(
-    prognostic_state: prognostics.PrognosticState,
-) -> None:
-    """`to_data_array` adds UGRID keys to the attrs it is handed; the shared
-    module-level CF attribute table must be left untouched."""
-    before = copy.deepcopy(state_data.PROGNOSTIC_CF_ATTRIBUTES)
-
-    driver_io.prognostic_state_to_dataarrays(prognostic_state)
-
-    assert before == state_data.PROGNOSTIC_CF_ATTRIBUTES
-    # specifically, no UGRID keys reach the attrs the shared table renders
-    for entry in state_data.PROGNOSTIC_CF_ATTRIBUTES.values():
-        rendered = entry.as_dict()
-        assert "location" not in rendered
-        assert "mesh" not in rendered
-        assert "coordinates" not in rendered
-
-
-def test_variables_subset(prognostic_state: prognostics.PrognosticState) -> None:
-    subset = ["air_density", "normal_velocity"]
-    state = driver_io.prognostic_state_to_dataarrays(prognostic_state, variables=subset)
-    assert set(state.keys()) == set(subset)
-
-
-def test_unknown_variable_raises(prognostic_state: prognostics.PrognosticState) -> None:
-    with pytest.raises(ValueError, match="Unknown prognostic output variable"):
-        driver_io.prognostic_state_to_dataarrays(prognostic_state, variables=["not_a_field"])
-
-
-def test_data_is_host_numpy(
-    grid: base.Grid,
-    backend: gtx.typing.Backend | None,
-) -> None:
-    """The buffer handed to the writers must be a host numpy array, not a device array.
-
-    Parameterized on the backend (``--backend``) so that with a GPU backend the inputs
-    really are device buffers and the host transfer is exercised.
-    """
-    prognostic_state = _make_prognostic_state(grid, allocator=backend)
-    state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-    for da in state.values():
-        assert isinstance(da.data, np.ndarray)
 
 
 def test_create_io_monitor_passes_the_io_config(
@@ -257,30 +84,6 @@ def test_create_io_monitor_passes_the_io_config(
     assert recorded["grid_id"] == uuid.UUID(grid.id)
 
 
-# --------------------------------------------------------------------------------------
-# Output state assembly
-# --------------------------------------------------------------------------------------
-
-
-def _metadata(key: str, *field_dims: gtx.Dimension) -> state_model.FieldMetaData:
-    """Precipitation metadata with the dims the physics store allocates its buffer from."""
-    return dataclasses.replace(state_data.PRECIPITATION_CF_ATTRIBUTES[key], dims=field_dims)
-
-
-def _physics_diagnostics(
-    grid: base.Grid, outputs: dict[str, dict[str, state_model.FieldMetaData]]
-) -> physics_state.DiagnosticsStore:
-    """A physics diagnostics store with the given outputs allocated, per process."""
-    store = physics_state.DiagnosticsStore(grid=grid)
-    for process_name, outputs_properties in outputs.items():
-        store.allocate(process_name, outputs_properties)
-    return store
-
-
-def _rainfall_outputs() -> dict[str, dict[str, state_model.FieldMetaData]]:
-    return {"muphys": {"pr": _metadata("rainfall_flux", dims.CellDim, dims.KDim)}}
-
-
 def _io_config(*groups: tuple[str, list[str]]) -> common_io.IOConfig:
     return common_io.IOConfig(
         field_groups=[
@@ -321,48 +124,13 @@ def test_available_variables_include_the_active_tracers(grid: base.Grid) -> None
     assert assembler.available_variables == {*ALL_OUTPUT_VARIABLES, "qv", "qc"}
 
 
-def test_available_variables_include_the_physics_diagnostics(grid: base.Grid) -> None:
+def test_available_variables_include_thephysics_diagnostics_store(grid: base.Grid) -> None:
     assembler = _assembler(
         grid,
         _io_config(("precipitation", ["rainfall_flux"])),
-        physics_diagnostics=_physics_diagnostics(grid, _rainfall_outputs()),
+        physics_diagnostics=physics_diagnostics_store(grid, rainfall_outputs()),
     )
     assert assembler.available_variables == {*ALL_OUTPUT_VARIABLES, "rainfall_flux"}
-
-
-def test_physics_diagnostic_outputs_are_named_by_standard_name(grid: base.Grid) -> None:
-    outputs = driver_io.physics_diagnostic_outputs(_physics_diagnostics(grid, _rainfall_outputs()))
-    assert set(outputs) == {"rainfall_flux"}
-    assert outputs["rainfall_flux"].name == "pr"
-    assert outputs["rainfall_flux"].process_name == "muphys"
-
-
-def test_physics_diagnostic_outputs_include_surface_fields(grid: base.Grid) -> None:
-    # a purely horizontal (surface) output is offered like the others
-    outputs = driver_io.physics_diagnostic_outputs(
-        _physics_diagnostics(
-            grid,
-            {
-                "muphys": {
-                    "pr": _metadata("rainfall_flux", dims.CellDim, dims.KDim),
-                    "pr_sfc": _metadata("precipitation_flux", dims.CellDim),
-                }
-            },
-        )
-    )
-    assert set(outputs) == {"rainfall_flux", "precipitation_flux"}
-    assert outputs["precipitation_flux"].field.domain.dims == (dims.CellDim,)
-
-
-def test_physics_diagnostic_outputs_without_physics_are_empty() -> None:
-    assert driver_io.physics_diagnostic_outputs(None) == {}
-
-
-def test_duplicate_physics_diagnostic_names_raise(grid: base.Grid) -> None:
-    rainfall = _metadata("rainfall_flux", dims.CellDim, dims.KDim)
-    store = _physics_diagnostics(grid, {"muphys": {"pr": rainfall}, "graupel": {"rain": rainfall}})
-    with pytest.raises(ValueError, match="more than one process: muphys, graupel"):
-        driver_io.physics_diagnostic_outputs(store)
 
 
 def test_validate_output_variables_rejects_unknown_names() -> None:
@@ -383,8 +151,8 @@ def test_validate_output_variables_rejects_ambiguous_names_only_when_requested(
     )
     sources = driver_io.output_variable_sources(
         tracer_config=None,
-        physics_outputs=driver_io.physics_diagnostic_outputs(
-            _physics_diagnostics(grid, {"muphys": {"rho": clashing}})
+        physics_outputs=driver_output_sources.physics_diagnostic_outputs(
+            physics_diagnostics_store(grid, {"muphys": {"rho": clashing}})
         ),
     )
     assert sources["air_density"] == ["prognostic", "physics"]
@@ -412,7 +180,7 @@ def test_assembler_assembles_only_the_requested_variables(grid: base.Grid) -> No
             ("moisture", ["qv", "rainfall_flux"]),
         ),
         tracer_config=tracer_states.TracerConfig(qv=True),
-        physics_diagnostics=_physics_diagnostics(grid, _rainfall_outputs()),
+        physics_diagnostics=physics_diagnostics_store(grid, rainfall_outputs()),
     )
 
     diagnostic_state = make_diagnostic_state(grid)
@@ -444,22 +212,3 @@ def test_assembler_builds_no_diagnostics_computer_without_diagnostics(
 
     monkeypatch.setattr(driver_diagnostics, "DiagnosticsComputer", _Unexpected)
     _assembler(grid, _io_config(("prognostics", ["air_density", "normal_velocity"])))
-
-
-def test_tracer_state_to_dataarrays(grid: base.Grid, backend: gtx.typing.Backend | None) -> None:
-    tracer_state = tracer_states.TracerState(
-        qv=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend)
-    )
-
-    state = driver_io.tracer_state_to_dataarrays(tracer_state, ["qv"])
-
-    assert set(state) == {"qv"}
-    assert state["qv"].dims == ("cell", "level")
-    assert state["qv"].attrs["standard_name"] == "specific_humidity"
-    assert state["qv"].attrs["location"] == "face"
-    # host numpy, also from a device buffer
-    assert isinstance(state["qv"].data, np.ndarray)
-    with pytest.raises(ValueError, match="'qc' is not active"):
-        driver_io.tracer_state_to_dataarrays(tracer_state, ["qc"])
-    with pytest.raises(ValueError, match="Unknown tracer output variable 'foo'"):
-        driver_io.tracer_state_to_dataarrays(tracer_state, ["foo"])

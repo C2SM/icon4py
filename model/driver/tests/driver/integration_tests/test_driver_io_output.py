@@ -29,7 +29,12 @@ from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.states import tracer_states
-from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
+from icon4py.model.driver import (
+    config as driver_config,
+    driver,
+    driver_output_sources,
+    driver_utils,
+)
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 
 from ..fixtures import *  # noqa: F403
@@ -153,7 +158,7 @@ def test_driver_writes_configured_field_groups(
                 ),
                 common_io.FieldGroupIOConfig(
                     basename="prognostics",
-                    variables=list(driver_io.PROGNOSTIC_VARIABLES),
+                    variables=list(driver_output_sources.PROGNOSTIC_VARIABLES),
                     backend=common_io.OutputBackend.NETCDF,
                     mode=common_io.OutputMode.GATHER,
                 ),
@@ -168,7 +173,7 @@ def test_driver_writes_configured_field_groups(
     # the winds every second step: the initial state and step 2
     with _open_output(_find_one(tmp_path, "winds_*.nc"), common_io.OutputBackend.NETCDF) as ds:
         assert {"eastward_wind", "northward_wind", "surface_pressure"} <= set(ds.variables)
-        assert not set(driver_io.PROGNOSTIC_VARIABLES) & set(ds.variables)
+        assert not set(driver_output_sources.PROGNOSTIC_VARIABLES) & set(ds.variables)
         assert "temperature" not in ds.variables
         assert ds.sizes["time"] == 2
         # the surface pressure is a purely horizontal field
@@ -178,8 +183,8 @@ def test_driver_writes_configured_field_groups(
     with _open_output(
         _find_one(tmp_path, "prognostics_*.nc"), common_io.OutputBackend.NETCDF
     ) as ds:
-        assert set(driver_io.PROGNOSTIC_VARIABLES) <= set(ds.variables)
-        assert "eastward_wind" not in ds.variables
+        assert set(driver_output_sources.PROGNOSTIC_VARIABLES) <= set(ds.variables)
+        assert {"eastward_wind", "northward_wind", "surface_pressure"}.isdisjoint(ds.variables)
         assert ds.sizes["time"] == 3
 
 
