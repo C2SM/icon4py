@@ -44,21 +44,6 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-__all__ = ["PhysicsDriver"]
-
-
-def _present[Q: quantity.Quantity](field: fw.Field[Q] | None) -> fw.Field[Q]:
-    """A tracer leaf the physics requires."""
-    if field is None:
-        raise ValueError("physics requires all moisture species active in the TracerState")
-    return field
-
-
-def _array(field: fw.Field[Any]) -> Any:
-    # NDArrayObject declares no __setitem__
-    return field.ndarray
-
-
 class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"]):
     """
     Runs the physics processes under parallel coupling (ICON AES's aes_phy_main).
@@ -236,6 +221,13 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self._apply(entry, self.dtime.total_seconds(), output)
         return output
 
+    @staticmethod
+    def _require_tracer[Q: quantity.Quantity](field: fw.Field[Q] | None) -> fw.Field[Q]:
+        """A tracer leaf the physics requires."""
+        if field is None:
+            raise ValueError("physics requires all moisture species active in the TracerState")
+        return field
+
     # NOTE: temporary, components MWE parts 04 (recipes) and 05 (derived inputs): the
     # diagnostics become recipes, which the processes define on their `Input`, and `_diagnose` goes.
     def _diagnose(self, input: Input) -> physics_state.EntryState:
@@ -253,12 +245,12 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             exner=input.exner,
             theta_v=input.theta_v,
             rho=input.rho,
-            qv=_present(input.qv),
-            qc=_present(input.qc),
-            qi=_present(input.qi),
-            qr=_present(input.qr),
-            qs=_present(input.qs),
-            qg=_present(input.qg),
+            qv=self._require_tracer(input.qv),
+            qc=self._require_tracer(input.qc),
+            qi=self._require_tracer(input.qi),
+            qr=self._require_tracer(input.qr),
+            qs=self._require_tracer(input.qs),
+            qg=self._require_tracer(input.qg),
             temperature=diagnostics.temperature,
             virtual_temperature=diagnostics.virtual_temperature,
             pressure=diagnostics.pressure,
@@ -298,7 +290,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     # `_zero_accumulators`, `_accumulate` and `_apply` with the updates each process declares.
     def _zero_accumulators(self) -> None:
         for accumulator in self.accumulators.values():
-            _array(accumulator)[...] = 0.0
+            accumulator.ndarray[...] = 0.0  # type: ignore[index]
 
     def _accumulate(self, output: fw.State) -> None:
         """
@@ -311,7 +303,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
                 accumulator = self.accumulators[name] = fw.zeros(
                     field.quantity, self.grid, self.allocator
                 )
-            _array(accumulator)[...] += field.ndarray
+            accumulator.ndarray[...] += field.ndarray  # type: ignore[index]
 
     @staticmethod
     def _continue_in_place(entry: physics_state.EntryState, output: Output) -> None:
@@ -319,7 +311,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         for name, target in fw.fields(output).items():
             source: fw.Field[Any] = getattr(entry, name)
             if target.ndarray is not source.ndarray:
-                _array(target)[...] = source.ndarray
+                target.ndarray[...] = source.ndarray  # type: ignore[index]
 
     def _apply(self, entry: physics_state.EntryState, dt_seconds: float, output: Output) -> None:
         """
@@ -335,7 +327,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         # 1. tracers: q += dt * sum of the tendencies (mo_interface_iconam_aes:513)
         for name in states.TRACERS:
             if (tendency := acc.get(f"tend_{name}")) is not None:
-                tracer = _present(getattr(output, name))
+                tracer = self._require_tracer(getattr(output, name))
                 self._apply_tendency(
                     field_a=tracer, coeff=dt_seconds, field_b=tendency, output_field=tracer
                 )
@@ -351,12 +343,12 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             )
             self._compute_virtual_temperature_tendency(
                 dtime=dt_seconds,
-                qv=_present(output.qv),
-                qc=_present(output.qc),
-                qi=_present(output.qi),
-                qr=_present(output.qr),
-                qs=_present(output.qs),
-                qg=_present(output.qg),
+                qv=self._require_tracer(output.qv),
+                qc=self._require_tracer(output.qc),
+                qi=self._require_tracer(output.qi),
+                qr=self._require_tracer(output.qr),
+                qs=self._require_tracer(output.qs),
+                qg=self._require_tracer(output.qg),
                 temperature=self._new_temperature,
                 virtual_temperature=entry.virtual_temperature,
                 virtual_temperature_tendency=self._virtual_temperature_tendency,
