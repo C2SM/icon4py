@@ -122,10 +122,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self.dtime = dtime
         self.grid = grid
         self.allocator = model_backends.get_allocator(backend)
-        self.processes = tuple(processes)
         self._process_outputs: dict[physics_process.PhysicsProcess[Any, Any], fw.State] = {
-            process: fw.allocate(process.Output, self.grid, self.allocator)
-            for process in self.processes
+            process: fw.allocate(process.Output, self.grid, self.allocator) for process in processes
         }
         # the diagnostics the processes read, derived here each step
         self.diagnostics = fw.allocate(states.Diagnostics, grid, self.allocator)
