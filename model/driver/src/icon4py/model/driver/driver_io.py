@@ -22,7 +22,7 @@ from typing import Any, Final
 
 import xarray as xr
 
-from icon4py.model.common import framework as fw, quantity, time
+from icon4py.model.common import field, framework as fw, quantity, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
@@ -83,16 +83,16 @@ class IOMonitor(fw.Component["IOMonitor.Input", fw.Empty]):
     # the configured variables, looked up among the quantities, instead of declaring everything
     # IO could write and filtering it through `_VARIABLE_NAMES`.
     class Input(fw.State):
-        rho: fw.Field[qty.RhoOnCellK]
-        exner: fw.Field[qty.ExnerOnCellK]
-        theta_v: fw.Field[qty.ThetaVOnCellK]
-        w: fw.Field[qty.WOnCellKHalf]
-        vn: fw.Field[qty.VnOnEdgeK]
-        u: fw.Field[qty.UOnCellK]
-        v: fw.Field[qty.VOnCellK]
-        temperature: fw.Field[qty.TemperatureOnCellK]
-        virtual_temperature: fw.Field[qty.VirtualTemperatureOnCellK]
-        pressure: fw.Field[qty.PressureOnCellK]
+        rho: field.Field[qty.RhoOnCellK]
+        exner: field.Field[qty.ExnerOnCellK]
+        theta_v: field.Field[qty.ThetaVOnCellK]
+        w: field.Field[qty.WOnCellKHalf]
+        vn: field.Field[qty.VnOnEdgeK]
+        u: field.Field[qty.UOnCellK]
+        v: field.Field[qty.VOnCellK]
+        temperature: field.Field[qty.TemperatureOnCellK]
+        virtual_temperature: field.Field[qty.VirtualTemperatureOnCellK]
+        pressure: field.Field[qty.PressureOnCellK]
         simulation_time: datetime.datetime
 
     Output = fw.Empty
@@ -117,9 +117,9 @@ class IOMonitor(fw.Component["IOMonitor.Input", fw.Empty]):
         state: dict[str, xr.DataArray] = {}
         if self.writer.at_capture_time():
             for name, leaf in self.selected.items():
-                field: fw.Field[Any] = getattr(input, leaf)
+                field_: field.Field[Any] = getattr(input, leaf)
                 state[name] = io_utils.to_data_array(
-                    field, _attributes(field.quantity), to_host=True
+                    field_, _attributes(field_.quantity), to_host=True
                 )
         self.writer.store(state, input.simulation_time)
         return output if output is not None else fw.Empty()

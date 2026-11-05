@@ -14,7 +14,7 @@ import pytest
 
 from icon4py.bindings import common as wrapper_common, diffusion_wrapper
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common import dimension as dims, framework as fw
+from icon4py.model.common import dimension as dims, field, framework as fw
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.testing import definitions as test_defs, test_utils as testing_test_utils
@@ -138,12 +138,12 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
         w=expected_prognostic_state.w,
         exner=expected_prognostic_state.exner,
         theta_v=expected_prognostic_state.theta_v,
-        hdef_ic=fw.Field(
+        hdef_ic=field.Field(
             qty.HorizontalWindDeformationOnCellKHalf, savepoint_diffusion_init.hdef_ic()
         ),
-        div_ic=fw.Field(qty.DivergenceOnCellKHalf, savepoint_diffusion_init.div_ic()),
-        dwdx=fw.Field(qty.ZonalGradientOfWOnCellKHalf, savepoint_diffusion_init.dwdx()),
-        dwdy=fw.Field(qty.MeridionalGradientOfWOnCellKHalf, savepoint_diffusion_init.dwdy()),
+        div_ic=field.Field(qty.DivergenceOnCellKHalf, savepoint_diffusion_init.div_ic()),
+        dwdx=field.Field(qty.ZonalGradientOfWOnCellKHalf, savepoint_diffusion_init.dwdx()),
+        dwdy=field.Field(qty.MeridionalGradientOfWOnCellKHalf, savepoint_diffusion_init.dwdy()),
     )
     expected_config = experiment.config.diffusion
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)

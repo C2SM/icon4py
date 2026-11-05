@@ -30,6 +30,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_trace
 )
 from icon4py.model.common import (
     dimension as dims,
+    field,
     field_type_aliases as fa,
     framework as fw,
     model_backends,
@@ -132,31 +133,31 @@ class Advection(fw.Component, ABC):
     _exchange: decomposition.ExchangeRuntime
 
     class Input(fw.State):
-        qv: fw.Field[qty.QvOnCellK] | None = None
-        qc: fw.Field[qty.QcOnCellK] | None = None
-        qi: fw.Field[qty.QiOnCellK] | None = None
-        qr: fw.Field[qty.QrOnCellK] | None = None
-        qs: fw.Field[qty.QsOnCellK] | None = None
-        qg: fw.Field[qty.QgOnCellK] | None = None
+        qv: field.Field[qty.QvOnCellK] | None = None
+        qc: field.Field[qty.QcOnCellK] | None = None
+        qi: field.Field[qty.QiOnCellK] | None = None
+        qr: field.Field[qty.QrOnCellK] | None = None
+        qs: field.Field[qty.QsOnCellK] | None = None
+        qg: field.Field[qty.QgOnCellK] | None = None
         #: mass of air in the layer at the beginning and the end of the time step
-        airmass_now: fw.Field[qty.AirMassOnCellK]
-        airmass_new: fw.Field[qty.AirMassOnCellK]
-        grf_tend_tracer: fw.Field[qty.GrfTendencyOfTracerOnCellK]
+        airmass_now: field.Field[qty.AirMassOnCellK]
+        airmass_new: field.Field[qty.AirMassOnCellK]
+        grf_tend_tracer: field.Field[qty.GrfTendencyOfTracerOnCellK]
         #: the fluxes the dycore accumulated over its substeps
-        vn_traj: fw.Field[qty.VnOnEdgeK]
-        mass_flx_me: fw.Field[qty.HorizontalMassFluxOnEdgeK]
-        mass_flx_ic: fw.Field[qty.VerticalMassFluxOnCellKHalf]
+        vn_traj: field.Field[qty.VnOnEdgeK]
+        mass_flx_me: field.Field[qty.HorizontalMassFluxOnEdgeK]
+        mass_flx_ic: field.Field[qty.VerticalMassFluxOnCellKHalf]
         dtime: float
 
     class Output(fw.State):
-        qv: fw.Field[qty.QvOnCellK] | None = None
-        qc: fw.Field[qty.QcOnCellK] | None = None
-        qi: fw.Field[qty.QiOnCellK] | None = None
-        qr: fw.Field[qty.QrOnCellK] | None = None
-        qs: fw.Field[qty.QsOnCellK] | None = None
-        qg: fw.Field[qty.QgOnCellK] | None = None
-        hfl_tracer: fw.Field[qty.HorizontalTracerFluxOnEdgeK]
-        vfl_tracer: fw.Field[qty.VerticalTracerFluxOnCellKHalf]
+        qv: field.Field[qty.QvOnCellK] | None = None
+        qc: field.Field[qty.QcOnCellK] | None = None
+        qi: field.Field[qty.QiOnCellK] | None = None
+        qr: field.Field[qty.QrOnCellK] | None = None
+        qs: field.Field[qty.QsOnCellK] | None = None
+        qg: field.Field[qty.QgOnCellK] | None = None
+        hfl_tracer: field.Field[qty.HorizontalTracerFluxOnEdgeK]
+        vfl_tracer: field.Field[qty.VerticalTracerFluxOnCellKHalf]
 
     def __init__(self, grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator | None) -> None:
         self.grid = grid

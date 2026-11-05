@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import copy
 import dataclasses
-import pickle
 from typing import Any
 
 import gt4py.next as gtx
@@ -17,41 +15,43 @@ import pytest
 
 from icon4py.model.common import (
     dimension as dims,
+    field,
     field_type_aliases as fa,
     framework as fw,
     quantity,
     type_alias as ta,
     utils as common_utils,
 )
-from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.common.grid import base as base_grid
 
-from tests.common.unit_tests.utils import CELL_K, Pressure, Salt, TendencyOfPressure, Vt
+from tests.common.fixtures import grid
+from tests.common.unit_tests.utils import Pressure, Salt, TendencyOfPressure, Vt
 
 
 class Column(fw.State):
-    pressure: fw.Field[Pressure]
-    salt: fw.Field[Salt]
+    pressure: field.Field[Pressure]
+    salt: field.Field[Salt]
     dtime: float
 
 
 class Tracers(fw.State):
-    pressure: fw.Field[Pressure]
-    salt: fw.Field[Salt] | None = None
-    vt: fw.Field[Vt] | None = None
+    pressure: field.Field[Pressure]
+    salt: field.Field[Salt] | None = None
+    vt: field.Field[Vt] | None = None
 
 
 class Budget(fw.State):
-    pressure: fw.Field[Pressure]
-    tend_pressure: fw.Field[TendencyOfPressure]
-    salt: fw.Field[Salt] | None = None
+    pressure: field.Field[Pressure]
+    tend_pressure: field.Field[TendencyOfPressure]
+    salt: field.Field[Salt] | None = None
 
 
 class Halve(fw.Component["Halve.Input", "Halve.Output"]):
     class Input(fw.State):
-        pressure: fw.Field[Pressure]
+        pressure: field.Field[Pressure]
 
     class Output(fw.State):
-        pressure: fw.Field[Pressure]
+        pressure: field.Field[Pressure]
 
     def run(self, input: Input, output: Output) -> Output:
         np.asarray(output.pressure.ndarray)[...] = 0.5 * np.asarray(input.pressure.ndarray)
@@ -67,56 +67,6 @@ class Double:
     def run(self, inputs: Halve.Input, outputs: Halve.Output) -> Halve.Output:
         np.asarray(outputs.pressure.ndarray)[...] = 2.0 * np.asarray(inputs.pressure.ndarray)
         return outputs
-
-
-@pytest.fixture
-def grid() -> base_grid.Grid:
-    return simple.simple_grid()
-
-
-def test_field_keeps_its_quantity(grid: base_grid.Grid) -> None:
-    pressure = fw.zeros(Pressure, grid, allocator=None)
-    assert pressure.quantity is Pressure
-    assert pressure.ndarray.shape == (grid.num_cells, grid.num_levels)
-    assert pressure.domain.dims == CELL_K
-
-
-def test_field_is_the_gt4py_field_it_tags(grid: base_grid.Grid) -> None:
-    data = gtx.zeros({dims.CellDim: grid.num_cells, dims.KDim: grid.num_levels}, dtype=ta.wpfloat)
-    pressure = fw.Field(Pressure, data)
-    assert isinstance(pressure, gtx.Field)
-    assert pressure.ndarray is data.ndarray and pressure.domain == data.domain
-    retagged = fw.Field(Pressure, pressure)
-    assert retagged.quantity is Pressure and retagged.ndarray is data.ndarray
-
-
-def test_fields_derived_from_a_field_are_untagged(grid: base_grid.Grid) -> None:
-    pressure = fw.zeros(Pressure, grid, allocator=None)
-    assert not isinstance(pressure + 1.0, fw.Field)
-    assert not isinstance(pressure[dims.CellDim(0) : dims.CellDim(2)], fw.Field)
-
-
-@gtx.field_operator
-def _double(field: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
-    return 2.0 * field
-
-
-def test_a_program_takes_a_field_as_is(grid: base_grid.Grid) -> None:
-    pressure = fw.zeros(Pressure, grid, allocator=None)
-    doubled = fw.zeros(Pressure, grid, allocator=None)
-    np.asarray(pressure.ndarray)[...] = 3.0
-    _double(pressure, out=doubled, offset_provider={})
-    assert np.all(np.asarray(doubled.ndarray) == 6.0)
-
-
-def test_field_copies_keep_the_quantity(grid: base_grid.Grid) -> None:
-    pressure = fw.zeros(Pressure, grid, allocator=None)
-    for copied in (
-        copy.copy(pressure),
-        copy.deepcopy(pressure),
-        pickle.loads(pickle.dumps(pressure)),
-    ):
-        assert isinstance(copied, fw.Field) and copied.quantity is Pressure
 
 
 def test_zeros_resolves_the_precision_at_allocation(
@@ -193,8 +143,8 @@ def test_optional_leaves_are_skipped_when_absent(grid: base_grid.Grid) -> None:
 
 def test_allocate_follows_the_declared_dims(grid: base_grid.Grid) -> None:
     class Fields(fw.State):
-        pressure: fw.Field[Pressure]
-        salt: fw.Field[Salt]
+        pressure: field.Field[Pressure]
+        salt: field.Field[Salt]
 
     fields = fw.allocate(Fields, grid, allocator=None, fill=lambda name, shape: float(len(name)))
     assert fields.pressure.ndarray.shape == (grid.num_cells, grid.num_levels)
@@ -208,7 +158,7 @@ def test_allocate_fill_is_written_on_the_leaf_without_a_host_conversion(
     """A device buffer refuses `np.asarray`; the fill value is assigned on the buffer itself."""
 
     class Fields(fw.State):
-        salt: fw.Field[Salt]
+        salt: field.Field[Salt]
 
     def refuse(*args: Any, **kwargs: Any) -> Any:
         raise TypeError("Implicit conversion to a NumPy array is not allowed")
@@ -269,8 +219,8 @@ def test_pairs_swap(grid: base_grid.Grid) -> None:
 
 # What mypy checks: a quantity mismatch is a type error. Each ignore below is
 # required (an unused one is reported), so type-checking this module is the test.
-def static_checks(pressure: fw.Field[Pressure], salt: fw.Field[Salt]) -> None:
-    wrong: fw.Field[Pressure] = salt  # type: ignore[assignment]
+def static_checks(pressure: field.Field[Pressure], salt: field.Field[Salt]) -> None:
+    wrong: field.Field[Pressure] = salt  # type: ignore[assignment]
     Halve.Input(pressure=salt)  # type: ignore[arg-type]
     Halve.Input(pressure=pressure)
     del wrong

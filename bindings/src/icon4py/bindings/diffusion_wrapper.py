@@ -44,12 +44,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import (
-    dimension as dims,
-    field_type_aliases as fa,
-    framework as fw,
-    model_backends,
-)
+from icon4py.model.common import dimension as dims, field, field_type_aliases as fa, model_backends
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.type_alias import wpfloat
 
@@ -293,10 +288,10 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=w.dtype)
     # the prognostics are diffused in place in ICON's buffers
     input = Diffusion.Input(
-        vn=fw.Field(qty.VnOnEdgeK, vn),
-        w=fw.Field(qty.WOnCellKHalf, w),
-        exner=fw.Field(qty.ExnerOnCellK, exner),
-        theta_v=fw.Field(qty.ThetaVOnCellK, theta_v),
+        vn=field.Field(qty.VnOnEdgeK, vn),
+        w=field.Field(qty.WOnCellKHalf, w),
+        exner=field.Field(qty.ExnerOnCellK, exner),
+        theta_v=field.Field(qty.ThetaVOnCellK, theta_v),
         dtime=dtime,
         initial_run=linit,
     )
@@ -305,9 +300,9 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
         w=input.w,
         exner=input.exner,
         theta_v=input.theta_v,
-        hdef_ic=fw.Field(qty.HorizontalWindDeformationOnCellKHalf, hdef_ic),
-        div_ic=fw.Field(qty.DivergenceOnCellKHalf, div_ic),
-        dwdx=fw.Field(qty.ZonalGradientOfWOnCellKHalf, dwdx),
-        dwdy=fw.Field(qty.MeridionalGradientOfWOnCellKHalf, dwdy),
+        hdef_ic=field.Field(qty.HorizontalWindDeformationOnCellKHalf, hdef_ic),
+        div_ic=field.Field(qty.DivergenceOnCellKHalf, div_ic),
+        dwdx=field.Field(qty.ZonalGradientOfWOnCellKHalf, dwdx),
+        dwdy=field.Field(qty.MeridionalGradientOfWOnCellKHalf, dwdy),
     )
     granule.diffusion.run(input=input, output=output)

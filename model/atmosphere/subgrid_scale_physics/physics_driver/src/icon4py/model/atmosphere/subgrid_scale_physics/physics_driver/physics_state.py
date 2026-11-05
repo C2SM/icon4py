@@ -8,7 +8,7 @@
 
 """What the physics driver offers its processes each step."""
 
-from icon4py.model.common import framework as fw, time
+from icon4py.model.common import field, framework as fw, time
 from icon4py.model.common.framework import quantities as qty
 
 
@@ -27,21 +27,21 @@ class EntryState(fw.State):
     `step_start`.
     """
 
-    vn: fw.Field[qty.VnOnEdgeK]
-    w: fw.Field[qty.WOnCellKHalf]
-    exner: fw.Field[qty.ExnerOnCellK]
-    theta_v: fw.Field[qty.ThetaVOnCellK]
-    rho: fw.Field[qty.RhoOnCellK]
-    qv: fw.Field[qty.QvOnCellK]
-    qc: fw.Field[qty.QcOnCellK]
-    qi: fw.Field[qty.QiOnCellK]
-    qr: fw.Field[qty.QrOnCellK]
-    qs: fw.Field[qty.QsOnCellK]
-    qg: fw.Field[qty.QgOnCellK]
-    temperature: fw.Field[qty.TemperatureOnCellK]
-    virtual_temperature: fw.Field[qty.VirtualTemperatureOnCellK]
-    pressure: fw.Field[qty.PressureOnCellK]
-    pressure_ifc: fw.Field[qty.PressureOnCellKHalf]
-    u: fw.Field[qty.UOnCellK]
-    v: fw.Field[qty.VOnCellK]
+    vn: field.Field[qty.VnOnEdgeK]
+    w: field.Field[qty.WOnCellKHalf]
+    exner: field.Field[qty.ExnerOnCellK]
+    theta_v: field.Field[qty.ThetaVOnCellK]
+    rho: field.Field[qty.RhoOnCellK]
+    qv: field.Field[qty.QvOnCellK]
+    qc: field.Field[qty.QcOnCellK]
+    qi: field.Field[qty.QiOnCellK]
+    qr: field.Field[qty.QrOnCellK]
+    qs: field.Field[qty.QsOnCellK]
+    qg: field.Field[qty.QgOnCellK]
+    temperature: field.Field[qty.TemperatureOnCellK]
+    virtual_temperature: field.Field[qty.VirtualTemperatureOnCellK]
+    pressure: field.Field[qty.PressureOnCellK]
+    pressure_ifc: field.Field[qty.PressureOnCellKHalf]
+    u: field.Field[qty.UOnCellK]
+    v: field.Field[qty.VOnCellK]
     step_start: time.AbsoluteTime

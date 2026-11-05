@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_process,
     physics_state,
 )
-from icon4py.model.common import framework as fw
+from icon4py.model.common import field, framework as fw
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base as base_grid, simple
 
@@ -42,23 +42,23 @@ from .utils import (
 class MoistOutput(fw.State):
     """A process output with a tendency and a diagnostic."""
 
-    tend_qv: fw.Field[qty.TendencyOfQvOnCellK]
-    pflx: fw.Field[qty.PrecipitationFluxOnCellK]
+    tend_qv: field.Field[qty.TendencyOfQvOnCellK]
+    pflx: field.Field[qty.PrecipitationFluxOnCellK]
 
 
 class ThermoOutput(fw.State):
-    tend_qv: fw.Field[qty.TendencyOfQvOnCellK]
-    tend_temperature: fw.Field[qty.TendencyOfTemperatureOnCellK]
-    tend_w: fw.Field[qty.TendencyOfWOnCellKHalf]
+    tend_qv: field.Field[qty.TendencyOfQvOnCellK]
+    tend_temperature: field.Field[qty.TendencyOfTemperatureOnCellK]
+    tend_w: field.Field[qty.TendencyOfWOnCellKHalf]
 
 
 class WindOutput(fw.State):
-    tend_u: fw.Field[qty.TendencyOfUOnCellK]
-    tend_v: fw.Field[qty.TendencyOfVOnCellK]
+    tend_u: field.Field[qty.TendencyOfUOnCellK]
+    tend_v: field.Field[qty.TendencyOfVOnCellK]
 
 
 class LoneWindOutput(fw.State):
-    tend_u: fw.Field[qty.TendencyOfUOnCellK]
+    tend_u: field.Field[qty.TendencyOfUOnCellK]
 
 
 @pytest.fixture

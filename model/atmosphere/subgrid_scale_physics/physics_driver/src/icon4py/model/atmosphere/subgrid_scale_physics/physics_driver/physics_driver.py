@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
 )
 from icon4py.model.common import (
     dimension as dims,
+    field,
     framework as fw,
     model_backends,
     model_options,
@@ -63,31 +64,31 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     """
 
     class Input(fw.State):
-        vn: fw.Field[qty.VnOnEdgeK]
-        w: fw.Field[qty.WOnCellKHalf]
-        exner: fw.Field[qty.ExnerOnCellK]
-        theta_v: fw.Field[qty.ThetaVOnCellK]
-        rho: fw.Field[qty.RhoOnCellK]
-        qv: fw.Field[qty.QvOnCellK] | None = None
-        qc: fw.Field[qty.QcOnCellK] | None = None
-        qi: fw.Field[qty.QiOnCellK] | None = None
-        qr: fw.Field[qty.QrOnCellK] | None = None
-        qs: fw.Field[qty.QsOnCellK] | None = None
-        qg: fw.Field[qty.QgOnCellK] | None = None
+        vn: field.Field[qty.VnOnEdgeK]
+        w: field.Field[qty.WOnCellKHalf]
+        exner: field.Field[qty.ExnerOnCellK]
+        theta_v: field.Field[qty.ThetaVOnCellK]
+        rho: field.Field[qty.RhoOnCellK]
+        qv: field.Field[qty.QvOnCellK] | None = None
+        qc: field.Field[qty.QcOnCellK] | None = None
+        qi: field.Field[qty.QiOnCellK] | None = None
+        qr: field.Field[qty.QrOnCellK] | None = None
+        qs: field.Field[qty.QsOnCellK] | None = None
+        qg: field.Field[qty.QgOnCellK] | None = None
         # the end of the step being integrated
         simulation_current_datetime: time.AbsoluteTime
 
     class Output(fw.State):
-        vn: fw.Field[qty.VnOnEdgeK]
-        w: fw.Field[qty.WOnCellKHalf]
-        exner: fw.Field[qty.ExnerOnCellK]
-        theta_v: fw.Field[qty.ThetaVOnCellK]
-        qv: fw.Field[qty.QvOnCellK] | None = None
-        qc: fw.Field[qty.QcOnCellK] | None = None
-        qi: fw.Field[qty.QiOnCellK] | None = None
-        qr: fw.Field[qty.QrOnCellK] | None = None
-        qs: fw.Field[qty.QsOnCellK] | None = None
-        qg: fw.Field[qty.QgOnCellK] | None = None
+        vn: field.Field[qty.VnOnEdgeK]
+        w: field.Field[qty.WOnCellKHalf]
+        exner: field.Field[qty.ExnerOnCellK]
+        theta_v: field.Field[qty.ThetaVOnCellK]
+        qv: field.Field[qty.QvOnCellK] | None = None
+        qc: field.Field[qty.QcOnCellK] | None = None
+        qi: field.Field[qty.QiOnCellK] | None = None
+        qr: field.Field[qty.QrOnCellK] | None = None
+        qs: field.Field[qty.QsOnCellK] | None = None
+        qg: field.Field[qty.QgOnCellK] | None = None
 
     def __init__(
         self,
@@ -113,7 +114,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         # the diagnostics the processes read, derived here each step
         self.diagnostics = fw.allocate(states.Diagnostics, grid, self.allocator)
         # one sum per tendency the processes emit, by output name, made when first seen
-        self.accumulators: dict[str, fw.Field[Any]] = {}
+        self.accumulators: dict[str, field.Field[Any]] = {}
 
         cells = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_cells)}
         edges = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_edges)}
@@ -222,7 +223,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         return output
 
     @staticmethod
-    def _require_tracer[Q: quantity.Quantity](field: fw.Field[Q] | None) -> fw.Field[Q]:
+    def _require_tracer[Q: quantity.Quantity](field: field.Field[Q] | None) -> field.Field[Q]:
         """A tracer leaf the physics requires."""
         if field is None:
             raise ValueError("physics requires all moisture species active in the TracerState")
@@ -298,18 +299,18 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
 
         Element-wise with no neighbour access, so a plain array operation rather than a stencil.
         """
-        for name, field in fw.fields(output, kind=quantity.Tendency).items():
+        for name, field_ in fw.fields(output, kind=quantity.Tendency).items():
             if (accumulator := self.accumulators.get(name)) is None:
                 accumulator = self.accumulators[name] = fw.zeros(
-                    field.quantity, self.grid, self.allocator
+                    field_.quantity, self.grid, self.allocator
                 )
-            accumulator.ndarray[...] += field.ndarray  # type: ignore[index]
+            accumulator.ndarray[...] += field_.ndarray  # type: ignore[index]
 
     @staticmethod
     def _continue_in_place(entry: physics_state.EntryState, output: Output) -> None:
         """`output` continues the entry's prognostics: they are updated in place."""
         for name, target in fw.fields(output).items():
-            source: fw.Field[Any] = getattr(entry, name)
+            source: field.Field[Any] = getattr(entry, name)
             if target.ndarray is not source.ndarray:
                 target.ndarray[...] = source.ndarray  # type: ignore[index]
 

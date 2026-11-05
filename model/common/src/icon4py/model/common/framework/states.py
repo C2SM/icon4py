@@ -15,7 +15,7 @@ import datetime
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Final
 
-from icon4py.model.common import framework as fw
+from icon4py.model.common import field, framework as fw
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.utils import PredictorCorrectorPair
 
@@ -29,11 +29,11 @@ if TYPE_CHECKING:
 class PrognosticState(fw.State):
     """ICON's t_nh_prog without the tracers: advanced once per dynamics substep."""
 
-    rho: fw.Field[qty.RhoOnCellK]
-    w: fw.Field[qty.WOnCellKHalf]
-    vn: fw.Field[qty.VnOnEdgeK]
-    exner: fw.Field[qty.ExnerOnCellK]
-    theta_v: fw.Field[qty.ThetaVOnCellK]
+    rho: field.Field[qty.RhoOnCellK]
+    w: field.Field[qty.WOnCellKHalf]
+    vn: field.Field[qty.VnOnEdgeK]
+    exner: field.Field[qty.ExnerOnCellK]
+    theta_v: field.Field[qty.ThetaVOnCellK]
 
 
 class TracerState(fw.State):
@@ -43,12 +43,12 @@ class TracerState(fw.State):
     The leaves are optional: `TracerConfig` says which tracers are active, the others are None.
     """
 
-    qv: fw.Field[qty.QvOnCellK] | None = None
-    qc: fw.Field[qty.QcOnCellK] | None = None
-    qi: fw.Field[qty.QiOnCellK] | None = None
-    qr: fw.Field[qty.QrOnCellK] | None = None
-    qs: fw.Field[qty.QsOnCellK] | None = None
-    qg: fw.Field[qty.QgOnCellK] | None = None
+    qv: field.Field[qty.QvOnCellK] | None = None
+    qc: field.Field[qty.QcOnCellK] | None = None
+    qi: field.Field[qty.QiOnCellK] | None = None
+    qr: field.Field[qty.QrOnCellK] | None = None
+    qs: field.Field[qty.QsOnCellK] | None = None
+    qg: field.Field[qty.QgOnCellK] | None = None
 
 
 #: the tracer names, in ICON's order (QV=0, QC=1, QI=2, QR=3, QS=4, QG=5)
@@ -123,10 +123,12 @@ class PrepAdvection(fw.State):
     # TODO(jcanton): part 02 fix this. If vn_traj keeps sharing VnOnEdgeK with vn, `collect`
     # either raises AmbiguousSource or quietly picks the wrong buffer. Discuss whether we should
     # define a new quantity.
-    vn_traj: fw.Field[qty.VnOnEdgeK]
-    mass_flx_me: fw.Field[qty.HorizontalMassFluxOnEdgeK]
-    dynamical_vertical_mass_flux_at_cells_on_half_levels: fw.Field[qty.VerticalMassFluxOnCellKHalf]
-    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fw.Field[
+    vn_traj: field.Field[qty.VnOnEdgeK]
+    mass_flx_me: field.Field[qty.HorizontalMassFluxOnEdgeK]
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: field.Field[
+        qty.VerticalMassFluxOnCellKHalf
+    ]
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: field.Field[
         qty.VerticalVolumetricFluxOnCellKHalf
     ]
 
@@ -140,17 +142,17 @@ class DycoreForcing(fw.State):
     tendencies, the physics or the initial condition.
     """
 
-    exner_tendency_due_to_slow_physics: fw.Field[qty.ExnerTendencyDueToSlowPhysicsOnCellK]
-    normal_wind_tendency_due_to_slow_physics_process: fw.Field[
+    exner_tendency_due_to_slow_physics: field.Field[qty.ExnerTendencyDueToSlowPhysicsOnCellK]
+    normal_wind_tendency_due_to_slow_physics_process: field.Field[
         qty.NormalWindTendencyDueToSlowPhysicsOnEdgeK
     ]
-    grf_tend_rho: fw.Field[qty.GrfTendencyOfRhoOnCellK]
-    grf_tend_thv: fw.Field[qty.GrfTendencyOfThetaVOnCellK]
-    grf_tend_w: fw.Field[qty.GrfTendencyOfWOnCellKHalf]
-    grf_tend_vn: fw.Field[qty.GrfTendencyOfVnOnEdgeK]
-    rho_iau_increment: fw.Field[qty.RhoIauIncrementOnCellK]
-    normal_wind_iau_increment: fw.Field[qty.NormalWindIauIncrementOnEdgeK]
-    exner_iau_increment: fw.Field[qty.ExnerIauIncrementOnCellK]
+    grf_tend_rho: field.Field[qty.GrfTendencyOfRhoOnCellK]
+    grf_tend_thv: field.Field[qty.GrfTendencyOfThetaVOnCellK]
+    grf_tend_w: field.Field[qty.GrfTendencyOfWOnCellKHalf]
+    grf_tend_vn: field.Field[qty.GrfTendencyOfVnOnEdgeK]
+    rho_iau_increment: field.Field[qty.RhoIauIncrementOnCellK]
+    normal_wind_iau_increment: field.Field[qty.NormalWindIauIncrementOnEdgeK]
+    exner_iau_increment: field.Field[qty.ExnerIauIncrementOnCellK]
 
 
 class DycoreDiagnostics(fw.State):
@@ -164,15 +166,15 @@ class DycoreDiagnostics(fw.State):
     `framework.allocate`, because of the pairs.
     """
 
-    perturbed_exner_at_cells_on_model_levels: fw.Field[qty.PerturbedExnerOnCellK]
-    exner_dynamical_increment: fw.Field[qty.ExnerDynamicalIncrementOnCellK]
+    perturbed_exner_at_cells_on_model_levels: field.Field[qty.PerturbedExnerOnCellK]
+    exner_dynamical_increment: field.Field[qty.ExnerDynamicalIncrementOnCellK]
     normal_wind_advective_tendency: PredictorCorrectorPair[
-        fw.Field[qty.NormalWindAdvectiveTendencyOnEdgeK]
+        field.Field[qty.NormalWindAdvectiveTendencyOnEdgeK]
     ]
     vertical_wind_advective_tendency: PredictorCorrectorPair[
-        fw.Field[qty.VerticalWindAdvectiveTendencyOnCellKHalf]
+        field.Field[qty.VerticalWindAdvectiveTendencyOnCellKHalf]
     ]
-    max_vertical_cfl: fw.Field[qty.MaxVerticalCflNumber]
+    max_vertical_cfl: field.Field[qty.MaxVerticalCflNumber]
 
     @classmethod
     def allocate(
@@ -198,32 +200,32 @@ class DycoreDiagnostics(fw.State):
 class DiffusionDiagnostics(fw.State):
     """The diagnostics of the diffusion (turbulence fields of ICON's t_nh_diag), owned by the driver."""
 
-    hdef_ic: fw.Field[qty.HorizontalWindDeformationOnCellKHalf]
-    div_ic: fw.Field[qty.DivergenceOnCellKHalf]
-    dwdx: fw.Field[qty.ZonalGradientOfWOnCellKHalf]
-    dwdy: fw.Field[qty.MeridionalGradientOfWOnCellKHalf]
+    hdef_ic: field.Field[qty.HorizontalWindDeformationOnCellKHalf]
+    div_ic: field.Field[qty.DivergenceOnCellKHalf]
+    dwdx: field.Field[qty.ZonalGradientOfWOnCellKHalf]
+    dwdy: field.Field[qty.MeridionalGradientOfWOnCellKHalf]
 
 
 class AdvectionDiagnostics(fw.State):
     """The diagnostics of the tracer advection, owned by the driver."""
 
     #: mass of air in the layer at the beginning and the end of the time step
-    airmass_now: fw.Field[qty.AirMassOnCellK]
-    airmass_new: fw.Field[qty.AirMassOnCellK]
-    grf_tend_tracer: fw.Field[qty.GrfTendencyOfTracerOnCellK]
-    hfl_tracer: fw.Field[qty.HorizontalTracerFluxOnEdgeK]
-    vfl_tracer: fw.Field[qty.VerticalTracerFluxOnCellKHalf]
+    airmass_now: field.Field[qty.AirMassOnCellK]
+    airmass_new: field.Field[qty.AirMassOnCellK]
+    grf_tend_tracer: field.Field[qty.GrfTendencyOfTracerOnCellK]
+    hfl_tracer: field.Field[qty.HorizontalTracerFluxOnEdgeK]
+    vfl_tracer: field.Field[qty.VerticalTracerFluxOnCellKHalf]
 
 
 class Diagnostics(fw.State):
     """ICON's t_nh_diag fields the physics reads and the output writes."""
 
-    pressure: fw.Field[qty.PressureOnCellK]
-    pressure_ifc: fw.Field[qty.PressureOnCellKHalf]
-    temperature: fw.Field[qty.TemperatureOnCellK]
-    virtual_temperature: fw.Field[qty.VirtualTemperatureOnCellK]
-    u: fw.Field[qty.UOnCellK]
-    v: fw.Field[qty.VOnCellK]
+    pressure: field.Field[qty.PressureOnCellK]
+    pressure_ifc: field.Field[qty.PressureOnCellKHalf]
+    temperature: field.Field[qty.TemperatureOnCellK]
+    virtual_temperature: field.Field[qty.VirtualTemperatureOnCellK]
+    u: field.Field[qty.UOnCellK]
+    v: field.Field[qty.VOnCellK]
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)

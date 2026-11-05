@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.run_full_muphy
 )
 from icon4py.model.common import (
     dimension as dims,
+    field,
     field_type_aliases as fa,
     framework as fw,
     model_backends,
@@ -45,30 +46,30 @@ class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
     """
 
     class Input(fw.State):
-        te: fw.Field[qty.TemperatureOnCellK]
-        p: fw.Field[qty.PressureOnCellK]
-        rho: fw.Field[qty.RhoOnCellK]
-        qv: fw.Field[qty.QvOnCellK]
-        qc: fw.Field[qty.QcOnCellK]
-        qi: fw.Field[qty.QiOnCellK]
-        qr: fw.Field[qty.QrOnCellK]
-        qs: fw.Field[qty.QsOnCellK]
-        qg: fw.Field[qty.QgOnCellK]
+        te: field.Field[qty.TemperatureOnCellK]
+        p: field.Field[qty.PressureOnCellK]
+        rho: field.Field[qty.RhoOnCellK]
+        qv: field.Field[qty.QvOnCellK]
+        qc: field.Field[qty.QcOnCellK]
+        qi: field.Field[qty.QiOnCellK]
+        qr: field.Field[qty.QrOnCellK]
+        qs: field.Field[qty.QsOnCellK]
+        qg: field.Field[qty.QgOnCellK]
 
     class Output(fw.State):
-        tend_temperature: fw.Field[qty.TendencyOfTemperatureOnCellK]
-        tend_qv: fw.Field[qty.TendencyOfQvOnCellK]
-        tend_qc: fw.Field[qty.TendencyOfQcOnCellK]
-        tend_qi: fw.Field[qty.TendencyOfQiOnCellK]
-        tend_qr: fw.Field[qty.TendencyOfQrOnCellK]
-        tend_qs: fw.Field[qty.TendencyOfQsOnCellK]
-        tend_qg: fw.Field[qty.TendencyOfQgOnCellK]
-        pflx: fw.Field[qty.PrecipitationFluxOnCellK]
-        pr: fw.Field[qty.RainfallFluxOnCellK]
-        ps: fw.Field[qty.SnowfallFluxOnCellK]
-        pi: fw.Field[qty.IcefallFluxOnCellK]
-        pg: fw.Field[qty.GraupelfallFluxOnCellK]
-        pre: fw.Field[qty.PrecipitationEnergyFluxOnCellK]
+        tend_temperature: field.Field[qty.TendencyOfTemperatureOnCellK]
+        tend_qv: field.Field[qty.TendencyOfQvOnCellK]
+        tend_qc: field.Field[qty.TendencyOfQcOnCellK]
+        tend_qi: field.Field[qty.TendencyOfQiOnCellK]
+        tend_qr: field.Field[qty.TendencyOfQrOnCellK]
+        tend_qs: field.Field[qty.TendencyOfQsOnCellK]
+        tend_qg: field.Field[qty.TendencyOfQgOnCellK]
+        pflx: field.Field[qty.PrecipitationFluxOnCellK]
+        pr: field.Field[qty.RainfallFluxOnCellK]
+        ps: field.Field[qty.SnowfallFluxOnCellK]
+        pi: field.Field[qty.IcefallFluxOnCellK]
+        pg: field.Field[qty.GraupelfallFluxOnCellK]
+        pre: field.Field[qty.PrecipitationEnergyFluxOnCellK]
 
     def __init__(
         self,

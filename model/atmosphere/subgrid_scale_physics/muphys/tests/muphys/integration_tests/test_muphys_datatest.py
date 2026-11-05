@@ -26,6 +26,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions impo
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_full_muphys
 from icon4py.model.common import (
     dimension as dims,
+    field as fd,
     framework as fw,
     model_backends,
     type_alias as ta,
@@ -116,15 +117,15 @@ def test_muphys_granule(
 
     muphys_configuration = muphys_config.MuphysConfig()
     input = muphys_component.Muphys.Input(
-        te=fw.Field(qty.TemperatureOnCellK, init_savepoint.temperature()),
-        p=fw.Field(qty.PressureOnCellK, init_savepoint.pressure()),
-        rho=fw.Field(qty.RhoOnCellK, init_savepoint.rho()),
-        qv=fw.Field(qty.QvOnCellK, init_savepoint.qv()),
-        qc=fw.Field(qty.QcOnCellK, init_savepoint.qc()),
-        qi=fw.Field(qty.QiOnCellK, init_savepoint.qi()),
-        qr=fw.Field(qty.QrOnCellK, init_savepoint.qr()),
-        qs=fw.Field(qty.QsOnCellK, init_savepoint.qs()),
-        qg=fw.Field(qty.QgOnCellK, init_savepoint.qg()),
+        te=fd.Field(qty.TemperatureOnCellK, init_savepoint.temperature()),
+        p=fd.Field(qty.PressureOnCellK, init_savepoint.pressure()),
+        rho=fd.Field(qty.RhoOnCellK, init_savepoint.rho()),
+        qv=fd.Field(qty.QvOnCellK, init_savepoint.qv()),
+        qc=fd.Field(qty.QcOnCellK, init_savepoint.qc()),
+        qi=fd.Field(qty.QiOnCellK, init_savepoint.qi()),
+        qr=fd.Field(qty.QrOnCellK, init_savepoint.qr()),
+        qs=fd.Field(qty.QsOnCellK, init_savepoint.qs()),
+        qg=fd.Field(qty.QgOnCellK, init_savepoint.qg()),
     )
     state = {"dz": init_savepoint.dz(), **fw.fields(input)}
     initial_state = {name: field.asnumpy().copy() for name, field in state.items()}

@@ -53,6 +53,7 @@ from icon4py.model.atmosphere.dycore.stencils.velocity_advection_predictor impor
 from icon4py.model.common import (
     constants,
     dimension as dims,
+    field,
     field_type_aliases as fa,
     framework as fw,
     model_backends,
@@ -406,22 +407,22 @@ def _update_max_vertical_cfl(
 
 class SolveNonhydro(fw.Component):
     class Input(fw.State):
-        rho: fw.Field[qty.RhoOnCellK]
-        w: fw.Field[qty.WOnCellKHalf]
-        vn: fw.Field[qty.VnOnEdgeK]
-        exner: fw.Field[qty.ExnerOnCellK]
-        theta_v: fw.Field[qty.ThetaVOnCellK]
-        exner_tendency_due_to_slow_physics: fw.Field[qty.ExnerTendencyDueToSlowPhysicsOnCellK]
-        normal_wind_tendency_due_to_slow_physics_process: fw.Field[
+        rho: field.Field[qty.RhoOnCellK]
+        w: field.Field[qty.WOnCellKHalf]
+        vn: field.Field[qty.VnOnEdgeK]
+        exner: field.Field[qty.ExnerOnCellK]
+        theta_v: field.Field[qty.ThetaVOnCellK]
+        exner_tendency_due_to_slow_physics: field.Field[qty.ExnerTendencyDueToSlowPhysicsOnCellK]
+        normal_wind_tendency_due_to_slow_physics_process: field.Field[
             qty.NormalWindTendencyDueToSlowPhysicsOnEdgeK
         ]
-        grf_tend_rho: fw.Field[qty.GrfTendencyOfRhoOnCellK]
-        grf_tend_thv: fw.Field[qty.GrfTendencyOfThetaVOnCellK]
-        grf_tend_w: fw.Field[qty.GrfTendencyOfWOnCellKHalf]
-        grf_tend_vn: fw.Field[qty.GrfTendencyOfVnOnEdgeK]
-        rho_iau_increment: fw.Field[qty.RhoIauIncrementOnCellK]
-        normal_wind_iau_increment: fw.Field[qty.NormalWindIauIncrementOnEdgeK]
-        exner_iau_increment: fw.Field[qty.ExnerIauIncrementOnCellK]
+        grf_tend_rho: field.Field[qty.GrfTendencyOfRhoOnCellK]
+        grf_tend_thv: field.Field[qty.GrfTendencyOfThetaVOnCellK]
+        grf_tend_w: field.Field[qty.GrfTendencyOfWOnCellKHalf]
+        grf_tend_vn: field.Field[qty.GrfTendencyOfVnOnEdgeK]
+        rho_iau_increment: field.Field[qty.RhoIauIncrementOnCellK]
+        normal_wind_iau_increment: field.Field[qty.NormalWindIauIncrementOnEdgeK]
+        exner_iau_increment: field.Field[qty.ExnerIauIncrementOnCellK]
         #: Originally declared as divdamp_fac_o2 in ICON. Second order (nabla2) divergence damping coefficient.
         second_order_divdamp_factor: float
         dtime: float
@@ -437,40 +438,44 @@ class SolveNonhydro(fw.Component):
         iau_wgt_dyn: float = 0.0
 
     class Output(fw.State):
-        rho: fw.Field[qty.RhoOnCellK]
-        w: fw.Field[qty.WOnCellKHalf]
-        vn: fw.Field[qty.VnOnEdgeK]
-        exner: fw.Field[qty.ExnerOnCellK]
-        theta_v: fw.Field[qty.ThetaVOnCellK]
-        vn_traj: fw.Field[qty.VnOnEdgeK]
-        mass_flx_me: fw.Field[qty.HorizontalMassFluxOnEdgeK]
-        dynamical_vertical_mass_flux_at_cells_on_half_levels: fw.Field[
+        rho: field.Field[qty.RhoOnCellK]
+        w: field.Field[qty.WOnCellKHalf]
+        vn: field.Field[qty.VnOnEdgeK]
+        exner: field.Field[qty.ExnerOnCellK]
+        theta_v: field.Field[qty.ThetaVOnCellK]
+        vn_traj: field.Field[qty.VnOnEdgeK]
+        mass_flx_me: field.Field[qty.HorizontalMassFluxOnEdgeK]
+        dynamical_vertical_mass_flux_at_cells_on_half_levels: field.Field[
             qty.VerticalMassFluxOnCellKHalf
         ]
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fw.Field[
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels: field.Field[
             qty.VerticalVolumetricFluxOnCellKHalf
         ]
-        perturbed_exner_at_cells_on_model_levels: fw.Field[qty.PerturbedExnerOnCellK]
-        exner_dynamical_increment: fw.Field[qty.ExnerDynamicalIncrementOnCellK]
-        normal_wind_advective_tendency_predictor: fw.Field[qty.NormalWindAdvectiveTendencyOnEdgeK]
-        normal_wind_advective_tendency_corrector: fw.Field[qty.NormalWindAdvectiveTendencyOnEdgeK]
-        vertical_wind_advective_tendency_predictor: fw.Field[
+        perturbed_exner_at_cells_on_model_levels: field.Field[qty.PerturbedExnerOnCellK]
+        exner_dynamical_increment: field.Field[qty.ExnerDynamicalIncrementOnCellK]
+        normal_wind_advective_tendency_predictor: field.Field[
+            qty.NormalWindAdvectiveTendencyOnEdgeK
+        ]
+        normal_wind_advective_tendency_corrector: field.Field[
+            qty.NormalWindAdvectiveTendencyOnEdgeK
+        ]
+        vertical_wind_advective_tendency_predictor: field.Field[
             qty.VerticalWindAdvectiveTendencyOnCellKHalf
         ]
-        vertical_wind_advective_tendency_corrector: fw.Field[
+        vertical_wind_advective_tendency_corrector: field.Field[
             qty.VerticalWindAdvectiveTendencyOnCellKHalf
         ]
-        max_vertical_cfl: fw.Field[qty.MaxVerticalCflNumber]
+        max_vertical_cfl: field.Field[qty.MaxVerticalCflNumber]
 
     class Diagnostics(fw.State):
-        tangential_wind: fw.Field[qty.TangentialWindOnEdgeK]
-        vn_on_half_levels: fw.Field[qty.VnOnEdgeKHalf]
-        contravariant_correction_at_cells_on_half_levels: fw.Field[
+        tangential_wind: field.Field[qty.TangentialWindOnEdgeK]
+        vn_on_half_levels: field.Field[qty.VnOnEdgeKHalf]
+        contravariant_correction_at_cells_on_half_levels: field.Field[
             qty.ContravariantCorrectionOnCellKHalf
         ]
-        theta_v_at_cells_on_half_levels: fw.Field[qty.ThetaVOnCellKHalf]
-        rho_at_cells_on_half_levels: fw.Field[qty.RhoOnCellKHalf]
-        mass_flux_at_edges_on_model_levels: fw.Field[qty.HorizontalMassFluxOnEdgeK]
+        theta_v_at_cells_on_half_levels: field.Field[qty.ThetaVOnCellKHalf]
+        rho_at_cells_on_half_levels: field.Field[qty.RhoOnCellKHalf]
+        mass_flux_at_edges_on_model_levels: field.Field[qty.HorizontalMassFluxOnEdgeK]
 
     def __init__(
         self,

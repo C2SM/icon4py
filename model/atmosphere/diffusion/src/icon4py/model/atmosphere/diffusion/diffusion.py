@@ -44,6 +44,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
 from icon4py.model.common import (
     constants,
     dimension as dims,
+    field,
     framework as fw,
     model_backends,
     type_alias as ta,
@@ -464,23 +465,23 @@ class Diffusion(fw.Component):
     """
 
     class Input(fw.State):
-        vn: fw.Field[qty.VnOnEdgeK]
-        w: fw.Field[qty.WOnCellKHalf]
-        exner: fw.Field[qty.ExnerOnCellK]
-        theta_v: fw.Field[qty.ThetaVOnCellK]
+        vn: field.Field[qty.VnOnEdgeK]
+        w: field.Field[qty.WOnCellKHalf]
+        exner: field.Field[qty.ExnerOnCellK]
+        theta_v: field.Field[qty.ThetaVOnCellK]
         dtime: float
         #: the extra diffusion call before the first time step of a real-data run (linit in ICON)
         initial_run: bool = False
 
     class Output(fw.State):
-        vn: fw.Field[qty.VnOnEdgeK]
-        w: fw.Field[qty.WOnCellKHalf]
-        exner: fw.Field[qty.ExnerOnCellK]
-        theta_v: fw.Field[qty.ThetaVOnCellK]
-        hdef_ic: fw.Field[qty.HorizontalWindDeformationOnCellKHalf]
-        div_ic: fw.Field[qty.DivergenceOnCellKHalf]
-        dwdx: fw.Field[qty.ZonalGradientOfWOnCellKHalf]
-        dwdy: fw.Field[qty.MeridionalGradientOfWOnCellKHalf]
+        vn: field.Field[qty.VnOnEdgeK]
+        w: field.Field[qty.WOnCellKHalf]
+        exner: field.Field[qty.ExnerOnCellK]
+        theta_v: field.Field[qty.ThetaVOnCellK]
+        hdef_ic: field.Field[qty.HorizontalWindDeformationOnCellKHalf]
+        div_ic: field.Field[qty.DivergenceOnCellKHalf]
+        dwdx: field.Field[qty.ZonalGradientOfWOnCellKHalf]
+        dwdy: field.Field[qty.MeridionalGradientOfWOnCellKHalf]
 
     def __init__(
         self,

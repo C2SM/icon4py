@@ -9,17 +9,17 @@
 import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.common import framework as fw
+from icon4py.model.common import field
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.testing import serialbox as sb, test_utils
 
 
 def construct_diagnostics(savepoint: sb.IconDiffusionInitSavepoint) -> states.DiffusionDiagnostics:
     return states.DiffusionDiagnostics(
-        hdef_ic=fw.Field(qty.HorizontalWindDeformationOnCellKHalf, savepoint.hdef_ic()),
-        div_ic=fw.Field(qty.DivergenceOnCellKHalf, savepoint.div_ic()),
-        dwdx=fw.Field(qty.ZonalGradientOfWOnCellKHalf, savepoint.dwdx()),
-        dwdy=fw.Field(qty.MeridionalGradientOfWOnCellKHalf, savepoint.dwdy()),
+        hdef_ic=field.Field(qty.HorizontalWindDeformationOnCellKHalf, savepoint.hdef_ic()),
+        div_ic=field.Field(qty.DivergenceOnCellKHalf, savepoint.div_ic()),
+        dwdx=field.Field(qty.ZonalGradientOfWOnCellKHalf, savepoint.dwdx()),
+        dwdy=field.Field(qty.MeridionalGradientOfWOnCellKHalf, savepoint.dwdy()),
     )
 
 

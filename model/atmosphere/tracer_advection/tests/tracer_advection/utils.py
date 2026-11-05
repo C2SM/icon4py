@@ -15,6 +15,7 @@ import numpy as np
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
     dimension as dims,
+    field,
     field_type_aliases as fa,
     framework as fw,
     type_alias as ta,
@@ -76,9 +77,9 @@ def construct_diagnostic_init_state(
     backend: gtx_typing.Backend | None,
 ) -> states.AdvectionDiagnostics:
     return states.AdvectionDiagnostics(
-        airmass_now=fw.Field(qty.AirMassOnCellK, savepoint.airmass_now()),
-        airmass_new=fw.Field(qty.AirMassOnCellK, savepoint.airmass_new()),
-        grf_tend_tracer=fw.Field(
+        airmass_now=field.Field(qty.AirMassOnCellK, savepoint.airmass_now()),
+        airmass_new=field.Field(qty.AirMassOnCellK, savepoint.airmass_new()),
+        grf_tend_tracer=field.Field(
             qty.GrfTendencyOfTracerOnCellK, savepoint.grf_tend_tracer(ntracer)
         ),
         hfl_tracer=fw.zeros(qty.HorizontalTracerFluxOnEdgeK, icon_grid, backend),
@@ -96,8 +97,8 @@ def construct_diagnostic_exit_state(
         airmass_now=fw.zeros(qty.AirMassOnCellK, icon_grid, backend),
         airmass_new=fw.zeros(qty.AirMassOnCellK, icon_grid, backend),
         grf_tend_tracer=fw.zeros(qty.GrfTendencyOfTracerOnCellK, icon_grid, backend),
-        hfl_tracer=fw.Field(qty.HorizontalTracerFluxOnEdgeK, savepoint.hfl_tracer(ntracer)),
-        vfl_tracer=fw.Field(qty.VerticalTracerFluxOnCellKHalf, savepoint.vfl_tracer(ntracer)),
+        hfl_tracer=field.Field(qty.HorizontalTracerFluxOnEdgeK, savepoint.hfl_tracer(ntracer)),
+        vfl_tracer=field.Field(qty.VerticalTracerFluxOnCellKHalf, savepoint.vfl_tracer(ntracer)),
     )
 
 
@@ -107,9 +108,9 @@ def construct_prep_adv(
     backend: gtx_typing.Backend | None,
 ) -> states.PrepAdvection:
     return states.PrepAdvection(
-        vn_traj=fw.Field(qty.VnOnEdgeK, savepoint.vn_traj()),
-        mass_flx_me=fw.Field(qty.HorizontalMassFluxOnEdgeK, savepoint.mass_flx_me()),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=fw.Field(
+        vn_traj=field.Field(qty.VnOnEdgeK, savepoint.vn_traj()),
+        mass_flx_me=field.Field(qty.HorizontalMassFluxOnEdgeK, savepoint.mass_flx_me()),
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=field.Field(
             qty.VerticalMassFluxOnCellKHalf, savepoint.mass_flx_ic()
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.zeros(
@@ -129,7 +130,7 @@ def advection_views(
 ) -> tuple[tracer_advection.Advection.Input, tracer_advection.Advection.Output]:
     """The advection's views over one tracer (in the qv slot), the diagnostics and the fluxes."""
     input = tracer_advection.Advection.Input(
-        qv=fw.Field(qty.QvOnCellK, p_tracer_now),
+        qv=field.Field(qty.QvOnCellK, p_tracer_now),
         airmass_now=diagnostic_state.airmass_now,
         airmass_new=diagnostic_state.airmass_new,
         grf_tend_tracer=diagnostic_state.grf_tend_tracer,
@@ -139,7 +140,7 @@ def advection_views(
         dtime=dtime,
     )
     output = tracer_advection.Advection.Output(
-        qv=fw.Field(qty.QvOnCellK, p_tracer_new),
+        qv=field.Field(qty.QvOnCellK, p_tracer_new),
         hfl_tracer=diagnostic_state.hfl_tracer,
         vfl_tracer=diagnostic_state.vfl_tracer,
     )

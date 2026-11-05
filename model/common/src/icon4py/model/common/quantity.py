@@ -13,6 +13,9 @@ from typing import Any, ClassVar, Literal
 from gt4py import next as gtx
 
 
+__all__ = ["Quantity", "Tendency"]
+
+
 class Quantity:
     """
     A type-level tag, one subclass per quantity at one place on the grid, never instantiated.

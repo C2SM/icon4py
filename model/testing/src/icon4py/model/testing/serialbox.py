@@ -17,7 +17,7 @@ import serialbox
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common import dimension as dims, framework as fw, model_backends
+from icon4py.model.common import dimension as dims, field, model_backends
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
@@ -1089,11 +1089,11 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
     def construct_prognostics(self) -> states.PrognosticState:
         return states.PrognosticState(
-            w=fw.Field(qty.WOnCellKHalf, self.w()),
-            vn=fw.Field(qty.VnOnEdgeK, self.vn()),
-            exner=fw.Field(qty.ExnerOnCellK, self.exner()),
-            theta_v=fw.Field(qty.ThetaVOnCellK, self.theta_v()),
-            rho=fw.Field(qty.RhoOnCellK, self.rho()),
+            w=field.Field(qty.WOnCellKHalf, self.w()),
+            vn=field.Field(qty.VnOnEdgeK, self.vn()),
+            exner=field.Field(qty.ExnerOnCellK, self.exner()),
+            theta_v=field.Field(qty.ThetaVOnCellK, self.theta_v()),
+            rho=field.Field(qty.RhoOnCellK, self.rho()),
         )
 
 
