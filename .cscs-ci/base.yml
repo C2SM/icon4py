@@ -254,6 +254,9 @@ variables:
         SLURM_TIMELIMIT: '01:30:00'
         SLURM_GPUS_PER_NODE: 2
         SLURM_NTASKS: 24
+    - if: $MODEL_MPI_SUBPACKAGE == 'tracer_advection'
+      variables:
+        SLURM_TIMELIMIT: '01:00:00'
     - when: on_success
   artifacts:
     when: always
