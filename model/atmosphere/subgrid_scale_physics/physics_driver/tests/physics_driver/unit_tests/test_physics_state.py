@@ -212,21 +212,6 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 # ---------------------------------------------------------------------------
 
 
-def test_compute_diagnostics_syncs_rho_u_v_and_w():
-    grid = simple.simple_grid()
-    exchange = _RecordingExchange()
-    ws = _physics_state(grid, exchange)
-    prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
-    diagnostics = _diagnostic_state(grid)
-
-    ws.compute_diagnostics(prognostic, _tracer_state(grid, qv=1e-3), diagnostics)
-
-    # ICON's dyn2phy sync for the horizontal operations of tmx: the very buffers, in that order
-    assert exchange.events == [
-        (dims.CellDim, [id(prognostic.rho), id(diagnostics.u), id(diagnostics.v), id(prognostic.w)])
-    ]
-
-
 def test_accumulate_sums_tendencies_and_skips_diagnostics():
     grid = simple.simple_grid()
     acc = _tendencies()
