@@ -257,5 +257,4 @@ class Component[I: State, O: State](Protocol):
     Input: type[I]
     Output: type[O]
 
-    def run(self, input: I, output: O) -> O:
-        raise NotImplementedError
+    def run(self, input: I, output: O) -> O: ...
