@@ -502,7 +502,7 @@ class Diffusion(fw.Component):
         max_nudging_coefficient: state_utils.FloatType,
     ) -> None:
         self.grid = grid
-        self.allocator = model_backends.get_allocator(backend)
+        self._allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
         self.config = config
         self._params = params
@@ -856,10 +856,10 @@ class Diffusion(fw.Component):
         dtime = wpfloat(input.dtime)
         if input.initial_run:
             diff_multfac_vn = data_alloc.zero_field(
-                self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+                self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
             )
             smag_limit = data_alloc.zero_field(
-                self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+                self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
             )
             self.setup_fields_for_initial_step(
                 self._params.K4,
