@@ -57,6 +57,17 @@ class Halve(fw.Component["Halve.Input", "Halve.Output"]):
         return output
 
 
+class Double:
+    """A component in structure only: it does not inherit from `fw.Component`."""
+
+    Input = Halve.Input
+    Output = Halve.Output
+
+    def run(self, inputs: Halve.Input, outputs: Halve.Output) -> Halve.Output:
+        np.asarray(outputs.pressure.ndarray)[...] = 2.0 * np.asarray(inputs.pressure.ndarray)
+        return outputs
+
+
 @pytest.fixture
 def grid() -> base_grid.Grid:
     return simple.simple_grid()
@@ -225,6 +236,17 @@ def test_empty_is_the_output_of_a_component_that_writes_no_field(grid: base_grid
     empty = fw.Empty()
     assert Sink().run(input, empty) is empty
     assert isinstance(Sink().run(input), fw.Empty)
+
+
+def test_a_component_that_does_not_inherit_satisfies_the_protocol(grid: base_grid.Grid) -> None:
+    # What mypy checks: `Double` subclasses nothing; the annotated assignment is the
+    # structural conformance check (Input, Output and run, by member name and type)
+    pressure = fw.zeros(Pressure, grid, allocator=None)
+    np.asarray(pressure.ndarray)[...] = 8.0
+    component: fw.Component[Halve.Input, Halve.Output] = Double()
+    given = fw.allocate(Halve.Output, grid, allocator=None)
+    assert component.run(Halve.Input(pressure=pressure), outputs=given) is given
+    assert np.all(np.asarray(given.pressure.ndarray) == 16.0)
 
 
 def test_pairs_swap(grid: base_grid.Grid) -> None:

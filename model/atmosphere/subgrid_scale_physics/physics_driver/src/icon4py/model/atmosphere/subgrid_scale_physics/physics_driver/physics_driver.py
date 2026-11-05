@@ -128,8 +128,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         # from its own cache, so the bookkeeping here is convenience, not correctness
         # TODO(msimberg): This should be keyed by process instead of relying on order?
         self._buffers: tuple[fw.State, ...] = tuple(
-            fw.allocate(process.component.Output, self.grid, self.allocator)
-            for process in self.processes
+            fw.allocate(process.Output, self.grid, self.allocator) for process in self.processes
         )
         # the diagnostics the processes read, derived here each step
         self.diagnostics = fw.allocate(states.Diagnostics, grid, self.allocator)

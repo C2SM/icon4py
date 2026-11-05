@@ -13,7 +13,6 @@ from __future__ import annotations
 import dataclasses
 import typing
 from collections.abc import Callable
-from typing import ClassVar
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
@@ -42,7 +41,7 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     """
 
     Input = physics_state.EntryState
-    Output: ClassVar[type[O]]
+    Output: type[O] = dataclasses.field(init=False)
 
     component: fw.Component[I, O]
     # the component's `Input` from the physics driver's entry state
@@ -56,6 +55,9 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryS
     # NOTE: temporary, components MWE part 08 (updates): the cache holds the process's `Update`
     # state, the tendencies it contributes, instead of its whole `Output`.
     _cache: O | None = dataclasses.field(default=None, init=False)
+
+    def __post_init__(self) -> None:
+        self.Output = self.component.Output
 
     def run(self, input: physics_state.EntryState, output: O) -> O:
         if not self.time_control.is_in_window(input.step_start):
