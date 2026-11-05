@@ -366,17 +366,6 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
             "exner_incr", domain=exner_now.domain, dtype=exner_now.dtype
         )
 
-    # the dycore's scratch and its CFL maximum point at ICON's buffers for this call
-    granule.solve_nh.diagnostics = solve_nonhydro.SolveNonhydro.Diagnostics(
-        tangential_wind=field.Field(qty.TangentialWindOnEdgeK, vt),
-        vn_on_half_levels=field.Field(qty.VnOnEdgeKHalf, vn_ie),
-        contravariant_correction_at_cells_on_half_levels=field.Field(
-            qty.ContravariantCorrectionOnCellKHalf, w_concorr_c
-        ),
-        theta_v_at_cells_on_half_levels=field.Field(qty.ThetaVOnCellKHalf, theta_v_ic),
-        rho_at_cells_on_half_levels=field.Field(qty.RhoOnCellKHalf, rho_ic),
-        mass_flux_at_edges_on_model_levels=field.Field(qty.HorizontalMassFluxOnEdgeK, mass_fl_e),
-    )
     # adjust for Fortran indexes
     idyn_timestep = idyn_timestep - 1
 
@@ -441,6 +430,14 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
             qty.MaxVerticalCflNumber,
             gtx.as_field((), data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)),
         ),
+        tangential_wind=field.Field(qty.TangentialWindOnEdgeK, vt),
+        vn_on_half_levels=field.Field(qty.VnOnEdgeKHalf, vn_ie),
+        contravariant_correction_at_cells_on_half_levels=field.Field(
+            qty.ContravariantCorrectionOnCellKHalf, w_concorr_c
+        ),
+        theta_v_at_cells_on_half_levels=field.Field(qty.ThetaVOnCellKHalf, theta_v_ic),
+        rho_at_cells_on_half_levels=field.Field(qty.RhoOnCellKHalf, rho_ic),
+        mass_flux_at_edges_on_model_levels=field.Field(qty.HorizontalMassFluxOnEdgeK, mass_fl_e),
     )
 
     granule.solve_nh.run(input=input, output=output)

@@ -126,26 +126,6 @@ def construct_forcing(
     )
 
 
-def construct_diagnostics(
-    init_savepoint: sb.IconNonHydroInitSavepoint,
-) -> solve_nonhydro.SolveNonhydro.Diagnostics:
-    """The dycore's own scratch, from the savepoint."""
-    return solve_nonhydro.SolveNonhydro.Diagnostics(
-        tangential_wind=field.Field(qty.TangentialWindOnEdgeK, init_savepoint.vt()),
-        vn_on_half_levels=field.Field(qty.VnOnEdgeKHalf, init_savepoint.vn_ie()),
-        contravariant_correction_at_cells_on_half_levels=field.Field(
-            qty.ContravariantCorrectionOnCellKHalf, init_savepoint.w_concorr_c()
-        ),
-        theta_v_at_cells_on_half_levels=field.Field(
-            qty.ThetaVOnCellKHalf, init_savepoint.theta_v_ic()
-        ),
-        rho_at_cells_on_half_levels=field.Field(qty.RhoOnCellKHalf, init_savepoint.rho_ic()),
-        mass_flux_at_edges_on_model_levels=field.Field(
-            qty.HorizontalMassFluxOnEdgeK, init_savepoint.mass_fl_e()
-        ),
-    )
-
-
 def construct_dycore_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     swap_vertical_wind_advective_tendency: bool = False,
@@ -176,6 +156,18 @@ def construct_dycore_diagnostics(
         max_vertical_cfl=field.Field(
             qty.MaxVerticalCflNumber,
             gtx.zeros((), dtype=ta.wpfloat, allocator=init_savepoint.backend),
+        ),
+        tangential_wind=field.Field(qty.TangentialWindOnEdgeK, init_savepoint.vt()),
+        vn_on_half_levels=field.Field(qty.VnOnEdgeKHalf, init_savepoint.vn_ie()),
+        contravariant_correction_at_cells_on_half_levels=field.Field(
+            qty.ContravariantCorrectionOnCellKHalf, init_savepoint.w_concorr_c()
+        ),
+        theta_v_at_cells_on_half_levels=field.Field(
+            qty.ThetaVOnCellKHalf, init_savepoint.theta_v_ic()
+        ),
+        rho_at_cells_on_half_levels=field.Field(qty.RhoOnCellKHalf, init_savepoint.rho_ic()),
+        mass_flux_at_edges_on_model_levels=field.Field(
+            qty.HorizontalMassFluxOnEdgeK, init_savepoint.mass_fl_e()
         ),
     )
 
@@ -271,4 +263,10 @@ def dycore_output(
         vertical_wind_advective_tendency_predictor=dycore_diagnostics.vertical_wind_advective_tendency.predictor,
         vertical_wind_advective_tendency_corrector=dycore_diagnostics.vertical_wind_advective_tendency.corrector,
         max_vertical_cfl=dycore_diagnostics.max_vertical_cfl,
+        tangential_wind=dycore_diagnostics.tangential_wind,
+        vn_on_half_levels=dycore_diagnostics.vn_on_half_levels,
+        contravariant_correction_at_cells_on_half_levels=dycore_diagnostics.contravariant_correction_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels=dycore_diagnostics.theta_v_at_cells_on_half_levels,
+        rho_at_cells_on_half_levels=dycore_diagnostics.rho_at_cells_on_half_levels,
+        mass_flux_at_edges_on_model_levels=dycore_diagnostics.mass_flux_at_edges_on_model_levels,
     )

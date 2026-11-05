@@ -481,18 +481,6 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
-    expected_diagnostics = solve_nh.SolveNonhydro.Diagnostics(
-        tangential_wind=field.Field(qty.TangentialWindOnEdgeK, sp.vt()),
-        vn_on_half_levels=field.Field(qty.VnOnEdgeKHalf, sp.vn_ie()),
-        contravariant_correction_at_cells_on_half_levels=field.Field(
-            qty.ContravariantCorrectionOnCellKHalf, sp.w_concorr_c()
-        ),
-        theta_v_at_cells_on_half_levels=field.Field(qty.ThetaVOnCellKHalf, sp.theta_v_ic()),
-        rho_at_cells_on_half_levels=field.Field(qty.RhoOnCellKHalf, sp.rho_ic()),
-        mass_flux_at_edges_on_model_levels=field.Field(
-            qty.HorizontalMassFluxOnEdgeK, sp.mass_fl_e()
-        ),
-    )
     expected_input = solve_nh.SolveNonhydro.Input(
         rho=field.Field(qty.RhoOnCellK, sp.rho_now()),
         w=field.Field(qty.WOnCellKHalf, sp.w_now()),
@@ -558,6 +546,16 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         max_vertical_cfl=field.Field(
             qty.MaxVerticalCflNumber,
             gtx.as_field((), data_alloc.scalar_like_array(max_vertical_cfl, backend)),
+        ),
+        tangential_wind=field.Field(qty.TangentialWindOnEdgeK, sp.vt()),
+        vn_on_half_levels=field.Field(qty.VnOnEdgeKHalf, sp.vn_ie()),
+        contravariant_correction_at_cells_on_half_levels=field.Field(
+            qty.ContravariantCorrectionOnCellKHalf, sp.w_concorr_c()
+        ),
+        theta_v_at_cells_on_half_levels=field.Field(qty.ThetaVOnCellKHalf, sp.theta_v_ic()),
+        rho_at_cells_on_half_levels=field.Field(qty.RhoOnCellKHalf, sp.rho_ic()),
+        mass_flux_at_edges_on_model_levels=field.Field(
+            qty.HorizontalMassFluxOnEdgeK, sp.mass_fl_e()
         ),
     )
 
@@ -753,10 +751,6 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         assert result, f"Input comparison failed: {error_message}"
         result, error_message = utils.compare_objects(captured_kwargs["output"], expected_out)
         assert result, f"Output comparison failed: {error_message}"
-        result, error_message = utils.compare_objects(
-            dycore_wrapper.granule.solve_nh.diagnostics, expected_diagnostics
-        )
-        assert result, f"Diagnostics comparison failed: {error_message}"
 
 
 @pytest.mark.datatest

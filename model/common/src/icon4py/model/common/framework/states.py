@@ -162,7 +162,9 @@ class DycoreDiagnostics(fw.State):
     The advective tendencies are predictor/corrector pairs the driver swaps between the
     substeps (`_update_time_levels_for_velocity_tendencies`); the initial condition fills the
     perturbed exner function and, on a restart, the pairs. The dycore raises `max_vertical_cfl`
-    over the substeps; the driver reads and resets it. Built by `allocate`, not by
+    over the substeps; the driver reads and resets it. The interpolated winds, densities and
+    fluxes are ICON's `t_nh_diag` fields: the next substep reads some of them (`vt`, `w_concorr_c`,
+    `rho_ic`), ICON outside the dycore the others. Built by `allocate`, not by
     `framework.allocate`, because of the pairs.
     """
 
@@ -175,6 +177,14 @@ class DycoreDiagnostics(fw.State):
         field.Field[qty.VerticalWindAdvectiveTendencyOnCellKHalf]
     ]
     max_vertical_cfl: field.Field[qty.MaxVerticalCflNumber]
+    tangential_wind: field.Field[qty.TangentialWindOnEdgeK]
+    vn_on_half_levels: field.Field[qty.VnOnEdgeKHalf]
+    contravariant_correction_at_cells_on_half_levels: field.Field[
+        qty.ContravariantCorrectionOnCellKHalf
+    ]
+    theta_v_at_cells_on_half_levels: field.Field[qty.ThetaVOnCellKHalf]
+    rho_at_cells_on_half_levels: field.Field[qty.RhoOnCellKHalf]
+    mass_flux_at_edges_on_model_levels: field.Field[qty.HorizontalMassFluxOnEdgeK]
 
     @classmethod
     def allocate(
@@ -194,6 +204,16 @@ class DycoreDiagnostics(fw.State):
                 fw.zeros(qty.VerticalWindAdvectiveTendencyOnCellKHalf, grid, allocator),
             ),
             max_vertical_cfl=fw.zeros(qty.MaxVerticalCflNumber, grid, allocator),
+            tangential_wind=fw.zeros(qty.TangentialWindOnEdgeK, grid, allocator),
+            vn_on_half_levels=fw.zeros(qty.VnOnEdgeKHalf, grid, allocator),
+            contravariant_correction_at_cells_on_half_levels=fw.zeros(
+                qty.ContravariantCorrectionOnCellKHalf, grid, allocator
+            ),
+            theta_v_at_cells_on_half_levels=fw.zeros(qty.ThetaVOnCellKHalf, grid, allocator),
+            rho_at_cells_on_half_levels=fw.zeros(qty.RhoOnCellKHalf, grid, allocator),
+            mass_flux_at_edges_on_model_levels=fw.zeros(
+                qty.HorizontalMassFluxOnEdgeK, grid, allocator
+            ),
         )
 
 

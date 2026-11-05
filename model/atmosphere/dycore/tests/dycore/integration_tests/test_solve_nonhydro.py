@@ -215,7 +215,6 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         backend=backend,
         max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
-    solve_nonhydro.diagnostics = utils.construct_diagnostics(sp)
     at_first_substep = substep_init == 1
 
     prognostic_states = utils.create_prognostic_states(sp)
@@ -287,7 +286,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencils 7,8,9
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.rho_at_cells_on_half_levels.asnumpy()[
+        dycore_diagnostics.rho_at_cells_on_half_levels.asnumpy()[
             cell_start_lateral_boundary_level_3:, :
         ],
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
@@ -304,7 +303,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencils 7,8,9, 11
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.theta_v_at_cells_on_half_levels.asnumpy()[
+        dycore_diagnostics.theta_v_at_cells_on_half_levels.asnumpy()[
             cell_start_lateral_boundary_level_3:, :
         ],
         sp_exit.theta_v_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
@@ -389,14 +388,14 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
     # stencil 30
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.tangential_wind.asnumpy(),
+        dycore_diagnostics.tangential_wind.asnumpy(),
         sp_exit.vt().asnumpy(),
         atol=5e-14 if test_utils.wp_is_dp else 3e-4,
     )
 
     # stencil 32
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.mass_flux_at_edges_on_model_levels.asnumpy(),
+        dycore_diagnostics.mass_flux_at_edges_on_model_levels.asnumpy(),
         sp_exit.mass_fl_e().asnumpy(),
         atol=4e-12 if test_utils.wp_is_dp else 0.03,
     )
@@ -411,9 +410,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencil 35,36, 37,38
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.vn_on_half_levels.asnumpy()[
-            edge_start_lateral_boundary_level_5:, :
-        ],
+        dycore_diagnostics.vn_on_half_levels.asnumpy()[edge_start_lateral_boundary_level_5:, :],
         sp_exit.vn_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=2e-14 if test_utils.wp_is_dp else 6e-4,
     )
@@ -447,7 +444,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencils 39,40
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.contravariant_correction_at_cells_on_half_levels.asnumpy(),
+        dycore_diagnostics.contravariant_correction_at_cells_on_half_levels.asnumpy(),
         sp_exit.w_concorr_c().asnumpy(),
         # practically zero in APE (max abs value 1.9e-12)
         atol=1e-15 if test_utils.wp_is_dp else 8e-5,
@@ -554,7 +551,6 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         backend=backend,
         max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
-    solve_nonhydro.diagnostics = utils.construct_diagnostics(init_savepoint)
     at_first_substep = substep_init == 1
     at_last_substep = substep_init == experiment.config.driver.ndyn_substeps
 
@@ -585,12 +581,12 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencil 10
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.rho_at_cells_on_half_levels.asnumpy(),
+        dycore_diagnostics.rho_at_cells_on_half_levels.asnumpy(),
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
     )
     # stencil 10
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.theta_v_at_cells_on_half_levels.asnumpy(),
+        dycore_diagnostics.theta_v_at_cells_on_half_levels.asnumpy(),
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         atol=1.0e-12,
     )
@@ -635,7 +631,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencil 32
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.mass_flux_at_edges_on_model_levels.asnumpy(),
+        dycore_diagnostics.mass_flux_at_edges_on_model_levels.asnumpy(),
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         atol=0 if test_utils.wp_is_dp else 1e-3,
         rtol=test_utils.scale_tol(5e-7),  # TODO(halungge): was rtol=1e-10 for local experiment only
@@ -740,7 +736,6 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
-    solve_nonhydro.diagnostics = utils.construct_diagnostics(sp)
     prognostic_states = utils.create_prognostic_states(sp)
 
     second_order_divdamp_factor = sp.divdamp_fac_o2()
@@ -864,7 +859,6 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
         max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
-    solve_nonhydro.diagnostics = utils.construct_diagnostics(sp)
     for i_substep in range(experiment.config.driver.ndyn_substeps):
         at_first_substep = i_substep == 0
         at_last_substep = i_substep == (experiment.config.driver.ndyn_substeps - 1)
@@ -902,21 +896,17 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     )
 
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.rho_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
+        dycore_diagnostics.rho_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.theta_v_at_cells_on_half_levels.asnumpy()[
-            cell_start_lb_plus2:, :
-        ],
+        dycore_diagnostics.theta_v_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     test_utils.assert_dallclose(
-        solve_nonhydro.diagnostics.mass_flux_at_edges_on_model_levels.asnumpy()[
-            edge_start_lb_plus4:, :
-        ],
+        dycore_diagnostics.mass_flux_at_edges_on_model_levels.asnumpy()[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
         atol=5e-7 if test_utils.wp_is_dp else 0.2,
     )

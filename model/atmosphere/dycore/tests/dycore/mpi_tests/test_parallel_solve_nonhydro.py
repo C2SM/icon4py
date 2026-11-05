@@ -136,7 +136,6 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         f"rank={process_props.rank}/{process_props.comm_size}:  entering : solve_nonhydro.time_step"
     )
 
-    solve_nonhydro.diagnostics = utils.construct_diagnostics(savepoint_nonhydro_init)
     solve_nonhydro.run(
         utils.dycore_input(
             prognostic_states.current,
@@ -187,17 +186,17 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     end_cell_local = icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL))
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_ic().asnumpy()[:end_cell_local, :],
-        solve_nonhydro.diagnostics.rho_at_cells_on_half_levels.asnumpy()[:end_cell_local, :],
+        dycore_diagnostics.rho_at_cells_on_half_levels.asnumpy()[:end_cell_local, :],
     )
 
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
-        solve_nonhydro.diagnostics.theta_v_at_cells_on_half_levels.asnumpy(),
+        dycore_diagnostics.theta_v_at_cells_on_half_levels.asnumpy(),
     )
 
     test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        solve_nonhydro.diagnostics.mass_flux_at_edges_on_model_levels.asnumpy(),
+        dycore_diagnostics.mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1e-10,
     )
 

@@ -466,8 +466,6 @@ class SolveNonhydro(fw.Component):
             qty.VerticalWindAdvectiveTendencyOnCellKHalf
         ]
         max_vertical_cfl: field.Field[qty.MaxVerticalCflNumber]
-
-    class Diagnostics(fw.State):
         tangential_wind: field.Field[qty.TangentialWindOnEdgeK]
         vn_on_half_levels: field.Field[qty.VnOnEdgeKHalf]
         contravariant_correction_at_cells_on_half_levels: field.Field[
@@ -498,7 +496,6 @@ class SolveNonhydro(fw.Component):
     ):
         self.grid = grid
         self.allocator = model_backends.get_allocator(backend)
-        self.diagnostics = fw.allocate(SolveNonhydro.Diagnostics, grid, self.allocator)
         self._exchange = exchange
 
         self._grid = grid
@@ -1230,12 +1227,12 @@ class SolveNonhydro(fw.Component):
 
             # TODO(havogt): however, our test data is probably not able to catch cfl_clipping conditions
             self._compute_velocity_advection_in_predictor_step(
-                tangential_wind=self.diagnostics.tangential_wind,
+                tangential_wind=output.tangential_wind,
                 tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
-                vn_on_half_levels=self.diagnostics.vn_on_half_levels,
+                vn_on_half_levels=output.vn_on_half_levels,
                 horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
                 contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
-                contravariant_correction_at_cells_on_half_levels=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
+                contravariant_correction_at_cells_on_half_levels=output.contravariant_correction_at_cells_on_half_levels,
                 vertical_wind_advective_tendency=output.vertical_wind_advective_tendency_predictor,
                 vertical_cfl=self._vertical_cfl,
                 normal_wind_advective_tendency=output.normal_wind_advective_tendency_predictor,
@@ -1260,8 +1257,8 @@ class SolveNonhydro(fw.Component):
             perturbed_exner_at_cells_on_model_levels=output.perturbed_exner_at_cells_on_model_levels,
             perturbed_rho_at_cells_on_model_levels=self.perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=self.perturbed_theta_v_at_cells_on_model_levels,
-            rho_at_cells_on_half_levels=self.diagnostics.rho_at_cells_on_half_levels,
-            theta_v_at_cells_on_half_levels=self.diagnostics.theta_v_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels=output.rho_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=output.theta_v_at_cells_on_half_levels,
             current_rho=input.rho,
             current_theta_v=input.theta_v,
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
@@ -1271,7 +1268,7 @@ class SolveNonhydro(fw.Component):
         log.debug("predictor: start stencil compute_rho_theta_pgrad_and_update_vn")
         self._compute_hydrostatic_correction_term(
             theta_v=input.theta_v,
-            theta_v_ic=self.diagnostics.theta_v_at_cells_on_half_levels,
+            theta_v_ic=output.theta_v_at_cells_on_half_levels,
             z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
 
@@ -1281,7 +1278,7 @@ class SolveNonhydro(fw.Component):
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
             next_vn=output.vn,
             current_vn=input.vn,
-            tangential_wind=self.diagnostics.tangential_wind,
+            tangential_wind=output.tangential_wind,
             perturbed_rho_at_cells_on_model_levels=self.perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=self.perturbed_theta_v_at_cells_on_model_levels,
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
@@ -1308,11 +1305,11 @@ class SolveNonhydro(fw.Component):
         self._compute_horizontal_velocity_quantities_and_fluxes(
             spatially_averaged_vn=self.z_vn_avg,
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
-            tangential_wind=self.diagnostics.tangential_wind,
-            mass_flux_at_edges_on_model_levels=self.diagnostics.mass_flux_at_edges_on_model_levels,
+            tangential_wind=output.tangential_wind,
+            mass_flux_at_edges_on_model_levels=output.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
-            vn_on_half_levels=self.diagnostics.vn_on_half_levels,
+            vn_on_half_levels=output.vn_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
             vn=output.vn,
@@ -1321,24 +1318,24 @@ class SolveNonhydro(fw.Component):
         )
 
         self._vertically_implicit_solver_at_predictor_step(
-            contravariant_correction_at_cells_on_half_levels=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=output.contravariant_correction_at_cells_on_half_levels,
             next_w=output.w,
             next_rho=output.rho,
             next_exner=output.exner,
             next_theta_v=output.theta_v,
             dwdz_at_cells_on_model_levels=z_fields.dwdz_at_cells_on_model_levels,
             exner_dynamical_increment=output.exner_dynamical_increment,
-            mass_flux_at_edges_on_model_levels=self.diagnostics.mass_flux_at_edges_on_model_levels,
+            mass_flux_at_edges_on_model_levels=output.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=output.vertical_wind_advective_tendency_predictor,
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
-            rho_at_cells_on_half_levels=self.diagnostics.rho_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels=output.rho_at_cells_on_half_levels,
             contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
             current_exner=input.exner,
             current_rho=input.rho,
             current_theta_v=input.theta_v,
             current_w=input.w,
-            theta_v_at_cells_on_half_levels=self.diagnostics.theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=output.theta_v_at_cells_on_half_levels,
             perturbed_exner_at_cells_on_model_levels=output.perturbed_exner_at_cells_on_model_levels,
             exner_tendency_due_to_slow_physics=input.exner_tendency_due_to_slow_physics,
             rho_iau_increment=input.rho_iau_increment,
@@ -1367,7 +1364,7 @@ class SolveNonhydro(fw.Component):
         if self._grid.limited_area and self._config.divdamp_type >= 3:
             self._compute_dwdz_for_divergence_damping(
                 w=output.w,
-                w_concorr_c=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
+                w_concorr_c=output.contravariant_correction_at_cells_on_half_levels,
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
             )
 
@@ -1431,11 +1428,11 @@ class SolveNonhydro(fw.Component):
             normal_wind_advective_tendency=output.normal_wind_advective_tendency_corrector,
             vn=output.vn,
             w=output.w,
-            tangential_wind=self.diagnostics.tangential_wind,
+            tangential_wind=output.tangential_wind,
             tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
-            vn_on_half_levels=self.diagnostics.vn_on_half_levels,
+            vn_on_half_levels=output.vn_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
-            contravariant_correction_at_cells_on_half_levels=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=output.contravariant_correction_at_cells_on_half_levels,
             dtime=dtime,
             apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
         )
@@ -1448,11 +1445,11 @@ class SolveNonhydro(fw.Component):
         )
 
         self._compute_interpolation_and_nonhydro_buoy(
-            rho_at_cells_on_half_levels=self.diagnostics.rho_at_cells_on_half_levels,
-            theta_v_at_cells_on_half_levels=self.diagnostics.theta_v_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels=output.rho_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=output.theta_v_at_cells_on_half_levels,
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             w=output.w,
-            contravariant_correction_at_cells_on_half_levels=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=output.contravariant_correction_at_cells_on_half_levels,
             current_rho=input.rho,
             next_rho=output.rho,
             current_theta_v=input.theta_v,
@@ -1508,7 +1505,7 @@ class SolveNonhydro(fw.Component):
 
         self._compute_averaged_vn_and_fluxes(
             spatially_averaged_vn=self.z_vn_avg,
-            mass_flux_at_edges_on_model_levels=self.diagnostics.mass_flux_at_edges_on_model_levels,
+            mass_flux_at_edges_on_model_levels=output.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             substep_and_spatially_averaged_vn=output.vn_traj,
             substep_averaged_mass_flux=output.mass_flx_me,
@@ -1529,18 +1526,18 @@ class SolveNonhydro(fw.Component):
             dynamical_vertical_volumetric_flux_at_cells_on_half_levels=output.dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             exner_dynamical_increment=output.exner_dynamical_increment,
             geofac_div=self._interpolation_state.geofac_div,
-            mass_flux_at_edges_on_model_levels=self.diagnostics.mass_flux_at_edges_on_model_levels,
+            mass_flux_at_edges_on_model_levels=output.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=output.vertical_wind_advective_tendency_predictor,
             corrector_vertical_wind_advective_tendency=output.vertical_wind_advective_tendency_corrector,
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
-            rho_at_cells_on_half_levels=self.diagnostics.rho_at_cells_on_half_levels,
-            contravariant_correction_at_cells_on_half_levels=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels=output.rho_at_cells_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=output.contravariant_correction_at_cells_on_half_levels,
             current_exner=input.exner,
             current_rho=input.rho,
             current_theta_v=input.theta_v,
             current_w=input.w,
-            theta_v_at_cells_on_half_levels=self.diagnostics.theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=output.theta_v_at_cells_on_half_levels,
             perturbed_exner_at_cells_on_model_levels=output.perturbed_exner_at_cells_on_model_levels,
             exner_tendency_due_to_slow_physics=input.exner_tendency_due_to_slow_physics,
             rho_iau_increment=input.rho_iau_increment,
@@ -1568,10 +1565,10 @@ class SolveNonhydro(fw.Component):
                         value=ta.wpfloat(0.0),
                     )
                 self._update_mass_flux_weighted(
-                    rho_ic=self.diagnostics.rho_at_cells_on_half_levels,
+                    rho_ic=output.rho_at_cells_on_half_levels,
                     w_now=input.w,
                     w_new=output.w,
-                    w_concorr_c=self.diagnostics.contravariant_correction_at_cells_on_half_levels,
+                    w_concorr_c=output.contravariant_correction_at_cells_on_half_levels,
                     mass_flx_ic=output.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                     r_nsubsteps=r_nsubsteps,
                 )

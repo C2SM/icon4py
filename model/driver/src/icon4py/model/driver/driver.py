@@ -541,6 +541,12 @@ class Icon4pyDriver:
             vertical_wind_advective_tendency_predictor=dycore_diagnostics.vertical_wind_advective_tendency.predictor,
             vertical_wind_advective_tendency_corrector=dycore_diagnostics.vertical_wind_advective_tendency.corrector,
             max_vertical_cfl=dycore_diagnostics.max_vertical_cfl,
+            tangential_wind=dycore_diagnostics.tangential_wind,
+            vn_on_half_levels=dycore_diagnostics.vn_on_half_levels,
+            contravariant_correction_at_cells_on_half_levels=dycore_diagnostics.contravariant_correction_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels=dycore_diagnostics.theta_v_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels=dycore_diagnostics.rho_at_cells_on_half_levels,
+            mass_flux_at_edges_on_model_levels=dycore_diagnostics.mass_flux_at_edges_on_model_levels,
         )
 
     def _do_dyn_substepping(
