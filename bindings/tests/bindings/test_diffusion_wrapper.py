@@ -138,6 +138,9 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
         w=expected_prognostic_state.w,
         exner=expected_prognostic_state.exner,
         theta_v=expected_prognostic_state.theta_v,
+        # TODO(msimberg): This pattern should be replaced eventually. The
+        # savepoints should return the correct Field type already and not need
+        # converting by the caller.
         hdef_ic=field.Field(
             qty.HorizontalWindDeformationOnCellKHalf, savepoint_diffusion_init.hdef_ic()
         ),
