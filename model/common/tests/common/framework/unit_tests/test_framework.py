@@ -21,6 +21,7 @@ from icon4py.model.common import (
     framework as fw,
     quantity,
     type_alias as ta,
+    utils as common_utils,
 )
 from icon4py.model.common.grid import base as base_grid, simple
 
@@ -261,7 +262,7 @@ def test_a_component_that_does_not_inherit_satisfies_the_protocol(grid: base_gri
 def test_pairs_swap(grid: base_grid.Grid) -> None:
     a = fw.allocate(Halve.Output, grid, allocator=None)
     b = fw.allocate(Halve.Output, grid, allocator=None)
-    pair = fw.TimeStepPair(a, b)
+    pair = common_utils.TimeStepPair(a, b)
     pair.swap()
     assert pair.current is b and pair.next is a
 
