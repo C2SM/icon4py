@@ -212,72 +212,68 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=gtx.float64
     )
 
-    exner_dp = array_ns.zeros((num_cells, num_levels), dtype=gtx.float64)
-    rho_dp = array_ns.zeros((num_cells, num_levels), dtype=gtx.float64)
-    theta_v_dp = array_ns.zeros((num_cells, num_levels), dtype=gtx.float64)
-
     eta_v_ndarray = eta_v.ndarray
 
     sin_lat = array_ns.sin(cell_lat)
     cos_lat = array_ns.cos(cell_lat)
-    fac1 = 1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0)
+    # Broadcast over levels: the Newton iteration is pointwise in (cell, level), so
+    # all levels are solved at once instead of one level at a time, which reduces
+    # the number of (small) kernel launches by a factor of num_levels.
+    fac1 = (1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0))[:, None]
     fac2 = (
         (8.0 / 5.0 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * math.pi)
         * gtx.float64(phy_const.EARTH_RADIUS)
         * gtx.float64(phy_const.EARTH_ANGULAR_VELOCITY)
-    )
+    )[:, None]
     lapse_rate = gtx.float64(phy_const.RD) * gamma / gtx.float64(phy_const.GRAV)
-    for k_index in range(num_levels - 1, -1, -1):
-        eta_old = array_ns.full(num_cells, fill_value=1e-7, dtype=gtx.float64)
-        log.info(f"In Newton iteration, k = {k_index}")
-        for _ in range(100):
-            eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
-            cos_etav = array_ns.cos(eta_v_ndarray[:, k_index])
-            sin_etav = array_ns.sin(eta_v_ndarray[:, k_index])
+    eta_old = array_ns.full((num_cells, num_levels), fill_value=1e-7, dtype=gtx.float64)
+    log.info("In Newton iteration")
+    for _ in range(100):
+        eta_v_dp = (eta_old - eta_0) * math.pi * 0.5
+        cos_etav = array_ns.cos(eta_v_dp)
+        sin_etav = array_ns.sin(eta_v_dp)
 
-            temperature_avg = temp0 * (eta_old**lapse_rate)
-            geopot_avg = temp0 * gtx.float64(phy_const.GRAV) / gamma * (1.0 - eta_old**lapse_rate)
-            temperature_avg = array_ns.where(
-                eta_old < eta_t,
-                temperature_avg + dtemp * ((eta_t - eta_old) ** 5),
-                temperature_avg,
-            )
-            geopot_avg = array_ns.where(
-                eta_old < eta_t,
-                geopot_avg
-                - gtx.float64(phy_const.RD)
-                * dtemp
-                * (
-                    (array_ns.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t**5)
-                    - 5.0 * (eta_t**4) * eta_old
-                    + 5.0 * (eta_t**3) * (eta_old**2)
-                    - 10.0 / 3.0 * (eta_t**2) * (eta_old**3)
-                    + 1.25 * eta_t * (eta_old**4)
-                    - 0.2 * (eta_old**5)
-                ),
-                geopot_avg,
-            )
-
-            geopot_jw = geopot_avg + u0 * (cos_etav**1.5) * (fac1 * u0 * (cos_etav**1.5) + fac2)
-            temperature_jw = temperature_avg + 0.75 * eta_old * math.pi * u0 / gtx.float64(
-                phy_const.RD
-            ) * sin_etav * array_ns.sqrt(cos_etav) * (2.0 * u0 * fac1 * (cos_etav**1.5) + fac2)
-            newton_function = geopot_jw - geopot[:, k_index]
-            newton_function_prime = -gtx.float64(phy_const.RD) / eta_old * temperature_jw
-
-            eta_old = eta_old - newton_function / newton_function_prime
-
-        eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
-        exner_dp[:, k_index] = (eta_old * p_sfc / gtx.float64(phy_const.P0REF)) ** gtx.float64(
-            phy_const.RD_O_CPD
+        temperature_avg = temp0 * (eta_old**lapse_rate)
+        geopot_avg = temp0 * gtx.float64(phy_const.GRAV) / gamma * (1.0 - eta_old**lapse_rate)
+        temperature_avg = array_ns.where(
+            eta_old < eta_t,
+            temperature_avg + dtemp * ((eta_t - eta_old) ** 5),
+            temperature_avg,
         )
-        theta_v_dp[:, k_index] = temperature_jw / exner_dp[:, k_index]
-        rho_dp[:, k_index] = (
-            exner_dp[:, k_index] ** gtx.float64(phy_const.CVD_O_RD)
-            * gtx.float64(phy_const.P0REF)
-            / gtx.float64(phy_const.RD)
-            / theta_v_dp[:, k_index]
+        geopot_avg = array_ns.where(
+            eta_old < eta_t,
+            geopot_avg
+            - gtx.float64(phy_const.RD)
+            * dtemp
+            * (
+                (array_ns.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t**5)
+                - 5.0 * (eta_t**4) * eta_old
+                + 5.0 * (eta_t**3) * (eta_old**2)
+                - 10.0 / 3.0 * (eta_t**2) * (eta_old**3)
+                + 1.25 * eta_t * (eta_old**4)
+                - 0.2 * (eta_old**5)
+            ),
+            geopot_avg,
         )
+
+        geopot_jw = geopot_avg + u0 * (cos_etav**1.5) * (fac1 * u0 * (cos_etav**1.5) + fac2)
+        temperature_jw = temperature_avg + 0.75 * eta_old * math.pi * u0 / gtx.float64(
+            phy_const.RD
+        ) * sin_etav * array_ns.sqrt(cos_etav) * (2.0 * u0 * fac1 * (cos_etav**1.5) + fac2)
+        newton_function = geopot_jw - geopot
+        newton_function_prime = -gtx.float64(phy_const.RD) / eta_old * temperature_jw
+
+        eta_old = eta_old - newton_function / newton_function_prime
+
+    eta_v_ndarray[:, :] = (eta_old - eta_0) * math.pi * 0.5
+    exner_dp = (eta_old * p_sfc / gtx.float64(phy_const.P0REF)) ** gtx.float64(phy_const.RD_O_CPD)
+    theta_v_dp = temperature_jw / exner_dp
+    rho_dp = (
+        exner_dp ** gtx.float64(phy_const.CVD_O_RD)
+        * gtx.float64(phy_const.P0REF)
+        / gtx.float64(phy_const.RD)
+        / theta_v_dp
+    )
     log.info("Newton iteration completed.")
 
     interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(backend)(

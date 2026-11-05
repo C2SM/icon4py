@@ -366,10 +366,11 @@ class GridFile:
     ) -> np.ndarray:
         """Read a field from the grid file.
 
-        If an index array is given it only reads the values at those positions.
+        If an index array is given only the values at those positions are returned.
+        The whole variable is read from the file and the selection is done in memory.
         Args:
             name: name of the field to read
-            indices: indices to read if requesting a restricted set of indices. We assume this be a 1d array it will be applied to the 1. dimension (after transposition)
+            indices: indices to select if requesting a restricted set of indices. We assume this be a 1d array it will be applied to the 1. dimension (after transposition)
             transpose: flag indicateing whether the array needs to be transposed
                 to match icon4py dimension ordering, defaults to False
             dtype: datatype of the field
@@ -383,12 +384,14 @@ class GridFile:
             n = (variable.shape[0],) if variable_size > 1 else ()
             target_shape = (*n, -1)
 
-            slicer = [slice(None) for _ in range(variable_size)]
-            if indices is not None and indices.size > 0:
-                # apply the slicing to the correct dimension
-                slicer[(1 if transpose else 0)] = data_alloc.as_numpy(indices)
             _log.debug(f"reading {name}: transposing = {transpose}")
-            data = np.asarray(variable[tuple(slicer)])
+            # Read the whole variable and select the indices in numpy: passing
+            # scattered indices to netCDF4 results in one read per contiguous
+            # run of indices, which is very slow for decomposed grids.
+            data = np.asarray(variable[:])
+            if indices is not None and indices.size > 0:
+                # apply the selection to the correct dimension
+                data = np.take(data, data_alloc.as_numpy(indices), axis=(1 if transpose else 0))
             data = np.array(data, dtype=dtype).ravel(order="K").reshape(target_shape)
             return np.transpose(data) if transpose else data
         except KeyError as err:
