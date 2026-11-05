@@ -19,7 +19,7 @@ would require per-process state advances and working tracer buffers.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, NamedTuple
 
 import gt4py.next as gtx
 
@@ -42,7 +42,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
 
     import gt4py.next.typing as gtx_typing
 
@@ -399,6 +399,15 @@ class Tendencies:
             )
 
 
+class DiagnosticOutput(NamedTuple):
+    """One diagnostic buffer of the ``DiagnosticsStore`` together with its declared metadata."""
+
+    process_name: str
+    name: str
+    metadata: model.FieldMetaData
+    field: gtx.Field
+
+
 class DiagnosticsStore:
     """Storage for the diagnostic (non-tendency) outputs of the processes.
 
@@ -406,13 +415,15 @@ class DiagnosticsStore:
     construction and hands it to the component, which writes into it directly.
     The buffers are keyed per process, so two processes may declare the same
     output name. A buffer holds the values of the last computed step, and zeros
-    before its process has run.
+    before its process has run. ``outputs`` enumerates the buffers with their
+    metadata, for consumers such as the model output.
     """
 
     def __init__(self, *, grid: base_grid.Grid, backend: gtx_typing.Backend | None = None) -> None:
         self._grid = grid
         self._backend = backend
         self._store: dict[str, dict[str, gtx.Field]] = {}
+        self._metadata: dict[str, dict[str, model.FieldMetaData]] = {}
 
     def allocate(
         self, process_name: str, outputs_properties: dict[str, model.FieldMetaData]
@@ -424,6 +435,7 @@ class DiagnosticsStore:
         across processes and recycling needs each process's last tendency).
         """
         buffers: dict[str, gtx.Field] = {}
+        metadata: dict[str, model.FieldMetaData] = {}
         for name, props in outputs_properties.items():
             if props.kind == model.FieldKind.TENDENCY:
                 continue
@@ -433,8 +445,21 @@ class DiagnosticsStore:
                     "the store allocates its buffer from that metadata"
                 )
             buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
+            metadata[name] = props
         self._store[process_name] = buffers
+        self._metadata[process_name] = metadata
         return buffers
 
     def __getitem__(self, process_name: str) -> dict[str, gtx.Field]:
         return self._store[process_name]
+
+    def outputs(self) -> Iterator[DiagnosticOutput]:
+        """Every allocated diagnostic buffer with its metadata, in allocation order."""
+        for process_name, buffers in self._store.items():
+            for name, field in buffers.items():
+                yield DiagnosticOutput(
+                    process_name=process_name,
+                    name=name,
+                    metadata=self._metadata[process_name][name],
+                    field=field,
+                )

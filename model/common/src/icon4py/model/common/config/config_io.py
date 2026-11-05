@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import types
 import typing
 
 import cattrs.gen
@@ -66,7 +67,6 @@ class SharedOptionSet:
 
 @CONV.register_structure_hook
 def structure_shared_set(data: dict, _: typing.Any) -> SharedOptionSet:
-    print(data)
     return SharedOptionSet(
         consumers=data["consumers"], options={k: v for k, v in data.items() if k != "consumers"}
     )
@@ -178,38 +178,67 @@ def unstructure_reltime(reltime: time.RelativeTime) -> str:
         return f"{int(seconds * 1_000_000)} microseconds"
 
 
-@CONV.register_structure_hook
-def structure_endtime(endtime_dict: dict, _: typing.Any) -> time.EndOfSimulation:
-    timeclass: type | None = None
-    match timetype := endtime_dict.pop("type"):
-        case "absolute":
-            timeclass = time.AbsoluteTime
-        case "relative":
-            timeclass = time.RelativeTime
-        case "numsteps":
-            timeclass = time.NumTimeSteps
-    if not timeclass:
-        raise TypeError(f"unsupported end of simulation time type: '{timetype}'")
-    return CONV.structure(endtime_dict["value"], timeclass)
+def register_time_union[T](
+    union_type: types.UnionType, mapping: typing.Mapping[str, type[T]]
+) -> None:
+    """Register the tagged YAML form of a union of time types.
+
+    A value is written as a mapping of the member's tag and the member's own YAML form,
+    for example::
+
+        end_of_simulation:
+          type: numsteps
+          value: 10
+        output_interval:
+          type: relative
+          value: 30 minutes
+        start:
+          type: absolute
+          value: '2020-01-01T00:00:00'
+
+    ``mapping`` gives the tag of every member type of ``union_type``.
+    """
+    inverse_mapping: dict[type[T], str] = {member: tag for tag, member in mapping.items()}
+
+    def structure(spec: object, _: typing.Any) -> T:
+        if not isinstance(spec, dict) or set(spec) != {"type", "value"}:
+            raise TypeError(
+                f"Expected a tagged mapping with 'type' and 'value' entries for "
+                f"'{union_type}', got {spec!r}."
+            )
+        tag = spec["type"]
+        if tag not in mapping:
+            raise TypeError(
+                f"Unsupported time type '{tag}' for '{union_type}'; expected one of: "
+                f"{', '.join(mapping)}."
+            )
+        return CONV.structure(spec["value"], mapping[tag])
+
+    def unstructure(value: T) -> dict:
+        return {"type": inverse_mapping[type(value)], "value": CONV.unstructure(value)}
+
+    CONV.register_structure_hook(union_type, structure)
+    CONV.register_unstructure_hook(union_type, unstructure)
 
 
-@CONV.register_unstructure_hook
-def unstructure_endtime(endtime: time.EndOfSimulation) -> dict:
-    timetype: str = ""
-    match endtime:
-        case time.AbsoluteTime():
-            timetype = "absolute"
-        case time.RelativeTime():
-            timetype = "relative"
-        case time.NumTimeSteps():
-            timetype = "numsteps"
-        case _:
-            raise TypeError(f"Unsupported time type: '{type(endtime)}'.")
-    return {"type": timetype, "value": CONV.unstructure(endtime)}
+register_time_union(
+    time.EndOfSimulation,
+    {"absolute": time.AbsoluteTime, "relative": time.RelativeTime, "numsteps": time.NumTimeSteps},
+)
 
 
 def register_config_union[T](union_type: type[T], mapping: typing.Mapping[str, type[T]]) -> None:
+    """Register the tagged YAML form of a union of config classes.
 
+    The member is picked by the ``type`` tag, written next to the member's own options,
+    for example::
+
+        initial_condition:
+          type: jablonowski_williamson
+          p_sfc: 100000.0
+
+    ``mapping`` gives the tag of every member class of ``union_type``.
+    """
     inverse_mapping: dict[type[T], str] = {v: k for k, v in mapping.items()}
 
     def unstructure(instance: T) -> dict:
