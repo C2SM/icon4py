@@ -71,7 +71,9 @@ def _input(grid: base_grid.Grid) -> muphys_component.Muphys.Input:
 
 
 def test_collect_input_views_the_entry_state(grid: base_grid.Grid) -> None:
-    entry = fw.allocate(physics_state.EntryState, grid, None)
+    entry = fw.allocate(
+        physics_state.EntryState, grid, None, step_start=datetime.datetime(2024, 1, 1)
+    )
 
     input = muphys_component.collect_input(entry)
 

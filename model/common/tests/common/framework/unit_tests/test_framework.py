@@ -137,6 +137,15 @@ def test_state_fields_list_the_field_leaves_only(grid: base_grid.Grid) -> None:
         column.dtime = 2.0  # type: ignore[misc]
 
 
+def test_allocate_takes_the_plain_leaves_by_keyword(grid: base_grid.Grid) -> None:
+    column = fw.allocate(Column, grid, None, dtime=60.0)
+    assert column.dtime == 60.0
+    assert list(fw.fields(column)) == ["pressure", "salt"]
+    # a plain leaf without a default must be given
+    with pytest.raises(TypeError, match="dtime"):
+        fw.allocate(Column, grid, None)
+
+
 def test_fields_of_a_kind_are_the_leaves_whose_quantity_is_one(grid: base_grid.Grid) -> None:
     budget = fw.allocate(Budget, grid, None)
     assert list(fw.fields(budget, kind=quantity.Tendency)) == ["tend_pressure"]

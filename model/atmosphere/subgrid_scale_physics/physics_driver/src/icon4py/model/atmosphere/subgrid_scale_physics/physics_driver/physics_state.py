@@ -44,4 +44,4 @@ class EntryState(fw.State):
     pressure_ifc: fw.Field[qty.PressureOnCellKHalf]
     u: fw.Field[qty.UOnCellK]
     v: fw.Field[qty.VOnCellK]
-    step_start: time.AbsoluteTime = time.AbsoluteTime.min
+    step_start: time.AbsoluteTime

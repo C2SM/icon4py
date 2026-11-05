@@ -202,12 +202,14 @@ def allocate[S: State](
     *,
     fill: Callable[[str, tuple[gtx.Dimension, ...]], Any] | None = None,
     only: Collection[str] | None = None,
+    **plain: Any,
 ) -> S:
     """
     A state with a zero field per declaration.
 
     `fill(name, dims)` gives the value of a leaf instead of zeros. `only` names the optional
     leaves to allocate; the other optional leaves are None. Without it every leaf is allocated.
+    The plain leaves (times, flags) are given by keyword in `plain`.
     """
     values: dict[str, Any] = {}
     # type objects are hashable, but typeshed's cache wrapper cannot say so
@@ -220,7 +222,7 @@ def allocate[S: State](
             buffer: Any = field.ndarray  # NDArrayObject declares no __setitem__
             buffer[...] = fill(name, quantity.dims)
         values[name] = field
-    return cls(**values)
+    return cls(**values, **plain)
 
 
 def copy[S1: State, S2: State](src: S1, dst: S2, kind: type[Quantity] = Quantity) -> S2:
