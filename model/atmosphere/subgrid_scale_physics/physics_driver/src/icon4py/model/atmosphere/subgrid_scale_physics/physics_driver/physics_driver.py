@@ -63,19 +63,18 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     """
     Runs the physics processes under parallel coupling (ICON AES's aes_phy_main).
 
-    In one step the entry state is diagnosed once from the prognostics, every process reads that
-    same entry state and gates its wrapped component by its time control, the tendencies of
-    their outputs are summed and the sum is applied to the prognostics once, at the end. The
-    processes never write the prognostics.
-    The driver hands each process a buffer each step, and the process populates that buffer
-    from its own cache; the buffer bookkeeping here is a scratch convenience for the driver,
-    not a correctness contract.
+    In one step the entry state for all physics processes is diagnosed once from
+    the prognostics. The entry state is the input to all processes, which return
+    updated tendencies of their outputs. The tendencies of all processes are
+    summed and applied to the prognostics once, at the end. The processes never
+    write the prognostics.
 
-    Not implemented: ICON AES couples microphysics and turbulence sequentially (each process
-    sees the previous one's provisional update), which would need per-process state advances.
+    The driver writes inputs in place and copies then into the output buffers,
+    if different from the input buffers.
 
-    In place like the diffusion: the caller passes the same buffers as input and output; `run`
-    copies `input` into `output` first where they differ. `rho` is read only.
+    Not implemented: ICON AES couples microphysics and turbulence sequentially
+    (each process sees the previous one's provisional update), which would need
+    per-process state advances.
     """
 
     class Input(fw.State):
