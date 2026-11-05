@@ -315,6 +315,10 @@ class PhysicsState:
         # 4. Halo sync for the horizontal operations of the physics, as ICON's dyn2phy
         #    does for the Smagorinsky scheme: tmx interpolates w to the vertices and
         #    edges of its owned cells, and diffusion left the halo of w stale.
+        #    TODO (Yilu): drop this exchange in a follow-up PR. It duplicates work: tmx
+        #    syncs u and v itself (as ICON's Compute_diagnostics does) and the dycore
+        #    syncs rho at the end of the step; only w is stale here. Sync w and rho at
+        #    the end of diffusion instead.
         self._exchange.exchange(
             dims.CellDim, self.rho, self.diagnostics.u, self.diagnostics.v, self.w
         )
