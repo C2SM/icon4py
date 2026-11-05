@@ -123,12 +123,10 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self.grid = grid
         self.allocator = model_backends.get_allocator(backend)
         self.processes = tuple(processes)
-        # one scratch buffer per process, handed to it each step; the process populates it
-        # from its own cache, so the bookkeeping here is convenience, not correctness
-        # TODO(msimberg): This should be keyed by process instead of relying on order?
-        self._buffers: tuple[fw.State, ...] = tuple(
-            fw.allocate(process.Output, self.grid, self.allocator) for process in self.processes
-        )
+        self._process_outputs: dict[physics_process.PhysicsProcess[Any, Any], fw.State] = {
+            process: fw.allocate(process.Output, self.grid, self.allocator)
+            for process in self.processes
+        }
         # the diagnostics the processes read, derived here each step
         self.diagnostics = fw.allocate(states.Diagnostics, grid, self.allocator)
         # one sum per tendency the processes emit, by output name, made when first seen
@@ -235,8 +233,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     def run(self, input: Input, output: Output) -> Output:
         entry = self._diagnose(input)
         self._zero_accumulators()
-        for process, buffer in zip(self.processes, self._buffers, strict=True):
-            self._accumulate(process.run(entry, buffer))
+        for process, process_output in self._process_outputs.items():
+            self._accumulate(process.run(entry, process_output))
         self._apply(entry, self.dtime.total_seconds(), output)
         return output
 

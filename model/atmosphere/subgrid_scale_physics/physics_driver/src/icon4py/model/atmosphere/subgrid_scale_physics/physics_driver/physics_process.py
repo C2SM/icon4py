@@ -28,7 +28,9 @@ if typing.TYPE_CHECKING:
 __all__ = ["PhysicsProcess"]
 
 
-@dataclasses.dataclass
+# Disable the default __eq__ so that PhysicsProcess compares by identity and
+# enables __hash__ so that a PhysicsProcess can be used in dicts.
+@dataclasses.dataclass(eq=False)
 class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.EntryState, O]):
     """
     A component that gates its wrapped component by time control.
