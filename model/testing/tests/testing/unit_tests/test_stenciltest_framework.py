@@ -440,15 +440,10 @@ class TestConnectivitiesAsNumpy:
 
 
 class TestDataAllocationWrapper:
-    @pytest.fixture(autouse=True)
-    def seed_context(self):
-        """The random constructors draw from a seed context, as fixtures do."""
-        with stencil_tests._seed_context(f"{__name__}:{type(self).__name__}:"):
-            yield
-
     @pytest.fixture
     def wrapper(self, grid):
-        return stencil_tests.DataAllocationWrapper(grid=grid, allocator=None)
+        """A wrapper seeded as the `data_alloc` fixture seeds one."""
+        return _seeded_wrapper(grid, f"{__name__}:{type(self).__name__}:")
 
     @pytest.mark.parametrize(
         "construct",
@@ -539,91 +534,101 @@ class TestDataAllocationWrapper:
             assert wrapped == method, f"'{name}' has drifted from 'data_allocation.{name}'"
 
 
-# -- Seed context ----------------------------------------------------------------------
+# -- Seeded random data ----------------------------------------------------------------
 
 
-class TestSeedContext:
-    @pytest.fixture
-    def wrapper(self, grid):
-        return stencil_tests.DataAllocationWrapper(grid=grid, allocator=None)
+def _seeded_wrapper(grid, key: str) -> stencil_tests.DataAllocationWrapper:
+    """A wrapper seeded from `key`, as the `data_alloc` fixture seeds one."""
+    return stencil_tests.DataAllocationWrapper(
+        grid=grid, allocator=None, seed_sequence=stencil_tests._derived_seed_sequence(key)
+    )
 
-    def test_identical_keys_produce_identical_fields(self, wrapper):
+
+class TestSeededWrapper:
+    def test_identical_keys_produce_identical_fields(self, grid):
         """Every rank and xdist worker derives the same streams from the same key."""
-        with stencil_tests._seed_context("module:Suite:param0"):
-            first = wrapper.random_field(dims.CellDim).asnumpy()
-        with stencil_tests._seed_context("module:Suite:param0"):
-            second = wrapper.random_field(dims.CellDim).asnumpy()
+        first = _seeded_wrapper(grid, "module:Suite:param0")
+        second = _seeded_wrapper(grid, "module:Suite:param0")
 
-        np.testing.assert_array_equal(first, second)
+        np.testing.assert_array_equal(
+            first.random_field(dims.CellDim).asnumpy(),
+            second.random_field(dims.CellDim).asnumpy(),
+        )
 
-    def test_different_keys_produce_different_fields(self, wrapper):
+    def test_different_keys_produce_different_fields(self, grid):
         """A different parametrization id must not collide on one seed."""
-        with stencil_tests._seed_context("module:Suite:param0"):
-            first = wrapper.random_field(dims.CellDim).asnumpy()
-        with stencil_tests._seed_context("module:Suite:param1"):
-            second = wrapper.random_field(dims.CellDim).asnumpy()
+        first = _seeded_wrapper(grid, "module:Suite:param0")
+        second = _seeded_wrapper(grid, "module:Suite:param1")
+
+        assert not np.array_equal(
+            first.random_field(dims.CellDim).asnumpy(),
+            second.random_field(dims.CellDim).asnumpy(),
+        )
+
+    def test_each_constructor_takes_the_next_stream(self, grid):
+        wrapper = _seeded_wrapper(grid, "module:Suite:")
+
+        first = wrapper.random_field(dims.CellDim).asnumpy()
+        second = wrapper.random_field(dims.CellDim).asnumpy()
 
         assert not np.array_equal(first, second)
 
-    def test_each_constructor_takes_the_next_stream(self, wrapper):
-        with stencil_tests._seed_context("module:Suite:"):
-            first = wrapper.random_field(dims.CellDim).asnumpy()
-            second = wrapper.random_field(dims.CellDim).asnumpy()
+    def test_seeded_generator_serves_successive_streams(self, grid):
+        wrapper = _seeded_wrapper(grid, "module:Suite:")
 
-        assert not np.array_equal(first, second)
-
-    def test_seeded_generator_serves_successive_streams(self, wrapper):
-        with stencil_tests._seed_context("module:Suite:"):
-            first = wrapper.seeded_generator()
-            second = wrapper.seeded_generator()
+        first = wrapper.seeded_generator()
+        second = wrapper.seeded_generator()
 
         assert isinstance(first, np.random.Generator)
         assert not np.array_equal(first.random(8), second.random(8))
 
-    def test_seeded_generator_requires_an_active_context(self, wrapper):
-        with pytest.raises(RuntimeError, match="A seed context must be active"):
-            wrapper.seeded_generator()
-
-    def test_random_constructors_require_an_active_context(self, wrapper):
-        with pytest.raises(RuntimeError, match="A seed context must be active"):
-            wrapper.random_field(dims.CellDim)
-
-    def test_numeric_seed_mixes_a_global_base_into_the_derivation(self, wrapper, monkeypatch):
+    def test_numeric_seed_mixes_a_global_base_into_the_derivation(self, grid, monkeypatch):
         """The same numeric base reproduces the same data; another base shifts it."""
         monkeypatch.setenv("ICON4PY_TEST_SEED", "41")
-        with stencil_tests._seed_context("module:Suite:"):
-            first = wrapper.random_field(dims.CellDim).asnumpy()
-        with stencil_tests._seed_context("module:Suite:"):
-            second = wrapper.random_field(dims.CellDim).asnumpy()
+        first = _seeded_wrapper(grid, "module:Suite:")
+        second = _seeded_wrapper(grid, "module:Suite:")
         monkeypatch.setenv("ICON4PY_TEST_SEED", "42")
-        with stencil_tests._seed_context("module:Suite:"):
-            third = wrapper.random_field(dims.CellDim).asnumpy()
+        third = _seeded_wrapper(grid, "module:Suite:")
 
-        np.testing.assert_array_equal(first, second)
-        assert not np.array_equal(first, third)
+        np.testing.assert_array_equal(
+            first.random_field(dims.CellDim).asnumpy(),
+            second.random_field(dims.CellDim).asnumpy(),
+        )
+        assert not np.array_equal(
+            first.random_field(dims.CellDim).asnumpy(),
+            third.random_field(dims.CellDim).asnumpy(),
+        )
 
-    def test_random_restores_os_entropy(self, wrapper, monkeypatch):
+    def test_random_restores_os_entropy(self, grid, monkeypatch):
         monkeypatch.setenv("ICON4PY_TEST_SEED", "random")
-        with stencil_tests._seed_context("module:Suite:"):
-            first = wrapper.random_field(dims.CellDim).asnumpy()
-        with stencil_tests._seed_context("module:Suite:"):
-            second = wrapper.random_field(dims.CellDim).asnumpy()
+        first = _seeded_wrapper(grid, "module:Suite:")
+        second = _seeded_wrapper(grid, "module:Suite:")
 
-        assert not np.array_equal(first, second)
+        assert not np.array_equal(
+            first.random_field(dims.CellDim).asnumpy(),
+            second.random_field(dims.CellDim).asnumpy(),
+        )
 
-    def test_reference_redirect_serves_the_context_and_is_restored(self):
-        """`reference` bodies draw `np.random.default_rng()` from the context."""
+    def test_reference_rng_draws_the_suite_seed(self):
+        """The `rng` passed to a `reference` that declares one draws the suite's seed."""
 
-        def draw():
-            with (
-                stencil_tests._seed_context("module:Suite:") as context,
-                stencil_tests._redirect_default_rng(context),
-            ):
-                return np.random.default_rng().random(4)
+        class Suite:
+            pass
 
-        original = np.random.default_rng
-        np.testing.assert_array_equal(draw(), draw())
-        assert np.random.default_rng is original
+        first = stencil_tests._reference_rng(Suite)
+        second = stencil_tests._reference_rng(Suite)
+
+        np.testing.assert_array_equal(first.random(4), second.random(4))
+
+    def test_reference_expects_rng_detects_the_parameter(self):
+        def with_rng(grid, *, rng):
+            pass
+
+        def without_rng(grid):
+            pass
+
+        assert stencil_tests._reference_expects_rng(with_rng)
+        assert not stencil_tests._reference_expects_rng(without_rng)
 
     @pytest.mark.parametrize(
         ("value", "expected"),
@@ -647,9 +652,11 @@ class TestSeedContext:
         with pytest.raises(ValueError, match="a non-negative integer or the literal 'random'"):
             stencil_tests._read_test_seed()
 
-    def test_random_field_requires_a_seed(self, grid):
-        with pytest.raises(TypeError, match="seed"):
-            data_allocation.random_field(grid, dims.CellDim)
+    def test_random_field_accepts_an_omitted_seed(self, grid):
+        """Omitting the seed draws OS entropy, as before the seeding change."""
+        field = data_allocation.random_field(grid, dims.CellDim)
+
+        assert field.shape == (grid.num_cells,)
 
 
 # -- StencilTest.verify_data -----------------------------------------------------------

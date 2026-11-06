@@ -138,11 +138,15 @@ def grid(
         return grid_manager.grid
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="class")
 def data_alloc(
-    grid: base_grid.Grid, backend_like: model_backends.BackendLike
+    grid: base_grid.Grid,
+    backend_like: model_backends.BackendLike,
+    request: pytest.FixtureRequest,
 ) -> _stencil_tests.DataAllocationWrapper:
-    """Field constructors with the grid and the selected backend's allocator bound."""
+    """Field constructors with the grid, the selected backend's allocator, and the suite's seed bound."""
     return _stencil_tests.DataAllocationWrapper(
-        grid=grid, allocator=model_backends.get_allocator(backend_like)
+        grid=grid,
+        allocator=model_backends.get_allocator(backend_like),
+        seed_sequence=_stencil_tests._suite_seed_sequence(request),
     )
