@@ -18,9 +18,6 @@ from gt4py.next.embedded import nd_array_field
 from icon4py.model.common.quantity import Quantity
 
 
-__all__ = ["Field"]
-
-
 @dataclasses.dataclass(frozen=True, eq=False, init=False, repr=False)
 class Field[Q: Quantity](nd_array_field.NdArrayField[Any, Any]):
     """
