@@ -105,8 +105,10 @@ def get_dace_options(
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
     # The callback function below is installed unconditionally at backend creation
-    # because the driver passes an already-instantiated backend to its granules,
-    # bypassing the per-program options above; the callback itself decides per SDFG name.
+    # because the driver passes an already-instantiated backend to its granules.
+    # Then, the callback itself takes action per program based on the SDFG name.
+    # TODO(edopao,iomaganaris): This is a general issue with the current design of
+    #   the backend customization, which should be fixed in the future.
     if gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowVerticalSplitCallBack not in (
         optimization_hooks
     ):

@@ -11,13 +11,34 @@ import typing
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import pytest
+from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.common import (
     backend_configuration as backend_cfg,
     field_type_aliases as fa,
     model_backends,
+    model_options,
 )
 from icon4py.model.common.model_options import customize_backend, setup_program
+
+
+def _default_dace_backend(device: model_backends.DeviceType) -> gtx_typing.Backend:
+    """Construct the default dace backend for the given device.
+
+    The backend carries the default optimization hooks that 'get_dace_options'
+    installs for dace backends, so it is equivalent to what 'customize_backend'
+    produces for a dace backend descriptor.
+    """
+    return model_backends.make_custom_dace_backend(
+        device=device,
+        optimization_args={
+            "optimization_hooks": {
+                gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowVerticalSplitCallBack: (
+                    model_options._apply_vertical_map_split
+                )
+            }
+        },
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -44,7 +65,7 @@ def program_return_field(field: fa.CellKField[float], factor: float):  # type: i
         ),
         (
             model_backends.make_custom_dace_backend,
-            model_backends.make_custom_dace_backend(device=model_backends.CPU),
+            _default_dace_backend(model_backends.CPU),
         ),
     ],
 )
@@ -61,7 +82,7 @@ def test_custom_backend_options(backend_factory: typing.Callable, expected_backe
 def test_custom_backend_device() -> None:
     device = model_backends.CPU
     backend = customize_backend(None, device)
-    default_backend = model_backends.make_custom_dace_backend(device=device)
+    default_backend = _default_dace_backend(device)
     # TODO(havogt): test should be improved to work without string comparison
     assert repr(default_backend) == repr(backend)
 
@@ -78,13 +99,26 @@ def test_custom_backend_with_external_workspace_config_and_no_explicit_device() 
 
 
 @pytest.mark.parametrize(
-    "backend",
+    ("backend", "expected_backend"),
     [
-        model_backends.make_custom_dace_backend(device=model_backends.CPU),  # conrete backend
-        model_backends.CPU,
-        {"backend_factory": model_backends.make_custom_dace_backend, "device": model_backends.CPU},
-        {"backend_factory": model_backends.make_custom_dace_backend},
-        {"device": model_backends.CPU},
+        # A concrete backend instance is used as-is, without the default hooks.
+        (
+            model_backends.make_custom_dace_backend(device=model_backends.CPU),  # concrete backend
+            model_backends.make_custom_dace_backend(device=model_backends.CPU),
+        ),
+        (model_backends.CPU, _default_dace_backend(model_backends.CPU)),
+        (
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.CPU,
+            },
+            _default_dace_backend(model_backends.CPU),
+        ),
+        (
+            {"backend_factory": model_backends.make_custom_dace_backend},
+            _default_dace_backend(model_backends.CPU),
+        ),
+        ({"device": model_backends.CPU}, _default_dace_backend(model_backends.CPU)),
     ],
 )
 def test_setup_program_defaults(
@@ -92,9 +126,9 @@ def test_setup_program_defaults(
     | model_backends.DeviceType
     | model_backends.BackendDescriptor
     | None,
+    expected_backend: gtx_typing.Backend,
 ) -> None:
     testee = setup_program(backend=backend, program=program_return_field)
-    expected_backend = model_backends.make_custom_dace_backend(device=model_backends.CPU)
     expected_program = functools.partial(
         program_return_field.with_backend(expected_backend)
         .with_compilation_options(enable_jit=False)
@@ -116,15 +150,15 @@ def test_setup_program_defaults(
                 "backend_factory": model_backends.make_custom_dace_backend,
                 "device": model_backends.GPU,
             },
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            _default_dace_backend(model_backends.GPU),
         ),
         (
             {"backend_factory": model_backends.make_custom_dace_backend},
-            model_backends.make_custom_dace_backend(device=model_backends.CPU),
+            _default_dace_backend(model_backends.CPU),
         ),
         (
             {"device": model_backends.GPU},
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            _default_dace_backend(model_backends.GPU),
         ),
     ],
 )
