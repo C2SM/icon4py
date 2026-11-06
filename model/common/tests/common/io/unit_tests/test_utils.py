@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+import numpy as np
 import xarray as xa
 
 import icon4py.model.common.grid.simple as simple_grid
@@ -17,7 +18,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 def test_data_array_has_ugrid_and_cf_attributes():
     grid = simple_grid.simple_grid()
-    buffer = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    buffer = data_alloc.random_field(grid, dims.CellDim, dims.KDim, seed=np.random.SeedSequence())
     data_array = utils.to_data_array(buffer, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"])
     assert data_array.attrs["units"] == "kg m-3"
     assert data_array.attrs["standard_name"] == "air_density"

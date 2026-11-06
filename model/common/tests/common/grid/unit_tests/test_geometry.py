@@ -435,10 +435,10 @@ def test_vertex(
 
 def test_sparse_fields_creator() -> None:
     grid = simple.simple_grid()
-    f1 = data_alloc.random_field(grid, dims.EdgeDim)
-    f2 = data_alloc.random_field(grid, dims.EdgeDim)
-    g1 = data_alloc.random_field(grid, dims.EdgeDim)
-    g2 = data_alloc.random_field(grid, dims.EdgeDim)
+    f1 = data_alloc.random_field(grid, dims.EdgeDim, seed=np.random.SeedSequence())
+    f2 = data_alloc.random_field(grid, dims.EdgeDim, seed=np.random.SeedSequence())
+    g1 = data_alloc.random_field(grid, dims.EdgeDim, seed=np.random.SeedSequence())
+    g2 = data_alloc.random_field(grid, dims.EdgeDim, seed=np.random.SeedSequence())
 
     sparse = as_sparse_field((dims.EdgeDim, dims.E2CDim), [(f1, f2), (g1, g2)])
     sparse_e2c = functools.partial(as_sparse_field, (dims.EdgeDim, dims.E2CDim))

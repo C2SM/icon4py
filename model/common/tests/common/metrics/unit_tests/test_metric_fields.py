@@ -11,6 +11,7 @@ import math
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
@@ -141,7 +142,9 @@ def test_compute_rayleigh_w(
 ) -> None:
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
-    rayleigh_w_full = data_alloc.random_field(icon_grid, dims.KHalfDim, allocator=backend)
+    rayleigh_w_full = data_alloc.random_field(
+        icon_grid, dims.KHalfDim, allocator=backend, seed=np.random.SeedSequence()
+    )
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
@@ -168,10 +171,10 @@ def test_compute_coeff_dwdz(
     coeff2_dwdz_ref = metrics_savepoint.coeff2_dwdz()
 
     coeff1_dwdz_full = data_alloc.random_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend, seed=np.random.SeedSequence()
     )
     coeff2_dwdz_full = data_alloc.random_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend, seed=np.random.SeedSequence()
     )
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),

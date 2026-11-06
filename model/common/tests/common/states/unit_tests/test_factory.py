@@ -121,7 +121,12 @@ def cell_coordinate_source(
             _prep_for_dict("lon", grid_savepoint.lon(dims.CellDim)),
         ]
         + [
-            _prep_for_dict(name, data_alloc.random_field(grid, dims.CellDim, dims.KDim))
+            _prep_for_dict(
+                name,
+                data_alloc.random_field(
+                    grid, dims.CellDim, dims.KDim, seed=np.random.SeedSequence()
+                ),
+            )
             for name in ["x", "y", "z"]
         ]
     )
@@ -300,8 +305,8 @@ def test_composite_field_source_contains_all_metadata(
 ) -> None:
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim, seed=np.random.SeedSequence())
+    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, seed=np.random.SeedSequence())
     data = dict([_prep_for_dict("foo", foo), _prep_for_dict("bar", bar)])
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
@@ -322,8 +327,8 @@ def test_composite_field_source_get_all_fields(
 ) -> None:
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim, seed=np.random.SeedSequence())
+    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, seed=np.random.SeedSequence())
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = dict(
         [_prep_for_dict("foo", foo), _prep_for_dict("bar", bar)]
     )
@@ -358,8 +363,8 @@ def test_composite_field_source_raises_upon_get_unknown_field(
 ) -> None:
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim, seed=np.random.SeedSequence())
+    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, seed=np.random.SeedSequence())
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = dict(
         [_prep_for_dict("foo", foo), _prep_for_dict("bar", bar)]
     )
@@ -399,7 +404,9 @@ def test_compute_scalar_value_from_numpy_provider(
 def _double_precision_source() -> SimpleFieldSource:
     """Field source on the simple grid holding float64 data, like the factories do internally."""
     grid = simple.simple_grid()
-    field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=gtx.float64)
+    field = data_alloc.random_field(
+        grid, dims.CellDim, dims.KDim, seed=np.random.SeedSequence(), dtype=gtx.float64
+    )
     source = SimpleFieldSource(
         data_=dict(
             [_prep_for_dict("default_dtype", field), _prep_for_dict("explicit_double", field)]

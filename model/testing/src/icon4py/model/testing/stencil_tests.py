@@ -32,12 +32,13 @@ import ast
 import contextlib
 import dataclasses
 import functools
+import hashlib
 import inspect
 import os
 import textwrap
 import types
 from collections.abc import Callable, Generator, Iterator, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -201,6 +202,45 @@ def _static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
     return marked
 
 
+def _seeded_input_data(
+    plain: types.FunctionType, fixture_kwargs: Mapping[str, Any]
+) -> Callable[..., Any]:
+    """
+    Wrap an `input_data` fixture so that a seed context is active while it runs.
+
+    The derivation key combines the test module, the suite class, and, for a
+    parametrized fixture, its parametrization id: stable strings only, so every
+    rank and xdist worker derives the same seed. `request` is added to the
+    signature pytest resolves when the fixture does not declare it, so deriving
+    the key never requires an extra fixture argument.
+    """
+    signature = inspect.signature(plain)
+    expects_request = "request" in signature.parameters
+    if not expects_request:
+        request_parameter = inspect.Parameter("request", inspect.Parameter.KEYWORD_ONLY)
+        signature = signature.replace(
+            parameters=[*signature.parameters.values(), request_parameter]
+        )
+    ids = fixture_kwargs.get("ids")
+    parametrized = "params" in fixture_kwargs
+
+    @functools.wraps(plain)
+    def seeded(request: pytest.FixtureRequest, **kwargs: Any) -> Any:
+        class_name = request.cls.__name__ if request.cls is not None else ""
+        if parametrized:
+            parametrization_id = str(ids(request.param)) if callable(ids) else str(request.param)
+        else:
+            parametrization_id = ""
+        key = f"{request.module.__name__}:{class_name}:{parametrization_id}"
+        with _seed_context(key):
+            if expects_request:
+                kwargs["request"] = request
+            return plain(**kwargs)
+
+    seeded.__signature__ = signature
+    return seeded
+
+
 def _input_data_fixture(
     func: types.FunctionType | staticmethod | None = None, **kwargs: Any
 ) -> Any:
@@ -228,7 +268,7 @@ def _input_data_fixture(
     kwargs.setdefault("scope", "class")
     # Wrapped in a `staticmethod` because pytest deprecated class-scoped fixtures defined
     # as instance methods: `self` is a different instance there than in the test.
-    fixture = staticmethod(pytest.fixture(**kwargs)(plain))
+    fixture = staticmethod(pytest.fixture(**kwargs)(_seeded_input_data(plain, kwargs)))
     setattr(fixture, _INPUT_DATA_FIXTURE_MARKER, True)
 
     return fixture
@@ -246,6 +286,135 @@ else:
     input_data_fixture = _input_data_fixture
 
 
+# -- Seeded random data ----------------------------------------------------------------
+
+
+_TEST_SEED_ENV_VAR: Final = "ICON4PY_TEST_SEED"
+
+
+def _read_test_seed() -> int | Literal["random"] | None:
+    """
+    The `ICON4PY_TEST_SEED` setting.
+
+    `None` when unset or empty, a non-negative integer mixed into every derivation
+    as a global base, or the literal `'random'` to disable seeding and draw from
+    OS entropy.
+    """
+    raw = os.getenv(_TEST_SEED_ENV_VAR)
+    if raw is None or raw == "":
+        return None
+    if raw == "random":
+        return "random"
+    if not raw.isdecimal():
+        raise ValueError(
+            f"Invalid value '{raw}' for environment variable '{_TEST_SEED_ENV_VAR}': it must be"
+            " a non-negative integer or the literal 'random'."
+        )
+    return int(raw)
+
+
+def _stable_seed(key: str) -> int:
+    """A stable integer for `key`: identical in every process, unlike `hash`."""
+    return int.from_bytes(hashlib.sha256(key.encode()).digest(), "big")
+
+
+class _SeedContext:
+    """
+    Source of the random streams of one fixture invocation or `reference` call.
+
+    With seeding enabled, every `random_*` call takes the next child stream of one
+    `SeedSequence` derived from the stable strings of the invocation, so each field
+    gets its own stream and every rank and xdist worker derives the same one. With
+    seeding disabled, each call draws fresh OS entropy, as before seeding existed.
+    """
+
+    def __init__(self, key: str) -> None:
+        seed = _read_test_seed()
+        if seed == "random":
+            self._sequence: np.random.SeedSequence | None = None
+        elif seed is None:
+            self._sequence = np.random.SeedSequence(_stable_seed(key))
+        else:
+            self._sequence = np.random.SeedSequence([seed, _stable_seed(key)])
+
+    @property
+    def deterministic(self) -> bool:
+        """Whether the streams are reproducible, i.e. seeding is not disabled."""
+        return self._sequence is not None
+
+    def next_seed(self) -> np.random.SeedSequence:
+        """The next child stream, one per `random_*` call."""
+        if self._sequence is None:
+            return np.random.SeedSequence()
+        (child,) = self._sequence.spawn(1)
+        return child
+
+    def next_generator(self) -> np.random.Generator:
+        """
+        A generator on the next seed stream.
+
+        Built directly on `PCG64`, the bit generator `default_rng` constructs,
+        because the redirect installed while a `reference` runs replaces
+        `default_rng` itself.
+        """
+        return np.random.Generator(np.random.PCG64(self.next_seed()))
+
+
+_current_seed_context: _SeedContext | None = None
+
+
+@contextlib.contextmanager
+def _seed_context(key: str) -> Iterator[_SeedContext]:
+    """Activate a seed context derived from `key`, restoring the previous one on exit."""
+    global _current_seed_context  # noqa: PLW0603 [global-statement] the active context is process state by design
+    previous = _current_seed_context
+    _current_seed_context = _SeedContext(key)
+    try:
+        yield _current_seed_context
+    finally:
+        _current_seed_context = previous
+
+
+def _require_seed_context() -> _SeedContext:
+    """The active seed context; a loud failure rather than a silent entropy draw."""
+    if _current_seed_context is None:
+        raise RuntimeError(
+            "A seed context must be active to draw seeded random data: it is set up around"
+            " 'input_data' fixture invocations and 'reference' calls of stencil tests."
+        )
+    return _current_seed_context
+
+
+@contextlib.contextmanager
+def _redirect_default_rng(context: _SeedContext) -> Iterator[None]:
+    """
+    Serve `np.random.default_rng()` from `context` while active.
+
+    This covers `reference` bodies, where the wrapper is not in scope. Only
+    installed while seeding is enabled: in entropy mode `default_rng` already
+    draws fresh entropy. The original function is restored on exit.
+    """
+    if not context.deterministic:
+        yield
+        return
+    original = np.random.default_rng
+    np.random.default_rng = context.next_generator  # type: ignore[assignment]
+    try:
+        yield
+    finally:
+        np.random.default_rng = original
+
+
+def _suite_seed_key(suite: type) -> str:
+    """
+    The derivation key of a `reference` call.
+
+    The test-level parametrization is the `STATIC_PARAMS` variant, which shares one
+    `input_data` fixture and must not enter the key.
+    """
+    return f"{suite.__module__}:{suite.__name__}:"
+
+
 @dataclasses.dataclass(frozen=True)
 class DataAllocationWrapper:
     """
@@ -256,6 +425,9 @@ class DataAllocationWrapper:
 
     A `StencilTest` suite receives one as the `data_alloc` argument of its `input_data`
     fixture. See the wrapped module for the meaning of the remaining arguments.
+
+    The `random_*` constructors draw from the active seed context, and
+    `seeded_generator` hands out its streams directly.
     """
 
     grid: base.Grid
@@ -311,6 +483,16 @@ class DataAllocationWrapper:
             grid=self.grid, dim=dim, extend=extend, dtype=dtype, allocator=self.allocator
         )
 
+    def seeded_generator(self) -> np.random.Generator:
+        """
+        A random generator on the next seed stream of the active seed context.
+
+        For direct draws inside `input_data` fixtures that the field constructors
+        below do not cover; each call takes the next stream. Raises `RuntimeError`
+        when no seed context is active, i.e. outside a stencil-test fixture.
+        """
+        return _require_seed_context().next_generator()
+
     def random_field(
         self,
         *dims: gtx.Dimension,
@@ -319,10 +501,11 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
-        """A field of uniform random values in `[low, high)`."""
+        """A field of uniform random values in `[low, high)`, on the next seed stream."""
         return data_allocation.random_field(
             self.grid,
             *dims,
+            seed=_require_seed_context().next_seed(),
             low=low,
             high=high,
             dtype=dtype,
@@ -336,9 +519,14 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
-        """A field of random booleans, or of `dtype` if given."""
+        """A field of random booleans, or of `dtype` if given, on the next seed stream."""
         return data_allocation.random_mask(
-            self.grid, *dims, dtype=dtype, allocator=self.allocator, extend=extend
+            self.grid,
+            *dims,
+            seed=_require_seed_context().next_seed(),
+            dtype=dtype,
+            allocator=self.allocator,
+            extend=extend,
         )
 
     def random_sign(
@@ -347,9 +535,14 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
-        """A field of random values in `{-1, 1}`."""
+        """A field of random values in `{-1, 1}`, on the next seed stream."""
         return data_allocation.random_sign(
-            self.grid, *dims, dtype=dtype, allocator=self.allocator, extend=extend
+            self.grid,
+            *dims,
+            seed=_require_seed_context().next_seed(),
+            dtype=dtype,
+            allocator=self.allocator,
+            extend=extend,
         )
 
     def zero_field(
@@ -500,10 +693,19 @@ def test_and_benchmark(
     program_kwargs: dict[str, Any] = {**input_data, "offset_provider": grid.connectivities}
 
     if not skip_verification:
-        reference_outputs = self.reference(
-            grid=grid,
-            **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
-        )
+        # `reference` bodies may draw their own random data and have no `data_alloc`
+        # in scope, so a seed context is active around the call and `default_rng`
+        # is redirected to it.
+        with (
+            _seed_context(_suite_seed_key(type(self))) as context,
+            _redirect_default_rng(context),
+        ):
+            reference_outputs = self.reference(
+                grid=grid,
+                **{
+                    k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()
+                },
+            )
         configured_program(**program_kwargs)
         self.verify_data(input_data=input_data, reference_outputs=reference_outputs)
 

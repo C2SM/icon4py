@@ -41,7 +41,9 @@ def _random_components() -> list[list[data_alloc.NDArray]]:
     """Nine random edge fields as numpy arrays, indexed as ``components[i][j]``."""
     return [
         [
-            data_alloc.random_field(GRID, dims.EdgeDim, dims.KDim, dtype=wpfloat).asnumpy()
+            data_alloc.random_field(
+                GRID, dims.EdgeDim, dims.KDim, seed=np.random.SeedSequence(), dtype=wpfloat
+            ).asnumpy()
             for _ in range(3)
         ]
         for _ in range(3)

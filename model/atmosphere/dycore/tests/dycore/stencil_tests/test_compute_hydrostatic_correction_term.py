@@ -141,7 +141,7 @@ class TestComputeHydrostaticCorrectionTerm(stencil_tests.StencilTest):
             (grid.size[dims.EdgeDim], grid.size[dims.E2CDim], grid.size[dims.KDim]),
             dtype=gtx.int32,
         )
-        rng = np.random.default_rng()
+        rng = data_alloc.seeded_generator()
         for k in range(grid.num_levels):
             # `theta_v` and `inv_ddqz_z_full` are model-level fields, so `k + ikoffset` must stay
             # below `num_levels`; the `+1` read of the half-level `theta_v_ic` is then still in range.

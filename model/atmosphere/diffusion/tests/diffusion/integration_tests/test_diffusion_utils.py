@@ -30,7 +30,10 @@ def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
 @pytest.mark.single_precision_ready
 def test_scale_k(backend):
     grid = simple_grid.simple_grid(allocator=backend)
-    field = data_alloc.random_field(grid, dims.KDim, dtype=wpfloat, allocator=backend)
+    # Only stencil tests are seeded; these inputs keep fresh OS entropy.
+    field = data_alloc.random_field(
+        grid, dims.KDim, seed=np.random.SeedSequence(), dtype=wpfloat, allocator=backend
+    )
     scaled_field = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     factor = wpfloat(2.0)
     diffusion_utils.scale_k.with_backend(backend)(field, factor, scaled_field, offset_provider={})
