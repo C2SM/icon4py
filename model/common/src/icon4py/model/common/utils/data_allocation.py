@@ -145,10 +145,10 @@ def random_field(
 def random_sign(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    seed: np.random.SeedSequence | None = None,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
+    seed: np.random.SeedSequence | None = None,
 ) -> gtx.Field:
     """A field of values drawn from `{-1, 1}`, seeded by `seed` (OS entropy if `None`)."""
     values = np.random.default_rng(seed).choice([-1, 1], size=_shape(grid, *dims, extend=extend))
