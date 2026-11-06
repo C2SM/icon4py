@@ -32,6 +32,7 @@ import ast
 import contextlib
 import dataclasses
 import functools
+import hashlib
 import inspect
 import os
 import textwrap
@@ -246,6 +247,79 @@ else:
     input_data_fixture = _input_data_fixture
 
 
+# -- Seeded random data ----------------------------------------------------------------
+
+
+_TEST_SEED_ENV_VAR: Final = "ICON4PY_TEST_SEED"
+
+
+def _read_test_seed() -> int | None:
+    """
+    The `ICON4PY_TEST_SEED` setting.
+
+    `None` when unset or empty, a non-negative integer mixed into every derivation
+    as a global base.
+    """
+    raw = os.getenv(_TEST_SEED_ENV_VAR)
+    if raw is None or raw == "":
+        return None
+    if not raw.isdecimal():
+        raise ValueError(
+            f"Invalid value '{raw}' for environment variable '{_TEST_SEED_ENV_VAR}': it must be"
+            " a non-negative integer."
+        )
+    return int(raw)
+
+
+def _stable_seed(key: str) -> int:
+    """A stable integer for `key`: identical in every process, unlike `hash`."""
+    return int.from_bytes(hashlib.sha256(key.encode()).digest(), "big")
+
+
+def _derived_seed_sequence(key: str) -> np.random.SeedSequence:
+    """
+    The seed sequence derived from `key`.
+
+    Applies the `ICON4PY_TEST_SEED` states: derived from `key` alone when unset or
+    empty, or mixed with a numeric global base when one is given.
+    """
+    seed = _read_test_seed()
+    if seed is None:
+        return np.random.SeedSequence(_stable_seed(key))
+    return np.random.SeedSequence([seed, _stable_seed(key)])
+
+
+def _suite_rng(request: pytest.FixtureRequest) -> np.random.Generator:
+    """
+    The requesting suite's generator.
+
+    The key combines the test module and the suite class: stable strings only, so
+    every rank and xdist worker derives the same generator.
+    """
+    suite = request.cls
+    if suite is None:
+        raise RuntimeError(
+            "The 'data_alloc' fixture requires a 'StencilTest' suite: the seed derives from"
+            " the suite class."
+        )
+    return np.random.default_rng(_derived_seed_sequence(_suite_seed_key(suite)))
+
+
+def _suite_seed_key(suite: type) -> str:
+    """
+    The derivation key of a `reference` call.
+
+    The test-level parametrization is the `STATIC_PARAMS` variant, which shares one
+    `input_data` fixture and must not enter the key.
+    """
+    return f"{suite.__module__}:{suite.__name__}:"
+
+
+def _reference_expects_rng(reference: Callable[..., Any]) -> bool:
+    """Whether the `reference` declares an `rng` parameter to draw seeded random data."""
+    return "rng" in inspect.signature(reference).parameters
+
+
 @dataclasses.dataclass(frozen=True)
 class DataAllocationWrapper:
     """
@@ -256,10 +330,14 @@ class DataAllocationWrapper:
 
     A `StencilTest` suite receives one as the `data_alloc` argument of its `input_data`
     fixture. See the wrapped module for the meaning of the remaining arguments.
+
+    The `random_*` constructors draw from the suite's generator, which
+    `input_data` fixtures may also draw from directly.
     """
 
     grid: base.Grid
     allocator: gtx_typing.Allocator | None
+    rng: np.random.Generator
 
     def connectivity_field(self, offset: str | gtx.FieldOffset) -> gtx.Field:
         """
@@ -319,10 +397,11 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
-        """A field of uniform random values in `[low, high)`."""
+        """A field of uniform random values in `[low, high)`, drawn with the suite's generator."""
         return data_allocation.random_field(
             self.grid,
             *dims,
+            rng=self.rng,
             low=low,
             high=high,
             dtype=dtype,
@@ -336,9 +415,14 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
-        """A field of random booleans, or of `dtype` if given."""
+        """A field of random booleans, or of `dtype` if given, drawn with the suite's generator."""
         return data_allocation.random_mask(
-            self.grid, *dims, dtype=dtype, allocator=self.allocator, extend=extend
+            self.grid,
+            *dims,
+            rng=self.rng,
+            dtype=dtype,
+            allocator=self.allocator,
+            extend=extend,
         )
 
     def random_sign(
@@ -347,9 +431,14 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
-        """A field of random values in `{-1, 1}`."""
+        """A field of random values in `{-1, 1}`, drawn with the suite's generator."""
         return data_allocation.random_sign(
-            self.grid, *dims, dtype=dtype, allocator=self.allocator, extend=extend
+            self.grid,
+            *dims,
+            rng=self.rng,
+            dtype=dtype,
+            allocator=self.allocator,
+            extend=extend,
         )
 
     def zero_field(
@@ -485,6 +574,7 @@ def test_and_benchmark(
     benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
     grid: base.Grid,
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+    data_alloc: DataAllocationWrapper,
     configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
@@ -500,8 +590,15 @@ def test_and_benchmark(
     program_kwargs: dict[str, Any] = {**input_data, "offset_provider": grid.connectivities}
 
     if not skip_verification:
+        # `reference` bodies may draw their own random data and have no `data_alloc`
+        # in scope, so a seeded generator is passed when the reference declares an
+        # `rng` parameter.
+        reference_kwargs: dict[str, Any] = (
+            {"rng": data_alloc.rng} if _reference_expects_rng(self.reference) else {}
+        )
         reference_outputs = self.reference(
             grid=grid,
+            **reference_kwargs,
             **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
         )
         configured_program(**program_kwargs)

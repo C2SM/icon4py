@@ -439,10 +439,20 @@ class TestConnectivitiesAsNumpy:
 # -- DataAllocationWrapper -------------------------------------------------------------
 
 
+def _seeded_wrapper(grid, key: str) -> stencil_tests.DataAllocationWrapper:
+    """A wrapper seeded from `key`, as the `data_alloc` fixture seeds one."""
+    return stencil_tests.DataAllocationWrapper(
+        grid=grid,
+        allocator=None,
+        rng=np.random.default_rng(stencil_tests._derived_seed_sequence(key)),
+    )
+
+
 class TestDataAllocationWrapper:
     @pytest.fixture
     def wrapper(self, grid):
-        return stencil_tests.DataAllocationWrapper(grid=grid, allocator=None)
+        """A wrapper seeded as the `data_alloc` fixture seeds one."""
+        return _seeded_wrapper(grid, f"{__name__}:{type(self).__name__}:")
 
     @pytest.mark.parametrize(
         "construct",
@@ -520,7 +530,8 @@ class TestDataAllocationWrapper:
             wrapped = [
                 param
                 for param in inspect.signature(getattr(data_alloc, name)).parameters.values()
-                if param.name not in ("grid", "allocator")
+                # `rng` is supplied by the wrapper, not by the caller.
+                if param.name not in ("grid", "allocator", "rng")
             ]
             method = [
                 param
@@ -530,6 +541,94 @@ class TestDataAllocationWrapper:
                 if param.name != "self"
             ]
             assert wrapped == method, f"'{name}' has drifted from 'data_allocation.{name}'"
+
+
+# -- Seeded random data ----------------------------------------------------------------
+
+
+class TestSeededWrapper:
+    def test_identical_keys_produce_identical_fields(self, grid):
+        """Every rank and xdist worker derives the same streams from the same key."""
+        first = _seeded_wrapper(grid, "module:Suite:param0")
+        second = _seeded_wrapper(grid, "module:Suite:param0")
+
+        np.testing.assert_array_equal(
+            first.random_field(dims.CellDim).asnumpy(),
+            second.random_field(dims.CellDim).asnumpy(),
+        )
+
+    def test_different_keys_produce_different_fields(self, grid):
+        """A different parametrization id must not collide on one seed."""
+        first = _seeded_wrapper(grid, "module:Suite:param0")
+        second = _seeded_wrapper(grid, "module:Suite:param1")
+
+        assert not np.array_equal(
+            first.random_field(dims.CellDim).asnumpy(),
+            second.random_field(dims.CellDim).asnumpy(),
+        )
+
+    def test_successive_draws_differ(self, grid):
+        wrapper = _seeded_wrapper(grid, "module:Suite:")
+
+        first = wrapper.random_field(dims.CellDim).asnumpy()
+        second = wrapper.random_field(dims.CellDim).asnumpy()
+
+        assert not np.array_equal(first, second)
+
+    def test_numeric_seed_mixes_a_global_base_into_the_derivation(self, grid, monkeypatch):
+        """The same numeric base reproduces the same data; another base shifts it."""
+        monkeypatch.setenv("ICON4PY_TEST_SEED", "41")
+        first = _seeded_wrapper(grid, "module:Suite:")
+        second = _seeded_wrapper(grid, "module:Suite:")
+        monkeypatch.setenv("ICON4PY_TEST_SEED", "42")
+        third = _seeded_wrapper(grid, "module:Suite:")
+
+        np.testing.assert_array_equal(
+            first.random_field(dims.CellDim).asnumpy(),
+            second.random_field(dims.CellDim).asnumpy(),
+        )
+        assert not np.array_equal(
+            first.random_field(dims.CellDim).asnumpy(),
+            third.random_field(dims.CellDim).asnumpy(),
+        )
+
+    def test_reference_expects_rng_detects_the_parameter(self):
+        def with_rng(grid, *, rng):
+            pass
+
+        def without_rng(grid):
+            pass
+
+        assert stencil_tests._reference_expects_rng(with_rng)
+        assert not stencil_tests._reference_expects_rng(without_rng)
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [("41", 41), ("0", 0), ("", None)],
+    )
+    def test_read_test_seed(self, value, expected, monkeypatch):
+        """An empty value counts as unset."""
+        monkeypatch.setenv(stencil_tests._TEST_SEED_ENV_VAR, value)
+
+        assert stencil_tests._read_test_seed() == expected
+
+    def test_read_test_seed_when_unset(self, monkeypatch):
+        monkeypatch.delenv(stencil_tests._TEST_SEED_ENV_VAR, raising=False)
+
+        assert stencil_tests._read_test_seed() is None
+
+    @pytest.mark.parametrize("value", ["-1", "1.5", "deterministic", " 41", "random"])
+    def test_read_test_seed_rejects_invalid_values(self, value, monkeypatch):
+        monkeypatch.setenv(stencil_tests._TEST_SEED_ENV_VAR, value)
+
+        with pytest.raises(ValueError, match="a non-negative integer"):
+            stencil_tests._read_test_seed()
+
+    def test_random_field_accepts_an_omitted_seed(self, grid):
+        """Omitting the seed draws OS entropy, as before the seeding change."""
+        field = data_allocation.random_field(grid, dims.CellDim)
+
+        assert field.shape == (grid.num_cells,)
 
 
 # -- StencilTest.verify_data -----------------------------------------------------------
