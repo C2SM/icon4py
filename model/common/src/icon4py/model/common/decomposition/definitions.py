@@ -12,7 +12,9 @@ import abc
 import dataclasses
 import functools
 import logging
+import math
 import warnings
+from collections.abc import Callable
 from enum import Enum
 from typing import Any, ClassVar, Literal, Protocol, overload, runtime_checkable
 
@@ -569,11 +571,74 @@ class Reductions(Protocol):
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
 
 
+#: Fixed-point sum of ICON (``order_insensit_sum`` in ``mo_sync.f90``): every value is
+#: scaled by one common power of two and split into an integer part and a scaled fraction,
+#: both accumulated as integers. Integer addition is exact, so the result does not depend
+#: on the summation order, and a decomposed run reproduces the single-rank sum bitwise.
+#:
+#: ICON scales the values so that the largest magnitude lies below ``2**30``
+#: (``fact = 2**(30 - iexp)``). The integer part and the fraction then each fit in 30 bits:
+#: every value keeps 60 bits below the leading bit of the largest one, more than the 53 bits
+#: of a double, and the int64 accumulators cannot overflow before ``2**33`` elements.
+FIXED_POINT_BITS = 30
+#: ICON returns 0 when the binary exponent of the largest magnitude is below -980: the
+#: scale factor ``2**(30 - iexp)`` would exceed ``2**1010``, close to the largest double
+#: exponent (1023). Values that small count as zero.
+_MIN_FIXED_POINT_EXPONENT = -980
+
+
+def fixed_point_shift(abs_max: float) -> int:
+    """Binary shift that scales ``abs_max`` into ``[2**(FIXED_POINT_BITS - 1), 2**FIXED_POINT_BITS)``."""
+    return FIXED_POINT_BITS - math.frexp(abs_max)[1]
+
+
+def fixed_point_partial_sums(buffer: data_alloc.NDArray, shift: int) -> tuple[int, int]:
+    """Exact integer sums of the integer parts and of the scaled fractions of ``buffer * 2**shift``."""
+    array_ns = data_alloc.array_namespace(buffer)
+    if buffer.size == 0:
+        return 0, 0
+    scaled = array_ns.ldexp(buffer, shift)  # |scaled| < 2**FIXED_POINT_BITS
+    integer_part = scaled.astype(array_ns.int64)  # truncates towards zero like Fortran INT
+    fraction_part = array_ns.ldexp(scaled - integer_part, FIXED_POINT_BITS).astype(array_ns.int64)
+    # both parts are below 2**FIXED_POINT_BITS in magnitude, so the int64 sums cannot
+    # overflow for fewer than 2**33 elements
+    return int(integer_part.sum()), int(fraction_part.sum())
+
+
+def order_insensitive_sum(
+    buffer: data_alloc.NDArray,
+    abs_max: float,
+    combine_partial_sums: Callable[[int, int], tuple[int, int]] | None = None,
+) -> float:
+    """Sum ``buffer`` independently of the order of its elements (ICON's ``order_insensit_sum``).
+
+    Args:
+        buffer: the local contributions; must be finite.
+        abs_max: the largest magnitude over *all* contributions, those of other ranks included.
+        combine_partial_sums: adds the two integer partial sums of the other ranks to the
+            local ones; ``None`` on a single rank.
+
+    Returns:
+        the sum, correctly rounded from the exact fixed-point total; 0 when ``abs_max`` is 0
+        or so small that ICON's scaling would overflow.
+    """
+    if abs_max == 0.0 or math.frexp(abs_max)[1] < _MIN_FIXED_POINT_EXPONENT:
+        return 0.0
+    shift = fixed_point_shift(abs_max)
+    integer_sum, fraction_sum = fixed_point_partial_sums(buffer, shift)
+    if combine_partial_sums is not None:
+        integer_sum, fraction_sum = combine_partial_sums(integer_sum, fraction_sum)
+    # exact total in units of 2**-(FIXED_POINT_BITS + shift); Python integers do not overflow
+    total = (integer_sum << FIXED_POINT_BITS) + fraction_sum
+    return math.ldexp(float(total), -(FIXED_POINT_BITS + shift))
+
+
 class SingleNodeReductions(Reductions):
     """Reductions for single-rank (non-distributed) runs.
 
     Single-rank runs have no halos, so all elements are owned and no masking
-    is needed. The entire buffer is reduced directly.
+    is needed. The entire buffer is reduced directly. Floating-point sums use the
+    order-insensitive sum of ICON, so that a distributed run reproduces them bitwise.
     """
 
     def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
@@ -586,11 +651,16 @@ class SingleNodeReductions(Reductions):
 
     def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         array_ns = data_alloc.array_namespace(buffer)
-        return array_ns.sum(buffer).item()
+        if not np.issubdtype(buffer.dtype, np.floating) or buffer.size == 0:
+            return array_ns.sum(buffer).item()
+        abs_max = float(array_ns.max(array_ns.abs(buffer)))
+        if not math.isfinite(abs_max):
+            # let NaN and infinity propagate as the plain sum does
+            return array_ns.sum(buffer).item()
+        return order_insensitive_sum(buffer, abs_max)
 
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        array_ns = data_alloc.array_namespace(buffer)
-        return array_ns.sum(buffer).item() / buffer.size
+        return self.sum(buffer) / buffer.size
 
 
 def get_runtype(with_mpi: bool = False) -> RunType:

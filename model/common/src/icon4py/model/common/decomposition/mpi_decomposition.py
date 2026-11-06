@@ -11,6 +11,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from types import ModuleType
@@ -531,30 +532,50 @@ class GlobalReductions(Reductions):
         )
 
     def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        """Sum of the owned entries over all ranks.
+
+        Floating-point buffers are summed with the order-insensitive sum of ICON
+        (``decomp_defs.order_insensitive_sum``), so that the result is bitwise identical
+        to the single-rank sum of the same values, whatever the decomposition.
+        """
         buffer = self._prepare_buffer(buffer)
         array_ns = data_alloc.array_namespace(buffer)
         if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
-        return self._reduce(
+        plain_sum = functools.partial(
+            self._reduce,
             buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
             array_ns.sum,
             mpi4py.MPI.SUM,
         )
+        if not np.issubdtype(buffer.dtype, np.floating):
+            return plain_sum()
+        abs_max = self._reduce(
+            array_ns.abs(buffer)
+            if buffer.size != 0
+            else self._sum_identity(buffer.dtype, array_ns),
+            array_ns.max,
+            mpi4py.MPI.MAX,
+        )
+        if not math.isfinite(abs_max):
+            # let NaN and infinity propagate as the plain sum does
+            return plain_sum()
+        return decomp_defs.order_insensitive_sum(
+            buffer, abs_max, combine_partial_sums=self._combine_partial_sums
+        )
 
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        buffer = self._prepare_buffer(buffer)
-        array_ns = data_alloc.array_namespace(buffer)
-        global_buffer_size = self._calc_buffer_size(buffer)
+        global_buffer_size = self._calc_buffer_size(self._prepare_buffer(buffer))
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
+        return self.sum(buffer) / global_buffer_size
 
+    def _combine_partial_sums(self, integer_sum: int, fraction_sum: int) -> tuple[int, int]:
+        # Python integers stay exact and cannot overflow, unlike an int64 ``Allreduce``
+        comm = self.process_props.comm
         return (
-            self._reduce(
-                (buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)),
-                array_ns.sum,
-                mpi4py.MPI.SUM,
-            )
-            / global_buffer_size
+            comm.allreduce(integer_sum, op=mpi4py.MPI.SUM),
+            comm.allreduce(fraction_sum, op=mpi4py.MPI.SUM),
         )
 
 
