@@ -53,7 +53,7 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py.next import common as gtx_common
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import model, utils as state_utils
@@ -130,7 +130,7 @@ class FieldProvider(Protocol):
         *,
         field_name: str,
         field_src: FieldSource,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
         grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | state_utils.ScalarType: ...
@@ -167,7 +167,7 @@ class FieldSource(GridProvider, Protocol):
         ...
 
     @property
-    def backend(self) -> gtx_typing.Backend | None:
+    def backend(self) -> model_backends.BackendLike:
         """Target backend: this is the backend that the field should be produced for when requested from the source.
         The field computation might
         be done on a different backend, as there are FieldOperators that require a specific backend (mostly embedded)
@@ -175,7 +175,7 @@ class FieldSource(GridProvider, Protocol):
         ...
 
     def _backend_name(self) -> str:
-        return "embedded" if self.backend is None else self.backend.name
+        return data_alloc.backend_name(self.backend)
 
     def check_field_in_provider(self, field_name: str) -> None:
         if field_name not in self._providers:
@@ -256,7 +256,7 @@ class CompositeSource(FieldSource):
         return self._metadata
 
     @property
-    def backend(self) -> gtx_typing.Backend | None:
+    def backend(self) -> model_backends.BackendLike:
         return self._backend
 
     @property
@@ -286,7 +286,7 @@ class PrecomputedFieldProvider(FieldProvider):
         *,
         field_name: str,
         field_src: FieldSource,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
         grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | state_utils.ScalarType:
@@ -371,7 +371,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         *,
         field_name: str,
         field_src: FieldSource | None,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
         grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
@@ -408,7 +408,9 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
                 f"transferring result {k} to target backend: "
                 f"{data_alloc.backend_name(factory.backend)}"
             )
-            self._fields[k] = data_alloc.reallocate(v, allocator=factory.backend)
+            self._fields[k] = data_alloc.reallocate(
+                v, allocator=model_backends.get_allocator(factory.backend)
+            )
 
     def _unravel_output_fields(self):
         out_fields = tuple(self._fields.values())
@@ -440,11 +442,11 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
 
     def _allocate_fields(
         self,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
         grid_provider: GridProvider,
         dtypes: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
-        allocate = gtx.constructors.zeros.partial(allocator=backend)
+        allocate = gtx.constructors.zeros.partial(allocator=model_backends.get_allocator(backend))
         field_domain = {
             dim: _field_extent(dim, declared, grid_provider)
             for dim, declared in self._domain.items()
@@ -496,11 +498,11 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
     def _allocate(
         self,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
         grid: GridProvider,
         dtypes: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
-        allocate = gtx.constructors.zeros.partial(allocator=backend)
+        allocate = gtx.constructors.zeros.partial(allocator=model_backends.get_allocator(backend))
         field_domain = {
             dim: _field_extent(dim, declared, grid) for dim, declared in self._domain.items()
         }
@@ -555,7 +557,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         *,
         field_name: str,
         field_src: FieldSource | None,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
         grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
     ):
@@ -569,7 +571,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         *,
         field_src: FieldSource,
         grid: GridProvider,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
     ) -> None:
         dtypes = field_src.dtypes_for_factory(self._output.values())
         self._fields = self._allocate(backend, grid, dtypes=dtypes)
@@ -580,7 +582,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         dims = self._domain_args(grid)
         offset_providers = self._get_offset_providers(grid.grid)
         deps.update(dims)
-        self._func.with_backend(backend)(**deps, offset_provider=offset_providers)
+        model_options.with_backend(self._func, backend)(**deps, offset_provider=offset_providers)
 
     @property
     def fields(self) -> Mapping[str, state_utils.FieldType]:
@@ -641,7 +643,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         *,
         field_name: str,
         field_src: FieldSource,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
         grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
@@ -657,7 +659,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
     def _compute(
         self,
         factory: FieldSource,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
         grid_provider: GridProvider,
     ) -> None:
         self._validate_dependencies()
@@ -687,17 +689,21 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
 
     def _as_field(
         self,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
         value: data_alloc.NDArray,
         dtype,
         grid: GridProvider,
     ) -> state_utils.GTXFieldType:
         if self._domain is None:
-            return gtx.as_field(self._dims, value, allocator=backend, dtype=dtype)
+            return gtx.as_field(
+                self._dims, value, allocator=model_backends.get_allocator(backend), dtype=dtype
+            )
         field_domain = gtx.domain(
             {dim: _field_extent(dim, declared, grid) for dim, declared in self._domain.items()}
         )
-        return gtx.as_field(field_domain, value, allocator=backend, dtype=dtype)
+        return gtx.as_field(
+            field_domain, value, allocator=model_backends.get_allocator(backend), dtype=dtype
+        )
 
     def _validate_dependencies(self) -> None:
         # TODO(egparedes): dealing with type annotations at run-time is error prone

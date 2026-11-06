@@ -74,7 +74,7 @@ class MuphysComponent:
         self._nlev = grid.num_levels
         self._dt_seconds = ta.wpfloat(dtime.total_seconds())
         self._qnc = qnc
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
 
         full_horizontal_sizes = {
             "horizontal_start": gtx.int32(0),

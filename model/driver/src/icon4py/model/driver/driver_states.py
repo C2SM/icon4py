@@ -21,7 +21,13 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
-from icon4py.model.common import dimension as dims, time, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    model_backends,
+    model_options,
+    time,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_attributes
@@ -286,7 +292,7 @@ def assemble_driver_states(
     *,
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
     exchange: decomposition_defs.ExchangeRuntime,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
@@ -317,7 +323,9 @@ def assemble_driver_states(
     rbf_vec_coeff_c1 = static_fields.interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C1)
     rbf_vec_coeff_c2 = static_fields.interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2)
 
-    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+    model_options.with_backend(
+        edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation, backend
+    )(
         p_e_in=prognostic_states.current.vn,
         ptr_coeff_1=rbf_vec_coeff_c1,
         ptr_coeff_2=rbf_vec_coeff_c2,

@@ -32,21 +32,6 @@ _WORKSPACE_SIZE_WARNING = (
 )
 
 
-# Generic backends built by `customize_backend(None, ...)`, keyed by `id()`, mapped to the
-# `BackendLike` and `BackendConfig` they were built from. Callers such as the driver and the
-# datatest fixtures build one generic concrete backend and pass it to the granules; this lets
-# `customize_backend` re-apply the per-program options for that backend instead of using the
-# generic one as is. The backend is stored in the value too, so its `id()` cannot be reused.
-_generic_backend_origins: dict[
-    int,
-    tuple[
-        gtx_typing.Backend,
-        model_backends.DeviceType | model_backends.BackendDescriptor,
-        backend_cfg.BackendConfig | None,
-    ],
-] = {}
-
-
 def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
@@ -185,6 +170,25 @@ def get_options(
     return backend_descriptor
 
 
+def with_backend_config(
+    backend: gtx_typing.Backend
+    | model_backends.DeviceType
+    | model_backends.BackendDescriptor
+    | None,
+    backend_config: backend_cfg.BackendConfig | None,
+) -> gtx_typing.Backend | model_backends.DeviceType | model_backends.BackendDescriptor | None:
+    """`backend` with `backend_config` attached, for `customize_backend` to use for every program.
+
+    A concrete backend (or `None` for embedded) is already configured and is returned as is.
+    """
+    if backend is None or isinstance(backend, gtx_backend.Backend) or backend_config is None:
+        return backend
+    backend_descriptor = (
+        {"device": backend} if isinstance(backend, model_backends.DeviceType) else dict(backend)
+    )
+    return {**backend_descriptor, "backend_config": backend_config}
+
+
 def customize_backend(
     program: gtx_typing.Program | gtx.typing.FieldOperator | None,
     backend: gtx_typing.Backend
@@ -193,23 +197,29 @@ def customize_backend(
     | None,
     backend_config: backend_cfg.BackendConfig | None = None,
 ) -> gtx_typing.Backend | None:
+    """
+    Build the concrete backend for `program` from a `BackendLike`.
+
+    A descriptor (or device) is customized with the options that `get_options` selects for
+    the program's name; a concrete backend (or `None` for embedded) is returned as is.
+    The descriptor may carry the `BackendConfig` under the 'backend_config' key, so that it
+    travels with the descriptor to every program; an explicit `backend_config` argument
+    takes precedence, and 'ICON4PY_BACKEND_WORKSPACE_SIZE' is the fallback.
+    """
     program_name = program.__name__ if program is not None else ""
-    if (
-        program is not None
-        and isinstance(backend, gtx_backend.Backend)
-        and (origin := _generic_backend_origins.get(id(backend))) is not None
-    ):
-        # Generic backend built from a descriptor: rebuild it with the program-specific options.
-        _, backend, origin_backend_config = origin
-        backend_config = backend_config or origin_backend_config
-    backend_config = backend_config or backend_cfg.backend_config_from_env()
     if backend is None or isinstance(backend, gtx_backend.Backend):
         backend_name = backend.name if backend is not None else "embedded"
         log.info(f"Using non-custom backend '{backend_name}' for '{program_name}'.")
         return backend  # type: ignore[return-value]
 
     backend_descriptor = (
-        {"device": backend} if isinstance(backend, model_backends.DeviceType) else backend
+        {"device": backend}
+        if isinstance(backend, model_backends.DeviceType)
+        else dict(backend)  # don't modify the caller's descriptor
+    )
+    descriptor_backend_config = backend_descriptor.pop("backend_config", None)
+    backend_config = (
+        backend_config or descriptor_backend_config or backend_cfg.backend_config_from_env()
     )
     backend_descriptor = get_options(
         program_name, backend_config=backend_config, **backend_descriptor
@@ -221,8 +231,6 @@ def customize_backend(
         "backend_factory", model_backends.make_custom_dace_backend
     )
     custom_backend = backend_factory(**backend_descriptor)
-    if program is None:
-        _generic_backend_origins[id(custom_backend)] = (custom_backend, backend, backend_config)
     # Log the workspace size only: formatting the array itself would copy it to host.
     logged_options = backend_descriptor
     if (workspace := backend_descriptor.get("external_workspace")) is not None:
@@ -236,6 +244,17 @@ def customize_backend(
         f"Using custom backend '{custom_backend.name}' for '{program_name}' with options: {logged_options}."
     )
     return custom_backend
+
+
+def with_backend[P: (gtx_typing.Program, gtx.typing.FieldOperator)](
+    program: P,
+    backend: gtx_typing.Backend
+    | model_backends.DeviceType
+    | model_backends.BackendDescriptor
+    | None,
+) -> P:
+    """`program` with the backend that `customize_backend` builds for it from `backend`."""
+    return program.with_backend(customize_backend(program, backend))  # type: ignore[return-value]
 
 
 def setup_program(

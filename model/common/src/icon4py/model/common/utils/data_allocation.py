@@ -56,9 +56,29 @@ def is_rank0_ndarray(obj: Any) -> TypeGuard[ScalarLikeArray]:
     return is_ndarray(obj) and obj.shape == ()
 
 
-def backend_name(backend: gtx_typing.Backend | None) -> str:
-    """The backend's name, or 'embedded' for the default one."""
-    return "embedded" if backend is None else backend.name
+def backend_name(backend: gtx_typing.Backend | gtx.DeviceType | dict[str, Any] | None) -> str:
+    """The backend's name, or 'embedded' for the default one.
+
+    Also accepts a device or a backend descriptor (see `model_backends.BackendLike`),
+    which are only turned into concrete backends when a program is bound to them.
+    """
+    if backend is None:
+        return "embedded"
+    if isinstance(backend, gtx.DeviceType):
+        return f"device={backend.name}"
+    if isinstance(backend, dict):
+        factory = backend.get("backend_factory")
+        device = backend.get("device")
+        return (
+            ", ".join(
+                [
+                    *([getattr(factory, "__name__", str(factory))] if factory is not None else []),
+                    *([f"device={device.name}"] if device is not None else []),
+                ]
+            )
+            or "default"
+        )
+    return backend.name
 
 
 def as_numpy(array: NDArrayInterface) -> np.ndarray:

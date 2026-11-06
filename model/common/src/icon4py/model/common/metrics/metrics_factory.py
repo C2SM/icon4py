@@ -22,6 +22,7 @@ from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
+    model_options,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
@@ -141,7 +142,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         process_props: decomposition.ProcessProperties,
     ):
         self._backend = backend
-        self._xp = data_alloc.import_array_ns(backend)
+        self._xp = data_alloc.import_array_ns(model_backends.get_allocator(backend))
         self._allocator = model_backends.get_allocator(backend)
         self._grid = grid
         self._vertical_grid = vertical_grid
@@ -232,8 +233,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(vertical_coordinates_on_half_levels)
 
         height = factory.ProgramFieldProvider(
-            func=vertical_ops.average_two_vertical_levels_downwards_on_cells.with_backend(
-                self._backend
+            func=model_options.with_backend(
+                vertical_ops.average_two_vertical_levels_downwards_on_cells, self._backend
             ),
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
@@ -249,7 +250,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(height)
 
         compute_ddqz_z_half = factory.ProgramFieldProvider(
-            func=mf.compute_ddqz_z_half.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_ddqz_z_half, self._backend),
             domain={
                 dims.CellDim: (
                     cell_domain(h_grid.Zone.LOCAL),
@@ -279,7 +280,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(height_above_ground)
 
         ddqz_z_full_and_inverse = factory.ProgramFieldProvider(
-            func=mf.compute_ddqz_z_full_and_inverse.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_ddqz_z_full_and_inverse, self._backend),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
             domain={
                 dims.CellDim: (
@@ -297,8 +298,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(ddqz_z_full_and_inverse)
 
         ddqz_full_on_edges = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(
-                self._backend
+            func=model_options.with_backend(
+                interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64, self._backend
             ),
             deps={"in_field": attrs.DDQZ_Z_FULL, "coeff": interpolation_attributes.C_LIN_E},
             domain={
@@ -317,7 +318,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(ddqz_full_on_edges)
 
         compute_scaling_factor_for_3d_divdamp = factory.ProgramFieldProvider(
-            func=mf.compute_scaling_factor_for_3d_divdamp.with_backend(self._backend),
+            func=model_options.with_backend(
+                mf.compute_scaling_factor_for_3d_divdamp, self._backend
+            ),
             domain={
                 dims.KDim: (
                     vertical_domain(v_grid.Zone.TOP),
@@ -336,7 +339,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_scaling_factor_for_3d_divdamp)
 
         compute_rayleigh_w = factory.ProgramFieldProvider(
-            func=mf.compute_rayleigh_w.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_rayleigh_w, self._backend),
             deps={"vct_a": "vct_a"},
             domain={
                 dims.KHalfDim: (
@@ -358,7 +361,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_rayleigh_w)
 
         compute_coeff_dwdz = factory.ProgramFieldProvider(
-            func=mf.compute_coeff_dwdz.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_coeff_dwdz, self._backend),
             deps={
                 "ddqz_z_full": attrs.DDQZ_Z_FULL,
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -379,7 +382,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_coeff_dwdz)
 
         compute_theta_exner_rho_ref_mc = factory.ProgramFieldProvider(
-            func=ra.compute_reference_atmosphere_cell_fields.with_backend(self._backend),
+            func=model_options.with_backend(
+                ra.compute_reference_atmosphere_cell_fields, self._backend
+            ),
             deps={
                 "z_height": attrs.Z_MC,
             },
@@ -413,7 +418,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_theta_exner_rho_ref_mc)
 
         compute_theta_rho_ref_me = factory.ProgramFieldProvider(
-            func=ra.compute_reference_atmosphere_edge_fields.with_backend(self._backend),
+            func=model_options.with_backend(
+                ra.compute_reference_atmosphere_edge_fields, self._backend
+            ),
             deps={"z_mc": attrs.Z_MC, "c_lin_e": interpolation_attributes.C_LIN_E},
             domain={
                 dims.EdgeDim: (
@@ -444,7 +451,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_theta_rho_ref_me)
 
         compute_theta_d_exner_dz_ref_ic = factory.ProgramFieldProvider(
-            func=ra.compute_theta_d_exner_dz_ref_ic.with_backend(self._backend),
+            func=model_options.with_backend(ra.compute_theta_d_exner_dz_ref_ic, self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
             },
@@ -478,7 +485,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_theta_d_exner_dz_ref_ic)
 
         compute_d2dexdz2_fac_mc = factory.ProgramFieldProvider(
-            func=reference_atmosphere.compute_d2dexdz2_fac_mc.with_backend(self._backend),
+            func=model_options.with_backend(
+                reference_atmosphere.compute_d2dexdz2_fac_mc, self._backend
+            ),
             deps={
                 "theta_ref_mc": attrs.THETA_REF_MC,
                 "inv_ddqz_z_full": attrs.INV_DDQZ_Z_FULL,
@@ -510,7 +519,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_d2dexdz2_fac_mc)
 
         compute_ddxt_z_half_e = factory.ProgramFieldProvider(
-            func=mf.compute_ddxt_z_half_e.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_ddxt_z_half_e, self._backend),
             deps={
                 "cell_in": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
                 "c_int": interpolation_attributes.CELL_AW_VERTS,
@@ -533,7 +542,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxt_z_half_e)
 
         compute_ddxn_z_half_e = factory.ProgramFieldProvider(
-            func=mf.compute_ddxn_z_half_e.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_ddxn_z_half_e, self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
                 "inv_dual_edge_length": f"inverse_of_{geometry_attrs.DUAL_EDGE_LENGTH}",
@@ -555,8 +564,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         # ddxn_z_full is dependent only on attrs.DDXN_Z_HALF_E, which has halo exchange. That's why halo_exchange is set to True
         compute_ddxn_z_full = factory.ProgramFieldProvider(
-            func=vertical_ops.average_two_vertical_levels_downwards_on_edges.with_backend(
-                self._backend
+            func=model_options.with_backend(
+                vertical_ops.average_two_vertical_levels_downwards_on_edges, self._backend
             ),
             deps={
                 "input_field": attrs.DDXN_Z_HALF_E,
@@ -577,8 +586,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxn_z_full)
 
         compute_ddxt_z_full = factory.ProgramFieldProvider(
-            func=vertical_ops.average_two_vertical_levels_downwards_on_edges.with_backend(
-                self._backend
+            func=model_options.with_backend(
+                vertical_ops.average_two_vertical_levels_downwards_on_edges, self._backend
             ),
             deps={
                 "input_field": attrs.DDXT_Z_HALF_E,
@@ -621,7 +630,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_exner_w_implicit_weight_parameter_np)
 
         compute_exner_w_explicit_weight_parameter = factory.ProgramFieldProvider(
-            func=mf.compute_exner_w_explicit_weight_parameter.with_backend(self._backend),
+            func=model_options.with_backend(
+                mf.compute_exner_w_explicit_weight_parameter, self._backend
+            ),
             deps={
                 "exner_w_implicit_weight_parameter": attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,
             },
@@ -637,7 +648,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_exner_w_explicit_weight_parameter)
 
         compute_exner_exfac = factory.ProgramFieldProvider(
-            func=mf.compute_exner_exfac.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_exner_exfac, self._backend),
             deps={
                 "maxslp": attrs.MAXSLP,
                 "maxhgtd": attrs.MAXHGTD,
@@ -664,7 +675,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_exner_exfac)
 
         wgtfac_c_provider = factory.ProgramFieldProvider(
-            func=weight_factors.compute_wgtfac_c.with_backend(self._backend),
+            func=model_options.with_backend(weight_factors.compute_wgtfac_c, self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
             },
@@ -682,7 +693,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(wgtfac_c_provider)
 
         compute_wgtfac_e = factory.ProgramFieldProvider(
-            func=mf.compute_wgtfac_e.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_wgtfac_e, self._backend),
             deps={
                 "wgtfac_c": attrs.WGTFAC_C,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
@@ -745,8 +756,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(nflat_gradp_provider)
 
         pressure_gradient_fields = factory.ProgramFieldProvider(
-            func=mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(
-                self._backend
+            func=model_options.with_backend(
+                mf.compute_pressure_gradient_downward_extrapolation_mask_distance, self._backend
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -777,7 +788,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(pressure_gradient_fields)
 
         compute_mask_prog_halo_c = factory.ProgramFieldProvider(
-            func=mf.compute_mask_prog_halo_c.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_mask_prog_halo_c, self._backend),
             deps={
                 "c_refin_ctrl": "c_refin_ctrl",
             },
@@ -795,7 +806,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_mask_prog_halo_c)
 
         compute_horizontal_mask_for_3d_divdamp = factory.ProgramFieldProvider(
-            func=mf.compute_horizontal_mask_for_3d_divdamp.with_backend(self._backend),
+            func=model_options.with_backend(
+                mf.compute_horizontal_mask_for_3d_divdamp, self._backend
+            ),
             deps={
                 "e_refin_ctrl": "e_refin_ctrl",
             },
@@ -862,7 +875,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(coeff_gradekin)
 
         compute_wgtfacq_c = factory.ProgramFieldProvider(
-            func=weight_factors.compute_wgtfacq_c.with_backend(self._backend),
+            func=model_options.with_backend(weight_factors.compute_wgtfacq_c, self._backend),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
@@ -879,8 +892,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_c)
 
         compute_wgtfacq_e = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(
-                self._backend
+            func=model_options.with_backend(
+                interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64, self._backend
             ),
             deps={
                 "in_field": attrs.WGTFACQ_C,
@@ -899,7 +912,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_e)
 
         compute_wgtfacq1_c = factory.ProgramFieldProvider(
-            func=weight_factors.compute_wgtfacq1_c.with_backend(self._backend),
+            func=model_options.with_backend(weight_factors.compute_wgtfacq1_c, self._backend),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
@@ -914,8 +927,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq1_c)
 
         compute_wgtfacq1_e = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(
-                self._backend
+            func=model_options.with_backend(
+                interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64, self._backend
             ),
             deps={
                 "in_field": attrs.WGTFACQ1_C,
@@ -934,7 +947,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq1_e)
 
         inv_ddqz_z_half = factory.ProgramFieldProvider(
-            func=math_utils.compute_inverse_on_cell_khalf.with_backend(self._backend),
+            func=model_options.with_backend(
+                math_utils.compute_inverse_on_cell_khalf, self._backend
+            ),
             deps={"f": attrs.DDQZ_Z_HALF},
             domain={
                 dims.CellDim: (
@@ -952,7 +967,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(inv_ddqz_z_half)
 
         inv_ddqz_z_full_e = factory.ProgramFieldProvider(
-            func=math_utils.compute_inverse_on_edge_k.with_backend(self._backend),
+            func=model_options.with_backend(math_utils.compute_inverse_on_edge_k, self._backend),
             deps={"f": attrs.DDQZ_Z_FULL_E},
             domain={
                 dims.EdgeDim: (
@@ -970,8 +985,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(inv_ddqz_z_full_e)
 
         inv_ddqz_z_half_e = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_on_half_levels_f64.with_backend(
-                self._backend
+            func=model_options.with_backend(
+                interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_on_half_levels_f64,
+                self._backend,
             ),
             deps={"in_field": attrs.INV_DDQZ_Z_HALF, "coeff": interpolation_attributes.C_LIN_E},
             domain={
@@ -987,8 +1003,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(inv_ddqz_z_half_e)
 
         inv_ddqz_z_half_v = factory.ProgramFieldProvider(
-            func=interpolate_cell_field_to_vertex.interpolate_cell_field_to_vertex_on_half_levels_f64.with_backend(
-                self._backend
+            func=model_options.with_backend(
+                interpolate_cell_field_to_vertex.interpolate_cell_field_to_vertex_on_half_levels_f64,
+                self._backend,
             ),
             deps={
                 "cell_in": attrs.INV_DDQZ_Z_HALF,
@@ -1015,7 +1032,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(geopot_agl_ifc)
 
         compute_maxslp_maxhgtd = factory.ProgramFieldProvider(
-            func=mf.compute_maxslp_maxhgtd.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_maxslp_maxhgtd, self._backend),
             deps={
                 "ddxn_z_full": attrs.DDXN_Z_FULL,
                 "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
@@ -1036,7 +1053,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_maxslp_maxhgtd)
 
         compute_weighted_cell_neighbor_sum = factory.ProgramFieldProvider(
-            func=mf.compute_weighted_cell_neighbor_sum.with_backend(self._backend),
+            func=model_options.with_backend(mf.compute_weighted_cell_neighbor_sum, self._backend),
             deps={
                 "maxslp": attrs.MAXSLP,
                 "maxhgtd": attrs.MAXHGTD,

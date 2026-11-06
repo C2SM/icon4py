@@ -80,7 +80,7 @@ def _make_grid_manager(
     config: driver_config.ExperimentConfig,
     grid: test_defs.GridDescription,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
 ) -> gm.GridManager:
     allocator = model_backends.get_allocator(backend)
     grid_file_path = grid_utils._download_grid_file(grid)
@@ -120,11 +120,11 @@ def driver_benchmark_grid_manager(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid: test_defs.GridDescription,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend | None,
+    backend_like: model_backends.BackendLike,
 ) -> gm.GridManager:
     return _make_grid_manager(
         config=driver_benchmark_config,
         grid=driver_benchmark_grid,
         process_props=process_props,
-        backend=backend,
+        backend=backend_like,
     )

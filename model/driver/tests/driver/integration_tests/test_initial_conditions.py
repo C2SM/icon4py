@@ -19,6 +19,7 @@ from icon4py.model.driver import driver, driver_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
+    backend_like,
     data_provider,
     download_ser_data,
     experiment,
@@ -91,9 +92,9 @@ def test_initial_conditions(
     data_provider: sb.IconSerialDataProvider,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> None:
-    allocator = model_backends.get_allocator(backend)
+    allocator = model_backends.get_allocator(backend_like)
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
@@ -109,7 +110,7 @@ def test_initial_conditions(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,
-        backend=backend,
+        backend=backend_like,
     )
 
     prognostic_state_now = prognostics.initialize_prognostic_state(

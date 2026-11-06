@@ -63,7 +63,7 @@ def _run_driver_with_output(
     experiment_description: test_defs.ExperimentDescription,
     output_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend: model_backends.BackendLike,
     *,
     output_backend: common_io.OutputBackend,
     output_mode: common_io.OutputMode,
@@ -143,12 +143,13 @@ def _reassemble_global_order(dataset: xr.Dataset, reference: xr.Dataset) -> xr.D
 @pytest.mark.level("integration")
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
-def test_parallel_output_matches_single_rank_reference(
+def test_parallel_output_matches_single_rank_reference(  # noqa: PLR0917 [too-many-positional-arguments]
     download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> None:
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
@@ -164,7 +165,7 @@ def test_parallel_output_matches_single_rank_reference(
         experiment_description,
         tmp_path / f"serial_reference_rank_{process_props.rank}",
         decomp_defs.SingleNodeProcessProperties(),
-        backend,
+        backend_like,
         output_backend=common_io.OutputBackend.NETCDF,
         output_mode=common_io.OutputMode.GATHER,
         config_file_path=config_file_path,
@@ -175,7 +176,7 @@ def test_parallel_output_matches_single_rank_reference(
             experiment_description,
             tmp_path / f"mpi_{output_backend.value}_{output_mode.value}_rank_{process_props.rank}",
             process_props,
-            backend,
+            backend_like,
             output_backend=output_backend,
             output_mode=output_mode,
             config_file_path=config_file_path,

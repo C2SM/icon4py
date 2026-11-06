@@ -26,7 +26,13 @@ from typing import Any, Final
 import gt4py.next as gtx
 import xarray as xr
 
-from icon4py.model.common import dimension as dims, time, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    model_backends,
+    model_options,
+    time,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
@@ -120,9 +126,18 @@ class DiagnosticsComputer:
     duplicated across IO and physics.
     """
 
-    def __init__(self, *, grid: grid_base.Grid, backend: gtx.typing.Backend | None) -> None:
+    def __init__(self, *, grid: grid_base.Grid, backend: model_backends.BackendLike) -> None:
         self._grid = grid
-        self._backend = backend
+        # bound once: `compute` runs on every output step
+        self._compute_virtual_temperature_and_temperature = model_options.with_backend(
+            compute_temperature.compute_virtual_temperature_and_temperature, backend
+        )
+        self._edge_2_cell_vector_rbf_interpolation = model_options.with_backend(
+            rbf.edge_2_cell_vector_rbf_interpolation, backend
+        )
+        self._compute_surface_and_hydrostatic_pressure = model_options.with_backend(
+            compute_pressure.compute_surface_and_hydrostatic_pressure, backend
+        )
         self._num_levels = grid.num_levels
         cell_domain = h_grid.domain(dims.CellDim)
         self._end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
@@ -132,7 +147,11 @@ class DiagnosticsComputer:
 
         def _zero_full() -> gtx.Field:
             return data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+                grid,
+                dims.CellDim,
+                dims.KDim,
+                dtype=ta.wpfloat,
+                allocator=model_backends.get_allocator(backend),
             )
 
         def _zero_interface() -> gtx.Field:
@@ -141,7 +160,7 @@ class DiagnosticsComputer:
                 dims.CellDim,
                 dims.KHalfDim,
                 dtype=ta.wpfloat,
-                allocator=backend,
+                allocator=model_backends.get_allocator(backend),
             )
 
         # dry air: all hydrometeors stay zero (never written, so allocated once)
@@ -173,11 +192,10 @@ class DiagnosticsComputer:
         Returns:
             ``{eastward_wind, northward_wind, temperature, virtual_temperature, pressure}``.
         """
-        backend = self._backend
         num_levels = self._num_levels
         end_cell_end = self._end_cell_end
 
-        compute_temperature.compute_virtual_temperature_and_temperature.with_backend(backend)(
+        self._compute_virtual_temperature_and_temperature(
             qv=self._qv,
             qc=self._qc,
             qi=self._qi,
@@ -195,7 +213,7 @@ class DiagnosticsComputer:
             offset_provider={},
         )
 
-        rbf.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+        self._edge_2_cell_vector_rbf_interpolation(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=rbf_vec_coeff_c1,
             ptr_coeff_2=rbf_vec_coeff_c2,
@@ -208,7 +226,7 @@ class DiagnosticsComputer:
             offset_provider={"C2E2C2E": self._grid.get_connectivity("C2E2C2E")},
         )
 
-        compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(backend)(
+        self._compute_surface_and_hydrostatic_pressure(
             exner=prognostic_state.exner,
             virtual_temperature=self._virtual_temperature,
             ddqz_z_full=ddqz_z_full,

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from icon4py.model.common import model_options
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
@@ -143,7 +144,7 @@ def apply(
 
     if solve_nonhydro_diagnostic_state is not None:
         # exner_pr, diagnosed from the initial state (compute_exner_pert in mo_nh_stepping.f90)
-        gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
+        model_options.with_backend(gt4py_math_op.compute_difference_on_cell_k, backend)(
             field_a=prognostic_state_now.exner,
             field_b=static_fields.metrics.get(metrics_attributes.EXNER_REF_MC),
             output_field=solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels,

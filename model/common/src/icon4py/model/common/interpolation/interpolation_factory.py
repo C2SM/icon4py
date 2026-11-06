@@ -17,7 +17,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
@@ -148,8 +148,10 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         process_props: decomposition.ProcessProperties,
     ):
         self._backend = backend
-        self._xp = data_alloc.import_array_ns(backend)
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
+        self._xp = data_alloc.import_array_ns(model_backends.get_allocator(backend))
+        self._allocator = gtx.constructors.zeros.partial(
+            allocator=model_backends.get_allocator(backend)
+        )
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata

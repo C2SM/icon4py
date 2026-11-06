@@ -169,7 +169,7 @@ def create_static_field_factories(
     decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
     process_props: decomposition_defs.ProcessProperties,
     geometry_config: geometry_configuration.GeometryConfig,
     interpolation_config: interpolation_factory.InterpolationConfig,
@@ -223,7 +223,7 @@ def initialize_granules(
     model_time_variables: driver_states.ModelTimeVariables,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
 ) -> Granules:
     geometry_field_source = static_field_factories.geometry
     interpolation_field_source = static_field_factories.interpolation

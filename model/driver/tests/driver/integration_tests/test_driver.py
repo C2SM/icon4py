@@ -130,7 +130,7 @@ def test_driver(
     request: pytest.FixtureRequest,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
     savepoint_time_step_exit: sb.IconTimeStepExitSavepoint,
 ) -> None:
     """End-to-end standalone-driver validation over one time step.
@@ -169,7 +169,7 @@ def test_driver(
         # driver, at which point this case validates again.
         pytest.xfail("Driver does not run tmx yet, which the v08 reference includes (PR #1360)")
 
-    allocator = model_backends.get_allocator(backend)
+    allocator = model_backends.get_allocator(backend_like)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
@@ -199,7 +199,7 @@ def test_driver(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,
-        backend=backend,
+        backend=backend_like,
     )
 
     prognostics = ds.prognostics.current

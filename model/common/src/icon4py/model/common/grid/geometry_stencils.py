@@ -11,7 +11,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py import next as gtx
 from gt4py.next import sin, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.dimension import E2C2V, E2V
 from icon4py.model.common.grid import utils as grid_utils
 from icon4py.model.common.math.coordinate_transformations import (
@@ -770,12 +770,12 @@ def coriolis_parameter_on_edges_torus(
     Returns:
         coriolis parameter
     """
-    xp = data_alloc.import_array_ns(backend)
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend))
     coriolis_parameter = gtx.as_field(
         (dims.EdgeDim,),
         xp.full(num_edges, coriolis_coefficient),
         dtype=gtx.float64,
-        allocator=backend,
+        allocator=model_backends.get_allocator(backend),
     )
     return coriolis_parameter
 

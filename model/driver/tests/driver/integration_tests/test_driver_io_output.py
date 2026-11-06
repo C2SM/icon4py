@@ -57,9 +57,9 @@ def test_driver_writes_output(
     download_ser_data: None,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> None:
-    allocator = model_backends.get_allocator(backend)
+    allocator = model_backends.get_allocator(backend_like)
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
@@ -86,7 +86,7 @@ def test_driver_writes_output(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,
-        backend=backend,
+        backend=backend_like,
     )
 
     # the UGRID grid file is written on monitor init

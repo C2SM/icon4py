@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Final
 
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, model_options
+from icon4py.model.common import dimension as dims, model_backends, model_options
 from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
@@ -112,12 +112,14 @@ class EntryState:
             offset_provider=grid.connectivities,
         )
 
-        self.diagnostics = diagnostic_state.initialize_diagnostic_state(grid, backend)
+        self.diagnostics = diagnostic_state.initialize_diagnostic_state(
+            grid, model_backends.get_allocator(backend)
+        )
         # Scratch for the pressure scan: a scan's range is deduced from its single
         # output domain, so the half-level result lands on model levels first and
         # compute_surface_and_hydrostatic_pressure copies it up (see that program).
         self._pressure_ifc_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
+            grid, dims.CellDim, dims.KDim, allocator=model_backends.get_allocator(backend)
         )
 
         # Pointers into the model state — bound by every compute_diagnostics call
@@ -283,9 +285,15 @@ class Tendencies:
         )
 
         # Scratch buffers — allocated once
-        self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self._ddt_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
+        self._new_te = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=model_backends.get_allocator(backend)
+        )
+        self._tv_tendency = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=model_backends.get_allocator(backend)
+        )
+        self._ddt_vn = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, allocator=model_backends.get_allocator(backend)
+        )
 
         self._backend = backend
         self._acc: dict[str, gtx.Field] = {}
@@ -317,7 +325,9 @@ class Tendencies:
             field = outputs[name]
             if (buffer := self._acc.get(name)) is None:
                 buffer = self._acc[name] = gtx.zeros(
-                    field.domain, dtype=field.dtype, allocator=self._backend
+                    field.domain,
+                    dtype=field.dtype,
+                    allocator=model_backends.get_allocator(self._backend),
                 )
             buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
@@ -432,7 +442,9 @@ class DiagnosticsStore:
                     f"diagnostic output '{name}' of process '{process_name}' declares no dims; "
                     "the store allocates its buffer from that metadata"
                 )
-            buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
+            buffers[name] = data_alloc.zero_field(
+                self._grid, *props.dims, allocator=model_backends.get_allocator(self._backend)
+            )
         self._store[process_name] = buffers
         return buffers
 

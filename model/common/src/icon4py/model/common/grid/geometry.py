@@ -19,6 +19,8 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
+    model_backends,
+    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -92,8 +94,10 @@ class GridGeometry(factory.FieldSource):
         """
         self._providers = {}
         self._backend = backend
-        self._xp = data_alloc.import_array_ns(backend)
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
+        self._xp = data_alloc.import_array_ns(model_backends.get_allocator(backend))
+        self._allocator = gtx.constructors.zeros.partial(
+            allocator=model_backends.get_allocator(backend)
+        )
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
@@ -153,18 +157,18 @@ class GridGeometry(factory.FieldSource):
                     (dims.EdgeDim,),
                     decomposition_info.owner_mask(dims.EdgeDim),
                     dtype=bool,
-                    allocator=self._backend,
+                    allocator=model_backends.get_allocator(self._backend),
                 ),
                 attrs.VERTEX_OWNER_MASK: gtx.as_field(
                     (dims.VertexDim,),
                     decomposition_info.owner_mask(dims.VertexDim),
-                    allocator=self._backend,
+                    allocator=model_backends.get_allocator(self._backend),
                     dtype=bool,
                 ),
                 attrs.CELL_OWNER_MASK: gtx.as_field(
                     (dims.CellDim,),
                     decomposition_info.owner_mask(dims.CellDim),
-                    allocator=self._backend,
+                    allocator=model_backends.get_allocator(self._backend),
                     dtype=bool,
                 ),
             }
@@ -734,7 +738,9 @@ class GridGeometry(factory.FieldSource):
     def _register_cartesian_coordinates_icosahedron(self) -> None:
         """Register Cartesian coordinate conversions for icosahedron geometry."""
         cartesian_vertices = factory.EmbeddedFieldOperatorProvider(
-            func=coord_trans.geographical_to_cartesian_on_vertices.with_backend(self.backend),
+            func=model_options.with_backend(
+                coord_trans.geographical_to_cartesian_on_vertices, self.backend
+            ),
             domain={
                 dims.VertexDim: (
                     h_grid.vertex_domain(h_grid.Zone.LOCAL),
@@ -754,7 +760,9 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(cartesian_vertices)
         cartesian_edge_centers = factory.EmbeddedFieldOperatorProvider(
-            func=coord_trans.geographical_to_cartesian_on_edges.with_backend(self.backend),
+            func=model_options.with_backend(
+                coord_trans.geographical_to_cartesian_on_edges, self.backend
+            ),
             domain={
                 dims.EdgeDim: (
                     h_grid.edge_domain(h_grid.Zone.LOCAL),
@@ -774,7 +782,9 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(cartesian_edge_centers)
         cartesian_cell_centers = factory.EmbeddedFieldOperatorProvider(
-            func=coord_trans.geographical_to_cartesian_on_cells.with_backend(self.backend),
+            func=model_options.with_backend(
+                coord_trans.geographical_to_cartesian_on_cells, self.backend
+            ),
             domain={
                 dims.CellDim: (
                     h_grid.cell_domain(h_grid.Zone.LOCAL),
@@ -912,12 +922,15 @@ def as_sparse_field(
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
     assert target_dims[1].kind == gtx.DimensionKind.LOCAL
-    xp = data_alloc.import_array_ns(backend)
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend))
     fields = []
     for t in data:
         buffers = list(b.ndarray for b in t)
         field = gtx.as_field(
-            target_dims, data=(xp.vstack(buffers).T), dtype=buffers[0].dtype, allocator=backend
+            target_dims,
+            data=(xp.vstack(buffers).T),
+            dtype=buffers[0].dtype,
+            allocator=model_backends.get_allocator(backend),
         )
         fields.append(field)
     return fields

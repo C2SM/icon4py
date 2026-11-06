@@ -11,6 +11,7 @@ import typing
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import pytest
+from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.common import (
@@ -156,11 +157,9 @@ def test_setup_program_specify_inputs(
     assert repr(testee) == repr(expected_program)
 
 
-def test_customize_backend_applies_dace_options_to_generic_backend(
+def test_customize_backend_applies_dace_options_per_program(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # The driver and the datatest fixtures pass a generic concrete backend to the granules.
-    generic_backend = customize_backend(None, model_backends.CPU)
     calls: list[tuple[str, typing.Any]] = []
     set_program_options = model_options._set_program_specific_dace_options
     set_device_options = model_options._set_device_specific_dace_options
@@ -178,13 +177,60 @@ def test_customize_backend_applies_dace_options_to_generic_backend(
 
     def vertically_implicit_solver_at_predictor_step() -> None: ...
 
-    backend = customize_backend(vertically_implicit_solver_at_predictor_step, generic_backend)
+    descriptor = {
+        "backend_factory": model_backends.make_custom_dace_backend,
+        "device": model_backends.CPU,
+    }
+    backend = model_options.with_backend(program_return_field, descriptor).backend
+    assert isinstance(backend, gtx_backend.Backend)
+    customize_backend(vertically_implicit_solver_at_predictor_step, descriptor)
     assert calls == [
+        ("program", "program_return_field"),
+        ("device", model_backends.CPU),
         ("program", "vertically_implicit_solver_at_predictor_step"),
         ("device", model_backends.CPU),
     ]
-    assert backend is not generic_backend
-    assert repr(backend) != repr(generic_backend)
+    assert descriptor == {
+        "backend_factory": model_backends.make_custom_dace_backend,
+        "device": model_backends.CPU,
+    }
+
+
+def test_backend_config_travels_with_descriptor(monkeypatch: pytest.MonkeyPatch) -> None:
+    descriptor = {"backend_factory": model_backends.make_custom_dace_backend, "device": None}
+    descriptor_config = backend_cfg.BackendConfig(workspace_size=4096)
+    backend_like = model_options.with_backend_config(descriptor, descriptor_config)
+    assert "backend_config" not in descriptor
+
+    class _GetOptionsCalled(Exception): ...
+
+    received: list[tuple[backend_cfg.BackendConfig | None, dict]] = []
+
+    def spy_get_options(program_name: str, *, backend_config, **backend_descriptor):  # type: ignore[no-untyped-def]
+        received.append((backend_config, backend_descriptor))
+        raise _GetOptionsCalled
+
+    monkeypatch.setattr(model_options, "get_options", spy_get_options)
+    with pytest.raises(_GetOptionsCalled):
+        customize_backend(program_return_field, backend_like)
+    # an explicit argument takes precedence over the one in the descriptor
+    explicit_config = backend_cfg.BackendConfig(workspace_size=8192)
+    with pytest.raises(_GetOptionsCalled):
+        customize_backend(program_return_field, backend_like, backend_config=explicit_config)
+
+    assert [config for config, _ in received] == [descriptor_config, explicit_config]
+    assert all("backend_config" not in options for _, options in received)
+
+
+def test_with_backend_config_keeps_concrete_backend() -> None:
+    backend = model_backends.make_custom_dace_backend(device=model_backends.CPU)
+    config = backend_cfg.BackendConfig(workspace_size=4096)
+    assert model_options.with_backend_config(backend, config) is backend
+    assert model_options.with_backend_config(None, config) is None
+    assert model_options.with_backend_config(model_backends.CPU, config) == {
+        "device": model_backends.CPU,
+        "backend_config": config,
+    }
 
 
 def test_rocm_device_options_are_applied_with_program_options() -> None:

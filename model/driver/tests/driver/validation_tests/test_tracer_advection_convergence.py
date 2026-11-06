@@ -105,9 +105,9 @@ def test_horizontal_tracer_advection_convergence(
     linf_acceptable_range: tuple[float, float],
     experiment_config: driver_config.ExperimentConfig,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> None:
-    allocator = model_backends.get_allocator(backend)
+    allocator = model_backends.get_allocator(backend_like)
 
     grid_file_paths = [
         grid_utils._download_grid_file(grid_description)
@@ -174,7 +174,7 @@ def test_horizontal_tracer_advection_convergence(
             config=experiment_config,
             grid_manager=grid_managers[i],
             process_props=process_props,
-            backend=backend,
+            backend=backend_like,
         )
         simulated_tracer = ds.tracers.current.qv.ndarray
 
@@ -237,9 +237,9 @@ def test_vertical_tracer_advection_convergence(
     linf_acceptable_range: tuple[float, float],
     experiment_config: driver_config.ExperimentConfig,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> None:
-    allocator = model_backends.get_allocator(backend)
+    allocator = model_backends.get_allocator(backend_like)
 
     grid_path = grid_utils._download_grid_file(_VERTICAL_CONVERGENCE_GRID)
     error_l1: list[float] = []
@@ -294,7 +294,7 @@ def test_vertical_tracer_advection_convergence(
             config=experiment_config_local,
             grid_manager=grid_manager,
             process_props=process_props,
-            backend=backend,
+            backend=backend_like,
         )
         simulated_tracer = ds.tracers.current.qv.ndarray
 

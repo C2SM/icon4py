@@ -20,6 +20,7 @@ from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
     model_backends,
+    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.config import options as common_conf_opt
@@ -276,7 +277,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("Newton iteration completed.")
 
-    interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64.with_backend(backend)(
+    model_options.with_backend(
+        interpolate_cell_field_to_edge.interpolate_cell_field_to_edge_f64, backend
+    )(
         in_field=eta_v,
         coeff=c_lin_e,
         out_field=eta_v_at_edge_dp,

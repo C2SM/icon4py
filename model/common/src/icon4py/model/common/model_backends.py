@@ -66,7 +66,8 @@ def get_allocator(
         return gtx_allocators.device_allocators[CPU]
 
     if is_backend_descriptor(backend):
-        backend = backend["device"]
+        # same default device as `model_options.customize_backend`
+        backend = backend.get("device") or CPU
     if isinstance(backend, gtx.DeviceType):
         return gtx_allocators.device_allocators[backend]
     raise ValueError(f"Cannot get allocator from {backend}")
