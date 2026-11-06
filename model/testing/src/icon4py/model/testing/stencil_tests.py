@@ -297,8 +297,12 @@ def _suite_rng(request: pytest.FixtureRequest) -> np.random.Generator:
     every rank and xdist worker derives the same generator.
     """
     suite = request.cls
-    key = _suite_seed_key(suite) if suite is not None else f"{request.module.__name__}:"
-    return np.random.default_rng(_derived_seed_sequence(key))
+    if suite is None:
+        raise RuntimeError(
+            "The 'data_alloc' fixture requires a 'StencilTest' suite: the seed derives from"
+            " the suite class."
+        )
+    return np.random.default_rng(_derived_seed_sequence(_suite_seed_key(suite)))
 
 
 def _suite_seed_key(suite: type) -> str:
@@ -309,16 +313,6 @@ def _suite_seed_key(suite: type) -> str:
     `input_data` fixture and must not enter the key.
     """
     return f"{suite.__module__}:{suite.__name__}:"
-
-
-def _reference_rng(suite: type) -> np.random.Generator:
-    """
-    A generator on the suite's derived seed.
-
-    Passed to `reference` bodies that declare an `rng` parameter, so their own random
-    draws are as deterministic as the suite's other seeded data.
-    """
-    return np.random.default_rng(_derived_seed_sequence(_suite_seed_key(suite)))
 
 
 def _reference_expects_rng(reference: Callable[..., Any]) -> bool:
@@ -580,6 +574,7 @@ def test_and_benchmark(
     benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
     grid: base.Grid,
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+    data_alloc: DataAllocationWrapper,
     configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
@@ -599,7 +594,7 @@ def test_and_benchmark(
         # in scope, so a seeded generator is passed when the reference declares an
         # `rng` parameter.
         reference_kwargs: dict[str, Any] = (
-            {"rng": _reference_rng(type(self))} if _reference_expects_rng(self.reference) else {}
+            {"rng": data_alloc.rng} if _reference_expects_rng(self.reference) else {}
         )
         reference_outputs = self.reference(
             grid=grid,

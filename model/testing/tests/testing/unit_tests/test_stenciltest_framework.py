@@ -439,6 +439,15 @@ class TestConnectivitiesAsNumpy:
 # -- DataAllocationWrapper -------------------------------------------------------------
 
 
+def _seeded_wrapper(grid, key: str) -> stencil_tests.DataAllocationWrapper:
+    """A wrapper seeded from `key`, as the `data_alloc` fixture seeds one."""
+    return stencil_tests.DataAllocationWrapper(
+        grid=grid,
+        allocator=None,
+        rng=np.random.default_rng(stencil_tests._derived_seed_sequence(key)),
+    )
+
+
 class TestDataAllocationWrapper:
     @pytest.fixture
     def wrapper(self, grid):
@@ -537,15 +546,6 @@ class TestDataAllocationWrapper:
 # -- Seeded random data ----------------------------------------------------------------
 
 
-def _seeded_wrapper(grid, key: str) -> stencil_tests.DataAllocationWrapper:
-    """A wrapper seeded from `key`, as the `data_alloc` fixture seeds one."""
-    return stencil_tests.DataAllocationWrapper(
-        grid=grid,
-        allocator=None,
-        rng=np.random.default_rng(stencil_tests._derived_seed_sequence(key)),
-    )
-
-
 class TestSeededWrapper:
     def test_identical_keys_produce_identical_fields(self, grid):
         """Every rank and xdist worker derives the same streams from the same key."""
@@ -591,17 +591,6 @@ class TestSeededWrapper:
             first.random_field(dims.CellDim).asnumpy(),
             third.random_field(dims.CellDim).asnumpy(),
         )
-
-    def test_reference_rng_draws_the_suite_seed(self):
-        """The `rng` passed to a `reference` that declares one draws the suite's seed."""
-
-        class Suite:
-            pass
-
-        first = stencil_tests._reference_rng(Suite)
-        second = stencil_tests._reference_rng(Suite)
-
-        np.testing.assert_array_equal(first.random(4), second.random(4))
 
     def test_reference_expects_rng_detects_the_parameter(self):
         def with_rng(grid, *, rng):
