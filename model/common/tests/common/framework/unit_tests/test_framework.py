@@ -64,9 +64,9 @@ class Double:
     Input = Halve.Input
     Output = Halve.Output
 
-    def run(self, inputs: Halve.Input, outputs: Halve.Output) -> Halve.Output:
-        np.asarray(outputs.pressure.ndarray)[...] = 2.0 * np.asarray(inputs.pressure.ndarray)
-        return outputs
+    def run(self, input: Halve.Input, output: Halve.Output) -> Halve.Output:
+        np.asarray(output.pressure.ndarray)[...] = 2.0 * np.asarray(input.pressure.ndarray)
+        return output
 
 
 def test_zeros_resolves_the_precision_at_allocation(
@@ -205,7 +205,7 @@ def test_a_component_that_does_not_inherit_satisfies_the_protocol(grid: base_gri
     np.asarray(pressure.ndarray)[...] = 8.0
     component: fw.Component[Halve.Input, Halve.Output] = Double()
     given = fw.allocate(Halve.Output, grid, allocator=None)
-    assert component.run(Halve.Input(pressure=pressure), outputs=given) is given
+    assert component.run(Halve.Input(pressure=pressure), output=given) is given
     assert np.all(np.asarray(given.pressure.ndarray) == 16.0)
 
 

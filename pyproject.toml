@@ -181,7 +181,8 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/io/unit_tests/test_io.py',
-  # '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/framework',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/framework',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/unit_tests',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/config',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
@@ -208,6 +209,7 @@ $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
+$MYPY_CONFIG_FILE_DIR/model/common:
 $MYPY_CONFIG_FILE_DIR/model/driver/src:
 $MYPY_CONFIG_FILE_DIR/model/driver/tests:
 $MYPY_CONFIG_FILE_DIR/model/testing/src:
