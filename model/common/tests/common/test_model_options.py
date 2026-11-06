@@ -11,6 +11,7 @@ import typing
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import pytest
+from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.common import (
     backend_configuration as backend_cfg,
@@ -153,6 +154,54 @@ def test_setup_program_specify_inputs(
         )
     # TODO(havogt): test should be improved to work without string comparison
     assert repr(testee) == repr(expected_program)
+
+
+def test_customize_backend_applies_dace_options_to_generic_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The driver and the datatest fixtures pass a generic concrete backend to the granules.
+    generic_backend = customize_backend(None, model_backends.CPU)
+    calls: list[tuple[str, typing.Any]] = []
+    set_program_options = model_options._set_program_specific_dace_options
+    set_device_options = model_options._set_device_specific_dace_options
+
+    def spy_program_options(program_name: str, *args: typing.Any) -> None:
+        calls.append(("program", program_name))
+        set_program_options(program_name, *args)
+
+    def spy_device_options(device: model_backends.DeviceType | None, **kwargs: typing.Any) -> None:
+        calls.append(("device", device))
+        set_device_options(device, **kwargs)
+
+    monkeypatch.setattr(model_options, "_set_program_specific_dace_options", spy_program_options)
+    monkeypatch.setattr(model_options, "_set_device_specific_dace_options", spy_device_options)
+
+    def vertically_implicit_solver_at_predictor_step() -> None: ...
+
+    backend = customize_backend(vertically_implicit_solver_at_predictor_step, generic_backend)
+    assert calls == [
+        ("program", "vertically_implicit_solver_at_predictor_step"),
+        ("device", model_backends.CPU),
+    ]
+    assert backend is not generic_backend
+    assert repr(backend) != repr(generic_backend)
+
+
+def test_rocm_device_options_are_applied_with_program_options() -> None:
+    options = model_options.get_options(
+        "vertically_implicit_solver_at_predictor_step",
+        backend_config=None,
+        device=model_backends.DeviceType.ROCM,
+    )["optimization_args"]
+    assert options["fuse_scan_inputs"] is True
+    assert options["gpu_block_size_2d"] == (256, 1, 1)
+    assert options["blocking_size"] == 4
+    assert options["transient_memory_mode"] == gtx_transformations.TransientMemoryMode.PERSISTENT
+
+
+def test_customize_backend_keeps_foreign_concrete_backend() -> None:
+    backend = model_backends.make_custom_dace_backend(device=model_backends.CPU)
+    assert customize_backend(program_return_field, backend) is backend
 
 
 @pytest.mark.parametrize(

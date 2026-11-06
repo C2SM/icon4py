@@ -4,6 +4,7 @@
 #SBATCH --ntasks-per-node=4
 #SBATCH --time=04:00:00
 ##SBATCH --gpus-per-task=1
+#SBATCH --cpus-per-task=16
 #SBATCH --uenv=prgenv-gnu/7.2.3:2950075422,/ritom/scratch/cscs/ioannmag/cycle39/icon4py-benchmarks/py_venv_mpi4.squashfs:/ritom/scratch/cscs/ioannmag/cycle39/icon4py-benchmarks/.venv
 #SBATCH -A csstaff
 #SBATCH --view=default

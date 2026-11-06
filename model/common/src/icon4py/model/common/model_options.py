@@ -32,6 +32,21 @@ _WORKSPACE_SIZE_WARNING = (
 )
 
 
+# Generic backends built by `customize_backend(None, ...)`, keyed by `id()`, mapped to the
+# `BackendLike` and `BackendConfig` they were built from. Callers such as the driver and the
+# datatest fixtures build one generic concrete backend and pass it to the granules; this lets
+# `customize_backend` re-apply the per-program options for that backend instead of using the
+# generic one as is. The backend is stored in the value too, so its `id()` cannot be reused.
+_generic_backend_origins: dict[
+    int,
+    tuple[
+        gtx_typing.Backend,
+        model_backends.DeviceType | model_backends.BackendDescriptor,
+        backend_cfg.BackendConfig | None,
+    ],
+] = {}
+
+
 def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
@@ -64,6 +79,7 @@ def _set_program_specific_dace_options(
         optimization_args.setdefault("scan_loop_unrolling_factor", 0)
         optimization_args.setdefault("fuse_scan_inputs", True)
         optimization_args.setdefault("scan_fusion_scope", "field_operator")
+        print("Enable vertically implicit solver optimizations for program:", program_name)
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
@@ -177,8 +193,16 @@ def customize_backend(
     | None,
     backend_config: backend_cfg.BackendConfig | None = None,
 ) -> gtx_typing.Backend | None:
-    backend_config = backend_config or backend_cfg.backend_config_from_env()
     program_name = program.__name__ if program is not None else ""
+    if (
+        program is not None
+        and isinstance(backend, gtx_backend.Backend)
+        and (origin := _generic_backend_origins.get(id(backend))) is not None
+    ):
+        # Generic backend built from a descriptor: rebuild it with the program-specific options.
+        _, backend, origin_backend_config = origin
+        backend_config = backend_config or origin_backend_config
+    backend_config = backend_config or backend_cfg.backend_config_from_env()
     if backend is None or isinstance(backend, gtx_backend.Backend):
         backend_name = backend.name if backend is not None else "embedded"
         log.info(f"Using non-custom backend '{backend_name}' for '{program_name}'.")
@@ -197,6 +221,8 @@ def customize_backend(
         "backend_factory", model_backends.make_custom_dace_backend
     )
     custom_backend = backend_factory(**backend_descriptor)
+    if program is None:
+        _generic_backend_origins[id(custom_backend)] = (custom_backend, backend, backend_config)
     # Log the workspace size only: formatting the array itself would copy it to host.
     logged_options = backend_descriptor
     if (workspace := backend_descriptor.get("external_workspace")) is not None:
