@@ -306,17 +306,6 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
                 )
             accumulator.ndarray[...] += field_.ndarray  # type: ignore[index]
 
-    @staticmethod
-    def _copy_to_output(input: physics_state.EntryState, output: Output) -> None:
-        """
-        Copy the leaves `input` and `output` share into `output`, unless they share a buffer.
-        """
-        sources = fw.fields(input)
-        for name, target in fw.fields(output).items():
-            source = sources.get(name)
-            if source is not None and target.ndarray is not source.ndarray:
-                target.ndarray[...] = source.ndarray  # type: ignore[index]  # NDArrayObject declares no __setitem__
-
     def _apply(self, entry: physics_state.EntryState, dt_seconds: float, output: Output) -> None:
         """
         The summed tendencies into `output`, once (ICON's phy2dyn).
@@ -325,7 +314,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         moisture, then the temperature, then the winds. A tendency no process produced is not
         applied.
         """
-        self._copy_to_output(entry, output)
+        fw.copy_to_output(entry, output)
         acc = self.accumulators
 
         # 1. tracers: q += dt * sum of the tendencies (mo_interface_iconam_aes:513)

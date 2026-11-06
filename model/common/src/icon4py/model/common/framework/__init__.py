@@ -85,6 +85,11 @@ def fields(state: State, kind: type[Quantity] = Quantity) -> dict[str, Field[Any
     }
 
 
+def leaf_quantities(cls: type[State]) -> dict[str, type[Quantity]]:
+    """The quantity of each `Field` leaf of a `State` class, by name, in declaration order."""
+    return {name: quantity for name, quantity, _ in _declarations(cls)}  # type: ignore[arg-type]
+
+
 def _declaration(name: str, hint: Any) -> tuple[str, type[Quantity], bool] | None:
     """
     The `(name, quantity, optional)` triple for one state annotation, or None when the
@@ -111,7 +116,7 @@ def _declarations(cls: type[State]) -> Sequence[tuple[str, type[Quantity], bool]
     declaration order. Cached because `typing.get_type_hints` evaluates the annotations,
     which are strings here, and `fields()` runs per step in the driver.
 
-    Behind `allocate` and `fields`. Code that handles any state walks it instead of a
+    Behind `allocate`, `fields` and `leaf_quantities`. Code that handles any state walks it instead of a
     per-state list of fields: `copy` (through `fields`), the physics driver and the IO.
     """
     hints = typing.get_type_hints(cls)
@@ -200,3 +205,17 @@ class Component[I: State, O: State](Protocol):
     Output: type[O]
 
     def run(self, input: I, output: O) -> O: ...
+
+
+def copy_to_output(input: State, output: State) -> None:
+    """
+    Copy the leaves `input` and `output` share into `output`, unless they share a buffer.
+
+    For components that update in place: when the caller passes distinct buffers, `run`
+    starts from a copy of `input`.
+    """
+    sources = fields(input)
+    for name, target in fields(output).items():
+        source = sources.get(name)
+        if source is not None and target.ndarray is not source.ndarray:
+            target.ndarray[...] = source.ndarray  # type: ignore[index]  # NDArrayObject declares no __setitem__
