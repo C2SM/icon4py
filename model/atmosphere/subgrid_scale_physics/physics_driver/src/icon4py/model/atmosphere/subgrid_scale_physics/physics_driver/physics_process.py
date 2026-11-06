@@ -26,6 +26,7 @@ if typing.TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
 
+# TODO(jcanton, msimberg): make this a generic TimeGatedComponent in part 02, when EntryState is removed
 # Disable the default __eq__ so that PhysicsProcess compares by identity and
 # enables __hash__ so that a PhysicsProcess can be used in dicts.
 @dataclasses.dataclass(eq=False)
