@@ -24,27 +24,32 @@ class Quantity:
     base like `Tendency` gives none).
     """
 
-    dims: ClassVar[tuple[gtx.Dimension, ...]]
     standard_name: ClassVar[str | None] = None
     units: ClassVar[str]
     long_name: ClassVar[str | None] = None
+
+    # NOTE: temporary, components MWE part 03 (dims): the dims are a property of the field, not of
+    # the quantity; they move to the field type (`Field[Q, D, T]`)
+    dims: ClassVar[tuple[gtx.Dimension, ...]]
+    # NOTE: temporary, components MWE part 03 (dims): the dtype is a property of the field, not of
+    # the quantity; they move to the field type (`Field[Q, D, T]`)
     precision: ClassVar[Literal["wp", "vp"]] = "wp"
 
     def __init_subclass__(
         cls,
         *,
-        dims: tuple[gtx.Dimension, ...] | None = None,
         standard_name: str | None = None,
         units: str | None = None,
         long_name: str | None = None,
+        dims: tuple[gtx.Dimension, ...] | None = None,
         precision: Literal["wp", "vp"] | None = None,
     ) -> None:
         super().__init_subclass__()
         given = {
-            "dims": dims,
             "standard_name": standard_name,
             "units": units,
             "long_name": long_name,
+            "dims": dims,
             "precision": precision,
         }
         for name, value in given.items():
