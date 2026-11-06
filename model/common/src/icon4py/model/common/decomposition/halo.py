@@ -23,6 +23,56 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 class HaloConstructor(Protocol):
     """Callable that takes a mapping from cells to ranks"""
 
+    @staticmethod
+    def _icon_keeps_in_owned(
+        global_indices: np.ndarray,
+        refin_ctrl: np.ndarray,
+        halo_level: int,
+        dim: gtx.Dimension,
+    ) -> np.ndarray:
+        """
+        Return the subset of global_indices that ICON keeps in the owned (boundary)
+        region rather than the pure halo section, following refine_*_atm in
+        mo_setup_subdivision.f90:3394-3420.
+
+        Rules (refin_ctl values that stay in front):
+          cells/vertices: refin 1 at any halo level, refin 2 only at halo level 1
+          edges:          refin 1-2 at any level, refin 3-4 at levels 1-2,
+                          refin 5-6 at level 1 only
+        """
+        rc = refin_ctrl[global_indices]
+        if dim in (dims.CellDim, dims.VertexDim):
+            mask = (rc == 1) | (rc == 2) if halo_level == 1 else rc == 1
+        elif dim == dims.EdgeDim:
+            if halo_level == 1:
+                mask = (rc >= 1) & (rc <= 6)
+            elif halo_level == 2:
+                mask = (rc >= 1) & (rc <= 4)
+            else:
+                mask = (rc >= 1) & (rc <= 2)
+        else:
+            mask = np.zeros(len(global_indices), dtype=bool)
+        return global_indices[mask]
+
+    def _split_halo(
+        self,
+        halo_indices: np.ndarray,
+        refin_ctrl: np.ndarray | None,
+        halo_level: int,
+        dim: gtx.Dimension,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Split halo indices into (boundary_halo, pure_halo).
+
+        boundary_halo: points ICON keeps in the owned region (sorted by global index).
+        pure_halo:     the remaining halo points that go into the halo block.
+        If refin_ctrl is None (non-LAM grid) all points are pure halo.
+        """
+        if refin_ctrl is None or len(halo_indices) == 0:
+            return np.array([], dtype=halo_indices.dtype), halo_indices
+        bdy = self._icon_keeps_in_owned(halo_indices, refin_ctrl, halo_level, dim)
+        pure = np.setdiff1d(halo_indices, bdy)
+        return bdy, pure
+
     def __call__(self, cell_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo: ...
 
 
@@ -58,11 +108,14 @@ class NoHalos(HaloConstructor):
 class IconLikeHaloConstructor(HaloConstructor):
     """Creates halo information for a rank with the same structure as fortran ICON."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0917
         self,
         process_props: defs.ProcessProperties,
         connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
         allocator: gtx_typing.Allocator | None = None,
+        cell_refinement: data_alloc.NDArray | None = None,
+        edge_refinement: data_alloc.NDArray | None = None,
+        vertex_refinement: data_alloc.NDArray | None = None,
     ):
         """
 
@@ -70,10 +123,22 @@ class IconLikeHaloConstructor(HaloConstructor):
             process_props: contains information on the communicator and local compute node.
             connectivities: connectivity arrays needed to construct the halos
             allocator: GT4Py buffer allocator
+            cell_refinement: global refin_c_ctrl array (optional, needed for LAM grids)
+            edge_refinement: global refin_e_ctrl array (optional, needed for LAM grids)
+            vertex_refinement: global refin_v_ctrl array (optional, needed for LAM grids)
         """
         self._xp = data_alloc.import_array_ns(allocator)
         self._process_props = process_props
         self._connectivities = {self._value(k): v for k, v in connectivities.items()}
+        self._cell_refinement = (
+            data_alloc.as_numpy(cell_refinement) if cell_refinement is not None else None
+        )
+        self._edge_refinement = (
+            data_alloc.as_numpy(edge_refinement) if edge_refinement is not None else None
+        )
+        self._vertex_refinement = (
+            data_alloc.as_numpy(vertex_refinement) if vertex_refinement is not None else None
+        )
         self._assert_all_neighbor_tables()
 
     @staticmethod
@@ -359,7 +424,23 @@ class IconLikeHaloConstructor(HaloConstructor):
         dual_cells = self._find_cell_neighbors_for_vertices(vertex_on_cutting_line)
         total_halo_cells = self._xp.setdiff1d(dual_cells, owned_cells)
         second_halo_cells = self._xp.setdiff1d(total_halo_cells, first_halo_cells)
-        all_cells = self._xp.hstack((owned_cells, first_halo_cells, second_halo_cells))
+
+        # ICON keeps some lateral-boundary halo cells in the owned block,
+        # sorted by global index into their refin_ctl zone (refine_cells_atm,
+        # mo_setup_subdivision.f90:3394-3420).
+        rc_c = self._cell_refinement
+        bdy_halo_c1, pure_halo_c1 = self._split_halo(
+            data_alloc.as_numpy(first_halo_cells), rc_c, 1, dims.CellDim
+        )
+        bdy_halo_c2, pure_halo_c2 = self._split_halo(
+            data_alloc.as_numpy(second_halo_cells), rc_c, 2, dims.CellDim
+        )
+        owned_block_cells = self._xp.array(
+            np.sort(np.concatenate([data_alloc.as_numpy(owned_cells), bdy_halo_c1, bdy_halo_c2]))
+        )
+        pure_halo_c1 = self._xp.array(pure_halo_c1)
+        pure_halo_c2 = self._xp.array(pure_halo_c2)
+        all_cells = self._xp.hstack((owned_block_cells, pure_halo_c1, pure_halo_c2))
 
         self._set_decomposition_info_dimension(
             decomp_info=decomp_info,
@@ -388,11 +469,28 @@ class IconLikeHaloConstructor(HaloConstructor):
         # vertices, and then we have to update the mask again, since it was
         # based on the old list of all vertices.
         vertex_owner_list = all_vertices[vertex_owner_mask]
+        # Vertices not owned that ICON keeps in the owned block (cutting-line vertices
+        # with refin 1 or 2 at halo level 1, refin 1 only at halo level 2).
+        vertex_halo_1_global = data_alloc.as_numpy(
+            self._xp.setdiff1d(vertex_on_cutting_line, vertex_owner_list)
+        )
+        vertex_halo_2_global = data_alloc.as_numpy(
+            self._xp.setdiff1d(vertex_on_halo_cells, vertex_on_owned_cells)
+        )
+        rc_v = self._vertex_refinement
+        bdy_halo_v1, pure_halo_v1 = self._split_halo(vertex_halo_1_global, rc_v, 1, dims.VertexDim)
+        bdy_halo_v2, pure_halo_v2 = self._split_halo(vertex_halo_2_global, rc_v, 2, dims.VertexDim)
+        owned_block_vertices = self._xp.array(
+            np.sort(
+                np.concatenate([data_alloc.as_numpy(vertex_owner_list), bdy_halo_v1, bdy_halo_v2])
+            )
+        )
+        # Rebuild all_vertices: owned block first, then pure halo
         all_vertices = self._xp.hstack(
             (
-                vertex_owner_list,
-                self._xp.setdiff1d(vertex_on_owned_cells, vertex_owner_list),
-                vertex_second_halo,
+                owned_block_vertices,
+                self._xp.array(pure_halo_v1),
+                self._xp.array(pure_halo_v2),
             )
         )
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_owner_list)
@@ -402,13 +500,8 @@ class IconLikeHaloConstructor(HaloConstructor):
             dim=dims.VertexDim,
             all_indices=all_vertices,
             owner_mask=vertex_owner_mask,
-            first_halo_level_mask=(
-                self._xp.logical_not(vertex_owner_mask)
-                & self._xp.isin(all_vertices, vertex_on_cutting_line)
-            ),
-            second_halo_level_mask=self._xp.isin(
-                all_vertices, self._xp.setdiff1d(vertex_on_halo_cells, vertex_on_owned_cells)
-            ),
+            first_halo_level_mask=self._xp.isin(all_vertices, vertex_halo_1_global),
+            second_halo_level_mask=self._xp.isin(all_vertices, vertex_halo_2_global),
             third_halo_level_mask=self._xp.zeros_like(vertex_owner_mask, dtype=bool),
         )
 
@@ -440,12 +533,35 @@ class IconLikeHaloConstructor(HaloConstructor):
         # edges, and then we have to update the mask again, since it was
         # based on the old list of all edges.
         edge_owner_list = all_edges[edge_owner_mask]
+        # Edges not owned that ICON keeps in the owned block (cutting-line edges
+        # with refin 1-6 at halo level 1, 1-4 at level 2, 1-2 at level 3).
+        edge_halo_1_global = data_alloc.as_numpy(
+            self._xp.setdiff1d(edge_on_cutting_line, edge_owner_list)
+        )
+        edge_halo_2_global = data_alloc.as_numpy(edge_second_level)
+        edge_halo_3_global = data_alloc.as_numpy(edge_third_level)
+        rc_e = self._edge_refinement
+        bdy_halo_e1, pure_halo_e1 = self._split_halo(edge_halo_1_global, rc_e, 1, dims.EdgeDim)
+        bdy_halo_e2, pure_halo_e2 = self._split_halo(edge_halo_2_global, rc_e, 2, dims.EdgeDim)
+        bdy_halo_e3, pure_halo_e3 = self._split_halo(edge_halo_3_global, rc_e, 3, dims.EdgeDim)
+        owned_block_edges = self._xp.array(
+            np.sort(
+                np.concatenate(
+                    [
+                        data_alloc.as_numpy(edge_owner_list),
+                        bdy_halo_e1,
+                        bdy_halo_e2,
+                        bdy_halo_e3,
+                    ]
+                )
+            )
+        )
         all_edges = self._xp.hstack(
             (
-                edge_owner_list,
-                self._xp.setdiff1d(edge_on_owned_cells, edge_owner_list),
-                edge_second_level,
-                edge_third_level,
+                owned_block_edges,
+                self._xp.array(pure_halo_e1),
+                self._xp.array(pure_halo_e2),
+                self._xp.array(pure_halo_e3),
             )
         )
         edge_owner_mask = self._xp.isin(all_edges, edge_owner_list)
@@ -455,22 +571,22 @@ class IconLikeHaloConstructor(HaloConstructor):
             dim=dims.EdgeDim,
             all_indices=all_edges,
             owner_mask=edge_owner_mask,
-            first_halo_level_mask=(
-                self._xp.logical_not(edge_owner_mask)
-                & self._xp.isin(all_edges, edge_on_cutting_line)
-            ),
-            second_halo_level_mask=self._xp.isin(all_edges, edge_second_level),
-            third_halo_level_mask=self._xp.isin(all_edges, edge_third_level),
+            first_halo_level_mask=self._xp.isin(all_edges, edge_halo_1_global),
+            second_halo_level_mask=self._xp.isin(all_edges, edge_halo_2_global),
+            third_halo_level_mask=self._xp.isin(all_edges, edge_halo_3_global),
         )
 
         return decomp_info
 
 
-def get_halo_constructor(
+def get_halo_constructor(  # noqa: PLR0917
     process_props: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
     connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
     allocator: gtx_typing.Allocator | None,
+    cell_refinement: data_alloc.NDArray | None = None,
+    edge_refinement: data_alloc.NDArray | None = None,
+    vertex_refinement: data_alloc.NDArray | None = None,
 ) -> HaloConstructor:
     """
     Factory method to create the halo constructor.
@@ -483,6 +599,9 @@ def get_halo_constructor(
         full_grid_size
         allocator:
         connectivities:
+        cell_refinement: global refin_c_ctrl array (needed for LAM grids)
+        edge_refinement: global refin_e_ctrl array (needed for LAM grids)
+        vertex_refinement: global refin_v_ctrl array (needed for LAM grids)
 
     Returns: a HaloConstructor suitable for the process_props
 
@@ -497,6 +616,9 @@ def get_halo_constructor(
         process_props=process_props,
         connectivities=connectivities,
         allocator=allocator,
+        cell_refinement=cell_refinement,
+        edge_refinement=edge_refinement,
+        vertex_refinement=vertex_refinement,
     )
 
 

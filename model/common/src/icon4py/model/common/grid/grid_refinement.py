@@ -180,64 +180,6 @@ def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
             raise ValueError(f"Invalid domain: {domain}, must be a HALO domain")
 
 
-def _compute_halo_domain_bounds_for_distributed_grid(
-    dim: gtx.Dimension,
-    decomposition_info: decomposition.DecompositionInfo,
-    start_indices: dict,
-    end_indices: dict,
-    array_ns: ModuleType,
-) -> None:
-    """
-    Compute halo domain bounds for a distributed grid.
-
-    IconLikeHaloConstructor lays out the local arrays as:
-        [owned | halo_level_1 | halo_level_2 | halo_level_3]
-
-    This differs from ICON's own memory layout, where some lateral-boundary
-    halo points are interspersed with the lateral-boundary owned points at the
-    front of the array.  The refinement-value scan used for the single-rank
-    case therefore yields wrong indices on a distributed grid: it looks for the
-    minimum array position of halo entries whose refinement value is above the
-    lateral-boundary threshold, but on IconLikeHaloConstructor's layout those
-    entries are at arbitrary positions inside the contiguous halo block.
-
-    Instead, we derive the boundaries directly from the decomposition info:
-    the owned count gives the exact start of the first halo level, and each
-    subsequent level follows contiguously.
-    """
-    owned_count = array_ns.sum(decomposition_info.owner_mask(dim)).item()
-    halo_1_count = array_ns.sum(
-        decomposition_info.halo_level_mask(dim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL)
-    ).item()
-    halo_2_count = array_ns.sum(
-        decomposition_info.halo_level_mask(dim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL)
-    ).item()
-    halo_3_count = 0
-    if dim == dims.EdgeDim:
-        halo_3_count = array_ns.sum(
-            decomposition_info.halo_level_mask(
-                dim, decomposition.DecompositionFlag.THIRD_HALO_LEVEL
-            )
-        ).item()
-
-    h1_end = owned_count + halo_1_count
-    h2_end = h1_end + halo_2_count
-    h3_end = h2_end + halo_3_count
-
-    h1 = h_grid.domain(dim)(h_grid.Zone.HALO)
-    h2 = h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2)
-
-    start_indices[h1] = gtx.int32(owned_count)
-    end_indices[h1] = gtx.int32(h1_end)
-    start_indices[h2] = gtx.int32(h1_end)
-    end_indices[h2] = gtx.int32(h2_end)
-
-    if dim == dims.EdgeDim:
-        h3 = h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_3)
-        start_indices[h3] = gtx.int32(h2_end)
-        end_indices[h3] = gtx.int32(h3_end)
-
-
 def _compute_halo_domain_bounds_for_single_rank(  # noqa: PLR0917
     dim: gtx.Dimension,
     refinement_ctrl: data_alloc.NDArray,
@@ -329,10 +271,11 @@ def compute_domain_bounds(
     For a global model grid all points are unordered. `Zone` that do not exist for a global model grid
     return empty domains.
 
-    For distributed grids halo points build their own `Domain`and are located at the end of the field arrays.
-    IconLikeHaloConstructor lays out arrays as [owned | halo_level_1 | halo_level_2 | halo_level_3],
-    so halo boundaries are derived directly from the decomposition_info owner/halo counts rather than
-    from scanning refinement values (which only matches ICON's own non-contiguous halo layout).
+    For distributed grids the layout matches ICON's: lateral-boundary halo points whose
+    refin_ctl value satisfies the refine_*_atm predicates (mo_setup_subdivision.f90:3394-3420)
+    are kept inside the owned block, so the halo sections are non-contiguous. The
+    refinement-value scan (_compute_halo_domain_bounds_for_single_rank) therefore works
+    correctly for both single-rank and distributed grids.
 
     Args:
         dim: Dimension one of `CellDim`. `VertexDim`, `EdgeDim`
@@ -353,14 +296,9 @@ def compute_domain_bounds(
     start_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
     end_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
 
-    if decomposition_info.is_distributed():
-        _compute_halo_domain_bounds_for_distributed_grid(
-            dim, decomposition_info, start_indices, end_indices, array_ns
-        )
-    else:
-        _compute_halo_domain_bounds_for_single_rank(
-            dim, refinement_ctrl, decomposition_info, start_indices, end_indices, array_ns
-        )
+    _compute_halo_domain_bounds_for_single_rank(
+        dim, refinement_ctrl, decomposition_info, start_indices, end_indices, array_ns
+    )
 
     ordered_domains = h_grid.get_ordered_domains(dim)
     for domain in ordered_domains:

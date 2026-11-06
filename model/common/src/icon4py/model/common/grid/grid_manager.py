@@ -415,6 +415,12 @@ class GridManager:
         cell_refinement = xp.asarray(
             self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         )
+        edge_refinement = xp.asarray(
+            self._reader.variable(gridfile.GridRefinementName.CONTROL_EDGES)
+        )
+        vertex_refinement = xp.asarray(
+            self._reader.variable(gridfile.GridRefinementName.CONTROL_VERTICES)
+        )
         global_size = self._read_full_grid_size()
         global_params = self._construct_grid_params(geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement)
@@ -439,6 +445,9 @@ class GridManager:
             full_grid_size=global_size,
             connectivities=global_neighbor_tables,
             allocator=allocator,
+            cell_refinement=cell_refinement,
+            edge_refinement=edge_refinement,
+            vertex_refinement=vertex_refinement,
         )
 
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)

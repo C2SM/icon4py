@@ -56,32 +56,6 @@ def domain(dim: gtx.Dimension, zone: h_grid.Zone) -> h_grid.Domain:
     return h_grid.domain(dim)(zone)
 
 
-def _expected_bounds_with_halos_last(
-    domain: h_grid.Domain,
-    decomposition_info: decomp_defs.DecompositionInfo,
-    ref_start_index: int,
-    ref_end_index: int,
-) -> tuple[int, int]:
-    dim = domain.dim
-    flags = decomp_defs.DecompositionFlag
-    owned = int(decomposition_info.owner_mask(dim).sum())
-    halo_sizes = {
-        h_grid.Zone.HALO: decomposition_info.get_halo_size(dim, flags.FIRST_HALO_LEVEL),
-        h_grid.Zone.HALO_LEVEL_2: decomposition_info.get_halo_size(dim, flags.SECOND_HALO_LEVEL),
-        h_grid.Zone.HALO_LEVEL_3: decomposition_info.get_halo_size(dim, flags.THIRD_HALO_LEVEL),
-    }
-    match domain.zone:
-        case h_grid.Zone.LOCAL | h_grid.Zone.INTERIOR:
-            return ref_start_index, owned
-        case h_grid.Zone.HALO | h_grid.Zone.HALO_LEVEL_2 | h_grid.Zone.HALO_LEVEL_3:
-            start = owned
-            for zone in (h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2, h_grid.Zone.HALO_LEVEL_3):
-                if zone == domain.zone:
-                    return start, start + halo_sizes[zone]
-                start += halo_sizes[zone]
-    return ref_start_index, ref_end_index
-
-
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_compute_domain_bounds(  # noqa: PLR0917 [too-many-positional-arguments]
@@ -121,10 +95,6 @@ def test_compute_domain_bounds(  # noqa: PLR0917 [too-many-positional-arguments]
 
     ref_start_index = ref_grid.start_index(domain)
     ref_end_index = ref_grid.end_index(domain)
-    if decomposition_info.is_distributed():
-        ref_start_index, ref_end_index = _expected_bounds_with_halos_last(
-            domain, decomposition_info, ref_start_index, ref_end_index
-        )
     computed_start = start_indices[domain]
     computed_end = end_indices[domain]
     _log.info(
@@ -169,9 +139,13 @@ def test_bounds_decomposition(
     end_index = grid_manager.grid.end_index
     domain = h_grid.domain(dim)
 
-    assert test_utils.is_sorted(decomposition_info.halo_levels(dim)), (
-        f"Halo levels for {dim} should be sorted, but are {decomposition_info.halo_levels(dim)}"
-    )
+    # With ICON's layout for LAM grids, some boundary halo points are
+    # interleaved with owned points in the owned block, so halo_levels
+    # is not globally sorted. Only assert sorted for non-LAM distributed grids.
+    if not (decomposition_info.is_distributed() and experiment.grid.limited_area):
+        assert test_utils.is_sorted(decomposition_info.halo_levels(dim)), (
+            f"Halo levels for {dim} should be sorted, but are {decomposition_info.halo_levels(dim)}"
+        )
 
     local_owned_size = decomposition_info.local_index(
         dim, decomp_defs.DecompositionInfo.EntryType.OWNED
@@ -192,25 +166,30 @@ def test_bounds_decomposition(
         dim, decomp_defs.DecompositionInfo.EntryType.HALO
     ).shape[0]
 
-    # NOTE: These assumptions may change once limited area grids are supported
-    # for icon4py domain decomposition.
+    # With ICON's layout some lateral-boundary halo points are kept inside
+    # the owned block, so LOCAL/INTERIOR end at the owned-block boundary
+    # (which includes those boundary-halo points) and HALO starts there.
+    halo_start = start_index(domain(h_grid.Zone.HALO))
+    is_lam = experiment.grid.limited_area
+
     assert start_index(domain(h_grid.Zone.LOCAL)) == 0
-    assert end_index(domain(h_grid.Zone.LOCAL)) == local_owned_size
-    assert end_index(domain(h_grid.Zone.LOCAL)) == global_owned_size
+    assert end_index(domain(h_grid.Zone.LOCAL)) == halo_start
 
-    assert start_index(domain(h_grid.Zone.INTERIOR)) == 0
-    assert end_index(domain(h_grid.Zone.INTERIOR)) == local_owned_size
-    assert end_index(domain(h_grid.Zone.INTERIOR)) == global_owned_size
+    # For LAM grids with ICON's layout, INTERIOR starts after the boundary
+    # zones (not at 0), consistent with ICON's own indexing.
+    if not is_lam:
+        assert start_index(domain(h_grid.Zone.INTERIOR)) == 0
+    assert end_index(domain(h_grid.Zone.INTERIOR)) == halo_start
 
-    assert start_index(domain(h_grid.Zone.HALO)) == local_owned_size
-    assert start_index(domain(h_grid.Zone.HALO)) == global_owned_size
+    assert halo_start >= local_owned_size
+    assert halo_start >= global_owned_size
     assert end_index(domain(h_grid.Zone.END)) == local_all_size
     assert end_index(domain(h_grid.Zone.END)) == global_all_size
-    assert (
-        end_index(domain(h_grid.Zone.END)) - start_index(domain(h_grid.Zone.HALO))
-        == local_halo_size
-    )
-    assert (
-        end_index(domain(h_grid.Zone.END)) - start_index(domain(h_grid.Zone.HALO))
-        == global_halo_size
-    )
+    # For LAM grids with ICON's layout, some halo-flagged points sit inside
+    # the owned block, so the pure halo section is smaller than local_halo_size.
+    pure_halo_size = end_index(domain(h_grid.Zone.END)) - halo_start
+    assert pure_halo_size <= local_halo_size
+    assert pure_halo_size <= global_halo_size
+    if not is_lam:
+        assert pure_halo_size == local_halo_size
+        assert pure_halo_size == global_halo_size
