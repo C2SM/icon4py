@@ -20,6 +20,8 @@ variables after them.
 
 from typing import Final
 
+from gt4py import next as gtx
+
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.quantity import Quantity, Tendency
 
@@ -27,11 +29,11 @@ from icon4py.model.common.quantity import Quantity, Tendency
 # NOTE: temporary, components MWE part 03 (dims): the place and the precision move to the field
 # type (`Field[Q, D, T]`), so `ThetaVOnCellK` and `ThetaVOnCellKHalf` become one quantity at two
 # places.
-CELL: Final = (dims.CellDim,)
-CELL_K: Final = (dims.CellDim, dims.KDim)
-CELL_KHALF: Final = (dims.CellDim, dims.KHalfDim)
-EDGE_K: Final = (dims.EdgeDim, dims.KDim)
-EDGE_KHALF: Final = (dims.EdgeDim, dims.KHalfDim)
+CELL: Final[tuple[gtx.Dimension, ...]] = (dims.CellDim,)
+CELL_K: Final[tuple[gtx.Dimension, ...]] = (dims.CellDim, dims.KDim)
+CELL_KHALF: Final[tuple[gtx.Dimension, ...]] = (dims.CellDim, dims.KHalfDim)
+EDGE_K: Final[tuple[gtx.Dimension, ...]] = (dims.EdgeDim, dims.KDim)
+EDGE_KHALF: Final[tuple[gtx.Dimension, ...]] = (dims.EdgeDim, dims.KHalfDim)
 
 # fmt: off
 
