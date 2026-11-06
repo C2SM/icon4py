@@ -208,9 +208,6 @@ def test_distributed_geometry_mean_fields(
     geometry_from_savepoint: geometry.GridGeometry,
     attr_name: str,
 ) -> None:
-    if experiment.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
-
     parallel_helpers.check_comm_size(process_props)
     parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)

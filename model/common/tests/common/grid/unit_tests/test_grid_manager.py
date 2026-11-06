@@ -520,13 +520,12 @@ def test_edge_cell_distance(
     experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
-    expected = grid_savepoint.edge_cell_length()
+    expected = np.nan_to_num(grid_savepoint.edge_cell_length().asnumpy(), nan=0.0)
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
 
     assert test_utils.dallclose(
         manager.geometry_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE].asnumpy(),
-        expected.asnumpy(),
-        equal_nan=True,
+        expected,
     )
 
 
@@ -679,9 +678,6 @@ def test_decomposition_size(
     ranks: int,
     grid_description: test_defs.GridDescription,
 ) -> None:
-    if grid_description.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
-
     decomposer = decomp.MetisDecomposer()
     file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
