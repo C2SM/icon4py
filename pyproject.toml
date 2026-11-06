@@ -242,7 +242,7 @@ module = [
 disallow_untyped_defs = false
 module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 
-[[tool.mypy.overrides]]  # the components and their tests are checked as `mypy --strict` would
+[[tool.mypy.overrides]]
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_subclassing_any = true
