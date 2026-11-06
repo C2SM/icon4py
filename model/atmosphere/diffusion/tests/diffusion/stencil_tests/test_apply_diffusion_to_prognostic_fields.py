@@ -607,7 +607,7 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
             (grid.size[dims.CellDim], grid.size[dims.C2E2CDim], grid.size[dims.KDim]),
             dtype=gtx.int32,
         )
-        rng = data_alloc.seeded_generator()
+        rng = data_alloc.rng
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
             zd_vertoffset_buffer[:, :, k] = rng.integers(

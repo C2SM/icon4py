@@ -289,16 +289,16 @@ def _derived_seed_sequence(key: str) -> np.random.SeedSequence:
     return np.random.SeedSequence([seed, _stable_seed(key)])
 
 
-def _suite_seed_sequence(request: pytest.FixtureRequest) -> np.random.SeedSequence:
+def _suite_rng(request: pytest.FixtureRequest) -> np.random.Generator:
     """
-    The requesting suite's seed sequence.
+    The requesting suite's generator.
 
     The key combines the test module and the suite class: stable strings only, so
-    every rank and xdist worker derives the same sequence.
+    every rank and xdist worker derives the same generator.
     """
     suite = request.cls
     key = _suite_seed_key(suite) if suite is not None else f"{request.module.__name__}:"
-    return _derived_seed_sequence(key)
+    return np.random.default_rng(_derived_seed_sequence(key))
 
 
 def _suite_seed_key(suite: type) -> str:
@@ -318,8 +318,7 @@ def _reference_rng(suite: type) -> np.random.Generator:
     Passed to `reference` bodies that declare an `rng` parameter, so their own random
     draws are as deterministic as the suite's other seeded data.
     """
-    sequence = _derived_seed_sequence(_suite_seed_key(suite))
-    return np.random.Generator(np.random.PCG64(sequence))
+    return np.random.default_rng(_derived_seed_sequence(_suite_seed_key(suite)))
 
 
 def _reference_expects_rng(reference: Callable[..., Any]) -> bool:
@@ -338,18 +337,13 @@ class DataAllocationWrapper:
     A `StencilTest` suite receives one as the `data_alloc` argument of its `input_data`
     fixture. See the wrapped module for the meaning of the remaining arguments.
 
-    The `random_*` constructors draw from the suite's seed sequence, and
-    `seeded_generator` hands out its streams directly.
+    The `random_*` constructors draw from the suite's generator, which
+    `input_data` fixtures may also draw from directly.
     """
 
     grid: base.Grid
     allocator: gtx_typing.Allocator | None
-    seed_sequence: np.random.SeedSequence
-
-    def _next_seed(self) -> np.random.SeedSequence:
-        """The next child stream, one per `random_*` call."""
-        (child,) = self.seed_sequence.spawn(1)
-        return child
+    rng: np.random.Generator
 
     def connectivity_field(self, offset: str | gtx.FieldOffset) -> gtx.Field:
         """
@@ -401,15 +395,6 @@ class DataAllocationWrapper:
             grid=self.grid, dim=dim, extend=extend, dtype=dtype, allocator=self.allocator
         )
 
-    def seeded_generator(self) -> np.random.Generator:
-        """
-        A random generator on the next seed stream of the suite's seed sequence.
-
-        For direct draws inside `input_data` fixtures that the field constructors
-        do not cover; each call takes the next stream.
-        """
-        return np.random.Generator(np.random.PCG64(self._next_seed()))
-
     def random_field(
         self,
         *dims: gtx.Dimension,
@@ -418,11 +403,11 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
-        """A field of uniform random values in `[low, high)`, on the next seed stream."""
+        """A field of uniform random values in `[low, high)`, drawn with the suite's generator."""
         return data_allocation.random_field(
             self.grid,
             *dims,
-            seed=self._next_seed(),
+            rng=self.rng,
             low=low,
             high=high,
             dtype=dtype,
@@ -436,11 +421,11 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
-        """A field of random booleans, or of `dtype` if given, on the next seed stream."""
+        """A field of random booleans, or of `dtype` if given, drawn with the suite's generator."""
         return data_allocation.random_mask(
             self.grid,
             *dims,
-            seed=self._next_seed(),
+            rng=self.rng,
             dtype=dtype,
             allocator=self.allocator,
             extend=extend,
@@ -452,11 +437,11 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
-        """A field of random values in `{-1, 1}`, on the next seed stream."""
+        """A field of random values in `{-1, 1}`, drawn with the suite's generator."""
         return data_allocation.random_sign(
             self.grid,
             *dims,
-            seed=self._next_seed(),
+            rng=self.rng,
             dtype=dtype,
             allocator=self.allocator,
             extend=extend,

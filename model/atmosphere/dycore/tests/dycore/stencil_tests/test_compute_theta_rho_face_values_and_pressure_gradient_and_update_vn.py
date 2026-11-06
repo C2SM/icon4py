@@ -494,7 +494,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             (grid.size[dims.EdgeDim], grid.size[dims.E2CDim], grid.size[dims.KDim]),
             dtype=gtx.int32,
         )
-        rng = data_alloc.seeded_generator()
+        rng = data_alloc.rng
         k_levels = grid.num_levels
 
         for k in range(k_levels):

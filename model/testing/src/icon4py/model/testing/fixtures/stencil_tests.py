@@ -144,9 +144,9 @@ def data_alloc(
     backend_like: model_backends.BackendLike,
     request: pytest.FixtureRequest,
 ) -> _stencil_tests.DataAllocationWrapper:
-    """Field constructors with the grid, the selected backend's allocator, and the suite's seed bound."""
+    """Field constructors with the grid, the selected backend's allocator, and the suite's generator bound."""
     return _stencil_tests.DataAllocationWrapper(
         grid=grid,
         allocator=model_backends.get_allocator(backend_like),
-        seed_sequence=_stencil_tests._suite_seed_sequence(request),
+        rng=_stencil_tests._suite_rng(request),
     )

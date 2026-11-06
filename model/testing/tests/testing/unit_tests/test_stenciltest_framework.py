@@ -521,8 +521,8 @@ class TestDataAllocationWrapper:
             wrapped = [
                 param
                 for param in inspect.signature(getattr(data_alloc, name)).parameters.values()
-                # `seed` is supplied by the active seed context, not by the caller.
-                if param.name not in ("grid", "allocator", "seed")
+                # `rng` is supplied by the wrapper, not by the caller.
+                if param.name not in ("grid", "allocator", "rng")
             ]
             method = [
                 param
@@ -540,7 +540,9 @@ class TestDataAllocationWrapper:
 def _seeded_wrapper(grid, key: str) -> stencil_tests.DataAllocationWrapper:
     """A wrapper seeded from `key`, as the `data_alloc` fixture seeds one."""
     return stencil_tests.DataAllocationWrapper(
-        grid=grid, allocator=None, seed_sequence=stencil_tests._derived_seed_sequence(key)
+        grid=grid,
+        allocator=None,
+        rng=np.random.default_rng(stencil_tests._derived_seed_sequence(key)),
     )
 
 
@@ -565,22 +567,13 @@ class TestSeededWrapper:
             second.random_field(dims.CellDim).asnumpy(),
         )
 
-    def test_each_constructor_takes_the_next_stream(self, grid):
+    def test_successive_draws_differ(self, grid):
         wrapper = _seeded_wrapper(grid, "module:Suite:")
 
         first = wrapper.random_field(dims.CellDim).asnumpy()
         second = wrapper.random_field(dims.CellDim).asnumpy()
 
         assert not np.array_equal(first, second)
-
-    def test_seeded_generator_serves_successive_streams(self, grid):
-        wrapper = _seeded_wrapper(grid, "module:Suite:")
-
-        first = wrapper.seeded_generator()
-        second = wrapper.seeded_generator()
-
-        assert isinstance(first, np.random.Generator)
-        assert not np.array_equal(first.random(8), second.random(8))
 
     def test_numeric_seed_mixes_a_global_base_into_the_derivation(self, grid, monkeypatch):
         """The same numeric base reproduces the same data; another base shifts it."""

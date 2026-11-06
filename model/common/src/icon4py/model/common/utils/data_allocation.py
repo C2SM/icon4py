@@ -133,10 +133,10 @@ def random_field(
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
-    seed: np.random.SeedSequence | None = None,
+    rng: np.random.Generator | None = None,
 ) -> gtx.Field:
-    """A field of values drawn uniformly from `[low, high)`, seeded by `seed` (OS entropy if `None`)."""
-    values = np.random.default_rng(seed).uniform(
+    """A field of values drawn uniformly from `[low, high)` with `rng`, or from OS entropy if `None`."""
+    values = np.random.default_rng(rng).uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
     return gtx.as_field(dims, values, dtype=dtype, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
@@ -148,10 +148,10 @@ def random_sign(
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
-    seed: np.random.SeedSequence | None = None,
+    rng: np.random.Generator | None = None,
 ) -> gtx.Field:
-    """A field of values drawn from `{-1, 1}`, seeded by `seed` (OS entropy if `None`)."""
-    values = np.random.default_rng(seed).choice([-1, 1], size=_shape(grid, *dims, extend=extend))
+    """A field of values drawn from `{-1, 1}` with `rng`, or from OS entropy if `None`."""
+    values = np.random.default_rng(rng).choice([-1, 1], size=_shape(grid, *dims, extend=extend))
     return gtx.as_field(dims, values, dtype=dtype, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
@@ -161,13 +161,13 @@ def random_mask(
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
-    seed: np.random.SeedSequence | None = None,
+    rng: np.random.Generator | None = None,
 ) -> gtx.Field:
-    """A field with half of its entries set, in random positions, seeded by `seed` (OS entropy if `None`)."""
+    """A field with half of its entries set, in random positions, drawn with `rng`, or from OS entropy if `None`."""
     shape = _shape(grid, *dims, extend=extend)
     mask = np.zeros(math.prod(shape), dtype=bool)
     mask[: mask.size // 2] = True
-    np.random.default_rng(seed).shuffle(mask)
+    np.random.default_rng(rng).shuffle(mask)
     return gtx.as_field(dims, mask.reshape(shape), dtype=dtype, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
