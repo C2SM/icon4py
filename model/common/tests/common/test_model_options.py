@@ -161,8 +161,8 @@ def test_setup_program_specify_inputs(
         (
             "compute_rho_theta_pgrad_and_update_vn",
             {
-                "vertical_split_allow_shared_data": True,
-                "vertical_split_shared_data_dimension": dimension.KDim,
+                "vertical_split_allow_shared_output": True,
+                "vertical_split_shared_output_dimension": dimension.KDim,
             },
         ),
         (
@@ -180,10 +180,10 @@ def test_selected_fusion_options(program: str, expected: dict) -> None:
     descriptor = {"optimization_args": {"optimization_hooks": {}}}
     options = model_options.get_dace_options(program, None, **descriptor)["optimization_args"]
     assert all(options[key] == value for key, value in expected.items())
-    assert "vertical_split_shared_data" not in options
+    assert "vertical_split_shared_output_data" not in options
     assert options.get("fuse_scan_inputs", False) == expected.get("fuse_scan_inputs", False)
-    assert options.get("vertical_split_allow_shared_data", False) == expected.get(
-        "vertical_split_allow_shared_data", False
+    assert options.get("vertical_split_allow_shared_output", False) == expected.get(
+        "vertical_split_allow_shared_output", False
     )
     assert descriptor == {"optimization_args": {"optimization_hooks": {}}}
 
@@ -191,7 +191,7 @@ def test_selected_fusion_options(program: str, expected: dict) -> None:
 @pytest.mark.parametrize(
     "program, flag",
     [
-        ("compute_rho_theta_pgrad_and_update_vn", "vertical_split_allow_shared_data"),
+        ("compute_rho_theta_pgrad_and_update_vn", "vertical_split_allow_shared_output"),
         ("vertically_implicit_solver_at_predictor_step", "fuse_scan_inputs"),
         ("vertically_implicit_solver_at_corrector_step", "fuse_scan_inputs"),
     ],

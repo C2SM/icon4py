@@ -69,8 +69,8 @@ def _set_program_specific_dace_options(
     # due to it falling into a less optimized code generation (on santis).
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
-        optimization_args.setdefault("vertical_split_allow_shared_data", True)
-        optimization_args.setdefault("vertical_split_shared_data_dimension", dimension.KDim)
+        optimization_args.setdefault("vertical_split_allow_shared_output", True)
+        optimization_args.setdefault("vertical_split_shared_output_dimension", dimension.KDim)
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
         if device != model_backends.DeviceType.ROCM:

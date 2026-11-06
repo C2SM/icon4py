@@ -64,7 +64,7 @@ def test_theta_fusion_reaches_optimizer(enabled: bool, expected_maps: int) -> No
                 "device": model_backends.CPU,
                 "use_metrics": False,
                 "optimization_args": {
-                    "vertical_split_allow_shared_data": enabled,
+                    "vertical_split_allow_shared_output": enabled,
                     "optimization_hooks": {
                         gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPost: capture_graph
                     },
