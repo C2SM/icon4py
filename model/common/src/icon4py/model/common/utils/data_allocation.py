@@ -128,14 +128,14 @@ def astype_if_needed(field: gtx.Field, dtype: type) -> gtx.Field:
 def random_field(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    seed: np.random.SeedSequence,
+    seed: np.random.SeedSequence | None = None,
     low: float = -1.0,
     high: float = 1.0,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
-    """A field of values drawn uniformly from `[low, high)`, seeded by `seed`."""
+    """A field of values drawn uniformly from `[low, high)`, seeded by `seed` (OS entropy if `None`)."""
     values = np.random.default_rng(seed).uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
@@ -145,12 +145,12 @@ def random_field(
 def random_sign(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    seed: np.random.SeedSequence,
+    seed: np.random.SeedSequence | None = None,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
-    """A field of values drawn from `{-1, 1}`, seeded by `seed`."""
+    """A field of values drawn from `{-1, 1}`, seeded by `seed` (OS entropy if `None`)."""
     values = np.random.default_rng(seed).choice([-1, 1], size=_shape(grid, *dims, extend=extend))
     return gtx.as_field(dims, values, dtype=dtype, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
@@ -158,12 +158,12 @@ def random_sign(
 def random_mask(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    seed: np.random.SeedSequence,
+    seed: np.random.SeedSequence | None = None,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
-    """A field with half of its entries set, in random positions, seeded by `seed`."""
+    """A field with half of its entries set, in random positions, seeded by `seed` (OS entropy if `None`)."""
     shape = _shape(grid, *dims, extend=extend)
     mask = np.zeros(math.prod(shape), dtype=bool)
     mask[: mask.size // 2] = True

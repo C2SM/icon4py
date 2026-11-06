@@ -12,7 +12,6 @@ import functools
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
-import numpy as np
 import pytest
 
 
@@ -307,40 +306,19 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         ),
     )
 
-    # Only stencil tests are seeded; these inputs keep fresh OS entropy.
     prognostic_state_nnow = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KHalfDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        vn=data_alloc.random_field(
-            mesh, dims.EdgeDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        theta_v=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        rho=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        exner=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
     )
     prognostic_state_nnew = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KHalfDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        vn=data_alloc.random_field(
-            mesh, dims.EdgeDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        theta_v=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        rho=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        exner=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
     )
 
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)

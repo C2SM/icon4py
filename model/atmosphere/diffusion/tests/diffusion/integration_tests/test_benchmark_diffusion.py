@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -151,42 +150,18 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        # Only stencil tests are seeded; these inputs keep fresh OS entropy.
-        hdef_ic=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KHalfDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        div_ic=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KHalfDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        dwdx=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KHalfDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        dwdy=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KHalfDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
+        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
     )
 
     prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh,
-            dims.CellDim,
-            dims.KHalfDim,
-            seed=np.random.SeedSequence(),
-            low=0.0,
-            allocator=allocator,
-        ),
-        vn=data_alloc.random_field(
-            mesh, dims.EdgeDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        exner=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        theta_v=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
-        rho=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, seed=np.random.SeedSequence(), allocator=allocator
-        ),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, low=0.0, allocator=allocator),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
+        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
     )
 
     diffusion_granule = diffusion.Diffusion(

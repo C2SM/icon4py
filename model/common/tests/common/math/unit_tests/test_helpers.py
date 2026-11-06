@@ -29,24 +29,12 @@ from icon4py.model.testing.fixtures.stencil_tests import data_alloc, grid, grid_
 
 def test_cross_product(backend: gtx_typing.Backend) -> None:
     mesh = simple.simple_grid(allocator=backend)
-    x1 = data_allocation.random_field(
-        mesh, dims.EdgeDim, seed=np.random.SeedSequence(), allocator=backend
-    )
-    y1 = data_allocation.random_field(
-        mesh, dims.EdgeDim, seed=np.random.SeedSequence(), allocator=backend
-    )
-    z1 = data_allocation.random_field(
-        mesh, dims.EdgeDim, seed=np.random.SeedSequence(), allocator=backend
-    )
-    x2 = data_allocation.random_field(
-        mesh, dims.EdgeDim, seed=np.random.SeedSequence(), allocator=backend
-    )
-    y2 = data_allocation.random_field(
-        mesh, dims.EdgeDim, seed=np.random.SeedSequence(), allocator=backend
-    )
-    z2 = data_allocation.random_field(
-        mesh, dims.EdgeDim, seed=np.random.SeedSequence(), allocator=backend
-    )
+    x1 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    y1 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    z1 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    x2 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    y2 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    z2 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
     x = data_allocation.zero_field(mesh, dims.EdgeDim, allocator=backend)
     y = data_allocation.zero_field(mesh, dims.EdgeDim, allocator=backend)
     z = data_allocation.zero_field(mesh, dims.EdgeDim, allocator=backend)

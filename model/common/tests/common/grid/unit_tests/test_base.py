@@ -8,7 +8,6 @@
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import numpy as np
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, gridfile, simple
@@ -21,13 +20,7 @@ def test_replace_skip_values(backend: gtx_typing.Backend) -> None:
     domain = (dims.CellDim, dims.C2E2CDim)
     xp = data_alloc.import_array_ns(backend)
     neighbor_table = data_alloc.random_field(
-        grid,
-        *domain,
-        low=0,
-        high=grid.num_cells,
-        dtype=gtx.int32,
-        allocator=backend,
-        seed=np.random.SeedSequence(),
+        grid, *domain, low=0, high=grid.num_cells, dtype=gtx.int32, allocator=backend
     ).ndarray
     neighbor_table[0, 1:] = gridfile.GridFile.INVALID_INDEX  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 

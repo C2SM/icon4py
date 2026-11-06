@@ -168,9 +168,7 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
     assert len(dataset.variables[writers.TIME]) == 1
     assert "air_density" in dataset.variables
 
-    new_rho = data_alloc.random_field(
-        grid, dims.CellDim, dims.KDim, dtype=np.float32, seed=np.random.SeedSequence()
-    )
+    new_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
     state["air_density"] = utils.to_data_array(
         new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
     )
@@ -258,9 +256,7 @@ def test_zarr_writer_append_timeslice_to_existing_var(
     first_time = datetime.now()
     writer.append(state, first_time)
 
-    new_rho = data_alloc.random_field(
-        grid, dims.CellDim, dims.KDim, dtype=np.float32, seed=np.random.SeedSequence()
-    )
+    new_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
     state["air_density"] = utils.to_data_array(
         new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
     )
