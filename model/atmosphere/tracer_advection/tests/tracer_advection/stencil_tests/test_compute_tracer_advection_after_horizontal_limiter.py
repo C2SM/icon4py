@@ -30,6 +30,7 @@ from .test_integrate_tracer_vertically import integrate_tracer_vertically_numpy
 
 @pytest.mark.uses_concat_where
 @pytest.mark.gtfn_too_slow
+@pytest.mark.dace_too_slow
 class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest):
     PROGRAM = compute_tracer_advection_after_horizontal_limiter
     OUTPUTS = (
