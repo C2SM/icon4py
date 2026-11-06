@@ -9,16 +9,18 @@ tags: [components, model state, typing]
 - **Created**: 2026-10-16
 - **Updated**: 2026-10-28
 
-ICON4Py has the dycore, the diffusion, the tracer advection, the physics with
-muphys and tmx, and the IO, driven by driver and physics_driver.
-Nothing reliably checks that the correct fields and variables are passed at the
-interfaces, so we decided to introduce typed states and components.
+ICON4Py has a number of building blocks, informally called components (e.g. the
+dycore, the diffusion, the physics), driven by the driver and the physics
+driver. Each defines its own, similar but often different, interface for
+declaring the variables it operates on and for advancing by a step. This ADR
+specifies a component protocol and typed states (the inputs and outputs of
+components), so that callers can treat components generically.
 
 ## Context
 
 The dycore and the diffusion took "states" as input: rigid state dataclasses of
-`gtx.Field`. To mypy a field is its dimensions and dtype, so passing `theta_v`
-where `exner` is expected was not a type error.
+`gtx.Field`. To mypy a GT4Py Field is its dimensions and dtype, so passing
+`theta_v` where `exner` is expected was not a type error.
 A physics component received a `dict[str, DataField]` and returned one (ADR
 0001). The keys it needed and produced were listed in tables of
 `FieldMetaData`, and the driver built the dicts with per-process adapters
@@ -31,10 +33,10 @@ misspelled key was a `KeyError` at run time.
   **checked statically**.
 - gt4py and the stencils should see the same arrays as before, at no run-time
   cost.
-- The metadata of a quantity (dimensions, units, CF names, precision) should
-  live in one single place.
+- The metadata of a quantity (units, name, precision, dimensions) should live
+  in one single place.
 - Allocation, copies and IO should work on any state without a per-state list
-  of fields.
+  of variables.
 - Who allocates and owns the buffers should be as unimportant as possible, and
   as close as possible to functional programming.
 
@@ -74,8 +76,8 @@ misspelled key was a `KeyError` at run time.
   It is a computation (`run`) with a typed interface: it reads one `Input`
   `State` and writes one `Output` `State`. A component that writes nothing
   declares `Output = fw.Empty` and takes `output: fw.Empty | None = None`, so its
-  caller can omit it. The caller specifies where `run` writes, similarly to
-  numpy's `out=`. Whether leaves of `Output` may alias leaves of `Input` is up to
+  caller can omit it. The caller specifies where `run` writes, and `run`
+  returns it, like numpy's `out=`. Whether leaves of `Output` may alias leaves of `Input` is up to
   the `Component`.
 
 ### Writing a component
@@ -103,15 +105,10 @@ The diffusion and the physics driver update in place. The dycore needs distinct
 `now` and `next`. Static fields (metrics, interpolation coefficients) stay
 constructor arguments for now.
 
-At the moment of writing, the components are `SolveNonhydro`, `Diffusion`,
-`Advection`, `PhysicsDriver`, `Muphys` and `Tmx` (run by the physics driver)
-and `IOMonitor`.
-
 #### PhysicsProcess
 
 `PhysicsProcess` is a Component that gates its wrapped component by time
-control (with `ProcessTimeControl`). This is used for all processes called by
-the physics_driver.
+control (with `ProcessTimeControl`).
 
 ### Adding a quantity
 
@@ -126,11 +123,11 @@ quantity at the same place reuses the tag.
 
 ### Type checking
 
-The framework (things introduced by this PR), the physics components and the
-driver are checked with the strict mypy flags (see `[[tool.mypy.overrides]]` in
-`pyproject.toml`). `SolveNonhydro`, `Diffusion` and `Advection` use the default
-flags, but the driver's calls to them are strict. The Fortran bindings are not
-type-checked, so a swapped tag there is not reported as error.
+mypy checks that a leaf has the declared quantity, that a view has no missing
+or unknown leaves, and that `run` gets the component's own `Input` and
+`Output`. It does not check whether `output` aliases `input`, or code that is
+not type-checked (e.g. the Fortran bindings). The strict flags and the modules
+they cover are in `pyproject.toml`.
 
 ## Consequences
 
@@ -166,9 +163,16 @@ Negative:
 ### String-keyed dictionaries with metadata tables (ADR 0001)
 
 - Good, because the set of fields can be chosen at run time.
-- Bad, because nothing checks the keys against the tables. A missing or
-  misspelled key is a `KeyError` at run time, and the value of a key is a
-  `gtx.Field` to mypy.
+- Bad, because nothing checks the keys of a `dict[str, DataField]` against the
+  tables. A missing or misspelled key is a `KeyError` at run time, and the
+  value of a key is a `gtx.Field` to mypy.
+
+### `TypedDict` states
+
+- Good, because the keys and their value types are checked.
+- Bad, because there is no attribute access, no methods
+  (`DycoreDiagnostics.allocate`) and no frozen instances, and the states on
+  main were already dataclasses.
 
 ### gt4py's dimension-typed fields alone (`fa.CellKField[wpfloat]`)
 
