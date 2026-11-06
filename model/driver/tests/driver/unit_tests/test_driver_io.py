@@ -192,12 +192,11 @@ def test_run_stores_every_call_and_assembles_at_capture_time_only(grid: base.Gri
 def test_stored_data_is_the_leaf_at_store_time(grid: base.Grid) -> None:
     writer = StubWriter()
     input = make_input(grid)
-    rho: Any = input.rho.ndarray
-    rho[...] = 1.5
+    input.rho.ndarray[...] = 1.5  # type: ignore[index]  # NDArrayObject declares no __setitem__
 
     make_monitor(grid, writer).run(input)
 
-    np.testing.assert_array_equal(writer.stored[0][0]["air_density"].data, rho)
+    np.testing.assert_array_equal(writer.stored[0][0]["air_density"].data, input.rho.asnumpy())
 
 
 def test_create_io_monitor_builds_one_field_group_with_every_variable(

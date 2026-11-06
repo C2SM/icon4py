@@ -596,10 +596,8 @@ class Icon4pyDriver:
     # omit spinup feature and the option that if the model starts from IFS or COSMO data
     # horizontal cfl is not ported
     def _adjust_ndyn_substeps_var(self, dycore_diagnostics: states.DycoreDiagnostics) -> None:
-        # NDArrayObject declares no __setitem__
-        max_vertical_cfl: Any = dycore_diagnostics.max_vertical_cfl.ndarray
         global_max_vertical_cfl = self.global_reductions.max(
-            self._xp.asarray(max_vertical_cfl[()], dtype=ta.wpfloat),
+            self._xp.asarray(dycore_diagnostics.max_vertical_cfl.ndarray[()], dtype=ta.wpfloat),
         )
         if (
             global_max_vertical_cfl
@@ -682,7 +680,7 @@ class Icon4pyDriver:
                     self.model_time_variables.update_cfl_watch_mode(False)
 
         # reset max_vertical_cfl to zero
-        max_vertical_cfl[...] = 0.0
+        dycore_diagnostics.max_vertical_cfl.ndarray[...] = 0.0  # type: ignore[index]  # NDArrayObject declares no __setitem__
 
     # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.

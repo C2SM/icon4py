@@ -150,8 +150,7 @@ def allocate[S: State](
             continue
         field = zeros(quantity, grid, allocator)
         if fill is not None:
-            buffer: Any = field.ndarray  # NDArrayObject declares no __setitem__
-            buffer[...] = fill(name, quantity.dims)
+            field.ndarray[...] = fill(name, quantity.dims)  # type: ignore[index]  # NDArrayObject declares no __setitem__
         values[name] = field
     return cls(**values, **plain)
 
@@ -174,9 +173,7 @@ def copy[S1: State, S2: State](src: S1, dst: S2, kind: type[Quantity] = Quantity
             f"missing in the destination: {missing}; unexpected in it: {unexpected}"
         )
     for name, field in src_fields.items():
-        # NDArrayObject declares no __setitem__
-        buffer: Any = dst_fields[name].ndarray
-        buffer[...] = field.ndarray
+        dst_fields[name].ndarray[...] = field.ndarray  # type: ignore[index]  # NDArrayObject declares no __setitem__
     return dst
 
 

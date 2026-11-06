@@ -186,10 +186,8 @@ def test_run_populates_the_given_outputs_from_its_cache_on_a_non_computing_step(
     # the first step computes and fills the cache
     process.run(entry_state(grid, step_start=T0), output)
     # the caller owns its buffer: other values are in it when it is handed back
-    scribble: Any = output.tend_qv.ndarray  # NDArrayObject declares no __setitem__
-    scribble[...] = 1e-7
-    flux: Any = output.pflx.ndarray
-    flux[...] = 9.0
+    output.tend_qv.ndarray[...] = 1e-7  # type: ignore[index]  # NDArrayObject declares no __setitem__
+    output.pflx.ndarray[...] = 9.0  # type: ignore[index]
 
     result = process.run(entry_state(grid, step_start=T0 + DT), output)
 
@@ -210,8 +208,7 @@ def test_a_mutated_buffer_does_not_touch_the_cache(grid: base_grid.Grid) -> None
     given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
     process.run(entry_state(grid, step_start=T0 + DT), given)
     # the caller mutates the buffer it was handed back
-    scribble: Any = given.tend_qv.ndarray  # NDArrayObject declares no __setitem__
-    scribble[...] = 42.0
+    given.tend_qv.ndarray[...] = 42.0  # type: ignore[index]  # NDArrayObject declares no __setitem__
 
     process.run(entry_state(grid, step_start=T0 + 3 * DT), given)
 
