@@ -827,18 +827,15 @@ class Diffusion(fw.Component):
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
 
     @staticmethod
-    def _continue_in_place(input: Input, output: Output) -> None:
+    def _copy_to_output(input: Input, output: Output) -> None:
         """
-        Copy the prognostics from `input` into `output`, unless they already share a buffer.
-
-        The stencils diffuse `output` in place. The driver passes the same buffers on both
-        sides, so nothing is copied; a caller passing distinct buffers (the tests) gets
-        `input` copied over first, so the diffusion starts from them.
+        Copy the leaves `input` and `output` share into `output`, unless they share a buffer.
         """
-        for name in ("vn", "w", "exner", "theta_v"):
-            source, target = getattr(input, name), getattr(output, name)
-            if target.ndarray is not source.ndarray:
-                target.ndarray[...] = source.ndarray
+        sources = fw.fields(input)
+        for name, target in fw.fields(output).items():
+            source = sources.get(name)
+            if source is not None and target.ndarray is not source.ndarray:
+                target.ndarray[...] = source.ndarray  # type: ignore[index]  # NDArrayObject declares no __setitem__
 
     def run(  # noqa: PLR0915 [too-many-statements]
         self, input: Input, output: Output
@@ -853,7 +850,7 @@ class Diffusion(fw.Component):
 
         The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
         """
-        self._continue_in_place(input, output)
+        self._copy_to_output(input, output)
         dtime = wpfloat(input.dtime)
         if input.initial_run:
             diff_multfac_vn = data_alloc.zero_field(

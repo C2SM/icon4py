@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 
 class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"]):
     """
-    Runs the physics processes under parallel coupling (ICON AES's aes_phy_main).
+    Runs the physics processes under ICON AES's aes_phy_main coupling.
 
     In one step the entry state for all physics processes is diagnosed once from
     the prognostics. The entry state is the input to all processes, which return
@@ -55,7 +55,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     summed and applied to the prognostics once, at the end. The processes never
     write the prognostics.
 
-    The driver writes inputs in place and copies then into the output buffers,
+    The driver writes inputs in place and copies them into the output buffers,
     if different from the input buffers.
 
     Not implemented: ICON AES couples microphysics and turbulence sequentially
@@ -307,12 +307,15 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             accumulator.ndarray[...] += field_.ndarray  # type: ignore[index]
 
     @staticmethod
-    def _continue_in_place(entry: physics_state.EntryState, output: Output) -> None:
-        """`output` continues the entry's prognostics: they are updated in place."""
+    def _copy_to_output(input: physics_state.EntryState, output: Output) -> None:
+        """
+        Copy the leaves `input` and `output` share into `output`, unless they share a buffer.
+        """
+        sources = fw.fields(input)
         for name, target in fw.fields(output).items():
-            source: field.Field[Any] = getattr(entry, name)
-            if target.ndarray is not source.ndarray:
-                target.ndarray[...] = source.ndarray  # type: ignore[index]
+            source = sources.get(name)
+            if source is not None and target.ndarray is not source.ndarray:
+                target.ndarray[...] = source.ndarray  # type: ignore[index]  # NDArrayObject declares no __setitem__
 
     def _apply(self, entry: physics_state.EntryState, dt_seconds: float, output: Output) -> None:
         """
@@ -322,7 +325,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         moisture, then the temperature, then the winds. A tendency no process produced is not
         applied.
         """
-        self._continue_in_place(entry, output)
+        self._copy_to_output(entry, output)
         acc = self.accumulators
 
         # 1. tracers: q += dt * sum of the tendencies (mo_interface_iconam_aes:513)
