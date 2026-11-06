@@ -38,7 +38,7 @@ import os
 import textwrap
 import types
 from collections.abc import Callable, Generator, Iterator, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -253,23 +253,20 @@ else:
 _TEST_SEED_ENV_VAR: Final = "ICON4PY_TEST_SEED"
 
 
-def _read_test_seed() -> int | Literal["random"] | None:
+def _read_test_seed() -> int | None:
     """
     The `ICON4PY_TEST_SEED` setting.
 
     `None` when unset or empty, a non-negative integer mixed into every derivation
-    as a global base, or the literal `'random'` to disable seeding and draw from
-    OS entropy.
+    as a global base.
     """
     raw = os.getenv(_TEST_SEED_ENV_VAR)
     if raw is None or raw == "":
         return None
-    if raw == "random":
-        return "random"
     if not raw.isdecimal():
         raise ValueError(
             f"Invalid value '{raw}' for environment variable '{_TEST_SEED_ENV_VAR}': it must be"
-            " a non-negative integer or the literal 'random'."
+            " a non-negative integer."
         )
     return int(raw)
 
@@ -279,25 +276,22 @@ def _stable_seed(key: str) -> int:
     return int.from_bytes(hashlib.sha256(key.encode()).digest(), "big")
 
 
-def _derived_seed_sequence(key: str) -> np.random.SeedSequence | None:
+def _derived_seed_sequence(key: str) -> np.random.SeedSequence:
     """
-    The seed sequence derived from `key`, or `None` when seeding is disabled.
+    The seed sequence derived from `key`.
 
     Applies the `ICON4PY_TEST_SEED` states: derived from `key` alone when unset or
-    empty, mixed with a numeric global base when one is given, and disabled by the
-    literal `random`, in which case every caller draws fresh OS entropy.
+    empty, or mixed with a numeric global base when one is given.
     """
     seed = _read_test_seed()
-    if seed == "random":
-        return None
     if seed is None:
         return np.random.SeedSequence(_stable_seed(key))
     return np.random.SeedSequence([seed, _stable_seed(key)])
 
 
-def _suite_seed_sequence(request: pytest.FixtureRequest) -> np.random.SeedSequence | None:
+def _suite_seed_sequence(request: pytest.FixtureRequest) -> np.random.SeedSequence:
     """
-    The requesting suite's seed sequence, or `None` when seeding is disabled.
+    The requesting suite's seed sequence.
 
     The key combines the test module and the suite class: stable strings only, so
     every rank and xdist worker derives the same sequence.
@@ -319,14 +313,12 @@ def _suite_seed_key(suite: type) -> str:
 
 def _reference_rng(suite: type) -> np.random.Generator:
     """
-    A generator on the suite's derived seed, or on OS entropy when seeding is disabled.
+    A generator on the suite's derived seed.
 
     Passed to `reference` bodies that declare an `rng` parameter, so their own random
     draws are as deterministic as the suite's other seeded data.
     """
     sequence = _derived_seed_sequence(_suite_seed_key(suite))
-    if sequence is None:
-        sequence = np.random.SeedSequence()
     return np.random.Generator(np.random.PCG64(sequence))
 
 
@@ -352,12 +344,10 @@ class DataAllocationWrapper:
 
     grid: base.Grid
     allocator: gtx_typing.Allocator | None
-    seed_sequence: np.random.SeedSequence | None
+    seed_sequence: np.random.SeedSequence
 
     def _next_seed(self) -> np.random.SeedSequence:
-        """The next child stream, one per `random_*` call; OS entropy when seeding is off."""
-        if self.seed_sequence is None:
-            return np.random.SeedSequence()
+        """The next child stream, one per `random_*` call."""
         (child,) = self.seed_sequence.spawn(1)
         return child
 

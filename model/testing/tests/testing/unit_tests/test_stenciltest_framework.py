@@ -599,16 +599,6 @@ class TestSeededWrapper:
             third.random_field(dims.CellDim).asnumpy(),
         )
 
-    def test_random_restores_os_entropy(self, grid, monkeypatch):
-        monkeypatch.setenv("ICON4PY_TEST_SEED", "random")
-        first = _seeded_wrapper(grid, "module:Suite:")
-        second = _seeded_wrapper(grid, "module:Suite:")
-
-        assert not np.array_equal(
-            first.random_field(dims.CellDim).asnumpy(),
-            second.random_field(dims.CellDim).asnumpy(),
-        )
-
     def test_reference_rng_draws_the_suite_seed(self):
         """The `rng` passed to a `reference` that declares one draws the suite's seed."""
 
@@ -632,10 +622,10 @@ class TestSeededWrapper:
 
     @pytest.mark.parametrize(
         ("value", "expected"),
-        [("41", 41), ("0", 0), ("", None), ("random", "random")],
+        [("41", 41), ("0", 0), ("", None)],
     )
     def test_read_test_seed(self, value, expected, monkeypatch):
-        """An empty value counts as unset; `random` disables seeding."""
+        """An empty value counts as unset."""
         monkeypatch.setenv(stencil_tests._TEST_SEED_ENV_VAR, value)
 
         assert stencil_tests._read_test_seed() == expected
@@ -645,11 +635,11 @@ class TestSeededWrapper:
 
         assert stencil_tests._read_test_seed() is None
 
-    @pytest.mark.parametrize("value", ["-1", "1.5", "deterministic", " 41", "random "])
+    @pytest.mark.parametrize("value", ["-1", "1.5", "deterministic", " 41", "random"])
     def test_read_test_seed_rejects_invalid_values(self, value, monkeypatch):
         monkeypatch.setenv(stencil_tests._TEST_SEED_ENV_VAR, value)
 
-        with pytest.raises(ValueError, match="a non-negative integer or the literal 'random'"):
+        with pytest.raises(ValueError, match="a non-negative integer"):
             stencil_tests._read_test_seed()
 
     def test_random_field_accepts_an_omitted_seed(self, grid):
