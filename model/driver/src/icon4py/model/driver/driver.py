@@ -196,6 +196,7 @@ class Icon4pyDriver:
         diffusion_diagnostic_state = ds.diffusion_diagnostic
         solve_nonhydro_diagnostic_state = ds.solve_nonhydro_diagnostic
         tracer_advection_diagnostic_state = ds.tracer_advection_diagnostic
+        diagnostic_state = ds.diagnostic
         prognostic_states = ds.prognostics
         tracers = ds.tracers
         prep_adv = ds.prep_advection_prognostic
@@ -249,6 +250,7 @@ class Icon4pyDriver:
                     diffusion_diagnostic_state=diffusion_diagnostic_state,
                     solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
                     tracer_advection_diagnostic_state=tracer_advection_diagnostic_state,
+                    diagnostic_state=diagnostic_state,
                     prognostic_states=prognostic_states,
                     tracers=tracers,
                     prep_adv=prep_adv,
@@ -290,6 +292,7 @@ class Icon4pyDriver:
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
         solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
         tracer_advection_diagnostic_state: tracer_advection_states.AdvectionDiagnosticState | None,
+        diagnostic_state: diagnostics.DiagnosticState,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         tracers: common_utils.TimeStepPair[tracer_states.TracerState],
         prep_adv: dycore_states.PrepAdvection | None,
@@ -366,8 +369,20 @@ class Icon4pyDriver:
             self.granules.physics.run(
                 prognostic=prognostic_states.next,
                 tracers=tracers.next,
+                diagnostics=diagnostic_state,
                 dtime=self.config.driver.dtime,
                 simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
+                # the air mass of the state the physics sees, ICON's ``mair`` (``airmass_new``)
+                air_mass=(
+                    tracer_advection_diagnostic_state.airmass_new
+                    if tracer_advection_diagnostic_state is not None
+                    else None
+                ),
+                perturbed_exner=(
+                    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels
+                    if solve_nonhydro_diagnostic_state is not None
+                    else None
+                ),
             )
 
         prognostic_states.swap()
@@ -756,6 +771,8 @@ def initialize_driver(
             allocator=allocator,
         ),
         backend=backend,
+        process_props=process_props,
+        decomposition_info=decomposition_info,
     )
     io_monitor = None
     if config.driver.enable_output:

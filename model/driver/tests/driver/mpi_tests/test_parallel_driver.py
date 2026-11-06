@@ -60,6 +60,12 @@ _log = logging.getLogger(__file__)
             id="integration-mch-ch-r04b09",
         ),
         pytest.param(
+            test_defs.Experiments.EXCLAIM_APE_AES,
+            time.NumTimeSteps(1),
+            marks=[pytest.mark.level("integration")],
+            id="integration-exclaim-ape-aes",
+        ),
+        pytest.param(
             test_defs.Experiments.JW,
             time.RelativeTime(days=7),
             marks=[pytest.mark.level("validation")],
@@ -101,6 +107,14 @@ def _run_driver_compare_single_multi_rank(
         atol = 1e-9
         rtol = 0.0
     atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=rtol)
+    if experiment_description is test_defs.Experiments.EXCLAIM_APE_AES:
+        # TODO (Yilu): drop this tolerance once #1535 is merged. The multi-rank global sum is
+        # order-dependent, so the moisture rescale of the APE initial condition makes qv differ
+        # by ~1e-14 relative from step 0, and muphys amplifies that to ~2e-11 in qc, qi and qr.
+        # #1535 ports ICON's order-insensitive sum, after which this experiment is bitwise
+        # reproducible (verified on #1534). The tolerance still catches a missing halo exchange
+        # (1e-5 and more).
+        atol, rtol = 1e-16, 1e-9
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
@@ -153,18 +167,29 @@ def _run_driver_compare_single_multi_rank(
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
+    compared = {
+        field_name: getattr(single_rank_ds.prognostics.current, field_name) for field_name in fields
+    }
+    multi_rank_compared = {
+        field_name: getattr(multi_rank_ds.prognostics.current, field_name) for field_name in fields
+    }
+    # the physics experiments validate the tracers too: stale tracer halos are exactly
+    # what the physics driver's end-of-step exchange fixes
+    for tracer in single_rank_ds.tracers.current.active_fields():
+        compared[tracer.name] = tracer.field
+    for tracer in multi_rank_ds.tracers.current.active_fields():
+        multi_rank_compared[tracer.name] = tracer.field
     single_rank_reference_fields: dict[str, object] = {
-        field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
-        for field_name in fields
+        field_name: field.asnumpy() for field_name, field in compared.items()
     }
 
-    for field_name in fields:
+    for field_name in compared:
         print(f"\nverifying field {field_name}")
         global_reference_field = process_props.comm.bcast(
             single_rank_reference_fields.get(field_name),
             root=0,
         )
-        local_field = getattr(multi_rank_ds.prognostics.current, field_name)
+        local_field = multi_rank_compared[field_name]
         dim = local_field.domain.dims[0]
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_driver.decomposition_info,
