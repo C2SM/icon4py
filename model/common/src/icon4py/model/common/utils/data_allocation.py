@@ -128,12 +128,12 @@ def astype_if_needed(field: gtx.Field, dtype: type) -> gtx.Field:
 def random_field(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    seed: np.random.SeedSequence | None = None,
     low: float = -1.0,
     high: float = 1.0,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
+    seed: np.random.SeedSequence | None = None,
 ) -> gtx.Field:
     """A field of values drawn uniformly from `[low, high)`, seeded by `seed` (OS entropy if `None`)."""
     values = np.random.default_rng(seed).uniform(
@@ -158,10 +158,10 @@ def random_sign(
 def random_mask(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    seed: np.random.SeedSequence | None = None,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
+    seed: np.random.SeedSequence | None = None,
 ) -> gtx.Field:
     """A field with half of its entries set, in random positions, seeded by `seed` (OS entropy if `None`)."""
     shape = _shape(grid, *dims, extend=extend)
