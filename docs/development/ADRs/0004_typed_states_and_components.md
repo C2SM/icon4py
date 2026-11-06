@@ -75,8 +75,7 @@ misspelled key was a `KeyError` at run time.
 - A `Component` is a `Protocol` of `Input`, `Output` and `run(Input, Output) -> Output`.
   It is a computation (`run`) with a typed interface: it reads one `Input`
   `State` and writes one `Output` `State`. A component that writes nothing
-  declares `Output = fw.Empty` and takes `output: fw.Empty | None = None`, so its
-  caller can omit it. The caller specifies where `run` writes, and `run`
+  declares `Output = fw.Empty`, and its caller passes `fw.Empty()`. The caller specifies where `run` writes, and `run`
   returns it, like numpy's `out=`. Whether leaves of `Output` may alias leaves of `Input` is up to
   the `Component`.
 

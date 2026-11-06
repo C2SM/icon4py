@@ -100,7 +100,7 @@ def make_input(
 
 def stored_state(grid: base.Grid, allocator: gtx_typing.Allocator | None = None) -> Any:
     writer = StubWriter()
-    make_monitor(grid, writer).run(make_input(grid, allocator))
+    make_monitor(grid, writer).run(make_input(grid, allocator), fw.Empty())
     ((state, _),) = writer.stored
     return state
 
@@ -124,7 +124,7 @@ def test_variables_subset(grid: base.Grid) -> None:
     writer = StubWriter()
     monitor = make_monitor(grid, writer, ["air_density", "normal_velocity"])
 
-    monitor.run(make_input(grid))
+    monitor.run(make_input(grid), fw.Empty())
 
     assert monitor.selected == {"air_density": "rho", "normal_velocity": "vn"}
     assert set(writer.stored[0][0]) == {"air_density", "normal_velocity"}
@@ -178,7 +178,7 @@ def test_run_stores_every_call_and_assembles_at_capture_time_only(grid: base.Gri
     times = [START + datetime.timedelta(seconds=s) for s in (0, 10, 20)]
 
     for t in times:
-        result = monitor.run(make_input(grid, simulation_time=t))
+        result = monitor.run(make_input(grid, simulation_time=t), fw.Empty())
         assert isinstance(result, fw.Empty)
 
     assert [t for _, t in writer.stored] == times
@@ -194,7 +194,7 @@ def test_stored_data_is_the_leaf_at_store_time(grid: base.Grid) -> None:
     input = make_input(grid)
     input.rho.ndarray[...] = 1.5  # type: ignore[index]  # NDArrayObject declares no __setitem__
 
-    make_monitor(grid, writer).run(input)
+    make_monitor(grid, writer).run(input, fw.Empty())
 
     np.testing.assert_array_equal(writer.stored[0][0]["air_density"].data, input.rho.asnumpy())
 

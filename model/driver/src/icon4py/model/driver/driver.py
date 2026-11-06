@@ -260,7 +260,8 @@ class Icon4pyDriver:
                     virtual_temperature=diagnostics.virtual_temperature,
                     pressure=diagnostics.pressure,
                     simulation_time=simulation_current_datetime,
-                )
+                ),
+                fw.Empty(),
             )
 
     def time_integration(
