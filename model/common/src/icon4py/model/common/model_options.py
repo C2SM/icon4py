@@ -13,7 +13,6 @@ from typing import Any
 import dace
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from dace import nodes as dace_nodes
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
@@ -33,30 +32,6 @@ def _dace_remove_access_node_copies(sdfg: dace.SDFG) -> None:
         validate=False,
         validate_all=False,
     )
-
-
-def _apply_vertical_map_split(
-    transformation: Any,
-    first_map: dace_nodes.Map,
-    second_map: dace_nodes.Map,
-    graph: dace.SDFGState,
-    sdfg: dace.SDFG,
-) -> bool:
-    """Decide whether a vertical map split should be applied.
-
-    Meets the requirements of the 'VerticalMapSplitCallback' protocol and is
-    passed as 'check_split_callback' to 'gt_vertical_map_split_fusion', where
-    'False' prevents the split.
-
-    The fused tracer-advection program splits its maps combinatorially inside
-    'gt_vertical_map_split_fusion': every split adds new data descriptors and
-    nested SDFG copies, while DaCe rescans all arrays on every 'add_nested_sdfg'
-    insertion, so the compilation cost grows quadratically and never terminates
-    in practice (https://github.com/spcl/dace/pull/2603). Skipping all of its
-    splits keeps the SDFG at its natural size, as a temporary workaround until
-    the issue is resolved in gt4py/dace.
-    """
-    return sdfg.name not in {"compute_tracer_advection_after_horizontal_limiter"}
 
 
 def get_dace_options(
@@ -104,17 +79,6 @@ def get_dace_options(
             optimization_args["gpu_block_size_2d"] = (64, 6)
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
-    # The callback function below is installed unconditionally at backend creation
-    # because the driver passes an already-instantiated backend to its granules.
-    # Then, the callback itself takes action per program based on the SDFG name.
-    # TODO(edopao,iomaganaris): This is a general issue with the current design of
-    #   the backend customization, which should be fixed in the future.
-    if gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowVerticalSplitCallBack not in (
-        optimization_hooks
-    ):
-        optimization_hooks[
-            gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowVerticalSplitCallBack
-        ] = _apply_vertical_map_split
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
