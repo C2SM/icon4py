@@ -423,17 +423,13 @@ class SolveNonhydro(fw.Component):
         rho_iau_increment: field.Field[qty.RhoIauIncrementOnCellK]
         normal_wind_iau_increment: field.Field[qty.NormalWindIauIncrementOnEdgeK]
         exner_iau_increment: field.Field[qty.ExnerIauIncrementOnCellK]
-        #: Originally declared as divdamp_fac_o2 in ICON. Second order (nabla2) divergence damping coefficient.
         second_order_divdamp_factor: float
         dtime: float
         ndyn_substeps_var: int
-        #: initial time step of the model run
         at_initial_timestep: bool
-        #: accumulate the fluxes for the tracer advection
         prepare_fluxes_for_advection: bool
         at_first_substep: bool
         at_last_substep: bool
-        #: incremental analysis update active during the dycore step, and its weight
         is_iau_active: bool = False
         iau_wgt_dyn: float = 0.0
 

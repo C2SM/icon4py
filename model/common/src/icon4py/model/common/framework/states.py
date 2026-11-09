@@ -229,7 +229,6 @@ class DiffusionDiagnostics(fw.State):
 class AdvectionDiagnostics(fw.State):
     """The diagnostics of the tracer advection, owned by the driver."""
 
-    #: mass of air in the layer at the beginning and the end of the time step
     airmass_now: field.Field[qty.AirMassOnCellK]
     airmass_new: field.Field[qty.AirMassOnCellK]
     grf_tend_tracer: field.Field[qty.GrfTendencyOfTracerOnCellK]

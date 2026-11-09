@@ -139,11 +139,9 @@ class Advection(fw.Component, ABC):
         qr: field.Field[qty.QrOnCellK] | None = None
         qs: field.Field[qty.QsOnCellK] | None = None
         qg: field.Field[qty.QgOnCellK] | None = None
-        #: mass of air in the layer at the beginning and the end of the time step
         airmass_now: field.Field[qty.AirMassOnCellK]
         airmass_new: field.Field[qty.AirMassOnCellK]
         grf_tend_tracer: field.Field[qty.GrfTendencyOfTracerOnCellK]
-        #: the fluxes the dycore accumulated over its substeps
         vn_traj: field.Field[qty.VnOnEdgeK]
         mass_flx_me: field.Field[qty.HorizontalMassFluxOnEdgeK]
         mass_flx_ic: field.Field[qty.VerticalMassFluxOnCellKHalf]
