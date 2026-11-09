@@ -177,7 +177,6 @@ def test_driver(
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={
-            "output_path": tmp_path / "ci_driver_output",
             # 'start_of_simulation' stays at the beginning of the experiment: the second
             # MCH_CH_R04B09 case starts the time loop later, i.e. it restarts.
             "start_of_timestepping": datetime.datetime.fromisoformat(timeloop_date_init).replace(

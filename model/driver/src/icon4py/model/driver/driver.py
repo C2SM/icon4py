@@ -40,7 +40,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initial_condition import apply as ic_apply
-from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
@@ -78,10 +77,17 @@ class Icon4pyDriver:
         vertical_grid_config: v_grid.VerticalGridConfig,
         process_props: decomposition_defs.ProcessProperties,
         io_monitor: common_io.IOMonitor | None = None,
+        output_assembler: driver_io.OutputStateAssembler | None = None,
         tendencies: prescribed_tendencies.PrescribedTendencies | None = None,
     ):
+        if (io_monitor is None) != (output_assembler is None):
+            raise ValueError(
+                "The IO monitor and the output assembler come together: both or neither."
+            )
         self.config = config
         self.io_monitor = io_monitor
+        # assembles what the monitor's field groups request from the driver's own state
+        self._output_assembler = output_assembler
         self.backend = backend
         self.grid = grid
         self.decomposition_info = decomposition_info
@@ -103,6 +109,7 @@ class Icon4pyDriver:
             model_time_variables=self.model_time_variables,
             vertical_params=self.static_field_factories.metrics._vertical_grid,
             tracer_config=self.config.tracer_config,
+            io_config=io_monitor.config if io_monitor is not None else None,
         )
 
     @functools.cached_property
@@ -122,11 +129,6 @@ class Icon4pyDriver:
 
     def _full_name(self, func: Callable) -> str:
         return f"{self.__class__.__name__}:{func.__name__}"
-
-    @functools.cached_property
-    def _diagnostics_computer(self) -> driver_io.DiagnosticsComputer:
-        """Reuses its scratch/output buffers across output steps (allocated once)."""
-        return driver_io.DiagnosticsComputer(grid=self.grid, backend=self.backend)
 
     @functools.cached_property
     def _compute_airmass(self) -> Callable[..., None]:
@@ -159,31 +161,26 @@ class Icon4pyDriver:
     def _store_output(
         self,
         prognostic_state: prognostics.PrognosticState,
+        tracer_state: tracer_states.TracerState,
+        diagnostic_state: diagnostics.DiagnosticState,
         simulation_current_datetime: time.AbsoluteTime,
     ) -> None:
-        """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
+        """Assemble what the capturing field groups request and hand it to the IO monitor.
 
         The assembled DataArrays reference the live state (see ``io.utils.to_data_array``),
-        so they must be written here and now -- before the next step mutates the state. The
-        static diagnostic inputs are fetched directly from the field factories.
+        so they must be written here and now, before the next step mutates the state.
 
         At steps no field group captures, only the monitor's schedule counters advance:
         nothing is assembled, timed or written -- so the diagnostics are not computed
         for steps that discard them, and the output timers hold only real capture work.
         """
-        assert self.io_monitor is not None
-        if self.io_monitor.at_capture_time():
+        assert self.io_monitor is not None and self._output_assembler is not None
+        variables = self.io_monitor.variables_at_capture_time()
+        if variables:
             with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
-                metrics = self.static_field_factories.metrics
-                interpolation = self.static_field_factories.interpolation
-                state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-                diagnostic_fields = self._diagnostics_computer.compute(
-                    prognostic_state,
-                    ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
-                    rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
-                    rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
+                state_to_store = self._output_assembler.assemble(
+                    variables, prognostic_state, tracer_state, diagnostic_state
                 )
-                state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
         else:
             state_to_store = {}
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_STORE.value]:
@@ -214,7 +211,10 @@ class Icon4pyDriver:
                 # write the initial state; the simulation datetime is still the start here
                 # (it is advanced below, per step)
                 self._store_output(
-                    prognostic_states.current, self.model_time_variables.simulation_current_datetime
+                    prognostic_states.current,
+                    tracers.current,
+                    ds.diagnostic,
+                    self.model_time_variables.simulation_current_datetime,
                 )
 
             self._diffuse_before_time_loop(diffusion_diagnostic_state, prognostic_states.current)
@@ -265,6 +265,8 @@ class Icon4pyDriver:
                 if self.io_monitor is not None:
                     self._store_output(
                         prognostic_states.current,
+                        tracers.current,
+                        ds.diagnostic,
                         self.model_time_variables.simulation_current_datetime,
                     )
             if self.io_monitor is not None:
@@ -699,14 +701,14 @@ def initialize_driver(
     process_props: decomposition_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
 ) -> Icon4pyDriver:
-    output_path = driver_config.prepare_output_directory(
-        config_output_path=config.driver.output_path,
-        cli_output_path=None,
-        process_props=process_props,
-    )
-    config = dataclasses.replace(
-        config, driver=dataclasses.replace(config.driver, output_path=output_path)
-    )
+    if config.io is not None:
+        # an existing output directory is never reused: a timestamped one is created
+        output_path = driver_config.prepare_output_directory(
+            config_output_path=config.io.output_path,
+            cli_output_path=None,
+            process_props=process_props,
+        )
+        config = config.with_overrides(io=dataclasses.replace(config.io, output_path=output_path))
 
     allocator = model_backends.get_allocator(backend)
 
@@ -757,17 +759,27 @@ def initialize_driver(
         ),
         backend=backend,
     )
-    io_monitor = None
-    if config.driver.enable_output:
+    io_monitor = output_assembler = None
+    if config.io is not None:
         log.info("Initializing IO monitor")
+        # the assembler validates the field groups against the variables of this run, so
+        # an unknown or ambiguous variable fails before the monitor creates any output file
+        output_assembler = driver_io.OutputStateAssembler(
+            io_config=config.io,
+            grid=grid_manager.grid,
+            backend=backend,
+            static_field_factories=static_field_factories,
+            tracer_config=config.tracer_config,
+            physics_diagnostics=(
+                granules.physics.diagnostics if granules.physics is not None else None
+            ),
+        )
         io_monitor = driver_io.create_io_monitor(
-            output_path=config.driver.output_path,
+            io_config=config.io,
             grid_file_path=pathlib.Path(grid_manager.file_path),
             grid=grid_manager.grid,
             vertical_grid=vertical_grid,
             dtime=config.driver.dtime,
-            output_backend=config.driver.output_backend,
-            output_mode=config.driver.output_mode,
             process_props=process_props,
             decomposition_info=decomposition_info,
         )
@@ -793,6 +805,7 @@ def initialize_driver(
             else None
         ),
         io_monitor=io_monitor,
+        output_assembler=output_assembler,
     )
 
     return icon4py_driver
