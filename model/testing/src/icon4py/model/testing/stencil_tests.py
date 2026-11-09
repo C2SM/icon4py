@@ -613,10 +613,10 @@ def test_and_benchmark(
 
     if not skip_verification:
         callspec = getattr(request.node, "callspec", None)
-        case_alloc = (
-            data_alloc.for_param(str(callspec.indices["input_data"]))
+        case_alloc = data_alloc.for_param(
+            str(callspec.indices["input_data"])
             if callspec is not None and "input_data" in callspec.indices
-            else data_alloc
+            else ""
         )
         reference_kwargs: dict[str, Any] = (
             {"rng": case_alloc.reference_rng} if _reference_expects_rng(self.reference) else {}
