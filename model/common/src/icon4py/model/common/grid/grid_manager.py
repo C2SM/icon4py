@@ -35,6 +35,11 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 _log = logging.getLogger(__name__)
 _single_node_decomposer = decomp.SingleNodeDecomposer()
 _fortran_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
+_REFINEMENT_CONTROL_DIMS = {
+    dims.CellDim: gridfile.GridRefinementName.CONTROL_CELLS,
+    dims.EdgeDim: gridfile.GridRefinementName.CONTROL_EDGES,
+    dims.VertexDim: gridfile.GridRefinementName.CONTROL_VERTICES,
+}
 
 
 class IconGridError(RuntimeError):
@@ -353,11 +358,6 @@ class GridManager:
         Returns:
             dict[gtx.Dimension, gtx.Field]: A dictionary containing the refinement control fields for each dimension.
         """
-        refinement_control_names = {
-            dims.CellDim: gridfile.GridRefinementName.CONTROL_CELLS,
-            dims.EdgeDim: gridfile.GridRefinementName.CONTROL_EDGES,
-            dims.VertexDim: gridfile.GridRefinementName.CONTROL_VERTICES,
-        }
         refinement_control_fields = {
             dim: gtx.as_field(
                 (dim,),
@@ -369,7 +369,7 @@ class GridManager:
                 ),
                 allocator=allocator,
             )
-            for dim, name in refinement_control_names.items()
+            for dim, name in _REFINEMENT_CONTROL_DIMS.items()
         }
         return refinement_control_fields
 
@@ -415,12 +415,6 @@ class GridManager:
         cell_refinement = xp.asarray(
             self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         )
-        edge_refinement = xp.asarray(
-            self._reader.variable(gridfile.GridRefinementName.CONTROL_EDGES)
-        )
-        vertex_refinement = xp.asarray(
-            self._reader.variable(gridfile.GridRefinementName.CONTROL_VERTICES)
-        )
         global_size = self._read_full_grid_size()
         global_params = self._construct_grid_params(geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement)
@@ -440,14 +434,16 @@ class GridManager:
         cells_to_rank_mapping = decomposer(cell_to_cell_neighbors, process_props.comm_size)
 
         # HALO CONSTRUCTION
+        refinement_control = {
+            dim: xp.asarray(self._reader.int_variable(name, transpose=False, apply_offset=False))
+            for dim, name in _REFINEMENT_CONTROL_DIMS.items()
+        }
         halo_constructor = halo.get_halo_constructor(
             process_props=process_props,
             full_grid_size=global_size,
             connectivities=global_neighbor_tables,
             allocator=allocator,
-            cell_refinement=cell_refinement,
-            edge_refinement=edge_refinement,
-            vertex_refinement=vertex_refinement,
+            refinement_control=refinement_control,
         )
 
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
@@ -457,6 +453,23 @@ class GridManager:
 
         # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables))
+
+        # As ICON (`mo_complete_subdivision.f90`), a halo rim edge in the lateral boundary zones,
+        # where stencils read `E2C`, points twice to its cell on this rank. Only after deriving
+        # `E2C2E`, whose RBF stencil needs the missing neighbors last.
+        if self._decomposition_info.is_distributed():
+            edges = self._decomposition_info.global_index(dims.EdgeDim)
+            e2c = neighbor_tables[dims.E2C]
+            patched = (
+                (e2c == -1)
+                & (global_neighbor_tables[dims.E2C][edges] != -1)
+                & refinement.is_placed_with_owned(
+                    dims.EdgeDim,
+                    self._decomposition_info.halo_levels(dims.EdgeDim),
+                    refinement_control[dims.EdgeDim][edges],
+                )[:, None]
+            )
+            neighbor_tables[dims.E2C] = xp.where(patched, e2c[:, ::-1], e2c)
 
         refinement_fields = self._read_grid_refinement_fields(allocator)
 
