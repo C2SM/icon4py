@@ -226,6 +226,25 @@ def _input_data_fixture(
         _reject_direct_data_allocation(plain, tree)
         _reject_host_field_construction(tree)
 
+    if "params" in kwargs:
+        # A hand-rolled parametrized fixture: each parametrization instance must draw from
+        # its own derived generator, so a single-case rerun with `-k` and a case on an
+        # xdist worker see the same data as in a full run.
+        ids = kwargs.get("ids")
+        unwrapped = plain
+
+        def seeded(
+            data_alloc: DataAllocationWrapper, request: pytest.FixtureRequest, **kwargs: Any
+        ) -> Any:
+            param_id = str(ids(request.param)) if callable(ids) else str(request.param)
+            return unwrapped(data_alloc.for_param(param_id), request=request, **kwargs)
+
+        functools.wraps(plain)(seeded)
+        # pytest introspects this signature to resolve the fixture arguments, which it
+        # passes by keyword; `request` carries the parametrization id.
+        seeded.__signature__ = inspect.signature(plain)
+        plain = cast(types.FunctionType, seeded)
+
     kwargs.setdefault("scope", "class")
     # Wrapped in a `staticmethod` because pytest deprecated class-scoped fixtures defined
     # as instance methods: `self` is a different instance there than in the test.
@@ -289,13 +308,20 @@ def _derived_seed_sequence(key: str) -> np.random.SeedSequence:
     return np.random.SeedSequence([seed, _stable_seed(key)])
 
 
-def _suite_rng(request: pytest.FixtureRequest) -> np.random.Generator:
+def _suite_seed_key(suite: type) -> str:
     """
-    The requesting suite's generator.
+    The derivation key of a suite.
 
     The key combines the test module and the suite class: stable strings only, so
-    every rank and xdist worker derives the same generator.
+    every rank and xdist worker derives the same generator. `DataAllocationWrapper.for_param`
+    pools the hashed parametrization id of hand-rolled parametrized fixtures into the
+    generator's seed sequence.
     """
+    return f"{suite.__module__}:{suite.__name__}:"
+
+
+def _suite_rng(request: pytest.FixtureRequest) -> np.random.Generator:
+    """The requesting suite's root generator, derived from `_suite_seed_key`."""
     suite = request.cls
     if suite is None:
         raise RuntimeError(
@@ -303,16 +329,6 @@ def _suite_rng(request: pytest.FixtureRequest) -> np.random.Generator:
             " the suite class."
         )
     return np.random.default_rng(_derived_seed_sequence(_suite_seed_key(suite)))
-
-
-def _suite_seed_key(suite: type) -> str:
-    """
-    The derivation key of a `reference` call.
-
-    The test-level parametrization is the `STATIC_PARAMS` variant, which shares one
-    `input_data` fixture and must not enter the key.
-    """
-    return f"{suite.__module__}:{suite.__name__}:"
 
 
 def _reference_expects_rng(reference: Callable[..., Any]) -> bool:
@@ -323,7 +339,7 @@ def _reference_expects_rng(reference: Callable[..., Any]) -> bool:
 @dataclasses.dataclass(frozen=True)
 class DataAllocationWrapper:
     """
-    Field constructors with `grid` and `allocator` already bound.
+    The suite's field constructors with `grid` and `allocator` bound.
 
     Mostly the `icon4py.model.common.utils.data_allocation` ones; `as_field` and
     `connectivity_field` go straight to gt4py, having no grid-shaped counterpart there.
@@ -331,13 +347,30 @@ class DataAllocationWrapper:
     A `StencilTest` suite receives one as the `data_alloc` argument of its `input_data`
     fixture. See the wrapped module for the meaning of the remaining arguments.
 
-    The `random_*` constructors draw from the suite's generator, which
-    `input_data` fixtures may also draw from directly.
+    `rng` is the suite's input stream, created once by the `data_alloc` fixture;
+    `reference_rng` is the first spawned child of `rng`, reserved for `reference`
+    bodies that declare an `rng` parameter.
     """
 
     grid: base.Grid
     allocator: gtx_typing.Allocator | None
     rng: np.random.Generator
+    reference_rng: np.random.Generator = dataclasses.field(init=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "reference_rng", self.rng.spawn(1)[0])
+
+    def for_param(self, param_id: str) -> DataAllocationWrapper:
+        """
+        A wrapper whose generator pools this generator's seed-sequence entropy with `param_id`.
+
+        Hand-rolled parametrized `input_data` fixtures call it so that each parametrization
+        instance draws its own stream, the same however pytest selects the cases.
+        """
+        entropy = self.rng.bit_generator.seed_seq.entropy
+        entropy = entropy if isinstance(entropy, list) else [entropy]
+        child = np.random.SeedSequence([*entropy, _stable_seed(param_id)])
+        return DataAllocationWrapper(self.grid, self.allocator, np.random.default_rng(child))
 
     def connectivity_field(self, offset: str | gtx.FieldOffset) -> gtx.Field:
         """
@@ -591,10 +624,10 @@ def test_and_benchmark(
 
     if not skip_verification:
         # `reference` bodies may draw their own random data and have no `data_alloc`
-        # in scope, so a seeded generator is passed when the reference declares an
-        # `rng` parameter.
+        # in scope, so a generator on the stream reserved for the reference is passed
+        # when the reference declares an `rng` parameter.
         reference_kwargs: dict[str, Any] = (
-            {"rng": data_alloc.rng} if _reference_expects_rng(self.reference) else {}
+            {"rng": data_alloc.reference_rng} if _reference_expects_rng(self.reference) else {}
         )
         reference_outputs = self.reference(
             grid=grid,

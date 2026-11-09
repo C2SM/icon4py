@@ -159,6 +159,27 @@ class TestInputDataFixture:
         assert marker.params == (1, 2)
         assert marker.scope == "function"  # an explicit scope wins over the default
 
+    @pytest.mark.parametrize("ids", [None, str], ids=["default_ids", "callable_ids"])
+    def test_hands_a_parametrized_fixture_a_per_param_wrapper(self, grid, ids):
+        """Each parametrization instance must draw from its own derived generator."""
+
+        def input_data(data_alloc, request):
+            return {"field": data_alloc.random_field(dims.CellDim)}
+
+        fixture = stencil_tests.input_data_fixture(params=[1, 2], ids=ids)(input_data)
+        wrapped = fixture.__func__._get_wrapped_function()
+
+        # pytest resolves the fixture arguments from the signature, which stays the
+        # plain fixture's so that `grid` and `request` are still injected.
+        assert inspect.signature(wrapped) == inspect.signature(input_data)
+
+        wrapper = _seeded_wrapper(grid, "module:Suite:")
+        field = wrapped(data_alloc=wrapper, request=types.SimpleNamespace(param=1))["field"]
+
+        np.testing.assert_array_equal(
+            field.asnumpy(), wrapper.for_param("1").random_field(dims.CellDim).asnumpy()
+        )
+
     def test_accepts_an_existing_staticmethod(self):
         fixture = stencil_tests.input_data_fixture(staticmethod(valid_input_data()))
 
@@ -583,13 +604,59 @@ class TestSeededWrapper:
         monkeypatch.setenv("ICON4PY_TEST_SEED", "42")
         third = _seeded_wrapper(grid, "module:Suite:")
 
+        base = first.random_field(dims.CellDim).asnumpy()
+
+        np.testing.assert_array_equal(base, second.random_field(dims.CellDim).asnumpy())
+        assert not np.array_equal(base, third.random_field(dims.CellDim).asnumpy())
+
+    def test_for_param_reproduces_one_parametrization_stream(self, grid):
+        """The same param id draws the same data; a different one draws different data."""
+        wrapper = _seeded_wrapper(grid, "module:Suite:")
+
+        first = wrapper.for_param("param0").random_field(dims.CellDim).asnumpy()
+
         np.testing.assert_array_equal(
-            first.random_field(dims.CellDim).asnumpy(),
-            second.random_field(dims.CellDim).asnumpy(),
+            first, wrapper.for_param("param0").random_field(dims.CellDim).asnumpy()
         )
         assert not np.array_equal(
-            first.random_field(dims.CellDim).asnumpy(),
-            third.random_field(dims.CellDim).asnumpy(),
+            first, wrapper.for_param("param1").random_field(dims.CellDim).asnumpy()
+        )
+
+    def test_for_param_differs_from_the_class_wrapper(self, grid):
+        """A parametrized fixture must not share the class generator's stream."""
+        wrapper = _seeded_wrapper(grid, "module:Suite:")
+
+        assert not np.array_equal(
+            wrapper.random_field(dims.CellDim).asnumpy(),
+            wrapper.for_param("param0").random_field(dims.CellDim).asnumpy(),
+        )
+
+    def test_reference_rng_is_deterministic(self, grid):
+        """Identically seeded wrappers spawn the same reference stream."""
+        first = _seeded_wrapper(grid, "module:Suite:")
+        second = _seeded_wrapper(grid, "module:Suite:")
+
+        assert np.array_equal(
+            first.reference_rng.random(16),
+            second.reference_rng.random(16),
+        )
+
+    def test_reference_rng_differs_from_the_input_data_stream(self, grid):
+        """The spawned reference stream is not the input data's stream."""
+        wrapper = _seeded_wrapper(grid, "module:Suite:")
+
+        assert not np.array_equal(
+            wrapper.reference_rng.random(16),
+            wrapper.rng.random(16),
+        )
+
+    def test_reference_rng_differs_from_a_for_param_stream(self, grid):
+        """A `for_param` stream must not collide with the spawned reference stream."""
+        wrapper = _seeded_wrapper(grid, "module:Suite:")
+
+        assert not np.array_equal(
+            wrapper.reference_rng.random(16),
+            wrapper.for_param("param0").rng.random(16),
         )
 
     def test_reference_expects_rng_detects_the_parameter(self):
