@@ -70,24 +70,22 @@ def construct_metric_state(
     )
 
 
-def construct_diagnostic_init_state(
+def construct_diagnostic_init_state_from_savepoint(
     icon_grid,
     savepoint: sb.AdvectionInitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
 ) -> states.AdvectionDiagnostics:
     return states.AdvectionDiagnostics(
-        airmass_now=field.Field(qty.AirMassOnCellK, savepoint.airmass_now()),
-        airmass_new=field.Field(qty.AirMassOnCellK, savepoint.airmass_new()),
-        grf_tend_tracer=field.Field(
-            qty.GrfTendencyOfTracerOnCellK, savepoint.grf_tend_tracer(ntracer)
-        ),
+        airmass_now=savepoint.airmass_now(),
+        airmass_new=savepoint.airmass_new(),
+        grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
         hfl_tracer=fw.zeros(qty.HorizontalTracerFluxOnEdgeK, icon_grid, backend),
         vfl_tracer=fw.zeros(qty.VerticalTracerFluxOnCellKHalf, icon_grid, backend),
     )
 
 
-def construct_diagnostic_exit_state(
+def construct_diagnostic_exit_state_from_savepoint(
     icon_grid,
     savepoint: sb.AdvectionExitSavepoint,
     ntracer: int,
@@ -97,22 +95,20 @@ def construct_diagnostic_exit_state(
         airmass_now=fw.zeros(qty.AirMassOnCellK, icon_grid, backend),
         airmass_new=fw.zeros(qty.AirMassOnCellK, icon_grid, backend),
         grf_tend_tracer=fw.zeros(qty.GrfTendencyOfTracerOnCellK, icon_grid, backend),
-        hfl_tracer=field.Field(qty.HorizontalTracerFluxOnEdgeK, savepoint.hfl_tracer(ntracer)),
-        vfl_tracer=field.Field(qty.VerticalTracerFluxOnCellKHalf, savepoint.vfl_tracer(ntracer)),
+        hfl_tracer=savepoint.hfl_tracer(ntracer),
+        vfl_tracer=savepoint.vfl_tracer(ntracer),
     )
 
 
-def construct_prep_adv(
+def construct_prep_adv_state_from_savepoint(
     savepoint: sb.AdvectionInitSavepoint,
     icon_grid,
     backend: gtx_typing.Backend | None,
 ) -> states.PrepAdvection:
     return states.PrepAdvection(
-        vn_traj=field.Field(qty.VnOnEdgeK, savepoint.vn_traj()),
-        mass_flx_me=field.Field(qty.HorizontalMassFluxOnEdgeK, savepoint.mass_flx_me()),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=field.Field(
-            qty.VerticalMassFluxOnCellKHalf, savepoint.mass_flx_ic()
-        ),
+        vn_traj=savepoint.vn_traj(),
+        mass_flx_me=savepoint.mass_flx_me(),
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=savepoint.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.zeros(
             qty.VerticalVolumetricFluxOnCellKHalf, icon_grid, backend
         ),

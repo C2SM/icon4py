@@ -43,12 +43,12 @@ from icon4py.model.testing.fixtures.datatest import (
 from ..fixtures import *  # noqa: F403
 from ..utils import (
     advection_views,
-    construct_diagnostic_exit_state,
-    construct_diagnostic_init_state,
+    construct_diagnostic_exit_state_from_savepoint,
+    construct_diagnostic_init_state_from_savepoint,
     construct_interpolation_state,
     construct_least_squares_state,
     construct_metric_state,
-    construct_prep_adv,
+    construct_prep_adv_state_from_savepoint,
     log_serialized,
 )
 
@@ -155,10 +155,10 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
         exchange=exchange_runtime,
     )
 
-    diagnostic_state = construct_diagnostic_init_state(
+    diagnostic_state = construct_diagnostic_init_state_from_savepoint(
         icon_grid=icon_grid, savepoint=advection_init_savepoint, ntracer=ntracer, backend=backend
     )
-    prep_adv = construct_prep_adv(advection_init_savepoint, icon_grid, backend)
+    prep_adv = construct_prep_adv_state_from_savepoint(advection_init_savepoint, icon_grid, backend)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
 
     p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
@@ -170,7 +170,7 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
         *advection_views(diagnostic_state, prep_adv, p_tracer_now, p_tracer_new, dtime)
     )
 
-    diagnostic_state_ref = construct_diagnostic_exit_state(
+    diagnostic_state_ref = construct_diagnostic_exit_state_from_savepoint(
         icon_grid=icon_grid,
         savepoint=advection_exit_savepoint,
         ntracer=ntracer,

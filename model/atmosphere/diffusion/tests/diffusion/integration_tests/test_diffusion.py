@@ -29,7 +29,7 @@ from icon4py.model.testing import (
 
 from ..fixtures import *  # noqa: F403
 from ..utils import (
-    construct_diagnostics,
+    construct_diagnostic_state_from_savepoint,
     diff_multfac_vn_numpy,
     diffusion_views,
     smag_limit_numpy,
@@ -386,7 +386,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
 
     dtime = savepoint_diffusion_init.dtime()
 
-    diagnostic_state = construct_diagnostics(savepoint_diffusion_init)
+    diagnostic_state = construct_diagnostic_state_from_savepoint(savepoint_diffusion_init)
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
 
     vertical_config = experiment.config.vertical_grid
@@ -448,7 +448,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
         vct_a=vct_a,
         vct_b=vct_b,
     )
-    diagnostic_state = construct_diagnostics(savepoint_diffusion_init)
+    diagnostic_state = construct_diagnostic_state_from_savepoint(savepoint_diffusion_init)
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
     config = experiment.config.diffusion
     params = diffusion.DiffusionParams(config)

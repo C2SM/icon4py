@@ -188,22 +188,20 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     exner_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
 
     tracer_state = states.TracerState(
-        qv=field.Field(qty.QvOnCellK, satad_exit.qv()),
-        qc=field.Field(qty.QcOnCellK, satad_exit.qc()),
-        qr=field.Field(qty.QrOnCellK, satad_init.qr()),
-        qi=field.Field(qty.QiOnCellK, satad_init.qi()),
-        qs=field.Field(qty.QsOnCellK, satad_init.qs()),
-        qg=field.Field(qty.QgOnCellK, satad_init.qg()),
+        qv=satad_exit.qv(),
+        qc=satad_exit.qc(),
+        qr=satad_init.qr(),
+        qi=satad_init.qi(),
+        qs=satad_init.qs(),
+        qg=satad_init.qg(),
     )
     exner = satad_init.exner()
 
     diagnostic_state = states.Diagnostics(
-        temperature=field.Field(qty.TemperatureOnCellK, satad_exit.temperature()),
-        virtual_temperature=field.Field(
-            qty.VirtualTemperatureOnCellK, satad_init.virtual_temperature()
-        ),
-        pressure=field.Field(qty.PressureOnCellK, satad_init.pressure()),
-        pressure_ifc=field.Field(qty.PressureOnCellKHalf, satad_init.pressure_ifc()),
+        temperature=satad_exit.temperature(),
+        virtual_temperature=satad_init.virtual_temperature(),
+        pressure=satad_init.pressure(),
+        pressure_ifc=satad_init.pressure_ifc(),
         u=fw.zeros(qty.UOnCellK, icon_grid, backend),
         v=fw.zeros(qty.VOnCellK, icon_grid, backend),
     )

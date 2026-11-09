@@ -102,9 +102,15 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = savepoint_nonhydro_init.dtime()
     prepare_fluxes_for_advection = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = utils.construct_prep_advection(savepoint_nonhydro_init, icon_grid, backend)
-    forcing = utils.construct_forcing(savepoint_nonhydro_init, icon_grid, backend)
-    dycore_diagnostics = utils.construct_dycore_diagnostics(savepoint_nonhydro_init)
+    prep_adv = utils.construct_prep_advection_state_from_savepoint(
+        savepoint_nonhydro_init, icon_grid, backend
+    )
+    forcing = utils.construct_forcing_state_from_savepoint(
+        savepoint_nonhydro_init, icon_grid, backend
+    )
+    dycore_diagnostics = utils.construct_dycore_diagnostic_state_from_savepoint(
+        savepoint_nonhydro_init
+    )
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)

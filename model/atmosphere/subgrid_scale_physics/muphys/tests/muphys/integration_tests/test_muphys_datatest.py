@@ -117,15 +117,15 @@ def test_muphys_granule(
 
     muphys_configuration = muphys_config.MuphysConfig()
     input = muphys_component.Muphys.Input(
-        te=fd.Field(qty.TemperatureOnCellK, init_savepoint.temperature()),
-        p=fd.Field(qty.PressureOnCellK, init_savepoint.pressure()),
-        rho=fd.Field(qty.RhoOnCellK, init_savepoint.rho()),
-        qv=fd.Field(qty.QvOnCellK, init_savepoint.qv()),
-        qc=fd.Field(qty.QcOnCellK, init_savepoint.qc()),
-        qi=fd.Field(qty.QiOnCellK, init_savepoint.qi()),
-        qr=fd.Field(qty.QrOnCellK, init_savepoint.qr()),
-        qs=fd.Field(qty.QsOnCellK, init_savepoint.qs()),
-        qg=fd.Field(qty.QgOnCellK, init_savepoint.qg()),
+        te=init_savepoint.temperature(),
+        p=init_savepoint.pressure(),
+        rho=init_savepoint.rho(),
+        qv=init_savepoint.qv(),
+        qc=init_savepoint.qc(),
+        qi=init_savepoint.qi(),
+        qr=init_savepoint.qr(),
+        qs=init_savepoint.qs(),
+        qg=init_savepoint.qg(),
     )
     state = {"dz": init_savepoint.dz(), **fw.fields(input)}
     initial_state = {name: field.asnumpy().copy() for name, field in state.items()}

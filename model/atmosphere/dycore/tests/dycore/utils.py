@@ -14,10 +14,9 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims, field, type_alias as ta, utils as common_utils
+from icon4py.model.common import field, framework as fw, type_alias as ta, utils as common_utils
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb
 
 
@@ -95,115 +94,81 @@ def create_vertical_params(
     )
 
 
-def construct_forcing(
+def construct_forcing_state_from_savepoint(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     grid: icon_grid.IconGrid,
     backend: gtx_typing.Backend | None,
 ) -> states.DycoreForcing:
     """The tendencies and increments the dycore reads; the increments are zero (no IAU)."""
 
-    def zeros(*field_dims: gtx.Dimension) -> gtx.Field:
-        return data_alloc.zero_field(grid, *field_dims, allocator=backend)
-
     return states.DycoreForcing(
-        exner_tendency_due_to_slow_physics=field.Field(
-            qty.ExnerTendencyDueToSlowPhysicsOnCellK, init_savepoint.ddt_exner_phy()
-        ),
-        normal_wind_tendency_due_to_slow_physics_process=field.Field(
-            qty.NormalWindTendencyDueToSlowPhysicsOnEdgeK, init_savepoint.ddt_vn_phy()
-        ),
-        grf_tend_rho=field.Field(qty.GrfTendencyOfRhoOnCellK, init_savepoint.grf_tend_rho()),
-        grf_tend_thv=field.Field(qty.GrfTendencyOfThetaVOnCellK, init_savepoint.grf_tend_thv()),
-        grf_tend_w=field.Field(qty.GrfTendencyOfWOnCellKHalf, init_savepoint.grf_tend_w()),
-        grf_tend_vn=field.Field(qty.GrfTendencyOfVnOnEdgeK, init_savepoint.grf_tend_vn()),
-        rho_iau_increment=field.Field(qty.RhoIauIncrementOnCellK, zeros(dims.CellDim, dims.KDim)),
-        normal_wind_iau_increment=field.Field(
-            qty.NormalWindIauIncrementOnEdgeK, zeros(dims.EdgeDim, dims.KDim)
-        ),
-        exner_iau_increment=field.Field(
-            qty.ExnerIauIncrementOnCellK, zeros(dims.CellDim, dims.KDim)
-        ),
+        exner_tendency_due_to_slow_physics=init_savepoint.ddt_exner_phy(),
+        normal_wind_tendency_due_to_slow_physics_process=init_savepoint.ddt_vn_phy(),
+        grf_tend_rho=init_savepoint.grf_tend_rho(),
+        grf_tend_thv=init_savepoint.grf_tend_thv(),
+        grf_tend_w=init_savepoint.grf_tend_w(),
+        grf_tend_vn=init_savepoint.grf_tend_vn(),
+        rho_iau_increment=fw.zeros(qty.RhoIauIncrementOnCellK, grid, backend),
+        normal_wind_iau_increment=fw.zeros(qty.NormalWindIauIncrementOnEdgeK, grid, backend),
+        exner_iau_increment=fw.zeros(qty.ExnerIauIncrementOnCellK, grid, backend),
     )
 
 
-def construct_dycore_diagnostics(
+def construct_dycore_diagnostic_state_from_savepoint(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     swap_vertical_wind_advective_tendency: bool = False,
 ) -> states.DycoreDiagnostics:
     """The dycore diagnostics kept between the substeps, from the savepoint."""
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return states.DycoreDiagnostics(
-        perturbed_exner_at_cells_on_model_levels=field.Field(
-            qty.PerturbedExnerOnCellK, init_savepoint.exner_pr()
-        ),
-        exner_dynamical_increment=field.Field(
-            qty.ExnerDynamicalIncrementOnCellK, init_savepoint.exner_dyn_incr()
-        ),
+        perturbed_exner_at_cells_on_model_levels=init_savepoint.exner_pr(),
+        exner_dynamical_increment=init_savepoint.exner_dyn_incr(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            field.Field(qty.NormalWindAdvectiveTendencyOnEdgeK, init_savepoint.ddt_vn_apc_pc(0)),
-            field.Field(qty.NormalWindAdvectiveTendencyOnEdgeK, init_savepoint.ddt_vn_apc_pc(1)),
+            init_savepoint.ddt_vn_apc_pc(0),
+            init_savepoint.ddt_vn_apc_pc(1),
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            field.Field(
-                qty.VerticalWindAdvectiveTendencyOnCellKHalf,
-                init_savepoint.ddt_w_adv_pc(current_index),
-            ),
-            field.Field(
-                qty.VerticalWindAdvectiveTendencyOnCellKHalf,
-                init_savepoint.ddt_w_adv_pc(next_index),
-            ),
+            init_savepoint.ddt_w_adv_pc(current_index),
+            init_savepoint.ddt_w_adv_pc(next_index),
         ),
         max_vertical_cfl=field.Field(
             qty.MaxVerticalCflNumber,
             gtx.zeros((), dtype=ta.wpfloat, allocator=init_savepoint.backend),
         ),
-        tangential_wind=field.Field(qty.TangentialWindOnEdgeK, init_savepoint.vt()),
-        vn_on_half_levels=field.Field(qty.VnOnEdgeKHalf, init_savepoint.vn_ie()),
-        contravariant_correction_at_cells_on_half_levels=field.Field(
-            qty.ContravariantCorrectionOnCellKHalf, init_savepoint.w_concorr_c()
-        ),
-        theta_v_at_cells_on_half_levels=field.Field(
-            qty.ThetaVOnCellKHalf, init_savepoint.theta_v_ic()
-        ),
-        rho_at_cells_on_half_levels=field.Field(qty.RhoOnCellKHalf, init_savepoint.rho_ic()),
-        mass_flux_at_edges_on_model_levels=field.Field(
-            qty.HorizontalMassFluxOnEdgeK, init_savepoint.mass_fl_e()
-        ),
+        tangential_wind=init_savepoint.vt(),
+        vn_on_half_levels=init_savepoint.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
+        theta_v_at_cells_on_half_levels=init_savepoint.theta_v_ic(),
+        rho_at_cells_on_half_levels=init_savepoint.rho_ic(),
+        mass_flux_at_edges_on_model_levels=init_savepoint.mass_fl_e(),
     )
 
 
-def construct_prep_advection(
+def construct_prep_advection_state_from_savepoint(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     grid: icon_grid.IconGrid,
     backend: gtx_typing.Backend | None,
 ) -> states.PrepAdvection:
     return states.PrepAdvection(
-        vn_traj=field.Field(qty.VnOnEdgeK, init_savepoint.vn_traj()),
-        mass_flx_me=field.Field(qty.HorizontalMassFluxOnEdgeK, init_savepoint.mass_flx_me()),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=field.Field(
-            qty.VerticalMassFluxOnCellKHalf, init_savepoint.mass_flx_ic()
-        ),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=field.Field(
-            qty.VerticalVolumetricFluxOnCellKHalf,
-            data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim, allocator=backend),
+        vn_traj=init_savepoint.vn_traj(),
+        mass_flx_me=init_savepoint.mass_flx_me(),
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=init_savepoint.mass_flx_ic(),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.zeros(
+            qty.VerticalVolumetricFluxOnCellKHalf, grid, backend
         ),
     )
 
 
-def construct_prognostic_state(
+def construct_prognostic_state_state_from_savepoint(
     sp: sb.IconNonHydroInitSavepoint, time_level: str
 ) -> states.PrognosticState:
     """The prognostics of the savepoint at the time level `now` or `new`."""
 
-    def read(name: str) -> gtx.Field:
+    def read(name: str) -> field.Field:
         return getattr(sp, f"{name}_{time_level}")()
 
     return states.PrognosticState(
-        rho=field.Field(qty.RhoOnCellK, read("rho")),
-        w=field.Field(qty.WOnCellKHalf, read("w")),
-        vn=field.Field(qty.VnOnEdgeK, read("vn")),
-        exner=field.Field(qty.ExnerOnCellK, read("exner")),
-        theta_v=field.Field(qty.ThetaVOnCellK, read("theta_v")),
+        rho=read("rho"), w=read("w"), vn=read("vn"), exner=read("exner"), theta_v=read("theta_v")
     )
 
 
@@ -211,7 +176,8 @@ def create_prognostic_states(
     sp: sb.IconNonHydroInitSavepoint,
 ) -> common_utils.TimeStepPair[states.PrognosticState]:
     return common_utils.TimeStepPair(
-        construct_prognostic_state(sp, "now"), construct_prognostic_state(sp, "new")
+        construct_prognostic_state_state_from_savepoint(sp, "now"),
+        construct_prognostic_state_state_from_savepoint(sp, "new"),
     )
 
 

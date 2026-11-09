@@ -482,21 +482,17 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
 
     # --- Expected objects that form inputs into run function ---
     expected_input = solve_nh.SolveNonhydro.Input(
-        rho=field.Field(qty.RhoOnCellK, sp.rho_now()),
-        w=field.Field(qty.WOnCellKHalf, sp.w_now()),
-        vn=field.Field(qty.VnOnEdgeK, sp.vn_now()),
-        exner=field.Field(qty.ExnerOnCellK, sp.exner_now()),
-        theta_v=field.Field(qty.ThetaVOnCellK, sp.theta_v_now()),
-        exner_tendency_due_to_slow_physics=field.Field(
-            qty.ExnerTendencyDueToSlowPhysicsOnCellK, sp.ddt_exner_phy()
-        ),
-        normal_wind_tendency_due_to_slow_physics_process=field.Field(
-            qty.NormalWindTendencyDueToSlowPhysicsOnEdgeK, sp.ddt_vn_phy()
-        ),
-        grf_tend_rho=field.Field(qty.GrfTendencyOfRhoOnCellK, sp.grf_tend_rho()),
-        grf_tend_thv=field.Field(qty.GrfTendencyOfThetaVOnCellK, sp.grf_tend_thv()),
-        grf_tend_w=field.Field(qty.GrfTendencyOfWOnCellKHalf, sp.grf_tend_w()),
-        grf_tend_vn=field.Field(qty.GrfTendencyOfVnOnEdgeK, sp.grf_tend_vn()),
+        rho=sp.rho_now(),
+        w=sp.w_now(),
+        vn=sp.vn_now(),
+        exner=sp.exner_now(),
+        theta_v=sp.theta_v_now(),
+        exner_tendency_due_to_slow_physics=sp.ddt_exner_phy(),
+        normal_wind_tendency_due_to_slow_physics_process=sp.ddt_vn_phy(),
+        grf_tend_rho=sp.grf_tend_rho(),
+        grf_tend_thv=sp.grf_tend_thv(),
+        grf_tend_w=sp.grf_tend_w(),
+        grf_tend_vn=sp.grf_tend_vn(),
         rho_iau_increment=field.Field(qty.RhoIauIncrementOnCellK, rho_incr_field),
         normal_wind_iau_increment=field.Field(qty.NormalWindIauIncrementOnEdgeK, vn_incr_field),
         exner_iau_increment=field.Field(qty.ExnerIauIncrementOnCellK, exner_incr_field),
@@ -511,52 +507,34 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         iau_wgt_dyn=0.0,
     )
     expected_output = solve_nh.SolveNonhydro.Output(
-        rho=field.Field(qty.RhoOnCellK, sp.rho_new()),
-        w=field.Field(qty.WOnCellKHalf, sp.w_new()),
-        vn=field.Field(qty.VnOnEdgeK, sp.vn_new()),
-        exner=field.Field(qty.ExnerOnCellK, sp.exner_new()),
-        theta_v=field.Field(qty.ThetaVOnCellK, sp.theta_v_new()),
-        vn_traj=field.Field(qty.VnOnEdgeK, sp.vn_traj()),
-        mass_flx_me=field.Field(qty.HorizontalMassFluxOnEdgeK, sp.mass_flx_me()),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=field.Field(
-            qty.VerticalMassFluxOnCellKHalf, sp.mass_flx_ic()
-        ),
+        rho=sp.rho_new(),
+        w=sp.w_new(),
+        vn=sp.vn_new(),
+        exner=sp.exner_new(),
+        theta_v=sp.theta_v_new(),
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=field.Field(
             qty.VerticalVolumetricFluxOnCellKHalf,
             data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),  # TODO(): sp.vol_flx_ic(),
         ),
-        perturbed_exner_at_cells_on_model_levels=field.Field(
-            qty.PerturbedExnerOnCellK, sp.exner_pr()
-        ),
-        exner_dynamical_increment=field.Field(
-            qty.ExnerDynamicalIncrementOnCellK, sp.exner_dyn_incr()
-        ),
-        normal_wind_advective_tendency_predictor=field.Field(
-            qty.NormalWindAdvectiveTendencyOnEdgeK, sp.ddt_vn_apc_pc(0)
-        ),
-        normal_wind_advective_tendency_corrector=field.Field(
-            qty.NormalWindAdvectiveTendencyOnEdgeK, sp.ddt_vn_apc_pc(1)
-        ),
-        vertical_wind_advective_tendency_predictor=field.Field(
-            qty.VerticalWindAdvectiveTendencyOnCellKHalf, sp.ddt_w_adv_pc(0)
-        ),
-        vertical_wind_advective_tendency_corrector=field.Field(
-            qty.VerticalWindAdvectiveTendencyOnCellKHalf, sp.ddt_w_adv_pc(1)
-        ),
+        perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
+        exner_dynamical_increment=sp.exner_dyn_incr(),
+        normal_wind_advective_tendency_predictor=sp.ddt_vn_apc_pc(0),
+        normal_wind_advective_tendency_corrector=sp.ddt_vn_apc_pc(1),
+        vertical_wind_advective_tendency_predictor=sp.ddt_w_adv_pc(0),
+        vertical_wind_advective_tendency_corrector=sp.ddt_w_adv_pc(1),
         max_vertical_cfl=field.Field(
             qty.MaxVerticalCflNumber,
             gtx.as_field((), data_alloc.scalar_like_array(max_vertical_cfl, backend)),
         ),
-        tangential_wind=field.Field(qty.TangentialWindOnEdgeK, sp.vt()),
-        vn_on_half_levels=field.Field(qty.VnOnEdgeKHalf, sp.vn_ie()),
-        contravariant_correction_at_cells_on_half_levels=field.Field(
-            qty.ContravariantCorrectionOnCellKHalf, sp.w_concorr_c()
-        ),
-        theta_v_at_cells_on_half_levels=field.Field(qty.ThetaVOnCellKHalf, sp.theta_v_ic()),
-        rho_at_cells_on_half_levels=field.Field(qty.RhoOnCellKHalf, sp.rho_ic()),
-        mass_flux_at_edges_on_model_levels=field.Field(
-            qty.HorizontalMassFluxOnEdgeK, sp.mass_fl_e()
-        ),
+        tangential_wind=sp.vt(),
+        vn_on_half_levels=sp.vn_ie(),
+        contravariant_correction_at_cells_on_half_levels=sp.w_concorr_c(),
+        theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
+        rho_at_cells_on_half_levels=sp.rho_ic(),
+        mass_flux_at_edges_on_model_levels=sp.mass_fl_e(),
     )
 
     ffi = cffi.FFI()

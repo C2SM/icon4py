@@ -8,7 +8,7 @@
 import functools
 import logging
 from collections.abc import Sequence
-from typing import Literal
+from typing import Any, Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -20,6 +20,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, field, model_backends
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
+from icon4py.model.common.quantity import Quantity
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
@@ -50,7 +51,10 @@ class IconSavepoint:
         self.backend = backend
         self.xp = data_alloc.import_array_ns(self.backend)
 
-    def optionally_registered(*dims, dtype=wpfloat):
+    def optionally_registered(*dims, dtype=wpfloat, quantity: type[Quantity] | None = None):
+        if quantity is not None:
+            dims = quantity.dims
+
         def decorator(func):
             @functools.wraps(func)
             def wrapper(self, *args, **kwargs):
@@ -65,9 +69,10 @@ class IconSavepoint:
                         # We allocate a dummy field with size 1 in each dimension
                         # as a workaround for the lack of support for optional fields in gt4py.
                         shp = (1,) * len(dims)
-                        return gtx.as_field(
+                        dummy = gtx.as_field(
                             dims, self.xp.zeros(shp, dtype=dtype), allocator=self.backend
                         )
+                        return dummy if quantity is None else field.Field(quantity, dummy)
                     else:
                         return None
 
@@ -105,6 +110,18 @@ class IconSavepoint:
         buffer = self._reduce_to_dim_size(buffer, dims)
         self.log.debug(f"{name} {buffer.shape}")
         return gtx.as_field(dims, buffer, allocator=self.backend)
+
+    def _get_typed_field[Q: Quantity](
+        self, name: str, quantity: type[Q], **kwargs: Any
+    ) -> field.Field[Q]:
+        return field.Field(quantity, self._get_field(name, *quantity.dims, **kwargs))
+
+    def _get_typed_field_component[Q: Quantity](
+        self, name: str, level: int, quantity: type[Q], dtype=wpfloat
+    ) -> field.Field[Q]:
+        return field.Field(
+            quantity, self._get_field_component(name, level, quantity.dims, dtype=dtype)
+        )
 
     def _reduce_to_dim_size(self, buffer, dimensions):
         buffer_size = (
@@ -988,67 +1005,77 @@ class MetricSavepoint(IconSavepoint):
 
 
 class AdvectionInitSavepoint(IconSavepoint):
-    def airmass_now(self):
-        return self._get_field("airmass_now", dims.CellDim, dims.KDim)
+    def airmass_now(self) -> field.Field[qty.AirMassOnCellK]:
+        return self._get_typed_field("airmass_now", qty.AirMassOnCellK)
 
-    def airmass_new(self):
-        return self._get_field("airmass_new", dims.CellDim, dims.KDim)
+    def airmass_new(self) -> field.Field[qty.AirMassOnCellK]:
+        return self._get_typed_field("airmass_new", qty.AirMassOnCellK)
 
-    def vn_traj(self):
-        return self._get_field("vn_traj", dims.EdgeDim, dims.KDim)
+    def vn_traj(self) -> field.Field[qty.VnOnEdgeK]:
+        return self._get_typed_field("vn_traj", qty.VnOnEdgeK)
 
-    def mass_flx_me(self):
-        return self._get_field("mass_flx_me", dims.EdgeDim, dims.KDim)
+    def mass_flx_me(self) -> field.Field[qty.HorizontalMassFluxOnEdgeK]:
+        return self._get_typed_field("mass_flx_me", qty.HorizontalMassFluxOnEdgeK)
 
-    def mass_flx_ic(self):
-        return self._get_field("mass_flx_ic", dims.CellDim, dims.KHalfDim)
+    def mass_flx_ic(self) -> field.Field[qty.VerticalMassFluxOnCellKHalf]:
+        return self._get_typed_field("mass_flx_ic", qty.VerticalMassFluxOnCellKHalf)
 
-    def grf_tend_tracer(self, ntracer: int):
-        return self._get_field_component("grf_tend_tracers", ntracer, (dims.CellDim, dims.KDim))
+    def grf_tend_tracer(self, ntracer: int) -> field.Field[qty.GrfTendencyOfTracerOnCellK]:
+        return self._get_typed_field_component(
+            "grf_tend_tracers", ntracer, qty.GrfTendencyOfTracerOnCellK
+        )
 
     def tracer(self, ntracer: int):
         return self._get_field_component("tracers_now", ntracer, (dims.CellDim, dims.KDim))
 
 
 class AdvectionExitSavepoint(IconSavepoint):
-    def hfl_tracer(self, ntracer: int):
-        return self._get_field_component("hfl_tracers", ntracer, (dims.EdgeDim, dims.KDim))
+    def hfl_tracer(self, ntracer: int) -> field.Field[qty.HorizontalTracerFluxOnEdgeK]:
+        return self._get_typed_field_component("hfl_tracers", ntracer, qty.HorizontalTracerFluxOnEdgeK)
 
-    def vfl_tracer(self, ntracer: int):
-        return self._get_field_component("vfl_tracers", ntracer, (dims.CellDim, dims.KHalfDim))
+    def vfl_tracer(self, ntracer: int) -> field.Field[qty.VerticalTracerFluxOnCellKHalf]:
+        return self._get_typed_field_component(
+            "vfl_tracers", ntracer, qty.VerticalTracerFluxOnCellKHalf
+        )
 
     def tracer(self, ntracer: int):
         return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KHalfDim)
-    def hdef_ic(self):
-        return self._get_field("hdef_ic", dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+    @IconSavepoint.optionally_registered(
+        quantity=qty.HorizontalWindDeformationOnCellKHalf, dtype=vpfloat
+    )
+    def hdef_ic(self) -> field.Field[qty.HorizontalWindDeformationOnCellKHalf]:
+        return self._get_typed_field(
+            "hdef_ic", qty.HorizontalWindDeformationOnCellKHalf, dtype=vpfloat
+        )
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
-    def div_ic(self):
-        return self._get_field("div_ic", dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+    @IconSavepoint.optionally_registered(quantity=qty.DivergenceOnCellKHalf, dtype=vpfloat)
+    def div_ic(self) -> field.Field[qty.DivergenceOnCellKHalf]:
+        return self._get_typed_field("div_ic", qty.DivergenceOnCellKHalf, dtype=vpfloat)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
-    def dwdx(self):
-        return self._get_field("dwdx", dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+    @IconSavepoint.optionally_registered(quantity=qty.ZonalGradientOfWOnCellKHalf, dtype=vpfloat)
+    def dwdx(self) -> field.Field[qty.ZonalGradientOfWOnCellKHalf]:
+        return self._get_typed_field("dwdx", qty.ZonalGradientOfWOnCellKHalf, dtype=vpfloat)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
-    def dwdy(self):
-        return self._get_field("dwdy", dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+    @IconSavepoint.optionally_registered(
+        quantity=qty.MeridionalGradientOfWOnCellKHalf, dtype=vpfloat
+    )
+    def dwdy(self) -> field.Field[qty.MeridionalGradientOfWOnCellKHalf]:
+        return self._get_typed_field("dwdy", qty.MeridionalGradientOfWOnCellKHalf, dtype=vpfloat)
 
-    def vn(self):
-        return self._get_field("vn", dims.EdgeDim, dims.KDim)
+    def vn(self) -> field.Field[qty.VnOnEdgeK]:
+        return self._get_typed_field("vn", qty.VnOnEdgeK)
 
-    def theta_v(self):
-        return self._get_field("theta_v", dims.CellDim, dims.KDim)
+    def theta_v(self) -> field.Field[qty.ThetaVOnCellK]:
+        return self._get_typed_field("theta_v", qty.ThetaVOnCellK)
 
-    def w(self):
-        return self._get_field("w", dims.CellDim, dims.KHalfDim)
+    def w(self) -> field.Field[qty.WOnCellKHalf]:
+        return self._get_typed_field("w", qty.WOnCellKHalf)
 
-    def exner(self):
-        return self._get_field("exner", dims.CellDim, dims.KDim)
+    def exner(self) -> field.Field[qty.ExnerOnCellK]:
+        return self._get_typed_field("exner", qty.ExnerOnCellK)
 
     def diff_multfac_smag(self):
         return self.xp.squeeze(
@@ -1084,16 +1111,16 @@ class IconDiffusionInitSavepoint(IconSavepoint):
     def diff_multfac_vn(self):
         return self.serializer.read("diff_multfac_vn", self.savepoint).astype(wpfloat)
 
-    def rho(self):
-        return self._get_field("rho", dims.CellDim, dims.KDim)
+    def rho(self) -> field.Field[qty.RhoOnCellK]:
+        return self._get_typed_field("rho", qty.RhoOnCellK)
 
     def construct_prognostics(self) -> states.PrognosticState:
         return states.PrognosticState(
-            w=field.Field(qty.WOnCellKHalf, self.w()),
-            vn=field.Field(qty.VnOnEdgeK, self.vn()),
-            exner=field.Field(qty.ExnerOnCellK, self.exner()),
-            theta_v=field.Field(qty.ThetaVOnCellK, self.theta_v()),
-            rho=field.Field(qty.RhoOnCellK, self.rho()),
+            w=self.w(),
+            vn=self.vn(),
+            exner=self.exner(),
+            theta_v=self.theta_v(),
+            rho=self.rho(),
         )
 
 
@@ -1130,11 +1157,11 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def z_kin_hor_e(self):
         return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
 
-    def vn_ie(self):
-        return self._get_field("vn_ie", dims.EdgeDim, dims.KHalfDim, dtype=vpfloat)
+    def vn_ie(self) -> field.Field[qty.VnOnEdgeKHalf]:
+        return self._get_typed_field("vn_ie", qty.VnOnEdgeKHalf, dtype=vpfloat)
 
-    def vt(self):
-        return self._get_field("vt", dims.EdgeDim, dims.KDim, dtype=vpfloat)
+    def vt(self) -> field.Field[qty.TangentialWindOnEdgeK]:
+        return self._get_typed_field("vt", qty.TangentialWindOnEdgeK, dtype=vpfloat)
 
     def bdy_divdamp(self):
         return self._get_field("bdy_divdamp", dims.KDim)
@@ -1142,65 +1169,75 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def divdamp_fac_o2(self):
         return self.serializer.read("divdamp_fac_o2", self.savepoint).astype(wpfloat)[0]
 
-    def ddt_exner_phy(self):
-        return self._get_field("ddt_exner_phy", dims.CellDim, dims.KDim, dtype=vpfloat)
+    def ddt_exner_phy(self) -> field.Field[qty.ExnerTendencyDueToSlowPhysicsOnCellK]:
+        return self._get_typed_field(
+            "ddt_exner_phy", qty.ExnerTendencyDueToSlowPhysicsOnCellK, dtype=vpfloat
+        )
 
-    def ddt_vn_phy(self):
-        return self._get_field("ddt_vn_phy", dims.EdgeDim, dims.KDim, dtype=vpfloat)
+    def ddt_vn_phy(self) -> field.Field[qty.NormalWindTendencyDueToSlowPhysicsOnEdgeK]:
+        return self._get_typed_field(
+            "ddt_vn_phy", qty.NormalWindTendencyDueToSlowPhysicsOnEdgeK, dtype=vpfloat
+        )
 
-    def exner_now(self):
-        return self._get_field("exner_now", dims.CellDim, dims.KDim)
+    def exner_now(self) -> field.Field[qty.ExnerOnCellK]:
+        return self._get_typed_field("exner_now", qty.ExnerOnCellK)
 
-    def exner_new(self):
-        return self._get_field("exner_new", dims.CellDim, dims.KDim)
+    def exner_new(self) -> field.Field[qty.ExnerOnCellK]:
+        return self._get_typed_field("exner_new", qty.ExnerOnCellK)
 
-    def theta_v_now(self):
-        return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+    def theta_v_now(self) -> field.Field[qty.ThetaVOnCellK]:
+        return self._get_typed_field("theta_v_now", qty.ThetaVOnCellK)
 
-    def theta_v_new(self):
-        return self._get_field("theta_v_new", dims.CellDim, dims.KDim)
+    def theta_v_new(self) -> field.Field[qty.ThetaVOnCellK]:
+        return self._get_typed_field("theta_v_new", qty.ThetaVOnCellK)
 
-    def rho_now(self):
-        return self._get_field("rho_now", dims.CellDim, dims.KDim)
+    def rho_now(self) -> field.Field[qty.RhoOnCellK]:
+        return self._get_typed_field("rho_now", qty.RhoOnCellK)
 
-    def rho_new(self):
-        return self._get_field("rho_new", dims.CellDim, dims.KDim)
+    def rho_new(self) -> field.Field[qty.RhoOnCellK]:
+        return self._get_typed_field("rho_new", qty.RhoOnCellK)
 
-    def exner_pr(self):
-        return self._get_field("exner_pr", dims.CellDim, dims.KDim)
+    def exner_pr(self) -> field.Field[qty.PerturbedExnerOnCellK]:
+        return self._get_typed_field("exner_pr", qty.PerturbedExnerOnCellK)
 
-    def grf_tend_rho(self):
-        return self._get_field("grf_tend_rho", dims.CellDim, dims.KDim)
+    def grf_tend_rho(self) -> field.Field[qty.GrfTendencyOfRhoOnCellK]:
+        return self._get_typed_field("grf_tend_rho", qty.GrfTendencyOfRhoOnCellK)
 
-    def grf_tend_thv(self):
-        return self._get_field("grf_tend_thv", dims.CellDim, dims.KDim)
+    def grf_tend_thv(self) -> field.Field[qty.GrfTendencyOfThetaVOnCellK]:
+        return self._get_typed_field("grf_tend_thv", qty.GrfTendencyOfThetaVOnCellK)
 
-    def grf_tend_vn(self):
-        return self._get_field("grf_tend_vn", dims.EdgeDim, dims.KDim)
+    def grf_tend_vn(self) -> field.Field[qty.GrfTendencyOfVnOnEdgeK]:
+        return self._get_typed_field("grf_tend_vn", qty.GrfTendencyOfVnOnEdgeK)
 
-    def w_concorr_c(self):
-        return self._get_field("w_concorr_c", dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+    def w_concorr_c(self) -> field.Field[qty.ContravariantCorrectionOnCellKHalf]:
+        return self._get_typed_field(
+            "w_concorr_c", qty.ContravariantCorrectionOnCellKHalf, dtype=vpfloat
+        )
 
-    def ddt_vn_apc_pc(self, ntnd):
-        return self._get_field_component("ddt_vn_apc_pc", ntnd, (dims.EdgeDim, dims.KDim))
+    def ddt_vn_apc_pc(self, ntnd) -> field.Field[qty.NormalWindAdvectiveTendencyOnEdgeK]:
+        return self._get_typed_field_component(
+            "ddt_vn_apc_pc", ntnd, qty.NormalWindAdvectiveTendencyOnEdgeK
+        )
 
-    def ddt_w_adv_pc(self, ntnd):
-        return self._get_field_component("ddt_w_adv_pc", ntnd, (dims.CellDim, dims.KHalfDim))
+    def ddt_w_adv_pc(self, ntnd) -> field.Field[qty.VerticalWindAdvectiveTendencyOnCellKHalf]:
+        return self._get_typed_field_component(
+            "ddt_w_adv_pc", ntnd, qty.VerticalWindAdvectiveTendencyOnCellKHalf
+        )
 
-    def grf_tend_w(self):
-        return self._get_field("grf_tend_w", dims.CellDim, dims.KHalfDim)
+    def grf_tend_w(self) -> field.Field[qty.GrfTendencyOfWOnCellKHalf]:
+        return self._get_typed_field("grf_tend_w", qty.GrfTendencyOfWOnCellKHalf)
 
-    def mass_fl_e(self):
-        return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
+    def mass_fl_e(self) -> field.Field[qty.HorizontalMassFluxOnEdgeK]:
+        return self._get_typed_field("mass_fl_e", qty.HorizontalMassFluxOnEdgeK)
 
-    def mass_flx_me(self):
-        return self._get_field("mass_flx_me", dims.EdgeDim, dims.KDim)
+    def mass_flx_me(self) -> field.Field[qty.HorizontalMassFluxOnEdgeK]:
+        return self._get_typed_field("mass_flx_me", qty.HorizontalMassFluxOnEdgeK)
 
-    def mass_flx_ic(self):
-        return self._get_field("mass_flx_ic", dims.CellDim, dims.KHalfDim)
+    def mass_flx_ic(self) -> field.Field[qty.VerticalMassFluxOnCellKHalf]:
+        return self._get_typed_field("mass_flx_ic", qty.VerticalMassFluxOnCellKHalf)
 
-    def rho_ic(self):
-        return self._get_field("rho_ic", dims.CellDim, dims.KHalfDim)
+    def rho_ic(self) -> field.Field[qty.RhoOnCellKHalf]:
+        return self._get_typed_field("rho_ic", qty.RhoOnCellKHalf)
 
     @IconSavepoint.optionally_registered(dtype=vpfloat)
     def rho_incr(self):
@@ -1215,8 +1252,10 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("vn_incr", dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
     @IconSavepoint.optionally_registered(dtype=vpfloat)
-    def exner_dyn_incr(self):
-        return self._get_field("exner_dyn_incr", dims.CellDim, dims.KDim, dtype=vpfloat)
+    def exner_dyn_incr(self) -> field.Field[qty.ExnerDynamicalIncrementOnCellK]:
+        return self._get_typed_field(
+            "exner_dyn_incr", qty.ExnerDynamicalIncrementOnCellK, dtype=vpfloat
+        )
 
     def scal_divdamp_o2(self) -> wpfloat:
         return self.serializer.read("scal_divdamp_o2", self.savepoint).astype(wpfloat)[0]
@@ -1224,11 +1263,11 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def scal_divdamp(self) -> fa.KField[wpfloat]:
         return self._get_field("scal_divdamp", dims.KDim)
 
-    def theta_v_ic(self):
-        return self._get_field("theta_v_ic", dims.CellDim, dims.KHalfDim)
+    def theta_v_ic(self) -> field.Field[qty.ThetaVOnCellKHalf]:
+        return self._get_typed_field("theta_v_ic", qty.ThetaVOnCellKHalf)
 
-    def vn_traj(self):
-        return self._get_field("vn_traj", dims.EdgeDim, dims.KDim)
+    def vn_traj(self) -> field.Field[qty.VnOnEdgeK]:
+        return self._get_typed_field("vn_traj", qty.VnOnEdgeK)
 
     def z_dwdz_dd(self):
         return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
@@ -1278,17 +1317,17 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def wgt_nnew_vel(self) -> wpfloat:
         return self.serializer.read("wgt_nnew_vel", self.savepoint).astype(wpfloat)[0]
 
-    def w_now(self):
-        return self._get_field("w_now", dims.CellDim, dims.KHalfDim)
+    def w_now(self) -> field.Field[qty.WOnCellKHalf]:
+        return self._get_typed_field("w_now", qty.WOnCellKHalf)
 
-    def w_new(self):
-        return self._get_field("w_new", dims.CellDim, dims.KHalfDim)
+    def w_new(self) -> field.Field[qty.WOnCellKHalf]:
+        return self._get_typed_field("w_new", qty.WOnCellKHalf)
 
-    def vn_now(self):
-        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
+    def vn_now(self) -> field.Field[qty.VnOnEdgeK]:
+        return self._get_typed_field("vn_now", qty.VnOnEdgeK)
 
-    def vn_new(self):
-        return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
+    def vn_new(self) -> field.Field[qty.VnOnEdgeK]:
+        return self._get_typed_field("vn_new", qty.VnOnEdgeK)
 
 
 class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
@@ -1938,41 +1977,41 @@ class IconGraupelSavepoint(IconSavepoint):
 
 
 class IconSatadExitSavepoint(IconSavepoint):
-    def temperature(self):
-        return self._get_field("temperature", dims.CellDim, dims.KDim)
+    def temperature(self) -> field.Field[qty.TemperatureOnCellK]:
+        return self._get_typed_field("temperature", qty.TemperatureOnCellK)
 
     def tracer(self, ntracer: TracerIndex):
         return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
 
-    def qv(self):
-        return self.tracer(QV)
+    def qv(self) -> field.Field[qty.QvOnCellK]:
+        return self._get_typed_field_component("tracers", QV, qty.QvOnCellK)
 
-    def qc(self):
-        return self.tracer(QC)
+    def qc(self) -> field.Field[qty.QcOnCellK]:
+        return self._get_typed_field_component("tracers", QC, qty.QcOnCellK)
 
-    def qi(self):
-        return self.tracer(QI)
+    def qi(self) -> field.Field[qty.QiOnCellK]:
+        return self._get_typed_field_component("tracers", QI, qty.QiOnCellK)
 
-    def qr(self):
-        return self.tracer(QR)
+    def qr(self) -> field.Field[qty.QrOnCellK]:
+        return self._get_typed_field_component("tracers", QR, qty.QrOnCellK)
 
-    def qs(self):
-        return self.tracer(QS)
+    def qs(self) -> field.Field[qty.QsOnCellK]:
+        return self._get_typed_field_component("tracers", QS, qty.QsOnCellK)
 
-    def qg(self):
-        return self.tracer(QG)
+    def qg(self) -> field.Field[qty.QgOnCellK]:
+        return self._get_typed_field_component("tracers", QG, qty.QgOnCellK)
 
     def exner(self):
         return self._get_field("exner", dims.CellDim, dims.KDim)
 
-    def virtual_temperature(self):
-        return self._get_field("virtual_temperature", dims.CellDim, dims.KDim)
+    def virtual_temperature(self) -> field.Field[qty.VirtualTemperatureOnCellK]:
+        return self._get_typed_field("virtual_temperature", qty.VirtualTemperatureOnCellK)
 
-    def pressure(self):
-        return self._get_field("pressure", dims.CellDim, dims.KDim)
+    def pressure(self) -> field.Field[qty.PressureOnCellK]:
+        return self._get_typed_field("pressure", qty.PressureOnCellK)
 
-    def pressure_ifc(self):
-        return self._get_field("pressure_ifc", dims.CellDim, dims.KHalfDim)
+    def pressure_ifc(self) -> field.Field[qty.PressureOnCellKHalf]:
+        return self._get_typed_field("pressure_ifc", qty.PressureOnCellKHalf)
 
     def pressure_sfc(self):
         return self._get_field("pressure_sfc", dims.CellDim)
@@ -2318,8 +2357,8 @@ class IconMuphysSavepoint(IconSavepoint):
     block (cloud_mig = satad + graupel + satad) in aes_phy_main. tend_ta/tend_tracers
     are the prm_tend accumulators: exit minus init isolates the mig contribution."""
 
-    def temperature(self):
-        return self._get_field("temperature", dims.CellDim, dims.KDim)
+    def temperature(self) -> field.Field[qty.TemperatureOnCellK]:
+        return self._get_typed_field("temperature", qty.TemperatureOnCellK)
 
     def tracer(self, ntracer: TracerIndex):
         return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
@@ -2330,34 +2369,34 @@ class IconMuphysSavepoint(IconSavepoint):
     def tend_tracer(self, ntracer: TracerIndex):
         return self._get_field_component("tend_tracers", ntracer, (dims.CellDim, dims.KDim))
 
-    def qv(self):
-        return self.tracer(QV)
+    def qv(self) -> field.Field[qty.QvOnCellK]:
+        return self._get_typed_field_component("tracers", QV, qty.QvOnCellK)
 
-    def qc(self):
-        return self.tracer(QC)
+    def qc(self) -> field.Field[qty.QcOnCellK]:
+        return self._get_typed_field_component("tracers", QC, qty.QcOnCellK)
 
-    def qi(self):
-        return self.tracer(QI)
+    def qi(self) -> field.Field[qty.QiOnCellK]:
+        return self._get_typed_field_component("tracers", QI, qty.QiOnCellK)
 
-    def qr(self):
-        return self.tracer(QR)
+    def qr(self) -> field.Field[qty.QrOnCellK]:
+        return self._get_typed_field_component("tracers", QR, qty.QrOnCellK)
 
-    def qs(self):
-        return self.tracer(QS)
+    def qs(self) -> field.Field[qty.QsOnCellK]:
+        return self._get_typed_field_component("tracers", QS, qty.QsOnCellK)
 
-    def qg(self):
-        return self.tracer(QG)
+    def qg(self) -> field.Field[qty.QgOnCellK]:
+        return self._get_typed_field_component("tracers", QG, qty.QgOnCellK)
 
 
 class IconMuphysInitSavepoint(IconMuphysSavepoint):
     def dz(self):
         return self._get_field("dz", dims.CellDim, dims.KDim)
 
-    def rho(self):
-        return self._get_field("rho", dims.CellDim, dims.KDim)
+    def rho(self) -> field.Field[qty.RhoOnCellK]:
+        return self._get_typed_field("rho", qty.RhoOnCellK)
 
-    def pressure(self):
-        return self._get_field("pressure", dims.CellDim, dims.KDim)
+    def pressure(self) -> field.Field[qty.PressureOnCellK]:
+        return self._get_typed_field("pressure", qty.PressureOnCellK)
 
     def dtime(self):
         return self.serializer.read("dtime", self.savepoint)[0]

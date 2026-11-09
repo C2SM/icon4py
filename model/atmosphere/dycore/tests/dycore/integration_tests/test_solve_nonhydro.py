@@ -191,9 +191,9 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.dtime()
 
-    forcing = utils.construct_forcing(sp, icon_grid, backend)
-    dycore_diagnostics = utils.construct_dycore_diagnostics(sp)
-    prep_adv = utils.construct_prep_advection(sp, icon_grid, backend)
+    forcing = utils.construct_forcing_state_from_savepoint(sp, icon_grid, backend)
+    dycore_diagnostics = utils.construct_dycore_diagnostic_state_from_savepoint(sp)
+    prep_adv = utils.construct_prep_advection_state_from_savepoint(sp, icon_grid, backend)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
@@ -515,9 +515,11 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = init_savepoint.dtime()
     prepare_fluxes_for_advection = init_savepoint.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = utils.construct_prep_advection(init_savepoint, icon_grid, backend)
-    forcing = utils.construct_forcing(init_savepoint, icon_grid, backend)
-    dycore_diagnostics = utils.construct_dycore_diagnostics(init_savepoint)
+    prep_adv = utils.construct_prep_advection_state_from_savepoint(
+        init_savepoint, icon_grid, backend
+    )
+    forcing = utils.construct_forcing_state_from_savepoint(init_savepoint, icon_grid, backend)
+    dycore_diagnostics = utils.construct_dycore_diagnostic_state_from_savepoint(init_savepoint)
 
     z_fields = solve_nh.IntermediateFields(
         horizontal_pressure_gradient=init_savepoint.z_gradh_exner(),
@@ -711,9 +713,9 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.dtime()
     prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = utils.construct_prep_advection(sp, icon_grid, backend)
-    forcing = utils.construct_forcing(sp, icon_grid, backend)
-    dycore_diagnostics = utils.construct_dycore_diagnostics(sp)
+    prep_adv = utils.construct_prep_advection_state_from_savepoint(sp, icon_grid, backend)
+    forcing = utils.construct_forcing_state_from_savepoint(sp, icon_grid, backend)
+    dycore_diagnostics = utils.construct_dycore_diagnostic_state_from_savepoint(sp)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
@@ -828,12 +830,12 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.dtime()
     prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = utils.construct_prep_advection(sp, icon_grid, backend)
+    prep_adv = utils.construct_prep_advection_state_from_savepoint(sp, icon_grid, backend)
 
     linit = sp.get_metadata("linit").get("linit")
 
-    forcing = utils.construct_forcing(sp, icon_grid, backend)
-    dycore_diagnostics = utils.construct_dycore_diagnostics(
+    forcing = utils.construct_forcing_state_from_savepoint(sp, icon_grid, backend)
+    dycore_diagnostics = utils.construct_dycore_diagnostic_state_from_savepoint(
         sp, swap_vertical_wind_advective_tendency=not linit
     )
     prognostic_states = utils.create_prognostic_states(sp)
