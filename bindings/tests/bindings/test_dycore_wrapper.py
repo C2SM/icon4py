@@ -510,7 +510,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         is_iau_active=False,
         iau_wgt_dyn=0.0,
     )
-    expected_out = solve_nh.SolveNonhydro.Output(
+    expected_output = solve_nh.SolveNonhydro.Output(
         rho=field.Field(qty.RhoOnCellK, sp.rho_new()),
         w=field.Field(qty.WOnCellKHalf, sp.w_new()),
         vn=field.Field(qty.VnOnEdgeK, sp.vn_new()),
@@ -749,7 +749,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         _, captured_kwargs = mock_init.call_args
         result, error_message = utils.compare_objects(captured_kwargs["input"], expected_input)
         assert result, f"Input comparison failed: {error_message}"
-        result, error_message = utils.compare_objects(captured_kwargs["output"], expected_out)
+        result, error_message = utils.compare_objects(captured_kwargs["output"], expected_output)
         assert result, f"Output comparison failed: {error_message}"
 
 
