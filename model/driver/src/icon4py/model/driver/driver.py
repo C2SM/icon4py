@@ -123,7 +123,7 @@ class Icon4pyDriver:
         return f"{self.__class__.__name__}:{func.__name__}"
 
     @functools.cached_property
-    def _dry_air_tracers(self) -> tuple[gtx.Field[Any, Any], ...]:
+    def _dry_air_tracers(self) -> tuple[gtx.Field, ...]:
         """qv, qc, qi, qr, qs, qg for the output diagnostics: zero, the dry-air path."""
         return tuple(
             data_alloc.zero_field(
@@ -133,7 +133,7 @@ class Icon4pyDriver:
         )
 
     @functools.cached_property
-    def _pressure_ifc_on_model_levels(self) -> gtx.Field[Any, Any]:
+    def _pressure_ifc_on_model_levels(self) -> gtx.Field:
         """Scratch of the hydrostatic pressure integration for output."""
         return data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator

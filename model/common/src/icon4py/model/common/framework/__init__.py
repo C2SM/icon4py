@@ -71,7 +71,7 @@ class State:
         dataclasses.dataclass(frozen=True, eq=False, kw_only=True)(cls)
 
 
-def fields(state: State, kind: type[Quantity] = Quantity) -> dict[str, Field[Any]]:
+def fields(state: State, kind: type[Quantity] = Quantity) -> dict[str, Field]:
     """
     The present leaves of a state whose quantity is a `kind`, by name, in declaration order.
 

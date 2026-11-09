@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import datetime
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 
@@ -50,7 +49,7 @@ def time_control(
 
 
 def driver(
-    grid: base_grid.Grid, processes: Sequence[physics_process.PhysicsProcess[Any, Any]] = ()
+    grid: base_grid.Grid, processes: Sequence[physics_process.PhysicsProcess] = ()
 ) -> physics_driver.PhysicsDriver:
     # neutral geometry: primal_normal_cell_x = 1, primal_normal_cell_y = 0, c_lin_e = 0.5, so
     # the two-neighbour projection of a uniform u-tendency onto the edges is the identity

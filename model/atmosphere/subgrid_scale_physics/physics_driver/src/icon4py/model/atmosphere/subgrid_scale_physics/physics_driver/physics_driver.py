@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
@@ -92,7 +92,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
 
     def __init__(
         self,
-        processes: Sequence[physics_process.PhysicsProcess[Any, Any]],
+        processes: Sequence[physics_process.PhysicsProcess],
         *,
         dtime: time.RelativeTime,
         grid: base_grid.Grid,
@@ -108,13 +108,13 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self.dtime = dtime
         self.grid = grid
         self.allocator = model_backends.get_allocator(backend)
-        self._process_outputs: dict[physics_process.PhysicsProcess[Any, Any], fw.State] = {
+        self._process_outputs: dict[physics_process.PhysicsProcess, fw.State] = {
             process: fw.allocate(process.Output, self.grid, self.allocator) for process in processes
         }
         # the diagnostics the processes read, derived here each step
         self.diagnostics = fw.allocate(states.Diagnostics, grid, self.allocator)
         # one sum per tendency the processes emit, by output name, made when first seen
-        self.accumulators: dict[str, field.Field[Any]] = {}
+        self.accumulators: dict[str, field.Field] = {}
 
         cells = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_cells)}
         edges = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_edges)}

@@ -20,7 +20,6 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 import xarray as xr
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import framework as fw
 from icon4py.model.common.decomposition import definitions as decomposition_defs
@@ -164,7 +163,7 @@ def test_written_attributes_are_those_of_the_leaf_quantity(grid: base.Grid) -> N
         assert name == quantity.standard_name
 
 
-def test_data_is_host_numpy(grid: base.Grid, backend: gtx_backend.Backend[Any] | None) -> None:
+def test_data_is_host_numpy(grid: base.Grid, backend: gtx_typing.Backend | None) -> None:
     """With a GPU backend the leaves are device buffers and the host transfer is exercised."""
     state = stored_state(grid, allocator=backend)
 

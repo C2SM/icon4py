@@ -18,7 +18,7 @@ driver before each store.
 import datetime
 import pathlib
 import uuid
-from typing import Any, Final
+from typing import Final
 
 import xarray as xr
 
@@ -117,7 +117,7 @@ class IOMonitor(fw.Component["IOMonitor.Input", fw.Empty]):
         state: dict[str, xr.DataArray] = {}
         if self.writer.at_capture_time():
             for name, leaf in self.selected.items():
-                field_: field.Field[Any] = getattr(input, leaf)
+                field_: field.Field = getattr(input, leaf)
                 state[name] = io_utils.to_data_array(
                     field_, _attributes(field_.quantity), to_host=True
                 )

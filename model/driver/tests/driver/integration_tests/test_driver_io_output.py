@@ -18,9 +18,9 @@ Being a datatest, it requires the JW grid and experiment configuration.
 import pathlib
 from typing import Any
 
+import gt4py.next.typing as gtx_typing
 import pytest
 import xarray as xr
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
@@ -59,7 +59,7 @@ def test_driver_writes_output(
     download_ser_data: None,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_backend.Backend[Any],
+    backend: gtx_typing.Backend,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)

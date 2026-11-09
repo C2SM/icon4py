@@ -19,7 +19,7 @@ from icon4py.model.common.quantity import Quantity
 
 
 @dataclasses.dataclass(frozen=True, eq=False, init=False, repr=False)
-class Field[Q: Quantity](nd_array_field.NdArrayField[Any, Any]):
+class Field[Q: Quantity](nd_array_field.NdArrayField):
     """
     A gt4py field tagged by its quantity: `Field(quantity, data)` shares `data`'s buffer.
 
@@ -30,8 +30,8 @@ class Field[Q: Quantity](nd_array_field.NdArrayField[Any, Any]):
     quantity: type[Q]
 
     # the plain gt4py field class of each array namespace -> its tagged subclass
-    _TAGGED: ClassVar[dict[type, type[Field[Any]]]] = {}
-    _plain: ClassVar[type[nd_array_field.NdArrayField[Any, Any]]]
+    _TAGGED: ClassVar[dict[type, type[Field]]] = {}
+    _plain: ClassVar[type[nd_array_field.NdArrayField]]
 
     if typing.TYPE_CHECKING:
         # implemented by gt4py's FieldBuiltinFuncRegistry, which mypy does not see
@@ -44,7 +44,7 @@ class Field[Q: Quantity](nd_array_field.NdArrayField[Any, Any]):
         plain = data._plain if isinstance(data, Field) else type(data)
         return typing.cast(Self, object.__new__(Field._TAGGED[plain]))
 
-    def __init__(self, quantity: type[Q], data: gtx.Field[Any, Any]) -> None:
+    def __init__(self, quantity: type[Q], data: gtx.Field) -> None:
         object.__setattr__(self, "_domain", data.domain)
         object.__setattr__(self, "_ndarray", data.ndarray)
         object.__setattr__(self, "quantity", quantity)

@@ -115,7 +115,7 @@ type _ProcessBuilder = Callable[
         process_time_control.ProcessTimeControl,
         gtx_typing.Backend | None,
     ],
-    physics_process.PhysicsProcess[Any, Any],
+    physics_process.PhysicsProcess,
 ]
 
 # the physics processes, by the name of their section in the experiment configuration; the
@@ -570,7 +570,7 @@ def spinup_second_order_divdamp_factor(
 
 
 def find_maximum_from_field(
-    input_field: gtx.Field[Any, Any],
+    input_field: gtx.Field,
 ) -> tuple[tuple[int, ...], float]:
     array_ns = data_alloc.array_namespace(input_field.ndarray)
     max_indices = array_ns.unravel_index(
