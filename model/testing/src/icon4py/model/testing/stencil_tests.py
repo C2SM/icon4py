@@ -231,18 +231,27 @@ def _input_data_fixture(
         # its own derived generator, so a single-case rerun with `-k` and a case on an
         # xdist worker see the same data as in a full run.
         ids = kwargs.get("ids")
+        if ids is not None and not callable(ids):
+            raise TypeError(
+                "The 'ids' of a parametrized 'input_data' fixture must be a callable: the"
+                " parametrization id feeds the seed derivation."
+            )
+        # `None` means pytest's default naming, which stringifies the param
+        ids = str if ids is None else ids
+        if "request" not in inspect.signature(plain).parameters:
+            raise TypeError(
+                "A parametrized 'input_data' fixture must declare a 'request' parameter: the"
+                " parametrization id feeds the seed derivation."
+            )
         unwrapped = plain
 
         def seeded(
             data_alloc: DataAllocationWrapper, request: pytest.FixtureRequest, **kwargs: Any
         ) -> Any:
-            param_id = str(ids(request.param)) if callable(ids) else str(request.param)
+            param_id = str(ids(request.param))
             return unwrapped(data_alloc.for_param(param_id), request=request, **kwargs)
 
         functools.wraps(plain)(seeded)
-        # pytest introspects this signature to resolve the fixture arguments, which it
-        # passes by keyword; `request` carries the parametrization id.
-        seeded.__signature__ = inspect.signature(plain)
         plain = cast(types.FunctionType, seeded)
 
     kwargs.setdefault("scope", "class")
@@ -349,7 +358,8 @@ class DataAllocationWrapper:
 
     `rng` is the suite's input stream, created once by the `data_alloc` fixture;
     `reference_rng` is the first spawned child of `rng`, reserved for `reference`
-    bodies that declare an `rng` parameter.
+    bodies that declare an `rng` parameter. Parametrized cases derive both streams
+    per case through `for_param`.
     """
 
     grid: base.Grid
@@ -365,7 +375,8 @@ class DataAllocationWrapper:
         A wrapper whose generator pools this generator's seed-sequence entropy with `param_id`.
 
         Hand-rolled parametrized `input_data` fixtures call it so that each parametrization
-        instance draws its own stream, the same however pytest selects the cases.
+        instance draws its own stream, and `test_and_benchmark` calls it with the case id to
+        key the reference stream per case, the same however pytest selects the cases.
         """
         entropy = self.rng.bit_generator.seed_seq.entropy
         entropy = entropy if isinstance(entropy, list) else [entropy]
@@ -625,9 +636,14 @@ def test_and_benchmark(
     if not skip_verification:
         # `reference` bodies may draw their own random data and have no `data_alloc`
         # in scope, so a generator on the stream reserved for the reference is passed
-        # when the reference declares an `rng` parameter.
+        # when the reference declares an `rng` parameter. Parametrized cases key that
+        # stream on the case id, so `-k`, a full run, and any xdist worker verify
+        # against the same reference data.
+        callspec = getattr(request.node, "callspec", None)
+        case_key = callspec.id if callspec is not None else ""
+        case_alloc = data_alloc if not case_key else data_alloc.for_param(case_key)
         reference_kwargs: dict[str, Any] = (
-            {"rng": data_alloc.reference_rng} if _reference_expects_rng(self.reference) else {}
+            {"rng": case_alloc.reference_rng} if _reference_expects_rng(self.reference) else {}
         )
         reference_outputs = self.reference(
             grid=grid,

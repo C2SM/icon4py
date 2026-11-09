@@ -150,9 +150,10 @@ class TestInputDataFixture:
         assert fixture.__func__._fixture_function_marker.scope == "class"
 
     def test_forwards_keyword_arguments_to_pytest_fixture(self):
-        fixture = stencil_tests.input_data_fixture(params=[1, 2], scope="function")(
-            valid_input_data()
-        )
+        def input_data(data_alloc, request):
+            return {"field": data_alloc.random_field(dims.CellDim)}
+
+        fixture = stencil_tests.input_data_fixture(params=[1, 2], scope="function")(input_data)
         marker = fixture.__func__._fixture_function_marker
 
         assert getattr(fixture, "__stencil_test_input_fixture__", False)
@@ -179,6 +180,24 @@ class TestInputDataFixture:
         np.testing.assert_array_equal(
             field.asnumpy(), wrapper.for_param("1").random_field(dims.CellDim).asnumpy()
         )
+
+    def test_rejects_a_parametrized_fixture_without_request(self):
+        """Regression: the wrapper needs `request` to read the parametrization id."""
+
+        def input_data(data_alloc):
+            return {"field": data_alloc.random_field(dims.CellDim)}
+
+        with pytest.raises(TypeError, match="must declare a 'request' parameter"):
+            stencil_tests.input_data_fixture(params=[1, 2])(input_data)
+
+    def test_rejects_sequence_ids(self):
+        """Regression: an `ids` sequence was ignored, so params with the same `str()` collided."""
+
+        def input_data(data_alloc, request):
+            return {"field": data_alloc.random_field(dims.CellDim)}
+
+        with pytest.raises(TypeError, match="must be a callable"):
+            stencil_tests.input_data_fixture(params=[10, 20], ids=["a", "b"])(input_data)
 
     def test_accepts_an_existing_staticmethod(self):
         fixture = stencil_tests.input_data_fixture(staticmethod(valid_input_data()))
@@ -764,3 +783,54 @@ class TestVerifyData:
                 input_data={"out": (cell_field([1.0]), cell_field([2.0]))},
                 reference_outputs={"out": (np.array([1.0]),)},
             )
+
+
+# -- test_and_benchmark ----------------------------------------------------------------
+
+
+class TestTestAndBenchmark:
+    @pytest.mark.parametrize(
+        ("node", "case_key"),
+        [
+            pytest.param(
+                types.SimpleNamespace(callspec=types.SimpleNamespace(id="a")),
+                "a",
+                id="parametrized",
+            ),
+            pytest.param(types.SimpleNamespace(), "", id="not_parametrized"),
+        ],
+    )
+    def test_passes_the_reference_the_case_reference_stream(self, grid, node, case_key):
+        """The reference draws from the stream keyed on the case, through `for_param`."""
+        seen: dict[str, np.ndarray] = {}
+
+        def reference(grid, *, rng=None, out=None):
+            seen["draw"] = rng.random(3)
+            return {"out": out}
+
+        suite = make_suite(OUTPUTS=("out",), reference=stencil_tests.static_reference(reference))
+        wrapper = _seeded_wrapper(grid, "module:Suite:")
+        # the class-level stream is stateful, so its expectation is drawn from a fresh,
+        # identically seeded wrapper; `for_param` derives a fresh generator per call
+        case_alloc = (
+            wrapper.for_param(case_key) if case_key else _seeded_wrapper(grid, "module:Suite:")
+        )
+        expected = case_alloc.reference_rng.random(3)
+        request = types.SimpleNamespace(
+            config=types.SimpleNamespace(getoption=lambda name: False), node=node
+        )
+
+        stencil_tests.test_and_benchmark(
+            suite(),
+            benchmark=None,
+            grid=grid,
+            input_data={"out": cell_field([0.0, 0.0, 0.0])},
+            data_alloc=wrapper,
+            configured_program=lambda **kwargs: None,
+            request=request,
+        )
+
+        np.testing.assert_array_equal(seen["draw"], expected)
+        if case_key:
+            # the per-case keying engaged: this is not the class-level stream
+            assert not np.array_equal(seen["draw"], wrapper.reference_rng.random(3))
