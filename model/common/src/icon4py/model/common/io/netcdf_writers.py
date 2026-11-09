@@ -299,17 +299,22 @@ class NETCDFWriter:
         half_levels.setncatts(metadata.HALF_LEVEL_ATTRIBUTES)
         heights = self.dataset.createVariable("height", np.float64, (writers.MODEL_HALF_LEVEL,))
         heights.setncatts(metadata.HEIGHT_ATTRIBUTES)
+        global_index = self._create_global_index()
+        if self._is_distributed():
+            # collective: leave define mode on all ranks before the root rank writes data
+            self.dataset._enddef()
         if self._is_root():
             # fixed-size coordinates, identical on all ranks: one writer suffices
             levels[:] = np.arange(self.num_levels, dtype=np.int32)
             half_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
             heights[:] = data_alloc.as_numpy(self._vertical_params.interface_physical_height)
-        self._write_global_index()
+        self._fill_global_index(global_index)
 
-    def _write_global_index(self) -> None:
-        """Create and fill the ``global_index_<dim>`` coordinates of a rank-block file."""
+    def _create_global_index(self) -> dict[str, Any]:
+        """Define the ``global_index_<dim>`` coordinates of a rank-block file (collective)."""
+        variables: dict[str, Any] = {}
         if self._rank_blocks is None:
-            return
+            return variables
         assert self.dataset is not None
         for dim_name, block in self._rank_blocks.items():
             chunk = self._horizontal_chunk(dim_name)
@@ -329,6 +334,14 @@ class NETCDFWriter:
                     ),
                 }
             )
+            variables[dim_name] = variable
+        return variables
+
+    def _fill_global_index(self, variables: dict[str, Any]) -> None:
+        """Fill this rank's blocks of the ``global_index_<dim>`` coordinates."""
+        assert self._rank_blocks is not None or not variables
+        for dim_name, variable in variables.items():
+            block = self._rank_blocks[dim_name]  # type: ignore[index]
             # each rank writes its whole block: the owned global indices followed by
             # explicit -1 padding. The zarr store encodes the -1 as the array's fill
             # value instead; a netCDF _FillValue attribute is decoded as a missing
@@ -391,10 +404,14 @@ class NETCDFWriter:
                 canonical_slice.shape[:-1], horizontal_chunk, canonical_slice.dtype.itemsize
             )
             create_kwargs["chunksizes"] = (1, *middle_chunks, max(horizontal_chunk, 1))
-        if self._rank_blocks is not None and np.issubdtype(canonical_slice.dtype, np.floating):
-            # the NaN fill makes any never-written entry of a floating variable read
-            # as missing (other dtypes read as the netCDF default fill values)
-            create_kwargs["fill_value"] = np.nan
+        if self._rank_blocks is not None:
+            if self._is_distributed():
+                # every entry of the block is written, padding included: no fill (NC_NOFILL)
+                create_kwargs["fill_value"] = False
+            elif np.issubdtype(canonical_slice.dtype, np.floating):
+                # a single writer may leave other ranks' regions unwritten (tests do);
+                # the NaN fill makes them read as missing
+                create_kwargs["fill_value"] = np.nan
         dimensions = (writers.TIME, *(str(d) for d in canonical_slice.dims))
         variable = self.dataset.createVariable(
             var_name, canonical_slice.dtype, dimensions, **create_kwargs

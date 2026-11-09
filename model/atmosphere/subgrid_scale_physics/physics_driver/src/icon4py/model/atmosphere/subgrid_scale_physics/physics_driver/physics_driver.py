@@ -24,6 +24,8 @@ from icon4py.model.common.decomposition import definitions as decomposition
 
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common import field_type_aliases as fa, type_alias as ta
@@ -125,6 +127,10 @@ class PhysicsDriver:
                     process.name, process.component.outputs_properties
                 )
             )
+
+    def diagnostic_outputs(self) -> Iterator[physics_state.DiagnosticOutput]:
+        """The processes' diagnostic output buffers with their metadata, for the model output."""
+        return self._state.diagnostic_outputs()
 
     @classmethod
     def from_sources(
