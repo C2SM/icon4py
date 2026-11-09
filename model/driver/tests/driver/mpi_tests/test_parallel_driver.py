@@ -113,6 +113,14 @@ def _run_driver_compare_single_multi_rank(
         atol = 1e-9
         rtol = 0.0
     atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=rtol)
+    if experiment_description is test_defs.Experiments.EXCLAIM_APE_AES:
+        # TODO (Yilu): drop this tolerance once #1535 is merged. The multi-rank global sum is
+        # order-dependent, so the moisture rescale of the APE initial condition makes qv differ
+        # by ~1e-14 relative from step 0, and muphys amplifies that to ~2e-11 in qc, qi and qr.
+        # #1535 ports ICON's order-insensitive sum, after which this experiment is bitwise
+        # reproducible (verified on #1534). The tolerance still catches a missing halo exchange
+        # (1e-5 and more).
+        atol, rtol = 1e-16, 1e-9
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
@@ -126,12 +134,7 @@ def _run_driver_compare_single_multi_rank(
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
-    single_rank_config = config.with_overrides(
-        driver={
-            "output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}",
-            "end_of_simulation": end_of_simulation,
-        }
-    )
+    single_rank_config = config.with_overrides(driver={"end_of_simulation": end_of_simulation})
     single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=single_rank_config.vertical_grid,
@@ -145,12 +148,7 @@ def _run_driver_compare_single_multi_rank(
         backend=backend,
     )
 
-    multi_rank_config = config.with_overrides(
-        driver={
-            "output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
-            "end_of_simulation": end_of_simulation,
-        }
-    )
+    multi_rank_config = config.with_overrides(driver={"end_of_simulation": end_of_simulation})
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=multi_rank_config.vertical_grid,

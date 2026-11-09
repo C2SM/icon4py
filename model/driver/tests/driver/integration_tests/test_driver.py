@@ -86,39 +86,45 @@ def timeloop_diffusion_linit_exit() -> bool:
 @pytest.mark.datatest
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
-@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "experiment_description, timeloop_date_init, timeloop_date_exit, step_date_exit",
     [
-        (
+        pytest.param(
             test_defs.Experiments.JW,
             "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
+            marks=pytest.mark.single_precision_ready,
         ),
-        (
+        pytest.param(
             test_defs.Experiments.GAUSS3D,
             "2001-01-01T00:00:00.000",
             "2001-01-01T00:00:04.000",
             "2001-01-01T00:00:04.000",
+            marks=pytest.mark.single_precision_ready,
         ),
-        (
+        # TODO (Yilu): mark single_precision_ready once the physics are: tmx, surface and
+        #   the physics driver still hand Python floats (dt, prefactor, config values) to
+        #   float32 programs, and the physics fields need single-precision tolerances.
+        pytest.param(
             test_defs.Experiments.EXCLAIM_APE_AES,
             "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
         ),
-        (
+        pytest.param(
             test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:00.000",
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
+            marks=pytest.mark.single_precision_ready,
         ),
-        (
+        pytest.param(
             test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
+            marks=pytest.mark.single_precision_ready,
         ),
     ],
 )
@@ -172,7 +178,6 @@ def test_driver(
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={
-            "output_path": tmp_path / "ci_driver_output",
             # 'start_of_simulation' stays at the beginning of the experiment: the second
             # MCH_CH_R04B09 case starts the time loop later, i.e. it restarts.
             "start_of_timestepping": datetime.datetime.fromisoformat(timeloop_date_init).replace(

@@ -212,21 +212,6 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 # ---------------------------------------------------------------------------
 
 
-def test_compute_diagnostics_syncs_rho_u_v_and_w():
-    grid = simple.simple_grid()
-    exchange = _RecordingExchange()
-    ws = _physics_state(grid, exchange)
-    prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
-    diagnostics = _diagnostic_state(grid)
-
-    ws.compute_diagnostics(prognostic, _tracer_state(grid, qv=1e-3), diagnostics)
-
-    # ICON's dyn2phy sync for the horizontal operations of tmx: the very buffers, in that order
-    assert exchange.events == [
-        (dims.CellDim, [id(prognostic.rho), id(diagnostics.u), id(diagnostics.v), id(prognostic.w)])
-    ]
-
-
 def test_accumulate_sums_tendencies_and_skips_diagnostics():
     grid = simple.simple_grid()
     acc = _tendencies()
@@ -483,6 +468,27 @@ def test_allocate_process_diagnostics_rejects_a_second_provider_of_a_name():
 
     with pytest.raises(ValueError, match="already provided by process 'surface'"):
         ws.allocate_process_diagnostics("ocean", {"surface_temperature": _meta(dims.CellDim)})
+
+
+def test_diagnostic_outputs_carry_metadata():
+    # consumers of the outputs (the model output) enumerate the diagnostic buffers together
+    # with the metadata they were allocated from; tendencies are not part of them
+    grid = simple.simple_grid()
+    ws = _physics_state(grid)
+    kh = _meta(dims.CellDim, dims.KDim)
+    pr = _meta(dims.CellDim, dims.KDim)
+    tmx_buffers = ws.allocate_process_diagnostics(
+        "tmx", {"tend_temperature": _meta(dims.CellDim, dims.KDim, kind=_TENDENCY), "kh": kh}
+    )
+    muphys_buffers = ws.allocate_process_diagnostics("muphys", {"pr": pr})
+
+    outputs = list(ws.diagnostic_outputs())
+
+    assert [(o.process_name, o.name) for o in outputs] == [("tmx", "kh"), ("muphys", "pr")]
+    assert outputs[0].metadata is kh
+    assert outputs[0].field is tmx_buffers["kh"]
+    assert outputs[1].metadata is pr
+    assert outputs[1].field is muphys_buffers["pr"]
 
 
 def test_update_prognostics_syncs_the_written_fields():

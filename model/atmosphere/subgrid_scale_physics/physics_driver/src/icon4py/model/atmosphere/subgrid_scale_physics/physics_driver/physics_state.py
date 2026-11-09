@@ -15,7 +15,7 @@ process gets as input the state that the previous ones have already updated. The
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, NamedTuple
 
 import gt4py.next as gtx
 
@@ -45,7 +45,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
 
     import gt4py.next.typing as gtx_typing
 
@@ -65,6 +65,15 @@ MOISTURE_SPECIES: Final = ("qv", "qc", "qi", "qr", "qs", "qg")
 def tendency_name(name: str) -> str:
     """The output name of the tendency of the state field ``name``."""
     return f"tend_{name}"
+
+
+class DiagnosticOutput(NamedTuple):
+    """One diagnostic output buffer of a process together with its declared metadata."""
+
+    process_name: str
+    name: str
+    metadata: model.FieldMetaData
+    field: gtx.Field
 
 
 class PhysicsState:
@@ -233,8 +242,9 @@ class PhysicsState:
         # The caller's diagnostic state — linked by every compute_diagnostics call
         self._diagnostics: diagnostic_state.DiagnosticState | None = None
 
-        # Diagnostic output buffers, keyed by process name, then by output name
+        # Diagnostic output buffers and their metadata, keyed by process name, then by output name
         self._process_diagnostics: dict[str, dict[str, gtx.Field]] = {}
+        self._process_diagnostics_metadata: dict[str, dict[str, model.FieldMetaData]] = {}
 
     @property
     def diagnostics(self) -> diagnostic_state.DiagnosticState:
@@ -315,6 +325,10 @@ class PhysicsState:
         # 4. Halo sync for the horizontal operations of the physics, as ICON's dyn2phy
         #    does for the Smagorinsky scheme: tmx interpolates w to the vertices and
         #    edges of its owned cells, and diffusion left the halo of w stale.
+        #    TODO (Yilu): drop this exchange in a follow-up PR. It duplicates work: tmx
+        #    syncs u and v itself (as ICON's Compute_diagnostics does) and the dycore
+        #    syncs rho at the end of the step; only w is stale here. Sync w and rho at
+        #    the end of diffusion instead.
         self._exchange.exchange(
             dims.CellDim, self.rho, self.diagnostics.u, self.diagnostics.v, self.w
         )
@@ -378,10 +392,14 @@ class PhysicsState:
 
         A diagnostic name has one provider: a second process declaring it is rejected, so
         that ``diagnostic_output`` can hand it to a reader by name alone.
+
+        ``diagnostic_outputs`` enumerates all buffers with the metadata they were allocated
+        from, for consumers such as the model output.
         """
         if process_name in self._process_diagnostics:
             raise ValueError(f"Process '{process_name}' already has output buffers.")
         buffers: dict[str, gtx.Field] = {}
+        metadata: dict[str, model.FieldMetaData] = {}
         for name, props in outputs_properties.items():
             if props.kind == model.FieldKind.TENDENCY:
                 continue
@@ -397,7 +415,9 @@ class PhysicsState:
             buffers[name] = data_alloc.zero_field(
                 self._grid, *props.dims, allocator=self._allocator
             )
+            metadata[name] = props
         self._process_diagnostics[process_name] = buffers
+        self._process_diagnostics_metadata[process_name] = metadata
         return buffers
 
     def _provider_of(self, name: str) -> str | None:
@@ -417,6 +437,20 @@ class PhysicsState:
                 f"No process provides the diagnostic '{name}'; is the process computing it enabled?"
             )
         return self._process_diagnostics[provider][name]
+
+    def diagnostic_outputs(self) -> Iterator[DiagnosticOutput]:
+        """Every allocated diagnostic buffer with its metadata, in allocation order.
+
+        This is how the model output reaches the process diagnostics (``driver_io``).
+        """
+        for process_name, buffers in self._process_diagnostics.items():
+            for name, field in buffers.items():
+                yield DiagnosticOutput(
+                    process_name=process_name,
+                    name=name,
+                    metadata=self._process_diagnostics_metadata[process_name][name],
+                    field=field,
+                )
 
     def update_prognostics(
         self,
