@@ -163,7 +163,7 @@ def random_mask(
     allocator: gtx_typing.Allocator | None = None,
     rng: np.random.Generator | None = None,
 ) -> gtx.Field:
-    """A field with half of its entries set, in random positions, drawn with `rng`, or from OS entropy if `None`."""
+    """A field with half of its entries set, in random positions. The shuffle is drawn with `rng`, or from OS entropy if `None`."""
     shape = _shape(grid, *dims, extend=extend)
     mask = np.zeros(math.prod(shape), dtype=bool)
     mask[: mask.size // 2] = True
