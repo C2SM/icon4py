@@ -1981,7 +1981,7 @@ scripts = [
   { name = "bump-my-version", specifier = ">=0.16.0" },
   { name = "f90nml", specifier = ">=1.5" },
   { name = "lazy-loader", specifier = ">=0.5" },
-  { name = "numpy", specifier = ">=1.23.3" },
+  { name = "numpy", specifier = ">=1.25" },
   { name = "packaging", specifier = ">=24.0" },
   { name = "pip", specifier = ">=22.1.1" },
   { name = "pooch", specifier = ">=1.7.0" },
@@ -2220,7 +2220,7 @@ requires-dist = [
   { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
   { name = "icon4py-common", extras = ["distributed"], editable = "model/common" },
   { name = "icon4py-tools", editable = "tools" },
-  { name = "numpy", specifier = ">=1.23.3" },
+  { name = "numpy", specifier = ">=1.25" },
   { name = "packaging", specifier = ">=20.0" },
   { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" }
 ]
@@ -2273,8 +2273,8 @@ requires-dist = [
   { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
   { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
   { name = "netcdf4", marker = "extra == 'io'", specifier = ">=1.6.1" },
-  { name = "numpy", specifier = ">=1.23.3" },
-  { name = "numpy", marker = "extra == 'io'", specifier = ">=1.23.3" },
+  { name = "numpy", specifier = ">=1.25" },
+  { name = "numpy", marker = "extra == 'io'", specifier = ">=1.25" },
   { name = "packaging", specifier = ">=20.0" },
   { name = "pymetis", marker = "extra == 'io'", specifier = ">2022.1" },
   { name = "pyyaml", specifier = ">=6.0.3" },
@@ -2393,7 +2393,7 @@ requires-dist = [
   { name = "gt4py", specifier = "==1.2.3" },
   { name = "icon4py-common", extras = ["io"], editable = "model/common" },
   { name = "icon4py-driver", editable = "model/driver" },
-  { name = "numpy", specifier = ">=1.23.3" },
+  { name = "numpy", specifier = ">=1.25" },
   { name = "packaging", specifier = ">=20.0" },
   { name = "pooch", specifier = ">=1.7.0" },
   { name = "pytest", specifier = ">=8.0.1" },
@@ -2425,7 +2425,7 @@ requires-dist = [
   { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
   { name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common" },
   { name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common" },
-  { name = "numpy", specifier = ">=1.23.3" },
+  { name = "numpy", specifier = ">=1.25" },
   { name = "packaging", specifier = ">=20.0" },
   { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" }
 ]

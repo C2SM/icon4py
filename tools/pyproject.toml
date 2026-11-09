@@ -27,7 +27,7 @@ dependencies = [
   # external dependencies
   'cffi>=1.5',
   'gt4py==1.2.3',
-  "numpy>=1.23.3",
+  "numpy>=1.25",
   'packaging>=20.0',
   'click>=8.1.7',
   'fprettify>=v0.3.7',

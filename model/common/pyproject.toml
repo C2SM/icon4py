@@ -27,7 +27,7 @@ dependencies = [
   'array-api-compat>=1.13.0',
   'gt4py==1.2.3',
   'packaging>=20.0',
-  'numpy>=1.23.3',  # needed to read topography from file until IO is done
+  'numpy>=1.25',  # needed to read topography from file until IO is done
   "serialbox4py>=2.6.2",
   "cattrs>=26.1.0",
   "pyyaml>=6.0.3",
@@ -53,7 +53,7 @@ io = [
   "datashader>=0.16.1",
   "holoviews>=1.16.0",
   "netcdf4>=1.6.1",
-  "numpy>=1.23.3",
+  "numpy>=1.25",
   "scikit-learn>=1.4.0",
   "pymetis>2022.1",
   # TODO(halungge): there are failing tests starting from uxarray==2024.4.0: when a data file does not have
