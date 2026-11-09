@@ -64,7 +64,7 @@ def read_from_file(
 
     ser = serialbox.Serializer(serialbox.OpenModeKind.Read, str(data_path), "icon_pydycore_rank0")
     sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()
-    log.debug("Reading topography from %s / icon_pydycore_rank0", data_path)
+    log.debug(f"Reading topography from {data_path} / icon_pydycore_rank0")
 
     local_indices = data_alloc.as_numpy(
         grid_manager.decomposition_info.global_index(

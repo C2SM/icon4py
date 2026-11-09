@@ -78,10 +78,8 @@ def test_compute_domain_bounds(  # noqa: PLR0917 [too-many-positional-arguments]
     ref_grid = grid_savepoint.construct_icon_grid(backend=backend, keep_skip_values=True)
     decomposition_info = grid_savepoint.construct_decomposition_info()
     refin_ctrl = {dim: grid_savepoint.refin_ctrl(dim) for dim in dims.horizontal_dims()}
-    allocator = model_backends.get_allocator(backend)
-    xp = data_alloc.import_array_ns(allocator)
     start_indices, end_indices = grid_refinement.compute_domain_bounds(
-        dim, refin_ctrl, decomposition_info, array_ns=xp
+        dim, refin_ctrl, decomposition_info
     )
     if (
         experiment.description == test_defs.Experiments.GAUSS3D

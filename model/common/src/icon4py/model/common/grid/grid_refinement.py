@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
-from types import ModuleType
 from typing import Final
 
 from gt4py import next as gtx
@@ -167,34 +166,38 @@ def is_placed_with_owned(
 
     ICON erases the negative `refin_ctl` values only after this ordering, so they still matter here.
     """
-    owned = halo_levels == decomposition.DecompositionFlag.OWNED
     first = halo_levels == decomposition.DecompositionFlag.FIRST_HALO_LEVEL
-    halo = ~owned
-    refin = refinement_ctrl
+    halo = halo_levels != decomposition.DecompositionFlag.OWNED
     match dim:
         case dims.CellDim:
-            kept = (halo & (refin == 1)) | (first & (refin == 2))
+            kept = (halo & (refinement_ctrl == 1)) | (first & (refinement_ctrl == 2))
         case dims.EdgeDim:
             first_or_second = first | (
                 halo_levels == decomposition.DecompositionFlag.SECOND_HALO_LEVEL
             )
             kept = (
-                (halo & ((refin == 1) | (refin == 2)))
-                | (first_or_second & ((refin == 3) | (refin == 4)))
-                | (first & ((refin == 5) | (refin == 6) | (refin < 0)))
+                (halo & ((refinement_ctrl == 1) | (refinement_ctrl == 2)))
+                | (first_or_second & ((refinement_ctrl == 3) | (refinement_ctrl == 4)))
+                | (
+                    first
+                    & ((refinement_ctrl == 5) | (refinement_ctrl == 6) | (refinement_ctrl < 0))
+                )
             )
         case dims.VertexDim:
-            kept = (halo & (refin == 1)) | (first & ((refin == 2) | (refin < 0)))
+            kept = (halo & (refinement_ctrl == 1)) | (
+                first & ((refinement_ctrl == 2) | (refinement_ctrl < 0))
+            )
         case _:
-            raise ValueError(f"Dimension must be one of {list(dims.horizontal_dims())}")
-    return owned | kept
+            raise ValueError(
+                f"Dimension must be one of the local horizontals: {list(dims.horizontal_dims())}"
+            )
+    return (halo_levels == decomposition.DecompositionFlag.OWNED) | kept
 
 
 def compute_domain_bounds(
     dim: gtx.Dimension,
     refinement_fields: dict[gtx.Dimension, gtx.Field],
     decomposition_info: decomposition.DecompositionInfo,
-    array_ns: ModuleType,
 ) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
     """
     Compute the domain bounds (start_index, end_index) based on a grid Domain.
@@ -226,6 +229,7 @@ def compute_domain_bounds(
     halo_levels = decomposition_info.halo_levels(dim)
     with_owned = is_placed_with_owned(dim, halo_levels, refinement_fields[dim].ndarray)
     refinement_ctrl = convert_to_non_nested_refinement_values(refinement_fields[dim].ndarray, dim)
+    array_ns = data_alloc.array_namespace(refinement_fields[dim].ndarray)
 
     start_indices = {}
     end_indices = {}

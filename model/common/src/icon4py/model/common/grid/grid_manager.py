@@ -35,7 +35,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 _log = logging.getLogger(__name__)
 _single_node_decomposer = decomp.SingleNodeDecomposer()
 _fortran_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
-_REFINEMENT_CONTROL_DIMS = {
+_refinement_control_dims = {
     dims.CellDim: gridfile.GridRefinementName.CONTROL_CELLS,
     dims.EdgeDim: gridfile.GridRefinementName.CONTROL_EDGES,
     dims.VertexDim: gridfile.GridRefinementName.CONTROL_VERTICES,
@@ -369,7 +369,7 @@ class GridManager:
                 ),
                 allocator=allocator,
             )
-            for dim, name in _REFINEMENT_CONTROL_DIMS.items()
+            for dim, name in _refinement_control_dims.items()
         }
         return refinement_control_fields
 
@@ -436,7 +436,7 @@ class GridManager:
         # HALO CONSTRUCTION
         refinement_control = {
             dim: xp.asarray(self._reader.int_variable(name, transpose=False, apply_offset=False))
-            for dim, name in _REFINEMENT_CONTROL_DIMS.items()
+            for dim, name in _refinement_control_dims.items()
         }
         halo_constructor = halo.get_halo_constructor(
             process_props=process_props,
@@ -454,9 +454,6 @@ class GridManager:
         # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables))
 
-        # As ICON (`mo_complete_subdivision.f90`), a halo rim edge in the lateral boundary zones,
-        # where stencils read `E2C`, points twice to its cell on this rank. Only after deriving
-        # `E2C2E`, whose RBF stencil needs the missing neighbors last.
         if self._decomposition_info.is_distributed():
             edges = self._decomposition_info.global_index(dims.EdgeDim)
             e2c = neighbor_tables[dims.E2C]
@@ -477,7 +474,6 @@ class GridManager:
             refinement.compute_domain_bounds,
             refinement_fields=refinement_fields,
             decomposition_info=self._decomposition_info,
-            array_ns=xp,
         )
         start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 

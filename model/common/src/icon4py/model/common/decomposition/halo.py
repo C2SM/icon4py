@@ -240,9 +240,6 @@ class IconLikeHaloConstructor(HaloConstructor):
         assert (halo_levels[third_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value).all()
         halo_levels[third_halo_level_mask] = defs.DecompositionFlag.THIRD_HALO_LEVEL
 
-        # As ICON (`build_patch_start_end` in `mo_setup_subdivision.f90`), the lateral boundary
-        # halo points placed with the owned points are merged into them by global index, so that
-        # they end up in the lateral boundary zone of their refinement level.
         refinement = (
             self._refinement_control[dim][all_indices]
             if self._refinement_control is not None
