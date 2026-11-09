@@ -885,6 +885,10 @@ def run_driver(
     )
     allocator = model_backends.get_allocator(backend)
     ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
+    # Finish all program compilations during setup so that the first time step does
+    # not wait for them.
+    log.info("Waiting for ongoing compilations")
+    gtx.wait_for_compilation()
     icon4py_driver.time_integration(ds)
     _cancel_pending_compilations()
     return ds, icon4py_driver
