@@ -53,7 +53,7 @@ from gt4py.next.instrumentation import hooks as gtx_hooks, metrics as gtx_metric
 from icon4py.model.common import exceptions, model_backends, model_options, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation, device_utils
-from icon4py.model.testing import test_utils
+from icon4py.model.testing import config, test_utils
 
 
 if TYPE_CHECKING:
@@ -276,27 +276,6 @@ else:
 # -- Seeded random data ----------------------------------------------------------------
 
 
-_TEST_SEED_ENV_VAR: Final = "ICON4PY_TEST_SEED"
-
-
-def _read_test_seed() -> int | None:
-    """
-    The `ICON4PY_TEST_SEED` setting.
-
-    `None` when unset or empty, a non-negative integer mixed into every derivation
-    as a global base.
-    """
-    raw = os.getenv(_TEST_SEED_ENV_VAR)
-    if not raw:
-        return None
-    if not raw.isdecimal():
-        raise ValueError(
-            f"Invalid value '{raw}' for environment variable '{_TEST_SEED_ENV_VAR}': it must be"
-            " a non-negative integer."
-        )
-    return int(raw)
-
-
 def _stable_seed(key: str) -> int:
     """A stable integer for `key`: identical in every process, unlike `hash`."""
     return int.from_bytes(hashlib.sha256(key.encode()).digest(), "big")
@@ -309,7 +288,7 @@ def _derived_seed_sequence(key: str) -> np.random.SeedSequence:
     Applies the `ICON4PY_TEST_SEED` states: derived from `key` alone when unset or
     empty, or mixed with a numeric global base when one is given.
     """
-    seed = _read_test_seed()
+    seed = config.TEST_SEED
     if seed is None:
         return np.random.SeedSequence(_stable_seed(key))
     return np.random.SeedSequence([seed, _stable_seed(key)])

@@ -24,8 +24,8 @@ from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple
-from icon4py.model.common.utils import data_allocation
-from icon4py.model.testing import stencil_tests
+from icon4py.model.common.utils import data_allocation, env
+from icon4py.model.testing import config, stencil_tests
 
 
 # Deliberately also bound under the name a fixture receives the wrapper as: the check must
@@ -612,10 +612,10 @@ class TestSeededWrapper:
 
     def test_numeric_seed_mixes_a_global_base_into_the_derivation(self, grid, monkeypatch):
         """The same numeric base reproduces the same data; another base shifts it."""
-        monkeypatch.setenv("ICON4PY_TEST_SEED", "41")
+        monkeypatch.setattr(config, "TEST_SEED", 41)
         first = _seeded_wrapper(grid, "module:Suite:")
         second = _seeded_wrapper(grid, "module:Suite:")
-        monkeypatch.setenv("ICON4PY_TEST_SEED", "42")
+        monkeypatch.setattr(config, "TEST_SEED", 42)
         third = _seeded_wrapper(grid, "module:Suite:")
 
         base = first.random_field(dims.CellDim).asnumpy()
@@ -689,21 +689,21 @@ class TestSeededWrapper:
     )
     def test_read_test_seed(self, value, expected, monkeypatch):
         """An empty value counts as unset."""
-        monkeypatch.setenv(stencil_tests._TEST_SEED_ENV_VAR, value)
+        monkeypatch.setenv("ICON4PY_TEST_SEED", value)
 
-        assert stencil_tests._read_test_seed() == expected
+        assert env.non_negative_int("ICON4PY_TEST_SEED") == expected
 
     def test_read_test_seed_when_unset(self, monkeypatch):
-        monkeypatch.delenv(stencil_tests._TEST_SEED_ENV_VAR, raising=False)
+        monkeypatch.delenv("ICON4PY_TEST_SEED", raising=False)
 
-        assert stencil_tests._read_test_seed() is None
+        assert env.non_negative_int("ICON4PY_TEST_SEED") is None
 
     @pytest.mark.parametrize("value", ["-1", "1.5", "deterministic", " 41", "random"])
     def test_read_test_seed_rejects_invalid_values(self, value, monkeypatch):
-        monkeypatch.setenv(stencil_tests._TEST_SEED_ENV_VAR, value)
+        monkeypatch.setenv("ICON4PY_TEST_SEED", value)
 
         with pytest.raises(ValueError, match="a non-negative integer"):
-            stencil_tests._read_test_seed()
+            env.non_negative_int("ICON4PY_TEST_SEED")
 
     def test_random_field_accepts_an_omitted_seed(self, grid):
         """Omitting the seed draws OS entropy, as before the seeding change."""
