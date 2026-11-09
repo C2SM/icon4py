@@ -159,10 +159,6 @@ class Advection(fw.Component, ABC):
         hfl_tracer: field.Field[qty.HorizontalTracerFluxOnEdgeK]
         vfl_tracer: field.Field[qty.VerticalTracerFluxOnCellKHalf]
 
-    def __init__(self, grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator | None) -> None:
-        self.grid = grid
-        self.allocator = allocator
-
     def run(self, input: Input, output: Output) -> Output:
         self._prepare(input)
         for name in states.TRACERS:
@@ -212,7 +208,6 @@ class NoAdvection(Advection):
         exchange: decomposition.ExchangeRuntime,
     ):
         log.debug("tracer_advection class init - start")
-        super().__init__(grid, model_backends.get_allocator(backend))
 
         # input arguments
         self._grid = grid
@@ -273,7 +268,6 @@ class GodunovSplittingAdvection(Advection):
         even_timestep: bool = False,
     ):
         log.debug("tracer_advection class init - start")
-        super().__init__(grid, model_backends.get_allocator(backend))
 
         # input arguments
         self._horizontal_advection = horizontal_advection

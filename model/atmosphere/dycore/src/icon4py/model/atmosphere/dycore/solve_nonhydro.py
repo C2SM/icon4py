@@ -494,8 +494,6 @@ class SolveNonhydro(fw.Component):
         exchange: decomposition.ExchangeRuntime,
         max_nudging_coefficient: state_utils.FloatType,
     ):
-        self.grid = grid
-        self.allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
 
         self._grid = grid

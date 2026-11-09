@@ -502,7 +502,6 @@ class Diffusion(fw.Component):
         ndyn_substeps: int,
         max_nudging_coefficient: state_utils.FloatType,
     ) -> None:
-        self.grid = grid
         self._allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
         self.config = config
