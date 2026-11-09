@@ -41,6 +41,37 @@ uv sync --extra distributed  # or `uv sync --extra all` which includes everythin
 
 from the top-level folder of the repository.
 
+### Profiling markers
+
+[profiling.py](src/icon4py/model/common/utils/profiling.py) emits ranges that show up on the
+timeline of `nsys` (NVIDIA, via NVTX) or `rocprofv3` (AMD, via ROCTx). The halo exchanges in
+`decomposition` are annotated with them: `halo_exchange[dim,nfields]` for a full exchange,
+plus `halo_exchange.start`, `halo_exchange.comm` (spanning the whole time the communication is
+in flight) and `halo_exchange.wait` for the multi-node implementation.
+
+Markers are off by default and are enabled with `ICON4PY_PROFILE_MARKERS`, which takes
+`off` (default), `auto`, `nvtx` or `roctx`. `auto` picks whichever of the two libraries is
+importable; naming one explicitly raises if it is missing, so a profiling run cannot silently
+record nothing.
+
+The marker libraries are not dependencies of `icon4py-common` and have to be installed
+separately:
+
+```bash
+# NVIDIA
+pip install nvtx
+ICON4PY_PROFILE_MARKERS=auto nsys profile --trace=nvtx,cuda <command>
+
+# AMD: `roctx` is not on PyPI, it ships with ROCprofiler-SDK and needs to be put on the path
+# explicitly. It is only built for the Python versions selected at ROCm build time, so check
+# that it is importable for the Python version used here.
+export PYTHONPATH="/opt/rocm/lib/python3.12/site-packages:$PYTHONPATH"
+ICON4PY_PROFILE_MARKERS=auto rocprofv3 --marker-trace -- <command>
+```
+
+Note that the ranges are recorded on the host: around an exchange scheduled on a stream they
+measure the submission, not the device-side execution.
+
 ### Grid
 
 Contains basic infrastructure regarding the (unstructured) grid used in `icon4py`. There are

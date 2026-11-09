@@ -9,6 +9,7 @@ import functools
 import logging
 from collections.abc import Callable
 from typing import Any
+import os
 
 import dace
 import gt4py.next as gtx

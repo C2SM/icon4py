@@ -59,7 +59,6 @@ class BackendConfig:
 
 def backend_config_from_env() -> BackendConfig | None:
     """Build a :class:`BackendConfig` from environment variables.
-
     Reads ``ICON4PY_BACKEND_WORKSPACE_SIZE`` and returns ``None`` when it is
     not set.
     """

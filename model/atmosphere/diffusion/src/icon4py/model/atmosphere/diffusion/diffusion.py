@@ -43,7 +43,7 @@ from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 """
@@ -804,13 +804,14 @@ class Diffusion:
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of vn - start")
-        self._exchange(
-            self.u_vert,
-            self.v_vert,
-            dim=dims.VertexDim,
-            full_exchange=True,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        with profiling.annotate("halo_exchange_rbf_extrapolation_vn"):
+            self._exchange(
+                self.u_vert,
+                self.v_vert,
+                dim=dims.VertexDim,
+                full_exchange=True,
+                stream=decomposition.DEFAULT_STREAM,
+            )
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
@@ -827,11 +828,12 @@ class Diffusion:
         # 5.  HALO EXCHANGE -- CALL sync_patch_array(SYNC_E, z_nabla2_e)
         # ICON: mo_nh_diffusion.f90:853. Fill halo edges before second RBF.
         log.debug("communication of z_nabla2_e - start")
-        self._exchange.exchange(
-            dims.EdgeDim,
-            self.z_nabla2_e,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        with profiling.annotate("halo_exchange_z_nabla2_e"):
+            self._exchange.exchange(
+                dims.EdgeDim,
+                self.z_nabla2_e,
+                stream=decomposition.DEFAULT_STREAM,
+            )
         log.debug("communication of z_nabla2_e - end")
 
         log.debug("2nd rbf interpolation: start")
@@ -843,13 +845,14 @@ class Diffusion:
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of z_nable2_e - start")
-        self._exchange(
-            self.u_vert,
-            self.v_vert,
-            dim=dims.VertexDim,
-            full_exchange=True,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        with profiling.annotate("halo_exchange_rbf_extrapolation_z_nabla2_e"):
+            self._exchange(
+                self.u_vert,
+                self.v_vert,
+                dim=dims.VertexDim,
+                full_exchange=True,
+                stream=decomposition.DEFAULT_STREAM,
+            )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         # The numerical diffusion operation reads neighboring values of the prognostic fields it
@@ -887,11 +890,12 @@ class Diffusion:
         log.debug("running diffusion program (diffuse_prognostic_fields): end")
 
         log.debug("communication of prognostic.vn : start")
-        self._exchange.exchange(
-            dims.EdgeDim,
-            prognostic_state.vn,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        with profiling.annotate("halo_exchange_vn"):
+            self._exchange.exchange(
+                dims.EdgeDim,
+                prognostic_state.vn,
+                stream=decomposition.DEFAULT_STREAM,
+            )
         log.debug("communication of prognostic.vn - end")
 
         # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
@@ -900,18 +904,20 @@ class Diffusion:
         if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
             if self.config.apply_to_temperature:
                 log.debug("communication of prognostic cell fields: theta and exner - start")
-                self._exchange.exchange(
-                    dims.CellDim,
-                    prognostic_state.theta_v,
-                    prognostic_state.exner,
-                    stream=decomposition.DEFAULT_STREAM,
-                )
+                with profiling.annotate("halo_exchange_theta_exner"):
+                    self._exchange.exchange(
+                        dims.CellDim,
+                        prognostic_state.theta_v,
+                        prognostic_state.exner,
+                        stream=decomposition.DEFAULT_STREAM,
+                    )
                 log.debug("communication of prognostic cell fields: theta and exner - done")
 
             log.debug("communication of prognostic cell field: w - start")
-            self._exchange.exchange(
-                dims.CellDim,
-                prognostic_state.w,
-                stream=decomposition.DEFAULT_STREAM,
-            )
+            with profiling.annotate("halo_exchange_w"):
+                self._exchange.exchange(
+                    dims.CellDim,
+                    prognostic_state.w,
+                    stream=decomposition.DEFAULT_STREAM,
+                )
             log.debug("communication of prognostic cell field: w - done")

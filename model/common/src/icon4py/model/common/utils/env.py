@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import enum
 import os
 import pathlib
 
@@ -27,6 +28,18 @@ def flag_to_bool(name: str, default: bool) -> bool:
                 f"Invalid value {flag_value!r} for environment variable {name!r}: "
                 "use '0 | false | off' or '1 | true | on'."
             )
+
+
+def str_enum[T: enum.StrEnum](name: str, enum_type: type[T], default: T) -> T:
+    """Read a `StrEnum` value from an environment variable (with checking)."""
+    value = os.environ.get(name, default.value).lower()
+    try:
+        return enum_type(value)
+    except ValueError:
+        allowed_values = ", ".join(f"'{member.value}'" for member in enum_type.__members__.values())
+        raise ValueError(
+            f"Invalid value {value!r} for environment variable {name!r}: use {allowed_values}."
+        ) from None
 
 
 def path(name: str, default: pathlib.Path) -> pathlib.Path:

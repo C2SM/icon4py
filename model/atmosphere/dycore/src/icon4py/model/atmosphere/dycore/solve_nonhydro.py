@@ -73,7 +73,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
     utils as state_utils,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 log = logging.getLogger(__name__)
@@ -1278,12 +1278,13 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
-        self._exchange.exchange(
-            dims.EdgeDim,
-            prognostic_states.next.vn,
-            z_fields.rho_at_edges_on_model_levels,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        with profiling.annotate("halo_exchange_vn_rho_at_edges_predictor"):
+            self._exchange.exchange(
+                dims.EdgeDim,
+                prognostic_states.next.vn,
+                z_fields.rho_at_edges_on_model_levels,
+                stream=decomposition.DEFAULT_STREAM,
+            )
 
         self._compute_horizontal_velocity_quantities_and_fluxes(
             spatially_averaged_vn=self.z_vn_avg,
@@ -1355,19 +1356,21 @@ class SolveNonhydro:
             log.debug(
                 "exchanging prognostic field 'w' and local field 'dwdz_at_cells_on_model_levels'"
             )
-            self._exchange.exchange(
-                dims.CellDim,
-                prognostic_states.next.w,
-                z_fields.dwdz_at_cells_on_model_levels,
-                stream=decomposition.DEFAULT_STREAM,
-            )
+            with profiling.annotate("halo_exchange_w_dwdz_predictor"):
+                self._exchange.exchange(
+                    dims.CellDim,
+                    prognostic_states.next.w,
+                    z_fields.dwdz_at_cells_on_model_levels,
+                    stream=decomposition.DEFAULT_STREAM,
+                )
         else:
             log.debug("exchanging prognostic field 'w'")
-            self._exchange.exchange(
-                dims.CellDim,
-                prognostic_states.next.w,
-                stream=decomposition.DEFAULT_STREAM,
-            )
+            with profiling.annotate("halo_exchange_w_predictor"):
+                self._exchange.exchange(
+                    dims.CellDim,
+                    prognostic_states.next.w,
+                    stream=decomposition.DEFAULT_STREAM,
+                )
 
     def run_corrector_step(
         self,
@@ -1485,11 +1488,12 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn'")
-        self._exchange.exchange(
-            dims.EdgeDim,
-            prognostic_states.next.vn,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        with profiling.annotate("halo_exchange_vn_corrector"):
+            self._exchange.exchange(
+                dims.EdgeDim,
+                prognostic_states.next.vn,
+                stream=decomposition.DEFAULT_STREAM,
+            )
 
         self._compute_averaged_vn_and_fluxes(
             spatially_averaged_vn=self.z_vn_avg,
@@ -1562,10 +1566,11 @@ class SolveNonhydro:
                 )
 
         log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
-        self._exchange.exchange(
-            dims.CellDim,
-            prognostic_states.next.rho,
-            prognostic_states.next.exner,
-            prognostic_states.next.w,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        with profiling.annotate("halo_exchange_rho_exner_w_corrector"):
+            self._exchange.exchange(
+                dims.CellDim,
+                prognostic_states.next.rho,
+                prognostic_states.next.exner,
+                prognostic_states.next.w,
+                stream=decomposition.DEFAULT_STREAM,
+            )
