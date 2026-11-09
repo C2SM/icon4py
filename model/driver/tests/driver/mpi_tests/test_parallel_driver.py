@@ -117,12 +117,7 @@ def _run_driver_compare_single_multi_rank(
     )
     single_rank_config = driver_config.read_experiment_config_from_yaml(
         single_rank_config_path / "config.yml"
-    ).with_overrides(
-        driver={
-            "output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}",
-            "end_of_simulation": end_of_simulation,
-        }
-    )
+    ).with_overrides(driver={"end_of_simulation": end_of_simulation})
     single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=single_rank_config.vertical_grid,
@@ -148,10 +143,7 @@ def _run_driver_compare_single_multi_rank(
         multi_rank_config_path / "config.yml"
     ).with_overrides(
         **data_overrides,
-        driver={
-            "output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}",
-            "end_of_simulation": end_of_simulation,
-        },
+        driver={"end_of_simulation": end_of_simulation},
     )
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

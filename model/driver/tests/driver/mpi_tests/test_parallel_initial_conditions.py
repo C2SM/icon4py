@@ -101,8 +101,6 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     single_rank_config = driver_config.read_experiment_config_from_yaml(
         dt_utils.get_path_for_experiment(experiment.description, single_rank_process_props)
         / "config.yml"
-    ).with_overrides(
-        driver={"output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}"}
     )
     single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
@@ -168,10 +166,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         for section in ("initial_condition", "topography", "prescribed_tendencies")
         if hasattr(getattr(single_rank_config, section), "data_path")
     }
-    multi_rank_config = experiment.config.with_overrides(
-        **data_overrides,
-        driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"},
-    )
+    multi_rank_config = experiment.config.with_overrides(**data_overrides)
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=multi_rank_config.vertical_grid,
