@@ -375,8 +375,9 @@ class DataAllocationWrapper:
         A wrapper whose generator pools this generator's seed-sequence entropy with `param_id`.
 
         Hand-rolled parametrized `input_data` fixtures call it so that each parametrization
-        instance draws its own stream, and `test_and_benchmark` calls it with the case id to
-        key the reference stream per case, the same however pytest selects the cases.
+        instance draws its own stream, and `test_and_benchmark` calls it with the input
+        case's parameter (excluding the `static_variant` id) to key the reference stream
+        per case, the same however pytest selects the cases.
         """
         entropy = self.rng.bit_generator.seed_seq.entropy
         entropy = entropy if isinstance(entropy, list) else [entropy]
@@ -636,11 +637,12 @@ def test_and_benchmark(
     if not skip_verification:
         # `reference` bodies may draw their own random data and have no `data_alloc`
         # in scope, so a generator on the stream reserved for the reference is passed
-        # when the reference declares an `rng` parameter. Parametrized cases key that
-        # stream on the case id, so `-k`, a full run, and any xdist worker verify
-        # against the same reference data.
+        # when the reference declares an `rng` parameter. Parametrized input cases key
+        # that stream on their own parameter, excluding the `static_variant` id, so
+        # `-k`, a full run, and any xdist worker verify against the same reference
+        # data, and equivalent variants of a case share one stream.
         callspec = getattr(request.node, "callspec", None)
-        case_key = callspec.id if callspec is not None else ""
+        case_key = str(callspec.params.get("input_data", "")) if callspec is not None else ""
         case_alloc = data_alloc if not case_key else data_alloc.for_param(case_key)
         reference_kwargs: dict[str, Any] = (
             {"rng": case_alloc.reference_rng} if _reference_expects_rng(self.reference) else {}

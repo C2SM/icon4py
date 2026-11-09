@@ -793,8 +793,8 @@ class TestTestAndBenchmark:
         ("node", "case_key"),
         [
             pytest.param(
-                types.SimpleNamespace(callspec=types.SimpleNamespace(id="a")),
-                "a",
+                types.SimpleNamespace(callspec=types.SimpleNamespace(params={"input_data": 1})),
+                "1",
                 id="parametrized",
             ),
             pytest.param(types.SimpleNamespace(), "", id="not_parametrized"),
