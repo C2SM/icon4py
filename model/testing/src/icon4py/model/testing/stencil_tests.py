@@ -227,9 +227,6 @@ def _input_data_fixture(
         _reject_host_field_construction(tree)
 
     if "params" in kwargs:
-        # A hand-rolled parametrized fixture: each parametrization instance must draw from
-        # its own derived generator, so a single-case rerun with `-k` and a case on an
-        # xdist worker see the same data as in a full run.
         ids = kwargs.get("ids")
         if ids is not None and not callable(ids):
             raise TypeError(
@@ -289,7 +286,7 @@ def _read_test_seed() -> int | None:
     as a global base.
     """
     raw = os.getenv(_TEST_SEED_ENV_VAR)
-    if raw is None or raw == "":
+    if not raw:
         return None
     if not raw.isdecimal():
         raise ValueError(
@@ -635,12 +632,6 @@ def test_and_benchmark(
     program_kwargs: dict[str, Any] = {**input_data, "offset_provider": grid.connectivities}
 
     if not skip_verification:
-        # `reference` bodies may draw their own random data and have no `data_alloc`
-        # in scope, so a generator on the stream reserved for the reference is passed
-        # when the reference declares an `rng` parameter. Parametrized input cases key
-        # that stream on their own parameter, excluding the `static_variant` id, so
-        # `-k`, a full run, and any xdist worker verify against the same reference
-        # data, and equivalent variants of a case share one stream.
         callspec = getattr(request.node, "callspec", None)
         case_key = str(callspec.params.get("input_data", "")) if callspec is not None else ""
         case_alloc = data_alloc if not case_key else data_alloc.for_param(case_key)

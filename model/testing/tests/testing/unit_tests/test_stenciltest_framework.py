@@ -141,6 +141,10 @@ class TestStaticReference:
 
 
 class TestInputDataFixture:
+    @staticmethod
+    def input_data(data_alloc, request):
+        return {"field": data_alloc.random_field(dims.CellDim)}
+
     def test_returns_a_marked_class_scoped_static_fixture(self):
         fixture = stencil_tests.input_data_fixture(valid_input_data())
 
@@ -150,10 +154,7 @@ class TestInputDataFixture:
         assert fixture.__func__._fixture_function_marker.scope == "class"
 
     def test_forwards_keyword_arguments_to_pytest_fixture(self):
-        def input_data(data_alloc, request):
-            return {"field": data_alloc.random_field(dims.CellDim)}
-
-        fixture = stencil_tests.input_data_fixture(params=[1, 2], scope="function")(input_data)
+        fixture = stencil_tests.input_data_fixture(params=[1, 2], scope="function")(self.input_data)
         marker = fixture.__func__._fixture_function_marker
 
         assert getattr(fixture, "__stencil_test_input_fixture__", False)
@@ -164,15 +165,12 @@ class TestInputDataFixture:
     def test_hands_a_parametrized_fixture_a_per_param_wrapper(self, grid, ids):
         """Each parametrization instance must draw from its own derived generator."""
 
-        def input_data(data_alloc, request):
-            return {"field": data_alloc.random_field(dims.CellDim)}
-
-        fixture = stencil_tests.input_data_fixture(params=[1, 2], ids=ids)(input_data)
+        fixture = stencil_tests.input_data_fixture(params=[1, 2], ids=ids)(self.input_data)
         wrapped = fixture.__func__._get_wrapped_function()
 
         # pytest resolves the fixture arguments from the signature, which stays the
         # plain fixture's so that `grid` and `request` are still injected.
-        assert inspect.signature(wrapped) == inspect.signature(input_data)
+        assert inspect.signature(wrapped) == inspect.signature(self.input_data)
 
         wrapper = _seeded_wrapper(grid, "module:Suite:")
         field = wrapped(data_alloc=wrapper, request=types.SimpleNamespace(param=1))["field"]
@@ -193,11 +191,8 @@ class TestInputDataFixture:
     def test_rejects_sequence_ids(self):
         """Regression: an `ids` sequence was ignored, so params with the same `str()` collided."""
 
-        def input_data(data_alloc, request):
-            return {"field": data_alloc.random_field(dims.CellDim)}
-
         with pytest.raises(TypeError, match="must be a callable"):
-            stencil_tests.input_data_fixture(params=[10, 20], ids=["a", "b"])(input_data)
+            stencil_tests.input_data_fixture(params=[10, 20], ids=["a", "b"])(self.input_data)
 
     def test_accepts_an_existing_staticmethod(self):
         fixture = stencil_tests.input_data_fixture(staticmethod(valid_input_data()))
@@ -824,7 +819,7 @@ class TestTestAndBenchmark:
             suite(),
             benchmark=None,
             grid=grid,
-            input_data={"out": cell_field([0.0, 0.0, 0.0])},
+            input_data={"out": cell_field(3 * [0.0])},
             data_alloc=wrapper,
             configured_program=lambda **kwargs: None,
             request=request,
