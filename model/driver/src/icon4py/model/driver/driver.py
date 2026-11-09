@@ -17,6 +17,7 @@ from collections.abc import Callable
 import gt4py.next as gtx
 from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
+from gt4py.next.otf import compiled_program as gtx_compiled_program, runners as gtx_runners
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion_states
@@ -885,4 +886,43 @@ def run_driver(
     allocator = model_backends.get_allocator(backend)
     ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
     icon4py_driver.time_integration(ds)
+    _cancel_pending_compilations()
     return ds, icon4py_driver
+
+
+def _cancel_pending_compilations() -> None:
+    """Drop precompilations of program variants the run never needed.
+
+    `setup_program` submits every variant to gt4py's compilation pool, and both
+    `concurrent.futures` and gt4py's atexit hook wait for the pool to drain, so
+    without this the process keeps compiling unused variants long after the
+    simulation has finished. Queued compilations are cancelled; the workers of
+    compilations already running are terminated. Both caches stay consistent: the
+    translation cache writes atomically and a build folder without its
+    completion marker is rebuilt on next use.
+    """
+    # TODO: use a public gt4py API for this once there is one.
+    pending = list(gtx_compiled_program._ongoing_compilations.items())
+    cancelled = [label for future, label in pending if future.cancel()]
+    running = [label for future, label in pending if not future.done()]
+    if cancelled:
+        log.warning(
+            f"Cancelled {len(cancelled)} queued compilations of unused program variants: "
+            f"{', '.join(sorted(set(cancelled)))}"
+        )
+    if not running:
+        return
+    runner = gtx_runners._default_runner
+    if not isinstance(runner, gtx_runners.ProcessRunner):
+        log.warning(
+            f"Waiting for {len(running)} running compilations of unused program variants "
+            f"that cannot be interrupted: {', '.join(sorted(set(running)))}"
+        )
+        return
+    log.warning(
+        f"Terminating {len(running)} running compilations of unused program variants: "
+        f"{', '.join(sorted(set(running)))}"
+    )
+    for process in list(runner._pool._processes.values()):
+        process.terminate()
+    gtx_runners.reset_default_runner()
