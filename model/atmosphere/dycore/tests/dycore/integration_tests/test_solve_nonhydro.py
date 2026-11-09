@@ -217,7 +217,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
     at_first_substep = substep_init == 1
 
-    prognostic_states = utils.create_prognostic_states(sp)
+    prognostic_states = utils.construct_prognostic_states_from_savepoint(sp)
 
     if not (at_initial_timestep and at_first_substep):
         diagnostic_state_nh.vertical_wind_advective_tendency.swap()
@@ -556,7 +556,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     at_first_substep = substep_init == 1
     at_last_substep = substep_init == experiment.config.driver.ndyn_substeps
 
-    prognostic_states = utils.create_prognostic_states(init_savepoint)
+    prognostic_states = utils.construct_prognostic_states_from_savepoint(init_savepoint)
 
     if not (at_initial_timestep and at_first_substep):
         dycore_diagnostics.vertical_wind_advective_tendency.swap()
@@ -738,7 +738,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
-    prognostic_states = utils.create_prognostic_states(sp)
+    prognostic_states = utils.construct_prognostic_states_from_savepoint(sp)
 
     second_order_divdamp_factor = sp.divdamp_fac_o2()
     solve_nonhydro.run(
@@ -838,7 +838,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     dycore_diagnostics = utils.construct_dycore_diagnostic_state_from_savepoint(
         sp, swap_vertical_wind_advective_tendency=not linit
     )
-    prognostic_states = utils.create_prognostic_states(sp)
+    prognostic_states = utils.construct_prognostic_states_from_savepoint(sp)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)

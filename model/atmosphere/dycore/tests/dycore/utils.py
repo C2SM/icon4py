@@ -118,7 +118,7 @@ def construct_dycore_diagnostic_state_from_savepoint(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     swap_vertical_wind_advective_tendency: bool = False,
 ) -> states.DycoreDiagnostics:
-    """The dycore diagnostics kept between the substeps, from the savepoint."""
+    """The dycore diagnostics kept between substeps."""
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return states.DycoreDiagnostics(
         perturbed_exner_at_cells_on_model_levels=init_savepoint.exner_pr(),
@@ -159,25 +159,24 @@ def construct_prep_advection_state_from_savepoint(
     )
 
 
-def construct_prognostic_state_state_from_savepoint(
-    sp: sb.IconNonHydroInitSavepoint, time_level: str
-) -> states.PrognosticState:
-    """The prognostics of the savepoint at the time level `now` or `new`."""
-
-    def read(name: str) -> field.Field:
-        return getattr(sp, f"{name}_{time_level}")()
-
-    return states.PrognosticState(
-        rho=read("rho"), w=read("w"), vn=read("vn"), exner=read("exner"), theta_v=read("theta_v")
-    )
-
-
-def create_prognostic_states(
+def construct_prognostic_states_from_savepoint(
     sp: sb.IconNonHydroInitSavepoint,
 ) -> common_utils.TimeStepPair[states.PrognosticState]:
     return common_utils.TimeStepPair(
-        construct_prognostic_state_state_from_savepoint(sp, "now"),
-        construct_prognostic_state_state_from_savepoint(sp, "new"),
+        states.PrognosticState(
+            rho=sp.rho_now(),
+            w=sp.w_now(),
+            vn=sp.vn_now(),
+            exner=sp.exner_now(),
+            theta_v=sp.theta_v_now(),
+        ),
+        states.PrognosticState(
+            rho=sp.rho_new(),
+            w=sp.w_new(),
+            vn=sp.vn_new(),
+            exner=sp.exner_new(),
+            theta_v=sp.theta_v_new(),
+        ),
     )
 
 

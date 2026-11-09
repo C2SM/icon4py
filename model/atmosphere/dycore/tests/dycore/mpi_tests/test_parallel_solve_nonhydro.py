@@ -119,7 +119,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    prognostic_states = utils.create_prognostic_states(savepoint_nonhydro_init)
+    prognostic_states = utils.construct_prognostic_states_from_savepoint(savepoint_nonhydro_init)
 
     exchange = definitions.create_exchange(process_props, decomposition_info)
 
