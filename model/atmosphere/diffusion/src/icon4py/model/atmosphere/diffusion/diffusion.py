@@ -460,8 +460,8 @@ class DiffusionParams:
 
 class Diffusion(fw.Component):
     """
-    Horizontal diffusion of the prognostics, in place: the caller passes the same buffers as
-    input and output; `run` copies the input into the output first when they differ.
+    Horizontal diffusion of the prognostic variables, in place: the caller
+    passes the same buffers as input and output.
     """
 
     class Input(fw.State):
@@ -470,7 +470,7 @@ class Diffusion(fw.Component):
         exner: field.Field[qty.ExnerOnCellK]
         theta_v: field.Field[qty.ThetaVOnCellK]
         dtime: float
-        #: the extra diffusion call before the first time step of a real-data run (linit in ICON)
+        #: the extra diffusion call before the first time step of a real-data run
         initial_run: bool = False
 
     class Output(fw.State):
