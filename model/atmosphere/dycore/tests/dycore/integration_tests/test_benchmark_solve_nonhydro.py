@@ -243,21 +243,11 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     at_initial_timestep = False
     second_order_divdamp_factor = 0.02
 
-    def random_prognostics() -> states.PrognosticState:
-        def random(quantity: type[quantity.Quantity]) -> field.Field:
-            return field.Field(
-                quantity, data_alloc.random_field(mesh, *quantity.dims, allocator=allocator)
-            )
+    def random(name: str, field_dims: tuple[Any, ...]) -> Any:
+        return data_alloc.random_field(mesh, *field_dims, allocator=allocator).ndarray
 
-        return states.PrognosticState(
-            rho=random(qty.RhoOnCellK),
-            w=random(qty.WOnCellKHalf),
-            vn=random(qty.VnOnEdgeK),
-            exner=random(qty.ExnerOnCellK),
-            theta_v=random(qty.ThetaVOnCellK),
-        )
-
-    current, next_ = random_prognostics(), random_prognostics()
+    current = fw.allocate(states.PrognosticState, mesh, allocator, fill=random)
+    next_ = fw.allocate(states.PrognosticState, mesh, allocator, fill=random)
     forcing = fw.allocate(states.DycoreForcing, mesh, allocator)
     prep_adv = fw.allocate(states.PrepAdvection, mesh, allocator)
     dycore_diagnostics = states.DycoreDiagnostics.allocate(mesh, allocator)
