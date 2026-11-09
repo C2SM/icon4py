@@ -16,7 +16,7 @@ from collections.abc import Callable
 from typing import Any
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend, config as gtx_config
+from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
@@ -68,7 +68,7 @@ class Icon4pyDriver:
         self,
         *,
         config: driver_config.ExperimentConfig,
-        backend: gtx_backend.Backend[Any] | None,
+        backend: gtx.typing.Backend | None,
         grid: IconGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: static_fields.StaticFieldFactories,
@@ -105,7 +105,7 @@ class Icon4pyDriver:
         )
 
     @functools.cached_property
-    def _allocator(self) -> gtx_backend.Backend[Any]:
+    def _allocator(self) -> gtx.typing.Backend:
         return model_backends.get_allocator(self.backend)
 
     @functools.cached_property
@@ -932,7 +932,7 @@ def initialize_driver(
     config: driver_config.ExperimentConfig,
     grid_manager: gm.GridManager,
     process_props: decomposition_defs.ProcessProperties,
-    backend: gtx_backend.Backend[Any] | None,
+    backend: gtx.typing.Backend | None,
 ) -> Icon4pyDriver:
     output_path = driver_config.prepare_output_directory(
         config_output_path=config.driver.output_path,
@@ -1107,7 +1107,7 @@ def run_driver(
     config: driver_config.ExperimentConfig,
     grid_manager: gm.GridManager,
     process_props: decomposition_defs.ProcessProperties,
-    backend: gtx_backend.Backend[Any] | None,
+    backend: gtx.typing.Backend | None,
 ) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
     icon4py_driver = initialize_driver(
         config=config,

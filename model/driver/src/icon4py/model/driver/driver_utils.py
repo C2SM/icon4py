@@ -18,7 +18,6 @@ from typing import Any, Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
@@ -88,7 +87,7 @@ def _muphys(
     grid: icon_grid.IconGrid,
     static_field_factories: static_fields.StaticFieldFactories,
     time_control: process_time_control.ProcessTimeControl,
-    backend: gtx_backend.Backend[Any] | None,
+    backend: gtx_typing.Backend | None,
 ) -> physics_process.PhysicsProcess[muphys_component.Muphys.Input, muphys_component.Muphys.Output]:
     if config.muphys is None:
         raise ValueError("The 'muphys' process is not configured.")
@@ -114,7 +113,7 @@ type _ProcessBuilder = Callable[
         icon_grid.IconGrid,
         static_fields.StaticFieldFactories,
         process_time_control.ProcessTimeControl,
-        gtx_backend.Backend[Any] | None,
+        gtx_typing.Backend | None,
     ],
     physics_process.PhysicsProcess[Any, Any],
 ]
@@ -215,7 +214,7 @@ def create_static_field_factories(
     decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
-    backend: gtx_backend.Backend[Any] | None,
+    backend: gtx_typing.Backend | None,
     process_props: decomposition_defs.ProcessProperties,
     geometry_config: geometry_configuration.GeometryConfig,
     interpolation_config: interpolation_factory.InterpolationConfig,
@@ -269,7 +268,7 @@ def initialize_granules(
     model_time_variables: driver_states.ModelTimeVariables,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
-    backend: gtx_backend.Backend[Any] | None,
+    backend: gtx_typing.Backend | None,
 ) -> Granules:
     geometry_field_source = static_field_factories.geometry
     interpolation_field_source = static_field_factories.interpolation
