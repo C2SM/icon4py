@@ -812,11 +812,10 @@ class TestTestAndBenchmark:
 
         suite = make_suite(OUTPUTS=("out",), reference=stencil_tests.static_reference(reference))
         wrapper = _seeded_wrapper(grid, "module:Suite:")
-        # the class-level stream is stateful, so its expectation is drawn from a fresh,
-        # identically seeded wrapper; `for_param` derives a fresh generator per call
-        case_alloc = (
-            wrapper.for_param(case_key) if case_key else _seeded_wrapper(grid, "module:Suite:")
-        )
+        # every case, parametrized or not, derives its expectation through `for_param`,
+        # exactly as `test_and_benchmark` does; `for_param` returns a fresh generator
+        # per call, so the expectation is at position 0 like the reference's draws
+        case_alloc = wrapper.for_param(case_key)
         expected = case_alloc.reference_rng.random(3)
         request = types.SimpleNamespace(
             config=types.SimpleNamespace(getoption=lambda name: False), node=node
@@ -833,6 +832,6 @@ class TestTestAndBenchmark:
         )
 
         np.testing.assert_array_equal(seen["draw"], expected)
-        if case_key:
-            # the per-case keying engaged: this is not the class-level stream
-            assert not np.array_equal(seen["draw"], wrapper.reference_rng.random(3))
+        # the reference never draws from the class-level stream: its stream is
+        # `for_param(case_key).reference_rng`, distinct from `wrapper.reference_rng`
+        assert not np.array_equal(seen["draw"], wrapper.reference_rng.random(3))
