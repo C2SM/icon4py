@@ -88,25 +88,25 @@ class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
 
         cell_domain = h_grid.domain(dims.CellDim)
         # the tendencies only on the prognostic subdomain
-        prognostic_cells = {
+        nudging_to_local_cell_range = {
             "horizontal_start": grid.start_index(cell_domain(h_grid.Zone.NUDGING)),
             "horizontal_end": grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
         }
-        cells = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_cells)}
-        levels = {"vertical_start": gtx.int32(0), "vertical_end": gtx.int32(grid.num_levels)}
+        cell_range = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(grid.num_cells)}
+        k_range = {"vertical_start": gtx.int32(0), "vertical_end": gtx.int32(grid.num_levels)}
 
         self._calculate_tendency = model_options.setup_program(
             program=compute_tendencies.compute_cell_kdim_field_tendency,
             backend=program_backend,
-            horizontal_sizes=prognostic_cells,
-            vertical_sizes=levels,
+            horizontal_sizes=nudging_to_local_cell_range,
+            vertical_sizes=k_range,
             offset_provider={},
         )
         self._copy_field = model_options.setup_program(
             program=generic_math_operations.copy_field_on_cell_k,
             backend=program_backend,
-            horizontal_sizes=cells,
-            vertical_sizes=levels,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
             offset_provider={},
         )
         if compute is None:

@@ -117,16 +117,16 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         # one sum per tendency the processes emit, by output name, made when first seen
         self.accumulators: dict[str, field.Field] = {}
 
-        cell_domain = {
+        cell_range = {
             "horizontal_start": gtx.int32(0),
             "horizontal_end": gtx.int32(self._grid.num_cells),
         }
-        edge_domain = {
+        edge_range = {
             "horizontal_start": gtx.int32(0),
             "horizontal_end": gtx.int32(self._grid.num_edges),
         }
-        k_domain = {"vertical_start": gtx.int32(0), "vertical_end": gtx.int32(self._grid.num_levels)}
-        khalf_domain = {
+        k_range = {"vertical_start": gtx.int32(0), "vertical_end": gtx.int32(self._grid.num_levels)}
+        khalf_range = {
             "vertical_start": gtx.int32(0),
             "vertical_end": gtx.int32(self._grid.num_levels + 1),
         }
@@ -135,15 +135,15 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self._diagnose_temperature = model_options.setup_program(
             program=compute_temperature.compute_virtual_temperature_and_temperature,
             backend=backend,
-            horizontal_sizes=cell_domain,
-            vertical_sizes=k_domain,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
             offset_provider={},
         )
         self._compute_surface_and_hydrostatic_pressure = model_options.setup_program(
             program=compute_pressure.compute_surface_and_hydrostatic_pressure,
             backend=backend,
-            horizontal_sizes=cell_domain,
-            vertical_sizes=k_domain,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
             offset_provider={},
         )
         # RBF reconstruction of the cell-centre wind from the edge-normal vn
@@ -154,43 +154,43 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
                 "ptr_coeff_1": static_state.rbf_vec_coeff_c1,
                 "ptr_coeff_2": static_state.rbf_vec_coeff_c2,
             },
-            horizontal_sizes=cell_domain,
-            vertical_sizes=k_domain,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
             offset_provider=self._grid.connectivities,
         )
         self._apply_tendency = model_options.setup_program(
             program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
             backend=backend,
-            horizontal_sizes=cell_domain,
-            vertical_sizes=k_domain,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
             offset_provider={},
         )
         self._apply_tendency_w = model_options.setup_program(
             program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_khalf,
             backend=backend,
-            horizontal_sizes=cell_domain,
-            vertical_sizes=khalf_domain,
+            horizontal_sizes=cell_range,
+            vertical_sizes=khalf_range,
             offset_provider={},
         )
         self._apply_tendency_vn = model_options.setup_program(
             program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_edge_k,
             backend=backend,
-            horizontal_sizes=edge_domain,
-            vertical_sizes=k_domain,
+            horizontal_sizes=edge_range,
+            vertical_sizes=k_range,
             offset_provider={},
         )
         self._compute_virtual_temperature_tendency = model_options.setup_program(
             program=compute_tendencies.compute_virtual_temperature_tendency,
             backend=backend,
-            horizontal_sizes=cell_domain,
-            vertical_sizes=k_domain,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
             offset_provider={},
         )
         self._update_exner_and_theta_v = model_options.setup_program(
             program=compute_temperature.update_exner_and_theta_v,
             backend=backend,
-            horizontal_sizes=cell_domain,
-            vertical_sizes=k_domain,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
             offset_provider={},
         )
         self._compute_vn_from_uv = model_options.setup_program(
@@ -201,8 +201,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
                 "primal_normal_cell_y": static_state.primal_normal_cell_y,
                 "c_lin_e": static_state.c_lin_e,
             },
-            horizontal_sizes=edge_domain,
-            vertical_sizes=k_domain,
+            horizontal_sizes=edge_range,
+            vertical_sizes=k_range,
             offset_provider=self._grid.connectivities,
         )
 
