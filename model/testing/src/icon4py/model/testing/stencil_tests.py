@@ -615,7 +615,7 @@ def test_and_benchmark(
         callspec = getattr(request.node, "callspec", None)
         case_alloc = (
             data_alloc.for_param(str(callspec.indices["input_data"]))
-            if callspec is not None
+            if callspec is not None and "input_data" in callspec.indices
             else data_alloc
         )
         reference_kwargs: dict[str, Any] = (

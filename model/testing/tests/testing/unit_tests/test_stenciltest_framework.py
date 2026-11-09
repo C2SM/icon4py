@@ -792,6 +792,13 @@ class TestTestAndBenchmark:
                 "0",
                 id="parametrized",
             ),
+            pytest.param(
+                types.SimpleNamespace(
+                    callspec=types.SimpleNamespace(indices={"static_variant": 0})
+                ),
+                "",
+                id="static_variant_only",
+            ),
             pytest.param(types.SimpleNamespace(), "", id="not_parametrized"),
         ],
     )
