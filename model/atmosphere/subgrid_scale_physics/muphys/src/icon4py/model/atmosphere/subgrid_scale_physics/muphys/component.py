@@ -78,13 +78,13 @@ class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
         dtime: time.RelativeTime,
         qnc: float,
         dz: fa.CellKField[ta.wpfloat],
-        backend: model_backends.BackendLike = None,
+        backend_like: model_backends.BackendLike = None,
         compute: Callable[..., Any] | None = None,
     ) -> None:
-        allocator = model_backends.get_allocator(backend)
+        allocator = model_backends.get_allocator(backend_like)
         self._dt_seconds = ta.wpfloat(dtime.total_seconds())
         self._dz = dz
-        program_backend = model_options.customize_backend(program=None, backend=backend)
+        backend = model_options.customize_backend(program=None, backend=backend_like)
 
         cell_domain = h_grid.domain(dims.CellDim)
         # the tendencies only on the prognostic subdomain
@@ -97,14 +97,14 @@ class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
 
         self._calculate_tendency = model_options.setup_program(
             program=compute_tendencies.compute_cell_kdim_field_tendency,
-            backend=program_backend,
+            backend=backend,
             horizontal_sizes=nudging_to_local_cell_range,
             vertical_sizes=k_range,
             offset_provider={},
         )
         self._copy_field = model_options.setup_program(
             program=generic_math_operations.copy_field_on_cell_k,
-            backend=program_backend,
+            backend=backend,
             horizontal_sizes=cell_range,
             vertical_sizes=k_range,
             offset_provider={},
@@ -115,7 +115,7 @@ class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
                 nlev=grid.num_levels,
                 dt=self._dt_seconds,
                 qnc=qnc,
-                backend=backend,
+                backend=backend_like,
                 single_program=False,
             )
         self._compute = compute

@@ -96,7 +96,7 @@ def _muphys(
         dtime=config.driver.dtime,
         qnc=config.muphys.qnc,
         dz=static_field_factories.metrics.get(metrics_attributes.DDQZ_Z_FULL),
-        backend=backend,
+        backend_like=backend,
     )
     return physics_process.PhysicsProcess(
         component=muphys,

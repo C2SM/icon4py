@@ -54,7 +54,7 @@ def _component(
         dtime=DTIME,
         qnc=100.0,
         dz=dz,
-        backend=None,
+        backend_like=None,
         compute=compute,
     )
     return component, dz

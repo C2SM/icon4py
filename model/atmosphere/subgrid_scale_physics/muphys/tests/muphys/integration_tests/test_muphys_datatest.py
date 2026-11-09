@@ -142,7 +142,7 @@ def test_muphys_granule(
         dtime=datetime.timedelta(seconds=dtime),
         qnc=muphys_configuration.qnc,
         dz=state["dz"],
-        backend=backend,
+        backend_like=backend,
         # The default Component setup is the separate-program mode.
         compute=muphys_program if single_program else None,
     )
