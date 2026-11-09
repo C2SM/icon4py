@@ -11,6 +11,7 @@
 import datetime
 import pathlib
 import uuid
+from collections.abc import Iterable
 
 import pytest
 
@@ -30,7 +31,7 @@ from .test_driver_diagnostics import (
     make_diagnostic_state,
     uniform_prognostic_state,
 )
-from .test_driver_output_sources import physics_diagnostics_store, rainfall_outputs
+from .test_driver_output_sources import allocated_physics_outputs, rainfall_outputs
 
 
 @pytest.fixture
@@ -98,7 +99,7 @@ def _assembler(
     io_config: common_io.IOConfig,
     *,
     tracer_config: tracer_states.TracerConfig | None = None,
-    physics_diagnostics: physics_state.DiagnosticsStore | None = None,
+    physics_diagnostics: Iterable[physics_state.DiagnosticOutput] | None = None,
 ) -> driver_io.OutputStateAssembler:
     return driver_io.OutputStateAssembler(
         io_config=io_config,
@@ -124,11 +125,11 @@ def test_available_variables_include_the_active_tracers(grid: base.Grid) -> None
     assert assembler.available_variables == {*ALL_OUTPUT_VARIABLES, "qv", "qc"}
 
 
-def test_available_variables_include_thephysics_diagnostics_store(grid: base.Grid) -> None:
+def test_available_variables_include_the_physics_diagnostic_outputs(grid: base.Grid) -> None:
     assembler = _assembler(
         grid,
         _io_config(("precipitation", ["rainfall_flux"])),
-        physics_diagnostics=physics_diagnostics_store(grid, rainfall_outputs()),
+        physics_diagnostics=allocated_physics_outputs(grid, rainfall_outputs()),
     )
     assert assembler.available_variables == {*ALL_OUTPUT_VARIABLES, "rainfall_flux"}
 
@@ -152,7 +153,7 @@ def test_validate_output_variables_rejects_ambiguous_names_only_when_requested(
     sources = driver_io.output_variable_sources(
         tracer_config=None,
         physics_outputs=driver_output_sources.physics_diagnostic_outputs(
-            physics_diagnostics_store(grid, {"muphys": {"rho": clashing}})
+            allocated_physics_outputs(grid, {"muphys": {"rho": clashing}})
         ),
     )
     assert sources["air_density"] == ["prognostic", "physics"]
@@ -180,7 +181,7 @@ def test_assembler_assembles_only_the_requested_variables(grid: base.Grid) -> No
             ("moisture", ["qv", "rainfall_flux"]),
         ),
         tracer_config=tracer_states.TracerConfig(qv=True),
-        physics_diagnostics=physics_diagnostics_store(grid, rainfall_outputs()),
+        physics_diagnostics=allocated_physics_outputs(grid, rainfall_outputs()),
     )
 
     diagnostic_state = make_diagnostic_state(grid)

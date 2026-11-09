@@ -18,7 +18,7 @@ the ``IOConfig`` against them at setup; :func:`create_io_monitor` builds the
 
 import pathlib
 import uuid
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Iterable, Mapping
 
 import gt4py.next as gtx
 import xarray as xr
@@ -107,7 +107,7 @@ class OutputStateAssembler:
         backend: gtx.typing.Backend | None,
         static_field_factories: static_fields.StaticFieldFactories,
         tracer_config: tracer_states.TracerConfig | None,
-        physics_diagnostics: physics_state.DiagnosticsStore | None,
+        physics_diagnostics: Iterable[physics_state.DiagnosticOutput] | None,
     ) -> None:
         self._tracer_names: tuple[str, ...] = (
             tracer_config.active_names if tracer_config is not None else ()
