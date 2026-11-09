@@ -240,21 +240,22 @@ def _input_data_fixture(
                 "A parametrized 'input_data' fixture must declare a 'request' parameter: the"
                 " parametrization id feeds the seed derivation."
             )
-        unwrapped = plain
 
+        @functools.wraps(plain)
         def seeded(
             data_alloc: DataAllocationWrapper, request: pytest.FixtureRequest, **kwargs: Any
         ) -> Any:
             param_id = str(ids(request.param))
-            return unwrapped(data_alloc.for_param(param_id), request=request, **kwargs)
+            return plain(data_alloc.for_param(param_id), request=request, **kwargs)
 
-        functools.wraps(plain)(seeded)
-        plain = cast(types.FunctionType, seeded)
+        fixture_function: Callable[..., Any] = seeded
+    else:
+        fixture_function = plain
 
     kwargs.setdefault("scope", "class")
     # Wrapped in a `staticmethod` because pytest deprecated class-scoped fixtures defined
     # as instance methods: `self` is a different instance there than in the test.
-    fixture = staticmethod(pytest.fixture(**kwargs)(plain))
+    fixture = staticmethod(pytest.fixture(**kwargs)(fixture_function))
     setattr(fixture, _INPUT_DATA_FIXTURE_MARKER, True)
 
     return fixture
