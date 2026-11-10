@@ -34,11 +34,10 @@ def compute_horizontal_tracer_flux_from_linear_coefficients_alt_numpy(  # noqa: 
     z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
     z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
     z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]
-    lvn_pos_inv = p_vn < 0.0
     return (
-        np.where(lvn_pos_inv, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
-        + distv_bary_1 * np.where(lvn_pos_inv, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
-        + distv_bary_2 * np.where(lvn_pos_inv, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
+        np.where(p_vn < 0.0, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
+        + distv_bary_1 * np.where(p_vn < 0.0, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
+        + distv_bary_2 * np.where(p_vn < 0.0, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
     ) * p_mass_flx_e
 
 
