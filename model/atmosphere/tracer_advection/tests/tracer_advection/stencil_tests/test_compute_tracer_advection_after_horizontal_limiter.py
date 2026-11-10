@@ -152,7 +152,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         k_half = data_alloc.index_field(dims.KHalfDim)
         geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
 
-        # Output fields (initialized to zero)
         p_mflx_tracer_h = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         p_tracer_new = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
