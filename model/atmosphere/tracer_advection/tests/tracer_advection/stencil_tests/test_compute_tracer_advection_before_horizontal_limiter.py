@@ -207,8 +207,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         p_mflx_tracer_h_unlimited = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         r_m = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
-        p_dtime = np.float64(5.0)
-        wp_eps = np.float64(1e-9)
         ivadv_tracer = gtx.int32(0)
         ihadv_tracer = request.param
         itype_hlimit = gtx.int32(4)
