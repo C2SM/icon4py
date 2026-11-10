@@ -306,7 +306,8 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         )
 
         p_tracer_after_vertical = p_tracer_now + np.zeros_like(p_tracer_now)
-
+        p_mflx_tracer_h_unlimited = np.zeros((grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype)
+        r_m = np.ones((grid.num_cells, grid.num_levels), dtype=rhodz_now.dtype)
         if ihadv_tracer == HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value:
             z_real_vt = compute_tangential_wind_numpy(p_vn, rbf_vec_coeff_e, connectivities)
             p_distv_bary_1, p_distv_bary_2 = compute_barycentric_backtrajectory_alt_numpy(
