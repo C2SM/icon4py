@@ -11,7 +11,10 @@ It supports both single-node and distributed (MPI) runs, including distributed
 output: in MPI runs the ranks write either through the root rank (`gather` mode)
 or each into its own block of a shared store (`distributed` mode, the default;
 see `icon4py.model.common.io`). Which variables are written, how often and into
-which files is configured in field groups (see [Output](#output)).
+which files is configured in field groups (see [Output](#output)). Optionally,
+some ranks are dedicated to output (`io.io_ranks_per_node`): the ranks running the
+model ship their fields to them and continue while the IO ranks write (see
+[Dedicated IO ranks](#dedicated-io-ranks)).
 
 ## Installation
 
@@ -42,6 +45,22 @@ mpirun -np 4 icon4py-driver \
     --config-file-path $CONFIG_FOLDER \
     --icon4py-backend gtfn_cpu
 ```
+
+With dedicated IO ranks (`io_ranks_per_node` in the `io` section) the launcher
+provides the compute *and* the IO ranks: on every node the last ranks only write.
+Here two nodes with four GPUs each run four compute ranks and one IO rank per node,
+i.e. ten tasks with `io_ranks_per_node: 1`; with the usual block placement, ranks 4
+and 9 write:
+
+```bash
+mpirun -np 10 icon4py-driver \
+    --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
+    --config-file-path $CONFIG_FOLDER \
+    --icon4py-backend gtfn_cpu
+```
+
+Fewer IO ranks than nodes are launched as described in
+[Dedicated IO ranks](#dedicated-io-ranks).
 
 ## Output
 
@@ -88,6 +107,59 @@ The variables a run can write are validated at startup. They are
 Fields are written with their horizontal dimension (`cell`, `edge` or `vertex`) and,
 if they have one, their vertical dimension (model or half levels): a surface field
 such as `surface_pressure` is stored as `(time, cell)`.
+
+### Dedicated IO ranks
+
+Some ranks of an MPI run can be dedicated to output: the model runs on the remaining
+compute ranks, which ship their output fields to the IO ranks at every capture step
+and continue computing while the IO ranks write (through the same backends and
+modes, on the IO ranks' communicator; see "Dedicated IO ranks" in
+`icon4py.model.common.io`). The launcher provides the tasks of both roles, and the
+`io` section says which of them write. There are two ways to say it; the examples
+run four compute ranks per node on ten nodes under Slurm (`C` computes, `O` writes).
+
+**IO ranks on every node** (`io_ranks_per_node`, the default way). On every node the
+last ranks write for the compute ranks of that node, so no output crosses the
+network. Every node needs at least twice as many ranks as IO ranks, so launch one
+task per node more than compute ranks:
+
+```yaml
+io:
+  io_ranks_per_node: 1
+```
+
+```bash
+# nodes 1-10:  C C C C O
+srun --nodes=10 --ntasks-per-node=5 icon4py-driver ...
+```
+
+**A total number of IO ranks** (`io_ranks`), for fewer IO ranks than nodes. The IO
+ranks are the last ranks of the nodes holding the most ranks, so launch as many tasks
+more than compute ranks and let the launcher place them: by default Slurm distributes
+the tasks evenly (`SLURM_TASKS_PER_NODE` reads `5(x2),4(x8)`), two nodes get a fifth
+task, and these two tasks write. The compute ranks of those two nodes ship to the IO
+rank of their node; the other nodes are shared evenly between the two IO ranks:
+
+```yaml
+io:
+  io_ranks: 2
+```
+
+```bash
+# nodes 1-2:   C C C C O
+# nodes 3-10:  C C C C
+srun --nodes=10 --ntasks=42 icon4py-driver ...
+```
+
+In a batch script the task count is the compute ranks plus the IO ranks
+(`--ntasks-per-node=5`, or `--nodes=10 --ntasks=42`): the driver takes the tasks the
+launcher provides and reads no Slurm variables. Request the GPUs per node
+(`--gpus-per-node=4`) rather than per task, since the IO tasks need none, and leave
+room for the extra task in `--cpus-per-task`.
+
+`io_ranks_per_node` and `io_ranks` exclude each other, and every IO rank needs at
+least one compute rank to serve. IO rank 0 logs the node it runs on and the compute
+ranks it serves.
 
 ## Configuration directory
 

@@ -89,6 +89,19 @@ def test_gather_distribution_single_rank_global_sizes_are_owned_counts() -> None
     assert horizontal_size.num_vertices == int(VERTEX_OWNER_MASK.sum())
 
 
+def test_global_horizontal_size_counts_owned_entries_only() -> None:
+    # the local grid holds its halos; the undecomposed sizes are the owned entries
+    # summed over the communicator (a single rank here)
+    size = distributed.global_horizontal_size(
+        decomposition.SingleNodeProcessProperties(), synthetic_decomposition_info()
+    )
+    assert size == base.HorizontalGridSize(
+        num_cells=int(CELL_OWNER_MASK.sum()),
+        num_edges=int(EDGE_OWNER_MASK.sum()),
+        num_vertices=int(VERTEX_OWNER_MASK.sum()),
+    )
+
+
 def test_gather_distribution_rejects_unknown_leading_dimension() -> None:
     distribution = distributed.GatherDistribution(
         decomposition.SingleNodeProcessProperties(), synthetic_decomposition_info()

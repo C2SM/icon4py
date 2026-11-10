@@ -8,19 +8,21 @@
 
 """Unit tests for the driver-side IO bridge (``driver_io``), data-free on the simple grid."""
 
+import dataclasses
 import datetime
 import pathlib
 import uuid
 from collections.abc import Iterable
 
+import numpy as np
 import pytest
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.decomposition import definitions as decomposition_defs, mpi_decomposition
 from icon4py.model.common.grid import base, simple, vertical as v_grid
-from icon4py.model.common.io import io as common_io
+from icon4py.model.common.io import io as common_io, io_servers
 from icon4py.model.common.states import model as state_model, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_diagnostics, driver_io, driver_output_sources
@@ -76,6 +78,7 @@ def test_create_io_monitor_passes_the_io_config(
         dtime=datetime.timedelta(seconds=1),
         process_props=decomposition_defs.SingleNodeProcessProperties(),
         decomposition_info=None,
+        io_ranks=None,
     )
 
     # the configuration carries the output directory
@@ -83,6 +86,120 @@ def test_create_io_monitor_passes_the_io_config(
     assert recorded["grid_file_name"] == tmp_path / "grid.nc"
     # the string grid id is converted to a UUID at the IO boundary
     assert recorded["grid_id"] == uuid.UUID(grid.id)
+
+
+def test_create_io_monitor_builds_a_client_with_io_ranks(
+    grid: base.Grid, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With dedicated IO ranks the compute side gets an ``IOClient`` on the intercomm.
+
+    ``IOClient`` is replaced by a recorder (its construction sends the setup); the
+    configuration handed to it is the one ``IOMonitor`` would get.
+    """
+    recorded: dict[str, object] = {}
+
+    class _RecordingClient:
+        def __init__(
+            self,
+            *,
+            config: common_io.IOConfig,
+            dtime: datetime.timedelta,
+            grid_id: uuid.UUID,
+            horizontal_size: base.HorizontalGridSize,
+            decomposition_info: decomposition_defs.DecompositionInfo,
+            intercomm: object,
+            io_rank: int,
+        ) -> None:
+            recorded["config"] = config
+            recorded["grid_id"] = grid_id
+            recorded["horizontal_size"] = horizontal_size
+            recorded["intercomm"] = intercomm
+            recorded["decomposition_info"] = decomposition_info
+            recorded["io_rank"] = io_rank
+
+    monkeypatch.setattr(io_servers, "IOClient", _RecordingClient)
+    intercomm = object()
+    io_ranks = mpi_decomposition.IORankSplit(
+        is_io_rank=False,
+        process_props=None,  # type: ignore[arg-type]  # not used by the recorder
+        intercomm=intercomm,  # type: ignore[arg-type]  # not used by the recorder
+        io_rank=3,
+        served_compute_ranks=(),
+    )
+    # a decomposed rank: two halo entries past the owned ones on every dimension
+    owned_counts = {dims.CellDim: 5, dims.EdgeDim: 7, dims.VertexDim: 3}
+    decomposition_info = decomposition_defs.DecompositionInfo()
+    for dim, owned in owned_counts.items():
+        owner_mask = np.asarray([True] * owned + [False, False])
+        decomposition_info.set_dimension(
+            dim,
+            np.arange(owned + 2, dtype=np.int64),
+            owner_mask,
+            np.where(
+                owner_mask,
+                decomposition_defs.DecompositionFlag.OWNED.value,
+                decomposition_defs.DecompositionFlag.FIRST_HALO_LEVEL.value,
+            ),
+        )
+    io_config = common_io.IOConfig(
+        output_path=tmp_path,
+        field_groups=[common_io.FieldGroupIOConfig(basename="a", variables=["air_density"])],
+        io_ranks_per_node=1,
+    )
+
+    io_monitor = driver_io.create_io_monitor(
+        io_config=io_config,
+        grid_file_path=tmp_path / "grid.nc",
+        grid=grid,
+        vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
+        dtime=datetime.timedelta(seconds=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
+        decomposition_info=decomposition_info,
+        io_ranks=io_ranks,
+    )
+    assert isinstance(io_monitor, _RecordingClient)
+    assert recorded["config"] is io_config
+    assert recorded["grid_id"] == uuid.UUID(grid.id)
+    # the IO rank gets the undecomposed sizes (the owned entries over the compute
+    # ranks), not this rank's halo-including grid sizes, which differ between ranks
+    assert recorded["horizontal_size"] == base.HorizontalGridSize(
+        num_cells=5, num_edges=7, num_vertices=3
+    )
+    assert recorded["horizontal_size"] != grid.config.horizontal_config
+    assert recorded["intercomm"] is intercomm
+    assert recorded["decomposition_info"] is decomposition_info
+    # the client ships to the IO rank the split assigned to this compute rank
+    assert recorded["io_rank"] == 3
+
+    with pytest.raises(ValueError, match="requires 'decomposition_info'"):
+        driver_io.create_io_monitor(
+            io_config=io_config,
+            grid_file_path=tmp_path / "grid.nc",
+            grid=grid,
+            vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
+            dtime=datetime.timedelta(seconds=1),
+            process_props=decomposition_defs.SingleNodeProcessProperties(),
+            decomposition_info=None,
+            io_ranks=io_ranks,
+        )
+    # the split and the configured IO ranks (on every node or in total) must agree, in
+    # both directions
+    for mismatched_config, mismatched_split in (
+        (dataclasses.replace(io_config, io_ranks_per_node=0), io_ranks),
+        (io_config, None),
+        (dataclasses.replace(io_config, io_ranks_per_node=0, io_ranks=1), None),
+    ):
+        with pytest.raises(ValueError, match="must agree"):
+            driver_io.create_io_monitor(
+                io_config=mismatched_config,
+                grid_file_path=tmp_path / "grid.nc",
+                grid=grid,
+                vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
+                dtime=datetime.timedelta(seconds=1),
+                process_props=decomposition_defs.SingleNodeProcessProperties(),
+                decomposition_info=decomposition_info,
+                io_ranks=mismatched_split,
+            )
 
 
 def _io_config(*groups: tuple[str, list[str]]) -> common_io.IOConfig:

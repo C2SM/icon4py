@@ -60,6 +60,7 @@ def test_benchmark_driver_init(
             grid_manager=grid_manager,
             process_props=props,
             backend=bench_backend,
+            io_ranks=None,
         )
         allocator = model_backends.get_allocator(bench_backend)
         return driver.initialize_driver_states(
@@ -94,6 +95,7 @@ def test_benchmark_driver_timeloop(
             grid_manager=driver_benchmark_grid_manager,
             process_props=process_props,
             backend=backend,
+            io_ranks=None,
         )
         allocator = model_backends.get_allocator(backend)
         ds = driver.initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
@@ -129,6 +131,7 @@ def test_benchmark_driver_total(
             grid_manager=driver_benchmark_grid_manager,
             process_props=process_props,
             backend=backend,
+            io_ranks=None,
         )
 
     benchmark.pedantic(
