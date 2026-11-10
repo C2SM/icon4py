@@ -23,9 +23,11 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.stencils import compute_airmass
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
     dimension as dims,
+    field,
     framework as fw,
     model_backends,
     model_options,
@@ -35,7 +37,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.framework import states
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
     grid_manager as gm,
@@ -366,22 +368,20 @@ class Icon4pyDriver:
 
         if self.granules.physics is not None:
             self.granules.physics.run(
-                prognostic=_untyped_prognostics(prognostic_states.next),
-                tracers=_untyped_tracers(tracers.next),
-                diagnostics=_untyped_diagnostics(diagnostic_state),
-                dtime=self.config.driver.dtime,
-                simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
-                # the air mass of the state the physics sees, ICON's ``mair`` (``airmass_new``)
-                air_mass=(
-                    tracer_advection_diagnostic_state.airmass_new
-                    if tracer_advection_diagnostic_state is not None
-                    else None
-                ),
-                perturbed_exner=(
-                    dycore_diagnostics.perturbed_exner_at_cells_on_model_levels
-                    if dycore_diagnostics is not None
-                    else None
-                ),
+                *self._physics_views(
+                    prognostic_states.next,
+                    tracers.next,
+                    air_mass=(
+                        tracer_advection_diagnostic_state.airmass_new
+                        if tracer_advection_diagnostic_state is not None
+                        else None
+                    ),
+                    perturbed_exner=(
+                        dycore_diagnostics.perturbed_exner_at_cells_on_model_levels
+                        if dycore_diagnostics is not None
+                        else None
+                    ),
+                )
             )
 
         prognostic_states.swap()
@@ -670,6 +670,47 @@ class Icon4pyDriver:
 
     # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.
+    def _physics_views(
+        self,
+        prognostic_state: states.PrognosticState,
+        tracer_state: states.TracerState,
+        *,
+        air_mass: field.Field[qty.AirMassOnCellK] | None,
+        perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None,
+    ) -> tuple[physics_driver.PhysicsDriver.Input, physics_driver.PhysicsDriver.Output]:
+        """The physics' views: the tendencies are applied in place, so both sides share the states."""
+        input = physics_driver.PhysicsDriver.Input(
+            vn=prognostic_state.vn,
+            w=prognostic_state.w,
+            exner=prognostic_state.exner,
+            theta_v=prognostic_state.theta_v,
+            rho=prognostic_state.rho,
+            qv=tracer_state.qv,
+            qc=tracer_state.qc,
+            qi=tracer_state.qi,
+            qr=tracer_state.qr,
+            qs=tracer_state.qs,
+            qg=tracer_state.qg,
+            air_mass=air_mass,
+            simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
+        )
+        output = physics_driver.PhysicsDriver.Output(
+            vn=prognostic_state.vn,
+            w=prognostic_state.w,
+            exner=prognostic_state.exner,
+            theta_v=prognostic_state.theta_v,
+            qv=tracer_state.qv,
+            qc=tracer_state.qc,
+            qi=tracer_state.qi,
+            qr=tracer_state.qr,
+            qs=tracer_state.qs,
+            qg=tracer_state.qg,
+            perturbed_exner=perturbed_exner,
+        )
+        return input, output
+
+    # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
+    # (`fw.collect`) instead of spelled out by keyword.
     def _diffusion_views(
         self,
         prognostic_state: states.PrognosticState,
@@ -841,8 +882,8 @@ class Icon4pyDriver:
             )
 
 
-# TODO(jcanton): temporary, until the physics and the IO run on the typed states: the untyped
-# states they take, over the same buffers
+# TODO(jcanton): temporary, until the IO runs on the typed states: the untyped states it
+# takes, over the same buffers
 def _untyped_prognostics(state: states.PrognosticState) -> prognostics.PrognosticState:
     return prognostics.PrognosticState(
         rho=state.rho, w=state.w, vn=state.vn, exner=state.exner, theta_v=state.theta_v
@@ -930,8 +971,6 @@ def initialize_driver(
             allocator=allocator,
         ),
         backend=backend,
-        process_props=process_props,
-        decomposition_info=decomposition_info,
     )
     io_monitor = output_assembler = None
     if config.io is not None:

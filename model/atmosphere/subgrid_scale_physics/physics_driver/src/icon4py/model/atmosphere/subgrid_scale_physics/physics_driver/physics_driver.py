@@ -6,182 +6,477 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""The ``PhysicsDriver`` and its process / time-control types."""
-
 from __future__ import annotations
 
-import dataclasses
-import datetime
-from typing import TYPE_CHECKING, Any, Protocol
+from collections.abc import Iterator, Sequence
+from typing import TYPE_CHECKING
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
-    ProcessTimeControl,
+import gt4py.next as gtx
+
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    physics_process,
+    physics_state,
+    static_fields,
 )
-from icon4py.model.common.components.component_state import ComponentState
-from icon4py.model.common.components.components import Component
-from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common import (
+    dimension as dims,
+    field,
+    framework as fw,
+    model_backends,
+    model_options,
+    quantity,
+    time,
+)
+from icon4py.model.common.framework import quantities as qty, states
+from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
+from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
+    edge_2_cell_vector_rbf_interpolation,
+)
+from icon4py.model.common.math.stencils import generic_math_operations
+from icon4py.model.common.physics.thermodynamics import (
+    compute_pressure,
+    compute_temperature,
+    compute_tendencies,
+)
+from icon4py.model.common.states import model
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
-    import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+    from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import (
-        diagnostic_state,
-        factory,
-        prognostic_state,
-        tracer_states,
-    )
 
 
-class PhysicsComponent(Component[Any, Any], Protocol):
-    """A ``Component`` that can adopt diagnostic output buffers owned by its caller.
+class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"]):
+    """
+    Runs the physics processes under ICON AES's sequential coupling (aes_phy_main).
 
-    The generic ``Component`` protocol is deliberately left untouched: writing
-    results into memory the caller owns is a physics-coupling concern, not a
-    property every model component should have to satisfy. Declaring the
-    extension here keeps that decision while still letting the driver call
-    ``bind_output_buffers`` under type checking rather than by duck typing.
+    In one step the physics state is diagnosed once from the prognostics, then the processes
+    run in list order. Each process's tendencies are summed over the processes and added to
+    the physics state in place before the next one runs, so each process sees the state the
+    previous ones advanced. At the end exner, theta_v, the perturbed exner (when given) and vn
+    are updated once from the advanced state and the summed wind tendencies (phy2dyn), and the
+    halos of what the physics wrote are synced.
+
+    `input` is read only and `output` continues it: the driver copies `input` into `output`
+    and advances `output`. The driver passes the same buffers as both, in place.
     """
 
-    def bind_output_buffers(self, buffers: dict[str, Any]) -> None:
-        """Adopt caller-owned buffers for this component's diagnostic outputs.
+    class Input(fw.State):
+        vn: field.Field[qty.VnOnEdgeK]
+        w: field.Field[qty.WOnCellKHalf]
+        exner: field.Field[qty.ExnerOnCellK]
+        theta_v: field.Field[qty.ThetaVOnCellK]
+        rho: field.Field[qty.RhoOnCellK]
+        qv: field.Field[qty.QvOnCellK] | None = None
+        qc: field.Field[qty.QcOnCellK] | None = None
+        qi: field.Field[qty.QiOnCellK] | None = None
+        qr: field.Field[qty.QrOnCellK] | None = None
+        qs: field.Field[qty.QsOnCellK] | None = None
+        qg: field.Field[qty.QgOnCellK] | None = None
+        # the air mass of the state the physics sees, ICON's `mair` (the dycore's `airmass_new`)
+        air_mass: field.Field[qty.AirMassOnCellK] | None = None
+        # the end of the step being integrated
+        simulation_current_datetime: time.AbsoluteTime
 
-        Implementations keep their own allocations as the default and replace
-        them with these, so the results are written in place, without a copy.
-        """
-        ...
-
-
-@dataclasses.dataclass
-class PhysicsProcess:
-    """One physics process: its component, its state adapter and its time control.
-
-    The state adapter belongs to the process rather than being shared, because it
-    maps the PhysicsState to the input names of this one component. The process also
-    decides whether it runs on a given step and keeps its last computed outputs, so
-    a step between two firings can reuse them.
-    """
-
-    name: str
-    component: PhysicsComponent
-    state: ComponentState
-    time_control: ProcessTimeControl
-    _cached_output: dict[str, Any] | None = dataclasses.field(default=None, init=False, repr=False)
-
-    def run(
-        self,
-        state: physics_state.PhysicsState,
-        step_start_datetime: datetime.datetime,
-        dtime: datetime.timedelta,
-    ) -> dict[str, Any]:
-        """This step's outputs: freshly computed, recycled, or empty if it does not run.
-
-        Takes the PhysicsState rather than the component's input mapping: building
-        that mapping may derive inputs of its own, which must not happen on a step
-        where the component does not compute.
-        """
-        tc = self.time_control
-        tc.validate_interval(dtime)
-        # Outside its window the process contributes nothing -- and must not reach the
-        # recycling branch below, which would compute once on the first step.
-        if not tc.is_in_window(step_start_datetime):
-            return {}
-        # Compute on a firing (active) step, and also on the first in-window step -- when
-        # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
-        if tc.is_active(step_start_datetime) or self._cached_output is None:
-            self._cached_output = self.component(
-                self.state.as_component_input(state), step_start_datetime
-            )
-        return self._cached_output
-
-
-class PhysicsDriver:
-    """Runs the physics processes under ICON's sequential coupling.
-
-    In one timestep (``run``) the PhysicsState is diagnosed once from the model
-    state, then the processes run in list order. The coupling is sequential: each
-    process's tendencies are summed over the processes (``Tendencies.accumulate``)
-    and added to the state in place before the next one runs (``PhysicsState.update``).
-
-    At the end of the step ``PhysicsState.update_prognostics`` writes exner, theta_v and
-    vn back and syncs the halos of what the physics wrote.
-    """
+    class Output(fw.State):
+        vn: field.Field[qty.VnOnEdgeK]
+        w: field.Field[qty.WOnCellKHalf]
+        exner: field.Field[qty.ExnerOnCellK]
+        theta_v: field.Field[qty.ThetaVOnCellK]
+        qv: field.Field[qty.QvOnCellK] | None = None
+        qc: field.Field[qty.QcOnCellK] | None = None
+        qi: field.Field[qty.QiOnCellK] | None = None
+        qr: field.Field[qty.QrOnCellK] | None = None
+        qs: field.Field[qty.QsOnCellK] | None = None
+        qg: field.Field[qty.QgOnCellK] | None = None
+        # the dycore's, updated with exner when given
+        perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None = None
 
     def __init__(
         self,
-        processes: list[PhysicsProcess],
-        state: physics_state.PhysicsState,
-        tendencies: physics_state.Tendencies,
-    ) -> None:
-        self._processes = processes
-        self._state = state
-        self._tendencies = tendencies
-        for process in processes:
-            process.component.bind_output_buffers(
-                state.allocate_process_diagnostics(
-                    process.name, process.component.outputs_properties
-                )
-            )
-
-    def diagnostic_outputs(self) -> Iterator[physics_state.DiagnosticOutput]:
-        """The processes' diagnostic output buffers with their metadata, for the model output."""
-        return self._state.diagnostic_outputs()
-
-    @classmethod
-    def from_sources(
-        cls,
-        processes: list[PhysicsProcess],
+        processes: Sequence[physics_process.PhysicsProcess],
         *,
+        dtime: time.RelativeTime,
         grid: base_grid.Grid,
-        geometry: factory.FieldSource,
-        interpolation: factory.FieldSource,
-        metrics: factory.FieldSource,
-        backend: gtx_typing.Backend | None = None,
-        process_props: decomposition.ProcessProperties,
-        decomposition_info: decomposition.DecompositionInfo,
-    ) -> PhysicsDriver:
-        """Build the driver together with the coupling pieces it owns.
+        static_state: static_fields.PhysicsDriverStaticState,
+        exchange: decomposition.ExchangeRuntime,
+        backend: model_backends.BackendLike = None,
+    ) -> None:
+        if mismatched := [
+            p.time_control.driver_dtime for p in processes if p.time_control.driver_dtime != dtime
+        ]:
+            raise ValueError(
+                f"the processes' time controls must use the driver's dtime {dtime}, got {mismatched}"
+            )
+        self.dtime = dtime
+        self._grid = grid
+        self._exchange = exchange
+        self._allocator = model_backends.get_allocator(backend)
+        self._process_outputs: dict[physics_process.PhysicsProcess, fw.State] = {
+            process: fw.allocate(process.Output, self._grid, self._allocator)
+            for process in processes
+        }
+        # the process outputs other processes read through the physics state, one provider each
+        self._provided: dict[str, field.Field] = {}
+        for process_output in self._process_outputs.values():
+            for name, field_ in fw.fields(process_output).items():
+                if name not in physics_state.PROVIDED_BY_PROCESSES:
+                    continue
+                if name in self._provided:
+                    raise ValueError(f"'{name}' is provided by more than one physics process")
+                self._provided[name] = field_
+        # the diagnostics the processes read, derived here each step
+        self.diagnostics = fw.allocate(states.Diagnostics, self._grid, self._allocator)
+        # one sum per tendency the processes emit, by output name, made when first seen
+        self.accumulators: dict[str, field.Field] = {}
 
-        The pieces stay constructor arguments so a caller -- a test, above all --
-        can substitute them; this is the assembly every real caller wants.
-        """
-        return cls(
-            processes,
-            state=physics_state.PhysicsState(
-                grid=grid,
-                geometry=geometry,
-                interpolation=interpolation,
-                metrics=metrics,
-                process_props=process_props,
-                decomposition_info=decomposition_info,
-                backend=backend,
-            ),
-            tendencies=physics_state.Tendencies(backend=backend),
+        cell_range = {
+            "horizontal_start": gtx.int32(0),
+            "horizontal_end": gtx.int32(self._grid.num_cells),
+        }
+        edge_range = {
+            "horizontal_start": gtx.int32(0),
+            "horizontal_end": gtx.int32(self._grid.num_edges),
+        }
+        k_range = {"vertical_start": gtx.int32(0), "vertical_end": gtx.int32(self._grid.num_levels)}
+        khalf_range = {
+            "vertical_start": gtx.int32(0),
+            "vertical_end": gtx.int32(self._grid.num_levels + 1),
+        }
+
+        self._ddqz_z_full = static_state.ddqz_z_full
+        self._diagnose_temperature = model_options.setup_program(
+            program=compute_temperature.compute_virtual_temperature_and_temperature,
+            backend=backend,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
+            offset_provider={},
+        )
+        self._compute_surface_and_hydrostatic_pressure = model_options.setup_program(
+            program=compute_pressure.compute_surface_and_hydrostatic_pressure,
+            backend=backend,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
+            offset_provider={},
+        )
+        # RBF reconstruction of the cell-centre wind from the edge-normal vn
+        self._rbf_interpolation = model_options.setup_program(
+            program=edge_2_cell_vector_rbf_interpolation,
+            backend=backend,
+            constant_args={
+                "ptr_coeff_1": static_state.rbf_vec_coeff_c1,
+                "ptr_coeff_2": static_state.rbf_vec_coeff_c2,
+            },
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
+            offset_provider=self._grid.connectivities,
+        )
+        self._apply_tendency = model_options.setup_program(
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
+            backend=backend,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
+            offset_provider={},
+        )
+        self._apply_tendency_w = model_options.setup_program(
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_khalf,
+            backend=backend,
+            horizontal_sizes=cell_range,
+            vertical_sizes=khalf_range,
+            offset_provider={},
+        )
+        self._apply_tendency_vn = model_options.setup_program(
+            program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_edge_k,
+            backend=backend,
+            horizontal_sizes=edge_range,
+            vertical_sizes=k_range,
+            offset_provider={},
+        )
+        self._compute_virtual_temperature_tendency = model_options.setup_program(
+            program=compute_tendencies.compute_virtual_temperature_tendency,
+            backend=backend,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
+            offset_provider={},
+        )
+        self._update_exner_and_theta_v = model_options.setup_program(
+            program=compute_temperature.update_exner_and_theta_v,
+            backend=backend,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
+            offset_provider={},
+        )
+        self._update_exner_theta_v_and_perturbed_exner = model_options.setup_program(
+            program=compute_temperature.update_exner_theta_v_and_perturbed_exner,
+            backend=backend,
+            horizontal_sizes=cell_range,
+            vertical_sizes=k_range,
+            offset_provider={},
+        )
+        self._compute_vn_from_uv = model_options.setup_program(
+            program=compute_vn_from_uv,
+            backend=backend,
+            constant_args={
+                "primal_normal_cell_x": static_state.primal_normal_cell_x,
+                "primal_normal_cell_y": static_state.primal_normal_cell_y,
+                "c_lin_e": static_state.c_lin_e,
+            },
+            horizontal_sizes=edge_range,
+            vertical_sizes=k_range,
+            offset_provider=self._grid.connectivities,
         )
 
-    def run(
-        self,
-        *,
-        prognostic: prognostic_state.PrognosticState,
-        tracers: tracer_states.TracerState,
-        diagnostics: diagnostic_state.DiagnosticState,
-        dtime: datetime.timedelta,
-        simulation_current_datetime: datetime.datetime,
-        air_mass: fa.CellKField[ta.wpfloat] | None = None,
-        perturbed_exner: fa.CellKField[ta.wpfloat] | None = None,
+        # A scan's range is deduced from its single output domain, so the half-level pressure
+        # lands on model levels first and compute_surface_and_hydrostatic_pressure copies it up.
+        self._pressure_ifc_on_model_levels = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=self._allocator
+        )
+        self._virtual_temperature_tendency = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=self._allocator
+        )
+        self._vn_tendency = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, allocator=self._allocator
+        )
+
+    def run(self, input: Input, output: Output) -> Output:
+        dt_seconds = self.dtime.total_seconds()
+        # the processes advance `output`, which continues `input`
+        fw.copy_to_output(input, output)
+        state = self._diagnose(input, output)
+        self._zero_accumulators()
+        for process, process_output in self._process_outputs.items():
+            process.run(state, process_output)
+            self._accumulate(process_output)
+            self._advance(state, process_output, dt_seconds)
+        self._update_prognostics(state, dt_seconds, output)
+        return output
+
+    def diagnostic_outputs(self) -> Iterator[physics_state.DiagnosticOutput]:
+        """
+        The processes' diagnostic (non-tendency) output buffers with their metadata.
+
+        They hold the values of the last step the process computed, zeros before that.
+        """
+        for process, process_output in self._process_outputs.items():
+            process_name = type(process.component).__name__.lower()
+            for name, field_ in fw.fields(process_output).items():
+                if issubclass(field_.quantity, quantity.Tendency):
+                    continue
+                yield physics_state.DiagnosticOutput(
+                    process_name=process_name,
+                    name=name,
+                    metadata=model.FieldMetaData(
+                        standard_name=field_.quantity.standard_name,
+                        long_name=field_.quantity.long_name,
+                        units=field_.quantity.units,
+                        dims=field_.quantity.dims,
+                    ),
+                    field=field_,
+                )
+
+    @staticmethod
+    def _require_tracer[Q: quantity.Quantity](field: field.Field[Q] | None) -> field.Field[Q]:
+        """A tracer leaf the physics requires."""
+        if field is None:
+            raise ValueError("physics requires all moisture species active in the TracerState")
+        return field
+
+    # NOTE: temporary, components MWE parts 04 (recipes) and 05 (derived inputs): the
+    # diagnostics become recipes, which the processes define on their `Input`, and `_diagnose` goes.
+    def _diagnose(self, input: Input, output: Output) -> physics_state.PhysicsState:
+        """
+        The physics state and the diagnostics derived from `input` (dyn2phy).
+
+        The fields the processes advance (w and the tracers) are the ones of `output`, which
+        continues `input`; the others are read only and stay the ones of `input`.
+
+        At the end the halos of rho, u, v and w are synced for the horizontal operations of
+        the physics, as ICON's interface does before tmx (mo_interface_iconam_aes): diffusion
+        skips the cell sync of w under AES forcing.
+        """
+        # The tracers are optional leaves (a tracer may be inactive in the TracerConfig): fail
+        # here rather than feed None to the physics.
+        if missing := [name for name in states.TRACERS if getattr(output, name) is None]:
+            raise ValueError(
+                f"physics requires all moisture species active in the TracerState; missing: {missing}"
+            )
+        diagnostics = self.diagnostics
+        state = physics_state.PhysicsState(
+            vn=input.vn,
+            w=output.w,
+            exner=input.exner,
+            theta_v=input.theta_v,
+            rho=input.rho,
+            qv=self._require_tracer(output.qv),
+            qc=self._require_tracer(output.qc),
+            qi=self._require_tracer(output.qi),
+            qr=self._require_tracer(output.qr),
+            qs=self._require_tracer(output.qs),
+            qg=self._require_tracer(output.qg),
+            temperature=diagnostics.temperature,
+            virtual_temperature=diagnostics.virtual_temperature,
+            pressure=diagnostics.pressure,
+            pressure_ifc=diagnostics.pressure_ifc,
+            u=diagnostics.u,
+            v=diagnostics.v,
+            air_mass=input.air_mass,
+            **self._provided,
+            step_start=input.simulation_current_datetime - self.dtime,
+        )
+        # 1. virtual temperature and temperature
+        self._diagnose_temperature(
+            qv=state.qv,
+            qc=state.qc,
+            qi=state.qi,
+            qr=state.qr,
+            qs=state.qs,
+            qg=state.qg,
+            theta_v=state.theta_v,
+            exner=state.exner,
+            virtual_temperature=state.virtual_temperature,
+            temperature=state.temperature,
+        )
+        # 2. surface pressure at the bottom interface, then the full pressure column
+        self._compute_surface_and_hydrostatic_pressure(
+            exner=state.exner,
+            virtual_temperature=state.virtual_temperature,
+            ddqz_z_full=self._ddqz_z_full,
+            pressure=state.pressure,
+            pressure_ifc_on_model_levels=self._pressure_ifc_on_model_levels,
+            pressure_ifc=state.pressure_ifc,
+        )
+        # 3. cell-centre (u, v) from the edge-normal vn
+        self._rbf_interpolation(p_e_in=state.vn, p_u_out=state.u, p_v_out=state.v)
+        # 4. halo sync for the horizontal operations of the physics: tmx interpolates w to the
+        #    vertices and edges of its owned cells, and diffusion left the halo of w stale.
+        # TODO(yiluchen1066): drop this exchange. It duplicates work: tmx syncs u and v itself
+        # and the dycore syncs rho at the end of the step; only w is stale here. Sync w and
+        # rho at the end of diffusion instead.
+        self._exchange.exchange(dims.CellDim, state.rho, state.u, state.v, state.w)
+        return state
+
+    # NOTE: temporary, components MWE parts 07 (tendencies) and 08 (updates): 07 keys the
+    # accumulators by the tendency's parent quantity instead of its output name; 08 replaces
+    # `_zero_accumulators`, `_accumulate`, `_advance` and `_update_prognostics` with the updates
+    # each process declares.
+    def _zero_accumulators(self) -> None:
+        for accumulator in self.accumulators.values():
+            accumulator.ndarray[...] = 0.0  # type: ignore[index]
+
+    def _accumulate(self, output: fw.State) -> None:
+        """
+        Add every `Tendency` leaf of a process output to the sum of its name.
+
+        Element-wise with no neighbour access, so a plain array operation rather than a stencil.
+        """
+        for name, field_ in fw.fields(output, kind=quantity.Tendency).items():
+            if (accumulator := self.accumulators.get(name)) is None:
+                accumulator = self.accumulators[name] = fw.zeros(
+                    field_.quantity, self._grid, self._allocator
+                )
+            accumulator.ndarray[...] += field_.ndarray  # type: ignore[index]
+
+    def _advance(
+        self, state: physics_state.PhysicsState, output: fw.State, dt_seconds: float
     ) -> None:
-        step_start_datetime = simulation_current_datetime - dtime
-        self._state.compute_diagnostics(prognostic, tracers, diagnostics, air_mass)
-        self._tendencies.zero()
-        dt_seconds = dtime.total_seconds()
-        for process in self._processes:
-            outputs = process.run(self._state, step_start_datetime, dtime)
-            outputs_properties = process.component.outputs_properties
-            self._tendencies.accumulate(outputs, outputs_properties)
-            self._state.update(outputs, outputs_properties, dt_seconds)
-        self._state.update_prognostics(self._tendencies.sums, dt_seconds, perturbed_exner)
+        """
+        Add a process's tendencies to the physics state in place: field += dt * tendency.
+
+        The next process reads the advanced temperature, u, v, w and tracers (ICON AES
+        `fc_xxx = 1`); the virtual temperature and the pressure stay at step start. Each
+        tendency must be the tendency of one of these fields.
+        """
+        targets: dict[str, field.Field] = {
+            "tend_temperature": state.temperature,
+            "tend_u": state.u,
+            "tend_v": state.v,
+            "tend_w": state.w,
+            **{f"tend_{name}": getattr(state, name) for name in states.TRACERS},
+        }
+        for name, tendency in fw.fields(output, kind=quantity.Tendency).items():
+            if (target := targets.get(name)) is None:
+                raise ValueError(
+                    f"tendency output '{name}' is not the tendency of an advanced field; "
+                    f"expected one of {list(targets)}"
+                )
+            apply = self._apply_tendency_w if name == "tend_w" else self._apply_tendency
+            apply(field_a=target, coeff=dt_seconds, field_b=tendency, output_field=target)
+
+    def _update_prognostics(
+        self, state: physics_state.PhysicsState, dt_seconds: float, output: Output
+    ) -> None:
+        """
+        Exner, theta_v, the perturbed exner and vn into `output`, once (phy2dyn).
+
+        The tracers, temperature, u, v and w were already advanced in place; exner and theta_v
+        follow from the final temperature and moisture, and vn from the summed wind tendencies.
+
+        The exit halo exchanges of the interface happen here, as in ICON's
+        mo_interface_iconam_aes: the summed wind tendencies before their projection, since an
+        owned edge reads the sums of a halo cell and the sync of vn only repairs halo edges, and
+        at the end what the physics wrote.
+
+        TODO(yiluchen1066): ICON clips negative tracers at the entry and the exit of the
+        interface (`iqneg_d2p` / `iqneg_p2d`: set to zero and move the deficit over dt into the
+        tendency; default off, the APE experiment sets both to 2). Port it with the two config
+        members before the exner update here and in `_diagnose`; the APE archive's config has to
+        be regenerated for the switches.
+        """
+        acc = self.accumulators
+        self._compute_virtual_temperature_tendency(
+            dtime=dt_seconds,
+            qv=state.qv,
+            qc=state.qc,
+            qi=state.qi,
+            qr=state.qr,
+            qs=state.qs,
+            qg=state.qg,
+            temperature=state.temperature,
+            virtual_temperature=state.virtual_temperature,
+            virtual_temperature_tendency=self._virtual_temperature_tendency,
+        )
+        if output.perturbed_exner is None:
+            self._update_exner_and_theta_v(
+                rho=state.rho,
+                virtual_temperature=state.virtual_temperature,
+                virtual_temperature_tendency=self._virtual_temperature_tendency,
+                dtime=dt_seconds,
+                exner=output.exner,
+                theta_v=output.theta_v,
+            )
+        else:
+            self._update_exner_theta_v_and_perturbed_exner(
+                rho=state.rho,
+                virtual_temperature=state.virtual_temperature,
+                virtual_temperature_tendency=self._virtual_temperature_tendency,
+                dtime=dt_seconds,
+                exner=output.exner,
+                theta_v=output.theta_v,
+                perturbed_exner=output.perturbed_exner,
+            )
+
+        # one projection of the summed (u, v) tendencies onto vn, when a process produced them
+        wind_tendencies = {"tend_u", "tend_v"} & acc.keys()
+        if len(wind_tendencies) == 1:
+            (declared,) = wind_tendencies
+            raise ValueError(
+                f"the horizontal wind tendencies are applied as a pair; got only {declared}"
+            )
+        if wind_tendencies:
+            self._exchange.exchange(dims.CellDim, acc["tend_u"], acc["tend_v"])
+            self._compute_vn_from_uv(u=acc["tend_u"], v=acc["tend_v"], vn=self._vn_tendency)
+            self._apply_tendency_vn(
+                field_a=output.vn,
+                coeff=dt_seconds,
+                field_b=self._vn_tendency,
+                output_field=output.vn,
+            )
+
+        written_cells: list[field.Field] = [getattr(state, name) for name in states.TRACERS]
+        written_cells += [output.w, output.exner, output.theta_v]
+        if output.perturbed_exner is not None:
+            written_cells.append(output.perturbed_exner)
+        self._exchange.exchange(dims.CellDim, *written_cells)
+        if wind_tendencies:
+            self._exchange.exchange(dims.EdgeDim, output.vn)
