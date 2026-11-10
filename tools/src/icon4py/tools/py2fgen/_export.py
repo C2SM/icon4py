@@ -8,6 +8,7 @@
 
 import dataclasses
 import functools
+import inspect
 import types
 import typing
 from collections.abc import Callable, Mapping
@@ -101,6 +102,7 @@ class _DecoratedFunction:
     annotation_descriptor_hook: AnnotationDescriptorHook | None
     annotation_mapping_hook: AnnotationMappingHook | None
     param_descriptors: _definitions.ParamDescriptors | None
+    with_metadata: bool = dataclasses.field(init=False)
     _mapping: Mapping[str, Callable] = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
@@ -112,6 +114,11 @@ class _DecoratedFunction:
                 raise ValueError(
                     "Exported functions must not have a return type. Use 'None' instead."
                 )
+
+        self.with_metadata = (
+            _definitions.METADATA_PARAM_NAME in inspect.signature(self._fun).parameters
+        )
+        type_hints.pop(_definitions.METADATA_PARAM_NAME, None)
 
         self.param_descriptors = get_param_descriptors(
             type_hints, self.param_descriptors, self.annotation_descriptor_hook
@@ -160,6 +167,9 @@ def export(
     therefore it is recommended to use a cache for the mapping function.
 
     A default mapping is provided, see ``_conversion.default_mapping()``.
+
+    If the function has a parameter named '_metadata', it is not part of the Fortran interface,
+    instead it receives the runtime ``Metadata`` of the call.
     """
 
     # precise typing is impossible since we are manipulating the args (e.g. ArrayInfo to the Python runtime objects)

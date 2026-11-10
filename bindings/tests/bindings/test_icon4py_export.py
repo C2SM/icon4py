@@ -39,10 +39,10 @@ SomeDim = gtx.Dimension("SomeDim")
 def make_array_info(
     ptr: cffi.FFI.CData,
     shape: tuple[int, ...],
-    on_gpu: bool,
+    use_device: bool,
     is_optional: bool,
 ) -> py2fgen.ArrayInfo:
-    return (ptr, shape, on_gpu, is_optional)
+    return (ptr, shape, use_device, is_optional)
 
 
 @export_with_mapping_hook
@@ -58,7 +58,7 @@ def test_mapping_hook():
     result_a, result_b = foo(
         ffi=ffi,
         perf_counters={},
-        a=make_array_info(shape=(10,), ptr=array_ptr, on_gpu=False, is_optional=False),
+        a=make_array_info(shape=(10,), ptr=array_ptr, use_device=False, is_optional=False),
         b=5,
     )
     assert hasattr(result_a, "ndarray")

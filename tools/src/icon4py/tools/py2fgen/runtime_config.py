@@ -9,12 +9,21 @@
 import collections
 import contextlib
 import os
+import typing
 from types import TracebackType
 
 from gt4py import eve
 
 
-def _env_flag_to_bool(name: str, default: bool) -> bool:
+@typing.overload
+def _env_flag_to_bool(name: str, default: bool) -> bool: ...
+
+
+@typing.overload
+def _env_flag_to_bool(name: str, default: None) -> bool | None: ...
+
+
+def _env_flag_to_bool(name: str, default: bool | None) -> bool | None:
     """Recognize true or false signaling string values."""
     flag_value = None
     if name in os.environ:
@@ -46,6 +55,14 @@ def _env_to_strenum[T: eve.StrEnum](name: str, enum_type: type[T], default: T) -
 
 PROFILING: bool = _env_flag_to_bool("PY2FGEN_PROFILING", False)
 """Enable profiling for the PY2FGEN generated bindings."""
+
+USE_DEVICE: bool | None = _env_flag_to_bool("PY2FGEN_USE_DEVICE", None)
+"""
+Run on the device even if the Fortran side passes host pointers (requires unified memory).
+
+If unset, the device is used if and only if the Fortran bindings were compiled with OpenACC.
+Disabling it while the Fortran side passes device pointers is an error.
+"""
 
 
 class Py2fgenLogLevels(eve.StrEnum):
