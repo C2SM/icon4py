@@ -105,7 +105,9 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
 
         _p_mflx_tracer_v = np.zeros_like(p_mflx_contra_v)
         r_m = np.ones((grid.num_cells, grid.num_levels), dtype=rhodz_now.dtype)
-        p_mflx_tracer_h_unlimited = np.zeros((grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype)
+        p_mflx_tracer_h_unlimited = np.zeros(
+            (grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype
+        )
         p_tracer_after_vertical = integrate_tracer_vertically_numpy(
             p_tracer_now,
             rhodz_now,
@@ -207,7 +209,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         p_mflx_tracer_h_unlimited = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         r_m = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
-
         return dict(
             rhodz_ast2=rhodz_ast2,
             p_mflx_tracer_v=p_mflx_tracer_v,
@@ -295,7 +296,9 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         )
 
         p_tracer_after_vertical = p_tracer_now + np.zeros_like(p_tracer_now)
-        p_mflx_tracer_h_unlimited = np.zeros((grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype)
+        p_mflx_tracer_h_unlimited = np.zeros(
+            (grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype
+        )
         r_m = np.ones((grid.num_cells, grid.num_levels), dtype=rhodz_now.dtype)
         if ihadv_tracer == HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value:
             z_real_vt = compute_tangential_wind_numpy(p_vn, rbf_vec_coeff_e, connectivities)
@@ -384,7 +387,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         p_tracer_after_vertical = data_alloc.zero_field(dims.CellDim, dims.KDim)
         p_mflx_tracer_h_unlimited = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         r_m = data_alloc.zero_field(dims.CellDim, dims.KDim)
-
 
         return dict(
             rhodz_ast2=rhodz_ast2,
