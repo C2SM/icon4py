@@ -156,9 +156,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         p_tracer_new = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
         do_vertical_first, ivadv_tracer = request.param
-        slev = gtx.int32(0)
-        slevp1_ti = gtx.int32(1)
-        elev = gtx.int32(grid.num_levels - 1)
 
         return dict(
             p_mflx_tracer_h=p_mflx_tracer_h,
