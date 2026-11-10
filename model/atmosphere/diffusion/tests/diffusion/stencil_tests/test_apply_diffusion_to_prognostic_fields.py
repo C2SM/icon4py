@@ -563,7 +563,12 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         )
         inv_vert_vert_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
         inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
-        area_edge = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        # Use small, positive, synthetic areas, consistently with the other arbitrarily
+        # scaled geometric inputs in this test; these values are not representative of
+        # physical grid areas. Larger areas can produce diffusive updates that
+        # nearly cancel the prognostic values. Around such near-zero results, roundoff
+        # in the O(1) intermediate terms exceeds the single-precision tolerances.
+        area_edge = data_alloc.random_field(dims.EdgeDim, low=0.0, high=0.01, dtype=ta.wpfloat)
         diff_multfac_vn = data_alloc.random_field(dims.KDim, dtype=ta.wpfloat)
         nudgecoeff_e = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
         nudgezone_diff = ta.vpfloat(9.0)
@@ -586,7 +591,10 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         hdef_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
 
         # w diffusion
-        area = data_alloc.random_field(dims.CellDim, dtype=ta.wpfloat)
+        # See `area_edge` above: larger synthetic areas can produce w and theta/exner
+        # updates that nearly cancel their base values and fail single-precision
+        # verification at the near-zero results.
+        area = data_alloc.random_field(dims.CellDim, low=0.0, high=0.01, dtype=ta.wpfloat)
         geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
         geofac_grg_x = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
         geofac_grg_y = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
@@ -599,9 +607,20 @@ class TestApplyDiffusionToPrognosticFields(stencil_tests.StencilTest):
         nrdmax = 13
 
         # theta_v and exner diffusion
-        theta_v_in = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        # Use positive, O(1) synthetic values for numerical conditioning, not as
+        # representative atmospheric temperatures or Exner values. Keeping theta_v_in
+        # away from zero avoids amplifying the theta_v_new / theta_v_in ratio. The
+        # positive exner input also respects its physical sign (same input convention
+        # as in test_compute_exner_from_rhotheta).
+        theta_v_in = data_alloc.random_field(
+            dims.CellDim, dims.KDim, low=1.0, high=2.0, dtype=ta.wpfloat
+        )
+        theta_v = data_alloc.random_field(
+            dims.CellDim, dims.KDim, low=1.0, high=2.0, dtype=ta.wpfloat
+        )
+        exner = data_alloc.random_field(
+            dims.CellDim, dims.KDim, low=1.0, high=2.0, dtype=ta.wpfloat
+        )
         inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
         zd_vertoffset_buffer = np.zeros(
             (grid.size[dims.CellDim], grid.size[dims.C2E2CDim], grid.size[dims.KDim]),
