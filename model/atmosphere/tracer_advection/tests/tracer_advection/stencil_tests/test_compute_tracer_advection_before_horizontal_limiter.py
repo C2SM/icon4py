@@ -104,7 +104,8 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         )
 
         _p_mflx_tracer_v = np.zeros_like(p_mflx_contra_v)
-
+        r_m = np.ones((grid.num_cells, grid.num_levels), dtype=rhodz_now.dtype)
+        p_mflx_tracer_h_unlimited = np.zeros((grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype)
         p_tracer_after_vertical = integrate_tracer_vertically_numpy(
             p_tracer_now,
             rhodz_now,
