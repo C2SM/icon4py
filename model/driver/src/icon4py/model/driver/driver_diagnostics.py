@@ -114,7 +114,8 @@ class DiagnosticsComputer:
         self._num_levels = grid.num_levels
         cell_domain = h_grid.domain(dims.CellDim)
         self._end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
-        self._cell_lateral_boundary_level_2 = grid.end_index(
+        # ICON's rbf_vec_interpol_cell starts at refinement level 2 (``rl_start = 2``)
+        self._start_cell_lateral_boundary_level_2 = grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
 
@@ -198,7 +199,7 @@ class DiagnosticsComputer:
                 ptr_coeff_2=self._rbf_vec_coeff_c2,
                 p_u_out=diagnostic_state.u,
                 p_v_out=diagnostic_state.v,
-                horizontal_start=self._cell_lateral_boundary_level_2,
+                horizontal_start=self._start_cell_lateral_boundary_level_2,
                 horizontal_end=end_cell_end,
                 vertical_start=0,
                 vertical_end=num_levels,
