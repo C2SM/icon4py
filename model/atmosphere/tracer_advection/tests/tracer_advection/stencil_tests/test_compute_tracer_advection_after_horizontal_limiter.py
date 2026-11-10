@@ -154,8 +154,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
 
         # Output fields (initialized to zero)
         p_mflx_tracer_h = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
-        # p_mflx_tracer_v is both an input (read for even-timestep pass-through) and an output;
-        # it is already declared above as the input field.
         p_tracer_new = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
         p_dtime = ta.wpfloat(5.0)
