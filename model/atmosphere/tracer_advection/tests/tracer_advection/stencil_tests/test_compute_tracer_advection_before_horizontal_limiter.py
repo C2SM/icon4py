@@ -354,8 +354,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
                 p_dtime,
                 wp_eps,
             )
-        else:
-            r_m = np.ones((grid.num_cells, grid.num_levels), dtype=rhodz_now.dtype)
 
         return dict(
             rhodz_ast2=rhodz_ast2,
