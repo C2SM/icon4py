@@ -96,9 +96,6 @@ class Tmx:
             backend=backend,
             exchange=exchange,
             dissipation_factor=config.dissipation_factor,
-            turb_prandtl=config.turb_prandtl,
-            use_km_const=config.use_km_const,
-            km_const=config.km_const,
         )
         # the temperature tendency of the heat diffusion, before the energy update adds the
         # dissipation heating and writes the total to the tendency state
@@ -111,6 +108,8 @@ class Tmx:
         *,
         input_state: tmx_states.TmxInputState,
         surface_flux_state: SurfaceFluxState,
+        surface_exchange_coefficient_momentum: fa.CellField[ta.wpfloat],
+        surface_exchange_coefficient_heat: fa.CellField[ta.wpfloat],
         diagnostic_state: tmx_states.TmxDiagnosticState,
         tendency_state: tmx_states.TmxTendencyState,
         new_state: tmx_states.TmxNewState,
@@ -119,6 +118,9 @@ class Tmx:
         """
         Run one tmx step: write the tendencies to `tendency_state`, the updated fields to
         `new_state` and the diagnostics to `diagnostic_state`.
+
+        The surface exchange coefficients of the surface scheme (``km_sfc``, ``kh_sfc``) end up
+        in the lowest level of `diagnostic_state.km` and `kh`.
         """
         log.debug("tmx step: start")
 
@@ -152,6 +154,8 @@ class Tmx:
         self.energy_update.run(
             input_state=input_state,
             surface_flux_state=surface_flux_state,
+            surface_exchange_coefficient_momentum=surface_exchange_coefficient_momentum,
+            surface_exchange_coefficient_heat=surface_exchange_coefficient_heat,
             heat_diffusion_tendency=self._heat_diffusion_tendency,
             diagnostic_state=diagnostic_state,
             tendency_state=tendency_state,

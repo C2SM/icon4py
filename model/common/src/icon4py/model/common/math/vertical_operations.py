@@ -353,6 +353,33 @@ def set_constant_on_model_levels_on_cells_wp(  # noqa: PLR0917 [too-many-positio
 
 
 @gtx.field_operator
+def _set_cell_field_on_model_levels_on_cells_wp(
+    value: fa.CellField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    return broadcast(value, (dims.CellDim, dims.KDim))
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def set_cell_field_on_model_levels_on_cells_wp(  # noqa: PLR0917 [too-many-positional-arguments]
+    field: fa.CellKField[wpfloat],
+    value: fa.CellField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """Set `field` to the cell field `value` on the model levels `vertical_start` to `vertical_end`."""
+    _set_cell_field_on_model_levels_on_cells_wp(
+        value=value,
+        out=field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
 def extrapolate_quadratically_to_top_on_cells(
     interpolant: fa.CellKField[wpfloat],
     weights: fa.CellKField[wpfloat],

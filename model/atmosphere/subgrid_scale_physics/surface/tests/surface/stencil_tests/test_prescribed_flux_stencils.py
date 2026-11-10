@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.surface.stencils.prescribed_
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.physics.thermodynamics import compute_moisture, compute_pressure
 from icon4py.model.testing import stencil_tests
 
 
@@ -34,27 +33,20 @@ class TestComputePrescribedSurfaceFluxes(stencil_tests.StencilTest):
         grid: base.Grid,
         *,
         surface_temperature: np.ndarray,
-        surface_pressure: np.ndarray,
         temperature: np.ndarray,
+        density: np.ndarray,
         shflx: float,
         lhflx: float,
         horizontal_start: int,
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
-        # compute_sfc_sat_spec_humidity (water surface) and compute_sfc_density
-        saturation_qv = compute_moisture.specific_humidity(
-            compute_pressure.sat_pres_water(surface_temperature), surface_pressure
-        )
-        surface_density = surface_pressure / (
-            constants.RD * surface_temperature * (1.0 + constants.RV_O_RD_MINUS_1 * saturation_qv)
-        )
         # the isrfc_type == 1 branch of compute_sfc_fluxes, then compute_energy_fluxes
-        evapotranspiration = -lhflx * surface_density
-        sensible_heat_flux = -shflx * constants.CVD * surface_density
+        evapotranspiration = -lhflx * density
+        sensible_heat_flux = -shflx * constants.CVD * density
         latent_heat_flux = (
             -lhflx
-            * surface_density
+            * density
             * (
                 constants.LATENT_HEAT_FOR_VAPORISATION_INVARIANT
                 + (constants.CVV - constants.CPL) * surface_temperature
@@ -72,7 +64,7 @@ class TestComputePrescribedSurfaceFluxes(stencil_tests.StencilTest):
             ("thermal_energy_flux", thermal_energy_flux),
             ("vapor_energy_flux", vapor_energy_flux),
         ):
-            outputs[name] = np.zeros_like(surface_pressure)
+            outputs[name] = np.zeros_like(density)
             outputs[name][cells] = values[cells]
         return outputs
 
@@ -80,8 +72,8 @@ class TestComputePrescribedSurfaceFluxes(stencil_tests.StencilTest):
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
         return dict(
             surface_temperature=data_alloc.random_field(dims.CellDim, low=270.0, high=310.0),
-            surface_pressure=data_alloc.random_field(dims.CellDim, low=9.0e4, high=1.05e5),
             temperature=data_alloc.random_field(dims.CellDim, low=260.0, high=305.0),
+            density=data_alloc.random_field(dims.CellDim, low=1.0, high=1.3),
             shflx=0.1,
             lhflx=2.0e-5,
             evapotranspiration=data_alloc.zero_field(dims.CellDim),
