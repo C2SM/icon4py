@@ -60,15 +60,12 @@ def reconstruct_linear_coefficients_svd_numpy(
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Reconstruct linear LSQ reconstruction coefficients via SVD pseudo-inverse."""
-    c2e2c = connectivities[dims.C2E2C]
     lsq_pseudoinv_1_exp = np.expand_dims(lsq_pseudoinv_1, axis=-1)
     lsq_pseudoinv_2_exp = np.expand_dims(lsq_pseudoinv_2, axis=-1)
-    p_cc_neighbors = p_cc[c2e2c]
-    diff = p_cc_neighbors - p_cc[:, np.newaxis, :]
-    p_coeff_1 = p_cc
+    diff = p_cc[connectivities[dims.C2E2C]] - p_cc[:, np.newaxis, :]
     p_coeff_2 = np.sum(lsq_pseudoinv_1_exp * diff, axis=1)
     p_coeff_3 = np.sum(lsq_pseudoinv_2_exp * diff, axis=1)
-    return p_coeff_1, p_coeff_2, p_coeff_3
+    return p_cc, p_coeff_2, p_coeff_3
 
 
 def compute_tangential_wind_numpy(
