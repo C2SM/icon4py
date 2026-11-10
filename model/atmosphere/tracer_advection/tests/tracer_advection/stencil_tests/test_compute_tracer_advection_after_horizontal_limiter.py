@@ -94,8 +94,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
                 geofac_div,
                 p_dtime,
             )
-        else:
-            p_tracer_new = tracer_now_for_h.copy()
 
         p_mflx_tracer_v_computed = np.zeros_like(p_mflx_tracer_v)
         if ivadv_tracer == 1:
