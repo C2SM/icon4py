@@ -621,6 +621,19 @@ def order_insensitive_sum(
     Returns:
         the sum, correctly rounded from the exact fixed-point total; 0 when ``abs_max`` is 0
         or so small that ICON's scaling would overflow.
+
+    Example::
+
+        buffer        = [1234.5, 0.1]
+        abs_max       = 1234.5
+        shift         = 19
+        scaled        = buffer * 2**shift                         = [647_233_536, 52_428.8]
+        integer_part  = int(scaled)                               = [647_233_536, 52_428]
+        fraction_part = (scaled - integer_part) * 2**30           = [0, 858_993_459]
+        integer_sum   = sum(integer_part)                         = 647_285_964
+        fraction_sum  = sum(fraction_part)                        = 858_993_459
+        total         = integer_sum * 2**30 + fraction_sum        = 695_018_012_493_951_795
+        result        = total * 2**-(30 + shift)                  = 1234.6
     """
     if abs_max == 0.0 or math.frexp(abs_max)[1] < _MIN_FIXED_POINT_EXPONENT:
         return 0.0
