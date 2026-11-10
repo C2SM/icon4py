@@ -16,10 +16,9 @@ import statistics
 import timeit
 import uuid
 from collections.abc import Iterator
-from typing import Annotated, Any, Final, Self, TypeAlias
+from typing import Annotated, Final, Self, TypeAlias
 
 from icon4py.model.common import exceptions, time
-from icon4py.model.common.components import monitor
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
@@ -387,7 +386,7 @@ class IOConfig:
         )
 
 
-class IOMonitor(monitor.Monitor):
+class IOMonitor:
     """
     Composite Monitor for all IO groups.
 
@@ -506,11 +505,9 @@ class IOMonitor(monitor.Monitor):
     def path(self) -> pathlib.Path:
         return self._output_path
 
-    def store(
-        self, state: dict, model_time: dt.datetime, *args: Any, **kwargs: dict[str, Any]
-    ) -> None:
+    def store(self, state: dict, model_time: dt.datetime) -> None:
         for m in self._group_monitors:
-            m.store(state, model_time, *args, **kwargs)
+            m.store(state, model_time)
 
     def close(self) -> None:
         """Close all field-group writers.
@@ -565,7 +562,7 @@ def generate_name(basename: str, counter: int, suffix: str) -> str:
     return f"{basename}_{counter:0>4}{suffix}"
 
 
-class FieldGroupMonitor(monitor.Monitor):
+class FieldGroupMonitor:
     """
     Monitor for a group of fields.
 
@@ -696,9 +693,7 @@ class FieldGroupMonitor(monitor.Monitor):
         df.initialize_dataset()
         self._dataset = df
 
-    def store(
-        self, state: dict, model_time: dt.datetime, *args: Any, **kwargs: dict[str, Any]
-    ) -> None:
+    def store(self, state: dict, model_time: dt.datetime) -> None:
         """Pick fields from the state dictionary to be written to disk.
 
         In a distributed run this is collective: every rank must call it at every step

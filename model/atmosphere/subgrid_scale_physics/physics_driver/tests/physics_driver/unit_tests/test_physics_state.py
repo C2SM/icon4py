@@ -191,16 +191,26 @@ def test_a_second_provider_of_a_physics_state_leaf_is_rejected(grid: base_grid.G
         driver(grid, [first, second])
 
 
-def test_diagnostic_outputs_carry_the_quantity_metadata_and_skip_the_tendencies(
+def test_diagnostic_fields_are_keyed_by_standard_name_and_skip_the_tendencies(
     grid: base_grid.Grid,
 ) -> None:
     process, _ = recording(FluxOutput, {}, time_control(), grid)
     physics = driver(grid, [process])
 
-    (output,) = physics.diagnostic_outputs()
+    ((name, field_),) = physics.diagnostic_fields().items()
 
-    assert output.name == "sensible_heat_flux"
-    assert output.field is physics._process_outputs[process].sensible_heat_flux
-    assert output.metadata.standard_name == qty.SensibleHeatFluxOnCell.standard_name
-    assert output.metadata.units == qty.SensibleHeatFluxOnCell.units
-    assert output.metadata.dims == (dims.CellDim,)
+    assert name == qty.SensibleHeatFluxOnCell.standard_name
+    assert field_ is physics._process_outputs[process].sensible_heat_flux
+
+
+class PrecipitationOutput(fw.State):
+    pflx: field.Field[qty.PrecipitationFluxOnCellK]
+
+
+def test_a_diagnostic_offered_by_two_processes_is_rejected(grid: base_grid.Grid) -> None:
+    first, _ = recording(PrecipitationOutput, {}, time_control(), grid)
+    second, _ = recording(PrecipitationOutput, {}, time_control(), grid)
+    physics = driver(grid, [first, second])
+
+    with pytest.raises(ValueError, match="'precipitation_flux' is an output of more than one"):
+        physics.diagnostic_fields()

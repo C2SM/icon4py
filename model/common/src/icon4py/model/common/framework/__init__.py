@@ -111,7 +111,7 @@ def _declarations(cls: type[State]) -> Sequence[tuple[str, type[Quantity], bool]
     declaration order. Cached because `typing.get_type_hints` evaluates the annotations,
     which are strings here, and `fields()` runs per step in the driver.
 
-    Behind `allocate` and `fields`. Code that handles any state walks it instead of a
+    Behind `allocate`, `fields` and `leaf_quantities`. Code that handles any state walks it instead of a
     per-state list of fields: `copy` (through `fields`), the physics driver and the IO.
     """
     hints = typing.get_type_hints(cls)
@@ -120,6 +120,11 @@ def _declarations(cls: type[State]) -> Sequence[tuple[str, type[Quantity], bool]
         for field in dataclasses.fields(cls)  # type: ignore[arg-type]
         if (declaration := _declaration(field.name, hints[field.name])) is not None
     )
+
+
+def leaf_quantities(cls: type[State]) -> dict[str, type[Quantity]]:
+    """The quantity of each `Field` leaf of a `State` class, by name, in declaration order."""
+    return {name: quantity for name, quantity, _ in _declarations(cls)}  # type: ignore[arg-type]
 
 
 class Empty(State):

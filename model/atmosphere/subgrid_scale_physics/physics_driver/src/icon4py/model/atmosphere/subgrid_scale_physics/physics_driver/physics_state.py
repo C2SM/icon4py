@@ -8,13 +8,10 @@
 
 """What the physics driver offers its processes each step."""
 
-from typing import Final, NamedTuple
-
-import gt4py.next as gtx
+from typing import Final
 
 from icon4py.model.common import field, framework as fw, time
 from icon4py.model.common.framework import quantities as qty
-from icon4py.model.common.states import model
 
 
 # NOTE: temporary, components MWE part 02 (collect): the processes collect from the physics
@@ -79,14 +76,3 @@ PROVIDED_BY_PROCESSES: Final = (
     "thermal_energy_flux",
     "vapor_energy_flux",
 )
-
-
-# NOTE: temporary, until the output is configured from the typed states: how the physics
-# diagnostics reach the output assembler
-class DiagnosticOutput(NamedTuple):
-    """One diagnostic output buffer of a process together with its metadata."""
-
-    process_name: str
-    name: str
-    metadata: model.FieldMetaData
-    field: gtx.Field

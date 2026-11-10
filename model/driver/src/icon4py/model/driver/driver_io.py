@@ -13,28 +13,24 @@ Driver-side glue between the model state and the ``icon4py.model.common.io`` mod
 capturing field groups request from their sources (``driver_output_sources`` and
 ``driver_diagnostics``), after :func:`validate_output_variables` checked the groups of
 the ``IOConfig`` against them at setup; :func:`create_io_monitor` builds the
-``IOMonitor`` that writes one file series per field group.
+``IOMonitor`` that writes one file series per field group. A variable is named by the
+standard name of its quantity.
 """
 
 import pathlib
 import uuid
-from collections.abc import Collection, Iterable, Mapping
+from collections.abc import Collection, Mapping
 
 import gt4py.next as gtx
 import xarray as xr
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
-from icon4py.model.common import exceptions, time
+from icon4py.model.common import exceptions, field, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
 from icon4py.model.common.io import io as common_io
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-    static_fields,
-    tracer_states,
-)
-from icon4py.model.driver import driver_diagnostics, driver_output_sources
+from icon4py.model.common.states import static_fields
+from icon4py.model.driver import driver_diagnostics, driver_output_sources as output_sources
 
 
 def requested_output_variables(io_config: common_io.IOConfig) -> set[str]:
@@ -44,20 +40,19 @@ def requested_output_variables(io_config: common_io.IOConfig) -> set[str]:
 
 def output_variable_sources(
     *,
-    tracer_config: tracer_states.TracerConfig | None,
-    physics_outputs: Mapping[str, physics_state.DiagnosticOutput],
+    tracer_config: states.TracerConfig | None,
+    physics_fields: Mapping[str, field.Field],
 ) -> dict[str, list[str]]:
     """Every variable the run can write, with the names of the sources providing it.
 
-    A variable is normally provided by exactly one source; a physics output whose
-    standard name coincides with another source's variable name is ambiguous and
-    rejected by :func:`validate_output_variables` if a field group requests it.
+    A variable is normally provided by exactly one source; one provided by several is
+    ambiguous and rejected by :func:`validate_output_variables` if a field group requests it.
     """
     sources: dict[str, Collection[str]] = {
-        "prognostic": driver_output_sources.PROGNOSTIC_VARIABLES,
+        "prognostic": output_sources.PROGNOSTIC_VARIABLES,
         "diagnostic": driver_diagnostics.DIAGNOSTIC_VARIABLES,
-        "tracer": tracer_config.active_names if tracer_config is not None else (),
-        "physics": physics_outputs,
+        "tracer": output_sources.tracer_variables(tracer_config),
+        "physics": physics_fields,
     }
     providers: dict[str, list[str]] = {}
     for source, names in sources.items():
@@ -106,17 +101,12 @@ class OutputStateAssembler:
         grid: grid_base.Grid,
         backend: gtx.typing.Backend | None,
         static_field_factories: static_fields.StaticFieldFactories,
-        tracer_config: tracer_states.TracerConfig | None,
-        physics_diagnostics: Iterable[physics_state.DiagnosticOutput] | None,
+        tracer_config: states.TracerConfig | None,
+        physics_fields: Mapping[str, field.Field] | None,
     ) -> None:
-        self._tracer_names: tuple[str, ...] = (
-            tracer_config.active_names if tracer_config is not None else ()
-        )
-        self._physics_outputs = driver_output_sources.physics_diagnostic_outputs(
-            physics_diagnostics
-        )
+        self._physics_fields: Mapping[str, field.Field] = physics_fields or {}
         sources = output_variable_sources(
-            tracer_config=tracer_config, physics_outputs=self._physics_outputs
+            tracer_config=tracer_config, physics_fields=self._physics_fields
         )
         validate_output_variables(io_config, sources)
         self._available = frozenset(sources)
@@ -145,9 +135,9 @@ class OutputStateAssembler:
     def assemble(
         self,
         variables: Collection[str],
-        prognostic_state: prognostics.PrognosticState,
-        tracer_state: tracer_states.TracerState,
-        diagnostic_state: diagnostics.DiagnosticState,
+        prognostic_state: states.PrognosticState,
+        tracer_state: states.TracerState,
+        diagnostic_state: states.Diagnostics,
     ) -> dict[str, xr.DataArray]:
         """The CF/UGRID-annotated DataArrays of exactly the requested variables.
 
@@ -156,30 +146,26 @@ class OutputStateAssembler:
         must be written before the next step mutates it.
         """
         requested = set(variables)
-        state: dict[str, xr.DataArray] = {}
-        if prognostic := [
-            name for name in driver_output_sources.PROGNOSTIC_VARIABLES if name in requested
-        ]:
-            state.update(
-                driver_output_sources.prognostic_state_to_dataarrays(prognostic_state, prognostic)
+        fields = {
+            name: field_
+            for source in (
+                output_sources.by_standard_name(prognostic_state),
+                output_sources.by_standard_name(tracer_state),
+                self._physics_fields,
             )
-        if tracers := [name for name in self._tracer_names if name in requested]:
-            state.update(driver_output_sources.tracer_state_to_dataarrays(tracer_state, tracers))
+            for name, field_ in source.items()
+            if name in requested
+        }
         if diagnostics := [
             name for name in driver_diagnostics.DIAGNOSTIC_VARIABLES if name in requested
         ]:
             assert self._diagnostics_computer is not None
-            fields = self._diagnostics_computer.compute(
-                prognostic_state, tracer_state, diagnostic_state, diagnostics
-            )
-            state.update(driver_diagnostics.diagnostic_fields_to_dataarrays(fields))
-        if physics := [name for name in self._physics_outputs if name in requested]:
-            state.update(
-                driver_output_sources.physics_diagnostics_to_dataarrays(
-                    self._physics_outputs, physics
+            fields.update(
+                self._diagnostics_computer.compute(
+                    prognostic_state, tracer_state, diagnostic_state, diagnostics
                 )
             )
-        return state
+        return output_sources.to_dataarrays(fields)
 
 
 def create_io_monitor(

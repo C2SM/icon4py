@@ -47,12 +47,7 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-    static_fields,
-    tracer_states,
-)
+from icon4py.model.common.states import static_fields
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.driver import (
     config as driver_config,
@@ -182,10 +177,7 @@ class Icon4pyDriver:
         if variables:
             with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
                 state_to_store = self._output_assembler.assemble(
-                    variables,
-                    _untyped_prognostics(prognostic_state),
-                    _untyped_tracers(tracer_state),
-                    _untyped_diagnostics(diagnostic_state),
+                    variables, prognostic_state, tracer_state, diagnostic_state
                 )
         else:
             state_to_store = {}
@@ -882,31 +874,6 @@ class Icon4pyDriver:
             )
 
 
-# TODO(jcanton): temporary, until the IO runs on the typed states: the untyped states it
-# takes, over the same buffers
-def _untyped_prognostics(state: states.PrognosticState) -> prognostics.PrognosticState:
-    return prognostics.PrognosticState(
-        rho=state.rho, w=state.w, vn=state.vn, exner=state.exner, theta_v=state.theta_v
-    )
-
-
-def _untyped_tracers(state: states.TracerState) -> tracer_states.TracerState:
-    return tracer_states.TracerState(
-        qv=state.qv, qc=state.qc, qi=state.qi, qr=state.qr, qs=state.qs, qg=state.qg
-    )
-
-
-def _untyped_diagnostics(state: states.Diagnostics) -> diagnostics.DiagnosticState:
-    return diagnostics.DiagnosticState(
-        pressure=state.pressure,
-        pressure_ifc=state.pressure_ifc,
-        temperature=state.temperature,
-        virtual_temperature=state.virtual_temperature,
-        u=state.u,
-        v=state.v,
-    )
-
-
 def initialize_driver(
     *,
     config: driver_config.ExperimentConfig,
@@ -983,8 +950,8 @@ def initialize_driver(
             backend=backend,
             static_field_factories=static_field_factories,
             tracer_config=config.tracer_config,
-            physics_diagnostics=(
-                granules.physics.diagnostic_outputs() if granules.physics is not None else None
+            physics_fields=(
+                granules.physics.diagnostic_fields() if granules.physics is not None else None
             ),
         )
         io_monitor = driver_io.create_io_monitor(

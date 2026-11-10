@@ -9,49 +9,44 @@
 """
 The standard diagnostics the driver offers as output variables.
 
-:data:`DIAGNOSTIC_VARIABLES` names them; :class:`DiagnosticsComputer` diagnoses the
-requested ones from the prognostic state and the active tracers into the driver's
-``DiagnosticState``, running only the programs those variables need, and
-:func:`diagnostic_fields_to_dataarrays` turns the computed fields into the
-CF/UGRID-annotated DataArrays the IO module writes. ``driver_io`` assembles them with the
-other output variables.
+:data:`DIAGNOSTIC_VARIABLES` names them, by the standard name of their quantity;
+:class:`DiagnosticsComputer` diagnoses the requested ones from the prognostic state and the
+active tracers into the driver's ``Diagnostics``, running only the programs those variables
+need. ``driver_io`` assembles them with the other output variables.
 """
 
-from collections.abc import Collection, Mapping
+from collections.abc import Collection
 from typing import Final, NamedTuple, Self
 
 import gt4py.next as gtx
-import xarray as xr
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, field, type_alias as ta
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
-from icon4py.model.common.io import utils as io_utils
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.physics.thermodynamics import compute_pressure, compute_temperature
-from icon4py.model.common.states import (
-    data as state_data,
-    diagnostic_state as diagnostics,
-    factory,
-    prognostic_state as prognostics,
-    tracer_states,
-)
+from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.driver import driver_output_sources as output_sources
 
 
-#: The diagnostic output variables, by CF name, with the ``DiagnosticState`` field the
-#: ``DiagnosticsComputer`` computes each of them into.
-_DIAGNOSTIC_STATE_FIELDS: Final[dict[str, str]] = {
-    "eastward_wind": "u",
-    "northward_wind": "v",
-    "temperature": "temperature",
-    "virtual_temperature": "virtual_temperature",
-    "pressure": "pressure",
-    "surface_pressure": "surface_pressure",
-}
+EASTWARD_WIND: Final = output_sources.standard_name(qty.UOnCellK)
+NORTHWARD_WIND: Final = output_sources.standard_name(qty.VOnCellK)
+TEMPERATURE: Final = output_sources.standard_name(qty.TemperatureOnCellK)
+VIRTUAL_TEMPERATURE: Final = output_sources.standard_name(qty.VirtualTemperatureOnCellK)
+PRESSURE: Final = output_sources.standard_name(qty.PressureOnCellK)
+SURFACE_PRESSURE: Final = output_sources.standard_name(qty.SurfacePressureOnCell)
 
-DIAGNOSTIC_VARIABLES: Final[list[str]] = list(_DIAGNOSTIC_STATE_FIELDS)
+DIAGNOSTIC_VARIABLES: Final[tuple[str, ...]] = (
+    EASTWARD_WIND,
+    NORTHWARD_WIND,
+    TEMPERATURE,
+    VIRTUAL_TEMPERATURE,
+    PRESSURE,
+    SURFACE_PRESSURE,
+)
 
 
 class _Programs(NamedTuple):
@@ -64,11 +59,11 @@ class _Programs(NamedTuple):
     @classmethod
     def needed_by(cls, variables: Collection[str]) -> Self:
         requested = frozenset(variables)
-        pressure = bool(requested & {"pressure", "surface_pressure"})
+        pressure = bool(requested & {PRESSURE, SURFACE_PRESSURE})
         return cls(
             # the pressure program integrates the virtual temperature hydrostatically
-            temperature=pressure or bool(requested & {"temperature", "virtual_temperature"}),
-            winds=bool(requested & {"eastward_wind", "northward_wind"}),
+            temperature=pressure or bool(requested & {TEMPERATURE, VIRTUAL_TEMPERATURE}),
+            winds=bool(requested & {EASTWARD_WIND, NORTHWARD_WIND}),
             pressure=pressure,
         )
 
@@ -84,13 +79,13 @@ class DiagnosticsComputer:
     programs the variables of the call need (``_Programs``), so a group that writes just
     the winds pays for neither temperature nor pressure.
 
-    The diagnostics are written into the ``DiagnosticState`` handed to :meth:`compute`
+    The diagnostics are written into the ``Diagnostics`` handed to :meth:`compute`
     (the driver's, allocated once); only the stencil scratch field and the zero stand-in
     for inactive tracers are owned here, and the static inputs of the requested programs
     are read once from the field sources at construction.
 
     TODO(kotsaloscv): the physics driver diagnoses the same variables into its own
-    ``DiagnosticState``; share them once the driver groups its model state.
+    ``Diagnostics``; share them once the driver groups its model state.
     """
 
     def __init__(
@@ -112,6 +107,7 @@ class DiagnosticsComputer:
         self._grid = grid
         self._backend = backend
         self._num_levels = grid.num_levels
+        self._surface_level = dims.KHalfDim(grid.num_levels)
         cell_domain = h_grid.domain(dims.CellDim)
         self._end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
         # ICON's rbf_vec_interpol_cell starts at refinement level 2 (``rl_start = 2``)
@@ -145,21 +141,21 @@ class DiagnosticsComputer:
         """The diagnostic variables this computer can provide."""
         return self._variables
 
-    def _tracer_or_zero(self, field: gtx.Field | None) -> gtx.Field:
-        return self._zero_tracer if field is None else field
+    def _tracer_or_zero(self, tracer: gtx.Field | None) -> gtx.Field:
+        return self._zero_tracer if tracer is None else tracer
 
     def compute(
         self,
-        prognostic_state: prognostics.PrognosticState,
-        tracer_state: tracer_states.TracerState,
-        diagnostic_state: diagnostics.DiagnosticState,
+        prognostic_state: states.PrognosticState,
+        tracer_state: states.TracerState,
+        diagnostic_state: states.Diagnostics,
         variables: Collection[str],
-    ) -> dict[str, gtx.Field]:
+    ) -> dict[str, field.Field]:
         """Diagnose the requested variables (a subset of those given at construction).
 
         The fields of ``diagnostic_state`` are overwritten in place; the returned fields
         are those fields, read for the requested variables only (the surface pressure is
-        the state's view of the bottom half level of ``pressure_ifc``).
+        the view of the bottom half level of ``pressure_ifc``).
         """
         requested = frozenset(variables)
         if unknown := requested - self._variables:
@@ -222,23 +218,8 @@ class DiagnosticsComputer:
                 offset_provider={},
             )
 
-        return {
-            name: getattr(diagnostic_state, _DIAGNOSTIC_STATE_FIELDS[name])
-            for name in DIAGNOSTIC_VARIABLES
-            if name in requested
-        }
-
-
-def diagnostic_fields_to_dataarrays(
-    diagnostic_fields: Mapping[str, gtx.Field],
-) -> dict[str, xr.DataArray]:
-    """Assemble CF/UGRID-annotated DataArrays from computed diagnostic fields."""
-    state: dict[str, xr.DataArray] = {}
-    for name, field in diagnostic_fields.items():
-        metadata = state_data.DIAGNOSTIC_CF_ATTRIBUTES[name]
-        state[name] = io_utils.to_data_array(
-            field,
-            metadata,
-            to_host=True,
+        fields = output_sources.by_standard_name(diagnostic_state)
+        fields[SURFACE_PRESSURE] = field.Field(
+            qty.SurfacePressureOnCell, diagnostic_state.pressure_ifc[self._surface_level]
         )
-    return state
+        return {name: fields[name] for name in DIAGNOSTIC_VARIABLES if name in requested}

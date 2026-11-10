@@ -27,7 +27,7 @@ from icon4py.model.common.io import (
     writers,
     zarr_writers,
 )
-from icon4py.model.common.states import data, metadata
+from icon4py.model.common.states import metadata, model
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
@@ -1002,7 +1002,11 @@ def _surface_field(grid: grid_def.Grid) -> xr.DataArray:
     """A purely horizontal (surface) cell field, like the surface pressure."""
     return utils.to_data_array(
         data_alloc.random_field(grid, dims.CellDim),
-        data.DIAGNOSTIC_CF_ATTRIBUTES["surface_pressure"],
+        model.FieldMetaData(
+            standard_name="air_pressure_at_ground_level",
+            long_name="air pressure at ground level",
+            units="Pa",
+        ),
     )
 
 

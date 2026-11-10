@@ -39,7 +39,7 @@ from icon4py.model.common.io.io import (
     OutputMode,
     generate_name,
 )
-from icon4py.model.common.states import data
+from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils
 
@@ -962,7 +962,11 @@ def test_io_monitor_writes_horizontal_only_fields(test_path: pathlib.Path) -> No
     state = test_io_utils.model_state(grid)
     state["surface_pressure"] = io_utils.to_data_array(
         data_alloc.random_field(grid, dims.CellDim),
-        data.DIAGNOSTIC_CF_ATTRIBUTES["surface_pressure"],
+        model.FieldMetaData(
+            standard_name="air_pressure_at_ground_level",
+            long_name="air pressure at ground level",
+            units="Pa",
+        ),
     )
     config = IOConfig(
         output_path=test_path / "output",

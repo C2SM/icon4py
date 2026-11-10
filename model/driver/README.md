@@ -62,7 +62,7 @@ io:
         value: 10
       timesteps_per_file: 10
     - basename: precipitation
-      variables: [precipitation_flux, rainfall_flux, qv]
+      variables: [precipitation_flux, rainfall_flux, specific_humidity]
       output_interval:
         type: relative
         value: 30 minutes
@@ -71,14 +71,17 @@ io:
       mode: gather
 ```
 
-The variables a run can write are validated at startup. They are
+The variables a run can write are validated at startup. A variable is named by the
+standard name of its quantity. They are
 
-- the prognostics: `air_density`, `exner_function`, `virtual_potential_temperature`,
-  `upward_air_velocity`, `normal_velocity`;
+- the prognostics: `air_density`, `upward_air_velocity`, `normal_velocity`,
+  `dimensionless_exner_function`, `virtual_potential_temperature`;
 - the diagnostics computed for the output: `eastward_wind`, `northward_wind`,
-  `temperature`, `virtual_temperature`, `pressure` and the purely horizontal
-  `surface_pressure`;
-- the tracers active in `tracer_config`: `qv`, `qc`, `qi`, `qr`, `qs`, `qg`;
+  `air_temperature`, `air_virtual_temperature`, `air_pressure` and the purely horizontal
+  `air_pressure_at_ground_level`;
+- the tracers active in `tracer_config`: `specific_humidity`, `specific_cloud_content`,
+  `specific_ice_content`, `specific_rain_content`, `specific_snow_content`,
+  `specific_graupel_content`;
 - the precipitation fluxes of the microphysics (`precipitation_flux`,
   `rainfall_flux`, `snowfall_flux`, `graupelfall_flux`, `icefall_flux`,
   `precipitation_energy_flux`), when `muphys` is configured. The physics needs all
@@ -87,7 +90,7 @@ The variables a run can write are validated at startup. They are
 
 Fields are written with their horizontal dimension (`cell`, `edge` or `vertex`) and,
 if they have one, their vertical dimension (model or half levels): a surface field
-such as `surface_pressure` is stored as `(time, cell)`.
+such as `air_pressure_at_ground_level` is stored as `(time, cell)`.
 
 ## Configuration directory
 

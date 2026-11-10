@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -38,7 +38,6 @@ from icon4py.model.common.physics.thermodynamics import (
     compute_temperature,
     compute_tendencies,
 )
-from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -252,28 +251,23 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self._update_prognostics(state, dt_seconds, output)
         return output
 
-    def diagnostic_outputs(self) -> Iterator[physics_state.DiagnosticOutput]:
+    def diagnostic_fields(self) -> dict[str, field.Field]:
         """
-        The processes' diagnostic (non-tendency) output buffers with their metadata.
+        The processes' diagnostic (non-tendency) output fields, by the standard name of their
+        quantity; those without a standard name are not offered.
 
         They hold the values of the last step the process computed, zeros before that.
         """
-        for process, process_output in self._process_outputs.items():
-            process_name = type(process.component).__name__.lower()
-            for name, field_ in fw.fields(process_output).items():
-                if issubclass(field_.quantity, quantity.Tendency):
+        fields: dict[str, field.Field] = {}
+        for process_output in self._process_outputs.values():
+            for field_ in fw.fields(process_output).values():
+                name = field_.quantity.standard_name
+                if issubclass(field_.quantity, quantity.Tendency) or name is None:
                     continue
-                yield physics_state.DiagnosticOutput(
-                    process_name=process_name,
-                    name=name,
-                    metadata=model.FieldMetaData(
-                        standard_name=field_.quantity.standard_name,
-                        long_name=field_.quantity.long_name,
-                        units=field_.quantity.units,
-                        dims=field_.quantity.dims,
-                    ),
-                    field=field_,
-                )
+                if name in fields:
+                    raise ValueError(f"'{name}' is an output of more than one physics process")
+                fields[name] = field_
+        return fields
 
     @staticmethod
     def _require_tracer[Q: quantity.Quantity](field: field.Field[Q] | None) -> field.Field[Q]:
