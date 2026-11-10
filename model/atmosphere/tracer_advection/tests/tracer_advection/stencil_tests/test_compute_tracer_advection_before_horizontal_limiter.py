@@ -151,10 +151,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             p_mflx_tracer_h_unlimited = compute_horizontal_tracer_flux_upwind_numpy(
                 p_tracer_after_vertical, p_mass_flx_e, p_vn, connectivities
             )
-        else:
-            p_mflx_tracer_h_unlimited = np.zeros(
-                (grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype
-            )
 
         if itype_hlimit == 4:
             r_m = compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(
