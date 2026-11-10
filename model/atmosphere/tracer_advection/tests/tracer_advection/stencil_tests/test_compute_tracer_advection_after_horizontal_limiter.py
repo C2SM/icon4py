@@ -67,14 +67,16 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
 
+        tracer_now_for_h = p_tracer_now
+        rhodz_for_h_now = rhodz_now
+        rhodz_for_h_new = rhodz_ast2
+        p_mflx_tracer_h = p_mflx_tracer_h_unlimited.copy()
+        p_tracer_new = tracer_now_for_h.copy()
         if do_vertical_first:
             tracer_now_for_h = p_tracer_after_vertical
             rhodz_for_h_now = rhodz_ast2
             rhodz_for_h_new = rhodz_new
-        else:
-            tracer_now_for_h = p_tracer_now
-            rhodz_for_h_now = rhodz_now
-            rhodz_for_h_new = rhodz_ast2
+      
 
         if itype_hlimit == 4:
             p_mflx_tracer_h = apply_positive_definite_horizontal_multiplicative_flux_factor_numpy(
