@@ -341,20 +341,20 @@ def test_gather_mode_overwrite_refusal_raises_on_all_ranks(
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "output_backend, output_mode, num_io_ranks, placement",
+    "output_backend, output_mode, num_io_ranks, in_total",
     [
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 1, None),
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 2, None),
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER, 2, None),
-        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 1, None),
-        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 2, None),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 1, False),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 2, False),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER, 2, False),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 1, False),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 2, False),
         # a single IO rank writes a one-block rank-block file through a serial handle
-        (common_io.OutputBackend.NETCDF, common_io.OutputMode.DISTRIBUTED, 1, None),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.DISTRIBUTED, 1, False),
         pytest.param(
             common_io.OutputBackend.NETCDF,
             common_io.OutputMode.DISTRIBUTED,
             2,
-            None,
+            False,
             marks=pytest.mark.skipif(
                 netcdf_writers.missing_parallel_support() is not None,
                 reason=(
@@ -364,18 +364,8 @@ def test_gather_mode_overwrite_refusal_raises_on_all_ranks(
             ),
         ),
         # a total number of IO ranks instead of IO ranks on every node
-        (
-            common_io.OutputBackend.ZARR,
-            common_io.OutputMode.DISTRIBUTED,
-            2,
-            common_io.IORankPlacement.FULLEST_NODES,
-        ),
-        (
-            common_io.OutputBackend.NETCDF,
-            common_io.OutputMode.GATHER,
-            1,
-            common_io.IORankPlacement.LAST_RANKS,
-        ),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 2, True),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 1, True),
     ],
 )
 def test_io_rank_output_synthetic_decomposition(
@@ -384,15 +374,15 @@ def test_io_rank_output_synthetic_decomposition(
     output_backend: common_io.OutputBackend,
     output_mode: common_io.OutputMode,
     num_io_ranks: int,
-    placement: common_io.IORankPlacement | None,
+    in_total: bool,
     tmp_path: pathlib.Path,
 ) -> None:
     """The compute ranks ship the synthetic state to dedicated IO ranks, which write it.
 
     The communicator is split into compute and IO ranks, ``num_io_ranks`` on every node
-    or, with a ``placement``, in total; the synthetic decomposition lives on the compute
-    communicator, the writers run on the IO communicator, and the root rank verifies the
-    files exactly like ``test_parallel_output_synthetic_decomposition``.
+    or ``in_total``; the synthetic decomposition lives on the compute communicator, the
+    writers run on the IO communicator, and the root rank verifies the files exactly
+    like ``test_parallel_output_synthetic_decomposition``.
     """
     output_path = pathlib.Path(
         process_props.comm.bcast(str(tmp_path) if process_props.rank == 0 else None, root=0)
@@ -409,9 +399,8 @@ def test_io_rank_output_synthetic_decomposition(
                 mode=output_mode,
             )
         ],
-        io_ranks_per_node=num_io_ranks if placement is None else 0,
-        io_ranks=0 if placement is None else num_io_ranks,
-        io_rank_placement=placement or common_io.IORankPlacement.FULLEST_NODES,
+        io_ranks_per_node=0 if in_total else num_io_ranks,
+        io_ranks=num_io_ranks if in_total else 0,
     )
     try:
         assignment = io_servers.assign_io_ranks(

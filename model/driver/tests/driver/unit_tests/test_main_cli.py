@@ -52,18 +52,15 @@ def _config_file_with_io_ranks(
     *,
     io_ranks_per_node: int = 0,
     io_ranks: int = 0,
-    io_rank_placement: str = "fullest_nodes",
 ) -> pathlib.Path:
     """The configuration with the 'io' section, dedicating ranks to output as given."""
     config_file = _config_file_with_io_section(directory)
     text = config_file.read_text()
-    defaults = "  io_ranks_per_node: 0\n  io_ranks: 0\n  io_rank_placement: fullest_nodes\n"
+    defaults = "  io_ranks_per_node: 0\n  io_ranks: 0\n"
     assert text.count(defaults) == 1
     config_file.write_text(
         text.replace(
-            defaults,
-            f"  io_ranks_per_node: {io_ranks_per_node}\n  io_ranks: {io_ranks}\n"
-            f"  io_rank_placement: {io_rank_placement}\n",
+            defaults, f"  io_ranks_per_node: {io_ranks_per_node}\n  io_ranks: {io_ranks}\n"
         )
     )
     return config_file
@@ -192,13 +189,9 @@ def test_split_io_ranks_without_io_ranks_leaves_the_communicator_alone(
 
 
 @pytest.mark.parametrize(
-    "io_ranks_per_node, io_ranks, io_rank_placement, expected_io_ranks",
-    [
-        (1, 0, "fullest_nodes", (4, 8)),
-        (0, 1, "fullest_nodes", (4,)),
-        (0, 1, "last_ranks", (8,)),
-    ],
-    ids=["per-node", "on-the-fullest-node", "last-rank"],
+    "io_ranks_per_node, io_ranks, expected_io_ranks",
+    [(1, 0, (4, 8)), (0, 1, (4,))],
+    ids=["per-node", "in-total"],
 )
 def test_main_cli_compute_rank_runs_the_driver_on_its_role_communicator(
     backend_name: str,
@@ -206,15 +199,11 @@ def test_main_cli_compute_rank_runs_the_driver_on_its_role_communicator(
     *,
     io_ranks_per_node: int,
     io_ranks: int,
-    io_rank_placement: str,
     expected_io_ranks: tuple[int, ...],
 ) -> None:
     split = _io_rank_split(is_io_rank=False)
     config_file = _config_file_with_io_ranks(
-        tmp_path,
-        io_ranks_per_node=io_ranks_per_node,
-        io_ranks=io_ranks,
-        io_rank_placement=io_rank_placement,
+        tmp_path, io_ranks_per_node=io_ranks_per_node, io_ranks=io_ranks
     )
     with _mocked_split(split) as mock_split:
         _, mock_run_driver = _run_cli(config_file, backend_name)

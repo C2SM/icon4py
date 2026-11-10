@@ -161,40 +161,23 @@ def test_fullest_nodes_with_the_same_surplus_on_every_node_are_the_per_node_choi
     ) == mpi_decomposition.assign_io_ranks_per_node(node_ids, io_ranks_per_node)
 
 
-# --------------------------------------------------------------------------------------
-# A total number of IO ranks, the last ranks of the run
-# --------------------------------------------------------------------------------------
+def test_fullest_nodes_reject_runs_short_of_compute_ranks() -> None:
+    with pytest.raises(errors.InvalidConfigError, match="at least 1"):
+        mpi_decomposition.assign_io_ranks_on_fullest_nodes([0, 0], 0)
+    # three IO ranks need three compute ranks
+    with pytest.raises(errors.InvalidConfigError, match="run has 5 ranks"):
+        mpi_decomposition.assign_io_ranks_on_fullest_nodes([0, 0, 0, 1, 1], 3)
 
 
-def test_last_ranks_on_a_node_of_their_own_share_the_compute_ranks_in_blocks() -> None:
-    # ten nodes with four compute ranks each, then two IO tasks on an eleventh node
-    node_ids = [*block_layout(4, 10), 10, 10]
-    assignment = mpi_decomposition.assign_last_ranks_as_io_ranks(node_ids, 2)
-    assert assignment.io_ranks == (40, 41)
-    assert assignment.compute_ranks == tuple(range(40))
-    assert served_ranks(assignment) == {40: list(range(20)), 41: list(range(20, 40))}
-
-
-def test_last_ranks_placed_on_compute_nodes_serve_their_node_first() -> None:
-    # the launcher put the two IO tasks on the last and on the first compute node
-    node_ids = [*block_layout(4, 10), 9, 0]
-    assignment = mpi_decomposition.assign_last_ranks_as_io_ranks(node_ids, 2)
-    assert assignment.io_ranks == (40, 41)
-    assert served_ranks(assignment) == {
-        40: [*range(4, 20), 36, 37, 38, 39],
-        41: [0, 1, 2, 3, *range(20, 36)],
-    }
-
-
-def test_last_ranks_do_not_depend_on_the_placement() -> None:
-    assignment = mpi_decomposition.assign_last_ranks_as_io_ranks(cyclic_layout(3, 2), 2)
-    assert assignment.io_ranks == (4, 5)
-    # each IO rank serves the compute ranks of its node
-    assert served_ranks(assignment) == {4: [0, 2], 5: [1, 3]}
+def test_io_rank_without_a_compute_rank_is_rejected() -> None:
+    # two nodes with three ranks each: the first is left with one compute rank for its
+    # two IO ranks, and the compute ranks of the other ship to its own IO rank
+    with pytest.raises(errors.InvalidConfigError, match="Rank 2 would be an IO rank without"):
+        mpi_decomposition.assign_io_ranks_on_fullest_nodes([0, 0, 0, 1, 1, 1], 3)
 
 
 # --------------------------------------------------------------------------------------
-# All choices
+# Both choices
 # --------------------------------------------------------------------------------------
 
 
@@ -203,7 +186,6 @@ def test_last_ranks_do_not_depend_on_the_placement() -> None:
     [
         mpi_decomposition.assign_io_ranks_per_node,
         mpi_decomposition.assign_io_ranks_on_fullest_nodes,
-        mpi_decomposition.assign_last_ranks_as_io_ranks,
     ],
 )
 @pytest.mark.parametrize(
@@ -223,30 +205,6 @@ def test_every_choice_partitions_the_ranks_and_serves_all_compute_ranks(
     )
     for compute_rank, rank in enumerate(assignment.compute_ranks):
         assert rank in served[assignment.io_ranks[assignment.io_rank_of(compute_rank)]]
-
-
-@pytest.mark.parametrize(
-    "assign",
-    [
-        mpi_decomposition.assign_io_ranks_on_fullest_nodes,
-        mpi_decomposition.assign_last_ranks_as_io_ranks,
-    ],
-)
-def test_total_io_ranks_reject_runs_short_of_compute_ranks(
-    assign: Callable[[list[int], int], mpi_decomposition.IORankAssignment],
-) -> None:
-    with pytest.raises(errors.InvalidConfigError, match="at least 1"):
-        assign([0, 0], 0)
-    # three IO ranks need three compute ranks
-    with pytest.raises(errors.InvalidConfigError, match="run has 5 ranks"):
-        assign([0, 0, 0, 1, 1], 3)
-
-
-def test_io_rank_without_a_compute_rank_is_rejected() -> None:
-    # the last two ranks are IO ranks on a node without compute ranks, and the compute
-    # ranks of the first node ship to its own IO rank
-    with pytest.raises(errors.InvalidConfigError, match="Rank 5 would be an IO rank without"):
-        mpi_decomposition.assign_last_ranks_as_io_ranks([0, 0, 0, 0, 0, 1, 1], 3)
 
 
 def test_node_ids_of_a_single_rank_run_need_no_mpi() -> None:

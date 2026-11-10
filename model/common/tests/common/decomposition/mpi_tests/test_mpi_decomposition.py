@@ -412,7 +412,6 @@ def test_exchange_and_reduction_cache_isolated_by_decomp_info(
             functools.partial(mpi_decomposition.assign_io_ranks_on_fullest_nodes, num_io_ranks=1),
             False,
         ),
-        (functools.partial(mpi_decomposition.assign_last_ranks_as_io_ranks, num_io_ranks=1), False),
         # with every pair of ranks posing as a node the IO ranks are not the last ranks
         # of the run, and compute ranks ship to an IO rank of another "node"
         (functools.partial(mpi_decomposition.assign_io_ranks_per_node, io_ranks_per_node=1), True),
@@ -425,7 +424,6 @@ def test_exchange_and_reduction_cache_isolated_by_decomp_info(
         "one-per-node",
         "two-per-node",
         "one-on-the-fullest-node",
-        "last-rank",
         "one-per-pair",
         "one-on-a-pair",
     ],

@@ -32,4 +32,3 @@ io:
   calendar: proleptic_gregorian
   io_ranks_per_node: 0
   io_ranks: 0
-  io_rank_placement: fullest_nodes

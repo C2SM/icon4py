@@ -59,8 +59,8 @@ mpirun -np 10 icon4py-driver \
     --icon4py-backend gtfn_cpu
 ```
 
-Fewer IO ranks than nodes, or IO ranks on a node of their own, are launched as
-described in [Dedicated IO ranks](#dedicated-io-ranks).
+Fewer IO ranks than nodes are launched as described in
+[Dedicated IO ranks](#dedicated-io-ranks).
 
 ## Output
 
@@ -115,7 +115,7 @@ compute ranks, which ship their output fields to the IO ranks at every capture s
 and continue computing while the IO ranks write (through the same backends and
 modes, on the IO ranks' communicator; see "Dedicated IO ranks" in
 `icon4py.model.common.io`). The launcher provides the tasks of both roles, and the
-`io` section says which of them write. There are three ways to say it; the examples
+`io` section says which of them write. There are two ways to say it; the examples
 run four compute ranks per node on ten nodes under Slurm (`C` computes, `O` writes).
 
 **IO ranks on every node** (`io_ranks_per_node`, the default way). On every node the
@@ -149,28 +149,6 @@ io:
 # nodes 1-2:   C C C C O
 # nodes 3-10:  C C C C
 srun --nodes=10 --ntasks=42 icon4py-driver ...
-```
-
-**IO ranks on a node of their own** (`io_ranks` with `io_rank_placement: last_ranks`).
-The last ranks of the run write, wherever they run, so launch the compute tasks first
-and the IO tasks last. Here a host file with one line per task, in rank order, puts
-the IO tasks on an eleventh node; the compute ranks are shared evenly between them:
-
-```yaml
-io:
-  io_ranks: 2
-  io_rank_placement: last_ranks
-```
-
-```bash
-# nodes 1-10:  C C C C
-# node 11:     O O
-nodes=($(scontrol show hostnames "$SLURM_JOB_NODELIST"))
-{
-  for node in "${nodes[@]:0:10}"; do yes "$node" | head -n 4; done # compute tasks
-  yes "${nodes[10]}" | head -n 2                                   # IO tasks, last
-} > hostfile
-SLURM_HOSTFILE=hostfile srun --ntasks=42 --distribution=arbitrary icon4py-driver ...
 ```
 
 In a batch script the task count is the compute ranks plus the IO ranks

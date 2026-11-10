@@ -16,9 +16,9 @@ receive them and write (:class:`IOServer`). Which ranks write and who serves who
 follows from the output configuration (:func:`assign_io_ranks`). By default the last
 ``IOConfig.io_ranks_per_node`` ranks of every node write: a compute rank ships to an
 IO rank on its own node, and the node's compute ranks are shared evenly among its IO
-ranks. Alternatively ``IOConfig.io_ranks`` ranks write in total, on some of the nodes
-or on nodes of their own (``IOConfig.io_rank_placement``): a compute rank then ships
-on its node where that has an IO rank and across nodes otherwise.
+ranks. Alternatively ``IOConfig.io_ranks`` ranks write in total, on the nodes holding
+the most ranks: a compute rank then ships on its node where that has an IO rank and
+across nodes otherwise.
 
 An IO rank writes through the ordinary output stack, on the IO ranks' communicator:
 its local state is the concatenation of the owned entries of the compute ranks it
@@ -70,7 +70,7 @@ import logging
 import pickle
 import timeit
 import uuid
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Final
 
 import numpy as np
@@ -100,14 +100,6 @@ _SETUP_TAG: Final[int] = 1
 _HEADER_TAG: Final[int] = 2
 _DATA_TAG: Final[int] = 3
 
-#: How each placement chooses the ``IOConfig.io_ranks`` from the node of every rank.
-_ASSIGN_TOTAL_IO_RANKS: Final[
-    dict[io.IORankPlacement, Callable[[Sequence[int], int], mpi_decomposition.IORankAssignment]]
-] = {
-    io.IORankPlacement.FULLEST_NODES: mpi_decomposition.assign_io_ranks_on_fullest_nodes,
-    io.IORankPlacement.LAST_RANKS: mpi_decomposition.assign_last_ranks_as_io_ranks,
-}
-
 
 def assign_io_ranks(
     config: io.IOConfig, node_ids: Sequence[int]
@@ -117,8 +109,8 @@ def assign_io_ranks(
     ``node_ids[rank]`` identifies the node of every rank of the communicator to split
     (``mpi_decomposition.allgather_node_ids``); the result is what
     ``mpi_decomposition.split_io_ranks`` splits it by. ``io_ranks_per_node`` puts IO
-    ranks on every node; ``io_ranks`` is their total number, placed as
-    ``io_rank_placement`` says.
+    ranks on every node; ``io_ranks`` is their total number, taken from the nodes
+    holding the most ranks.
 
     Raises:
         InvalidConfigError: if the configuration dedicates no ranks to output, or the
@@ -127,7 +119,7 @@ def assign_io_ranks(
     """
     if config.io_ranks_per_node > 0:
         return mpi_decomposition.assign_io_ranks_per_node(node_ids, config.io_ranks_per_node)
-    return _ASSIGN_TOTAL_IO_RANKS[config.io_rank_placement](node_ids, config.io_ranks)
+    return mpi_decomposition.assign_io_ranks_on_fullest_nodes(node_ids, config.io_ranks)
 
 
 def _object_messages(obj: Any) -> list[np.ndarray]:

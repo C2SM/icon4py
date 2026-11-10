@@ -34,7 +34,6 @@ from icon4py.model.common.io.io import (
     FieldGroupMonitor,
     IOConfig,
     IOMonitor,
-    IORankPlacement,
     OutputBackend,
     OutputInterval,
     OutputMode,
@@ -1079,7 +1078,6 @@ def test_io_config_yaml_roundtrip_two_groups() -> None:
         calendar: proleptic_gregorian
         io_ranks_per_node: 0
         io_ranks: 2
-        io_rank_placement: last_ranks
         """
     )
     config = config_io.read_yaml_str(yaml_str, IOConfig)
@@ -1091,7 +1089,6 @@ def test_io_config_yaml_roundtrip_two_groups() -> None:
     assert config.field_groups[1].timesteps_per_file == 0
     assert config.io_ranks_per_node == 0
     assert config.io_ranks == 2
-    assert config.io_rank_placement is IORankPlacement.LAST_RANKS
     assert config_io.write_yaml_str(config) == yaml_str
 
 
@@ -1135,23 +1132,9 @@ def test_io_config_dedicates_io_ranks_per_node_or_in_total() -> None:
     default = IOConfig(field_groups=[group])
     assert not default.has_dedicated_io_ranks
     assert default.io_ranks == 0
-    assert default.io_rank_placement is IORankPlacement.FULLEST_NODES
     assert IOConfig(field_groups=[group], io_ranks_per_node=2).has_dedicated_io_ranks
-    assert IOConfig(field_groups=[group], io_ranks=2).has_dedicated_io_ranks
-    in_total = IOConfig(
-        field_groups=[group], io_ranks=2, io_rank_placement=IORankPlacement.LAST_RANKS
-    )
-    assert in_total.has_dedicated_io_ranks
+    in_total = IOConfig(field_groups=[group], io_ranks=2)
+    assert in_total.io_ranks == 2 and in_total.has_dedicated_io_ranks
 
     with pytest.raises(errors.InvalidConfigError, match="exclude each other"):
         IOConfig(field_groups=[group], io_ranks_per_node=1, io_ranks=2)
-    # the placement belongs to 'io_ranks': without them it has nothing to place
-    for io_ranks_per_node in (0, 1):
-        with pytest.raises(errors.InvalidConfigError, match="'io_rank_placement'"):
-            IOConfig(
-                field_groups=[group],
-                io_ranks_per_node=io_ranks_per_node,
-                io_rank_placement=IORankPlacement.LAST_RANKS,
-            )
-    with pytest.raises(errors.InvalidConfigError, match="'IORankPlacement' member"):
-        IOConfig(field_groups=[group], io_ranks=2, io_rank_placement="last_ranks")  # type: ignore[arg-type]  # invalid on purpose

@@ -319,18 +319,6 @@ def _serve_compute_ranks(node_ids: Sequence[int], io_ranks: Collection[int]) -> 
     )
 
 
-def _check_total_io_ranks(num_ranks: int, num_io_ranks: int) -> None:
-    if num_io_ranks < 1:
-        raise exceptions.InvalidConfigError(
-            f"Invalid number of IO ranks {num_io_ranks}: must be at least 1."
-        )
-    if num_ranks < 2 * num_io_ranks:
-        raise exceptions.InvalidConfigError(
-            f"The run has {num_ranks} ranks: with {num_io_ranks} IO rank(s) it needs at least "
-            f"{2 * num_io_ranks} (every IO rank serves at least one compute rank)."
-        )
-
-
 def assign_io_ranks_per_node(node_ids: Sequence[int], io_ranks_per_node: int) -> IORankAssignment:
     """Choose the dedicated IO ranks: the last ``io_ranks_per_node`` ranks of every node.
 
@@ -377,7 +365,15 @@ def assign_io_ranks_on_fullest_nodes(
         InvalidConfigError: if ``num_io_ranks`` is not positive, or the run has fewer
             compute ranks than IO ranks, or an IO rank is left without a compute rank.
     """
-    _check_total_io_ranks(len(node_ids), num_io_ranks)
+    if num_io_ranks < 1:
+        raise exceptions.InvalidConfigError(
+            f"Invalid number of IO ranks {num_io_ranks}: must be at least 1."
+        )
+    if len(node_ids) < 2 * num_io_ranks:
+        raise exceptions.InvalidConfigError(
+            f"The run has {len(node_ids)} ranks: with {num_io_ranks} IO rank(s) it needs at "
+            f"least {2 * num_io_ranks} (every IO rank serves at least one compute rank)."
+        )
     ranks_of_nodes = _ranks_of_nodes(node_ids)
     num_compute_ranks = [len(ranks) for ranks in ranks_of_nodes]
     remaining = num_io_ranks
@@ -396,24 +392,6 @@ def assign_io_ranks_on_fullest_nodes(
         for rank in ranks[count:]
     ]
     return _serve_compute_ranks(node_ids, io_ranks)
-
-
-def assign_last_ranks_as_io_ranks(node_ids: Sequence[int], num_io_ranks: int) -> IORankAssignment:
-    """Choose the last ``num_io_ranks`` ranks of the communicator as the dedicated IO ranks.
-
-    The choice does not look at the nodes, so the launcher decides where the IO ranks
-    run: launching the IO tasks last, on nodes of their own, gives dedicated IO nodes.
-    A compute rank ships to an IO rank on its own node if there is one, otherwise
-    across nodes (see ``_serve_compute_ranks``). ``node_ids`` as in
-    ``assign_io_ranks_per_node``.
-
-    Raises:
-        InvalidConfigError: if ``num_io_ranks`` is not positive, or the run has fewer
-            compute ranks than IO ranks, or an IO rank is left without a compute rank.
-    """
-    num_ranks = len(node_ids)
-    _check_total_io_ranks(num_ranks, num_io_ranks)
-    return _serve_compute_ranks(node_ids, range(num_ranks - num_io_ranks, num_ranks))
 
 
 def allgather_node_ids(process_props: decomp_defs.ProcessProperties) -> list[int]:

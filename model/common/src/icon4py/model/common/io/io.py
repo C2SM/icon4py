@@ -69,20 +69,6 @@ class OutputMode(enum.StrEnum):
     DISTRIBUTED = "distributed"
 
 
-@config_io.register_enum
-class IORankPlacement(enum.StrEnum):
-    """Which ranks the ``io_ranks`` of an ``IOConfig`` are (see "Dedicated IO ranks").
-
-    FULLEST_NODES: the last ranks of the nodes holding the most ranks, so a run launched
-    with ``io_ranks`` tasks more than compute ranks keeps its compute ranks on every node.
-    LAST_RANKS: the last ranks of the run, wherever the launcher placed them, e.g. on
-    nodes of their own.
-    """
-
-    FULLEST_NODES = "fullest_nodes"
-    LAST_RANKS = "last_ranks"
-
-
 #: File suffix per output backend (zarr "files" are directories).
 FILE_SUFFIXES: Final[dict[OutputBackend, str]] = {
     OutputBackend.NETCDF: ".nc",
@@ -438,24 +424,14 @@ class IOConfig:
         common_conf_opt.ConfigOption(
             description=(
                 "Total number of MPI ranks dedicated to output, instead of "
-                "'io_ranks_per_node' (the two exclude each other; 0: not used): for fewer IO "
-                "ranks than nodes, or IO ranks on nodes of their own. 'io_rank_placement' "
-                "selects the ranks; a compute rank ships to an IO rank on its own node if "
-                "there is one, otherwise to one on another node."
+                "'io_ranks_per_node' (the two exclude each other; 0: not used), for fewer IO "
+                "ranks than nodes. The IO ranks are the last ranks of the nodes holding the "
+                "most ranks, so with 'io_ranks' tasks more than compute ranks the surplus tasks "
+                "write. A compute rank ships to an IO rank on its own node if there is one, "
+                "otherwise to one on another node."
             ),
         ),
     ] = 0
-    io_rank_placement: Annotated[
-        IORankPlacement,
-        common_conf_opt.ConfigOption(
-            description=(
-                "Which ranks the 'io_ranks' are: 'fullest_nodes' takes the last ranks of the "
-                "nodes holding the most ranks, so with 'io_ranks' tasks more than compute "
-                "ranks the surplus tasks write; 'last_ranks' takes the last ranks of the run, "
-                "wherever the launcher placed them, e.g. on a node of their own."
-            ),
-        ),
-    ] = IORankPlacement.FULLEST_NODES
 
     def __post_init__(self) -> None:
         if not self.field_groups:
@@ -469,21 +445,10 @@ class IOConfig:
                 raise exceptions.InvalidConfigError(
                     f"Invalid '{name}': must be a non-negative integer, got {value!r}."
                 )
-        if not isinstance(self.io_rank_placement, IORankPlacement):
-            raise exceptions.InvalidConfigError(
-                f"Invalid 'io_rank_placement': {self.io_rank_placement!r}; must be an "
-                f"'IORankPlacement' member (strings are converted at the config-file "
-                f"boundary only, see 'common.config.config_io')."
-            )
         if self.io_ranks_per_node > 0 and self.io_ranks > 0:
             raise exceptions.InvalidConfigError(
                 "Invalid 'io_ranks': 'io_ranks_per_node' and 'io_ranks' exclude each other "
                 "(IO ranks on every node, or a total number of them)."
-            )
-        if self.io_ranks == 0 and self.io_rank_placement != IORankPlacement.FULLEST_NODES:
-            raise exceptions.InvalidConfigError(
-                f"Invalid 'io_rank_placement': '{self.io_rank_placement.value}' places the "
-                f"'io_ranks', which are not set."
             )
         # compared as paths: './winds' and 'winds' name the same file series
         basenames = [normalized_basename(group.basename) for group in self.field_groups]

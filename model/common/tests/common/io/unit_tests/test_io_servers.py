@@ -469,19 +469,12 @@ def test_assign_io_ranks_follows_the_output_configuration(tmp_path: pathlib.Path
     ) == mpi_decomposition.assign_io_ranks_per_node(node_ids, 1)
     assert io_servers.assign_io_ranks(per_node, node_ids).io_ranks == (4, 8)
 
-    # a total number of IO ranks: by default on the fullest nodes, or the last ranks
+    # a total number of IO ranks: on the fullest nodes
     in_total = dataclasses.replace(per_node, io_ranks_per_node=0, io_ranks=1)
     assert io_servers.assign_io_ranks(
         in_total, node_ids
     ) == mpi_decomposition.assign_io_ranks_on_fullest_nodes(node_ids, 1)
     assert io_servers.assign_io_ranks(in_total, node_ids).io_ranks == (4,)
-    last_ranks = dataclasses.replace(
-        in_total, io_rank_placement=common_io.IORankPlacement.LAST_RANKS
-    )
-    assert io_servers.assign_io_ranks(
-        last_ranks, node_ids
-    ) == mpi_decomposition.assign_last_ranks_as_io_ranks(node_ids, 1)
-    assert io_servers.assign_io_ranks(last_ranks, node_ids).io_ranks == (8,)
 
     without_io_ranks = dataclasses.replace(per_node, io_ranks_per_node=0)
     with pytest.raises(errors.InvalidConfigError, match="at least 1"):
