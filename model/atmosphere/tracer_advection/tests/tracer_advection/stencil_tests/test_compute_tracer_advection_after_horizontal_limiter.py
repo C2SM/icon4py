@@ -82,8 +82,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             p_mflx_tracer_h = apply_positive_definite_horizontal_multiplicative_flux_factor_numpy(
                 r_m, p_mflx_tracer_h_unlimited, connectivities
             )
-        else:
-            p_mflx_tracer_h = p_mflx_tracer_h_unlimited.copy()
 
         if ihadv_tracer != 0:
             p_tracer_new = integrate_tracer_horizontally_numpy(
