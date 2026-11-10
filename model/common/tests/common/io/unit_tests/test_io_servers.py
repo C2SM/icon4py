@@ -33,7 +33,7 @@ import xarray as xr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time as common_time
-from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import io as common_io, io_servers, writers
 
@@ -457,3 +457,32 @@ def test_io_server_requires_a_served_compute_rank() -> None:
     io_servers.IOServer(io_intercomm, served_ranks=(0,))  # type: ignore[arg-type]  # in-process stand-in
     with pytest.raises(errors.InvalidConfigError, match="serves no compute rank"):
         io_servers.IOServer(io_intercomm, served_ranks=())  # type: ignore[arg-type]  # in-process stand-in
+
+
+def test_assign_io_ranks_follows_the_output_configuration(tmp_path: pathlib.Path) -> None:
+    # two nodes, the first with one rank more
+    node_ids = [0] * 5 + [1] * 4
+    per_node = io_config(tmp_path, common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED)
+    assert per_node.io_ranks_per_node == 1
+    assert io_servers.assign_io_ranks(
+        per_node, node_ids
+    ) == mpi_decomposition.assign_io_ranks_per_node(node_ids, 1)
+    assert io_servers.assign_io_ranks(per_node, node_ids).io_ranks == (4, 8)
+
+    # a total number of IO ranks: by default on the fullest nodes, or the last ranks
+    in_total = dataclasses.replace(per_node, io_ranks_per_node=0, io_ranks=1)
+    assert io_servers.assign_io_ranks(
+        in_total, node_ids
+    ) == mpi_decomposition.assign_io_ranks_on_fullest_nodes(node_ids, 1)
+    assert io_servers.assign_io_ranks(in_total, node_ids).io_ranks == (4,)
+    last_ranks = dataclasses.replace(
+        in_total, io_rank_placement=common_io.IORankPlacement.LAST_RANKS
+    )
+    assert io_servers.assign_io_ranks(
+        last_ranks, node_ids
+    ) == mpi_decomposition.assign_last_ranks_as_io_ranks(node_ids, 1)
+    assert io_servers.assign_io_ranks(last_ranks, node_ids).io_ranks == (8,)
+
+    without_io_ranks = dataclasses.replace(per_node, io_ranks_per_node=0)
+    with pytest.raises(errors.InvalidConfigError, match="at least 1"):
+        io_servers.assign_io_ranks(without_io_ranks, node_ids)

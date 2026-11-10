@@ -20,6 +20,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
+from icon4py.model.common.io import io_servers
 from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 
 
@@ -70,9 +71,9 @@ def main(
     The configuration, output included (its ``io`` section), is read from the YAML
     file at ``config_file_path``; the driver is initialized, an initial condition is
     generated, and the time integration is run. With dedicated IO ranks
-    (``io.io_ranks_per_node``) the run's communicator is split first: the IO ranks only
-    receive and write the compute ranks' output, and a failure on any rank aborts the
-    whole run (``_abort_run_on_failure``).
+    (``io.io_ranks_per_node`` or ``io.io_ranks``) the run's communicator is split first:
+    the IO ranks only receive and write the compute ranks' output, and a failure on any
+    rank aborts the whole run (``_abort_run_on_failure``).
     """
 
     process_props = decomposition_defs.get_process_properties(
@@ -121,13 +122,14 @@ def main(
 def split_io_ranks(
     config: driver_config.ExperimentConfig, process_props: decomposition_defs.ProcessProperties
 ) -> mpi_decomp.IORankSplit | None:
-    """Split the run's communicator for ``io.io_ranks_per_node``; None without dedicated IO ranks.
+    """Split the run's communicator for the dedicated IO ranks of the ``io`` section; None without.
 
     Collective on the communicator.
     """
-    if config.io is None or config.io.io_ranks_per_node == 0:
+    if config.io is None or not config.io.has_dedicated_io_ranks:
         return None
-    return mpi_decomp.split_io_ranks(process_props, config.io.io_ranks_per_node)
+    assignment = io_servers.assign_io_ranks(config.io, mpi_decomp.allgather_node_ids(process_props))
+    return mpi_decomp.split_io_ranks(process_props, assignment)
 
 
 @contextlib.contextmanager

@@ -11,7 +11,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass
 from types import ModuleType
 from typing import Any, Final, Union
@@ -228,6 +228,14 @@ def _balanced_blocks(items: Sequence[int], num_blocks: int) -> list[tuple[int, .
     return blocks
 
 
+def _ranks_of_nodes(node_ids: Sequence[int]) -> list[list[int]]:
+    """The ranks of every node in increasing order, the nodes ordered by their lowest rank."""
+    ranks_of_node: dict[int, list[int]] = {}
+    for rank, node in enumerate(node_ids):
+        ranks_of_node.setdefault(node, []).append(rank)
+    return list(ranks_of_node.values())
+
+
 @dataclass(frozen=True)
 class IORankAssignment:
     """The dedicated IO ranks of a communicator and the compute ranks each one serves.
@@ -261,7 +269,69 @@ class IORankAssignment:
         )
 
 
-def assign_io_ranks(node_ids: Sequence[int], io_ranks_per_node: int) -> IORankAssignment:
+def _serve_compute_ranks(node_ids: Sequence[int], io_ranks: Collection[int]) -> IORankAssignment:
+    """Share the compute ranks, all ranks but the chosen ``io_ranks``, among the IO ranks.
+
+    The compute ranks of a node with IO ranks are shared evenly among these, in rank
+    order, so they ship on their node. The compute ranks of the nodes without an IO
+    rank are then handed out node by node, in contiguous blocks sized to level the
+    number of compute ranks per IO rank.
+
+    Raises:
+        InvalidConfigError: if an IO rank is left without a compute rank.
+    """
+    chosen = frozenset(io_ranks)
+    served: dict[int, list[int]] = {io_rank: [] for io_rank in sorted(chosen)}
+    off_node: list[int] = []
+    for ranks in _ranks_of_nodes(node_ids):
+        node_io_ranks = [rank for rank in ranks if rank in chosen]
+        node_compute_ranks = [rank for rank in ranks if rank not in chosen]
+        if not node_io_ranks:
+            off_node.extend(node_compute_ranks)
+            continue
+        blocks = _balanced_blocks(node_compute_ranks, len(node_io_ranks))
+        for io_rank, block in zip(node_io_ranks, blocks, strict=True):
+            served[io_rank].extend(block)
+    # every off-node compute rank counts for the IO rank serving the fewest so far (the
+    # lowest one on ties); the ranks are then handed out in blocks of these sizes
+    num_served = {io_rank: len(ranks) for io_rank, ranks in served.items()}
+    for _ in off_node:
+        num_served[min(num_served, key=num_served.__getitem__)] += 1
+    start = 0
+    for io_rank, ranks in served.items():
+        stop = start + num_served[io_rank] - len(ranks)
+        ranks.extend(off_node[start:stop])
+        start = stop
+    for io_rank, ranks in served.items():
+        if not ranks:
+            raise exceptions.InvalidConfigError(
+                f"Rank {io_rank} would be an IO rank without a compute rank to serve: reduce "
+                f"the number of IO ranks."
+            )
+    compute_ranks = sorted(rank for ranks in served.values() for rank in ranks)
+    io_rank_of = {
+        compute_rank: index for index, ranks in enumerate(served.values()) for compute_rank in ranks
+    }
+    return IORankAssignment(
+        compute_ranks=tuple(compute_ranks),
+        io_ranks=tuple(served),
+        io_rank_of_compute_rank=tuple(io_rank_of[rank] for rank in compute_ranks),
+    )
+
+
+def _check_total_io_ranks(num_ranks: int, num_io_ranks: int) -> None:
+    if num_io_ranks < 1:
+        raise exceptions.InvalidConfigError(
+            f"Invalid number of IO ranks {num_io_ranks}: must be at least 1."
+        )
+    if num_ranks < 2 * num_io_ranks:
+        raise exceptions.InvalidConfigError(
+            f"The run has {num_ranks} ranks: with {num_io_ranks} IO rank(s) it needs at least "
+            f"{2 * num_io_ranks} (every IO rank serves at least one compute rank)."
+        )
+
+
+def assign_io_ranks_per_node(node_ids: Sequence[int], io_ranks_per_node: int) -> IORankAssignment:
     """Choose the dedicated IO ranks: the last ``io_ranks_per_node`` ranks of every node.
 
     ``node_ids[rank]`` identifies the node of every rank of the communicator (see
@@ -278,40 +348,83 @@ def assign_io_ranks(node_ids: Sequence[int], io_ranks_per_node: int) -> IORankAs
         raise exceptions.InvalidConfigError(
             f"Invalid number of IO ranks per node {io_ranks_per_node}: must be at least 1."
         )
-    ranks_of_node: dict[int, list[int]] = {}
-    for rank, node in enumerate(node_ids):
-        ranks_of_node.setdefault(node, []).append(rank)
     io_ranks: list[int] = []
-    ships_to: dict[int, int] = {}
-    for ranks in ranks_of_node.values():
+    for ranks in _ranks_of_nodes(node_ids):
         if len(ranks) < 2 * io_ranks_per_node:
             raise exceptions.InvalidConfigError(
                 f"The node of rank {ranks[0]} has {len(ranks)} ranks: with {io_ranks_per_node} "
                 f"IO rank(s) per node it needs at least {2 * io_ranks_per_node} (every IO rank "
                 f"serves at least one compute rank)."
             )
-        node_io_ranks = ranks[-io_ranks_per_node:]
-        io_ranks.extend(node_io_ranks)
-        blocks = _balanced_blocks(ranks[:-io_ranks_per_node], io_ranks_per_node)
-        for block, io_rank in zip(blocks, node_io_ranks, strict=True):
-            for compute_rank in block:
-                ships_to[compute_rank] = io_rank
-    compute_ranks = tuple(sorted(ships_to))
-    io_ranks.sort()
-    io_index = {rank: index for index, rank in enumerate(io_ranks)}
-    return IORankAssignment(
-        compute_ranks=compute_ranks,
-        io_ranks=tuple(io_ranks),
-        io_rank_of_compute_rank=tuple(io_index[ships_to[rank]] for rank in compute_ranks),
-    )
+        io_ranks.extend(ranks[-io_ranks_per_node:])
+    return _serve_compute_ranks(node_ids, io_ranks)
+
+
+def assign_io_ranks_on_fullest_nodes(
+    node_ids: Sequence[int], num_io_ranks: int
+) -> IORankAssignment:
+    """Choose ``num_io_ranks`` dedicated IO ranks in total: the last ranks of the fullest nodes.
+
+    The IO ranks are taken one at a time, always the last remaining rank of the
+    fullest node; among equally full nodes they are spread evenly, in node order. A
+    run launched with ``num_io_ranks`` tasks more than compute ranks thus turns
+    exactly the surplus tasks into IO ranks, on whichever nodes the launcher placed
+    them, and every node keeps its compute ranks. A compute rank ships to an IO rank
+    on its own node if there is one, otherwise across nodes (see
+    ``_serve_compute_ranks``). ``node_ids`` as in ``assign_io_ranks_per_node``.
+
+    Raises:
+        InvalidConfigError: if ``num_io_ranks`` is not positive, or the run has fewer
+            compute ranks than IO ranks, or an IO rank is left without a compute rank.
+    """
+    _check_total_io_ranks(len(node_ids), num_io_ranks)
+    ranks_of_nodes = _ranks_of_nodes(node_ids)
+    num_compute_ranks = [len(ranks) for ranks in ranks_of_nodes]
+    remaining = num_io_ranks
+    while remaining > 0:
+        most = max(num_compute_ranks)
+        fullest = [node for node, count in enumerate(num_compute_ranks) if count == most]
+        if len(fullest) > remaining:
+            # fewer IO ranks left than equally full nodes: spread them evenly over these
+            fullest = [fullest[index * len(fullest) // remaining] for index in range(remaining)]
+        for node in fullest:
+            num_compute_ranks[node] -= 1
+        remaining -= len(fullest)
+    io_ranks = [
+        rank
+        for ranks, count in zip(ranks_of_nodes, num_compute_ranks, strict=True)
+        for rank in ranks[count:]
+    ]
+    return _serve_compute_ranks(node_ids, io_ranks)
+
+
+def assign_last_ranks_as_io_ranks(node_ids: Sequence[int], num_io_ranks: int) -> IORankAssignment:
+    """Choose the last ``num_io_ranks`` ranks of the communicator as the dedicated IO ranks.
+
+    The choice does not look at the nodes, so the launcher decides where the IO ranks
+    run: launching the IO tasks last, on nodes of their own, gives dedicated IO nodes.
+    A compute rank ships to an IO rank on its own node if there is one, otherwise
+    across nodes (see ``_serve_compute_ranks``). ``node_ids`` as in
+    ``assign_io_ranks_per_node``.
+
+    Raises:
+        InvalidConfigError: if ``num_io_ranks`` is not positive, or the run has fewer
+            compute ranks than IO ranks, or an IO rank is left without a compute rank.
+    """
+    num_ranks = len(node_ids)
+    _check_total_io_ranks(num_ranks, num_io_ranks)
+    return _serve_compute_ranks(node_ids, range(num_ranks - num_io_ranks, num_ranks))
 
 
 def allgather_node_ids(process_props: decomp_defs.ProcessProperties) -> list[int]:
     """The node of every rank of the communicator, identified by the lowest rank on it.
 
     The nodes are found through MPI's shared-memory split (``MPI_COMM_TYPE_SHARED``):
-    the ranks that can share memory are on one node. Collective on the communicator.
+    the ranks that can share memory are on one node. Collective on the communicator;
+    works on a single-rank communicator without an MPI installation.
     """
+    if process_props.is_single_rank():
+        return [0]
     comm = process_props.comm
     node_comm = comm.Split_type(mpi4py.MPI.COMM_TYPE_SHARED, key=process_props.rank)
     try:
@@ -352,23 +465,21 @@ class IORankSplit:
 
 
 def split_io_ranks(
-    process_props: decomp_defs.ProcessProperties, io_ranks_per_node: int
+    process_props: decomp_defs.ProcessProperties, assignment: IORankAssignment
 ) -> IORankSplit:
-    """Split the communicator into compute ranks and ``io_ranks_per_node`` IO ranks per node.
+    """Split the communicator into the compute ranks and the IO ranks of ``assignment``.
 
-    Collective on the communicator of ``process_props``. The IO ranks are the last
-    ranks of every node (``assign_io_ranks``), so every compute rank ships to an IO
-    rank on its own node.
+    ``assignment`` partitions the ranks of the communicator of ``process_props``: it
+    is one of the ``assign_*`` functions applied to the communicator's
+    ``allgather_node_ids``. Collective on that communicator.
 
     Raises:
-        InvalidConfigError: on a single-node run (no MPI communicator), or if a node
-            has fewer compute ranks than IO ranks (see ``assign_io_ranks``).
+        InvalidConfigError: on a single-node run (no MPI communicator).
     """
     if process_props.comm is None:
         raise exceptions.InvalidConfigError(
             "Dedicated IO ranks require an MPI run: the process properties carry no communicator."
         )
-    assignment = assign_io_ranks(allgather_node_ids(process_props), io_ranks_per_node)
     is_io_rank = process_props.rank in assignment.io_ranks
     # the role communicators keep the order of the split communicator
     role_comm = process_props.comm.Split(color=int(is_io_rank), key=process_props.rank)

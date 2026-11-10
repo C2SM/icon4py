@@ -8,7 +8,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import pathlib
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -45,13 +47,24 @@ def _config_file_with_io_section(directory: pathlib.Path) -> pathlib.Path:
     return config_file
 
 
-def _config_file_with_io_ranks(directory: pathlib.Path, io_ranks_per_node: int) -> pathlib.Path:
-    """The configuration with the 'io' section, dedicating ``io_ranks_per_node`` ranks to output."""
+def _config_file_with_io_ranks(
+    directory: pathlib.Path,
+    *,
+    io_ranks_per_node: int = 0,
+    io_ranks: int = 0,
+    io_rank_placement: str = "fullest_nodes",
+) -> pathlib.Path:
+    """The configuration with the 'io' section, dedicating ranks to output as given."""
     config_file = _config_file_with_io_section(directory)
     text = config_file.read_text()
-    assert text.count("  io_ranks_per_node: 0\n") == 1
+    defaults = "  io_ranks_per_node: 0\n  io_ranks: 0\n  io_rank_placement: fullest_nodes\n"
+    assert text.count(defaults) == 1
     config_file.write_text(
-        text.replace("  io_ranks_per_node: 0\n", f"  io_ranks_per_node: {io_ranks_per_node}\n")
+        text.replace(
+            defaults,
+            f"  io_ranks_per_node: {io_ranks_per_node}\n  io_ranks: {io_ranks}\n"
+            f"  io_rank_placement: {io_rank_placement}\n",
+        )
     )
     return config_file
 
@@ -148,6 +161,21 @@ def _io_rank_split(is_io_rank: bool) -> mpi_decomp.IORankSplit:
     )
 
 
+#: Node of every rank of the run the split is mocked for: two nodes, the first with one
+#: rank more.
+_NODE_IDS = [0] * 5 + [1] * 4
+
+
+@contextlib.contextmanager
+def _mocked_split(split: mpi_decomp.IORankSplit) -> Iterator[mock.MagicMock]:
+    """Mock the split of a run on ``_NODE_IDS`` away; yields the mock, which returns ``split``."""
+    with (
+        mock.patch.object(mpi_decomp, "allgather_node_ids", return_value=_NODE_IDS),
+        mock.patch.object(mpi_decomp, "split_io_ranks", return_value=split) as mock_split,
+    ):
+        yield mock_split
+
+
 def test_split_io_ranks_without_io_ranks_leaves_the_communicator_alone(
     tmp_path: pathlib.Path,
 ) -> None:
@@ -159,30 +187,52 @@ def test_split_io_ranks_without_io_ranks_leaves_the_communicator_alone(
     with_output = driver_config.read_experiment_config_from_yaml(
         _config_file_with_io_section(tmp_path)
     )
-    assert with_output.io is not None and with_output.io.io_ranks_per_node == 0
+    assert with_output.io is not None and not with_output.io.has_dedicated_io_ranks
     assert main.split_io_ranks(with_output, process_props) is None
 
 
+@pytest.mark.parametrize(
+    "io_ranks_per_node, io_ranks, io_rank_placement, expected_io_ranks",
+    [
+        (1, 0, "fullest_nodes", (4, 8)),
+        (0, 1, "fullest_nodes", (4,)),
+        (0, 1, "last_ranks", (8,)),
+    ],
+    ids=["per-node", "on-the-fullest-node", "last-rank"],
+)
 def test_main_cli_compute_rank_runs_the_driver_on_its_role_communicator(
-    backend_name: str, tmp_path: pathlib.Path
+    backend_name: str,
+    tmp_path: pathlib.Path,
+    *,
+    io_ranks_per_node: int,
+    io_ranks: int,
+    io_rank_placement: str,
+    expected_io_ranks: tuple[int, ...],
 ) -> None:
     split = _io_rank_split(is_io_rank=False)
-    with mock.patch.object(mpi_decomp, "split_io_ranks", return_value=split) as mock_split:
-        _, mock_run_driver = _run_cli(_config_file_with_io_ranks(tmp_path, 2), backend_name)
+    config_file = _config_file_with_io_ranks(
+        tmp_path,
+        io_ranks_per_node=io_ranks_per_node,
+        io_ranks=io_ranks,
+        io_rank_placement=io_rank_placement,
+    )
+    with _mocked_split(split) as mock_split:
+        _, mock_run_driver = _run_cli(config_file, backend_name)
+    # the communicator is split by the IO ranks the configuration asks for
     mock_split.assert_called_once()
-    assert mock_split.call_args.args[1] == 2
+    assert mock_split.call_args.args[1].io_ranks == expected_io_ranks
     kwargs = mock_run_driver.call_args.kwargs
     assert kwargs["io_ranks"] is split
     # the model (and its grid decomposition) runs on the compute communicator
     assert kwargs["process_props"] is split.process_props
-    assert kwargs["config"].io.io_ranks_per_node == 2
+    assert kwargs["config"].io.has_dedicated_io_ranks
 
 
 def test_main_cli_io_rank_runs_the_io_server(backend_name: str, tmp_path: pathlib.Path) -> None:
     split = _io_rank_split(is_io_rank=True)
-    config_file = _config_file_with_io_ranks(tmp_path, 2)
+    config_file = _config_file_with_io_ranks(tmp_path, io_ranks_per_node=2)
     with (
-        mock.patch.object(mpi_decomp, "split_io_ranks", return_value=split),
+        _mocked_split(split),
         mock.patch.object(driver_io, "run_io_server") as mock_run_io_server,
     ):
         _, mock_run_driver = _run_cli(config_file, backend_name)
@@ -213,13 +263,11 @@ def test_main_cli_failure_with_io_ranks_aborts_the_run(
     failure = RuntimeError("the rank failed")
     with (
         mock.patch.object(decomp_defs, "get_process_properties", return_value=process_props),
-        mock.patch.object(
-            mpi_decomp, "split_io_ranks", return_value=_io_rank_split(is_io_rank=is_io_rank)
-        ),
+        _mocked_split(_io_rank_split(is_io_rank=is_io_rank)),
         mock.patch.object(driver_io, "run_io_server", side_effect=failure if is_io_rank else None),
     ):
         result, _, _ = _invoke_cli(
-            _config_file_with_io_ranks(tmp_path, 1),
+            _config_file_with_io_ranks(tmp_path, io_ranks_per_node=1),
             backend_name,
             run_driver_error=None if is_io_rank else failure,
         )

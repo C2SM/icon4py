@@ -252,7 +252,9 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
         config_file_path=config_file_path,
     )
 
-    io_ranks = mpi_decomposition.split_io_ranks(process_props, io_ranks_per_node)
+    io_ranks = mpi_decomposition.split_io_ranks(
+        process_props, mpi_decomposition.assign_io_ranks_per_node(node_ids, io_ranks_per_node)
+    )
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={"end_of_simulation": time.NumTimeSteps(1)},

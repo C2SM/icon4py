@@ -182,10 +182,12 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
             decomposition_info=None,
             io_ranks=io_ranks,
         )
-    # the split and the configured rank count must agree, in both directions
+    # the split and the configured IO ranks (on every node or in total) must agree, in
+    # both directions
     for mismatched_config, mismatched_split in (
         (dataclasses.replace(io_config, io_ranks_per_node=0), io_ranks),
         (io_config, None),
+        (dataclasses.replace(io_config, io_ranks_per_node=0, io_ranks=1), None),
     ):
         with pytest.raises(ValueError, match="must agree"):
             driver_io.create_io_monitor(

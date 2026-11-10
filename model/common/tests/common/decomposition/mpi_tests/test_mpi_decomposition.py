@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import collections
 import copy
 import functools
 import logging
+from collections.abc import Callable
 from typing import Any
 
 import gt4py.next as gtx
@@ -403,19 +403,50 @@ def test_exchange_and_reduction_cache_isolated_by_decomp_info(
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.level("unit")
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-@pytest.mark.parametrize("io_ranks_per_node", [1, 2])
+@pytest.mark.parametrize(
+    "assign, pairs_of_ranks_as_nodes",
+    [
+        (functools.partial(mpi_decomposition.assign_io_ranks_per_node, io_ranks_per_node=1), False),
+        (functools.partial(mpi_decomposition.assign_io_ranks_per_node, io_ranks_per_node=2), False),
+        (
+            functools.partial(mpi_decomposition.assign_io_ranks_on_fullest_nodes, num_io_ranks=1),
+            False,
+        ),
+        (functools.partial(mpi_decomposition.assign_last_ranks_as_io_ranks, num_io_ranks=1), False),
+        # with every pair of ranks posing as a node the IO ranks are not the last ranks
+        # of the run, and compute ranks ship to an IO rank of another "node"
+        (functools.partial(mpi_decomposition.assign_io_ranks_per_node, io_ranks_per_node=1), True),
+        (
+            functools.partial(mpi_decomposition.assign_io_ranks_on_fullest_nodes, num_io_ranks=1),
+            True,
+        ),
+    ],
+    ids=[
+        "one-per-node",
+        "two-per-node",
+        "one-on-the-fullest-node",
+        "last-rank",
+        "one-per-pair",
+        "one-on-a-pair",
+    ],
+)
 def test_split_io_ranks_roles_and_intercomm(
-    process_props: decomp_defs.ProcessProperties, io_ranks_per_node: int
+    process_props: decomp_defs.ProcessProperties,
+    assign: Callable[[list[int]], mpi_decomposition.IORankAssignment],
+    pairs_of_ranks_as_nodes: bool,
 ) -> None:
     node_ids = mpi_decomposition.allgather_node_ids(process_props)
     assert len(node_ids) == process_props.comm_size
     # a node is identified by its lowest rank
     my_node = node_ids[process_props.rank]
     assert my_node == min(rank for rank, node in enumerate(node_ids) if node == my_node)
-    if min(collections.Counter(node_ids).values()) < 2 * io_ranks_per_node:
-        pytest.skip("needs at least twice as many ranks per node as IO ranks")
-    assignment = mpi_decomposition.assign_io_ranks(node_ids, io_ranks_per_node)
-    split = mpi_decomposition.split_io_ranks(process_props, io_ranks_per_node)
+    if pairs_of_ranks_as_nodes:
+        node_ids = [rank // 2 for rank in range(process_props.comm_size)]
+    try:
+        assignment = assign(node_ids)
+    except errors.InvalidConfigError as error:
+        pytest.skip(f"too few ranks for these IO ranks: {error}")
+    split = mpi_decomposition.split_io_ranks(process_props, assignment)
 
     # the roles follow the assignment; each role is one communicator keeping the rank order
     assert split.is_io_rank == (process_props.rank in assignment.io_ranks)
@@ -426,12 +457,8 @@ def test_split_io_ranks_roles_and_intercomm(
     assert split.process_props.comm_size == len(role_ranks)
     assert split.process_props.comm_name == expected_name
     assert split.process_props.rank == role_ranks.index(process_props.rank)
-    if len(set(node_ids)) == 1:
-        # on a single node the IO ranks are simply the last ranks
-        last_ranks = range(process_props.comm_size - io_ranks_per_node, process_props.comm_size)
-        assert split.is_io_rank == (process_props.rank in last_ranks)
 
-    # who serves whom: an IO rank on the same node
+    # who serves whom
     if split.is_io_rank:
         assert split.io_rank is None
         assert split.served_compute_ranks == assignment.served_compute_ranks(
@@ -441,7 +468,6 @@ def test_split_io_ranks_roles_and_intercomm(
     else:
         assert split.served_compute_ranks == ()
         assert split.io_rank == assignment.io_rank_of(split.process_props.rank)
-        assert node_ids[assignment.io_ranks[split.io_rank]] == my_node
 
     # the inter-communicator connects the two roles
     assert split.intercomm.Is_inter()
@@ -462,17 +488,3 @@ def test_split_io_ranks_roles_and_intercomm(
         message = np.array([split.process_props.rank], dtype=np.int64)
         split.intercomm.Send(message, dest=split.io_rank, tag=7)
     process_props.comm.Barrier()
-
-
-@pytest.mark.mpi(min_size=2)
-@pytest.mark.level("unit")
-@pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_split_io_ranks_rejects_invalid_counts(
-    process_props: decomp_defs.ProcessProperties,
-) -> None:
-    with pytest.raises(errors.InvalidConfigError, match="at least 1"):
-        mpi_decomposition.split_io_ranks(process_props, 0)
-    with pytest.raises(errors.InvalidConfigError, match="needs at least"):
-        mpi_decomposition.split_io_ranks(process_props, process_props.comm_size)
-    with pytest.raises(errors.InvalidConfigError, match="require an MPI run"):
-        mpi_decomposition.split_io_ranks(decomp_defs.SingleNodeProcessProperties(), 1)

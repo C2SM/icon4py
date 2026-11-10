@@ -15,11 +15,13 @@ capturing field groups request from their sources (``driver_output_sources`` and
 the ``IOConfig`` against them at setup; :func:`create_io_monitor` builds the output
 monitor that writes one file series per field group: an ``IOMonitor`` when the ranks
 write themselves, an ``IOClient`` shipping the fields to dedicated IO ranks
-(``IOConfig.io_ranks_per_node``), whose side is :func:`run_io_server`.
+(``IOConfig.io_ranks_per_node`` or ``IOConfig.io_ranks``), whose side is
+:func:`run_io_server`.
 """
 
 import logging
 import pathlib
+import platform
 import uuid
 from collections.abc import Collection, Iterable, Mapping
 
@@ -219,13 +221,15 @@ def create_io_monitor(
     this very configuration (see ``run_io_server``); ``process_props`` are then the
     compute ranks', and the client ships the sizes of the undecomposed grid (summed
     over the compute communicator, so this is collective on it). None: the ranks write
-    themselves (``IOMonitor``). Either way the split must agree with
-    ``io_config.io_ranks_per_node``, the setting it was made for.
+    themselves (``IOMonitor``). Either way the split must agree with the dedicated IO
+    ranks of ``io_config`` (``io_ranks_per_node`` or ``io_ranks``), the setting it was
+    made for.
     """
-    if (io_ranks is None) != (io_config.io_ranks_per_node == 0):
+    if (io_ranks is None) == io_config.has_dedicated_io_ranks:
         raise ValueError(
-            "The communicator split and 'io_ranks_per_node' of the output configuration "
-            "must agree: dedicated IO ranks with both or with neither."
+            "The communicator split and the dedicated IO ranks of the output configuration "
+            "('io_ranks_per_node' or 'io_ranks') must agree: IO ranks with both or with "
+            "neither."
         )
     # Grid.id holds the file's `uuidOfHGrid` as a string; the IO layer wants a UUID.
     grid_id = uuid.UUID(grid.id)
@@ -278,7 +282,8 @@ def run_io_server(
     server = io_servers.IOServer(io_ranks.intercomm, served_ranks=io_ranks.served_compute_ranks)
     setup = server.receive_setup()
     log.info(
-        f"IO rank {io_ranks.process_props.rank} serves compute ranks {list(server.served_ranks)}"
+        f"IO rank {io_ranks.process_props.rank} on node '{platform.node()}' serves compute "
+        f"ranks {list(server.served_ranks)}"
     )
     vertical_grid = driver_utils.create_vertical_grid(
         vertical_grid_config=config.vertical_grid,

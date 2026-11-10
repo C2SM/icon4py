@@ -18,7 +18,6 @@ field ``1000 * global_index + level + 10 * step``.
 Works with any rank count >= 2 (``mpirun -np 8 ... --with-mpi``), no test data needed.
 """
 
-import collections
 import datetime as dt
 import itertools
 import pathlib
@@ -342,19 +341,20 @@ def test_gather_mode_overwrite_refusal_raises_on_all_ranks(
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "output_backend, output_mode, io_ranks_per_node",
+    "output_backend, output_mode, num_io_ranks, placement",
     [
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 1),
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 2),
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER, 2),
-        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 1),
-        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 2),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 1, None),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, 2, None),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER, 2, None),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 1, None),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, 2, None),
         # a single IO rank writes a one-block rank-block file through a serial handle
-        (common_io.OutputBackend.NETCDF, common_io.OutputMode.DISTRIBUTED, 1),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.DISTRIBUTED, 1, None),
         pytest.param(
             common_io.OutputBackend.NETCDF,
             common_io.OutputMode.DISTRIBUTED,
             2,
+            None,
             marks=pytest.mark.skipif(
                 netcdf_writers.missing_parallel_support() is not None,
                 reason=(
@@ -363,6 +363,19 @@ def test_gather_mode_overwrite_refusal_raises_on_all_ranks(
                 ),
             ),
         ),
+        # a total number of IO ranks instead of IO ranks on every node
+        (
+            common_io.OutputBackend.ZARR,
+            common_io.OutputMode.DISTRIBUTED,
+            2,
+            common_io.IORankPlacement.FULLEST_NODES,
+        ),
+        (
+            common_io.OutputBackend.NETCDF,
+            common_io.OutputMode.GATHER,
+            1,
+            common_io.IORankPlacement.LAST_RANKS,
+        ),
     ],
 )
 def test_io_rank_output_synthetic_decomposition(
@@ -370,24 +383,17 @@ def test_io_rank_output_synthetic_decomposition(
     *,
     output_backend: common_io.OutputBackend,
     output_mode: common_io.OutputMode,
-    io_ranks_per_node: int,
+    num_io_ranks: int,
+    placement: common_io.IORankPlacement | None,
     tmp_path: pathlib.Path,
 ) -> None:
     """The compute ranks ship the synthetic state to dedicated IO ranks, which write it.
 
-    The communicator is split into compute and IO ranks; the synthetic decomposition
-    lives on the compute communicator, the writers run on the IO communicator, and the
-    root rank verifies the files exactly like ``test_parallel_output_synthetic_decomposition``.
+    The communicator is split into compute and IO ranks, ``num_io_ranks`` on every node
+    or, with a ``placement``, in total; the synthetic decomposition lives on the compute
+    communicator, the writers run on the IO communicator, and the root rank verifies the
+    files exactly like ``test_parallel_output_synthetic_decomposition``.
     """
-    node_ids = mpi_decomposition.allgather_node_ids(process_props)
-    num_io_ranks = io_ranks_per_node * len(set(node_ids))
-    # every node needs a compute rank per IO rank, and the synthetic decomposition two
-    # compute ranks in total (one of them empty)
-    if (
-        min(collections.Counter(node_ids).values()) < 2 * io_ranks_per_node
-        or process_props.comm_size - num_io_ranks < 2
-    ):
-        pytest.skip("needs twice as many ranks per node as IO ranks and two compute ranks")
     output_path = pathlib.Path(
         process_props.comm.bcast(str(tmp_path) if process_props.rank == 0 else None, root=0)
     )
@@ -403,10 +409,21 @@ def test_io_rank_output_synthetic_decomposition(
                 mode=output_mode,
             )
         ],
-        io_ranks_per_node=io_ranks_per_node,
+        io_ranks_per_node=num_io_ranks if placement is None else 0,
+        io_ranks=0 if placement is None else num_io_ranks,
+        io_rank_placement=placement or common_io.IORankPlacement.FULLEST_NODES,
     )
+    try:
+        assignment = io_servers.assign_io_ranks(
+            config, mpi_decomposition.allgather_node_ids(process_props)
+        )
+    except errors.InvalidConfigError as error:
+        pytest.skip(f"too few ranks for these IO ranks: {error}")
+    # the synthetic decomposition needs two compute ranks (one of them empty)
+    if len(assignment.compute_ranks) < 2:
+        pytest.skip("needs two compute ranks")
     dtime = common_time.RelativeTime(hours=1)
-    split = mpi_decomposition.split_io_ranks(process_props, config.io_ranks_per_node)
+    split = mpi_decomposition.split_io_ranks(process_props, assignment)
 
     if split.is_io_rank:
         server = io_servers.IOServer(split.intercomm, served_ranks=split.served_compute_ranks)
@@ -465,7 +482,7 @@ def test_io_rank_output_synthetic_decomposition(
                     for name, *_ in VARIABLES.values()
                 }
                 for name, dim, _ in VARIABLES.values():
-                    assert dataset.sizes[name] % num_io_ranks == 0
+                    assert dataset.sizes[name] % len(assignment.io_ranks) == 0
                     assert dataset.sizes[name] >= GLOBAL_SIZES[dim]
             else:
                 global_index = identity
