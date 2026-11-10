@@ -15,7 +15,7 @@ The fourth, the standard diagnostics, is ``driver_diagnostics``; ``driver_io`` a
 the variables of all four at a capture step.
 """
 
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Iterable, Mapping
 from typing import Final
 
 import gt4py.next as gtx
@@ -98,7 +98,7 @@ def tracer_state_to_dataarrays(
 
 
 def physics_diagnostic_outputs(
-    physics_diagnostics: physics_state.DiagnosticsStore | None,
+    physics_diagnostics: Iterable[physics_state.DiagnosticOutput] | None,
 ) -> dict[str, physics_state.DiagnosticOutput]:
     """The diagnostic outputs of the physics processes offered as output variables.
 
@@ -110,7 +110,7 @@ def physics_diagnostic_outputs(
     outputs: dict[str, physics_state.DiagnosticOutput] = {}
     if physics_diagnostics is None:
         return outputs
-    for output in physics_diagnostics.outputs():
+    for output in physics_diagnostics:
         name = output.metadata.standard_name
         if name in outputs:
             raise ValueError(

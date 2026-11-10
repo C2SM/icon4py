@@ -214,18 +214,24 @@ def test_tracer_state_to_dataarrays(grid: base.Grid, backend: gtx.typing.Backend
 
 
 def precipitation_metadata(key: str, *field_dims: gtx.Dimension) -> state_model.FieldMetaData:
-    """Precipitation metadata with the dims the physics store allocates its buffer from."""
+    """Precipitation metadata with the dims the physics state allocates its buffer from."""
     return dataclasses.replace(state_data.PRECIPITATION_CF_ATTRIBUTES[key], dims=field_dims)
 
 
-def physics_diagnostics_store(
+def allocated_physics_outputs(
     grid: base.Grid, outputs: dict[str, dict[str, state_model.FieldMetaData]]
-) -> physics_state.DiagnosticsStore:
-    """A physics diagnostics store with the given outputs allocated, per process."""
-    store = physics_state.DiagnosticsStore(grid=grid)
-    for process_name, outputs_properties in outputs.items():
-        store.allocate(process_name, outputs_properties)
-    return store
+) -> list[physics_state.DiagnosticOutput]:
+    """The given outputs, per process, as the physics state enumerates them: zero buffers from their dims."""
+    return [
+        physics_state.DiagnosticOutput(
+            process_name=process_name,
+            name=name,
+            metadata=metadata,
+            field=data_alloc.zero_field(grid, *metadata.dims),  # type: ignore[misc]  # dims given above
+        )
+        for process_name, outputs_properties in outputs.items()
+        for name, metadata in outputs_properties.items()
+    ]
 
 
 def rainfall_outputs() -> dict[str, dict[str, state_model.FieldMetaData]]:
@@ -234,7 +240,7 @@ def rainfall_outputs() -> dict[str, dict[str, state_model.FieldMetaData]]:
 
 def test_physics_diagnostic_outputs_are_named_by_standard_name(grid: base.Grid) -> None:
     outputs = driver_output_sources.physics_diagnostic_outputs(
-        physics_diagnostics_store(grid, rainfall_outputs())
+        allocated_physics_outputs(grid, rainfall_outputs())
     )
     assert set(outputs) == {"rainfall_flux"}
     assert outputs["rainfall_flux"].name == "pr"
@@ -244,7 +250,7 @@ def test_physics_diagnostic_outputs_are_named_by_standard_name(grid: base.Grid) 
 def test_physics_diagnostic_outputs_include_surface_fields(grid: base.Grid) -> None:
     # a purely horizontal (surface) output is offered like the others
     outputs = driver_output_sources.physics_diagnostic_outputs(
-        physics_diagnostics_store(
+        allocated_physics_outputs(
             grid,
             {
                 "muphys": {
@@ -264,8 +270,8 @@ def test_physics_diagnostic_outputs_without_physics_are_empty() -> None:
 
 def test_duplicate_physics_diagnostic_names_raise(grid: base.Grid) -> None:
     rainfall = precipitation_metadata("rainfall_flux", dims.CellDim, dims.KDim)
-    store = physics_diagnostics_store(
+    outputs = allocated_physics_outputs(
         grid, {"muphys": {"pr": rainfall}, "graupel": {"rain": rainfall}}
     )
     with pytest.raises(ValueError, match="more than one process: muphys, graupel"):
-        driver_output_sources.physics_diagnostic_outputs(store)
+        driver_output_sources.physics_diagnostic_outputs(outputs)
