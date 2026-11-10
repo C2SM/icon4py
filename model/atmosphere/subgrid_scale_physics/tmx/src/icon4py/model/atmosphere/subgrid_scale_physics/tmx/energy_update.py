@@ -34,6 +34,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 if typing.TYPE_CHECKING:
     from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+    from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
 
 
 log = logging.getLogger(__name__)
@@ -110,7 +111,7 @@ class EnergyUpdate:
         self,
         *,
         input_state: tmx_states.TmxInputState,
-        surface_flux_state: tmx_states.TmxSurfaceFluxState,
+        surface_flux_state: SurfaceFluxState,
         heat_diffusion_tendency: fa.CellKField[ta.wpfloat],
         diagnostic_state: tmx_states.TmxDiagnosticState,
         tendency_state: tmx_states.TmxTendencyState,

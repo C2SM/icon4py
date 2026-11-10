@@ -7,162 +7,200 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-The driver's output: the IO component and its factory.
+Driver-side glue between the model state and the ``icon4py.model.common.io`` module.
 
-`IOMonitor` declares every leaf the driver can write; the config selects the variables by
-name and `run` hands them, as CF/UGRID-annotated DataArrays, to the common writer
-(`icon4py.model.common.io.io.IOMonitor`). The diagnostics among them are derived by the
-driver before each store.
+:class:`OutputStateAssembler` assembles, at a capture step, exactly the variables the
+capturing field groups request from their sources (``driver_output_sources`` and
+``driver_diagnostics``), after :func:`validate_output_variables` checked the groups of
+the ``IOConfig`` against them at setup; :func:`create_io_monitor` builds the
+``IOMonitor`` that writes one file series per field group.
 """
 
-import datetime
 import pathlib
 import uuid
-from typing import Final
+from collections.abc import Collection, Iterable, Mapping
 
+import gt4py.next as gtx
 import xarray as xr
 
-from icon4py.model.common import field, framework as fw, quantity, time
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
+from icon4py.model.common import exceptions, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
-from icon4py.model.common.io import io as common_io, utils as io_utils
+from icon4py.model.common.io import io as common_io
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+    static_fields,
+    tracer_states,
+)
+from icon4py.model.driver import driver_diagnostics, driver_output_sources
 
 
-# file-name stub of the output file (a counter and the backend's suffix are appended)
-DEFAULT_OUTPUT_BASENAME: Final[str] = "icon4py_output"
-
-DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [
-    "air_density",
-    "dimensionless_exner_function",
-    "virtual_potential_temperature",
-    "upward_air_velocity",
-    "normal_velocity",
-    "eastward_wind",
-    "northward_wind",
-    "air_temperature",
-    "air_virtual_temperature",
-    "air_pressure",
-]
-
-# output variable name -> `IOMonitor.Input` leaf name; a variable is named after its
-# quantity's `standard_name`
-_VARIABLE_NAMES: Final[dict[str, str]] = {
-    "air_density": "rho",
-    "dimensionless_exner_function": "exner",
-    "virtual_potential_temperature": "theta_v",
-    "upward_air_velocity": "w",
-    "normal_velocity": "vn",
-    "eastward_wind": "u",
-    "northward_wind": "v",
-    "air_temperature": "temperature",
-    "air_virtual_temperature": "virtual_temperature",
-    "air_pressure": "pressure",
-}
+def requested_output_variables(io_config: common_io.IOConfig) -> set[str]:
+    """The union of the variables of all field groups."""
+    return {name for group in io_config.field_groups for name in group.variables}
 
 
-def _attributes(quantity: type[quantity.Quantity]) -> dict[str, str]:
-    """The CF attributes of a variable, from its quantity."""
-    attributes = {
-        "standard_name": quantity.standard_name,
-        "long_name": quantity.long_name,
-        "units": quantity.units,
+def output_variable_sources(
+    *,
+    tracer_config: tracer_states.TracerConfig | None,
+    physics_outputs: Mapping[str, physics_state.DiagnosticOutput],
+) -> dict[str, list[str]]:
+    """Every variable the run can write, with the names of the sources providing it.
+
+    A variable is normally provided by exactly one source; a physics output whose
+    standard name coincides with another source's variable name is ambiguous and
+    rejected by :func:`validate_output_variables` if a field group requests it.
+    """
+    sources: dict[str, Collection[str]] = {
+        "prognostic": driver_output_sources.PROGNOSTIC_VARIABLES,
+        "diagnostic": driver_diagnostics.DIAGNOSTIC_VARIABLES,
+        "tracer": tracer_config.active_names if tracer_config is not None else (),
+        "physics": physics_outputs,
     }
-    return {key: value for key, value in attributes.items() if value is not None}
+    providers: dict[str, list[str]] = {}
+    for source, names in sources.items():
+        for name in names:
+            providers.setdefault(name, []).append(source)
+    return providers
 
 
-class IOMonitor(fw.Component["IOMonitor.Input", fw.Empty]):
+def validate_output_variables(
+    io_config: common_io.IOConfig, sources: Mapping[str, Collection[str]]
+) -> None:
+    """Fail at setup if a field group requests a variable the run does not provide.
+
+    ``sources`` maps every available variable to the sources providing it (see
+    :func:`output_variable_sources`); a requested variable with several sources is
+    rejected as ambiguous.
     """
-    Writes the selected variables through the common writer.
+    for group in io_config.field_groups:
+        if unknown := sorted(set(group.variables) - set(sources)):
+            raise exceptions.InvalidConfigError(
+                f"Unknown output variables in field group '{group.basename}': "
+                f"{', '.join(unknown)}. Available output variables are: "
+                f"{', '.join(sorted(sources))}."
+            )
+        for name in group.variables:
+            if len(sources[name]) > 1:
+                raise exceptions.InvalidConfigError(
+                    f"Output variable '{name}' of field group '{group.basename}' is "
+                    f"ambiguous: provided by the {' and the '.join(sources[name])} fields."
+                )
 
-    The writer's schedule advances on every `store`, so `run` must be called at every step;
-    the DataArrays are built only when the writer captures.
+
+class OutputStateAssembler:
+    """Assembles the output state the capturing field groups request from its sources.
+
+    The available variables are the prognostics, the standard diagnostics, the active
+    tracers and the physics diagnostics of the run; the field groups are validated
+    against them on construction, so an unknown variable fails before the first time
+    step. The diagnostics computer is only built if some group requests a diagnostic.
     """
-
-    # NOTE: temporary, components MWE part 06 (IO from the config): the `Input` is built from
-    # the configured variables, looked up among the quantities, instead of declaring everything
-    # IO could write and filtering it through `_VARIABLE_NAMES`.
-    class Input(fw.State):
-        rho: field.Field[qty.RhoOnCellK]
-        exner: field.Field[qty.ExnerOnCellK]
-        theta_v: field.Field[qty.ThetaVOnCellK]
-        w: field.Field[qty.WOnCellKHalf]
-        vn: field.Field[qty.VnOnEdgeK]
-        u: field.Field[qty.UOnCellK]
-        v: field.Field[qty.VOnCellK]
-        temperature: field.Field[qty.TemperatureOnCellK]
-        virtual_temperature: field.Field[qty.VirtualTemperatureOnCellK]
-        pressure: field.Field[qty.PressureOnCellK]
-        simulation_time: datetime.datetime
-
-    Output = fw.Empty
 
     def __init__(
         self,
         *,
-        writer: common_io.IOMonitor,
-        variables: list[str],
+        io_config: common_io.IOConfig,
+        grid: grid_base.Grid,
+        backend: gtx.typing.Backend | None,
+        static_field_factories: static_fields.StaticFieldFactories,
+        tracer_config: tracer_states.TracerConfig | None,
+        physics_diagnostics: Iterable[physics_state.DiagnosticOutput] | None,
     ) -> None:
-        self.writer = writer
-        unknown = [name for name in variables if name not in _VARIABLE_NAMES]
-        if unknown:
-            raise ValueError(
-                f"Unknown output variable '{unknown[0]}'. "
-                f"Known variables are: {list(_VARIABLE_NAMES)}."
-            )
-        # output variable name -> Input leaf name
-        self.selected = {name: _VARIABLE_NAMES[name] for name in variables}
+        self._tracer_names: tuple[str, ...] = (
+            tracer_config.active_names if tracer_config is not None else ()
+        )
+        self._physics_outputs = driver_output_sources.physics_diagnostic_outputs(
+            physics_diagnostics
+        )
+        sources = output_variable_sources(
+            tracer_config=tracer_config, physics_outputs=self._physics_outputs
+        )
+        validate_output_variables(io_config, sources)
+        self._available = frozenset(sources)
 
-    def run(self, input: Input, output: fw.Empty) -> fw.Empty:
+        requested = requested_output_variables(io_config)
+        requested_diagnostics = [
+            name for name in driver_diagnostics.DIAGNOSTIC_VARIABLES if name in requested
+        ]
+        self._diagnostics_computer: driver_diagnostics.DiagnosticsComputer | None = (
+            driver_diagnostics.DiagnosticsComputer(
+                grid=grid,
+                backend=backend,
+                variables=requested_diagnostics,
+                metrics=static_field_factories.metrics,
+                interpolation=static_field_factories.interpolation,
+            )
+            if requested_diagnostics
+            else None
+        )
+
+    @property
+    def available_variables(self) -> frozenset[str]:
+        """The variables this run can write."""
+        return self._available
+
+    def assemble(
+        self,
+        variables: Collection[str],
+        prognostic_state: prognostics.PrognosticState,
+        tracer_state: tracer_states.TracerState,
+        diagnostic_state: diagnostics.DiagnosticState,
+    ) -> dict[str, xr.DataArray]:
+        """The CF/UGRID-annotated DataArrays of exactly the requested variables.
+
+        The requested standard diagnostics are computed into ``diagnostic_state`` first.
+        The DataArrays reference the live state (see ``io.utils.to_data_array``): they
+        must be written before the next step mutates it.
+        """
+        requested = set(variables)
         state: dict[str, xr.DataArray] = {}
-        if self.writer.at_capture_time():
-            for name, leaf in self.selected.items():
-                field_: field.Field = getattr(input, leaf)
-                state[name] = io_utils.to_data_array(
-                    field_, _attributes(field_.quantity), to_host=True
+        if prognostic := [
+            name for name in driver_output_sources.PROGNOSTIC_VARIABLES if name in requested
+        ]:
+            state.update(
+                driver_output_sources.prognostic_state_to_dataarrays(prognostic_state, prognostic)
+            )
+        if tracers := [name for name in self._tracer_names if name in requested]:
+            state.update(driver_output_sources.tracer_state_to_dataarrays(tracer_state, tracers))
+        if diagnostics := [
+            name for name in driver_diagnostics.DIAGNOSTIC_VARIABLES if name in requested
+        ]:
+            assert self._diagnostics_computer is not None
+            fields = self._diagnostics_computer.compute(
+                prognostic_state, tracer_state, diagnostic_state, diagnostics
+            )
+            state.update(driver_diagnostics.diagnostic_fields_to_dataarrays(fields))
+        if physics := [name for name in self._physics_outputs if name in requested]:
+            state.update(
+                driver_output_sources.physics_diagnostics_to_dataarrays(
+                    self._physics_outputs, physics
                 )
-        self.writer.store(state, input.simulation_time)
-        return output
+            )
+        return state
 
 
 def create_io_monitor(
     *,
-    output_path: pathlib.Path,
+    io_config: common_io.IOConfig,
     grid_file_path: pathlib.Path,
     grid: grid_base.Grid,
     vertical_grid: v_grid.VerticalGrid,
-    dtime: datetime.timedelta,
-    variables: list[str] | None = None,
-    output_interval: common_io.OutputInterval = time.NumTimeSteps(1),
-    output_backend: common_io.OutputBackend = common_io.OutputBackend.ZARR,
-    output_mode: common_io.OutputMode = common_io.OutputMode.DISTRIBUTED,
+    dtime: time.RelativeTime,
     process_props: decomposition_defs.ProcessProperties,
     decomposition_info: decomposition_defs.DecompositionInfo | None,
-) -> IOMonitor:
-    """Build an ``IOMonitor`` writing through one field group that holds all output fields.
+) -> common_io.IOMonitor:
+    """Build the ``IOMonitor`` writing the field groups of ``io_config`` below its
+    ``output_path``.
 
-    ``output_interval`` is either a number of model steps or a simulation-time delta
-    (normalized to steps using ``dtime``); it defaults to every step. In a distributed
-    run (multi-rank ``process_props``) ``decomposition_info`` is required and
-    ``output_mode`` selects how the ranks write (see ``common_io.OutputMode``).
+    In a distributed run (multi-rank ``process_props``) ``decomposition_info`` is
+    required; each group's ``mode`` selects how the ranks write (see
+    ``common_io.OutputMode``).
     """
-    output_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
-
-    field_groups = [
-        common_io.FieldGroupIOConfig(
-            output_interval=output_interval,
-            basename=DEFAULT_OUTPUT_BASENAME,
-            variables=output_variables,
-            backend=output_backend,
-            mode=output_mode,
-            nc_title="ICON4Py output",
-            nc_comment="Fields computed by ICON4Py.",
-        )
-    ]
-
-    config = common_io.IOConfig(output_path=str(output_path), field_groups=field_groups)
-    writer = common_io.IOMonitor(
-        config=config,
+    return common_io.IOMonitor(
+        config=io_config,
         vertical_size=vertical_grid,
         horizontal_size=grid.config.horizontal_config,
         grid_file_name=grid_file_path,
@@ -172,4 +210,3 @@ def create_io_monitor(
         process_props=process_props,
         decomposition_info=decomposition_info,
     )
-    return IOMonitor(writer=writer, variables=output_variables)

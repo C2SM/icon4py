@@ -16,8 +16,9 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.metrics import metric_fields
+from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
 from icon4py.model.testing import test_utils
 
 
@@ -103,13 +104,33 @@ def construct_input_state(entry_savepoint: sb.TmxEntrySavepoint) -> tmx_states.T
 
 def construct_surface_flux_state(
     surface_fluxes_savepoint: sb.TmxSurfaceFluxesSavepoint,
-) -> tmx_states.TmxSurfaceFluxState:
-    return tmx_states.TmxSurfaceFluxState(
-        evapotranspiration=surface_fluxes_savepoint.evspsbl(),
-        sensible_heat_flux=surface_fluxes_savepoint.hfss(),
+    entry_savepoint: sb.TmxEntrySavepoint,
+    allocator: gtx_typing.Allocator | None = None,
+) -> SurfaceFluxState:
+    """
+    The surface fluxes of the savepoint, plus the surface fluxes of internal energy that ICON
+    does not serialize, as `compute_energy_fluxes` (mo_tmx_surface.f90) forms them:
+    `ufts = hfss` and `ufvs = ta * evspsbl * (cvv - cvd)` with the lowest-level temperature.
+    The latent heat flux is neither serialized nor read by tmx: zero.
+    """
+    evapotranspiration = surface_fluxes_savepoint.evspsbl()
+    sensible_heat_flux = surface_fluxes_savepoint.hfss()
+    vapor_energy_flux = (
+        entry_savepoint.ta().asnumpy()[:, -1]
+        * evapotranspiration.asnumpy()
+        * (constants.CVV - constants.CVD)
+    )
+    return SurfaceFluxState(
+        evapotranspiration=evapotranspiration,
+        sensible_heat_flux=sensible_heat_flux,
+        latent_heat_flux=gtx.zeros(
+            evapotranspiration.domain, dtype=evapotranspiration.dtype, allocator=allocator
+        ),
         u_stress=surface_fluxes_savepoint.tauu(),
         v_stress=surface_fluxes_savepoint.tauv(),
         q_snocpymlt=surface_fluxes_savepoint.q_snocpymlt(),
+        thermal_energy_flux=sensible_heat_flux,
+        vapor_energy_flux=gtx.as_field((dims.CellDim,), vapor_energy_flux, allocator=allocator),
     )
 
 
@@ -129,10 +150,11 @@ def assert_tmx_exit_fields(
     unsynced.
     """
     num_levels = diagnostic_state.km.ndarray.shape[1]
-    # the surface level of km and kh is the surface exchange coefficient, written only with
-    # `use_km_const`
-    # TODO(jcanton): drop this slicing once the tmx surface scheme, which computes km_sfc and
-    # kh_sfc, is ported.
+    # the lowest level of km and kh is the surface exchange coefficient (km_sfc, kh_sfc of
+    # ICON's surface Compute_diagnostics), which tmx only writes with `use_km_const`
+    # TODO(yilu): drop this slicing once the surface component computes the exchange
+    # coefficients (follow-up of #1516) and tmx writes them into the lowest level, as
+    # Update_diagnostics in mo_vdf.f90 does.
     exchange_coefficient_levels = slice(None, None if use_km_const else num_levels - 1)
     synced_fields = {"tend_ta", "tend_ua", "tend_va"}
     # Tolerances of the tmx datatests, per field. The comment above each field gives the worst

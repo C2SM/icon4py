@@ -6,446 +6,399 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests of the physics driver: process loop, time control, accumulation, apply-once."""
-
 import dataclasses
 import datetime
-from typing import Any
 
-import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
-    physics_process,
-    physics_state,
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_driver import (
+    PhysicsDriver,
+    PhysicsProcess,
 )
-from icon4py.model.common import field, framework as fw
-from icon4py.model.common.framework import quantities as qty, states
-from icon4py.model.common.grid import base as base_grid, simple
-
-from .utils import (
-    DT,
-    T0,
-    Recorder,
-    driver,
-    entry_state,
-    filled,
-    make_input,
-    make_output,
-    prognostics,
-    recording,
-    time_control,
-    tracers,
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
+    ProcessTimeControl,
 )
+from icon4py.model.common.components.component_state import ComponentState
+from icon4py.model.common.states import model
+from icon4py.model.common.states.model import FieldMetaData
 
 
-class MoistOutput(fw.State):
-    """A process output with a tendency and a diagnostic."""
-
-    tend_qv: field.Field[qty.TendencyOfQvOnCellK]
-    pflx: field.Field[qty.PrecipitationFluxOnCellK]
-
-
-class ThermoOutput(fw.State):
-    tend_qv: field.Field[qty.TendencyOfQvOnCellK]
-    tend_temperature: field.Field[qty.TendencyOfTemperatureOnCellK]
-    tend_w: field.Field[qty.TendencyOfWOnCellKHalf]
+def test_field_metadata_accepts_kind() -> None:
+    meta = FieldMetaData(
+        standard_name="tend_temperature", units="K s-1", kind=model.FieldKind.TENDENCY
+    )
+    assert meta.kind == model.FieldKind.TENDENCY
+    # unset optional entries read as None and are left out of the rendered attrs
+    assert meta.dims is None
+    assert "dims" not in meta.as_dict()
 
 
-class WindOutput(fw.State):
-    tend_u: field.Field[qty.TendencyOfUOnCellK]
-    tend_v: field.Field[qty.TendencyOfVOnCellK]
+_T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
+_DT = datetime.timedelta(seconds=300)  # 5-min physics interval
 
 
-class LoneWindOutput(fw.State):
-    tend_u: field.Field[qty.TendencyOfUOnCellK]
-
-
-@pytest.fixture
-def grid() -> base_grid.Grid:
-    return simple.simple_grid()
-
-
-def _qv(tracer_state: states.TracerState) -> np.ndarray:
-    assert tracer_state.qv is not None
-    return tracer_state.qv.asnumpy()
+def _tc(
+    interval: datetime.timedelta = _DT,
+    start: datetime.datetime = _T0,
+    end: datetime.datetime = _T0 + datetime.timedelta(days=1),
+) -> ProcessTimeControl:
+    return ProcessTimeControl(interval=interval, start_date=start, end_date=end)
 
 
 class TestProcessTimeControl:
-    @pytest.mark.parametrize("process_dtime", [datetime.timedelta(0), -DT])
-    def test_rejects_a_non_positive_process_dtime(self, process_dtime: datetime.timedelta) -> None:
-        with pytest.raises(ValueError, match="positive"):
-            time_control(process_dtime=process_dtime)
-
-    def test_rejects_a_process_dtime_not_a_multiple_of_driver_dtime(self) -> None:
-        with pytest.raises(ValueError, match="positive multiple"):
-            time_control(process_dtime=DT * 3 / 2)
-
-    @pytest.mark.parametrize("offset", [DT / 2, -DT / 2])
-    def test_rejects_a_window_start_between_two_driver_steps(
-        self, offset: datetime.timedelta
-    ) -> None:
-        with pytest.raises(ValueError, match="window_start"):
-            time_control(start=T0 + offset)
-
-    def test_accepts_a_window_start_on_a_driver_step_before_the_simulation_start(self) -> None:
-        tc = time_control(start=T0 - 3 * DT, process_dtime=2 * DT)
-        # the process grid is anchored at `window_start`, not at the simulation start
-        assert tc.computes_at(T0) is False
-        assert tc.computes_at(T0 + DT) is True
-
-    def test_skips_steps_only_when_process_dtime_exceeds_driver_dtime(self) -> None:
-        assert time_control().skips_steps is False
-        assert time_control(process_dtime=2 * DT).skips_steps is True
+    def test_is_active_false_when_interval_zero(self) -> None:
+        assert _tc(interval=datetime.timedelta(0)).is_active(_T0) is False
 
     def test_is_in_window_at_start_is_true(self) -> None:
-        assert time_control().is_in_window(T0) is True
+        assert _tc().is_in_window(_T0) is True
 
     def test_is_in_window_at_end_is_false(self) -> None:
-        end = T0 + datetime.timedelta(hours=1)
-        assert time_control(end=end).is_in_window(end) is False
+        end = _T0 + datetime.timedelta(hours=1)
+        assert _tc(end=end).is_in_window(end) is False
 
     def test_is_in_window_before_start_is_false(self) -> None:
-        assert time_control().is_in_window(T0 - datetime.timedelta(seconds=1)) is False
+        assert _tc().is_in_window(_T0 - datetime.timedelta(seconds=1)) is False
 
     def test_is_in_window_inside_is_true(self) -> None:
-        assert time_control().is_in_window(T0 + datetime.timedelta(hours=12)) is True
+        assert _tc().is_in_window(_T0 + datetime.timedelta(hours=12)) is True
 
-    def test_computes_at_start(self) -> None:
-        assert time_control().computes_at(T0) is True
+    def test_is_active_at_start_is_true(self) -> None:
+        assert _tc().is_active(_T0) is True
 
-    def test_computes_at_one_interval(self) -> None:
-        assert time_control().computes_at(T0 + DT) is True
+    def test_is_active_at_one_interval_is_true(self) -> None:
+        assert _tc().is_active(_T0 + _DT) is True
 
-    def test_does_not_compute_at_half_interval(self) -> None:
-        assert time_control().computes_at(T0 + DT / 2) is False
+    def test_is_active_at_half_interval_is_false(self) -> None:
+        assert _tc().is_active(_T0 + _DT / 2) is False
 
-    def test_does_not_compute_before_start(self) -> None:
-        assert time_control().computes_at(T0 - datetime.timedelta(seconds=1)) is False
+    def test_is_active_before_start_is_false(self) -> None:
+        assert _tc().is_active(_T0 - datetime.timedelta(seconds=1)) is False
 
-    def test_computes_at_exact_interval_multiples_only(self) -> None:
-        assert time_control().computes_at(T0 + 2 * DT) is True
-        # 1 microsecond off the boundary does not compute (no tolerance).
+    def test_is_active_requires_exact_interval_multiple(self) -> None:
+        # Fires only at an exact integer multiple of the interval.
+        assert _tc().is_active(_T0 + 2 * _DT) is True
+        # 1 microsecond off the boundary does not fire (no tolerance).
         jitter = datetime.timedelta(microseconds=1)
-        assert time_control().computes_at(T0 + 2 * DT + jitter) is False
+        assert _tc().is_active(_T0 + 2 * _DT + jitter) is False
 
     def test_frozen_dataclass(self) -> None:
-        tc = time_control()
+        tc = _tc()
         with pytest.raises(dataclasses.FrozenInstanceError):
-            tc.process_dtime = datetime.timedelta(seconds=1)  # type: ignore[misc]
+            tc.interval = datetime.timedelta(seconds=1)  # type: ignore[misc]
+
+    def test_validate_interval_accepts_integer_multiple(self) -> None:
+        _tc(interval=2 * _DT).validate_interval(_DT)
+
+    def test_validate_interval_rejects_non_multiple(self) -> None:
+        with pytest.raises(ValueError, match="integer multiple"):
+            _tc(interval=1.5 * _DT).validate_interval(_DT)
+
+    def test_validate_interval_rejects_zero_interval(self) -> None:
+        with pytest.raises(ValueError, match="positive"):
+            _tc(interval=datetime.timedelta(0)).validate_interval(_DT)
 
 
-def test_run_zeroes_the_tendency_leaves_of_the_outputs_outside_the_window(
-    grid: base_grid.Grid,
-) -> None:
-    window_end = T0 + 4 * DT
-    process, recorder = recording(
-        MoistOutput, {}, time_control(process_dtime=2 * DT, end=window_end), grid
+def test_physics_process_construction() -> None:
+    class _DummyComponent:
+        inputs_properties = {}
+        outputs_properties = {}
+
+        def __call__(self, state, time_step):
+            return {}
+
+    state = RecordingComponentState()
+    proc = PhysicsProcess(
+        name="muphys",
+        component=_DummyComponent(),
+        state=state,
+        time_control=_tc(),
     )
-    # the output handed to this step, with a tendency and a flux already in them
-    given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
-    entry = entry_state(grid, step_start=window_end)
-
-    result = process.run(entry, given)
-
-    # the zeroing happens in place: the output handed in is the output handed back
-    assert result is given
-    # the tendency leaves are zeroed, the non-tendency leaves (the muphys fluxes) are not
-    np.testing.assert_array_equal(given.tend_qv.asnumpy(), 0.0)
-    np.testing.assert_array_equal(given.pflx.asnumpy(), 5.0)
-    # outside its window the process never runs its component
-    assert recorder.entries == []
+    assert proc.name == "muphys"
+    assert proc.component is not None
+    assert proc.state is state
+    assert proc.time_control.interval == _DT
 
 
-def test_run_computes_on_the_first_in_window_step_even_when_not_triggered(
-    grid: base_grid.Grid,
-) -> None:
-    # the process's first step in its window is not one its time control fires; it computes
-    # anyway, because there is nothing cached yet
-    output = filled(MoistOutput, grid)
-    process, recorder = recording(MoistOutput, {}, time_control(process_dtime=2 * DT), grid)
-    entry = entry_state(grid, step_start=T0 + DT)
+@dataclasses.dataclass
+class RecordingComponent:
+    """Stub Component: records calls, returns configured outputs.
 
-    assert process.run(entry, output) is output
-    assert len(recorder.entries) == 1
+    `output_kinds` keys mirror `outputs` keys; a value of `FieldKind.TENDENCY`
+    marks a tendency and `None` marks a diagnostic, as in production metadata.
+    """
 
-    # the next step fires the time control again, over the cached values: it computes again
-    again = entry_state(grid, step_start=T0 + 2 * DT)
+    outputs: dict[str, object]
+    output_kinds: dict[str, model.FieldKind | None]
+    call_count: int = 0
+    last_state: dict | None = None
+    last_time: datetime.datetime | None = None
+    #: what the driver bound at construction (the layer-owned diagnostic buffers)
+    bound: dict | None = None
 
-    assert process.run(again, output) is output
-    assert len(recorder.entries) == 2
+    @property
+    def inputs_properties(self) -> dict:
+        return {}
+
+    @property
+    def outputs_properties(self) -> dict[str, FieldMetaData]:
+        return {
+            k: FieldMetaData(standard_name=k, units="1", kind=self.output_kinds[k])
+            for k in self.outputs
+        }
+
+    def __call__(self, state, time_step):
+        self.call_count += 1
+        self.last_state = state
+        self.last_time = time_step
+        return dict(self.outputs)
+
+    def bind_output_buffers(self, buffers: dict) -> None:
+        self.bound = dict(buffers)
 
 
-def test_run_populates_the_given_outputs_from_its_cache_on_a_non_computing_step(
-    grid: base_grid.Grid,
-) -> None:
-    output = filled(MoistOutput, grid)
-    process, recorder = recording(
-        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(process_dtime=2 * DT), grid
+@dataclasses.dataclass
+class RecordingComponentState(ComponentState):
+    """Stub ComponentState: records the state handed to it; fixed input dict."""
+
+    input_calls: list = dataclasses.field(default_factory=list)
+
+    def as_component_input(self, state) -> dict:
+        self.input_calls.append(state)
+        return {"foo": "bar"}
+
+
+@dataclasses.dataclass
+class RecordingCoupling:
+    """Stub for the whole PhysicsState layer, recording the driver's coupling calls.
+
+    Plays PhysicsState and Tendencies at once — the driver only cares about the
+    call sequence, which `events` captures in order.
+    """
+
+    events: list = dataclasses.field(default_factory=list)
+
+    # PhysicsState surface
+    def compute_diagnostics(self, prognostic, tracers, diagnostics, air_mass=None) -> None:
+        self.events.append(("compute_diagnostics", prognostic, diagnostics))
+
+    #: the buffers handed out per process, for the assertions
+    allocated: dict = dataclasses.field(default_factory=dict)
+
+    def allocate_process_diagnostics(self, process_name, outputs_properties):
+        self.events.append(("allocate", process_name))
+        buffers = {
+            name: f"BUF_{name}"
+            for name, props in outputs_properties.items()
+            if props.kind != model.FieldKind.TENDENCY
+        }
+        self.allocated[process_name] = buffers
+        return buffers
+
+    def update_prognostics(self, sums, dt_seconds, perturbed_exner=None) -> None:
+        self.events.append(("update_prognostics", dt_seconds, perturbed_exner))
+
+    def update(self, outputs, outputs_properties, dt_seconds) -> None:
+        self.events.append(("update", dict(outputs), dt_seconds))
+
+    # Tendencies surface
+    def zero(self) -> None:
+        self.events.append(("zero",))
+
+    def accumulate(self, outputs, outputs_properties) -> None:
+        self.events.append(("accumulate", dict(outputs)))
+
+    #: the tendency sums the driver hands to update_prognostics
+    sums: dict = dataclasses.field(default_factory=lambda: {"tend_u": "SUM_TU", "tend_v": "SUM_TV"})
+
+
+def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
+    coupling = RecordingCoupling()
+    driver = PhysicsDriver(processes=processes, state=coupling, tendencies=coupling)
+    return driver, coupling
+
+
+def test_run_diagnoses_once_updates_after_each_process_and_writes_back_once() -> None:
+    state = RecordingComponentState()
+    comp_a = RecordingComponent(
+        outputs={"tend_temperature": "A"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
     )
-    # the first step computes and fills the cache
-    process.run(entry_state(grid, step_start=T0), output)
-    # the caller owns its buffer: other values are in it when it is handed back
-    output.tend_qv.ndarray[...] = 1e-7  # type: ignore[index]  # NDArrayObject declares no __setitem__
-    output.pflx.ndarray[...] = 9.0  # type: ignore[index]
-
-    result = process.run(entry_state(grid, step_start=T0 + DT), output)
-
-    # the given buffer receives the tendencies the computing run produced, the other leaves
-    # stay as the caller left them
-    assert result is output
-    np.testing.assert_array_equal(output.tend_qv.asnumpy(), 2e-7)
-    np.testing.assert_array_equal(output.pflx.asnumpy(), 9.0)
-    assert len(recorder.entries) == 1
-
-
-def test_a_mutated_buffer_does_not_touch_the_cache(grid: base_grid.Grid) -> None:
-    output = filled(MoistOutput, grid)
-    process, recorder = recording(
-        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(process_dtime=2 * DT), grid
+    comp_b = RecordingComponent(
+        outputs={"tend_temperature": "B", "kh": "KH"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY, "kh": None},
     )
-    process.run(entry_state(grid, step_start=T0), output)
-    given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
-    process.run(entry_state(grid, step_start=T0 + DT), given)
-    # the caller mutates the buffer it was handed back
-    given.tend_qv.ndarray[...] = 42.0  # type: ignore[index]  # NDArrayObject declares no __setitem__
-
-    process.run(entry_state(grid, step_start=T0 + 3 * DT), given)
-
-    # the next non-computing step restores the cached tendencies only
-    np.testing.assert_array_equal(given.tend_qv.asnumpy(), 2e-7)
-    np.testing.assert_array_equal(given.pflx.asnumpy(), 5.0)
-    assert len(recorder.entries) == 1
-
-
-def test_a_fresh_buffer_gets_the_cached_tendencies_only(grid: base_grid.Grid) -> None:
-    output = filled(MoistOutput, grid)
-    process, recorder = recording(
-        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(process_dtime=2 * DT), grid
-    )
-    process.run(entry_state(grid, step_start=T0), output)
-
-    # a differently-allocated buffer, holding other values
-    given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
-    result = process.run(entry_state(grid, step_start=T0 + DT), given)
-
-    assert result is given
-    np.testing.assert_array_equal(given.tend_qv.asnumpy(), 2e-7)
-    np.testing.assert_array_equal(given.pflx.asnumpy(), 5.0)
-    assert len(recorder.entries) == 1
-
-
-def test_a_process_computing_every_step_keeps_no_cache(grid: base_grid.Grid) -> None:
-    output = filled(MoistOutput, grid)
-    process, recorder = recording(MoistOutput, {"tend_qv": 2e-7}, time_control(), grid)
-
-    for step in range(3):
-        process.run(entry_state(grid, step_start=T0 + step * DT), output)
-
-    assert len(recorder.entries) == 3
-    assert process._cache is None
-
-
-def test_run_hands_every_process_the_same_entry_state_and_applies_the_sum_once(
-    grid: base_grid.Grid,
-) -> None:
-    process_a, recorder_a = recording(
-        MoistOutput, {"tend_qv": 1e-7, "pflx": 5.0}, time_control(), grid
-    )
-    process_b, recorder_b = recording(
-        MoistOutput, {"tend_qv": 2e-7, "pflx": 7.0}, time_control(), grid
-    )
-    physics = driver(grid, [process_a, process_b])
-    prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-
-    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
-
-    # parallel coupling: one entry state, diagnosed once, read by both processes
-    assert len(recorder_a.entries) == 1
-    assert recorder_b.entries == recorder_a.entries
-    assert recorder_b.entries[0] is recorder_a.entries[0]
-    # b reads the entry qv, not qv already updated by a's tendency
-    np.testing.assert_array_equal(recorder_a.qv_read[0], 1e-3)
-    np.testing.assert_array_equal(recorder_b.qv_read[0], 1e-3)
-    # the tendencies are summed and applied once; the diagnostics are not accumulated
-    np.testing.assert_allclose(_qv(tracer_state), 1e-3 + DT.total_seconds() * 3e-7, rtol=1e-12)
-    assert set(physics.accumulators) == {"tend_qv"}
-
-
-def test_driver_rejects_a_process_timed_for_another_dtime(grid: base_grid.Grid) -> None:
-    process, _ = recording(
-        MoistOutput, {}, time_control(process_dtime=4 * DT, driver_dtime=2 * DT), grid
-    )
-    with pytest.raises(ValueError, match="driver's dtime"):
-        driver(grid, [process])
-
-
-def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:
-    process, _ = recording(MoistOutput, {"tend_qv": 1e-7}, time_control(), grid)
-    physics = driver(grid, [process])
-    prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-
-    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
-    physics.run(
-        make_input(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        output=make_output(prognostic, tracer_state),
+    driver, coupling = _driver(
+        [
+            PhysicsProcess(name="A", component=comp_a, state=state, time_control=_tc()),
+            PhysicsProcess(name="B", component=comp_b, state=state, time_control=_tc()),
+        ]
     )
 
-    np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 2 * DT.total_seconds() * 1e-7, rtol=1e-12)
-
-
-def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
-    # the window starts in the future: the step being integrated is before it
-    future = T0 + datetime.timedelta(days=1)
-    window = time_control(start=future, end=future + datetime.timedelta(hours=1))
-    process, recorder = recording(MoistOutput, {"tend_qv": 1e-7}, window, grid)
-    physics = driver(grid, [process])
-    prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-
-    physics.run(
-        make_input(prognostic, tracer_state, simulation_current_datetime=T0),
-        output=make_output(prognostic, tracer_state),
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + _DT,
     )
 
-    assert recorder.entries == []
-    np.testing.assert_array_equal(_qv(tracer_state), 1e-3)
+    assert comp_a.call_count == 1
+    assert comp_b.call_count == 1
+    # buffers allocated at construction, compute_diagnostics + zero once at entry, one
+    # update per process (before the next process runs), exactly one update_prognostics
+    # at the very end
+    assert coupling.events == [
+        ("allocate", "A"),
+        ("allocate", "B"),
+        ("compute_diagnostics", "prog", "diag"),
+        ("zero",),
+        ("accumulate", {"tend_temperature": "A"}),
+        ("update", {"tend_temperature": "A"}, 300.0),
+        ("accumulate", {"tend_temperature": "B", "kh": "KH"}),
+        ("update", {"tend_temperature": "B", "kh": "KH"}, 300.0),
+        ("update_prognostics", 300.0, None),
+    ]
+    # both processes translated the same PhysicsState object, advanced in place in between
+    assert state.input_calls == [coupling, coupling]
+    # the state holds the layer-allocated buffers the granule writes into, by process
+    assert coupling.allocated["B"] == {"kh": "BUF_kh"}
+    assert coupling.allocated["A"] == {}
 
 
-def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> None:
-    process, recorder = recording(
-        MoistOutput, {"tend_qv": 1e-7}, time_control(process_dtime=2 * DT), grid
+def test_run_raises_for_non_multiple_interval() -> None:
+    state = RecordingComponentState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "X"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
     )
-    # fires every other step
-    physics = driver(
-        grid,
-        [process],
-    )
-    prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-
-    # step 1: active (step start == T0), computes
-    physics.run(
-        make_input(prognostic, tracer_state, simulation_current_datetime=T0 + DT),
-        output=make_output(prognostic, tracer_state),
-    )
-    # step 2: in the window but not active (step start == T0 + DT), reuses the last output
-    physics.run(
-        make_input(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        output=make_output(prognostic, tracer_state),
-    )
-
-    # the entry state reaches the process only on the step it computes
-    assert len(recorder.entries) == 1
-    np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 2 * DT.total_seconds() * 1e-7, rtol=1e-12)
-
-
-def test_first_in_window_step_inactive_computes(grid: base_grid.Grid) -> None:
-    # A process whose first step in its window is not active (interval = 2 dt, the first
-    # step starts at T0 + DT) has no output to reuse yet: it computes instead.
-    process, recorder = recording(
-        MoistOutput, {"tend_qv": 1e-7}, time_control(process_dtime=2 * DT), grid
-    )
-    physics = driver(
-        grid,
-        [process],
-    )
-    prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-
-    physics.run(
-        make_input(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        output=make_output(prognostic, tracer_state),
+    driver, _ = _driver(
+        [
+            PhysicsProcess(
+                name="X", component=comp, state=state, time_control=_tc(interval=1.5 * _DT)
+            ),
+        ]
     )
 
-    assert len(recorder.entries) == 1
-    np.testing.assert_allclose(_qv(tracer_state), 1e-3 + DT.total_seconds() * 1e-7, rtol=1e-12)
-
-
-def test_run_requires_every_moisture_species(grid: base_grid.Grid) -> None:
-    physics = driver(grid)
-    prognostic, tracer_state = prognostics(grid), tracers(grid)
-    without_qc = dataclasses.replace(tracer_state, qc=None)
-
-    with pytest.raises(ValueError, match="qc"):
-        physics.run(make_input(prognostic, without_qc), output=make_output(prognostic, without_qc))
-
-
-def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
-    process, _ = recording(MoistOutput, {"tend_qv": 1e-7}, time_control(), grid)
-    physics = driver(grid, [process])
-    prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-    new_prognostic, new_tracers = prognostics(grid, theta_v=0.0), tracers(grid, qv=0.0)
-
-    physics.run(
-        make_input(prognostic, tracer_state), output=make_output(new_prognostic, new_tracers)
-    )
-
-    # The input is read only, `output` continues it, with the tendencies applied
-    np.testing.assert_array_equal(_qv(tracer_state), 1e-3)
-    np.testing.assert_allclose(_qv(new_tracers), 1e-3 + DT.total_seconds() * 1e-7, rtol=1e-12)
-    np.testing.assert_array_equal(new_prognostic.theta_v.asnumpy(), 300.0)
-
-
-def test_apply_updates_tracers_w_and_thermodynamics_once(grid: base_grid.Grid) -> None:
-    process, _ = recording(
-        ThermoOutput,
-        {"tend_qv": 1e-7, "tend_temperature": 1e-3, "tend_w": 1e-4},
-        time_control(),
-        grid,
-    )
-    physics = driver(grid, [process])
-    prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-    exner_before = prognostic.exner.asnumpy().copy()
-    theta_v_before = prognostic.theta_v.asnumpy().copy()
-
-    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
-
-    dt = DT.total_seconds()
-    np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 1e-7 * dt, rtol=1e-12)
-    np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
-    # EOS wiring smoke test: the exact-EOS update rewrote exner and theta_v (no direction
-    # assertion: the uniform test state is not EOS-consistent)
-    assert not np.array_equal(prognostic.exner.asnumpy(), exner_before)
-    assert not np.array_equal(prognostic.theta_v.asnumpy(), theta_v_before)
-
-
-def test_apply_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> None:
-    # uniform tend_u = 1e-4, tend_v = 0 with the neutral geometry of `driver`:
-    # ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on every edge of the periodic simple grid
-    process, _ = recording(WindOutput, {"tend_u": 1e-4}, time_control(), grid)
-    physics = driver(grid, [process])
-    prognostic, tracer_state = prognostics(grid), tracers(grid)
-
-    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
-
-    np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * DT.total_seconds(), rtol=1e-12)
-
-
-def test_apply_rejects_a_lone_horizontal_wind_tendency(grid: base_grid.Grid) -> None:
-    # vn is one projection of (u, v): a process emitting only one of the two would
-    # silently lose the other half of the momentum, an error rather than a no-op
-    process, _ = recording(LoneWindOutput, {"tend_u": 1e-4}, time_control(), grid)
-    physics = driver(grid, [process])
-    prognostic, tracer_state = prognostics(grid), tracers(grid)
-
-    with pytest.raises(ValueError, match="applied as a pair"):
-        physics.run(
-            make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state)
+    with pytest.raises(ValueError, match="integer multiple"):
+        driver.run(
+            prognostic="prog",
+            tracers="tracers",
+            diagnostics="diag",
+            dtime=_DT,
+            simulation_current_datetime=_T0,
         )
+    assert comp.call_count == 0
 
 
-def _empty(entry: physics_state.EntryState) -> fw.Empty:
-    return fw.Empty()
-
-
-def static_checks() -> None:
-    """
-    A wiring error mypy reports; never run. With `warn_unused_ignores`, the check fails when
-    it stops being an error.
-    """
-    # a collect_input that builds another component's Input
-    physics_process.PhysicsProcess(
-        component=Recorder({}),
-        collect_input=_empty,  # type: ignore[arg-type]
-        time_control=time_control(),
-        grid=simple.simple_grid(),
-        allocator=None,
+def test_out_of_window_process_does_nothing() -> None:
+    state = RecordingComponentState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "X"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
     )
+    # Window starts in the future — the step being integrated is before it.
+    future = _T0 + datetime.timedelta(days=1)
+    tc = _tc(start=future, end=future + datetime.timedelta(hours=1))
+    driver, coupling = _driver(
+        [PhysicsProcess(name="future", component=comp, state=state, time_control=tc)]
+    )
+
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0,
+    )
+
+    assert comp.call_count == 0
+    assert state.input_calls == []
+    # the accumulate and update calls still happen, with nothing in them to add
+    assert coupling.events == [
+        ("allocate", "future"),
+        ("compute_diagnostics", "prog", "diag"),
+        ("zero",),
+        ("accumulate", {}),
+        ("update", {}, 300.0),
+        ("update_prognostics", 300.0, None),
+    ]
+
+
+def test_inactive_in_window_recycles_cached_outputs() -> None:
+    state = RecordingComponentState()
+    # Component computes once; on the recycle step it MUST NOT be called, but its
+    # cached tendencies are advanced again.
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "FRESH"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
+    )
+    # interval = 2 * dt → process fires every other step.
+    driver, coupling = _driver(
+        [PhysicsProcess(name="p", component=comp, state=state, time_control=_tc(interval=2 * _DT))]
+    )
+
+    # Step 1: active (step start == _T0, elapsed == 0), compute + cache.
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + _DT,
+    )
+    # Step 2: in window, but not active (elapsed == _DT) — recycle the cached outputs.
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + 2 * _DT,
+    )
+
+    assert comp.call_count == 1
+    # The state is translated only on the firing step: a process that derives its own
+    # inputs must not compute them for the step that reuses the cached outputs.
+    assert state.input_calls == [coupling]
+    updates = [e for e in coupling.events if e[0] == "update"]
+    assert updates == [("update", {"tend_temperature": "FRESH"}, 300.0)] * 2
+    updates = [e for e in coupling.events if e[0] == "update_prognostics"]
+    assert len(updates) == 2  # one per run
+
+
+def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
+    # Regression (jcanton review): a process whose first-ever in-window step is NOT active
+    # (interval = 2*dt, first step lands at start + dt) used to KeyError on the empty recycle
+    # cache. With nothing cached to recycle yet, it must compute instead.
+    state = RecordingComponentState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "FRESH"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
+    )
+    driver, coupling = _driver(
+        [PhysicsProcess(name="p", component=comp, state=state, time_control=_tc(interval=2 * _DT))]
+    )
+
+    # First call lands in-window but off the firing tick (step start == _T0 + _DT).
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + 2 * _DT,
+    )
+
+    assert comp.call_count == 1
+    assert ("update", {"tend_temperature": "FRESH"}, 300.0) in coupling.events
+
+
+def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:
+    state = RecordingComponentState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "T", "kh": "KH"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY, "kh": None},
+    )
+    _, coupling = _driver(
+        [PhysicsProcess(name="tmx", component=comp, state=state, time_control=_tc())]
+    )
+    # before any run: the layer allocated, the component adopted the buffer
+    assert comp.bound == {"kh": "BUF_kh"}
+    assert coupling.allocated["tmx"] == {"kh": "BUF_kh"}

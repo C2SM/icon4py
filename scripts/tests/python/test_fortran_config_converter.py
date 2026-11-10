@@ -20,6 +20,7 @@ import fortran_config_converter as fcc
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.subgrid_scale_physics.surface import config as surface_config
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.common import constants, prescribed_tendencies
 from icon4py.model.common.config import config_io
@@ -433,4 +434,32 @@ def test_tmx_rejects_positions_that_disagree_with_the_input_namelist() -> None:
         fcc.make_tmx_config(
             atm_dict=fortran_dict,
             input_dict=_input_vdf(solver_type=2, energy_type=2, dissipation_factor=0.5),
+        )
+
+
+def test_surface_config() -> None:
+    atm_dict = {"aes_vdf_nml": {"aes_vdf_config": _echoed_vdf_record()}}
+    input_dict = {
+        "nh_testcase_nml": {"ape_sst_case": "sst_const", "ape_sst_val": 30.0, "isrfc_type": 1}
+    }
+    config = fcc.make_surface_config(atm_dict=atm_dict, input_dict=input_dict)
+    assert config is not None
+    assert config.surface_flux_type is surface_config.SurfaceFluxType.FIXED_HEAT_FLUXES
+    assert config.sea_surface_temperature == pytest.approx(303.15)
+    # shflx and lhflx left out: the defaults of mo_nh_testcases_nml.f90
+    assert config.kinematic_sensible_heat_flux == 0.1
+    assert config.kinematic_latent_heat_flux == 0.0
+
+
+def test_surface_config_is_none_without_tmx() -> None:
+    input_dict = {"nh_testcase_nml": {"ape_sst_case": "sst_const", "isrfc_type": 1}}
+    assert fcc.make_surface_config(atm_dict={}, input_dict=input_dict) is None
+
+
+def test_surface_config_rejects_other_sst_cases() -> None:
+    """ICON's default `ape_sst_case` is 'sst1', a latitude-dependent SST."""
+    atm_dict = {"aes_vdf_nml": {"aes_vdf_config": _echoed_vdf_record()}}
+    with pytest.raises(NotImplementedError, match="ape_sst_case"):
+        fcc.make_surface_config(
+            atm_dict=atm_dict, input_dict={"nh_testcase_nml": {"isrfc_type": 1}}
         )

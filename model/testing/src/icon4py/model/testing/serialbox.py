@@ -1031,7 +1031,9 @@ class AdvectionInitSavepoint(IconSavepoint):
 
 class AdvectionExitSavepoint(IconSavepoint):
     def hfl_tracer(self, ntracer: int) -> field.Field[qty.HorizontalTracerFluxOnEdgeK]:
-        return self._get_typed_field_component("hfl_tracers", ntracer, qty.HorizontalTracerFluxOnEdgeK)
+        return self._get_typed_field_component(
+            "hfl_tracers", ntracer, qty.HorizontalTracerFluxOnEdgeK
+        )
 
     def vfl_tracer(self, ntracer: int) -> field.Field[qty.VerticalTracerFluxOnCellKHalf]:
         return self._get_typed_field_component(
@@ -2113,6 +2115,9 @@ class TmxEntrySavepoint(IconSavepoint):
 
     def cvair(self):
         return self._get_field("cvair", dims.CellDim, dims.KDim)
+
+    def pres_ifc(self):
+        return self._get_field("pres_ifc", dims.CellDim, dims.KHalfDim)
 
 
 class TmxSurfaceFluxesSavepoint(IconSavepoint):

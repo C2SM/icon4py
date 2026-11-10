@@ -237,17 +237,6 @@ def _compute_temperature_from_internal_energy(
     )
 
 
-@gtx.field_operator
-def _compute_surface_internal_energy_flux(
-    sensible_heat_flux: fa.CellField[wpfloat],
-    evapotranspiration: fa.CellField[wpfloat],
-    temperature: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
-    return sensible_heat_flux + temperature * evapotranspiration * (
-        PhysicsConstants.cvv - PhysicsConstants.cvd
-    )
-
-
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_energy_from_temperature(
     temperature: fa.CellKField[wpfloat],
@@ -288,8 +277,8 @@ def _diffuse_energy_and_update_temperature(
     energy: fa.CellKField[wpfloat],
     diffusivity: fa.CellKHalfField[wpfloat],
     inv_dz: fa.CellKHalfField[wpfloat],
-    sensible_heat_flux: fa.CellField[wpfloat],
-    evapotranspiration: fa.CellField[wpfloat],
+    thermal_energy_flux: fa.CellField[wpfloat],
+    vapor_energy_flux: fa.CellField[wpfloat],
     temperature: fa.CellKField[wpfloat],
     new_qv: fa.CellKField[wpfloat],
     new_qc: fa.CellKField[wpfloat],
@@ -322,8 +311,9 @@ def _diffuse_energy_and_update_temperature(
         a,
         b,
         c,
-        # only the bottom row is used, where 'temperature' is that of the lowest level
-        _compute_surface_internal_energy_flux(sensible_heat_flux, evapotranspiration, temperature),
+        # compute_flux_x (mo_vdf_atmo.f90) for the internal energy: the surface fluxes of
+        # internal energy of the surface scheme, summed; only the bottom row is used
+        broadcast(thermal_energy_flux + vapor_energy_flux, (dims.CellDim, dims.KDim)),
         air_mass,
         rho,
         km_ie,
@@ -345,8 +335,8 @@ def diffuse_energy_and_update_temperature(
     energy: fa.CellKField[wpfloat],
     diffusivity: fa.CellKHalfField[wpfloat],
     inv_dz: fa.CellKHalfField[wpfloat],
-    sensible_heat_flux: fa.CellField[wpfloat],
-    evapotranspiration: fa.CellField[wpfloat],
+    thermal_energy_flux: fa.CellField[wpfloat],
+    vapor_energy_flux: fa.CellField[wpfloat],
     temperature: fa.CellKField[wpfloat],
     new_qv: fa.CellKField[wpfloat],
     new_qc: fa.CellKField[wpfloat],
@@ -375,8 +365,8 @@ def diffuse_energy_and_update_temperature(
         energy=energy,
         diffusivity=diffusivity,
         inv_dz=inv_dz,
-        sensible_heat_flux=sensible_heat_flux,
-        evapotranspiration=evapotranspiration,
+        thermal_energy_flux=thermal_energy_flux,
+        vapor_energy_flux=vapor_energy_flux,
         temperature=temperature,
         new_qv=new_qv,
         new_qc=new_qc,

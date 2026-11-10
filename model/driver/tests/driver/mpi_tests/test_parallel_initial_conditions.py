@@ -92,9 +92,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     grid_file_path = grid_utils._download_grid_file(experiment.description.grid)
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
-    single_rank_config = experiment.config.with_overrides(
-        driver={"output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}"}
-    )
+    single_rank_config = experiment.config
     single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=single_rank_config.vertical_grid,
@@ -159,9 +157,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         prep_adv=single_rank_prep_adv,
     )
 
-    multi_rank_config = experiment.config.with_overrides(
-        driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"}
-    )
+    multi_rank_config = experiment.config
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=multi_rank_config.vertical_grid,

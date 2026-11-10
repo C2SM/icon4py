@@ -87,22 +87,6 @@ class TmxInterpolationState:
 
 
 @dataclasses.dataclass(frozen=True)
-class TmxSurfaceFluxState:
-    """Surface fluxes provided by the surface scheme (inputs to the atmospheric diffusion)."""
-
-    evapotranspiration: fa.CellField[ta.wpfloat]
-    """Surface evapotranspiration flux (`evspsbl`) [kg/(m^2 s)]."""
-    sensible_heat_flux: fa.CellField[ta.wpfloat]
-    """Surface sensible heat flux (`hfss`) [W/m^2]."""
-    u_stress: fa.CellField[ta.wpfloat]
-    """Zonal surface wind stress (`tauu`) [N/m^2]."""
-    v_stress: fa.CellField[ta.wpfloat]
-    """Meridional surface wind stress (`tauv`) [N/m^2]."""
-    q_snocpymlt: fa.CellField[ta.wpfloat]
-    """Heat used to melt snow on the canopy (`q_snocpymlt`), zero off land [W/m^2]."""
-
-
-@dataclasses.dataclass(frozen=True)
 class TmxInputState:
     """Atmospheric input fields of tmx (``t_vdf_atmo_inputs`` in mo_vdf_atmo_memory.f90)."""
 
