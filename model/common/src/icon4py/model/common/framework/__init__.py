@@ -73,9 +73,12 @@ class State:
         dataclasses.dataclass(frozen=True, eq=False, kw_only=True)(cls)
 
 
-def fields(state: State, kind: type[Quantity] = Quantity) -> dict[str, Field]:
+def fields(
+    state: State, kind: type[Quantity] = Quantity, exclude: type[Quantity] | None = None
+) -> dict[str, Field]:
     """
-    The present leaves of a state whose quantity is a `kind`, by name, in declaration order.
+    The present leaves of a state whose quantity is a `kind` and not an `exclude`, by name, in
+    declaration order.
 
     One level of `Field` leaves, the optional ones skipped while None. `copy`, the
     physics driver and the IO walk a state through it.
@@ -83,7 +86,9 @@ def fields(state: State, kind: type[Quantity] = Quantity) -> dict[str, Field]:
     return {
         name: field
         for name, quantity, _ in _declarations(type(state))  # type: ignore[arg-type]
-        if issubclass(quantity, kind) and (field := getattr(state, name)) is not None
+        if issubclass(quantity, kind)
+        and not (exclude is not None and issubclass(quantity, exclude))
+        and (field := getattr(state, name)) is not None
     }
 
 

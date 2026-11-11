@@ -103,6 +103,11 @@ def test_fields_of_a_kind_are_the_leaves_whose_quantity_is_one(grid: base_grid.G
     assert list(fw.fields(budget, kind=Pressure)) == ["pressure"]
 
 
+def test_fields_without_a_kind_are_the_other_leaves(grid: base_grid.Grid) -> None:
+    budget = fw.allocate(Budget, grid, None)
+    assert list(fw.fields(budget, exclude=quantity.Tendency)) == ["pressure", "salt"]
+
+
 def test_copy_of_a_kind_writes_and_compares_only_those_leaves(grid: base_grid.Grid) -> None:
     src = fw.allocate(Budget, grid, None, fill=lambda name, _: 1.0)
     # `salt` is present on one side only, and not a tendency: it is not compared

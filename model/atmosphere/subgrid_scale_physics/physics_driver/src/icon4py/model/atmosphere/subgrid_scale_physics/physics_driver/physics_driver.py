@@ -164,7 +164,6 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             vertical_sizes=k_range,
             offset_provider={},
         )
-        # RBF reconstruction of the cell-centre wind from the edge-normal vn
         self._rbf_interpolation = model_options.setup_program(
             program=edge_2_cell_vector_rbf_interpolation,
             backend=backend,
@@ -245,12 +244,10 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
 
     def run(self, input: Input, output: Output) -> Output:
         dt_seconds = self.dtime.total_seconds()
-        # the processes advance `output`, which continues `input`
         fw.copy_to_output(input, output)
         # NOTE: temporary, replaced in parts 04 (recipes) and 05 (derived inputs), see `_diagnose`.
         state = self._diagnose(input, output)
-        # NOTE: temporary, replaced in parts 07 (tendencies) and 08 (updates), see
-        # `_zero_accumulators`.
+        # NOTE: temporary, replaced in parts 07 (tendencies) and 08 (updates)
         self._zero_accumulators()
         for process, process_output in self._process_outputs.items():
             process.run(state, process_output)
@@ -263,16 +260,14 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         """
         The processes' diagnostic (non-tendency) output fields, by the standard name of their
         quantity; those without a standard name are not offered.
-
-        They hold the values of the last step the process computed, zeros before that.
         """
         fields: dict[str, field.Field] = {}
         for process_output in self._process_outputs.values():
-            for field_ in fw.fields(process_output).values():
+            # NOTE: temporary, replaced in part 07 (tendencies): a tendency is a `TendencyOf`
+            # instead of a subclass of the marker base.
+            for field_ in fw.fields(process_output, exclude=quantity.Tendency).values():
                 name = field_.quantity.standard_name
-                # NOTE: temporary, replaced in part 07 (tendencies): a tendency is a `TendencyOf`
-                # instead of a subclass of the marker base.
-                if issubclass(field_.quantity, quantity.Tendency) or name is None:
+                if name is None:
                     continue
                 if name in fields:
                     raise ValueError(f"'{name}' is an output of more than one physics process")
