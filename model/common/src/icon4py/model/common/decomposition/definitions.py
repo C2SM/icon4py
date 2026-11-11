@@ -16,7 +16,7 @@ import math
 import warnings
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, ClassVar, Literal, Protocol, overload, runtime_checkable
+from typing import Any, ClassVar, Final, Literal, Protocol, overload, runtime_checkable
 
 import gt4py.next as gtx
 import numpy as np
@@ -580,11 +580,11 @@ class Reductions(Protocol):
 #: (``fact = 2**(30 - iexp)``). The integer part and the fraction then each fit in 30 bits:
 #: every value keeps 60 bits below the leading bit of the largest one, more than the 53 bits
 #: of a double, and the int64 accumulators cannot overflow before ``2**33`` elements.
-FIXED_POINT_BITS = 30
+FIXED_POINT_BITS: Final[int] = 30
 #: ICON returns 0 when the binary exponent of the largest magnitude is below -980: the
 #: scale factor ``2**(30 - iexp)`` would exceed ``2**1010``, close to the largest double
 #: exponent (1023). Values that small count as zero.
-_MIN_FIXED_POINT_EXPONENT = -980
+_MIN_FIXED_POINT_EXPONENT: Final[int] = -980
 
 
 def fixed_point_shift(abs_max: float) -> int:
