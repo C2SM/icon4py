@@ -215,6 +215,29 @@ class GodunovSplittingAdvection(Advection):
         self._p_mflx_tracer_v_zero = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
         )
+        # Temporary holding the vertically advected tracer between the vertical and
+        # the horizontal transport step. On even timesteps `p_tracer_new` is both
+        # read (as `p_tracer_after_vertical`) and written by
+        # `compute_tracer_advection_after_horizontal_limiter`; programs do not
+        # support aliased in/out fields, so the input is frozen into this
+        # temporary first.
+        self._p_tracer_after_vertical = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
+
+        self._copy_field_on_cell_k = setup_program(
+            backend=self._backend,
+            program=generic_math_operations.copy_field_on_cell_k,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_nudging,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self._grid.num_levels,
+            },
+            offset_provider=self._grid.connectivities,
+        )
 
         self._apply_interpolated_tracer_time_tendency = setup_program(
             backend=self._backend,
@@ -395,6 +418,16 @@ class GodunovSplittingAdvection(Advection):
 
         self._exchange.exchange(dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM)
 
+        if self._even_timestep:
+            # `p_tracer_new` currently holds the vertically advected tracer (written
+            # by `compute_tracer_advection_before_horizontal_limiter`) and is read
+            # (as `p_tracer_after_vertical`) and written by
+            # `compute_tracer_advection_after_horizontal_limiter`. Freeze the input
+            # into a temporary so the program does not receive an aliased inout field.
+            self._copy_field_on_cell_k(
+                field=p_tracer_new, output_field=self._p_tracer_after_vertical
+            )
+
         self._compute_after_horizontal_limiter(
             p_mflx_tracer_h=diagnostic_state.hfl_tracer,
             p_mflx_tracer_v=diagnostic_state.vfl_tracer,
@@ -402,7 +435,7 @@ class GodunovSplittingAdvection(Advection):
             r_m=self._r_m,
             p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
             p_tracer_now=p_tracer_now,
-            p_tracer_after_vertical=p_tracer_new,
+            p_tracer_after_vertical=self._p_tracer_after_vertical,
             rhodz_ast2=self._rhodz_ast2,
             rhodz_now=diagnostic_state.airmass_now,
             rhodz_new=diagnostic_state.airmass_new,
