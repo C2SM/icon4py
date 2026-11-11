@@ -234,7 +234,7 @@ def _input_data_fixture(
                 " parametrization id feeds the seed derivation."
             )
         # `None` means pytest's default naming, which stringifies the param
-        ids = str if ids is None else ids
+        ids = (lambda x: x) if ids is None else ids
         if "request" not in inspect.signature(plain).parameters:
             raise TypeError(
                 "A parametrized 'input_data' fixture must declare a 'request' parameter: the"
