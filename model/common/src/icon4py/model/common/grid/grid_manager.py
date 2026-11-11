@@ -454,6 +454,9 @@ class GridManager:
         # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables))
 
+        # As ICON (`mo_complete_subdivision.f90`), a halo rim edge in the lateral boundary zones,
+        # where stencils read `E2C`, points twice to its cell on this rank. Only after deriving
+        # `E2C2E`, whose RBF stencil needs the missing neighbors last.
         if self._decomposition_info.is_distributed():
             edges = self._decomposition_info.global_index(dims.EdgeDim)
             e2c = neighbor_tables[dims.E2C]
