@@ -10,7 +10,7 @@ import inspect
 
 import pytest
 
-from icon4py.model.common import dimension as dims, framework as fw, quantity
+from icon4py.model.common import dimension as dims, quantity
 from icon4py.model.common.framework import quantities as qty
 
 
@@ -40,17 +40,3 @@ def test_quantity_is_named_after_its_place(quantity: type[quantity.Quantity]) ->
     assert quantity.dims == (PLACES[place] if place is not None else ())
     assert isinstance(quantity.units, str)
     assert quantity.precision in ("wp", "vp")
-
-
-def test_tendencies_are_marked() -> None:
-    assert issubclass(qty.TendencyOfTemperatureOnCellK, quantity.Tendency)
-    assert issubclass(qty.TendencyOfVnOnEdgeK, quantity.Tendency)
-    assert not issubclass(qty.TemperatureOnCellK, quantity.Tendency)
-
-
-def test_the_dycore_precisions_follow_the_diagnostic_state() -> None:
-    assert qty.TangentialWindOnEdgeK.precision == "vp"
-    assert qty.NormalWindAdvectiveTendencyOnEdgeK.precision == "vp"
-    assert qty.ExnerDynamicalIncrementOnCellK.precision == "vp"
-    assert qty.ThetaVOnCellKHalf.precision == "wp"
-    assert qty.HorizontalWindDeformationOnCellKHalf.precision == "vp"

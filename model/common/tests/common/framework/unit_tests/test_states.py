@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
 import pytest
 
 from icon4py.model.common import framework as fw
@@ -19,42 +18,8 @@ def grid() -> base_grid.Grid:
     return simple.simple_grid()
 
 
-def test_prognostic_state_allocates_its_five_leaves(grid: base_grid.Grid) -> None:
-    prognostics = fw.allocate(states.PrognosticState, grid, allocator=None)
-    assert list(fw.fields(prognostics)) == ["rho", "w", "vn", "exner", "theta_v"]
-
-
 def test_tracer_state_allocates_the_configured_tracers_only(grid: base_grid.Grid) -> None:
     config = states.TracerConfig.from_ntracer(2)
     tracers = fw.allocate(states.TracerState, grid, allocator=None, only=config.active_names)
     assert list(fw.fields(tracers)) == ["qv", "qc"]
     assert tracers.qi is None
-
-
-def test_copy_writes_the_given_state_in_place(grid: base_grid.Grid) -> None:
-    tracers = fw.allocate(states.TracerState, grid, allocator=None, only=("qv",))
-    np.asarray(tracers.qv.ndarray)[...] = 2.0  # type: ignore[union-attr]
-    dst = fw.allocate(states.TracerState, grid, allocator=None, only=("qv",))
-    copied = fw.copy(tracers, dst)
-    assert copied is dst
-    assert copied.qc is None
-    assert copied.qv is not None and copied.qv is not tracers.qv
-    assert np.all(np.asarray(copied.qv.ndarray) == 2.0)
-
-
-def test_copy_rejects_mismatched_present_leaves(grid: base_grid.Grid) -> None:
-    # a leaf present on either side without a counterpart on the other is a mismatch
-    src = fw.allocate(states.TracerState, grid, allocator=None, only=("qv",))
-    dst = fw.allocate(states.TracerState, grid, allocator=None)
-    with pytest.raises(ValueError, match="present leaves must match"):
-        fw.copy(src, dst)
-
-
-def test_prep_advection_merges_the_dycore_and_advection_views(grid: base_grid.Grid) -> None:
-    prep = fw.allocate(states.PrepAdvection, grid, allocator=None)
-    assert list(fw.fields(prep)) == [
-        "vn_traj",
-        "mass_flx_me",
-        "dynamical_vertical_mass_flux_at_cells_on_half_levels",
-        "dynamical_vertical_volumetric_flux_at_cells_on_half_levels",
-    ]

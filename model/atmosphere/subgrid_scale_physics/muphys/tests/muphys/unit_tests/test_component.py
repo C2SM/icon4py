@@ -66,9 +66,11 @@ class TestMuphys(component_tests.ComponentTest, component_tests.CollectInputTest
             physics_state.PhysicsState, grid, None, step_start=datetime.datetime(2024, 1, 1)
         )
 
-    def test_run_reports_tendencies(
+    def test_run_hands_the_granule_copies_and_reports_tendencies(
         self,
         component: muphys_component.Muphys,
+        compute: GranuleStandIn,
+        dz: fa.CellKField[float],
         input: muphys_component.Muphys.Input,
         output: muphys_component.Muphys.Output,
     ) -> None:
@@ -79,17 +81,7 @@ class TestMuphys(component_tests.ComponentTest, component_tests.CollectInputTest
         np.testing.assert_allclose(output.tend_qv.asnumpy(), 2.0 / dt, rtol=1e-12)
         np.testing.assert_array_equal(output.tend_qc.asnumpy(), 0.0)
         np.testing.assert_array_equal(output.pflx.asnumpy(), 3.0)
-
-    def test_run_hands_the_granule_copies_of_what_it_overwrites(
-        self,
-        component: muphys_component.Muphys,
-        compute: GranuleStandIn,
-        dz: fa.CellKField[float],
-        input: muphys_component.Muphys.Input,
-        output: muphys_component.Muphys.Output,
-    ) -> None:
-        component.run(input, output)
-
+        # what the granule overwrites goes in as a copy, what it only reads as given
         (call,) = compute.calls
         assert call["te"] is not input.te
         assert call["dz"] is dz

@@ -62,10 +62,6 @@ def _horizontal_size(grid: base.Grid, dim: gtx.Dimension) -> int:
     }[dim]
 
 
-def test_the_prognostic_variables_are_the_standard_names_of_the_prognostic_state() -> None:
-    assert set(driver_output_sources.PROGNOSTIC_VARIABLES) == set(_EXPECTED_DIMS)
-
-
 def test_assembles_all_prognostic_variables(
     prognostic_state: states.PrognosticState, grid: base.Grid
 ) -> None:

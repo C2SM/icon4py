@@ -25,17 +25,11 @@ from tests.common.fixtures import grid
 from tests.common.unit_tests.utils import CELL_K, Pressure
 
 
-def test_field_keeps_its_quantity(grid: base_grid.Grid) -> None:
-    pressure = fw.zeros(Pressure, grid, allocator=None)
-    assert pressure.quantity is Pressure
-    assert pressure.ndarray.shape == (grid.num_cells, grid.num_levels)
-    assert pressure.domain.dims == CELL_K
-
-
 def test_field_is_the_gt4py_field_it_tags(grid: base_grid.Grid) -> None:
     data = gtx.zeros({dims.CellDim: grid.num_cells, dims.KDim: grid.num_levels}, dtype=ta.wpfloat)
     pressure = field.Field(Pressure, data)
     assert isinstance(pressure, gtx.Field)
+    assert pressure.quantity is Pressure and pressure.domain.dims == CELL_K
     assert pressure.ndarray is data.ndarray and pressure.domain == data.domain
     retagged = field.Field(Pressure, pressure)
     assert retagged.quantity is Pressure and retagged.ndarray is data.ndarray
