@@ -50,9 +50,7 @@ class PhysicsState(fw.State):
     pressure_ifc: field.Field[qty.PressureOnCellKHalf]
     u: field.Field[qty.UOnCellK]
     v: field.Field[qty.VOnCellK]
-    # the dycore's air mass, ICON's `mair`, which only some processes need
     air_mass: field.Field[qty.AirMassOnCellK] | None = None
-    # the surface process's output, present when it runs
     evapotranspiration: field.Field[qty.EvapotranspirationOnCell] | None = None
     sensible_heat_flux: field.Field[qty.SensibleHeatFluxOnCell] | None = None
     latent_heat_flux: field.Field[qty.LatentHeatFluxOnCell] | None = None

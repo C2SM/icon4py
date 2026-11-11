@@ -56,9 +56,6 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     previous ones advanced. At the end exner, theta_v, the perturbed exner (when given) and vn
     are updated once from the advanced state and the summed wind tendencies (phy2dyn), and the
     halos of what the physics wrote are synced.
-
-    `input` is read only and `output` continues it: the driver copies `input` into `output`
-    and advances `output`. The driver passes the same buffers as both, in place.
     """
 
     class Input(fw.State):
@@ -73,9 +70,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         qr: field.Field[qty.QrOnCellK] | None = None
         qs: field.Field[qty.QsOnCellK] | None = None
         qg: field.Field[qty.QgOnCellK] | None = None
-        # the air mass of the state the physics sees, ICON's `mair` (the dycore's `airmass_new`)
         air_mass: field.Field[qty.AirMassOnCellK] | None = None
-        # the end of the step being integrated
         simulation_current_datetime: time.AbsoluteTime
 
     class Output(fw.State):
@@ -89,15 +84,12 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         qr: field.Field[qty.QrOnCellK] | None = None
         qs: field.Field[qty.QsOnCellK] | None = None
         qg: field.Field[qty.QgOnCellK] | None = None
-        # the driver's diagnostics, shared with the output: diagnosed at step start, then
-        # temperature, u and v advanced by the processes
         temperature: field.Field[qty.TemperatureOnCellK]
         virtual_temperature: field.Field[qty.VirtualTemperatureOnCellK]
         pressure: field.Field[qty.PressureOnCellK]
         pressure_ifc: field.Field[qty.PressureOnCellKHalf]
         u: field.Field[qty.UOnCellK]
         v: field.Field[qty.VOnCellK]
-        # the dycore's, updated with exner when given
         perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None = None
 
     def __init__(

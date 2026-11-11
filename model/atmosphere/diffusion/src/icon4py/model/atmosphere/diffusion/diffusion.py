@@ -460,7 +460,6 @@ class Diffusion(fw.Component):
         exner: field.Field[qty.ExnerOnCellK]
         theta_v: field.Field[qty.ThetaVOnCellK]
         dtime: float
-        #: the extra diffusion call before the first time step of a real-data run
         initial_run: bool = False
 
     class Output(fw.State):
