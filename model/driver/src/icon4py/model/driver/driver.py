@@ -421,7 +421,7 @@ class Icon4pyDriver:
         if not at_first_substep:
             dycore_diagnostics.normal_wind_advective_tendency.swap()
 
-    # NOTE: temporary, components MWE part 02 (collect): the view is collected by quantity
+    # NOTE: temporary, replaced in part 02 (collect): the view is collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.
     def _dycore_input(
         self,
@@ -457,7 +457,7 @@ class Icon4pyDriver:
             at_last_substep=at_last_substep,
         )
 
-    # NOTE: temporary, components MWE part 02 (collect): the view is collected by quantity
+    # NOTE: temporary, replaced in part 02 (collect): the view is collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.
     def _dycore_output(
         self,
@@ -624,7 +624,7 @@ class Icon4pyDriver:
         # reset max_vertical_cfl to zero
         dycore_diagnostics.max_vertical_cfl.ndarray[...] = 0.0  # type: ignore[index]  # NDArrayObject declares no __setitem__
 
-    # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
+    # NOTE: temporary, replaced in part 02 (collect): the views are collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.
     def _advection_views(
         self,
@@ -661,7 +661,7 @@ class Icon4pyDriver:
         )
         return input, output
 
-    # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
+    # NOTE: temporary, replaced in part 02 (collect): the views are collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.
     def _physics_views(
         self,
@@ -712,7 +712,7 @@ class Icon4pyDriver:
         )
         return input, output
 
-    # NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
+    # NOTE: temporary, replaced in part 02 (collect): the views are collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.
     def _diffusion_views(
         self,

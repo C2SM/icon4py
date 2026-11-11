@@ -486,6 +486,8 @@ def initialize_granules(
     )
     allocator = model_backends.get_allocator(backend)
 
+    # NOTE: temporary, replaced in part 02 (collect): the process collects its component's
+    # `Input` by quantity, and the `collect_input` functions go.
     def process[I: fw.State, O: fw.State](
         component: fw.Component[I, O],
         collect_input: Callable[[physics_state.PhysicsState], I],

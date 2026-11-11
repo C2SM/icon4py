@@ -174,7 +174,7 @@ class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
         return output
 
 
-# NOTE: temporary, components MWE part 02 (collect): replaced by `fw.collect(Muphys.Input, ...)`,
+# NOTE: temporary, replaced in part 02 (collect): `fw.collect(Muphys.Input, ...)`,
 # which picks the leaves by quantity.
 def collect_input(state: physics_state.PhysicsState) -> Muphys.Input:
     """The muphys input from the physics physics state (no copies)."""

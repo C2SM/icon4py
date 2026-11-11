@@ -161,7 +161,7 @@ def _require[Q: quantity.Quantity](value: field.Field[Q] | None, name: str) -> f
     return value
 
 
-# NOTE: temporary, components MWE part 02 (collect): replaced by `fw.collect(Tmx.Input, ...)`,
+# NOTE: temporary, replaced in part 02 (collect): `fw.collect(Tmx.Input, ...)`,
 # which picks the leaves by quantity.
 def collect_input(state: physics_state.PhysicsState) -> Tmx.Input:
     """

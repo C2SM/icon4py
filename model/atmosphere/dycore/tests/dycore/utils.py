@@ -180,7 +180,7 @@ def construct_prognostic_states_from_savepoint(
     )
 
 
-# NOTE: temporary, components MWE part 02 (collect): the view is collected by quantity
+# NOTE: temporary, replaced in part 02 (collect): the view is collected by quantity
 # (`fw.collect`) instead of spelled out by keyword.
 def dycore_input(
     prognostics: states.PrognosticState, forcing: states.DycoreForcing, **scalars: Any

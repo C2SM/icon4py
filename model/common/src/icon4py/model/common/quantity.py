@@ -25,10 +25,10 @@ class Quantity:
     units: ClassVar[str]
     long_name: ClassVar[str | None] = None
 
-    # NOTE: temporary, components MWE part 03 (dims): the dims are a property of the field, not of
+    # NOTE: temporary, replaced in part 03 (dims): the dims are a property of the field, not of
     # the quantity; they move to the field type (`Field[Q, D, T]`)
     dims: ClassVar[tuple[gtx.Dimension, ...]]
-    # NOTE: temporary, components MWE part 03 (dims): the dtype is a property of the field, not of
+    # NOTE: temporary, replaced in part 03 (dims): the dtype is a property of the field, not of
     # the quantity; they move to the field type (`Field[Q, D, T]`)
     precision: ClassVar[Literal["wp", "vp"]] = "wp"
 

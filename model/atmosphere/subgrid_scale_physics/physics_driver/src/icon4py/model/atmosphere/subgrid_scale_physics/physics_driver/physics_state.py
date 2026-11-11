@@ -15,7 +15,7 @@ from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.quantity import Quantity
 
 
-# NOTE: temporary, components MWE part 02 (collect): the processes collect from the physics
+# NOTE: temporary, replaced in part 02 (collect): the processes collect from the physics
 # driver's `Input`, its `Diagnostics` and the other processes' `Output` directly, and the
 # physics state goes.
 class PhysicsState(fw.State):
@@ -63,6 +63,7 @@ class PhysicsState(fw.State):
     step_start: time.AbsoluteTime
 
 
+# NOTE: temporary, replaced in part 02 (collect): goes with the physics state.
 # Process outputs which are read by other processes through the physics state,
 # e.g. surface outputs read by tmx
 COMPUTED_BY_PROCESSES: Final[frozenset[type[Quantity]]] = frozenset(

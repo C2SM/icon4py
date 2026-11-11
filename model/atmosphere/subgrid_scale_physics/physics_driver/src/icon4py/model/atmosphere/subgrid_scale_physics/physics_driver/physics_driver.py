@@ -116,6 +116,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             process: fw.allocate(process.Output, self._grid, self._allocator)
             for process in processes
         }
+        # NOTE: temporary, replaced in part 02 (collect): goes with the physics state.
         # Dict of process outputs which are read by other processes through the
         # physics state, e.g. surface outputs read by tmx
         self._computed_by_processes: dict[type[quantity.Quantity], field.Field] = {}
@@ -129,6 +130,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             quantity: name
             for name, quantity in fw.leaf_quantities(physics_state.PhysicsState).items()
         }
+        # NOTE: temporary, replaced in parts 07 (tendencies) and 08 (updates), see
+        # `_zero_accumulators`.
         # one sum per tendency the processes emit, by quantity, made when first seen
         self.accumulators: dict[type[quantity.Quantity], field.Field] = {}
 
@@ -244,7 +247,10 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         dt_seconds = self.dtime.total_seconds()
         # the processes advance `output`, which continues `input`
         fw.copy_to_output(input, output)
+        # NOTE: temporary, replaced in parts 04 (recipes) and 05 (derived inputs), see `_diagnose`.
         state = self._diagnose(input, output)
+        # NOTE: temporary, replaced in parts 07 (tendencies) and 08 (updates), see
+        # `_zero_accumulators`.
         self._zero_accumulators()
         for process, process_output in self._process_outputs.items():
             process.run(state, process_output)
@@ -264,6 +270,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         for process_output in self._process_outputs.values():
             for field_ in fw.fields(process_output).values():
                 name = field_.quantity.standard_name
+                # NOTE: temporary, replaced in part 07 (tendencies): a tendency is a `TendencyOf`
+                # instead of a subclass of the marker base.
                 if issubclass(field_.quantity, quantity.Tendency) or name is None:
                     continue
                 if name in fields:
@@ -278,7 +286,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             raise ValueError("physics requires all moisture species active in the TracerState")
         return field
 
-    # NOTE: temporary, components MWE parts 04 (recipes) and 05 (derived inputs): the
+    # NOTE: temporary, replaced in parts 04 (recipes) and 05 (derived inputs): the
     # diagnostics become recipes, which the processes define on their `Input`, and `_diagnose` goes.
     def _diagnose(self, input: Input, output: Output) -> physics_state.PhysicsState:
         """
@@ -351,7 +359,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self._exchange.exchange(dims.CellDim, state.rho, state.u, state.v, state.w)
         return state
 
-    # NOTE: temporary, components MWE parts 07 (tendencies) and 08 (updates): 07 keys the
+    # NOTE: temporary, replaced in parts 07 (tendencies) and 08 (updates): 07 keys the
     # accumulators by the tendency's parent quantity instead of the tendency's; 08 replaces
     # `_zero_accumulators`, `_accumulate`, `_update` and `_update_prognostics` with the updates
     # each process declares.

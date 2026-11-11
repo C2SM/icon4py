@@ -109,8 +109,8 @@ class ComponentTest:
             )
 
 
-# TODO(jcanton, msimberg): delete this in part02 with `collect_input`, once
-# `fw.collect` picks the input by quantity
+# NOTE: temporary, replaced in part 02 (collect): goes with `collect_input`, once `fw.collect`
+# picks the input by quantity.
 class CollectInputTest:
     """
     `collect_input(state)` builds the component's input from views of `state`, no copies.

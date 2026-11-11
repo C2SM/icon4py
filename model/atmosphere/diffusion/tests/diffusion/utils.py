@@ -24,7 +24,7 @@ def construct_diagnostic_state_from_savepoint(
     )
 
 
-# NOTE: temporary, components MWE part 02 (collect): the views are collected by quantity
+# NOTE: temporary, replaced in part 02 (collect): the views are collected by quantity
 # (`fw.collect`) instead of spelled out by keyword.
 def diffusion_views(
     prognostic_state: states.PrognosticState,

@@ -26,7 +26,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.quantity import Quantity, Tendency
 
 
-# NOTE: temporary, components MWE part 03 (dims): the place and the precision move to the field
+# NOTE: temporary, replaced in part 03 (dims): the place and the precision move to the field
 # type (`Field[Q, D, T]`), so `ThetaVOnCellK` and `ThetaVOnCellKHalf` become one quantity at two
 # places.
 CELL: Final[tuple[gtx.Dimension, ...]] = (dims.CellDim,)

@@ -29,10 +29,12 @@ if typing.TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-# NOTE: temporary, components MWE part 07 (tendencies): `TendencyOf[Q]`, derived from its parent
+# NOTE: temporary, replaced in part 07 (tendencies): `TendencyOf[Q]`, derived from its parent
 # quantity, replaces the marker base and the hand-declared tendency tags.
 
 
+# NOTE: temporary, replaced in part 03 (dims): the dims and the dtype come from the field type
+# instead of the quantity.
 def _dtype(quantity: type[Quantity]) -> Any:
     return ta.vpfloat if quantity.precision == "vp" else ta.wpfloat
 

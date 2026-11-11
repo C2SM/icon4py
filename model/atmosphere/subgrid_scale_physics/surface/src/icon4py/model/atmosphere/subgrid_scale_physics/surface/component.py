@@ -84,7 +84,7 @@ class Surface(fw.Component["Surface.Input", "Surface.Output"]):
         return output
 
 
-# NOTE: temporary, components MWE part 02 (collect): replaced by `fw.collect(Surface.Input, ...)`,
+# NOTE: temporary, replaced in part 02 (collect): `fw.collect(Surface.Input, ...)`,
 # which picks the leaves by quantity.
 def collect_input(state: physics_state.PhysicsState) -> Surface.Input:
     """The surface input from the physics state (no copies)."""
