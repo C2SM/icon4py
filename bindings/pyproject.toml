@@ -32,8 +32,8 @@ dependencies = [
   # external dependencies
   'cffi>=1.5',
   'click>=8.0',
-  'gt4py==1.2.3',
-  "numpy>=1.25",
+  'gt4py==1.2.4',
+  "numpy>=1.23.3",
   'packaging>=20.0'
 ]
 description = 'Fortran bindings for icon4py model components.'
