@@ -288,6 +288,7 @@ def _ppm4gpu_flux_numpy(
 
 
 @pytest.mark.uses_concat_where
+@pytest.mark.gtfn_too_slow
 class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest):
     PROGRAM = compute_tracer_advection_after_horizontal_limiter
     OUTPUTS = (
