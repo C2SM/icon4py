@@ -131,11 +131,12 @@ class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
 
     def run(self, input: Input, output: Output) -> Output:
         """
-        Run the granule on private copies of `input` and report the tendencies.
+        Run the granule and return the tendencies.
 
-        The temperature and the tracers are copied, because the granule overwrites whatever it
-        is handed and the old values are still needed afterwards; the layer thickness, pressure
-        and density go in as they are, since the granule only reads them.
+        The temperature and the tracers are copied because muphys overwrites
+        them and the original values are needed afterwards. The layer
+        thickness, pressure and density go in as they are, since muphys only
+        reads them.
         """
         self._copy_field(field=input.te, output_field=self._te)
         for s in SPECIES:
