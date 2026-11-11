@@ -1657,7 +1657,7 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-source = { git = "https://github.com/edopao/gt4py?branch=bump_dace_version#d6a5440349864a64227f6e28950f20b1448a1fe1" }
+source = { git = "https://github.com/edopao/gt4py?branch=bump_dace_version#037978a92438b92f701d7e3892ff223ccc65cba7" }
 version = "1.2.4+unknown.version.details"
 
 [package.optional-dependencies]
