@@ -266,7 +266,9 @@ module = [
   "icon4py.model.driver.*",
   "*.framework.unit_tests.*",
   "*.physics_driver.unit_tests.*",
-  "*.muphys.unit_tests.*"
+  "*.muphys.unit_tests.*",
+  "driver.unit_tests.test_driver_io",
+  "driver.integration_tests.test_driver_io_output"
 ]
 no_implicit_reexport = true
 strict_equality = true

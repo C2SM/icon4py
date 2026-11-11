@@ -52,7 +52,8 @@ def _open_output(path: pathlib.Path, output_backend: common_io.OutputBackend) ->
         case common_io.OutputBackend.NETCDF:
             return xr.open_dataset(path, decode_times=False)
         case common_io.OutputBackend.ZARR:
-            return xr.open_zarr(path, decode_times=False)
+            dataset: xr.Dataset = xr.open_zarr(path, decode_times=False)  # untyped in xarray
+            return dataset
 
 
 def _run_driver(
