@@ -17,9 +17,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physic
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
     component as surface_component,
     config as surface_config,
+    surface_states,
 )
 from icon4py.model.common import framework as fw
 from icon4py.model.common.grid import simple
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 _CONFIG = surface_config.SurfaceConfig(
@@ -44,6 +46,33 @@ def test_run_writes_the_fluxes_and_the_surface_temperature_into_the_output() -> 
     assert result is output
     assert np.all(output.sensible_heat_flux.asnumpy() != 0.0)
     assert np.all(output.surface_temperature.asnumpy() == 303.15)
+
+
+def test_run_hands_the_scheme_views_of_the_lowest_levels() -> None:
+    grid = simple.simple_grid()
+    component = surface_component.Surface(grid=grid, config=_CONFIG)
+    input = fw.allocate(
+        surface_component.Surface.Input,
+        grid,
+        None,
+        fill=lambda _, field_dims: data_alloc.random_field(grid, *field_dims).ndarray,
+    )
+    output = fw.allocate(surface_component.Surface.Output, grid, None)
+    seen: list[surface_states.SurfaceInputState] = []
+    component._surface.run = lambda *, input_state, out: seen.append(input_state)  # type: ignore[method-assign]
+
+    component.run(input, output)
+
+    (scheme_input,) = seen
+    np.testing.assert_array_equal(
+        scheme_input.surface_pressure.asnumpy(),
+        input.pressure_ifc.asnumpy()[:, grid.num_levels],
+    )
+    np.testing.assert_array_equal(
+        scheme_input.temperature.asnumpy(), input.temperature.asnumpy()[:, grid.num_levels - 1]
+    )
+    assert np.shares_memory(scheme_input.surface_pressure.ndarray, input.pressure_ifc.ndarray)
+    assert np.shares_memory(scheme_input.temperature.ndarray, input.temperature.ndarray)
 
 
 def test_collect_input_views_the_physics_state() -> None:
