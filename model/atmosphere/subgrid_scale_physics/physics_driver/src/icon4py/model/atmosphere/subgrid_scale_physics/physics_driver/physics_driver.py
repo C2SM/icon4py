@@ -116,17 +116,21 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             process: fw.allocate(process.Output, self._grid, self._allocator)
             for process in processes
         }
-        # the process outputs other processes read through the physics state, one provider each
-        self._provided: dict[str, field.Field] = {}
+        # Dict of process outputs which are read by other processes through the
+        # physics state, e.g. surface outputs read by tmx
+        self._computed_by_processes: dict[type[quantity.Quantity], field.Field] = {}
         for process_output in self._process_outputs.values():
             for name, field_ in fw.fields(process_output).items():
-                if name not in physics_state.PROVIDED_BY_PROCESSES:
-                    continue
-                if name in self._provided:
-                    raise ValueError(f"'{name}' is provided by more than one physics process")
-                self._provided[name] = field_
-        # one sum per tendency the processes emit, by output name, made when first seen
-        self.accumulators: dict[str, field.Field] = {}
+                if field_.quantity in physics_state.COMPUTED_BY_PROCESSES:
+                    if field_.quantity in self._computed_by_processes:
+                        raise ValueError(f"'{name}' is computed by more than one physics process")
+                    self._computed_by_processes[field_.quantity] = field_
+        self._state_leaves = {
+            quantity: name
+            for name, quantity in fw.leaf_quantities(physics_state.PhysicsState).items()
+        }
+        # one sum per tendency the processes emit, by quantity, made when first seen
+        self.accumulators: dict[type[quantity.Quantity], field.Field] = {}
 
         cell_range = {
             "horizontal_start": gtx.int32(0),
@@ -312,7 +316,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             u=output.u,
             v=output.v,
             air_mass=input.air_mass,
-            **self._provided,
+            **{self._state_leaves[q]: f for q, f in self._computed_by_processes.items()},
             step_start=input.simulation_current_datetime - self.dtime,
         )
         # 1. virtual temperature and temperature
@@ -348,7 +352,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         return state
 
     # NOTE: temporary, components MWE parts 07 (tendencies) and 08 (updates): 07 keys the
-    # accumulators by the tendency's parent quantity instead of its output name; 08 replaces
+    # accumulators by the tendency's parent quantity instead of the tendency's; 08 replaces
     # `_zero_accumulators`, `_accumulate`, `_update` and `_update_prognostics` with the updates
     # each process declares.
     def _zero_accumulators(self) -> None:
@@ -357,13 +361,13 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
 
     def _accumulate(self, output: fw.State) -> None:
         """
-        Add every `Tendency` leaf of a process output to the sum of its name.
+        Add every `Tendency` leaf of a process output to the sum of its quantity.
 
         Element-wise with no neighbour access, so a plain array operation rather than a stencil.
         """
-        for name, field_ in fw.fields(output, kind=quantity.Tendency).items():
-            if (accumulator := self.accumulators.get(name)) is None:
-                accumulator = self.accumulators[name] = fw.zeros(
+        for field_ in fw.fields(output, kind=quantity.Tendency).values():
+            if (accumulator := self.accumulators.get(field_.quantity)) is None:
+                accumulator = self.accumulators[field_.quantity] = fw.zeros(
                     field_.quantity, self._grid, self._allocator
                 )
             accumulator.ndarray[...] += field_.ndarray  # type: ignore[index]
@@ -378,20 +382,29 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         `fc_xxx = 1`); the virtual temperature and the pressure stay at step start. Each
         tendency must be the tendency of one of these fields.
         """
-        targets: dict[str, field.Field] = {
-            "tend_temperature": state.temperature,
-            "tend_u": state.u,
-            "tend_v": state.v,
-            "tend_w": state.w,
-            **{f"tend_{name}": getattr(state, name) for name in states.TRACERS},
+        targets: dict[type[quantity.Quantity], field.Field] = {
+            qty.TendencyOfTemperatureOnCellK: state.temperature,
+            qty.TendencyOfUOnCellK: state.u,
+            qty.TendencyOfVOnCellK: state.v,
+            qty.TendencyOfWOnCellKHalf: state.w,
+            qty.TendencyOfQvOnCellK: state.qv,
+            qty.TendencyOfQcOnCellK: state.qc,
+            qty.TendencyOfQiOnCellK: state.qi,
+            qty.TendencyOfQrOnCellK: state.qr,
+            qty.TendencyOfQsOnCellK: state.qs,
+            qty.TendencyOfQgOnCellK: state.qg,
         }
         for name, tendency in fw.fields(output, kind=quantity.Tendency).items():
-            if (target := targets.get(name)) is None:
+            if (target := targets.get(tendency.quantity)) is None:
                 raise ValueError(
                     f"tendency output '{name}' is not the tendency of an advanced field; "
-                    f"expected one of {list(targets)}"
+                    f"expected one of {[q.__name__ for q in targets]}"
                 )
-            apply = self._apply_tendency_w if name == "tend_w" else self._apply_tendency
+            apply = (
+                self._apply_tendency_w
+                if tendency.quantity is qty.TendencyOfWOnCellKHalf
+                else self._apply_tendency
+            )
             apply(field_a=target, coeff=dt_seconds, field_b=tendency, output_field=target)
 
     def _update_prognostics(
@@ -448,15 +461,16 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             )
 
         # one projection of the summed (u, v) tendencies onto vn, when a process produced them
-        wind_tendencies = {"tend_u", "tend_v"} & acc.keys()
+        wind_tendencies = {qty.TendencyOfUOnCellK, qty.TendencyOfVOnCellK} & acc.keys()
         if len(wind_tendencies) == 1:
             (declared,) = wind_tendencies
             raise ValueError(
-                f"the horizontal wind tendencies are applied as a pair; got only {declared}"
+                f"the horizontal wind tendencies are applied as a pair; got only {declared.__name__}"
             )
         if wind_tendencies:
-            self._exchange.exchange(dims.CellDim, acc["tend_u"], acc["tend_v"])
-            self._compute_vn_from_uv(u=acc["tend_u"], v=acc["tend_v"], vn=self._vn_tendency)
+            u, v = acc[qty.TendencyOfUOnCellK], acc[qty.TendencyOfVOnCellK]
+            self._exchange.exchange(dims.CellDim, u, v)
+            self._compute_vn_from_uv(u=u, v=v, vn=self._vn_tendency)
             self._apply_tendency_vn(
                 field_a=output.vn,
                 coeff=dt_seconds,

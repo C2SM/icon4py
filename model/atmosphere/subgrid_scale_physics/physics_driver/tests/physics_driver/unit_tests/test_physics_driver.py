@@ -267,8 +267,10 @@ def test_run_advances_the_physics_state_after_each_process(grid: base_grid.Grid)
     np.testing.assert_allclose(recorder_b.qv_read[0], 1e-3 + dt * 1e-7, rtol=1e-12)
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + dt * 3e-7, rtol=1e-12)
     # the tendencies are summed over the processes, the diagnostics are not
-    assert set(physics.accumulators) == {"tend_qv"}
-    np.testing.assert_allclose(physics.accumulators["tend_qv"].asnumpy(), 3e-7, rtol=1e-12)
+    assert set(physics.accumulators) == {qty.TendencyOfQvOnCellK}
+    np.testing.assert_allclose(
+        physics.accumulators[qty.TendencyOfQvOnCellK].asnumpy(), 3e-7, rtol=1e-12
+    )
 
 
 def test_driver_rejects_a_process_timed_for_another_dtime(grid: base_grid.Grid) -> None:

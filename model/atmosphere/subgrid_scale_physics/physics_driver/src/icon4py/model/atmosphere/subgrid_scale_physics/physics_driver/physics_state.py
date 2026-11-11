@@ -12,6 +12,7 @@ from typing import Final
 
 from icon4py.model.common import field, framework as fw, time
 from icon4py.model.common.framework import quantities as qty
+from icon4py.model.common.quantity import Quantity
 
 
 # NOTE: temporary, components MWE part 02 (collect): the processes collect from the physics
@@ -62,15 +63,17 @@ class PhysicsState(fw.State):
     step_start: time.AbsoluteTime
 
 
-# the leaves of the physics state that a process's output provides (the surface fluxes, which tmx
-# reads), one provider each
-PROVIDED_BY_PROCESSES: Final = (
-    "evapotranspiration",
-    "sensible_heat_flux",
-    "latent_heat_flux",
-    "u_stress",
-    "v_stress",
-    "q_snocpymlt",
-    "thermal_energy_flux",
-    "vapor_energy_flux",
+# Process outputs which are read by other processes through the physics state,
+# e.g. surface outputs read by tmx
+COMPUTED_BY_PROCESSES: Final[frozenset[type[Quantity]]] = frozenset(
+    {
+        qty.EvapotranspirationOnCell,
+        qty.SensibleHeatFluxOnCell,
+        qty.LatentHeatFluxOnCell,
+        qty.UStressOnCell,
+        qty.VStressOnCell,
+        qty.SnowCanopyMeltHeatOnCell,
+        qty.ThermalEnergyFluxOnCell,
+        qty.VaporEnergyFluxOnCell,
+    }
 )

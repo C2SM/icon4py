@@ -165,7 +165,10 @@ def test_run_syncs_the_wind_sums_before_projecting_them_onto_vn(grid: base_grid.
     physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
 
     sums = physics.accumulators
-    assert exchange.events[1] == (dims.CellDim, [id(sums["tend_u"]), id(sums["tend_v"])])
+    assert exchange.events[1] == (
+        dims.CellDim,
+        [id(sums[qty.TendencyOfUOnCellK]), id(sums[qty.TendencyOfVOnCellK])],
+    )
     assert exchange.events[-1] == (dims.EdgeDim, [id(prognostic.vn)])
 
 
@@ -187,7 +190,7 @@ def test_a_process_output_is_offered_to_the_others_through_the_physics_state(
 def test_a_second_provider_of_a_physics_state_leaf_is_rejected(grid: base_grid.Grid) -> None:
     first, _ = recording(FluxOutput, {}, time_control(), grid)
     second, _ = recording(FluxOutput, {}, time_control(), grid)
-    with pytest.raises(ValueError, match="'sensible_heat_flux' is provided by more than one"):
+    with pytest.raises(ValueError, match="'sensible_heat_flux' is computed by more than one"):
         driver(grid, [first, second])
 
 
