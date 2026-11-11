@@ -17,9 +17,10 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as muphys_component
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
-from icon4py.model.common import dimension as dims, framework as fw
-from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, framework as fw
+from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import component_tests
 
 
 DTIME = datetime.timedelta(seconds=10)
@@ -40,69 +41,57 @@ class GranuleStandIn:
         pflx.ndarray[...] = 3.0
 
 
-@pytest.fixture
-def grid() -> base_grid.Grid:
-    return simple.simple_grid()
+class TestMuphys(component_tests.ComponentTest, component_tests.CollectInputTest):
+    collect_input = staticmethod(muphys_component.collect_input)
 
+    @pytest.fixture
+    def compute(self) -> GranuleStandIn:
+        return GranuleStandIn()
 
-def _component(
-    grid: base_grid.Grid, compute: GranuleStandIn
-) -> tuple[muphys_component.Muphys, Any]:
-    dz = data_alloc.constant_field(grid, 100.0, dims.CellDim, dims.KDim)
-    component = muphys_component.Muphys(
-        grid=grid,
-        dtime=DTIME,
-        qnc=100.0,
-        dz=dz,
-        backend_like=None,
-        compute=compute,
-    )
-    return component, dz
+    @pytest.fixture
+    def dz(self, grid: base_grid.Grid) -> fa.CellKField[float]:
+        return data_alloc.constant_field(grid, 100.0, dims.CellDim, dims.KDim)
 
+    @pytest.fixture
+    def component(
+        self, grid: base_grid.Grid, compute: GranuleStandIn, dz: fa.CellKField[float]
+    ) -> muphys_component.Muphys:
+        return muphys_component.Muphys(
+            grid=grid, dtime=DTIME, qnc=100.0, dz=dz, backend_like=None, compute=compute
+        )
 
-def _input(grid: base_grid.Grid) -> muphys_component.Muphys.Input:
-    values = {"te": 280.0, "p": 9e4, "rho": 1.1, "qv": 1e-3}
-    return fw.allocate(
-        muphys_component.Muphys.Input,
-        grid,
-        None,
-        fill=lambda name, _: values.get(name, 0.0),
-    )
+    @pytest.fixture
+    def state(self, grid: base_grid.Grid) -> physics_state.PhysicsState:
+        return fw.allocate(
+            physics_state.PhysicsState, grid, None, step_start=datetime.datetime(2024, 1, 1)
+        )
 
+    def test_run_reports_tendencies(
+        self,
+        component: muphys_component.Muphys,
+        input: muphys_component.Muphys.Input,
+        output: muphys_component.Muphys.Output,
+    ) -> None:
+        component.run(input, output)
 
-def test_collect_input_views_the_physics_state(grid: base_grid.Grid) -> None:
-    state = fw.allocate(
-        physics_state.PhysicsState, grid, None, step_start=datetime.datetime(2024, 1, 1)
-    )
+        dt = DTIME.total_seconds()
+        np.testing.assert_allclose(output.tend_temperature.asnumpy(), 1.0 / dt, rtol=1e-12)
+        np.testing.assert_allclose(output.tend_qv.asnumpy(), 2.0 / dt, rtol=1e-12)
+        np.testing.assert_array_equal(output.tend_qc.asnumpy(), 0.0)
+        np.testing.assert_array_equal(output.pflx.asnumpy(), 3.0)
 
-    input = muphys_component.collect_input(state)
+    def test_run_hands_the_granule_copies_of_what_it_overwrites(
+        self,
+        component: muphys_component.Muphys,
+        compute: GranuleStandIn,
+        dz: fa.CellKField[float],
+        input: muphys_component.Muphys.Input,
+        output: muphys_component.Muphys.Output,
+    ) -> None:
+        component.run(input, output)
 
-    assert input.te is state.temperature
-    assert input.p is state.pressure
-    assert input.rho is state.rho
-    for name in ("qv", "qc", "qi", "qr", "qs", "qg"):
-        assert getattr(input, name) is getattr(state, name), name
-
-
-def test_run_reports_tendencies_and_leaves_the_inputs_untouched(grid: base_grid.Grid) -> None:
-    compute = GranuleStandIn()
-    component, dz = _component(grid, compute)
-    input = _input(grid)
-    output = fw.allocate(muphys_component.Muphys.Output, grid, None)
-
-    result = component.run(input, output)
-
-    assert result is output
-    dt = DTIME.total_seconds()
-    np.testing.assert_allclose(result.tend_temperature.asnumpy(), 1.0 / dt, rtol=1e-12)
-    np.testing.assert_allclose(result.tend_qv.asnumpy(), 2.0 / dt, rtol=1e-12)
-    np.testing.assert_array_equal(result.tend_qc.asnumpy(), 0.0)
-    np.testing.assert_array_equal(result.pflx.asnumpy(), 3.0)
-    # the granule ran on private copies; the static and read-only fields went in as given
-    np.testing.assert_array_equal(input.te.asnumpy(), 280.0)
-    np.testing.assert_array_equal(input.qv.asnumpy(), 1e-3)
-    (call,) = compute.calls
-    assert call["te"] is not input.te
-    assert call["dz"] is dz
-    assert call["p"] is input.p
-    assert call["rho"] is input.rho
+        (call,) = compute.calls
+        assert call["te"] is not input.te
+        assert call["dz"] is dz
+        assert call["p"] is input.p
+        assert call["rho"] is input.rho

@@ -6,12 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-
 """Tests of the typed surface component: the component contract, not the physics."""
 
 import datetime
+from typing import Any
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
@@ -20,8 +21,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
     surface_states,
 )
 from icon4py.model.common import framework as fw
-from icon4py.model.common.grid import simple
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.grid import base as base_grid
+from icon4py.model.testing import component_tests
 
 
 _CONFIG = surface_config.SurfaceConfig(
@@ -32,56 +33,57 @@ _CONFIG = surface_config.SurfaceConfig(
 )
 
 
-def test_run_writes_the_fluxes_and_the_surface_temperature_into_the_output() -> None:
-    grid = simple.simple_grid()
-    component = surface_component.Surface(grid=grid, config=_CONFIG)
-    values = {"pressure_ifc": 1.0e5, "temperature": 300.0}
-    input = fw.allocate(
-        surface_component.Surface.Input, grid, None, fill=lambda name, _: values[name]
-    )
-    output = fw.allocate(surface_component.Surface.Output, grid, None)
+class TestSurface(component_tests.ComponentTest, component_tests.CollectInputTest):
+    collect_input = staticmethod(surface_component.collect_input)
 
-    result = component.run(input, output)
+    @pytest.fixture
+    def component(self, grid: base_grid.Grid) -> surface_component.Surface:
+        return surface_component.Surface(grid=grid, config=_CONFIG)
 
-    assert result is output
-    assert np.all(output.sensible_heat_flux.asnumpy() != 0.0)
-    assert np.all(output.surface_temperature.asnumpy() == 303.15)
+    @pytest.fixture
+    def state(self, grid: base_grid.Grid) -> physics_state.PhysicsState:
+        return fw.allocate(
+            physics_state.PhysicsState, grid, None, step_start=datetime.datetime(2008, 9, 1)
+        )
 
+    def test_run_writes_the_fluxes_and_the_surface_temperature(
+        self,
+        component: surface_component.Surface,
+        grid: base_grid.Grid,
+        output: surface_component.Surface.Output,
+    ) -> None:
+        values = {"pressure_ifc": 1.0e5, "temperature": 300.0}
+        input = fw.allocate(
+            surface_component.Surface.Input, grid, None, fill=lambda name, _: values[name]
+        )
 
-def test_run_hands_the_scheme_views_of_the_lowest_levels() -> None:
-    grid = simple.simple_grid()
-    component = surface_component.Surface(grid=grid, config=_CONFIG)
-    input = fw.allocate(
-        surface_component.Surface.Input,
-        grid,
-        None,
-        fill=lambda _, field_dims: data_alloc.random_field(grid, *field_dims).ndarray,
-    )
-    output = fw.allocate(surface_component.Surface.Output, grid, None)
-    seen: list[surface_states.SurfaceInputState] = []
-    component._surface.run = lambda *, input_state, out: seen.append(input_state)  # type: ignore[method-assign]
+        component.run(input, output)
 
-    component.run(input, output)
+        assert np.all(output.sensible_heat_flux.asnumpy() != 0.0)
+        assert np.all(output.surface_temperature.asnumpy() == 303.15)
 
-    (scheme_input,) = seen
-    np.testing.assert_array_equal(
-        scheme_input.surface_pressure.asnumpy(),
-        input.pressure_ifc.asnumpy()[:, grid.num_levels],
-    )
-    np.testing.assert_array_equal(
-        scheme_input.temperature.asnumpy(), input.temperature.asnumpy()[:, grid.num_levels - 1]
-    )
-    assert np.shares_memory(scheme_input.surface_pressure.ndarray, input.pressure_ifc.ndarray)
-    assert np.shares_memory(scheme_input.temperature.ndarray, input.temperature.ndarray)
+    def test_run_hands_the_scheme_views_of_the_lowest_levels(
+        self,
+        grid: base_grid.Grid,
+        input: surface_component.Surface.Input,
+        output: surface_component.Surface.Output,
+    ) -> None:
+        seen: list[surface_states.SurfaceInputState] = []
 
+        def compute(*, input_state: surface_states.SurfaceInputState, **_: Any) -> None:
+            seen.append(input_state)
 
-def test_collect_input_views_the_physics_state() -> None:
-    grid = simple.simple_grid()
-    state = fw.allocate(
-        physics_state.PhysicsState, grid, None, step_start=datetime.datetime(2008, 9, 1)
-    )
+        component = surface_component.Surface(grid=grid, config=_CONFIG, compute=compute)
 
-    input = surface_component.collect_input(state)
+        component.run(input, output)
 
-    assert input.pressure_ifc is state.pressure_ifc
-    assert input.temperature is state.temperature
+        (scheme_input,) = seen
+        np.testing.assert_array_equal(
+            scheme_input.surface_pressure.asnumpy(),
+            input.pressure_ifc.asnumpy()[:, grid.num_levels],
+        )
+        np.testing.assert_array_equal(
+            scheme_input.temperature.asnumpy(), input.temperature.asnumpy()[:, grid.num_levels - 1]
+        )
+        assert np.shares_memory(scheme_input.surface_pressure.ndarray, input.pressure_ifc.ndarray)
+        assert np.shares_memory(scheme_input.temperature.ndarray, input.temperature.ndarray)

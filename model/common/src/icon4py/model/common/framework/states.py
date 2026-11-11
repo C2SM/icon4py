@@ -120,7 +120,7 @@ class TracerConfig:
 class PrepAdvection(fw.State):
     """The fluxes the dycore accumulates over the substeps for the tracer advection."""
 
-    # TODO(jcanton): part 02 fix this. If vn_traj keeps sharing VnOnEdgeK with vn, `collect`
+    # TODO(jcanton, msimberg): part 02 fix this. If vn_traj keeps sharing VnOnEdgeK with vn, `collect`
     # either raises AmbiguousSource or quietly picks the wrong buffer. Discuss whether we should
     # define a new quantity.
     vn_traj: field.Field[qty.VnOnEdgeK]

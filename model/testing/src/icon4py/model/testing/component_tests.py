@@ -17,8 +17,12 @@ component that has a `collect_input` also subclasses `CollectInputTest`.
 
 from __future__ import annotations
 
+import dataclasses
+import types
+import typing
 from typing import Any
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -27,12 +31,42 @@ from icon4py.model.common.grid import base as base_grid, simple
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
+def random_dataclass[T](cls: type[T], grid: base_grid.Grid) -> T:
+    """
+    A dataclass of grid fields, each one random.
+    Used, e.g., for the metric, interpolation and geometry states needed to
+    build a component without savepoints in unit_tests.
+
+    Fields, tuples of fields and optional fields are filled, every other member keeps its
+    default. The values are positive, so that a scheme dividing by them stays finite.
+    """
+
+    def value(hint: Any) -> Any:
+        origin = typing.get_origin(hint)
+        if origin in (types.UnionType, typing.Union):
+            (hint,) = (arg for arg in typing.get_args(hint) if arg is not type(None))
+            return value(hint)
+        if origin is tuple:
+            return tuple(value(arg) for arg in typing.get_args(hint))
+        if origin is not gtx.Field:
+            return None
+        dims = typing.get_args(hint)[0]
+        # `Field[Dims[...], ...]` or `Field[[...], ...]`
+        dims = dims if isinstance(dims, list) else typing.get_args(dims)
+        return data_alloc.random_field(grid, *dims, low=0.5, high=1.5)
+
+    hints = typing.get_type_hints(cls)
+    values = {field.name: value(hints[field.name]) for field in dataclasses.fields(cls)}  # type: ignore[arg-type]  # checked by the caller
+    return cls(**{name: v for name, v in values.items() if v is not None})
+
+
 class ComponentTest:
     """
     The `run(input, output) -> output` contract of `fw.Component`.
 
-    `component` is the subclass's fixture. `input` and `output` are allocated from the
-    component's states, and can be overridden.
+    `component` is the subclass's fixture, and it can build the states needed
+    by its constructor with `random_dataclass` defined above. `grid`, `input`
+    and `output` default to states on a simple grid, and can be overridden.
     """
 
     @pytest.fixture
@@ -59,7 +93,11 @@ class ComponentTest:
         assert component.run(input, output) is output
 
     def test_run_leaves_the_input_untouched(
-        self, component: fw.Component, grid: base_grid.Grid, input: fw.State, output: fw.State
+        self,
+        component: fw.Component,
+        grid: base_grid.Grid,
+        input: fw.State,
+        output: fw.State,
     ) -> None:
         before = fw.copy(input, fw.allocate(type(input), grid, None))
 
@@ -71,7 +109,8 @@ class ComponentTest:
             )
 
 
-# TODO(jcanton, msimberg): goes with `collect_input`, once `fw.collect` picks the input by quantity
+# TODO(jcanton, msimberg): delete this in part02 with `collect_input`, once
+# `fw.collect` picks the input by quantity
 class CollectInputTest:
     """
     `collect_input(state)` builds the component's input from views of `state`, no copies.
