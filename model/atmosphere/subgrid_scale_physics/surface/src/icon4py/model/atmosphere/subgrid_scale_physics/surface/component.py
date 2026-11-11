@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import surface, surface_states
@@ -54,14 +55,16 @@ class Surface(fw.Component["Surface.Input", "Surface.Output"]):
         grid: base_grid.Grid,
         config: surface_config.SurfaceConfig,
         backend: gtx_typing.Backend | None = None,
+        compute: Callable[..., None] | None = None,
     ) -> None:
         self._surface = surface.Surface(grid=grid, config=config, backend=backend)
+        self._compute = self._surface.run if compute is None else compute
         self._lowest_level = dims.KDim(grid.num_levels - 1)
         self._surface_level = dims.KHalfDim(grid.num_levels)
 
     def run(self, input: Input, output: Output) -> Output:
         """One step of the surface scheme, from the surface pressure and the lowest-level air temperature."""
-        self._surface.run(
+        self._compute(
             input_state=surface_states.SurfaceInputState(
                 surface_pressure=input.pressure_ifc[self._surface_level],
                 temperature=input.temperature[self._lowest_level],
