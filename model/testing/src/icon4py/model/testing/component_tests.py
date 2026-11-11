@@ -1,0 +1,91 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""
+Base classes for the contract tests of typed components: the states they take and return,
+not their numerics.
+
+A suite subclasses `ComponentTest` and provides a `component` fixture. It inherits the
+tests every `fw.Component` must pass, and adds its own as ordinary methods. A suite of a
+component that has a `collect_input` also subclasses `CollectInputTest`.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+import numpy as np
+import pytest
+
+from icon4py.model.common import framework as fw
+from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+class ComponentTest:
+    """
+    The `run(input, output) -> output` contract of `fw.Component`.
+
+    `component` is the subclass's fixture. `input` and `output` are allocated from the
+    component's states, and can be overridden.
+    """
+
+    @pytest.fixture
+    def grid(self) -> base_grid.Grid:
+        return simple.simple_grid()
+
+    @pytest.fixture
+    def input(self, component: fw.Component, grid: base_grid.Grid) -> fw.State:
+        # random, so that a misplaced read shows; positive, so that a scheme dividing by them stays finite
+        return fw.allocate(
+            component.Input,
+            grid,
+            None,
+            fill=lambda _, dims: data_alloc.random_field(grid, *dims, low=0.5, high=1.5).ndarray,
+        )
+
+    @pytest.fixture
+    def output(self, component: fw.Component, grid: base_grid.Grid) -> fw.State:
+        return fw.allocate(component.Output, grid, None)
+
+    def test_run_returns_the_output_it_is_given(
+        self, component: fw.Component, input: fw.State, output: fw.State
+    ) -> None:
+        assert component.run(input, output) is output
+
+    def test_run_leaves_the_input_untouched(
+        self, component: fw.Component, grid: base_grid.Grid, input: fw.State, output: fw.State
+    ) -> None:
+        before = fw.copy(input, fw.allocate(type(input), grid, None))
+
+        component.run(input, output)
+
+        for name, field in fw.fields(input).items():
+            np.testing.assert_array_equal(
+                field.asnumpy(), getattr(before, name).asnumpy(), err_msg=name
+            )
+
+
+# TODO(jcanton, msimberg): goes with `collect_input`, once `fw.collect` picks the input by quantity
+class CollectInputTest:
+    """
+    `collect_input(state)` builds the component's input from views of `state`, no copies.
+
+    The subclass sets `collect_input = staticmethod(...)` and provides a `state` fixture.
+    """
+
+    @staticmethod
+    def collect_input(state: Any) -> fw.State:
+        raise NotImplementedError
+
+    def test_collect_input_views_the_state(self, state: fw.State) -> None:
+        input = self.collect_input(state)
+
+        leaves = fw.fields(state).values()
+        for name, field in fw.fields(input).items():
+            assert any(field is leaf for leaf in leaves), name

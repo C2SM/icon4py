@@ -39,10 +39,10 @@ class Tmx(fw.Component["Tmx.Input", "Tmx.Output"]):
     model state from the tendencies.
     """
 
-    # TODO(yiluchen1066): on an in-window step on which tmx does not compute, `PhysicsProcess`
-    # recycles its last tendencies, as ICON's microphysics does; ICON's tmx interface instead
-    # contributes nothing on such a step. No difference while tmx runs every step; revisit when
-    # the tmx time step is read from the configuration.
+    # NOTE: different from ICON tmx returns cached tendencies on in-window,
+    # non-compute steps, same as all other PhysicsProcesses, while in fortran
+    # tmx is the only process which returns zero tendencies on those steps
+    # (possible fortran bug under investigation)
 
     class Input(fw.State):
         temperature: field.Field[qty.TemperatureOnCellK]
