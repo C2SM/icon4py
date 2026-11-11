@@ -86,7 +86,16 @@ standard name of its quantity. They are
   `rainfall_flux`, `snowfall_flux`, `graupelfall_flux`, `icefall_flux`,
   `precipitation_energy_flux`), when `muphys` is configured. The physics needs all
   six tracers active. The fluxes are written per model level (the surface value is the
-  lowest level), and the initial time slice is zero since the physics has not run yet.
+  lowest level), and the initial time slice is zero since the physics has not run yet;
+- the outputs of the surface scheme (`water_evapotranspiration_flux`,
+  `surface_upward_sensible_heat_flux`, `surface_upward_latent_heat_flux`,
+  `surface_downward_eastward_stress`, `surface_downward_northward_stress`,
+  `surface_snow_and_canopy_melt_heat_flux`,
+  `surface_upward_internal_energy_flux_due_to_thermal_exchange`,
+  `surface_upward_internal_energy_flux_due_to_vapor_exchange`, `surface_temperature`),
+  when `surface` is configured;
+- the turbulent viscosity and diffusivity of tmx (`turbulent_viscosity`,
+  `turbulent_diffusivity`), when `tmx` is configured.
 
 Fields are written with their horizontal dimension (`cell`, `edge` or `vertex`) and,
 if they have one, their vertical dimension (model or half levels): a surface field
