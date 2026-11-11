@@ -281,6 +281,9 @@ def _stable_seed(key: str) -> int:
     return int.from_bytes(hashlib.sha256(key.encode()).digest(), "big")
 
 
+_REFERENCE_TAG: Final = _stable_seed(":reference")
+
+
 def _derived_seed_sequence(key: str) -> np.random.SeedSequence:
     """
     The seed sequence derived from `key`.
@@ -306,15 +309,15 @@ def _suite_seed_key(suite: type) -> str:
     return f"{suite.__module__}:{suite.__name__}:"
 
 
-def _suite_rng(request: pytest.FixtureRequest) -> np.random.Generator:
-    """The requesting suite's root generator, derived from `_suite_seed_key`."""
+def _suite_seed_sequence(request: pytest.FixtureRequest) -> np.random.SeedSequence:
+    """The requesting suite's root seed sequence, derived from `_suite_seed_key`."""
     suite = request.cls
     if suite is None:
         raise RuntimeError(
             "The 'data_alloc' fixture requires a 'StencilTest' suite: the seed derives from"
             " the suite class."
         )
-    return np.random.default_rng(_derived_seed_sequence(_suite_seed_key(suite)))
+    return _derived_seed_sequence(_suite_seed_key(suite))
 
 
 def _reference_expects_rng(reference: Callable[..., Any]) -> bool:
@@ -322,7 +325,6 @@ def _reference_expects_rng(reference: Callable[..., Any]) -> bool:
     return "rng" in inspect.signature(reference).parameters
 
 
-@dataclasses.dataclass(frozen=True)
 class DataAllocationWrapper:
     """
     The suite's field constructors with `grid` and `allocator` bound.
@@ -331,35 +333,51 @@ class DataAllocationWrapper:
     `connectivity_field` go straight to gt4py, having no grid-shaped counterpart there.
 
     A `StencilTest` suite receives one as the `data_alloc` argument of its `input_data`
-    fixture. See the wrapped module for the meaning of the remaining arguments.
+    fixture.
 
-    `rng` is the suite's input stream, created once by the `data_alloc` fixture;
-    `reference_rng` is the first spawned child of `rng`, reserved for `reference`
-    bodies that declare an `rng` parameter. Parametrized cases derive both streams
-    per case through `for_param`.
+    `rng` is the input stream for this wrapper's `key`, and `reference_rng` the
+    reference stream: both pool the suite's `seed_sequence` with the key, the
+    reference under an extra `_REFERENCE_TAG` element, so the two streams are
+    independent by construction. Parametrized cases derive both streams per case
+    through `for_param`.
     """
 
-    grid: base.Grid
-    allocator: gtx_typing.Allocator | None
-    rng: np.random.Generator
-    reference_rng: np.random.Generator = dataclasses.field(init=False)
+    def __init__(
+        self,
+        grid: base.Grid,
+        allocator: gtx_typing.Allocator | None,
+        seed_sequence: np.random.SeedSequence,
+        key: str = "",
+    ) -> None:
+        self.grid = grid
+        self.allocator = allocator
+        self.seed_sequence = seed_sequence
+        self.key = key
+        self.rng = np.random.default_rng(self._pooled(key))
+        self.reference_rng = np.random.default_rng(self._pooled(key, _REFERENCE_TAG))
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "reference_rng", self.rng.spawn(1)[0])
+    def _pooled(self, key: str, *extra: int) -> np.random.SeedSequence:
+        """The suite's seed sequence pooled with `key` and any extra elements."""
+        entropy = self.seed_sequence.entropy
+        if entropy is None:
+            elements: list[int] = []
+        elif isinstance(entropy, int):
+            elements = [entropy]
+        else:
+            elements = list(entropy)
+        return np.random.SeedSequence([*elements, _stable_seed(key), *extra])
 
     def for_param(self, param_id: str) -> DataAllocationWrapper:
         """
-        A wrapper whose generator pools this generator's seed-sequence entropy with `param_id`.
+        A wrapper whose streams pool the suite's seed sequence with `param_id`.
 
         Hand-rolled parametrized `input_data` fixtures call it so that each parametrization
         instance draws its own stream, and `test_and_benchmark` calls it with the input
         case's parameter (excluding the `static_variant` id) to key the reference stream
         per case, the same however pytest selects the cases.
         """
-        entropy = self.rng.bit_generator.seed_seq.entropy
-        entropy = entropy if isinstance(entropy, list) else [entropy]
-        child = np.random.SeedSequence([*entropy, _stable_seed(param_id)])
-        return DataAllocationWrapper(self.grid, self.allocator, np.random.default_rng(child))
+        key = f"{self.key}:{param_id}" if self.key else param_id
+        return DataAllocationWrapper(self.grid, self.allocator, self.seed_sequence, key)
 
     def connectivity_field(self, offset: str | gtx.FieldOffset) -> gtx.Field:
         """

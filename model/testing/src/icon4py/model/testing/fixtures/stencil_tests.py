@@ -148,5 +148,5 @@ def data_alloc(
     return _stencil_tests.DataAllocationWrapper(
         grid=grid,
         allocator=model_backends.get_allocator(backend_like),
-        rng=_stencil_tests._suite_rng(request),
+        seed_sequence=_stencil_tests._suite_seed_sequence(request),
     )

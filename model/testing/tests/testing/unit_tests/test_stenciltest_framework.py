@@ -479,7 +479,7 @@ def _seeded_wrapper(grid, key: str) -> stencil_tests.DataAllocationWrapper:
     return stencil_tests.DataAllocationWrapper(
         grid=grid,
         allocator=None,
-        rng=np.random.default_rng(stencil_tests._derived_seed_sequence(key)),
+        seed_sequence=stencil_tests._derived_seed_sequence(key),
     )
 
 
@@ -646,7 +646,7 @@ class TestSeededWrapper:
         )
 
     def test_reference_rng_is_deterministic(self, grid):
-        """Identically seeded wrappers spawn the same reference stream."""
+        """Identically seeded wrappers derive the same reference stream."""
         first = _seeded_wrapper(grid, "module:Suite:")
         second = _seeded_wrapper(grid, "module:Suite:")
 
@@ -656,7 +656,7 @@ class TestSeededWrapper:
         )
 
     def test_reference_rng_differs_from_the_input_data_stream(self, grid):
-        """The spawned reference stream is not the input data's stream."""
+        """The reference stream is not the input data's stream."""
         wrapper = _seeded_wrapper(grid, "module:Suite:")
 
         assert not np.array_equal(
@@ -665,7 +665,7 @@ class TestSeededWrapper:
         )
 
     def test_reference_rng_differs_from_a_for_param_stream(self, grid):
-        """A `for_param` stream must not collide with the spawned reference stream."""
+        """A `for_param` stream must not collide with the reference stream."""
         wrapper = _seeded_wrapper(grid, "module:Suite:")
 
         assert not np.array_equal(
@@ -832,6 +832,9 @@ class TestTestAndBenchmark:
         )
 
         np.testing.assert_array_equal(seen["draw"], expected)
-        # the reference never draws from the class-level stream: its stream is
-        # `for_param(case_key).reference_rng`, distinct from `wrapper.reference_rng`
-        assert not np.array_equal(seen["draw"], wrapper.reference_rng.random(3))
+        # the reference stream is independent of the input stream by construction:
+        # it pools the suite's seed sequence with the case key and a reference tag
+        assert not np.array_equal(seen["draw"], wrapper.for_param(case_key).rng.random(3))
+        if case_key:
+            # the case key engages: the reference stream differs from the suite-level one
+            assert not np.array_equal(seen["draw"], wrapper.reference_rng.random(3))
