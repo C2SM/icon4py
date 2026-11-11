@@ -1180,8 +1180,7 @@ dependencies = [
   { name = "typing-extensions" }
 ]
 name = "dace"
-sdist = { url = "https://files.pythonhosted.org/packages/07/08/e02a771ee94c47f5bede9d70f8299f29a2bd088b0f54a9a22b81f3923b82/dace-2.0.0b1.tar.gz", hash = "sha256:a645f17cf6155a8cf13543df2daf2823f7d1cc88984276e73206a652fe305698", size = 7104619, upload-time = "2026-10-26T08:06:49.246Z" }
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/spcl/dace?branch=main#9e56218b0ef09b2a5786d182a0293b1fa930faf7" }
 version = "2.0.0b1"
 
 [[package]]
@@ -1658,12 +1657,8 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-sdist = { url = "https://files.pythonhosted.org/packages/1a/9e/eb1f3e1ed6cc98236d6abb36be4558aca99e25c2870bc0ea7d5f033c1768/gt4py-1.2.4.tar.gz", hash = "sha256:5089e7bf9f0e59ea855617867995ef1981d467b31b30aa052e7f56276f047b58", size = 892136, upload-time = "2026-11-04T16:40:28.842Z" }
-source = { registry = "https://pypi.org/simple" }
-version = "1.2.4"
-wheels = [
-  { url = "https://files.pythonhosted.org/packages/cb/0c/209904ee0777413d18fd9bd4d376e839cdb7c45b657926a283f3516f41b6/gt4py-1.2.4-py3-none-any.whl", hash = "sha256:e37b6e7090fc316b9881c851e22e8d57208dd2433caef3485866cb3f4662c358", size = 1112066, upload-time = "2026-11-04T16:40:26.96Z" }
-]
+source = { git = "https://github.com/edopao/gt4py?branch=bump_dace_version#d6a5440349864a64227f6e28950f20b1448a1fe1" }
+version = "1.2.4+unknown.version.details"
 
 [package.optional-dependencies]
 cuda12 = [
@@ -2066,7 +2061,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2083,7 +2078,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2100,7 +2095,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2117,7 +2112,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-common", extras = ["io"], editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2134,7 +2129,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2151,7 +2146,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2168,7 +2163,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2185,7 +2180,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2213,9 +2208,9 @@ requires-dist = [
   { name = "click", specifier = ">=8.0" },
   { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
   { name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0" },
-  { name = "gt4py", specifier = "==1.2.4" },
-  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
-  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
+  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
+  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
   { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
   { name = "icon4py-common", extras = ["distributed"], editable = "model/common" },
@@ -2265,10 +2260,10 @@ requires-dist = [
   { name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1" },
   { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
   { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0" },
-  { name = "gt4py", specifier = "==1.2.4" },
-  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
-  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'" },
-  { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
+  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
+  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
+  { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
   { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
   { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -2356,7 +2351,7 @@ version = "0.5.0"
 [package.metadata]
 requires-dist = [
   { name = "devtools", specifier = ">=0.12" },
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
   { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
   { name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics" },
@@ -2390,7 +2385,7 @@ version = "0.5.0"
 [package.metadata]
 requires-dist = [
   { name = "filelock", specifier = ">=3.18.0,<3.20" },
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-common", extras = ["io"], editable = "model/common" },
   { name = "icon4py-driver", editable = "model/driver" },
   { name = "numpy", specifier = ">=1.23.3" },
@@ -2421,7 +2416,7 @@ requires-dist = [
   { name = "click", specifier = ">=8.1.7" },
   { name = "configargparse", specifier = ">=1.7.1" },
   { name = "fprettify", specifier = ">=0.3.7" },
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=bump_dace_version" },
   { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
   { name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common" },
   { name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common" },
