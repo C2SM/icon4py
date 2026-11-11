@@ -251,8 +251,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self._zero_accumulators()
         for process, process_output in self._process_outputs.items():
             process.run(state, process_output)
-            self._accumulate(process_output)
-            self._update(state, process_output, dt_seconds)
+            self._accumulate_tendencies(process_output)
+            self._update_state(state, process_output, dt_seconds)
         self._update_prognostics(state, dt_seconds, output)
         return output
 
@@ -362,7 +362,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         for accumulator in self.accumulators.values():
             accumulator.ndarray[...] = 0.0  # type: ignore[index]
 
-    def _accumulate(self, output: fw.State) -> None:
+    def _accumulate_tendencies(self, output: fw.State) -> None:
         """
         Add every `Tendency` leaf of a process output to the sum of its quantity.
 
@@ -375,7 +375,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
                 )
             accumulator.ndarray[...] += field_.ndarray  # type: ignore[index]
 
-    def _update(
+    def _update_state(
         self, state: physics_state.PhysicsState, output: fw.State, dt_seconds: float
     ) -> None:
         """
