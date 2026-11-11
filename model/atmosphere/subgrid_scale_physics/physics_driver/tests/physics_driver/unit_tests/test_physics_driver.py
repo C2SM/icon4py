@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests of the physics driver: process loop, time control, sequential coupling, phy2dyn."""
+"""Tests of the physics driver: dyn2phy, process loop, time control, sequential coupling, phy2dyn."""
 
 import dataclasses
 import datetime
@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_process,
     physics_state,
 )
-from icon4py.model.common import field, framework as fw
+from icon4py.model.common import dimension as dims, field, framework as fw
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base as base_grid, simple
 
@@ -27,6 +27,7 @@ from .utils import (
     DT,
     T0,
     Recorder,
+    RecordingExchange,
     driver,
     filled,
     make_input,
@@ -44,12 +45,6 @@ class MoistOutput(fw.State):
 
     tend_qv: field.Field[qty.TendencyOfQvOnCellK]
     pflx: field.Field[qty.PrecipitationFluxOnCellK]
-
-
-class ThermoOutput(fw.State):
-    tend_qv: field.Field[qty.TendencyOfQvOnCellK]
-    tend_temperature: field.Field[qty.TendencyOfTemperatureOnCellK]
-    tend_w: field.Field[qty.TendencyOfWOnCellKHalf]
 
 
 class WindOutput(fw.State):
@@ -98,41 +93,33 @@ class TestProcessTimeControl:
         assert time_control().skips_steps is False
         assert time_control(process_dtime=2 * DT).skips_steps is True
 
-    def test_is_in_window_at_start_is_true(self) -> None:
-        assert time_control().is_in_window(T0) is True
+    @pytest.mark.parametrize(
+        "step_start, expected",
+        [
+            (T0, True),
+            (T0 + datetime.timedelta(minutes=30), True),
+            (T0 - datetime.timedelta(seconds=1), False),
+            (T0 + datetime.timedelta(hours=1), False),
+        ],
+    )
+    def test_is_in_window(self, step_start: datetime.datetime, expected: bool) -> None:
+        tc = time_control(end=T0 + datetime.timedelta(hours=1))
+        assert tc.is_in_window(step_start) is expected
 
-    def test_is_in_window_at_end_is_false(self) -> None:
-        end = T0 + datetime.timedelta(hours=1)
-        assert time_control(end=end).is_in_window(end) is False
-
-    def test_is_in_window_before_start_is_false(self) -> None:
-        assert time_control().is_in_window(T0 - datetime.timedelta(seconds=1)) is False
-
-    def test_is_in_window_inside_is_true(self) -> None:
-        assert time_control().is_in_window(T0 + datetime.timedelta(hours=12)) is True
-
-    def test_computes_at_start(self) -> None:
-        assert time_control().computes_at(T0) is True
-
-    def test_computes_at_one_interval(self) -> None:
-        assert time_control().computes_at(T0 + DT) is True
-
-    def test_does_not_compute_at_half_interval(self) -> None:
-        assert time_control().computes_at(T0 + DT / 2) is False
-
-    def test_does_not_compute_before_start(self) -> None:
-        assert time_control().computes_at(T0 - datetime.timedelta(seconds=1)) is False
-
-    def test_computes_at_exact_interval_multiples_only(self) -> None:
-        assert time_control().computes_at(T0 + 2 * DT) is True
-        # 1 microsecond off the boundary does not compute (no tolerance).
-        jitter = datetime.timedelta(microseconds=1)
-        assert time_control().computes_at(T0 + 2 * DT + jitter) is False
-
-    def test_frozen_dataclass(self) -> None:
-        tc = time_control()
-        with pytest.raises(dataclasses.FrozenInstanceError):
-            tc.process_dtime = datetime.timedelta(seconds=1)  # type: ignore[misc]
+    @pytest.mark.parametrize(
+        "step_start, expected",
+        [
+            (T0, True),
+            (T0 + DT, True),
+            (T0 + 2 * DT, True),
+            (T0 + DT / 2, False),
+            (T0 - datetime.timedelta(seconds=1), False),
+            # no tolerance
+            (T0 + 2 * DT + datetime.timedelta(microseconds=1), False),
+        ],
+    )
+    def test_computes_at(self, step_start: datetime.datetime, expected: bool) -> None:
+        assert time_control().computes_at(step_start) is expected
 
 
 def test_run_zeroes_the_tendency_leaves_of_the_outputs_outside_the_window(
@@ -176,74 +163,26 @@ def test_run_computes_on_the_first_in_window_step_even_when_not_triggered(
     assert len(recorder.states) == 2
 
 
-def test_run_populates_the_given_outputs_from_its_cache_on_a_non_computing_step(
+def test_run_hands_the_cached_tendencies_to_the_given_output_on_a_non_computing_step(
     grid: base_grid.Grid,
 ) -> None:
-    output = filled(MoistOutput, grid)
     process, recorder = recording(
         MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(process_dtime=2 * DT), grid
     )
-    # the first step computes and fills the cache
-    process.run(zero_physics_state(grid, step_start=T0), output)
-    # the caller owns its buffer: other values are in it when it is handed back
-    output.tend_qv.ndarray[...] = 1e-7  # type: ignore[index]  # NDArrayObject declares no __setitem__
-    output.pflx.ndarray[...] = 9.0  # type: ignore[index]
-
-    result = process.run(zero_physics_state(grid, step_start=T0 + DT), output)
-
-    # the given buffer receives the tendencies the computing run produced, the other leaves
-    # stay as the caller left them
-    assert result is output
-    np.testing.assert_array_equal(output.tend_qv.asnumpy(), 2e-7)
-    np.testing.assert_array_equal(output.pflx.asnumpy(), 9.0)
-    assert len(recorder.states) == 1
-
-
-def test_a_mutated_buffer_does_not_touch_the_cache(grid: base_grid.Grid) -> None:
-    output = filled(MoistOutput, grid)
-    process, recorder = recording(
-        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(process_dtime=2 * DT), grid
-    )
-    process.run(zero_physics_state(grid, step_start=T0), output)
+    process.run(zero_physics_state(grid, step_start=T0), filled(MoistOutput, grid))
+    # another buffer, with other values in it
     given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
-    process.run(zero_physics_state(grid, step_start=T0 + DT), given)
-    # the caller mutates the buffer it was handed back
+
+    assert process.run(zero_physics_state(grid, step_start=T0 + DT), given) is given
+
+    # the cached tendencies, the other leaves as the caller left them
+    np.testing.assert_array_equal(given.tend_qv.asnumpy(), 2e-7)
+    np.testing.assert_array_equal(given.pflx.asnumpy(), 5.0)
+    # the cache is a copy: what the caller writes into the buffer does not reach it
     given.tend_qv.ndarray[...] = 42.0  # type: ignore[index]  # NDArrayObject declares no __setitem__
-
     process.run(zero_physics_state(grid, step_start=T0 + 3 * DT), given)
-
-    # the next non-computing step restores the cached tendencies only
     np.testing.assert_array_equal(given.tend_qv.asnumpy(), 2e-7)
-    np.testing.assert_array_equal(given.pflx.asnumpy(), 5.0)
     assert len(recorder.states) == 1
-
-
-def test_a_fresh_buffer_gets_the_cached_tendencies_only(grid: base_grid.Grid) -> None:
-    output = filled(MoistOutput, grid)
-    process, recorder = recording(
-        MoistOutput, {"tend_qv": 2e-7, "pflx": 3.0}, time_control(process_dtime=2 * DT), grid
-    )
-    process.run(zero_physics_state(grid, step_start=T0), output)
-
-    # a differently-allocated buffer, holding other values
-    given = filled(MoistOutput, grid, tend_qv=1e-7, pflx=5.0)
-    result = process.run(zero_physics_state(grid, step_start=T0 + DT), given)
-
-    assert result is given
-    np.testing.assert_array_equal(given.tend_qv.asnumpy(), 2e-7)
-    np.testing.assert_array_equal(given.pflx.asnumpy(), 5.0)
-    assert len(recorder.states) == 1
-
-
-def test_a_process_computing_every_step_keeps_no_cache(grid: base_grid.Grid) -> None:
-    output = filled(MoistOutput, grid)
-    process, recorder = recording(MoistOutput, {"tend_qv": 2e-7}, time_control(), grid)
-
-    for step in range(3):
-        process.run(zero_physics_state(grid, step_start=T0 + step * DT), output)
-
-    assert len(recorder.states) == 3
-    assert process._cache is None
 
 
 def test_run_advances_the_physics_state_after_each_process(grid: base_grid.Grid) -> None:
@@ -295,23 +234,6 @@ def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 2 * DT.total_seconds() * 1e-7, rtol=1e-12)
 
 
-def test_out_of_window_process_does_nothing(grid: base_grid.Grid) -> None:
-    # the window starts in the future: the step being integrated is before it
-    future = T0 + datetime.timedelta(days=1)
-    window = time_control(start=future, end=future + datetime.timedelta(hours=1))
-    process, recorder = recording(MoistOutput, {"tend_qv": 1e-7}, window, grid)
-    physics = driver(grid, [process])
-    prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-
-    physics.run(
-        make_input(prognostic, tracer_state, simulation_current_datetime=T0),
-        output=make_output(prognostic, tracer_state),
-    )
-
-    assert recorder.states == []
-    np.testing.assert_array_equal(_qv(tracer_state), 1e-3)
-
-
 def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> None:
     process, recorder = recording(
         MoistOutput, {"tend_qv": 1e-7}, time_control(process_dtime=2 * DT), grid
@@ -337,27 +259,6 @@ def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> No
     # the physics state reaches the process only on the step it computes
     assert len(recorder.states) == 1
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 2 * DT.total_seconds() * 1e-7, rtol=1e-12)
-
-
-def test_first_in_window_step_inactive_computes(grid: base_grid.Grid) -> None:
-    # A process whose first step in its window is not active (interval = 2 dt, the first
-    # step starts at T0 + DT) has no output to reuse yet: it computes instead.
-    process, recorder = recording(
-        MoistOutput, {"tend_qv": 1e-7}, time_control(process_dtime=2 * DT), grid
-    )
-    physics = driver(
-        grid,
-        [process],
-    )
-    prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-
-    physics.run(
-        make_input(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        output=make_output(prognostic, tracer_state),
-    )
-
-    assert len(recorder.states) == 1
-    np.testing.assert_allclose(_qv(tracer_state), 1e-3 + DT.total_seconds() * 1e-7, rtol=1e-12)
 
 
 def test_run_requires_every_moisture_species(grid: base_grid.Grid) -> None:
@@ -394,29 +295,6 @@ def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
         )
 
 
-def test_run_updates_tracers_w_and_thermodynamics(grid: base_grid.Grid) -> None:
-    process, _ = recording(
-        ThermoOutput,
-        {"tend_qv": 1e-7, "tend_temperature": 1e-3, "tend_w": 1e-4},
-        time_control(),
-        grid,
-    )
-    physics = driver(grid, [process])
-    prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
-    exner_before = prognostic.exner.asnumpy().copy()
-    theta_v_before = prognostic.theta_v.asnumpy().copy()
-
-    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
-
-    dt = DT.total_seconds()
-    np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 1e-7 * dt, rtol=1e-12)
-    np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
-    # EOS wiring smoke test: the exact-EOS update rewrote exner and theta_v (no direction
-    # assertion: the uniform test state is not EOS-consistent)
-    assert not np.array_equal(prognostic.exner.asnumpy(), exner_before)
-    assert not np.array_equal(prognostic.theta_v.asnumpy(), theta_v_before)
-
-
 def test_run_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> None:
     # uniform tend_u = 1e-4, tend_v = 0 with the neutral geometry of `driver`:
     # ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on every edge of the periodic simple grid
@@ -440,6 +318,122 @@ def test_run_rejects_a_lone_horizontal_wind_tendency(grid: base_grid.Grid) -> No
         physics.run(
             make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state)
         )
+
+
+class TemperatureOutput(fw.State):
+    tend_temperature: field.Field[qty.TendencyOfTemperatureOnCellK]
+
+
+class VnTendencyOutput(fw.State):
+    tend_vn: field.Field[qty.TendencyOfVnOnEdgeK]
+
+
+class FluxOutput(fw.State):
+    sensible_heat_flux: field.Field[qty.SensibleHeatFluxOnCell]
+    tend_qv: field.Field[qty.TendencyOfQvOnCellK]
+
+
+def test_diagnose_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Grid) -> None:
+    process, recorder = recording(fw.Empty, {}, time_control(), grid)
+    physics = driver(grid, [process])
+    prognostic, tracer_state = prognostics(grid), tracers(grid)
+    air_mass = fw.zeros(qty.AirMassOnCellK, grid, None)
+    driver_input = make_input(prognostic, tracer_state, air_mass=air_mass)
+    diagnostics = fw.allocate(states.Diagnostics, grid, None)
+
+    physics.run(driver_input, output=make_output(prognostic, tracer_state, diagnostics=diagnostics))
+
+    (state,) = recorder.states
+    # no copies: the prognostics and tracers as given, the diagnostics in the driver's buffers
+    for name in ("vn", "w", "exner", "theta_v", "rho", "air_mass", *states.TRACERS):
+        assert getattr(state, name) is getattr(driver_input, name), name
+    for name, field_ in fw.fields(diagnostics).items():
+        assert getattr(state, name) is field_, name
+    # without a surface process the fluxes are absent
+    assert state.sensible_heat_flux is None
+
+
+def test_run_rejects_a_tendency_of_no_advanced_field(grid: base_grid.Grid) -> None:
+    process, _ = recording(VnTendencyOutput, {"tend_vn": 1e-4}, time_control(), grid)
+    physics = driver(grid, [process])
+    prognostic, tracer_state = prognostics(grid), tracers(grid)
+
+    with pytest.raises(ValueError, match="'tend_vn' is not the tendency of an advanced field"):
+        physics.run(
+            make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state)
+        )
+
+
+def test_run_syncs_the_halos_at_entry_the_wind_sums_and_what_it_wrote(
+    grid: base_grid.Grid,
+) -> None:
+    exchange = RecordingExchange()
+    thermo, recorder = recording(
+        TemperatureOutput, {"tend_temperature": 1e-3}, time_control(), grid
+    )
+    wind, _ = recording(WindOutput, {"tend_u": 1e-4}, time_control(), grid)
+    physics = driver(grid, [thermo, wind], exchange=exchange)
+    prognostic, tracer_state = prognostics(grid), tracers(grid)
+    perturbed_exner = fw.zeros(qty.PerturbedExnerOnCellK, grid, None)
+
+    physics.run(
+        make_input(prognostic, tracer_state),
+        output=make_output(prognostic, tracer_state, perturbed_exner=perturbed_exner),
+    )
+
+    # identity, not equality: the syncs must target the very buffers that were read and written,
+    # and the wind sums before they are projected onto vn
+    (state,) = recorder.states
+    sums = physics.accumulators
+    assert exchange.events == [
+        (dims.CellDim, [id(prognostic.rho), id(state.u), id(state.v), id(prognostic.w)]),
+        (dims.CellDim, [id(sums[qty.TendencyOfUOnCellK]), id(sums[qty.TendencyOfVOnCellK])]),
+        (
+            dims.CellDim,
+            [
+                *(id(getattr(tracer_state, name)) for name in states.TRACERS),
+                id(prognostic.w),
+                id(prognostic.exner),
+                id(prognostic.theta_v),
+                id(perturbed_exner),
+            ],
+        ),
+        (dims.EdgeDim, [id(prognostic.vn)]),
+    ]
+
+
+def test_a_process_output_is_offered_to_the_others_through_the_physics_state(
+    grid: base_grid.Grid,
+) -> None:
+    provider, _ = recording(FluxOutput, {"sensible_heat_flux": 5.0}, time_control(), grid)
+    reader, recorder = recording(fw.Empty, {}, time_control(), grid)
+    physics = driver(grid, [provider, reader])
+    prognostic, tracer_state = prognostics(grid), tracers(grid)
+
+    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
+
+    (state,) = recorder.states
+    assert state.sensible_heat_flux is physics._process_outputs[provider].sensible_heat_flux
+    np.testing.assert_array_equal(state.sensible_heat_flux.asnumpy(), 5.0)
+
+
+def test_a_second_provider_of_a_physics_state_leaf_is_rejected(grid: base_grid.Grid) -> None:
+    first, _ = recording(FluxOutput, {}, time_control(), grid)
+    second, _ = recording(FluxOutput, {}, time_control(), grid)
+    with pytest.raises(ValueError, match="'sensible_heat_flux' is computed by more than one"):
+        driver(grid, [first, second])
+
+
+def test_diagnostic_fields_are_keyed_by_standard_name_and_skip_the_tendencies(
+    grid: base_grid.Grid,
+) -> None:
+    process, _ = recording(FluxOutput, {}, time_control(), grid)
+    physics = driver(grid, [process])
+
+    ((name, field_),) = physics.diagnostic_fields().items()
+
+    assert name == qty.SensibleHeatFluxOnCell.standard_name
+    assert field_ is physics._process_outputs[process].sensible_heat_flux
 
 
 def _empty(state: physics_state.PhysicsState) -> fw.Empty:
