@@ -26,7 +26,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
 from icon4py.model.common import dimension as dims, field, framework as fw
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.framework import quantities as qty, states
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.grid import base as base_grid, simple
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -119,8 +119,12 @@ def make_output(
     prognostic: states.PrognosticState,
     tracer_state: states.TracerState,
     *,
+    diagnostics: states.Diagnostics | None = None,
     perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None = None,
 ) -> physics_driver.PhysicsDriver.Output:
+    """The output continuing the given states, with new diagnostics on the simple grid if none."""
+    if diagnostics is None:
+        diagnostics = fw.allocate(states.Diagnostics, simple.simple_grid(), None)
     return physics_driver.PhysicsDriver.Output(
         vn=prognostic.vn,
         w=prognostic.w,
@@ -132,6 +136,12 @@ def make_output(
         qr=tracer_state.qr,
         qs=tracer_state.qs,
         qg=tracer_state.qg,
+        temperature=diagnostics.temperature,
+        virtual_temperature=diagnostics.virtual_temperature,
+        pressure=diagnostics.pressure,
+        pressure_ifc=diagnostics.pressure_ifc,
+        u=diagnostics.u,
+        v=diagnostics.v,
         perturbed_exner=perturbed_exner,
     )
 

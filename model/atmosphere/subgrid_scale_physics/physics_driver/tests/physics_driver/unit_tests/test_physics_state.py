@@ -57,15 +57,15 @@ def test_physics_state_views_the_inputs_and_the_driver_diagnostics(grid: base_gr
     prognostic, tracer_state = prognostics(grid), tracers(grid)
     air_mass = fw.zeros(qty.AirMassOnCellK, grid, None)
     driver_input = make_input(prognostic, tracer_state, air_mass=air_mass)
+    diagnostics = fw.allocate(states.Diagnostics, grid, None)
 
-    physics.run(driver_input, output=make_output(prognostic, tracer_state))
+    physics.run(driver_input, output=make_output(prognostic, tracer_state, diagnostics=diagnostics))
 
     (state,) = recorder.states
-    assert isinstance(physics.diagnostics, states.Diagnostics)
     # no copies: the prognostics and tracers as given, the diagnostics in the driver's buffers
     for name in ("vn", "w", "exner", "theta_v", "rho", "air_mass", *states.TRACERS):
         assert getattr(state, name) is getattr(driver_input, name), name
-    for name, field_ in fw.fields(physics.diagnostics).items():
+    for name, field_ in fw.fields(diagnostics).items():
         assert getattr(state, name) is field_, name
     # without a surface process the fluxes are absent
     assert state.sensible_heat_flux is None
@@ -79,13 +79,13 @@ def test_diagnose_fills_the_diagnostics_and_leaves_the_input_untouched(
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid, exner=0.95, theta_v=300.0), tracers(grid)
     before = {name: field_.asnumpy().copy() for name, field_ in fw.fields(prognostic).items()}
+    diagnostics = fw.allocate(states.Diagnostics, grid, None)
 
     physics.run(
         make_input(prognostic, tracer_state),
-        output=make_output(prognostics(grid), tracers(grid, qv=0.0)),
+        output=make_output(prognostics(grid), tracers(grid, qv=0.0), diagnostics=diagnostics),
     )
 
-    diagnostics = physics.diagnostics
     assert 200.0 < diagnostics.temperature.asnumpy().mean() < 320.0
     assert (diagnostics.pressure.asnumpy() > 0).all()
     # pressure grows downward: the surface interface above the top full level

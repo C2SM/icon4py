@@ -21,9 +21,9 @@ class PhysicsState(fw.State):
     """
     The state the physics processes read and advance in one step (ICON's dyn2phy).
 
-    Every field leaf is a view, no copies: onto the driver's input (the prognostics, the
-    tracers and the air mass), onto its `diagnostics`, or, for the surface fluxes, onto the
-    output of the surface process. `step_start` is derived from the input instead: the end of
+    Every field leaf is a view, no copies: onto the driver's input (the prognostics and the
+    air mass), onto its output (w, the tracers and the diagnostics), or, for the surface
+    fluxes, onto the output of the surface process. `step_start` is derived from the input instead: the end of
     the step being integrated less its length.
 
     The coupling is sequential, as in ICON AES: after each process the driver adds its

@@ -89,6 +89,14 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         qr: field.Field[qty.QrOnCellK] | None = None
         qs: field.Field[qty.QsOnCellK] | None = None
         qg: field.Field[qty.QgOnCellK] | None = None
+        # the driver's diagnostics, shared with the output: diagnosed at step start, then
+        # temperature, u and v advanced by the processes
+        temperature: field.Field[qty.TemperatureOnCellK]
+        virtual_temperature: field.Field[qty.VirtualTemperatureOnCellK]
+        pressure: field.Field[qty.PressureOnCellK]
+        pressure_ifc: field.Field[qty.PressureOnCellKHalf]
+        u: field.Field[qty.UOnCellK]
+        v: field.Field[qty.VOnCellK]
         # the dycore's, updated with exner when given
         perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None = None
 
@@ -125,8 +133,6 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
                 if name in self._provided:
                     raise ValueError(f"'{name}' is provided by more than one physics process")
                 self._provided[name] = field_
-        # the diagnostics the processes read, derived here each step
-        self.diagnostics = fw.allocate(states.Diagnostics, self._grid, self._allocator)
         # one sum per tendency the processes emit, by output name, made when first seen
         self.accumulators: dict[str, field.Field] = {}
 
@@ -280,10 +286,10 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     # diagnostics become recipes, which the processes define on their `Input`, and `_diagnose` goes.
     def _diagnose(self, input: Input, output: Output) -> physics_state.PhysicsState:
         """
-        The physics state and the diagnostics derived from `input` (dyn2phy).
+        The physics state and the diagnostics derived from `input` into `output` (dyn2phy).
 
-        The fields the processes advance (w and the tracers) are the ones of `output`, which
-        continues `input`; the others are read only and stay the ones of `input`.
+        The fields the processes advance (w, the tracers and the diagnostics) are the ones of
+        `output`, which continues `input`; the others are read only and stay the ones of `input`.
 
         At the end the halos of rho, u, v and w are synced for the horizontal operations of
         the physics, as ICON's interface does before tmx (mo_interface_iconam_aes): diffusion
@@ -295,7 +301,6 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             raise ValueError(
                 f"physics requires all moisture species active in the TracerState; missing: {missing}"
             )
-        diagnostics = self.diagnostics
         state = physics_state.PhysicsState(
             vn=input.vn,
             w=output.w,
@@ -308,12 +313,12 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             qr=self._require_tracer(output.qr),
             qs=self._require_tracer(output.qs),
             qg=self._require_tracer(output.qg),
-            temperature=diagnostics.temperature,
-            virtual_temperature=diagnostics.virtual_temperature,
-            pressure=diagnostics.pressure,
-            pressure_ifc=diagnostics.pressure_ifc,
-            u=diagnostics.u,
-            v=diagnostics.v,
+            temperature=output.temperature,
+            virtual_temperature=output.virtual_temperature,
+            pressure=output.pressure,
+            pressure_ifc=output.pressure_ifc,
+            u=output.u,
+            v=output.v,
             air_mass=input.air_mass,
             **self._provided,
             step_start=input.simulation_current_datetime - self.dtime,

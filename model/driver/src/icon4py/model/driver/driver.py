@@ -212,7 +212,7 @@ class Icon4pyDriver:
                 self._store_output(
                     prognostic_states.current,
                     tracers.current,
-                    ds.diagnostic,
+                    diagnostic_state,
                     self.model_time_variables.simulation_current_datetime,
                 )
 
@@ -266,7 +266,7 @@ class Icon4pyDriver:
                     self._store_output(
                         prognostic_states.current,
                         tracers.current,
-                        ds.diagnostic,
+                        diagnostic_state,
                         self.model_time_variables.simulation_current_datetime,
                     )
             if self.io_monitor is not None:
@@ -363,6 +363,7 @@ class Icon4pyDriver:
                 *self._physics_views(
                     prognostic_states.next,
                     tracers.next,
+                    diagnostic_state,
                     air_mass=(
                         tracer_advection_diagnostic_state.airmass_new
                         if tracer_advection_diagnostic_state is not None
@@ -666,11 +667,15 @@ class Icon4pyDriver:
         self,
         prognostic_state: states.PrognosticState,
         tracer_state: states.TracerState,
+        diagnostic_state: states.Diagnostics,
         *,
         air_mass: field.Field[qty.AirMassOnCellK] | None,
         perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None,
     ) -> tuple[physics_driver.PhysicsDriver.Input, physics_driver.PhysicsDriver.Output]:
-        """The physics' views: the tendencies are applied in place, so both sides share the states."""
+        """
+        The physics' views: the tendencies are applied in place, so both sides share the
+        states. The physics diagnoses into the diagnostics the output also writes.
+        """
         input = physics_driver.PhysicsDriver.Input(
             vn=prognostic_state.vn,
             w=prognostic_state.w,
@@ -697,6 +702,12 @@ class Icon4pyDriver:
             qr=tracer_state.qr,
             qs=tracer_state.qs,
             qg=tracer_state.qg,
+            temperature=diagnostic_state.temperature,
+            virtual_temperature=diagnostic_state.virtual_temperature,
+            pressure=diagnostic_state.pressure,
+            pressure_ifc=diagnostic_state.pressure_ifc,
+            u=diagnostic_state.u,
+            v=diagnostic_state.v,
             perturbed_exner=perturbed_exner,
         )
         return input, output
