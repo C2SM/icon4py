@@ -486,10 +486,25 @@ class GlobalReductions(Reductions):
     def _sum_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
         return array_ns.asarray([dtype.type(0)])
 
+    @staticmethod
+    def _max_or_inf_if_not_finite(buffer: data_alloc.NDArray) -> data_alloc.ScalarLikeArray:
+        """Local maximum, replaced by +inf when it is NaN.
+
+        ``MPI.MAX`` compares with ``>``, which is false for NaN, so a NaN would survive the
+        reduction on some ranks only. +inf compares reliably and marks the buffer as non-finite.
+        """
+        array_ns = data_alloc.array_namespace(buffer)
+        local_max = array_ns.max(buffer)
+        return array_ns.where(array_ns.isfinite(local_max), local_max, array_ns.inf).astype(
+            buffer.dtype
+        )
+
     def _reduce(
         self,
         buffer: data_alloc.NDArray,
-        local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
+        local_reduction: Callable[
+            [data_alloc.NDArray], data_alloc.ScalarT | data_alloc.ScalarLikeArray
+        ],
         global_reduction: mpi4py.MPI.Op,
     ) -> state_utils.ScalarType:
         array_ns = data_alloc.array_namespace(buffer)
@@ -554,11 +569,11 @@ class GlobalReductions(Reductions):
             array_ns.abs(buffer)
             if buffer.size != 0
             else self._sum_identity(buffer.dtype, array_ns),
-            array_ns.max,
+            self._max_or_inf_if_not_finite,
             mpi4py.MPI.MAX,
         )
         if not math.isfinite(abs_max):
-            # let NaN and infinity propagate as the plain sum does
+            # some rank holds NaN or infinity: let it propagate as the plain sum does
             return plain_sum()
         return decomp_defs.order_insensitive_sum(
             buffer, abs_max, combine_partial_sums=self._combine_partial_sums

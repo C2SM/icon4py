@@ -620,7 +620,8 @@ def order_insensitive_sum(
 
     Returns:
         the sum, correctly rounded from the exact fixed-point total; 0 when ``abs_max`` is 0
-        or so small that ICON's scaling would overflow.
+        or so small that ICON's scaling would overflow; infinity when the sum of the finite
+        values exceeds the largest double, like a plain sum.
 
     Example::
 
@@ -643,7 +644,10 @@ def order_insensitive_sum(
         integer_sum, fraction_sum = combine_partial_sums(integer_sum, fraction_sum)
     # exact total in units of 2**-(FIXED_POINT_BITS + shift); Python integers do not overflow
     total = (integer_sum << FIXED_POINT_BITS) + fraction_sum
-    return math.ldexp(float(total), -(FIXED_POINT_BITS + shift))
+    try:
+        return math.ldexp(float(total), -(FIXED_POINT_BITS + shift))
+    except OverflowError:
+        return math.copysign(math.inf, total)
 
 
 class SingleNodeReductions(Reductions):
