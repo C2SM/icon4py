@@ -247,7 +247,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         for process, process_output in self._process_outputs.items():
             process.run(state, process_output)
             self._accumulate(process_output)
-            self._advance(state, process_output, dt_seconds)
+            self._update(state, process_output, dt_seconds)
         self._update_prognostics(state, dt_seconds, output)
         return output
 
@@ -352,7 +352,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
 
     # NOTE: temporary, components MWE parts 07 (tendencies) and 08 (updates): 07 keys the
     # accumulators by the tendency's parent quantity instead of its output name; 08 replaces
-    # `_zero_accumulators`, `_accumulate`, `_advance` and `_update_prognostics` with the updates
+    # `_zero_accumulators`, `_accumulate`, `_update` and `_update_prognostics` with the updates
     # each process declares.
     def _zero_accumulators(self) -> None:
         for accumulator in self.accumulators.values():
@@ -371,7 +371,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
                 )
             accumulator.ndarray[...] += field_.ndarray  # type: ignore[index]
 
-    def _advance(
+    def _update(
         self, state: physics_state.PhysicsState, output: fw.State, dt_seconds: float
     ) -> None:
         """
