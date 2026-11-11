@@ -126,21 +126,17 @@ def test_decomposition_info_as_host_copies_device_buffers() -> None:
 
 
 def _sum_on_emulated_ranks(values: np.ndarray, num_ranks: int) -> float:
-    """Sum ``values`` as ``GlobalReductions`` does: integer partial sums per rank, combined exactly."""
+    """Sum ``values`` as ``GlobalReductions`` does: one exact fixed-point total per rank, allreduced.
+
+    Only the allreduce is emulated: it adds the totals of the other ranks to the one of rank 0.
+    """
     chunks = np.array_split(values, num_ranks)
     abs_max = float(np.max(np.abs(values)))
     shift = definitions.fixed_point_shift(abs_max)
-    other_partial_sums = [
-        definitions.fixed_point_partial_sums(chunk, shift) for chunk in chunks[1:]
-    ]
-
-    def combine(integer_sum: int, fraction_sum: int) -> tuple[int, int]:
-        return (
-            integer_sum + sum(partial[0] for partial in other_partial_sums),
-            fraction_sum + sum(partial[1] for partial in other_partial_sums),
-        )
-
-    return definitions.order_insensitive_sum(chunks[0], abs_max, combine_partial_sums=combine)
+    other_totals = sum(definitions.fixed_point_total(chunk, shift) for chunk in chunks[1:])
+    return definitions.order_insensitive_sum(
+        chunks[0], abs_max, allreduce=lambda total: total + other_totals
+    )
 
 
 @pytest.mark.parametrize("num_ranks", [1, 2, 3, 7])
@@ -170,6 +166,27 @@ def test_single_node_sum_and_mean() -> None:
     assert reductions.sum(np.array([1, 2, 3])) == 6
     assert math.isnan(reductions.sum(np.array([1.0, np.nan])))
     assert reductions.sum(np.array([1.0, np.inf])) == np.inf
+
+
+@pytest.mark.parametrize("name", ["min", "max", "sum", "mean"])
+def test_single_node_reductions_require_a_non_empty_buffer(name: str) -> None:
+    reduce = getattr(definitions.SingleNodeReductions(), name)
+    with pytest.raises(ValueError, match=f"global_{name} requires a non-empty buffer"):
+        reduce(np.array([]))
+
+
+def test_order_insensitive_sum_of_a_rank_without_owned_entries() -> None:
+    values = np.array([-2.5, 1.25, 4.0])
+    abs_max = 4.0
+    total = definitions.fixed_point_total(values, definitions.fixed_point_shift(abs_max))
+    nothing = np.array([])
+    # the rank contributes an exact zero to the allreduce, in both branches of the sum
+    assert (
+        definitions.order_insensitive_sum(nothing, abs_max, allreduce=lambda t: t + total) == 2.75
+    )
+    assert (
+        definitions.order_insensitive_sum(nothing, np.inf, allreduce=lambda s: s + np.inf) == np.inf
+    )
 
 
 @pytest.mark.parametrize("sign", [1.0, -1.0])

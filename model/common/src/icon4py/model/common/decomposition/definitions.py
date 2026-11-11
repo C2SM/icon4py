@@ -592,36 +592,40 @@ def fixed_point_shift(abs_max: float) -> int:
     return FIXED_POINT_BITS - math.frexp(abs_max)[1]
 
 
-def fixed_point_partial_sums(buffer: data_alloc.NDArray, shift: int) -> tuple[int, int]:
-    """Exact integer sums of the integer parts and of the scaled fractions of ``buffer * 2**shift``."""
+def fixed_point_total(buffer: data_alloc.NDArray, shift: int) -> int:
+    """Exact integer total of ``buffer * 2**(shift + FIXED_POINT_BITS)``, every element truncated.
+
+    As in ICON, the integer parts and the scaled fractions of ``buffer * 2**shift`` are
+    accumulated separately in int64 (``isum``, ``fsum``); the two sums are then combined
+    into one Python integer, which cannot overflow.
+    """
     array_ns = data_alloc.array_namespace(buffer)
-    if buffer.size == 0:
-        return 0, 0
     scaled = array_ns.ldexp(buffer, shift)  # |scaled| < 2**FIXED_POINT_BITS
     integer_part = scaled.astype(array_ns.int64)  # truncates towards zero like Fortran INT
     fraction_part = array_ns.ldexp(scaled - integer_part, FIXED_POINT_BITS).astype(array_ns.int64)
     # both parts are below 2**FIXED_POINT_BITS in magnitude, so the int64 sums cannot
     # overflow for fewer than 2**33 elements
-    return int(integer_part.sum()), int(fraction_part.sum())
+    return (int(integer_part.sum()) << FIXED_POINT_BITS) + int(fraction_part.sum())
 
 
 def order_insensitive_sum(
     buffer: data_alloc.NDArray,
     abs_max: float,
-    combine_partial_sums: Callable[[int, int], tuple[int, int]] | None = None,
+    allreduce: Callable[[int | float], int | float] | None = None,
 ) -> float:
     """Sum ``buffer`` independently of the order of its elements (ICON's ``order_insensit_sum``).
 
     Args:
-        buffer: the local contributions; must be finite.
-        abs_max: the largest magnitude over *all* contributions, those of other ranks included.
-        combine_partial_sums: adds the two integer partial sums of the other ranks to the
-            local ones; ``None`` on a single rank.
+        buffer: the local contributions.
+        abs_max: the largest magnitude over *all* contributions, those of other ranks included;
+            NaN or infinity when any contribution is.
+        allreduce: sums a Python number over all ranks, exactly when it is an integer;
+            ``None`` on a single rank.
 
     Returns:
         the sum, correctly rounded from the exact fixed-point total; 0 when ``abs_max`` is 0
-        or so small that ICON's scaling would overflow; infinity when the sum of the finite
-        values exceeds the largest double, like a plain sum.
+        or so small that ICON's scaling would overflow; NaN or infinity, propagated as by a
+        plain sum, when ``abs_max`` is not finite or the sum exceeds the largest double.
 
     Example::
 
@@ -636,14 +640,18 @@ def order_insensitive_sum(
         total         = integer_sum * 2**30 + fraction_sum        = 695_018_012_493_951_795
         result        = total * 2**-(30 + shift)                  = 1234.6
     """
+    if not math.isfinite(abs_max):
+        # some contribution is NaN or infinite: a plain sum propagates it
+        array_ns = data_alloc.array_namespace(buffer)
+        local_sum = float(array_ns.sum(buffer))
+        return allreduce(local_sum) if allreduce is not None else local_sum
     if abs_max == 0.0 or math.frexp(abs_max)[1] < _MIN_FIXED_POINT_EXPONENT:
         return 0.0
     shift = fixed_point_shift(abs_max)
-    integer_sum, fraction_sum = fixed_point_partial_sums(buffer, shift)
-    if combine_partial_sums is not None:
-        integer_sum, fraction_sum = combine_partial_sums(integer_sum, fraction_sum)
     # exact total in units of 2**-(FIXED_POINT_BITS + shift); Python integers do not overflow
-    total = (integer_sum << FIXED_POINT_BITS) + fraction_sum
+    total: int | float = fixed_point_total(buffer, shift)
+    if allreduce is not None:
+        total = allreduce(total)
     try:
         return math.ldexp(float(total), -(FIXED_POINT_BITS + shift))
     except OverflowError:
@@ -656,27 +664,33 @@ class SingleNodeReductions(Reductions):
     Single-rank runs have no halos, so all elements are owned and no masking
     is needed. The entire buffer is reduced directly. Floating-point sums use the
     order-insensitive sum of ICON, so that a distributed run reproduces them bitwise.
+    An empty buffer raises ``ValueError``, as in the distributed implementation.
     """
 
+    @staticmethod
+    def _require_non_empty(buffer: data_alloc.NDArray, name: str) -> None:
+        if buffer.size == 0:
+            raise ValueError(f"{name} requires a non-empty buffer")
+
     def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        self._require_non_empty(buffer, "global_min")
         array_ns = data_alloc.array_namespace(buffer)
         return array_ns.min(buffer).item()
 
     def max(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        self._require_non_empty(buffer, "global_max")
         array_ns = data_alloc.array_namespace(buffer)
         return array_ns.max(buffer).item()
 
     def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        self._require_non_empty(buffer, "global_sum")
         array_ns = data_alloc.array_namespace(buffer)
-        if not np.issubdtype(buffer.dtype, np.floating) or buffer.size == 0:
+        if not np.issubdtype(buffer.dtype, np.floating):
             return array_ns.sum(buffer).item()
-        abs_max = float(array_ns.max(array_ns.abs(buffer)))
-        if not math.isfinite(abs_max):
-            # let NaN and infinity propagate as the plain sum does
-            return array_ns.sum(buffer).item()
-        return order_insensitive_sum(buffer, abs_max)
+        return order_insensitive_sum(buffer, float(array_ns.max(array_ns.abs(buffer))))
 
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        self._require_non_empty(buffer, "global_mean")
         return self.sum(buffer) / buffer.size
 
 

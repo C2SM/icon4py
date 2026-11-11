@@ -11,7 +11,6 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
-import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from types import ModuleType
@@ -557,14 +556,12 @@ class GlobalReductions(Reductions):
         array_ns = data_alloc.array_namespace(buffer)
         if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
-        plain_sum = functools.partial(
-            self._reduce,
-            buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
-            array_ns.sum,
-            mpi4py.MPI.SUM,
-        )
         if not np.issubdtype(buffer.dtype, np.floating):
-            return plain_sum()
+            return self._reduce(
+                buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
+                array_ns.sum,
+                mpi4py.MPI.SUM,
+            )
         abs_max = self._reduce(
             array_ns.abs(buffer)
             if buffer.size != 0
@@ -572,12 +569,7 @@ class GlobalReductions(Reductions):
             self._max_or_inf_if_not_finite,
             mpi4py.MPI.MAX,
         )
-        if not math.isfinite(abs_max):
-            # some rank holds NaN or infinity: let it propagate as the plain sum does
-            return plain_sum()
-        return decomp_defs.order_insensitive_sum(
-            buffer, abs_max, combine_partial_sums=self._combine_partial_sums
-        )
+        return decomp_defs.order_insensitive_sum(buffer, abs_max, allreduce=self._allreduce_exact)
 
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         global_buffer_size = self._calc_buffer_size(self._prepare_buffer(buffer))
@@ -585,13 +577,10 @@ class GlobalReductions(Reductions):
             raise ValueError("global_mean requires a non-empty buffer")
         return self.sum(buffer) / global_buffer_size
 
-    def _combine_partial_sums(self, integer_sum: int, fraction_sum: int) -> tuple[int, int]:
-        # Python integers stay exact and cannot overflow, unlike an int64 ``Allreduce``
-        comm = self.process_props.comm
-        return (
-            comm.allreduce(integer_sum, op=mpi4py.MPI.SUM),
-            comm.allreduce(fraction_sum, op=mpi4py.MPI.SUM),
-        )
+    def _allreduce_exact(self, value: int | float) -> int | float:
+        # the pickling ``allreduce`` adds Python numbers: exact for the integer total of the
+        # order-insensitive sum, unlike an int64 ``Allreduce``
+        return self.process_props.comm.allreduce(value, op=mpi4py.MPI.SUM)
 
 
 @decomp_defs.create_reduction.register(MPICommProcessProperties)
