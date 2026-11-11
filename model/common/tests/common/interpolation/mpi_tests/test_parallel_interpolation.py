@@ -152,7 +152,7 @@ def test_distributed_interpolation_grg(  # noqa: PLR0917 [too-many-positional-ar
         field_x,
         ref_x,
         rtol=1e-11,
-        atol=1e-15,
+        atol=1e-16,
     ), f"comparison of {attrs.GEOFAC_GRG_X} failed"
     assert test_utils.dallclose(
         field_y,

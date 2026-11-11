@@ -25,7 +25,6 @@ from .utils import internal_energy_per_area_numpy, on_subdomain
 
 class TestUpdateTemperatureAndComputeEndOfStepDiagnostics(stencil_tests.StencilTest):
     PROGRAM = update_temperature_and_compute_end_of_step_diagnostics
-    ABSOLUTE_TOLERANCE = 5e-8
     OUTPUTS = (
         "dissip_ke",
         "heating",
