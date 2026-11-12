@@ -3,9 +3,10 @@
 # See docs/development/pr_agent.md.
 
 [config]
-# Release PRs are generated, and the others are throwaway test PRs. The first
-# pattern is PR Agent's default, which setting this key would otherwise drop.
-ignore_pr_title = ["^\\[Auto\\]", "^Bump version to", "^\\[throwaway\\]", "^Don't merge"]
+# Release PRs are generated. The first pattern is PR Agent's default, which
+# setting this key would otherwise drop. A matching title also blocks comment
+# commands, so only list PRs nobody would want reviewed.
+ignore_pr_title = ["^\\[Auto\\]", "^Bump version to"]
 # The review is not always produced by the primary model, and which one
 # answered explains a thin review without reading the run log.
 output_run_details = true

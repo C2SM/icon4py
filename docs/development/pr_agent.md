@@ -4,7 +4,7 @@ The `PR Agent` workflow ([`.github/workflows/pr-agent.yml`](../../.github/workfl
 
 ## Usage
 
-- `/review` runs automatically when a non-draft PR is opened, reopened or marked ready, if its author has write access. PRs titled `Bump version to …`, `[throwaway] …` or `Don't merge …` are skipped, and comment commands on them are ignored too: the run stays green and posts nothing.
+- `/review` runs automatically when a non-draft PR is opened, reopened or marked ready, if its author has write access. Release PRs (titled `Bump version to …`) are skipped, and comment commands on them are ignored too: the run stays green and posts nothing.
 - Users with write access can comment `/review`, `/improve`, `/ask "<question>"` or `/describe` on any PR, including one from an outside contributor. `/describe` is manual because it rewrites the PR body, which becomes the squash-commit message.
 
 The review policy is in [`.pr_agent.toml`](../../.pr_agent.toml). The review rules are in [`.github/copilot-instructions.md`](../../.github/copilot-instructions.md), shared with GitHub Copilot's reviewer, followed by `CODING_GUIDELINES.md` and `AGENTS.md`. Extend those files rather than adding guidance to `.pr_agent.toml`.
