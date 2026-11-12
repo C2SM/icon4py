@@ -96,7 +96,7 @@ io:
         - precipitation_energy_flux
       output_interval:
         type: numsteps
-        value: 1
+        value: 300
       timesteps_per_file: 0
       backend: netcdf
       mode: gather

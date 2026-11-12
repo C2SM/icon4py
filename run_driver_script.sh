@@ -12,7 +12,7 @@
 ###SBATCH --gpus-per-task=1
 ###SBATCH --gres-flags=allow-task-sharing
 #SBATCH --partition=normal
-#SBATCH --time=6:00:00
+#SBATCH --time=12:00:00
 
 
 # santis build command:
@@ -40,7 +40,7 @@ export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000
 # export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res5000m/torus_100000mx100000m_res5000m.nc
 
 #  --print-distributed-debug-msg
-srun --cpu-bind=cores bash -c 'export CUDA_VISIBLE_DEVICES=$SLURM_LOCALID; /capstor/scratch/cscs/cong/test_repo/icon4py/.venv/bin/python /capstor/scratch/cscs/cong/test_repo/icon4py/model/driver/src/icon4py/model/driver/main.py --config-file-path /capstor/scratch/cscs/cong/test_repo/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/warm_bubble.yaml --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning; true'
+srun --cpu-bind=cores bash -c 'export CUDA_VISIBLE_DEVICES=$SLURM_LOCALID; export CUPY_CACHE_DIR=/capstor/scratch/cscs/cong/test_repo/cupy_cache/rank_$SLURM_PROCID; /capstor/scratch/cscs/cong/test_repo/icon4py/.venv/bin/python /capstor/scratch/cscs/cong/test_repo/icon4py/model/driver/src/icon4py/model/driver/main.py --config-file-path /capstor/scratch/cscs/cong/test_repo/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/warm_bubble.yaml --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning; true'
 # srun --cpu-bind=cores --gpu-bind=single:1 bash -c '/capstor/scratch/cscs/cong/icon4py/.venv/bin/python /capstor/scratch/cscs/cong/icon4py/model/driver/src/icon4py/model/driver/main.py --config-file-path /capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/warm_bubble.yaml --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning; true'
 # srun --cpu-bind=cores bash -c '/capstor/scratch/cscs/cong/icon4py/.venv/bin/python /capstor/scratch/cscs/cong/icon4py/model/driver/src/icon4py/model/driver/main.py --config-file-path /capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/warm_bubble.yaml --grid-file-path $INPUT_GRID --icon4py-backend gtfn_cpu --log-level warning; true'
 
