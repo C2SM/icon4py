@@ -48,6 +48,8 @@ def _gather_at_khalf(field: np.ndarray, offset: float, num_levels: int) -> np.nd
     directly here as index arithmetic on full (ncells, num_levels) arrays,
     returning a (ncells, num_levels + 1) KHalf array. Out-of-range reads are
     clipped; the stencil's concat_where guards never consume the clipped values.
+
+    The result is a fresh contiguous array, so callers may patch it in place.
     """
     kh = np.arange(num_levels + 1)
     j = int(abs(offset) - 0.5)
@@ -67,20 +69,24 @@ def _ppm_sum_neighbor_contributions_numpy(
     elev: int,
     num_levels: int,
 ) -> np.ndarray:
-    """numpy port of `_sum_neighbor_contributions` (fractional flux)."""
+    """numpy port of `_sum_neighbor_contributions` (fractional flux).
+
+    The guard fallback `f_k = field(KHalf + 0.5)` only overrides the `j + 1` edge
+    columns excluded by the guard; since every gather is a fresh array, that fixup
+    is applied in place on the edge columns instead of via a full-array `np.where`.
+    """
     ncells = field.shape[0]
-    kh = np.arange(num_levels + 1)
     f_k = _gather_at_khalf(field, 0.5, num_levels)
     contrib = np.zeros((ncells, num_levels + 1))
     for j in range(5):
         # plus side: concat_where(KHalfDim < elev - (j - 1), field(KHalf + j + 0.5), f_k)
-        plus_guard = kh < elev - j + 1
-        plus_val = _gather_at_khalf(field, j + 0.5, num_levels) if j > 0 else f_k
-        contrib += np.where(mask1 & (js == j), np.where(plus_guard, plus_val, f_k), 0.0)
+        plus_val = _gather_at_khalf(field, j + 0.5, num_levels)
+        plus_val[:, elev - j + 1 :] = f_k[:, elev - j + 1 :]
+        contrib += np.where(mask1 & (js == j), plus_val, 0.0)
         # minus side: concat_where(KHalfDim > j, field(KHalf - j - 0.5), f_k)
-        minus_guard = kh > j
         minus_val = _gather_at_khalf(field, -(j + 0.5), num_levels)
-        contrib += np.where(mask2 & (js == j), np.where(minus_guard, minus_val, f_k), 0.0)
+        minus_val[:, : j + 1] = f_k[:, : j + 1]
+        contrib += np.where(mask2 & (js == j), minus_val, 0.0)
     return contrib
 
 
@@ -94,19 +100,21 @@ def _ppm_sum_neighbor_contributions_all_numpy(
     elev: int,
     num_levels: int,
 ) -> np.ndarray:
-    """numpy port of `_sum_neighbor_contributions_all` (integer flux)."""
+    """numpy port of `_sum_neighbor_contributions_all` (integer flux).
+
+    The guard only zeroes the contributions it excludes, so it folds directly
+    into the selection mask instead of a nested `np.where`.
+    """
     ncells = field1.shape[0]
     kh = np.arange(num_levels + 1)
     contrib = np.zeros((ncells, num_levels + 1))
     for j in range(5):
-        plus_guard = kh < elev + 1 - j
         plus_idx = np.clip(kh + j, 0, num_levels - 1)
-        minus_guard = kh > j
         minus_idx = np.clip(kh - j - 1, 0, num_levels - 1)
         prod_plus = field1[:, plus_idx] * field2[:, plus_idx]
         prod_minus = field1[:, minus_idx] * field2[:, minus_idx]
-        contrib += np.where(mask1 & (js >= j), np.where(plus_guard, prod_plus, 0.0), 0.0)
-        contrib += np.where(mask2 & (js >= j), np.where(minus_guard, prod_minus, 0.0), 0.0)
+        contrib += np.where(mask1 & (js >= j) & (kh < elev + 1 - j)[None, :], prod_plus, 0.0)
+        contrib += np.where(mask2 & (js >= j) & (kh > j)[None, :], prod_minus, 0.0)
     return contrib
 
 
@@ -228,15 +236,20 @@ def _ppm4gpu_flux_numpy(
     # faces: kh=0 -> p_cc[0]; 1 <= kh <= elev -> quadratic/quartic; kh >= elev+1 -> p_cc[kh-1]
     p_face = np.empty((ncells, num_levels + 1))
     p_face[:, 0] = p_cc[:, 0]
-    p_face[:, elev + 1 :] = _gather_at_khalf(p_cc, -0.5, num_levels)[:, elev + 1 :]
+    p_face[:, elev + 1 :] = p_cc[:, -1:]
     quadratic = compute_ppm_quadratic_face_values_numpy(p_cc, p_cellhgt_mc_now)
     quartic = np.zeros((ncells, num_levels))
-    quartic[:, 2:] = compute_ppm_quartic_face_values_numpy(p_cc, p_cellhgt_mc_now, z_slope)
-    for kh_idx in range(1, elev + 1):
-        if 1 < kh_idx < elev:
-            p_face[:, kh_idx] = quartic[:, kh_idx]
-        else:
-            p_face[:, kh_idx] = quadratic[:, kh_idx]
+    # `compute_ppm_quartic_face_values_numpy` mirrors the standalone stencil test, which
+    # allocates `p_cellhgt_mc_now` with one extra K-extended level (the stencil reads
+    # `p_cellhgt_mc_now(KHalf + 1.5)`). Here the quartic values are only consumed for
+    # faces kh = 2..elev - 1, where those reads stay within the allocated field; the
+    # extra level only affects the unused top entry, so replicating the top level is safe.
+    p_cellhgt_mc_now_k_ext = np.concatenate((p_cellhgt_mc_now, p_cellhgt_mc_now[:, -1:]), axis=1)
+    quartic[:, 2:] = compute_ppm_quartic_face_values_numpy(p_cc, p_cellhgt_mc_now_k_ext, z_slope)
+    face_kh = np.arange(1, elev + 1)
+    p_face[:, 1 : elev + 1] = np.where(
+        (face_kh > 1) & (face_kh < elev), quartic[:, 1 : elev + 1], quadratic[:, 1 : elev + 1]
+    )
 
     l_limit = compute_vertical_parabola_limiter_condition_numpy(p_face, p_cc)
     z_face_up, z_face_low = limit_vertical_parabola_semi_monotonically_numpy(l_limit, p_face, p_cc)
@@ -288,7 +301,6 @@ def _ppm4gpu_flux_numpy(
 
 
 @pytest.mark.uses_concat_where
-@pytest.mark.gtfn_too_slow
 class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest):
     PROGRAM = compute_tracer_advection_after_horizontal_limiter
     OUTPUTS = (
