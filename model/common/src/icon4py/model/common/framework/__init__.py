@@ -92,6 +92,14 @@ def fields(
     }
 
 
+# NOTE: temporary, replaced in part 06 (io-config): goes with the optional leaves.
+def require[Q: Quantity](field: Field[Q] | None, name: str) -> Field[Q]:
+    """The optional leaf `name`, which the caller needs present."""
+    if field is None:
+        raise ValueError(f"'{name}' is required, but the state lacks it")
+    return field
+
+
 def _declaration(name: str, hint: Any) -> tuple[str, type[Quantity], bool] | None:
     """
     The `(name, quantity, optional)` triple for one state annotation, or None when the

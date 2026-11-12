@@ -14,7 +14,7 @@ import dataclasses
 from typing import TYPE_CHECKING
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
-from icon4py.model.common import field, framework as fw, model_backends, quantity, type_alias as ta
+from icon4py.model.common import field, framework as fw, model_backends, type_alias as ta
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.states import surface_flux_state
 
@@ -104,12 +104,11 @@ class Tmx(fw.Component["Tmx.Input", "Tmx.Output"]):
             exchange=exchange,
         )
         allocator = model_backends.get_allocator(backend)
-        # km and kh are replaced by the output's buffers in `run`
         self._diagnostic_state = tmx_states.TmxDiagnosticState.allocate(grid, allocator=allocator)
         self._new_state = tmx_states.TmxNewState.allocate(grid, allocator=allocator)
 
     def run(self, input: Input, output: Output) -> Output:
-        """One tmx step: the tendencies and `km`, `kh` into `output`; the inputs are read only."""
+
         self._tmx.run(
             input_state=tmx_states.TmxInputState(
                 temperature=input.temperature,
@@ -155,12 +154,6 @@ class Tmx(fw.Component["Tmx.Input", "Tmx.Output"]):
         return output
 
 
-def _require[Q: quantity.Quantity](value: field.Field[Q] | None, name: str) -> field.Field[Q]:
-    if value is None:
-        raise ValueError(f"tmx needs '{name}', which the physics state lacks.")
-    return value
-
-
 # NOTE: temporary, replaced in part 02 (collect): `fw.collect(Tmx.Input, ...)`,
 # which picks the leaves by quantity.
 def collect_input(state: physics_state.PhysicsState) -> Tmx.Input:
@@ -184,13 +177,13 @@ def collect_input(state: physics_state.PhysicsState) -> Tmx.Input:
         qs=state.qs,
         qg=state.qg,
         rho=state.rho,
-        air_mass=_require(state.air_mass, "air_mass"),
-        evapotranspiration=_require(state.evapotranspiration, "evapotranspiration"),
-        sensible_heat_flux=_require(state.sensible_heat_flux, "sensible_heat_flux"),
-        latent_heat_flux=_require(state.latent_heat_flux, "latent_heat_flux"),
-        u_stress=_require(state.u_stress, "u_stress"),
-        v_stress=_require(state.v_stress, "v_stress"),
-        q_snocpymlt=_require(state.q_snocpymlt, "q_snocpymlt"),
-        thermal_energy_flux=_require(state.thermal_energy_flux, "thermal_energy_flux"),
-        vapor_energy_flux=_require(state.vapor_energy_flux, "vapor_energy_flux"),
+        air_mass=fw.require(state.air_mass, "air_mass"),
+        evapotranspiration=fw.require(state.evapotranspiration, "evapotranspiration"),
+        sensible_heat_flux=fw.require(state.sensible_heat_flux, "sensible_heat_flux"),
+        latent_heat_flux=fw.require(state.latent_heat_flux, "latent_heat_flux"),
+        u_stress=fw.require(state.u_stress, "u_stress"),
+        v_stress=fw.require(state.v_stress, "v_stress"),
+        q_snocpymlt=fw.require(state.q_snocpymlt, "q_snocpymlt"),
+        thermal_energy_flux=fw.require(state.thermal_energy_flux, "thermal_energy_flux"),
+        vapor_energy_flux=fw.require(state.vapor_energy_flux, "vapor_energy_flux"),
     )

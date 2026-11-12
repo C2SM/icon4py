@@ -274,13 +274,6 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
                 fields[name] = field_
         return fields
 
-    @staticmethod
-    def _require_tracer[Q: quantity.Quantity](field: field.Field[Q] | None) -> field.Field[Q]:
-        """A tracer leaf the physics requires."""
-        if field is None:
-            raise ValueError("physics requires all moisture species active in the TracerState")
-        return field
-
     # NOTE: temporary, replaced in parts 04 (recipes) and 05 (derived inputs): the
     # diagnostics become recipes, which the processes define on their `Input`, and `_diagnose` goes.
     def _diagnose(self, input: Input, output: Output) -> physics_state.PhysicsState:
@@ -294,24 +287,18 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         the physics, as ICON's interface does before tmx (mo_interface_iconam_aes): diffusion
         skips the cell sync of w under AES forcing.
         """
-        # The tracers are optional leaves (a tracer may be inactive in the TracerConfig): fail
-        # here rather than feed None to the physics.
-        if missing := [name for name in states.TRACERS if getattr(output, name) is None]:
-            raise ValueError(
-                f"physics requires all moisture species active in the TracerState; missing: {missing}"
-            )
         state = physics_state.PhysicsState(
             vn=input.vn,
             w=output.w,
             exner=input.exner,
             theta_v=input.theta_v,
             rho=input.rho,
-            qv=self._require_tracer(output.qv),
-            qc=self._require_tracer(output.qc),
-            qi=self._require_tracer(output.qi),
-            qr=self._require_tracer(output.qr),
-            qs=self._require_tracer(output.qs),
-            qg=self._require_tracer(output.qg),
+            qv=fw.require(output.qv, "qv"),
+            qc=fw.require(output.qc, "qc"),
+            qi=fw.require(output.qi, "qi"),
+            qr=fw.require(output.qr, "qr"),
+            qs=fw.require(output.qs, "qs"),
+            qg=fw.require(output.qg, "qg"),
             temperature=output.temperature,
             virtual_temperature=output.virtual_temperature,
             pressure=output.pressure,
