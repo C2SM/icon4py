@@ -359,6 +359,7 @@ class Icon4pyDriver:
                 assert tracer_next_field is not None, (
                     f"tracer '{tracer_current.name}' active in current state but missing in next state"
                 )
+                log.debug(f"Running {self.granules.tracer_advection.__class__} for tracer {tracer_current.name}")
                 self.granules.tracer_advection.run(
                     diagnostic_state=tracer_advection_diagnostic_state,
                     prep_adv=tracer_prep_adv,
@@ -368,6 +369,7 @@ class Icon4pyDriver:
                 )
 
         if self.granules.physics is not None:
+            log.debug(f"Running {self.granules.physics.__class__}")
             self.granules.physics.run(
                 prognostic=prognostic_states.next,
                 tracers=tracers.next,
@@ -643,17 +645,21 @@ class Icon4pyDriver:
     ) -> None:
         """
         Compute relevant statistics of prognostic variables at the beginning of every time step. The statistics include:
-        absolute maximum value of rho, vn, and w, as well as the levels at which their maximum value is found.
+        absolute maximum value of rho, vn, and w over all ranks, as well as the levels at which their maximum value is found.
         """
         if self.config.driver.enable_statistics_logging:
-            # TODO (Chia Rui): Do global max when multinode is ready
-            rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
-                prognostic_states.rho,
-            )
-            vn_arg_max, max_vn = driver_utils.find_maximum_from_field(
-                prognostic_states.vn,
-            )
-            w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w)
+
+            def _find_global_absolute_maximum(field: gtx.Field) -> tuple[float, int]:
+                value, level = decomposition_defs.find_global_absolute_maximum(
+                    field.ndarray,
+                    self.decomposition_info.owner_mask(field.domain.dims[0]),
+                    self.global_reductions,
+                )
+                return float(value), level
+
+            max_rho, rho_level = _find_global_absolute_maximum(prognostic_states.rho)
+            max_vn, vn_level = _find_global_absolute_maximum(prognostic_states.vn)
+            max_w, w_level = _find_global_absolute_maximum(prognostic_states.w)
 
             def _determine_sign(input_number: float) -> str:
                 return " " if input_number >= 0.0 else "-"
@@ -664,7 +670,7 @@ class Icon4pyDriver:
 
             log.info(
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self.model_time_variables.ndyn_substeps_var:3d} == "
-                f"MAX RHO: {rho_sign}{abs(max_rho):.5e} at lvl {rho_arg_max[1]:4d}, MAX VN: {vn_sign}{abs(max_vn):.5e} at lvl {vn_arg_max[1]:4d}, MAX W: {w_sign}{abs(max_w):.5e} at lvl {w_arg_max[1]:4d}"
+                f"MAX RHO: {rho_sign}{abs(max_rho):.5e} at lvl {rho_level:4d}, MAX VN: {vn_sign}{abs(max_vn):.5e} at lvl {vn_level:4d}, MAX W: {w_sign}{abs(max_w):.5e} at lvl {w_level:4d}"
             )
         else:
             log.info(

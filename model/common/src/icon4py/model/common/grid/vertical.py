@@ -175,10 +175,10 @@ class VerticalGrid:
 
     def __str__(self) -> str:
         vertical_params_properties = ["Model interface height properties:"]
-        for key, value in self.metadata_interface_physical_height.items():
+        for key, value in self.metadata_interface_physical_height.as_dict().items():
             vertical_params_properties.append(f"    {key}: {value}")
         vertical_params_properties.append("Level    Coordinate    Thickness:")
-        vct_a_array = self.vct_a.ndarray
+        vct_a_array = self.vct_a.asnumpy()
         dvct = vct_a_array[:-1] - vct_a_array[1:]
         array_value = [
             f"   0   {vct_a_array[0]:12.3f}             ",
