@@ -84,7 +84,7 @@ class TracerConfig:
         """
         Build a ``TracerConfig`` from a Fortran ``ntracer`` count.
 
-        Fortran ICON uses a fixed tracer ordering: QV=0, QC=1, QI=2, QR=3, QS=4, QG=5.
+        Fortran ICON uses a fixed tracer ordering defined above in TRACERS.
         The first *ntracer* entries in this order are considered active.
 
         Raises:
