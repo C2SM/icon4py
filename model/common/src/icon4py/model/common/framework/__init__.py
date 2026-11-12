@@ -20,7 +20,7 @@ import gt4py.next as gtx
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.field import Field
 from icon4py.model.common.quantity import Quantity
-from icon4py.model.common.utils import data_allocation
+from icon4py.model.common.utils import Pair, data_allocation
 
 
 if typing.TYPE_CHECKING:
@@ -133,6 +133,20 @@ def _declarations(cls: type[State]) -> Sequence[tuple[str, type[Quantity], bool]
     )
 
 
+@functools.cache
+def _pairs(cls: type[State]) -> Sequence[tuple[str, type[Pair], type[Quantity]]]:
+    """The `(name, pair type, quantity)` triples of a `State` class's `Pair[Field[Q]]` leaves."""
+    hints = typing.get_type_hints(cls)
+    pairs = []
+    for field in dataclasses.fields(cls):  # type: ignore[arg-type]
+        pair = typing.get_origin(hints[field.name])
+        if isinstance(pair, type) and issubclass(pair, Pair):
+            (member,) = typing.get_args(hints[field.name])
+            (quantity,) = typing.get_args(member)
+            pairs.append((field.name, pair, quantity))
+    return tuple(pairs)
+
+
 def leaf_quantities(cls: type[State]) -> dict[str, type[Quantity]]:
     """The quantity of each `Field` leaf of a `State` class, by name, in declaration order."""
     return {name: quantity for name, quantity, _ in _declarations(cls)}  # type: ignore[arg-type]
@@ -156,18 +170,25 @@ def allocate[S: State](
 
     `fill(name, dims)` gives the value of a leaf instead of zeros. `only` names the optional
     leaves to allocate; the other optional leaves are None. Without it every leaf is allocated.
+    A `Pair` of fields gets one field per member, which `fields` and `copy` skip.
     The plain leaves (times, flags) are given by keyword in `plain`.
     """
+
+    def leaf(name: str, quantity: type[Quantity]) -> Field:
+        field = zeros(quantity, grid, allocator)
+        if fill is not None:
+            field.ndarray[...] = fill(name, quantity.dims)  # type: ignore[index]  # NDArrayObject declares no __setitem__
+        return field
+
     values: dict[str, Any] = {}
     # type objects are hashable, but typeshed's cache wrapper cannot say so
     for name, quantity, optional in _declarations(cls):  # type: ignore[arg-type]
         if optional and only is not None and name not in only:
             values[name] = None
             continue
-        field = zeros(quantity, grid, allocator)
-        if fill is not None:
-            field.ndarray[...] = fill(name, quantity.dims)  # type: ignore[index]  # NDArrayObject declares no __setitem__
-        values[name] = field
+        values[name] = leaf(name, quantity)
+    for name, pair, quantity in _pairs(cls):  # type: ignore[arg-type]
+        values[name] = pair(leaf(name, quantity), leaf(name, quantity))
     return cls(**values, **plain)
 
 

@@ -13,17 +13,11 @@ from __future__ import annotations
 import dataclasses
 import datetime
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Final
+from typing import Final
 
 from icon4py.model.common import field, framework as fw
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.utils import PredictorCorrectorPair
-
-
-if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.common.grid import base as base_grid
 
 
 class PrognosticState(fw.State):
@@ -171,8 +165,7 @@ class DycoreDiagnostics(fw.State):
     perturbed exner function and, on a restart, the pairs. The dycore raises `max_vertical_cfl`
     over the substeps; the driver reads and resets it. The interpolated winds, densities and
     fluxes are ICON's `t_nh_diag` fields: the next substep reads some of them (`vt`, `w_concorr_c`,
-    `rho_ic`), ICON outside the dycore the others. Built by `allocate`, not by
-    `framework.allocate`, because of the pairs.
+    `rho_ic`), ICON outside the dycore the others.
     """
 
     perturbed_exner_at_cells_on_model_levels: field.Field[qty.PerturbedExnerOnCellK]
@@ -204,36 +197,6 @@ class DycoreDiagnostics(fw.State):
     """Declared as rho_ic in ICON."""
     mass_flux_at_edges_on_model_levels: field.Field[qty.HorizontalMassFluxOnEdgeK]
     """Declared as mass_fl_e in ICON."""
-
-    @classmethod
-    def allocate(
-        cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None
-    ) -> DycoreDiagnostics:
-        return cls(
-            perturbed_exner_at_cells_on_model_levels=fw.zeros(
-                qty.PerturbedExnerOnCellK, grid, allocator
-            ),
-            exner_dynamical_increment=fw.zeros(qty.ExnerDynamicalIncrementOnCellK, grid, allocator),
-            normal_wind_advective_tendency=PredictorCorrectorPair(
-                fw.zeros(qty.NormalWindAdvectiveTendencyOnEdgeK, grid, allocator),
-                fw.zeros(qty.NormalWindAdvectiveTendencyOnEdgeK, grid, allocator),
-            ),
-            vertical_wind_advective_tendency=PredictorCorrectorPair(
-                fw.zeros(qty.VerticalWindAdvectiveTendencyOnCellKHalf, grid, allocator),
-                fw.zeros(qty.VerticalWindAdvectiveTendencyOnCellKHalf, grid, allocator),
-            ),
-            max_vertical_cfl=fw.zeros(qty.MaxVerticalCflNumber, grid, allocator),
-            tangential_wind=fw.zeros(qty.TangentialWindOnEdgeK, grid, allocator),
-            vn_on_half_levels=fw.zeros(qty.VnOnEdgeKHalf, grid, allocator),
-            contravariant_correction_at_cells_on_half_levels=fw.zeros(
-                qty.ContravariantCorrectionOnCellKHalf, grid, allocator
-            ),
-            theta_v_at_cells_on_half_levels=fw.zeros(qty.ThetaVOnCellKHalf, grid, allocator),
-            rho_at_cells_on_half_levels=fw.zeros(qty.RhoOnCellKHalf, grid, allocator),
-            mass_flux_at_edges_on_model_levels=fw.zeros(
-                qty.HorizontalMassFluxOnEdgeK, grid, allocator
-            ),
-        )
 
 
 class DiffusionDiagnostics(fw.State):

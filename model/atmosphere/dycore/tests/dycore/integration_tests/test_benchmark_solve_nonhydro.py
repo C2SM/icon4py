@@ -250,7 +250,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     next_ = fw.allocate(states.PrognosticState, mesh, allocator, fill=random)
     forcing = fw.allocate(states.DycoreForcing, mesh, allocator)
     prep_adv = fw.allocate(states.PrepAdvection, mesh, allocator)
-    dycore_diagnostics = states.DycoreDiagnostics.allocate(mesh, allocator)
+    dycore_diagnostics = fw.allocate(states.DycoreDiagnostics, mesh, allocator)
     input = solve_nh.SolveNonhydro.Input(
         rho=current.rho,
         w=current.w,

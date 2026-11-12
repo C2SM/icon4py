@@ -121,8 +121,8 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     single_rank_dycore_forcing = fw.allocate(
         states.DycoreForcing, single_rank_icon4py_driver.grid, allocator
     )
-    single_rank_dycore_diagnostics = states.DycoreDiagnostics.allocate(
-        single_rank_icon4py_driver.grid, allocator
+    single_rank_dycore_diagnostics = fw.allocate(
+        states.DycoreDiagnostics, single_rank_icon4py_driver.grid, allocator
     )
     single_rank_prep_adv = fw.allocate(
         states.PrepAdvection, single_rank_icon4py_driver.grid, allocator
@@ -184,8 +184,8 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     multi_rank_dycore_forcing = fw.allocate(
         states.DycoreForcing, multi_rank_icon4py_driver.grid, allocator
     )
-    multi_rank_dycore_diagnostics = states.DycoreDiagnostics.allocate(
-        multi_rank_icon4py_driver.grid, allocator
+    multi_rank_dycore_diagnostics = fw.allocate(
+        states.DycoreDiagnostics, multi_rank_icon4py_driver.grid, allocator
     )
     multi_rank_prep_adv = fw.allocate(
         states.PrepAdvection, multi_rank_icon4py_driver.grid, allocator

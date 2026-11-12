@@ -1027,7 +1027,7 @@ def initialize_driver_states(
         else None
     )
     dycore_diagnostics = (
-        states.DycoreDiagnostics.allocate(icon4py_driver.grid, allocator)
+        fw.allocate(states.DycoreDiagnostics, icon4py_driver.grid, allocator)
         if dycore_enabled
         else None
     )
