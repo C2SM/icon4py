@@ -188,7 +188,8 @@ class DycoreDiagnostics(fw.State):
     ]
     """Declared as ddt_w_adv_pc in ICON."""
     max_vertical_cfl: field.Field[qty.MaxVerticalCflNumber]
-    """Declared as max_vcfl_dyn in ICON."""
+    """Declared as max_vcfl_dyn in ICON. Kept on the device as a 0-d field
+    rather than a float so that updating it needs no host synchronization. """
     tangential_wind: field.Field[qty.TangentialWindOnEdgeK]
     """Declared as vt in ICON."""
     vn_on_half_levels: field.Field[qty.VnOnEdgeKHalf]
