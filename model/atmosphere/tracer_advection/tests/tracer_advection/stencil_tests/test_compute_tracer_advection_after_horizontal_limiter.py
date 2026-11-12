@@ -308,6 +308,49 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         "p_mflx_tracer_v",
         "p_tracer_new",
     )
+    STATIC_GENERIC_PARAMS = (
+        "do_vertical_first",
+        "itype_hlimit",
+        "itype_vlimit",
+    )
+    HORIZONTAL_PARAMS = (
+        "start_cell_nudging",
+        "end_cell_local",
+        "start_edge_lateral_boundary_level_5",
+        "end_edge_halo",
+    )
+    VERTICAL_PARAMS = (
+        "slev",
+        "slevp1_ti",
+        "elev",
+        "iadv_slev_jt",
+        "vertical_end",
+    )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: STATIC_GENERIC_PARAMS,
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            *STATIC_GENERIC_PARAMS,
+            *HORIZONTAL_PARAMS,
+            *VERTICAL_PARAMS,
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            *STATIC_GENERIC_PARAMS,
+            *VERTICAL_PARAMS,
+        ),
+    }
+
+    @pytest.fixture(autouse=True)
+    def _skip_symbolic_variant(self, request: pytest.FixtureRequest):
+        """Skip the symbolic variant (`StandardStaticVariants.NONE`).
+
+        Compiling this program without baked domain bounds is prohibitively slow; the
+        setup-time scalars and domain sizes should be baked in (as `tracer_advection.py`
+        does), so only the compile-time variants are meant to run.
+        """
+        variant = request.node.callspec.params.get("static_variant")
+        if variant is None or variant[0] == stencil_tests.StandardStaticVariants.NONE:
+            pytest.skip("symbolic stencil variant: skipped")
+        yield
 
     @stencil_tests.static_reference
     def reference(

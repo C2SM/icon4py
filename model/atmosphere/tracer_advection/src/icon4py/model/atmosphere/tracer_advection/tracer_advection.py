@@ -323,6 +323,7 @@ class GodunovSplittingAdvection(Advection):
             horizontal_sizes=horizontal_domains,
             vertical_sizes=vertical_domains,
             offset_provider=self._grid.connectivities,
+            variants={"do_vertical_first": [False, True]},
         )
         self._compute_vertical_tracer_flux = setup_program(
             backend=self._backend,

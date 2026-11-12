@@ -365,14 +365,10 @@ def _compute_tracer_advection_before_horizontal_limiter(
             iadv_slev_jt=iadv_slev_jt,
         )
         if do_vertical_first
-        else p_tracer_now + broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
+        else p_tracer_now
     )
 
-    tracer_for_h = (
-        p_tracer_after_vertical
-        if do_vertical_first
-        else p_tracer_now + broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
-    )
+    tracer_for_h = p_tracer_after_vertical if do_vertical_first else p_tracer_now
     p_mflx_tracer_h_unlimited = (
         _compute_horizontal_tracer_flux_upwind(
             p_cc=tracer_for_h,
@@ -547,15 +543,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
     wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
 ) -> tuple[fa.EdgeKField[ta.wpfloat], fa.CellKHalfField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
-    # NOTE: the `+ broadcast(0.0)` expressions below keep the do_vertical_first branches
-    # from being pure field references. gtfn materializes pure references over the
-    # K-extended domain required by the fused PPM kernel, reading/writing outside the
-    # allocated (unextended) temporaries.
-    tracer_now_for_h = (
-        p_tracer_after_vertical + broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
-        if do_vertical_first
-        else p_tracer_now + broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
-    )
+    tracer_now_for_h = p_tracer_after_vertical if do_vertical_first else p_tracer_now
     rhodz_for_h_now = rhodz_ast2 if do_vertical_first else rhodz_now
     rhodz_for_h_new = rhodz_new if do_vertical_first else rhodz_ast2
 
@@ -617,7 +605,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
     )
     p_mflx_tracer_v_out = p_mflx_tracer_v if do_vertical_first else p_mflx_tracer_v_computed
     p_tracer_new = (
-        p_tracer_after_horizontal + broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
+        p_tracer_after_horizontal
         if do_vertical_first
         else _integrate_tracer_vertically(
             tracer_now=p_tracer_after_horizontal,
