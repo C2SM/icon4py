@@ -454,15 +454,17 @@ class GridManager:
         # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables))
 
-        # As ICON (`mo_complete_subdivision.f90`), a halo rim edge in the lateral boundary zones,
-        # where stencils read `E2C`, points twice to its cell on this rank. Only after deriving
-        # `E2C2E`, whose RBF stencil needs the missing neighbors last.
+        # Following ICON (mo_complete_subdivision.f90), remap E2C for halo rim edges
+        # in the lateral boundary zones: point the missing side to the one valid local
+        # cell instead of INVALID_INDEX, so stencils reading E2C never go out of bounds.
+        # This must happen after E2C2E is derived, because the RBF stencil needs the
+        # original INVALID_INDEX to avoid a singular matrix.
         if self._decomposition_info.is_distributed():
             edges = self._decomposition_info.global_index(dims.EdgeDim)
             e2c = neighbor_tables[dims.E2C]
             patched = (
-                (e2c == -1)
-                & (global_neighbor_tables[dims.E2C][edges] != -1)
+                (e2c == gridfile.GridFile.INVALID_INDEX)
+                & (global_neighbor_tables[dims.E2C][edges] != gridfile.GridFile.INVALID_INDEX)
                 & refinement.is_placed_with_owned(
                     dims.EdgeDim,
                     self._decomposition_info.halo_levels(dims.EdgeDim),

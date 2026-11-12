@@ -136,11 +136,12 @@ def test_bounds_decomposition(
     start_index = grid_manager.grid.start_index
     end_index = grid_manager.grid.end_index
     domain = h_grid.domain(dim)
-    halo_levels = data_alloc.as_numpy(decomposition_info.halo_levels(dim))
-    owner_mask = data_alloc.as_numpy(decomposition_info.owner_mask(dim))
+    halo_levels = decomposition_info.halo_levels(dim)
+    owner_mask = decomposition_info.owner_mask(dim)
     with_owned = grid_refinement.is_placed_with_owned(
-        dim, halo_levels, data_alloc.as_numpy(grid_manager.grid.refinement_control[dim].ndarray)
+        dim, halo_levels, grid_manager.grid.refinement_control[dim].ndarray
     )
+
     num_with_owned = int(with_owned.sum())
 
     # owned points and the halo points ICON keeps with them come first
