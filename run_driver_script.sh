@@ -12,7 +12,7 @@
 ###SBATCH --gpus-per-task=1
 ###SBATCH --gres-flags=allow-task-sharing
 #SBATCH --partition=normal
-#SBATCH --time=6:00:00
+#SBATCH --time=12:00:00
 
 
 # santis build command:

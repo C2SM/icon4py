@@ -184,6 +184,7 @@ class Icon4pyDriver:
         else:
             state_to_store = {}
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_STORE.value]:
+            log.debug(f"Running IO monitor for {len(state_to_store)} variables")
             self.io_monitor.store(state_to_store, simulation_current_datetime)
 
     def time_integration(

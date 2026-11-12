@@ -184,7 +184,7 @@ class PhysicsDriver:
         self._tendencies.zero()
         dt_seconds = dtime.total_seconds()
         for process in self._processes:
-            log.warning(f"Running {process.component.__class__}")
+            log.info(f"Running {process.component.__class__}")
             outputs = process.run(self._state, step_start_datetime, dtime)
             outputs_properties = process.component.outputs_properties
             self._tendencies.accumulate(outputs, outputs_properties)
