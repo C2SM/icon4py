@@ -68,6 +68,9 @@ class _Programs(NamedTuple):
         )
 
 
+# NOTE: temporary, replaced in parts 04 (recipes) and 05 (derived inputs): the
+# output diagnostics become recipes, also to be merged with
+# `PhysicsDriver._diagnose`.
 class DiagnosticsComputer:
     """Diagnoses the requested standard diagnostic output fields.
 

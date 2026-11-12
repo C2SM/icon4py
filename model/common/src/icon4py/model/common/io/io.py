@@ -386,6 +386,8 @@ class IOConfig:
         )
 
 
+# NOTE: temporary, replaced in parts 02 (collect) and 06 (io-config): a sink
+# fw.Component, with Input built from the config.
 class IOMonitor:
     """
     Composite Monitor for all IO groups.

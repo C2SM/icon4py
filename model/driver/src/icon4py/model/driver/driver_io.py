@@ -61,6 +61,7 @@ def output_variable_sources(
     return providers
 
 
+# NOTE: temporary, replaced in part 06 (io-config): `lookup` raises `UnknownQuantity` at init.
 def validate_output_variables(
     io_config: common_io.IOConfig, sources: Mapping[str, Collection[str]]
 ) -> None:
@@ -85,6 +86,8 @@ def validate_output_variables(
                 )
 
 
+# NOTE: temporary, replaced in parts 02 (collect), 05 (derived inputs) and 06 (io-config): goes,
+# its work split among `fw.collect`, `derived_by` and the IOMonitor's Input.
 class OutputStateAssembler:
     """Assembles the output state the capturing field groups request from its sources.
 
@@ -145,6 +148,7 @@ class OutputStateAssembler:
         The DataArrays reference the live state (see ``io.utils.to_data_array``): they
         must be written before the next step mutates it.
         """
+        # NOTE: temporary, replaced in part 02 (collect): the leaves are collected by quantity
         requested = set(variables)
         fields = {
             name: field_
@@ -156,6 +160,7 @@ class OutputStateAssembler:
             for name, field_ in source.items()
             if name in requested
         }
+        # NOTE: temporary, replaced in part 05 (derived inputs): `derived_by` on the IOMonitor's Input
         if diagnostics := [
             name for name in driver_diagnostics.DIAGNOSTIC_VARIABLES if name in requested
         ]:
@@ -165,6 +170,7 @@ class OutputStateAssembler:
                     prognostic_state, tracer_state, diagnostic_state, diagnostics
                 )
             )
+        # NOTE: temporary, replaced in part 06 (io-config): moves into `IOMonitor.run`
         return output_sources.to_dataarrays(fields)
 
 

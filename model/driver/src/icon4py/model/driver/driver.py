@@ -173,6 +173,8 @@ class Icon4pyDriver:
         for steps that discard them, and the output timers hold only real capture work.
         """
         assert self.io_monitor is not None and self._output_assembler is not None
+        # NOTE: temporary, replaced in parts 02 (collect) and 06 (io-config):
+        # `self.io_monitor.run(fw.collect(self.io_monitor.Input, ...))`
         variables = self.io_monitor.variables_at_capture_time()
         if variables:
             with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
