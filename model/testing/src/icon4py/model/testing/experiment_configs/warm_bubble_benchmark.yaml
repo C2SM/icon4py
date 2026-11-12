@@ -35,8 +35,8 @@ driver:
   profiling_options:
   dtime: 200 milliseconds
   enable_statistics_logging: True
-  start_of_simulation: 0001-01-01T00:00:00
-  start_of_timestepping: 0001-01-01T00:00:00
+  start_of_simulation: 1970-01-01T00:00:00
+  start_of_timestepping: 1970-01-01T00:00:00
   end_of_simulation:
     type: numsteps
     value: 36000
