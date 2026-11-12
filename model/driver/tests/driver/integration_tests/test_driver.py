@@ -252,3 +252,51 @@ def test_driver(
             rtol=rtol,
             err_msg=name,
         )
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.parametrize(
+    "experiment_case, experiment_description",
+    [
+        ("warm_bubble", test_defs.Experiments.WEISMAN_KLEMP_TORUS),
+    ],
+)
+def test_warm_bubble(
+    *,
+    experiment_case: str,
+    experiment_description: test_defs.ExperimentDescription,
+    tmp_path: pathlib.Path,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+) -> None:
+    allocator = model_backends.get_allocator(backend)
+    grid_path = pathlib.Path("/capstor/store/cscs/userlab/cwd01/cong/grids/Torus_Triangles_100km_x_100km_res500m.nc")
+    
+    driver_utils.configure_logging(
+        logging_level="debug",
+        print_distributed_debug_msg=False,
+        process_props=process_props,
+    )
+
+    my_config_path = test_config.EXPERIMENT_CONFIG_PATH / f"{experiment_case}.yaml"
+
+    experiment_config = config_io.read_yaml_str(
+        my_config_path.read_text(), driver_config.ExperimentConfig
+    )
+    # config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
+    
+    # test_experiment_config = driver_config.read_experiment_config_from_fortran(config_file_path)
+    # breakpoint()
+    grid_managers = driver_utils.create_grid_manager(
+        grid_file_path=grid_path,
+        vertical_grid_config=experiment_config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
+    )
+ 
+    ds, icon4py_driver = driver.run_driver(
+        config=experiment_config,
+        grid_manager=grid_managers,
+        process_props=process_props,
+        backend=backend,
+    )
