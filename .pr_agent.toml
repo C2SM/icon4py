@@ -27,6 +27,11 @@ suggestions_score_threshold = 6
 # The generic usage guide is noise on every review; the commands are listed in
 # the CI reminder comment and docs/development/pr_agent.md.
 enable_help_text = false
+# A diff larger than the token budget is split into up to 'max_number_of_calls'
+# (default 3) chunks reviewed in parallel and merged, instead of dropping
+# whole files. Chunks are only made when the diff does not fit, so normal PRs
+# cost the same; a chunked review costs roughly one call per chunk.
+enable_large_pr_chunking = true
 extra_instructions = "Follow the review rules in `.github/copilot-instructions.md`, included in the repository context below."
 # An updated review replaces its comment in place; a second comment pointing
 # at it is noise.

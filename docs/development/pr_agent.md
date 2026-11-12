@@ -35,5 +35,6 @@ The key is the `CSCS_INFERENCE_API_KEY` repository secret, shared with the weekl
 
 - Model ids are stored without the `openai/` prefix, which the workflow adds. CSCS retires models on short notice, so check them against the [model table](https://docs.cscs.ch/services/inference/api/).
 - The token limits apply to every model in the chain, so they must fit the smallest one: the output reserve is sent as `max_tokens`, which a model with a lower output limit rejects. Check a fallback before adding it, since it is only reached when the models before it fail. Too small an output reserve makes reasoning models return empty responses.
+- A diff that does not fit in the token budget is reviewed in up to three chunks, sent to the model in parallel and merged into one review (`enable_large_pr_chunking` in `.pr_agent.toml`). Each chunk is billed as a separate call; files that still do not fit are listed in the review's coverage footer.
 - The `Run PR Agent` step limit is derived as one `PR_AGENT_AI_TIMEOUT` per model plus two minutes; `Resolve models` rejects a chain that does not fit in the job's `timeout-minutes` with two minutes to spare.
 - The review names the model that produced it, so a fallback answer is visible.
