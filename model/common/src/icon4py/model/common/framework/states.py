@@ -128,9 +128,11 @@ class PrepAdvection(fw.State):
     dynamical_vertical_mass_flux_at_cells_on_half_levels: field.Field[
         qty.VerticalMassFluxOnCellKHalf
     ]
+    """Declared as mass_flx_ic in ICON."""
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels: field.Field[
         qty.VerticalVolumetricFluxOnCellKHalf
     ]
+    """Declared as vol_flx_ic in ICON."""
 
 
 class DycoreForcing(fw.State):
@@ -143,16 +145,21 @@ class DycoreForcing(fw.State):
     """
 
     exner_tendency_due_to_slow_physics: field.Field[qty.ExnerTendencyDueToSlowPhysicsOnCellK]
+    """Declared as ddt_exner_phy in ICON."""
     normal_wind_tendency_due_to_slow_physics_process: field.Field[
         qty.NormalWindTendencyDueToSlowPhysicsOnEdgeK
     ]
+    """Declared as ddt_vn_phy in ICON."""
     grf_tend_rho: field.Field[qty.GrfTendencyOfRhoOnCellK]
     grf_tend_thv: field.Field[qty.GrfTendencyOfThetaVOnCellK]
     grf_tend_w: field.Field[qty.GrfTendencyOfWOnCellKHalf]
     grf_tend_vn: field.Field[qty.GrfTendencyOfVnOnEdgeK]
     rho_iau_increment: field.Field[qty.RhoIauIncrementOnCellK]
+    """Declared as rho_incr in ICON."""
     normal_wind_iau_increment: field.Field[qty.NormalWindIauIncrementOnEdgeK]
+    """Declared as vn_incr in ICON."""
     exner_iau_increment: field.Field[qty.ExnerIauIncrementOnCellK]
+    """Declared as exner_incr in ICON."""
 
 
 class DycoreDiagnostics(fw.State):
@@ -169,22 +176,33 @@ class DycoreDiagnostics(fw.State):
     """
 
     perturbed_exner_at_cells_on_model_levels: field.Field[qty.PerturbedExnerOnCellK]
+    """Declared as exner_pr in ICON."""
     exner_dynamical_increment: field.Field[qty.ExnerDynamicalIncrementOnCellK]
+    """Declared as exner_dyn_incr in ICON."""
     normal_wind_advective_tendency: PredictorCorrectorPair[
         field.Field[qty.NormalWindAdvectiveTendencyOnEdgeK]
     ]
+    """Declared as ddt_vn_apc_pc in ICON."""
     vertical_wind_advective_tendency: PredictorCorrectorPair[
         field.Field[qty.VerticalWindAdvectiveTendencyOnCellKHalf]
     ]
+    """Declared as ddt_w_adv_pc in ICON."""
     max_vertical_cfl: field.Field[qty.MaxVerticalCflNumber]
+    """Declared as max_vcfl_dyn in ICON."""
     tangential_wind: field.Field[qty.TangentialWindOnEdgeK]
+    """Declared as vt in ICON."""
     vn_on_half_levels: field.Field[qty.VnOnEdgeKHalf]
+    """Declared as vn_ie in ICON."""
     contravariant_correction_at_cells_on_half_levels: field.Field[
         qty.ContravariantCorrectionOnCellKHalf
     ]
+    """Declared as w_concorr_c in ICON."""
     theta_v_at_cells_on_half_levels: field.Field[qty.ThetaVOnCellKHalf]
+    """Declared as theta_v_ic in ICON."""
     rho_at_cells_on_half_levels: field.Field[qty.RhoOnCellKHalf]
+    """Declared as rho_ic in ICON."""
     mass_flux_at_edges_on_model_levels: field.Field[qty.HorizontalMassFluxOnEdgeK]
+    """Declared as mass_fl_e in ICON."""
 
     @classmethod
     def allocate(

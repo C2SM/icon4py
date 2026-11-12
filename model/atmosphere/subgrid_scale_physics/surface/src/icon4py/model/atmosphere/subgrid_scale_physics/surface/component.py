@@ -40,14 +40,20 @@ class Surface(fw.Component["Surface.Input", "Surface.Output"]):
 
     class Output(fw.State):
         evapotranspiration: field.Field[qty.EvapotranspirationOnCell]
+        """Declared as evap in ICON."""
         sensible_heat_flux: field.Field[qty.SensibleHeatFluxOnCell]
+        """Declared as shflx in ICON."""
         latent_heat_flux: field.Field[qty.LatentHeatFluxOnCell]
+        """Declared as lhflx in ICON."""
         u_stress: field.Field[qty.UStressOnCell]
         v_stress: field.Field[qty.VStressOnCell]
         q_snocpymlt: field.Field[qty.SnowCanopyMeltHeatOnCell]
         thermal_energy_flux: field.Field[qty.ThermalEnergyFluxOnCell]
+        """Declared as ufts in ICON."""
         vapor_energy_flux: field.Field[qty.VaporEnergyFluxOnCell]
+        """Declared as ufvs in ICON."""
         surface_temperature: field.Field[qty.SurfaceTemperatureOnCell]
+        """Declared as ts in ICON."""
 
     def __init__(
         self,

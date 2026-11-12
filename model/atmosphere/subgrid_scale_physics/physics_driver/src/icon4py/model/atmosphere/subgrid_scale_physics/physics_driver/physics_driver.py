@@ -91,6 +91,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         u: field.Field[qty.UOnCellK]
         v: field.Field[qty.VOnCellK]
         perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None = None
+        """Declared as exner_pr in ICON."""
 
     def __init__(
         self,
