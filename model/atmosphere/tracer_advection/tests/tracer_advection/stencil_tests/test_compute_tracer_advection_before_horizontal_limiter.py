@@ -56,6 +56,37 @@ def compute_horizontal_tracer_flux_upwind_numpy(
     return np.where(p_vn > 0.0, p_cc[e2c[:, 0]], p_cc[e2c[:, 1]]) * p_mass_flx_e
 
 
+# Compile like the production driver (`tracer_advection.py`): `setup_program` bakes
+# the setup-time scalars and the domain sizes into the compiled artifact.
+_STATIC_GENERIC_PARAMS = (
+    "do_vertical_first",
+    "itype_hlimit",
+)
+_HORIZONTAL_PARAMS = (
+    "start_cell_lateral_boundary_level_2",
+    "end_cell_local",
+    "end_cell_end",
+    "start_edge_lateral_boundary_level_5",
+    "end_edge_halo",
+)
+_VERTICAL_PARAMS = (
+    "iadv_slev_jt",
+    "vertical_end",
+)
+_BEFORE_LIMITER_STATIC_PARAMS = {
+    stencil_tests.StandardStaticVariants.NONE: _STATIC_GENERIC_PARAMS,
+    stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        *_STATIC_GENERIC_PARAMS,
+        *_HORIZONTAL_PARAMS,
+        *_VERTICAL_PARAMS,
+    ),
+    stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        *_STATIC_GENERIC_PARAMS,
+        *_VERTICAL_PARAMS,
+    ),
+}
+
+
 class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.StencilTest):
     """Even-timestep mode: vertical flux and integration precede the horizontal limiter."""
 
@@ -66,6 +97,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         "p_mflx_tracer_h_unlimited",
         "r_m",
     )
+    STATIC_PARAMS = _BEFORE_LIMITER_STATIC_PARAMS
 
     @stencil_tests.static_reference
     def reference(
@@ -260,6 +292,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         "p_mflx_tracer_h_unlimited",
         "r_m",
     )
+    STATIC_PARAMS = _BEFORE_LIMITER_STATIC_PARAMS
 
     @stencil_tests.static_reference
     def reference(

@@ -300,6 +300,28 @@ def _ppm4gpu_flux_numpy(
     return np.where((kh[None, :] > 0) & (kh[None, :] < elev + 1), p_upflux, 0.0)
 
 
+# Compile like the production driver (`tracer_advection.py`): `setup_program` bakes
+# the setup-time scalars and the domain sizes into the compiled artifact.
+_STATIC_GENERIC_PARAMS = (
+    "do_vertical_first",
+    "itype_hlimit",
+    "itype_vlimit",
+)
+_HORIZONTAL_PARAMS = (
+    "start_cell_nudging",
+    "end_cell_local",
+    "start_edge_lateral_boundary_level_5",
+    "end_edge_halo",
+)
+_VERTICAL_PARAMS = (
+    "slev",
+    "slevp1_ti",
+    "elev",
+    "iadv_slev_jt",
+    "vertical_end",
+)
+
+
 @pytest.mark.uses_concat_where
 class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest):
     PROGRAM = compute_tracer_advection_after_horizontal_limiter
@@ -308,34 +330,16 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         "p_mflx_tracer_v",
         "p_tracer_new",
     )
-    STATIC_GENERIC_PARAMS = (
-        "do_vertical_first",
-        "itype_hlimit",
-        "itype_vlimit",
-    )
-    HORIZONTAL_PARAMS = (
-        "start_cell_nudging",
-        "end_cell_local",
-        "start_edge_lateral_boundary_level_5",
-        "end_edge_halo",
-    )
-    VERTICAL_PARAMS = (
-        "slev",
-        "slevp1_ti",
-        "elev",
-        "iadv_slev_jt",
-        "vertical_end",
-    )
     STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: STATIC_GENERIC_PARAMS,
+        stencil_tests.StandardStaticVariants.NONE: _STATIC_GENERIC_PARAMS,
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            *STATIC_GENERIC_PARAMS,
-            *HORIZONTAL_PARAMS,
-            *VERTICAL_PARAMS,
+            *_STATIC_GENERIC_PARAMS,
+            *_HORIZONTAL_PARAMS,
+            *_VERTICAL_PARAMS,
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            *STATIC_GENERIC_PARAMS,
-            *VERTICAL_PARAMS,
+            *_STATIC_GENERIC_PARAMS,
+            *_VERTICAL_PARAMS,
         ),
     }
 
