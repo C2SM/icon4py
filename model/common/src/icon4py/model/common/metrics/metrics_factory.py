@@ -195,7 +195,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._register_computed_fields()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__} on (grid={self._grid!r}) providing fields f{self.metadata.keys()}"
+        return f"{self.__class__.__name__} on (grid={self._grid.id!r}) providing fields f{self.metadata.keys()}"
 
     @property
     def _sources(self) -> factory.FieldSource:
