@@ -155,11 +155,12 @@ jobs:
           config.max_output_tokens: ${{ steps.models.outputs.output }}
           # Helps open-weight models follow the output schema.
           config.duplicate_prompt_examples: "true"
-          # Timeouts and rejected requests (429, 5xx) move on to the next model,
-          # since the step limit allows one request per model.
+          # A timeout moves on to the next model, since the step limit allows one
+          # timeout per model. A rejected request (429, 5xx) is retried twice
+          # first; slow rejections can still use up the step limit.
           config.ai_timeout: ${{ steps.models.outputs.ai_timeout }}
           config.retry_same_model_on_timeout: "false"
-          config.num_retries: "0"
+          config.num_retries: "2"
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "false"
           github_action_config.auto_improve: "false"
