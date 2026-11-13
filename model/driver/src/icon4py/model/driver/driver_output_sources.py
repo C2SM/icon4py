@@ -8,42 +8,30 @@
 
 
 """
-The model state and the physics outputs as CF/UGRID-annotated DataArrays the IO module writes.
+The output variables of the model state and of the physics, as typed fields by standard name.
 
 Three of the four sources of output variables: the prognostic state, the active tracers
 and the diagnostic outputs of the physics processes, such as the precipitation fluxes.
 The fourth, the standard diagnostics, is ``driver_diagnostics``; ``driver_io`` assembles
 the variables of all four at a capture step.
 
-A variable is named by the standard name of its quantity, which also gives its CF attributes;
+A variable is named by the standard name of its quantity, which IO also reads its CF attributes from;
 a field whose quantity has no standard name is not offered.
 """
 
-from collections.abc import Mapping
 from typing import Final
-
-import xarray as xr
 
 from icon4py.model.common import field, framework as fw, quantity
 from icon4py.model.common.framework import states
-from icon4py.model.common.io import utils as io_utils
-from icon4py.model.common.states import model
 
 
+# NOTE: temporary, replaced in parts 04 (recipes) and 05 (derived inputs): goes with
+# `DiagnosticsComputer`, its only user.
 def standard_name(quantity_: type[quantity.Quantity]) -> str:
     """The standard name of a quantity that is an output variable."""
     if quantity_.standard_name is None:
         raise ValueError(f"'{quantity_.__name__}' has no standard name: it cannot be output")
     return quantity_.standard_name
-
-
-def attributes(quantity_: type[quantity.Quantity]) -> model.FieldMetaData:
-    """The CF attributes of an output variable, from its quantity."""
-    return model.FieldMetaData(
-        standard_name=standard_name(quantity_),
-        long_name=quantity_.long_name,
-        units=quantity_.units,
-    )
 
 
 def standard_names(cls: type[fw.State]) -> dict[str, str]:
@@ -76,11 +64,3 @@ def tracer_variables(tracer_config: states.TracerConfig | None) -> tuple[str, ..
         return ()
     names = standard_names(states.TracerState)
     return tuple(names[name] for name in tracer_config.active_names)
-
-
-def to_dataarrays(fields: Mapping[str, field.Field]) -> dict[str, xr.DataArray]:
-    """CF/UGRID-annotated DataArrays of the given fields, by variable name."""
-    return {
-        name: io_utils.to_data_array(field_, attributes(field_.quantity), to_host=True)
-        for name, field_ in fields.items()
-    }

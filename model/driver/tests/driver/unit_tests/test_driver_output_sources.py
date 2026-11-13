@@ -12,6 +12,8 @@
 Data-free: the ``simple_grid`` and synthetic states, so no serialized/grid test data.
 """
 
+from collections.abc import Mapping
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -20,9 +22,15 @@ import xarray as xr
 from icon4py.model.common import dimension as dims, field, framework as fw
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base, simple
+from icon4py.model.common.io import utils as io_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_output_sources
 from icon4py.model.testing.fixtures import backend
+
+
+def _dataarrays(fields: Mapping[str, field.Field]) -> dict[str, xr.DataArray]:
+    """The fields as IO writes them."""
+    return {name: io_utils.to_data_array(field_, to_host=True) for name, field_ in fields.items()}
 
 
 @pytest.fixture
@@ -65,9 +73,7 @@ def _horizontal_size(grid: base.Grid, dim: gtx.Dimension) -> int:
 def test_assembles_all_prognostic_variables(
     prognostic_state: states.PrognosticState, grid: base.Grid
 ) -> None:
-    state = driver_output_sources.to_dataarrays(
-        driver_output_sources.by_standard_name(prognostic_state)
-    )
+    state = _dataarrays(driver_output_sources.by_standard_name(prognostic_state))
 
     assert set(state.keys()) == set(driver_output_sources.PROGNOSTIC_VARIABLES)
     for name, da in state.items():
@@ -85,9 +91,7 @@ def test_assembles_all_prognostic_variables(
 def test_dataarrays_carry_cf_and_ugrid_metadata(
     prognostic_state: states.PrognosticState,
 ) -> None:
-    state = driver_output_sources.to_dataarrays(
-        driver_output_sources.by_standard_name(prognostic_state)
-    )
+    state = _dataarrays(driver_output_sources.by_standard_name(prognostic_state))
 
     air_density = state["air_density"]
     # CF metadata from the quantity
@@ -126,9 +130,7 @@ def test_data_is_host_numpy(
     really are device buffers and the host transfer is exercised.
     """
     prognostic_state = fw.allocate(states.PrognosticState, grid, backend)
-    state = driver_output_sources.to_dataarrays(
-        driver_output_sources.by_standard_name(prognostic_state)
-    )
+    state = _dataarrays(driver_output_sources.by_standard_name(prognostic_state))
     for da in state.values():
         assert isinstance(da.data, np.ndarray)
 
@@ -151,9 +153,7 @@ def test_only_the_active_tracers_are_assembled(
         )
     )
 
-    state = driver_output_sources.to_dataarrays(
-        driver_output_sources.by_standard_name(tracer_state)
-    )
+    state = _dataarrays(driver_output_sources.by_standard_name(tracer_state))
 
     assert set(state) == {"specific_humidity"}
     assert state["specific_humidity"].dims == ("cell", "level")

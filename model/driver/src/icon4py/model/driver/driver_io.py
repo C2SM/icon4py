@@ -22,7 +22,6 @@ import uuid
 from collections.abc import Collection, Mapping
 
 import gt4py.next as gtx
-import xarray as xr
 
 from icon4py.model.common import exceptions, field, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
@@ -141,12 +140,12 @@ class OutputStateAssembler:
         prognostic_state: states.PrognosticState,
         tracer_state: states.TracerState,
         diagnostic_state: states.Diagnostics,
-    ) -> dict[str, xr.DataArray]:
-        """The CF/UGRID-annotated DataArrays of exactly the requested variables.
+    ) -> dict[str, field.Field]:
+        """
+        The fields of exactly the requested variables, by name.
 
         The requested standard diagnostics are computed into ``diagnostic_state`` first.
-        The DataArrays reference the live state (see ``io.utils.to_data_array``): they
-        must be written before the next step mutates it.
+        The fields are the live state: they must be written before the next step mutates it.
         """
         # NOTE: temporary, replaced in part 02 (collect): the leaves are collected by quantity
         requested = set(variables)
@@ -170,8 +169,7 @@ class OutputStateAssembler:
                     prognostic_state, tracer_state, diagnostic_state, diagnostics
                 )
             )
-        # NOTE: temporary, replaced in part 06 (io-config): moves into `IOMonitor.run`
-        return output_sources.to_dataarrays(fields)
+        return fields
 
 
 def create_io_monitor(

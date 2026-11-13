@@ -47,7 +47,7 @@ A field group is a set of variables written on the same schedule into the same f
 - `output_interval`: the output schedule, given as either a positive integer N (write every N model steps, i.e. every N calls to `store`) or a `datetime.timedelta` (a simulation-time delta, e.g. `timedelta(hours=2)`, must be a multiple of the model time step). A time delta is normalized to a number of steps using the model time step, so the schedule is always evaluated in steps. Defaults to every step. In YAML: `{type: numsteps, value: 10}` or `{type: relative, value: 30 minutes}`.
 - `basename`: Base name of the datafiles, without an extension (the backend's extension and a roll-over counter are appended, see `timesteps_per_file`); it may contain a _relative_ path which is appended to the output directory.
 - `timesteps_per_file` (default=10): Number of captured time steps recorded in one file before the next one is started; a value `<= 0` writes all captures of the run into the same file.
-- `variables`: List of variables names to be output. Variable names are the keys of the model state handed to `store`; the driver names a variable by the standard name of its quantity (e.g. `dimensionless_exner_function`, `air_temperature`, or `specific_humidity` for a tracer).
+- `variables`: List of variables names to be output. Variable names are the keys of the fields handed to `store`, typed fields whose quantity gives the CF attributes; the driver names a variable by the standard name of its quantity (e.g. `dimensionless_exner_function`, `air_temperature`, or `specific_humidity` for a tracer).
 - `backend` (default="zarr"): File format of the group, `"netcdf"` or `"zarr"`.
 - `mode` (default="distributed"): Write strategy of distributed (MPI) runs; single-rank runs write the full state either way:
     - `"gather"`: the owned entries of all ranks are collected on the root rank, which writes them in global order.
@@ -121,8 +121,8 @@ capturing groups need, so it assembles only those (and nothing at steps nobody c
 ```
 io_monitor = IOMonitor(config=io_config, ...)
 (...)
-model_state = assemble(io_monitor.variables_at_capture_time())
-io_monitor.store(model_state, time)
+fields = assemble(io_monitor.variables_at_capture_time())  # {name: field.Field}
+io_monitor.store(fields, time)
 ```
 
 ### Parallel netCDF

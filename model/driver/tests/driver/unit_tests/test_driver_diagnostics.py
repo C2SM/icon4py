@@ -9,14 +9,18 @@
 
 """Unit tests for the output diagnostics (``driver_diagnostics``), data-free on the simple grid."""
 
+from collections.abc import Mapping
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
+import xarray as xr
 
 from icon4py.model.common import dimension as dims, field, framework as fw
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
+from icon4py.model.common.io import utils as io_utils
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_diagnostics, driver_output_sources as output_sources
@@ -30,6 +34,11 @@ from icon4py.model.driver.driver_diagnostics import (
 )
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures import backend
+
+
+def _dataarrays(fields: Mapping[str, field.Field]) -> dict[str, xr.DataArray]:
+    """The fields as IO writes them."""
+    return {name: io_utils.to_data_array(field_, to_host=True) for name, field_ in fields.items()}
 
 
 @pytest.fixture
@@ -110,7 +119,7 @@ def test_diagnostic_data_is_host_numpy(
     driver's diagnostics; assembling them must land host numpy arrays.
     """
     diagnostic_state = fw.allocate(states.Diagnostics, grid, backend)
-    state = output_sources.to_dataarrays(output_sources.by_standard_name(diagnostic_state))
+    state = _dataarrays(output_sources.by_standard_name(diagnostic_state))
     assert state
     for da in state.values():
         assert isinstance(da.data, np.ndarray)
@@ -226,7 +235,7 @@ def test_diagnostic_dataarrays_carry_dims_and_attributes(grid: base.Grid) -> Non
         uniform_prognostic_state(grid), states.TracerState(), make_diagnostic_state(grid), variables
     )
 
-    state = output_sources.to_dataarrays(fields)
+    state = _dataarrays(fields)
 
     assert set(state) == set(variables)
     for name, da in state.items():

@@ -204,16 +204,14 @@ def test_assembler_assembles_only_the_requested_variables(grid: base.Grid) -> No
     diagnostic_state = make_diagnostic_state(grid)
     state = assembler.assemble(requested, prognostic_state, tracer_state, diagnostic_state)
     assert set(state) == requested
-    assert state["specific_humidity"].attrs["standard_name"] == "specific_humidity"
-    assert state["rainfall_flux"].attrs["standard_name"] == "rainfall_flux"
-    assert state["rainfall_flux"].dims == ("cell", "level")
-    # a purely horizontal diagnostic
-    assert state["air_pressure_at_ground_level"].dims == ("cell",)
+    for name, field_ in state.items():
+        assert field_.quantity.standard_name == name
+    assert state["specific_humidity"] is tracer_state.qv
 
     winds = assembler.assemble({"eastward_wind"}, prognostic_state, tracer_state, diagnostic_state)
     assert set(winds) == {"eastward_wind"}
     # the diagnostics are computed into the driver's diagnostic state
-    assert winds["eastward_wind"].data is diagnostic_state.u.ndarray
+    assert winds["eastward_wind"] is diagnostic_state.u
 
 
 def test_assembler_builds_no_diagnostics_computer_without_diagnostics(

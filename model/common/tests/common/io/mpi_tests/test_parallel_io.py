@@ -30,8 +30,9 @@ import xarray as xr
 import zarr
 
 import icon4py.model.common.exceptions as errors
-from icon4py.model.common import dimension as dims, time as common_time
+from icon4py.model.common import dimension as dims, field, quantity, time as common_time
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.io import distributed, io as common_io, netcdf_writers, writers
 
@@ -48,6 +49,11 @@ VARIABLES: dict[str, tuple[str, gtx.Dimension, int]] = {
     "air_density": ("cell", dims.CellDim, NUM_LEVELS),
     "normal_velocity": ("edge", dims.EdgeDim, NUM_LEVELS),
     "surface_pressure": ("cell", dims.CellDim, 0),
+}
+QUANTITIES: dict[str, type[quantity.Quantity]] = {
+    "air_density": qty.RhoOnCellK,
+    "normal_velocity": qty.VnOnEdgeK,
+    "surface_pressure": qty.SurfacePressureOnCell,
 }
 
 
@@ -96,10 +102,10 @@ def expected_value(global_index: np.ndarray, level: int, step: int) -> np.ndarra
     return 1000.0 * global_index + level + 10.0 * step
 
 
-def synthetic_state(info: decomp_defs.DecompositionInfo, step: int) -> dict[str, xr.DataArray]:
+def synthetic_state(info: decomp_defs.DecompositionInfo, step: int) -> dict[str, field.Field]:
     """Local state whose entries (halos included) carry their analytic global values."""
-    state: dict[str, xr.DataArray] = {}
-    for name, (dim_name, dim, num_levels) in VARIABLES.items():
+    state: dict[str, field.Field] = {}
+    for name, (_, dim, num_levels) in VARIABLES.items():
         local_global = info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.ALL)
         if num_levels:
             data = np.stack(
@@ -108,17 +114,8 @@ def synthetic_state(info: decomp_defs.DecompositionInfo, step: int) -> dict[str,
             )
         else:
             data = expected_value(local_global, 0, step)
-        state[name] = xr.DataArray(
-            data,
-            dims=(dim_name, "level") if num_levels else (dim_name,),
-            attrs=dict(
-                units="1",
-                standard_name=name,
-                long_name=name,
-                coordinates="lat lon",
-                mesh="mesh",
-                location=dim_name,
-            ),
+        state[name] = field.Field(
+            QUANTITIES[name], gtx.as_field((dim, dims.KDim) if num_levels else (dim,), data)
         )
     return state
 

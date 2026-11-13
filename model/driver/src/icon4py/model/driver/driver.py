@@ -165,8 +165,8 @@ class Icon4pyDriver:
     ) -> None:
         """Assemble what the capturing field groups request and hand it to the IO monitor.
 
-        The assembled DataArrays reference the live state (see ``io.utils.to_data_array``),
-        so they must be written here and now, before the next step mutates the state.
+        The assembled fields are the live state, so they must be written here and now,
+        before the next step mutates the state.
 
         At steps no field group captures, only the monitor's schedule counters advance:
         nothing is assembled, timed or written -- so the diagnostics are not computed
@@ -176,6 +176,7 @@ class Icon4pyDriver:
         # NOTE: temporary, replaced in parts 02 (collect) and 06 (io-config):
         # `self.io_monitor.run(fw.collect(self.io_monitor.Input, ...))`
         variables = self.io_monitor.variables_at_capture_time()
+        state_to_store: dict[str, field.Field]
         if variables:
             with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
                 state_to_store = self._output_assembler.assemble(

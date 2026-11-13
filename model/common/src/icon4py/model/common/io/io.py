@@ -15,12 +15,13 @@ import posixpath
 import statistics
 import timeit
 import uuid
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from typing import Annotated, Final, Self, TypeAlias
 
 from icon4py.model.common import exceptions, time
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.field import Field
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGrid
 from icon4py.model.common.io import (
@@ -28,6 +29,7 @@ from icon4py.model.common.io import (
     distributed,
     netcdf_writers,
     ugrid,
+    utils as io_utils,
     writers,
     zarr_writers,
 )
@@ -507,9 +509,9 @@ class IOMonitor:
     def path(self) -> pathlib.Path:
         return self._output_path
 
-    def store(self, state: dict, model_time: dt.datetime) -> None:
+    def store(self, fields: Mapping[str, Field], model_time: dt.datetime) -> None:
         for m in self._group_monitors:
-            m.store(state, model_time)
+            m.store(fields, model_time)
 
     def close(self) -> None:
         """Close all field-group writers.
@@ -695,15 +697,15 @@ class FieldGroupMonitor:
         df.initialize_dataset()
         self._dataset = df
 
-    def store(self, state: dict, model_time: dt.datetime) -> None:
-        """Pick fields from the state dictionary to be written to disk.
+    def store(self, fields: Mapping[str, Field], model_time: dt.datetime) -> None:
+        """Pick the fields of this group to be written to disk.
 
         In a distributed run this is collective: every rank must call it at every step
         (the distribution communicates at capture steps). File and step counters advance
         identically on all ranks, including ranks that do not write.
 
         Args:
-            state: dict  model state dictionary
+            fields: the model's fields, by variable name
             model_time: the current time step of the simulation
         """
         capture = self.at_capture_time()
@@ -714,7 +716,10 @@ class FieldGroupMonitor:
         #   asynchronous (the gather/halo-strip paths already copy, the single-node
         #   path writes synchronously before the state is mutated)
         try:
-            state_to_store = {field: state[field] for field in self._field_names}
+            state_to_store = {
+                name: io_utils.to_data_array(fields[name], to_host=True)
+                for name in self._field_names
+            }
         except KeyError as e:
             log.error(f"Field '{e.args[0]}' is missing in state.")
             self.close()

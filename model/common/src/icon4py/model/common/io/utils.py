@@ -7,43 +7,32 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import xarray as xa
 from gt4py import next as gtx
-from gt4py._core import definitions as gt_coredefs
-from gt4py.next import common as gt_common
 
+from icon4py.model.common.field import Field
 from icon4py.model.common.io.ugrid import dimension_mapping, ugrid_attributes
-from icon4py.model.common.states.model import FieldMetaData
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def to_data_array(
-    field: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT],
-    attrs: FieldMetaData | dict | None = None,
-    to_host: bool = False,
-) -> xa.DataArray:
-    """Convert a gt4py field to a xarray data array.
+def to_data_array(field: Field, to_host: bool = False) -> xa.DataArray:
+    """
+    The xarray data array of a typed field, with the CF attributes of its quantity and the UGRID
+    attributes of its horizontal dimension.
 
-    Args:
-        field: gt4py field,
-        attrs: optional dictionary of metadata attributes to be added to the data array, empty by default.
-            The dictionary is copied, the caller's instance is left untouched.
-        to_host: if True, copy the data buffer to host (numpy). netCDF4 cannot consume
-            device arrays, so set this when the result is written from a GPU backend.
+    `to_host=True` copies the buffer to host (numpy), as netCDF4 cannot consume device arrays.
 
     Note:
         The data buffer is not copied: the result usually references ``field`` (a view).
         ``to_host=True`` is a copy only on GPU; on CPU it still references ``field``.
         Callers that keep the DataArray past the next mutation of ``field`` must copy it.
     """
-    if attrs is None:
-        attrs = {}
-    elif isinstance(attrs, FieldMetaData):
-        attrs = attrs.as_dict()
-    else:
-        attrs = dict(attrs)
+    attrs = {
+        key: value
+        for key in ("standard_name", "long_name", "units")
+        if (value := getattr(field.quantity, key)) is not None
+    }
     dims = tuple(dimension_mapping(d) for d in field.domain.dims)
     horizontal_dim = next(d for d in field.domain.dims if _is_horizontal(d))
-    uxgrid_attrs = ugrid_attributes(horizontal_dim)
-    attrs.update(uxgrid_attrs)
+    attrs.update(ugrid_attributes(horizontal_dim))
     data = data_alloc.as_numpy(field) if to_host else field.ndarray
     return xa.DataArray(data=data, dims=dims, attrs=attrs)
 
