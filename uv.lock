@@ -1180,7 +1180,7 @@ dependencies = [
   { name = "typing-extensions" }
 ]
 name = "dace"
-source = { git = "https://github.com/spcl/dace?branch=main#9e56218b0ef09b2a5786d182a0293b1fa930faf7" }
+source = { git = "https://github.com/spcl/dace?branch=main#b9c658fd5026e98d0a549de0b2cb543c08ac785a" }
 version = "2.0.0b1"
 
 [[package]]
