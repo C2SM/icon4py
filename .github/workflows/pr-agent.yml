@@ -49,8 +49,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
           ACTOR: ${{ github.event_name == 'issue_comment' && github.event.comment.user.login || github.event.pull_request.user.login }}
+          BODY: ${{ github.event.comment.body }}
         run: |
+          skip() {
+            echo "::notice::$1"
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
           if ! level=$(gh api "repos/${REPO}/collaborators/${ACTOR}/permission" \
             --jq '.permission' 2>&1); then
             echo "allowed=false" >> "$GITHUB_OUTPUT"
@@ -59,15 +66,23 @@ jobs:
           fi
           # 'permission' reports the 'maintain' role as 'write'.
           case "${level}" in
-            admin | write)
-              echo "::notice::${ACTOR} has '${level}' permission; running PR Agent."
-              echo "allowed=true" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "::notice::${ACTOR} has '${level}' permission; skipping PR Agent."
-              echo "allowed=false" >> "$GITHUB_OUTPUT"
-              ;;
+            admin | write) ;;
+            *) skip "${ACTOR} has '${level}' permission; skipping PR Agent." ;;
           esac
+          # Other commands can write labels, and '--section.key=value' arguments
+          # override any setting not reserved to the host, including the ones
+          # that keep model output out of labels and the PR description.
+          if [ "${EVENT}" = "issue_comment" ]; then
+            case "${BODY%%[[:space:]]*}" in
+              /review | /improve | /ask | /describe | /help) ;;
+              *) skip "Ignoring '${BODY%%[[:space:]]*}': only /review, /improve, /ask, /describe and /help are enabled." ;;
+            esac
+            if grep -qE '(^|[[:space:]"])--' <<<"${BODY}"; then
+              skip "Ignoring the command: '--' setting arguments are not accepted."
+            fi
+          fi
+          echo "::notice::${ACTOR} has '${level}' permission; running PR Agent."
+          echo "allowed=true" >> "$GITHUB_OUTPUT"
 
       # Validated here because the next step tolerates failure.
       - name: Resolve models
@@ -140,8 +155,11 @@ jobs:
           config.max_output_tokens: ${{ steps.models.outputs.output }}
           # Helps open-weight models follow the output schema.
           config.duplicate_prompt_examples: "true"
+          # Timeouts and rejected requests (429, 5xx) move on to the next model,
+          # since the step limit allows one request per model.
           config.ai_timeout: ${{ steps.models.outputs.ai_timeout }}
           config.retry_same_model_on_timeout: "false"
+          config.num_retries: "0"
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "false"
           github_action_config.auto_improve: "false"
@@ -167,10 +185,16 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           marker='<!-- pr-agent-run-failed -->'
-          existing=$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
-            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"${marker}\"))) | .id" | tail -n 1)
+          ids=$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"${marker}\"))) | .id")
+          existing=$(tail -n 1 <<<"${ids}")
+          # Overlapping runs can each create one: keep at most the newest.
+          for id in ${ids}; do
+            if [ "${OUTCOME}" = "success" ] || [ "${id}" != "${existing}" ]; then
+              gh api -X DELETE "repos/${REPO}/issues/comments/${id}"
+            fi
+          done
           if [ "${OUTCOME}" = "success" ]; then
-            [ -z "${existing}" ] || gh api -X DELETE "repos/${REPO}/issues/comments/${existing}"
             exit 0
           fi
           echo "::warning title=PR Agent failed::No review was posted. See the 'Run PR Agent' log."
