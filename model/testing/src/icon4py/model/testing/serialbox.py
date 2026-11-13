@@ -17,10 +17,9 @@ import serialbox
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common import dimension as dims, field, model_backends
+from icon4py.model.common import dimension as dims, field, model_backends, quantity
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
-from icon4py.model.common.quantity import Quantity
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
@@ -51,7 +50,9 @@ class IconSavepoint:
         self.backend = backend
         self.xp = data_alloc.import_array_ns(self.backend)
 
-    def optionally_registered(*dims, dtype=wpfloat, quantity: type[Quantity] | None = None):
+    def optionally_registered(
+        *dims, dtype=wpfloat, quantity: type[quantity.Quantity] | None = None
+    ):
         if quantity is not None:
             dims = quantity.dims
 
@@ -111,12 +112,12 @@ class IconSavepoint:
         self.log.debug(f"{name} {buffer.shape}")
         return gtx.as_field(dims, buffer, allocator=self.backend)
 
-    def _get_typed_field[Q: Quantity](
+    def _get_typed_field[Q: quantity.Quantity](
         self, name: str, quantity: type[Q], **kwargs: Any
     ) -> field.Field[Q]:
         return field.Field(quantity, self._get_field(name, *quantity.dims, **kwargs))
 
-    def _get_typed_field_component[Q: Quantity](
+    def _get_typed_field_component[Q: quantity.Quantity](
         self, name: str, level: int, quantity: type[Q], dtype=wpfloat
     ) -> field.Field[Q]:
         return field.Field(

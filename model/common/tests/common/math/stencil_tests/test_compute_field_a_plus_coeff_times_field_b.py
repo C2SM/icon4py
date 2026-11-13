@@ -11,11 +11,10 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
 
@@ -39,10 +38,10 @@ class TestComputeFieldAPlusCoeffTimesFieldBOnCellKHalf(stencil_tests.StencilTest
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         return dict(
-            field_a=data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat),
-            coeff=wpfloat(300.0),
-            field_b=data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat),
-            output_field=data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat),
+            field_a=data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat),
+            coeff=ta.wpfloat(300.0),
+            field_b=data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat),
+            output_field=data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat),
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

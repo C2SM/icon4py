@@ -15,9 +15,8 @@ import datetime
 from collections.abc import Iterator
 from typing import Final
 
-from icon4py.model.common import field, framework as fw
+from icon4py.model.common import field, framework as fw, utils as common_utils
 from icon4py.model.common.framework import quantities as qty
-from icon4py.model.common.utils import PredictorCorrectorPair
 
 
 class PrognosticState(fw.State):
@@ -172,11 +171,11 @@ class DycoreDiagnostics(fw.State):
     """Declared as exner_pr in ICON."""
     exner_dynamical_increment: field.Field[qty.ExnerDynamicalIncrementOnCellK]
     """Declared as exner_dyn_incr in ICON."""
-    normal_wind_advective_tendency: PredictorCorrectorPair[
+    normal_wind_advective_tendency: common_utils.PredictorCorrectorPair[
         field.Field[qty.NormalWindAdvectiveTendencyOnEdgeK]
     ]
     """Declared as ddt_vn_apc_pc in ICON."""
-    vertical_wind_advective_tendency: PredictorCorrectorPair[
+    vertical_wind_advective_tendency: common_utils.PredictorCorrectorPair[
         field.Field[qty.VerticalWindAdvectiveTendencyOnCellKHalf]
     ]
     """Declared as ddt_w_adv_pc in ICON."""

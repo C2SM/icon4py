@@ -24,14 +24,6 @@ from icon4py.model.common.io import utils as io_utils
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_diagnostics, driver_output_sources as output_sources
-from icon4py.model.driver.driver_diagnostics import (
-    EASTWARD_WIND,
-    NORTHWARD_WIND,
-    PRESSURE,
-    SURFACE_PRESSURE,
-    TEMPERATURE,
-    VIRTUAL_TEMPERATURE,
-)
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures import backend
 
@@ -126,24 +118,35 @@ def test_diagnostic_data_is_host_numpy(
 
 
 def test_diagnostics_computer_returns_only_the_requested_variables(grid: base.Grid) -> None:
-    computer = _diagnostics_computer(grid, [PRESSURE, EASTWARD_WIND])
+    computer = _diagnostics_computer(
+        grid, [driver_diagnostics.PRESSURE, driver_diagnostics.EASTWARD_WIND]
+    )
     prognostic_state = uniform_prognostic_state(grid)
     diagnostic_state = make_diagnostic_state(grid)
 
-    fields = computer.compute(prognostic_state, states.TracerState(), diagnostic_state, [PRESSURE])
-    assert set(fields) == {PRESSURE}
-    assert fields[PRESSURE] is diagnostic_state.pressure
-    assert (fields[PRESSURE].asnumpy() > 0.0).all()
+    fields = computer.compute(
+        prognostic_state, states.TracerState(), diagnostic_state, [driver_diagnostics.PRESSURE]
+    )
+    assert set(fields) == {driver_diagnostics.PRESSURE}
+    assert fields[driver_diagnostics.PRESSURE] is diagnostic_state.pressure
+    assert (fields[driver_diagnostics.PRESSURE].asnumpy() > 0.0).all()
     # the wind program did not run: the diagnostic state's winds are untouched
     assert not diagnostic_state.u.asnumpy().any()
 
-    with pytest.raises(ValueError, match=f"not configured for this computer: {TEMPERATURE}"):
-        computer.compute(prognostic_state, states.TracerState(), diagnostic_state, [TEMPERATURE])
+    with pytest.raises(
+        ValueError, match=f"not configured for this computer: {driver_diagnostics.TEMPERATURE}"
+    ):
+        computer.compute(
+            prognostic_state,
+            states.TracerState(),
+            diagnostic_state,
+            [driver_diagnostics.TEMPERATURE],
+        )
 
 
 def test_diagnostics_computer_winds(grid: base.Grid) -> None:
     """Constant ``vn`` and coefficients: each wind is their product summed over the neighbors."""
-    requested = [EASTWARD_WIND, NORTHWARD_WIND]
+    requested = [driver_diagnostics.EASTWARD_WIND, driver_diagnostics.NORTHWARD_WIND]
     fields = _diagnostics_computer(grid, requested).compute(
         uniform_prognostic_state(grid),
         states.TracerState(),
@@ -151,8 +154,12 @@ def test_diagnostics_computer_winds(grid: base.Grid) -> None:
         requested,
     )
     neighbors = grid.get_connectivity(dims.C2E2C2E).asnumpy().shape[1]
-    test_utils.assert_dallclose(fields[EASTWARD_WIND].asnumpy(), neighbors * RBF_COEFF_C1 * VN)
-    test_utils.assert_dallclose(fields[NORTHWARD_WIND].asnumpy(), neighbors * RBF_COEFF_C2 * VN)
+    test_utils.assert_dallclose(
+        fields[driver_diagnostics.EASTWARD_WIND].asnumpy(), neighbors * RBF_COEFF_C1 * VN
+    )
+    test_utils.assert_dallclose(
+        fields[driver_diagnostics.NORTHWARD_WIND].asnumpy(), neighbors * RBF_COEFF_C2 * VN
+    )
 
 
 def test_diagnostics_computer_rejects_unknown_variables(grid: base.Grid) -> None:
@@ -162,7 +169,7 @@ def test_diagnostics_computer_rejects_unknown_variables(grid: base.Grid) -> None
 
 def test_diagnostics_computer_surface_pressure(grid: base.Grid) -> None:
     """The surface pressure is a cell field: the bottom half-level row of the pressure program."""
-    requested = [PRESSURE, SURFACE_PRESSURE]
+    requested = [driver_diagnostics.PRESSURE, driver_diagnostics.SURFACE_PRESSURE]
     computer = _diagnostics_computer(grid, requested)
     diagnostic_state = make_diagnostic_state(grid)
 
@@ -170,7 +177,7 @@ def test_diagnostics_computer_surface_pressure(grid: base.Grid) -> None:
         uniform_prognostic_state(grid), states.TracerState(), diagnostic_state, requested
     )
 
-    surface_pressure = fields[SURFACE_PRESSURE]
+    surface_pressure = fields[driver_diagnostics.SURFACE_PRESSURE]
     assert surface_pressure.quantity is qty.SurfacePressureOnCell
     assert surface_pressure.domain.dims == (dims.CellDim,)
     assert surface_pressure.asnumpy().shape == (grid.num_cells,)
@@ -180,43 +187,53 @@ def test_diagnostics_computer_surface_pressure(grid: base.Grid) -> None:
         surface_pressure.asnumpy(), diagnostic_state.pressure_ifc.asnumpy()[:, -1]
     )
     # hydrostatic: the surface pressure exceeds the pressure of the lowest model level
-    assert (surface_pressure.asnumpy() > fields[PRESSURE].asnumpy()[:, -1]).all()
+    assert (surface_pressure.asnumpy() > fields[driver_diagnostics.PRESSURE].asnumpy()[:, -1]).all()
     # the surface pressure alone also runs the temperature and pressure programs
-    alone = _diagnostics_computer(grid, [SURFACE_PRESSURE]).compute(
+    alone = _diagnostics_computer(grid, [driver_diagnostics.SURFACE_PRESSURE]).compute(
         uniform_prognostic_state(grid),
         states.TracerState(),
         make_diagnostic_state(grid),
-        [SURFACE_PRESSURE],
+        [driver_diagnostics.SURFACE_PRESSURE],
     )
-    assert set(alone) == {SURFACE_PRESSURE}
-    test_utils.assert_dallclose(alone[SURFACE_PRESSURE].asnumpy(), surface_pressure.asnumpy())
+    assert set(alone) == {driver_diagnostics.SURFACE_PRESSURE}
+    test_utils.assert_dallclose(
+        alone[driver_diagnostics.SURFACE_PRESSURE].asnumpy(), surface_pressure.asnumpy()
+    )
 
 
 def test_diagnostics_computer_runs_only_the_programs_of_the_requested_variables(
     grid: base.Grid,
 ) -> None:
     """A call for the winds does not run the pressure program."""
-    computer = _diagnostics_computer(grid, [EASTWARD_WIND, SURFACE_PRESSURE])
+    computer = _diagnostics_computer(
+        grid, [driver_diagnostics.EASTWARD_WIND, driver_diagnostics.SURFACE_PRESSURE]
+    )
     diagnostic_state = make_diagnostic_state(grid)
 
     fields = computer.compute(
-        uniform_prognostic_state(grid), states.TracerState(), diagnostic_state, [EASTWARD_WIND]
+        uniform_prognostic_state(grid),
+        states.TracerState(),
+        diagnostic_state,
+        [driver_diagnostics.EASTWARD_WIND],
     )
 
-    assert set(fields) == {EASTWARD_WIND}
+    assert set(fields) == {driver_diagnostics.EASTWARD_WIND}
     assert not diagnostic_state.pressure_ifc.asnumpy().any()
 
 
 def test_diagnostics_computer_uses_the_active_tracers(grid: base.Grid) -> None:
     """Moist air: the temperature falls below the virtual temperature; dry air: they agree."""
-    requested = [TEMPERATURE, VIRTUAL_TEMPERATURE]
+    requested = [driver_diagnostics.TEMPERATURE, driver_diagnostics.VIRTUAL_TEMPERATURE]
     computer = _diagnostics_computer(grid, requested)
     prognostic_state = uniform_prognostic_state(grid)
     diagnostic_state = make_diagnostic_state(grid)
 
     dry = computer.compute(prognostic_state, states.TracerState(), diagnostic_state, requested)
-    test_utils.assert_dallclose(dry[TEMPERATURE].asnumpy(), dry[VIRTUAL_TEMPERATURE].asnumpy())
-    dry_temperature = dry[TEMPERATURE].asnumpy().copy()
+    test_utils.assert_dallclose(
+        dry[driver_diagnostics.TEMPERATURE].asnumpy(),
+        dry[driver_diagnostics.VIRTUAL_TEMPERATURE].asnumpy(),
+    )
+    dry_temperature = dry[driver_diagnostics.TEMPERATURE].asnumpy().copy()
 
     moist_tracers = states.TracerState(
         qv=field.Field(
@@ -224,8 +241,13 @@ def test_diagnostics_computer_uses_the_active_tracers(grid: base.Grid) -> None:
         )
     )
     moist = computer.compute(prognostic_state, moist_tracers, diagnostic_state, requested)
-    test_utils.assert_dallclose(moist[VIRTUAL_TEMPERATURE].asnumpy(), dry_temperature)
-    assert (moist[TEMPERATURE].asnumpy() < moist[VIRTUAL_TEMPERATURE].asnumpy()).all()
+    test_utils.assert_dallclose(
+        moist[driver_diagnostics.VIRTUAL_TEMPERATURE].asnumpy(), dry_temperature
+    )
+    assert (
+        moist[driver_diagnostics.TEMPERATURE].asnumpy()
+        < moist[driver_diagnostics.VIRTUAL_TEMPERATURE].asnumpy()
+    ).all()
 
 
 def test_diagnostic_dataarrays_carry_dims_and_attributes(grid: base.Grid) -> None:
@@ -239,7 +261,7 @@ def test_diagnostic_dataarrays_carry_dims_and_attributes(grid: base.Grid) -> Non
 
     assert set(state) == set(variables)
     for name, da in state.items():
-        if name == SURFACE_PRESSURE:
+        if name == driver_diagnostics.SURFACE_PRESSURE:
             assert da.dims == ("cell",)
             assert da.shape == (grid.num_cells,)
         else:
@@ -248,5 +270,5 @@ def test_diagnostic_dataarrays_carry_dims_and_attributes(grid: base.Grid) -> Non
         assert isinstance(da.data, np.ndarray)
         assert da.attrs["standard_name"] == name
         assert "icon_var_name" not in da.attrs
-    assert state[PRESSURE].attrs["units"] == "Pa"
-    assert state[EASTWARD_WIND].attrs["location"] == "face"
+    assert state[driver_diagnostics.PRESSURE].attrs["units"] == "Pa"
+    assert state[driver_diagnostics.EASTWARD_WIND].attrs["location"] == "face"

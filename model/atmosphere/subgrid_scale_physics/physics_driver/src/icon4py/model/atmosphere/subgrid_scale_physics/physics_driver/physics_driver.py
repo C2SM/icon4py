@@ -28,9 +28,9 @@ from icon4py.model.common import (
     time,
 )
 from icon4py.model.common.framework import quantities as qty, states
-from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
-from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
-    edge_2_cell_vector_rbf_interpolation,
+from icon4py.model.common.interpolation.stencils import (
+    compute_vn_from_uv,
+    edge_2_cell_vector_rbf_interpolation as rbf,
 )
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.physics.thermodynamics import (
@@ -166,7 +166,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             offset_provider={},
         )
         self._rbf_interpolation = model_options.setup_program(
-            program=edge_2_cell_vector_rbf_interpolation,
+            program=rbf.edge_2_cell_vector_rbf_interpolation,
             backend=backend,
             constant_args={
                 "ptr_coeff_1": static_state.rbf_vec_coeff_c1,
@@ -219,7 +219,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             offset_provider={},
         )
         self._compute_vn_from_uv = model_options.setup_program(
-            program=compute_vn_from_uv,
+            program=compute_vn_from_uv.compute_vn_from_uv,
             backend=backend,
             constant_args={
                 "primal_normal_cell_x": static_state.primal_normal_cell_x,

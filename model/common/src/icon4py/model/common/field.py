@@ -15,11 +15,11 @@ from typing import Any, ClassVar, Self
 from gt4py import next as gtx
 from gt4py.next.embedded import nd_array_field
 
-from icon4py.model.common.quantity import Quantity
+from icon4py.model.common import quantity
 
 
 @dataclasses.dataclass(frozen=True, eq=False, init=False, repr=False)
-class Field[Q: Quantity](nd_array_field.NdArrayField):
+class Field[Q: quantity.Quantity](nd_array_field.NdArrayField):
     """
     A gt4py field tagged by its quantity: `Field(quantity, data)` shares `data`'s buffer.
 
@@ -63,11 +63,11 @@ class Field[Q: Quantity](nd_array_field.NdArrayField):
         return f"Field({self.quantity.__name__}, {self.ndarray.shape})"
 
 
-class _NumPyField[Q: Quantity](Field[Q], nd_array_field.NumPyArrayField):
+class _NumPyField[Q: quantity.Quantity](Field[Q], nd_array_field.NumPyArrayField):
     _plain = nd_array_field.NumPyArrayField
 
 
 if hasattr(nd_array_field, "CuPyArrayField"):
 
-    class _CuPyField[Q: Quantity](Field[Q], nd_array_field.CuPyArrayField):
+    class _CuPyField[Q: quantity.Quantity](Field[Q], nd_array_field.CuPyArrayField):
         _plain = nd_array_field.CuPyArrayField

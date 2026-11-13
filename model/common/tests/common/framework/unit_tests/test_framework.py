@@ -10,9 +10,14 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import field, framework as fw, quantity, type_alias as ta
+from icon4py.model.common import (
+    field,
+    framework as fw,
+    quantity,
+    type_alias as ta,
+    utils as common_utils,
+)
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.common.utils import PredictorCorrectorPair
 
 from tests.common.fixtures import grid
 from tests.common.unit_tests.utils import Pressure, Salt, TendencyOfPressure, Vt
@@ -123,7 +128,7 @@ def test_allocate_follows_the_declared_dims(grid: base_grid.Grid) -> None:
     class Fields(fw.State):
         pressure: field.Field[Pressure]
         salt: field.Field[Salt]
-        salt_pc: PredictorCorrectorPair[field.Field[Salt]]
+        salt_pc: common_utils.PredictorCorrectorPair[field.Field[Salt]]
 
     fields = fw.allocate(Fields, grid, allocator=None, fill=lambda name, shape: float(len(name)))
     assert fields.pressure.ndarray.shape == (grid.num_cells, grid.num_levels)

@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     component as muphys_component,
     config as muphys_config,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import (
-    PRECIP_DIAGNOSTICS,
-    SPECIES,
-    Q,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core import definitions as muphys_defs
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_full_muphys
 from icon4py.model.common import (
     dimension as dims,
@@ -156,10 +152,10 @@ def test_muphys_granule(
 
     # the direct run advances its own copy of the input in place
     direct = fw.copy(input, fw.allocate(muphys_component.Muphys.Input, icon_grid, allocator))
-    direct_q = Q(**{s: getattr(direct, f"q{s}") for s in SPECIES})
+    direct_q = muphys_defs.Q(**{s: getattr(direct, f"q{s}") for s in muphys_defs.SPECIES})
     direct_precip = {
         port: gtx.zeros(input.te.domain, dtype=ta.wpfloat, allocator=allocator)
-        for port in PRECIP_DIAGNOSTICS
+        for port in muphys_defs.PRECIP_DIAGNOSTICS
     }
     muphys_program(
         dz=dz,
@@ -179,7 +175,7 @@ def test_muphys_granule(
     # Check all seven tendency conversions, including zero boundary/halo rows.
     for name, tracer in (
         ("temperature", "te"),
-        *((f"q{species}", f"q{species}") for species in SPECIES),
+        *((f"q{species}", f"q{species}") for species in muphys_defs.SPECIES),
     ):
         old = getattr(input, tracer).asnumpy()
         expected = np.zeros_like(old)

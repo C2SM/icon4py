@@ -18,10 +18,9 @@ import uuid
 from collections.abc import Iterator, Mapping
 from typing import Annotated, Final, Self, TypeAlias
 
-from icon4py.model.common import exceptions, time
+from icon4py.model.common import exceptions, field, time
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.field import Field
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGrid
 from icon4py.model.common.io import (
@@ -509,7 +508,7 @@ class IOMonitor:
     def path(self) -> pathlib.Path:
         return self._output_path
 
-    def store(self, fields: Mapping[str, Field], model_time: dt.datetime) -> None:
+    def store(self, fields: Mapping[str, field.Field], model_time: dt.datetime) -> None:
         for m in self._group_monitors:
             m.store(fields, model_time)
 
@@ -697,7 +696,7 @@ class FieldGroupMonitor:
         df.initialize_dataset()
         self._dataset = df
 
-    def store(self, fields: Mapping[str, Field], model_time: dt.datetime) -> None:
+    def store(self, fields: Mapping[str, field.Field], model_time: dt.datetime) -> None:
         """Pick the fields of this group to be written to disk.
 
         In a distributed run this is collective: every rank must call it at every step

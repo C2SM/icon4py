@@ -10,9 +10,8 @@
 
 from typing import Final
 
-from icon4py.model.common import field, framework as fw, time
+from icon4py.model.common import field, framework as fw, quantity, time
 from icon4py.model.common.framework import quantities as qty
-from icon4py.model.common.quantity import Quantity
 
 
 # NOTE: temporary, replaced in part 02 (collect): the processes collect from the physics
@@ -66,7 +65,7 @@ class PhysicsState(fw.State):
 # NOTE: temporary, replaced in part 02 (collect): goes with the physics state.
 # Process outputs which are read by other processes through the physics state,
 # e.g. surface outputs read by tmx
-COMPUTED_BY_PROCESSES: Final[frozenset[type[Quantity]]] = frozenset(
+COMPUTED_BY_PROCESSES: Final[frozenset[type[quantity.Quantity]]] = frozenset(
     {
         qty.EvapotranspirationOnCell,
         qty.SensibleHeatFluxOnCell,

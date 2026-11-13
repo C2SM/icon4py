@@ -14,9 +14,9 @@ import dataclasses
 import typing
 from collections.abc import Callable
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
-    ProcessTimeControl,
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    physics_state,
+    process_time_control,
 )
 from icon4py.model.common import framework as fw, quantity
 from icon4py.model.common.grid import base as base_grid
@@ -50,7 +50,7 @@ class PhysicsProcess[I: fw.State, O: fw.State](fw.Component[physics_state.Physic
     # NOTE: temporary, replaced in part 02 (collect): the process collects its component's
     # `Input` by quantity (`fw.collect`), and `collect_input` goes.
     collect_input: Callable[[physics_state.PhysicsState], I]
-    time_control: ProcessTimeControl
+    time_control: process_time_control.ProcessTimeControl
     grid: base_grid.Grid
     allocator: gtx_typing.Allocator | None
     # the last computed output, of which only the `Tendency` leaves are used

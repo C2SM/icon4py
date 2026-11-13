@@ -17,10 +17,8 @@ from typing import Any, Protocol, dataclass_transform
 
 import gt4py.next as gtx
 
-from icon4py.model.common import type_alias as ta
-from icon4py.model.common.field import Field
-from icon4py.model.common.quantity import Quantity
-from icon4py.model.common.utils import Pair, data_allocation
+from icon4py.model.common import field, quantity, type_alias as ta, utils as common_utils
+from icon4py.model.common.utils import data_allocation
 
 
 if typing.TYPE_CHECKING:
@@ -31,18 +29,18 @@ if typing.TYPE_CHECKING:
 
 # NOTE: temporary, replaced in part 03 (dims): the dims and the dtype come from the field type
 # instead of the quantity.
-def _dtype(quantity: type[Quantity]) -> Any:
-    return ta.vpfloat if quantity.precision == "vp" else ta.wpfloat
+def _dtype(quantity_: type[quantity.Quantity]) -> Any:
+    return ta.vpfloat if quantity_.precision == "vp" else ta.wpfloat
 
 
-def zeros[Q: Quantity](
-    quantity: type[Q], grid: base_grid.Grid, allocator: gtx_typing.Allocator | None
-) -> Field[Q]:
+def zeros[Q: quantity.Quantity](
+    quantity_: type[Q], grid: base_grid.Grid, allocator: gtx_typing.Allocator | None
+) -> field.Field[Q]:
     """A zero field of the quantity's dimensions and precision."""
-    return Field(
-        quantity,
+    return field.Field(
+        quantity_,
         data_allocation.zero_field(
-            grid, *quantity.dims, dtype=_dtype(quantity), allocator=allocator
+            grid, *quantity_.dims, dtype=_dtype(quantity_), allocator=allocator
         ),
     )
 
@@ -70,8 +68,10 @@ class State:
 
 
 def fields(
-    state: State, kind: type[Quantity] = Quantity, exclude: type[Quantity] | None = None
-) -> dict[str, Field]:
+    state: State,
+    kind: type[quantity.Quantity] = quantity.Quantity,
+    exclude: type[quantity.Quantity] | None = None,
+) -> dict[str, field.Field]:
     """
     The present leaves of a state whose quantity is a `kind` and not an `exclude`, by name, in
     declaration order.
@@ -80,23 +80,23 @@ def fields(
     physics driver and the IO walk a state through it.
     """
     return {
-        name: field
-        for name, quantity, _ in _declarations(type(state))  # type: ignore[arg-type]
-        if issubclass(quantity, kind)
-        and not (exclude is not None and issubclass(quantity, exclude))
-        and (field := getattr(state, name)) is not None
+        name: field_
+        for name, quantity_, _ in _declarations(type(state))  # type: ignore[arg-type]
+        if issubclass(quantity_, kind)
+        and not (exclude is not None and issubclass(quantity_, exclude))
+        and (field_ := getattr(state, name)) is not None
     }
 
 
 # NOTE: temporary, replaced in part 06 (io-config): goes with the optional leaves.
-def require[Q: Quantity](field: Field[Q] | None, name: str) -> Field[Q]:
+def require[Q: quantity.Quantity](field_: field.Field[Q] | None, name: str) -> field.Field[Q]:
     """The optional leaf `name`, which the caller needs present."""
-    if field is None:
+    if field_ is None:
         raise ValueError(f"'{name}' is required, but the state lacks it")
-    return field
+    return field_
 
 
-def _declaration(name: str, hint: Any) -> tuple[str, type[Quantity], bool] | None:
+def _declaration(name: str, hint: Any) -> tuple[str, type[quantity.Quantity], bool] | None:
     """
     The `(name, quantity, optional)` triple for one state annotation, or None when the
     annotation is not a `Field` leaf. `X | None` makes the leaf optional.
@@ -109,14 +109,14 @@ def _declaration(name: str, hint: Any) -> tuple[str, type[Quantity], bool] | Non
             optional = False
     else:
         optional = False
-    if typing.get_origin(hint) is not Field:
+    if typing.get_origin(hint) is not field.Field:
         return None
-    (quantity,) = typing.get_args(hint)
-    return (name, quantity, optional)
+    (quantity_,) = typing.get_args(hint)
+    return (name, quantity_, optional)
 
 
 @functools.cache
-def _declarations(cls: type[State]) -> Sequence[tuple[str, type[Quantity], bool]]:
+def _declarations(cls: type[State]) -> Sequence[tuple[str, type[quantity.Quantity], bool]]:
     """
     The `(name, quantity, optional)` triples of a `State` class's `Field` leaves, in
     declaration order. Cached because `typing.get_type_hints` evaluates the annotations,
@@ -128,28 +128,30 @@ def _declarations(cls: type[State]) -> Sequence[tuple[str, type[Quantity], bool]
     hints = typing.get_type_hints(cls)
     return tuple(
         declaration
-        for field in dataclasses.fields(cls)  # type: ignore[arg-type]
-        if (declaration := _declaration(field.name, hints[field.name])) is not None
+        for field_ in dataclasses.fields(cls)  # type: ignore[arg-type]
+        if (declaration := _declaration(field_.name, hints[field_.name])) is not None
     )
 
 
 @functools.cache
-def _pairs(cls: type[State]) -> Sequence[tuple[str, type[Pair], type[Quantity]]]:
+def _pairs(
+    cls: type[State],
+) -> Sequence[tuple[str, type[common_utils.Pair], type[quantity.Quantity]]]:
     """The `(name, pair type, quantity)` triples of a `State` class's `Pair[Field[Q]]` leaves."""
     hints = typing.get_type_hints(cls)
     pairs = []
-    for field in dataclasses.fields(cls):  # type: ignore[arg-type]
-        pair = typing.get_origin(hints[field.name])
-        if isinstance(pair, type) and issubclass(pair, Pair):
-            (member,) = typing.get_args(hints[field.name])
-            (quantity,) = typing.get_args(member)
-            pairs.append((field.name, pair, quantity))
+    for field_ in dataclasses.fields(cls):  # type: ignore[arg-type]
+        pair = typing.get_origin(hints[field_.name])
+        if isinstance(pair, type) and issubclass(pair, common_utils.Pair):
+            (member,) = typing.get_args(hints[field_.name])
+            (quantity_,) = typing.get_args(member)
+            pairs.append((field_.name, pair, quantity_))
     return tuple(pairs)
 
 
-def leaf_quantities(cls: type[State]) -> dict[str, type[Quantity]]:
+def leaf_quantities(cls: type[State]) -> dict[str, type[quantity.Quantity]]:
     """The quantity of each `Field` leaf of a `State` class, by name, in declaration order."""
-    return {name: quantity for name, quantity, _ in _declarations(cls)}  # type: ignore[arg-type]
+    return {name: quantity_ for name, quantity_, _ in _declarations(cls)}  # type: ignore[arg-type]
 
 
 class Empty(State):
@@ -174,25 +176,27 @@ def allocate[S: State](
     The plain leaves (times, flags) are given by keyword in `plain`.
     """
 
-    def leaf(name: str, quantity: type[Quantity]) -> Field:
-        field = zeros(quantity, grid, allocator)
+    def leaf(name: str, quantity_: type[quantity.Quantity]) -> field.Field:
+        field_ = zeros(quantity_, grid, allocator)
         if fill is not None:
-            field.ndarray[...] = fill(name, quantity.dims)  # type: ignore[index]  # NDArrayObject declares no __setitem__
-        return field
+            field_.ndarray[...] = fill(name, quantity_.dims)  # type: ignore[index]  # NDArrayObject declares no __setitem__
+        return field_
 
     values: dict[str, Any] = {}
     # type objects are hashable, but typeshed's cache wrapper cannot say so
-    for name, quantity, optional in _declarations(cls):  # type: ignore[arg-type]
+    for name, quantity_, optional in _declarations(cls):  # type: ignore[arg-type]
         if optional and only is not None and name not in only:
             values[name] = None
             continue
-        values[name] = leaf(name, quantity)
-    for name, pair, quantity in _pairs(cls):  # type: ignore[arg-type]
-        values[name] = pair(leaf(name, quantity), leaf(name, quantity))
+        values[name] = leaf(name, quantity_)
+    for name, pair, quantity_ in _pairs(cls):  # type: ignore[arg-type]
+        values[name] = pair(leaf(name, quantity_), leaf(name, quantity_))
     return cls(**values, **plain)
 
 
-def copy[S1: State, S2: State](src: S1, dst: S2, kind: type[Quantity] = Quantity) -> S2:
+def copy[S1: State, S2: State](
+    src: S1, dst: S2, kind: type[quantity.Quantity] = quantity.Quantity
+) -> S2:
     """
     The present leaves of `src` whose quantity is a `kind` written into `dst`, in place.
 
@@ -209,8 +213,8 @@ def copy[S1: State, S2: State](src: S1, dst: S2, kind: type[Quantity] = Quantity
             "the states' present leaves must match on both sides; "
             f"missing in the destination: {missing}; unexpected in it: {unexpected}"
         )
-    for name, field in src_fields.items():
-        dst_fields[name].ndarray[...] = field.ndarray  # type: ignore[index]  # NDArrayObject declares no __setitem__
+    for name, field_ in src_fields.items():
+        dst_fields[name].ndarray[...] = field_.ndarray  # type: ignore[index]  # NDArrayObject declares no __setitem__
     return dst
 
 
