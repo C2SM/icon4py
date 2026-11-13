@@ -18,8 +18,8 @@ from icon4py.model.common import (
     utils as common_utils,
 )
 from icon4py.model.common.grid import base as base_grid
+from icon4py.model.testing.fixtures import backend_like, grid, grid_manager
 
-from tests.common.fixtures import grid
 from tests.common.unit_tests.utils import Pressure, Salt, TendencyOfPressure, Vt
 
 

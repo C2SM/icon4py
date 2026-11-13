@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""A physics driver on the simple grid, with stub processes, for the unit tests."""
+"""A physics driver with stub processes, for the unit tests."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
 from icon4py.model.common import dimension as dims, field, framework as fw
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.framework import quantities as qty, states
-from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -116,15 +116,16 @@ def make_input(
 
 
 def make_output(
+    grid: base_grid.Grid,
     prognostic: states.PrognosticState,
     tracer_state: states.TracerState,
     *,
     diagnostics: states.Diagnostics | None = None,
     perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None = None,
 ) -> physics_driver.PhysicsDriver.Output:
-    """The output continuing the given states, with new diagnostics on the simple grid if none."""
+    """The output continuing the given states, with new diagnostics on `grid` if none."""
     if diagnostics is None:
-        diagnostics = fw.allocate(states.Diagnostics, simple.simple_grid(), None)
+        diagnostics = fw.allocate(states.Diagnostics, grid, None)
     return physics_driver.PhysicsDriver.Output(
         vn=prognostic.vn,
         w=prognostic.w,

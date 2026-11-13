@@ -21,6 +21,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, fr
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import component_tests
+from icon4py.model.testing.fixtures import backend_like, grid, grid_manager
 
 
 DTIME = datetime.timedelta(seconds=10)

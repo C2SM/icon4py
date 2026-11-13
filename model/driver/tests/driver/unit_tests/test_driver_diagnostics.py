@@ -18,24 +18,19 @@ import xarray as xr
 
 from icon4py.model.common import dimension as dims, field, framework as fw
 from icon4py.model.common.framework import quantities as qty, states
-from icon4py.model.common.grid import base, simple
+from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import utils as io_utils
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_diagnostics, driver_output_sources as output_sources
 from icon4py.model.testing import test_utils
-from icon4py.model.testing.fixtures import backend
+from icon4py.model.testing.fixtures import backend, backend_like, grid, grid_manager
 
 
 def _dataarrays(fields: Mapping[str, field.Field]) -> dict[str, xr.DataArray]:
     """The fields as IO writes them."""
     return {name: io_utils.to_data_array(field_, to_host=True) for name, field_ in fields.items()}
-
-
-@pytest.fixture
-def grid() -> base.Grid:
-    return simple.simple_grid()
 
 
 #: Uniform wind-program inputs: with constant ``vn`` and RBF coefficients the reconstructed

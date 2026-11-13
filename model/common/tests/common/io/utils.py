@@ -22,7 +22,6 @@ from icon4py.model.testing import datatest_utils as dt_utils, definitions as tes
 # setting backend to fieldview embedded here.
 backend = None
 UNLIMITED = None
-simple_grid = simple.simple_grid()
 
 grid_file = dt_utils.get_grid_filepath(test_defs.Grids.R02B04_GLOBAL)
 global_grid = grid_utils.get_grid_manager_from_identifier(
@@ -56,4 +55,4 @@ def model_dataarrays(grid: base.Grid) -> dict[str, xr.DataArray]:
 
 
 def state_values() -> Iterator[xr.DataArray]:
-    yield from model_dataarrays(simple_grid).values()
+    yield from model_dataarrays(simple.simple_grid()).values()
