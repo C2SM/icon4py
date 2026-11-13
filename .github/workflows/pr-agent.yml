@@ -9,6 +9,9 @@ on:
     types: [opened, reopened, ready_for_review]
   issue_comment:
     types: [created]
+  pull_request:
+    branches:
+      - main
 
 # No 'contents: write': a prompt injection in a diff must not become a way to push.
 permissions:
@@ -33,6 +36,7 @@ jobs:
           && github.event.pull_request.draft == false
           && github.event.pull_request.user.type != 'Bot'
         )
+        || github.event_name == 'pull_request'
         || (
           github.event_name == 'issue_comment'
           && github.event.issue.pull_request != null
@@ -163,6 +167,8 @@ jobs:
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "false"
           github_action_config.auto_improve: "false"
+          github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "synchronize"]'
+          PR_AGENT_CONFIG_BRANCH: ci-pr-agent
           # Model output must not write labels or the PR body. Set here rather
           # than in '.pr_agent.toml', which PR Agent skips if fetching it fails.
           pr_reviewer.enable_review_labels_effort: "false"
