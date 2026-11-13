@@ -216,9 +216,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     sin_lat = array_ns.sin(cell_lat)
     cos_lat = array_ns.cos(cell_lat)
-    # Broadcast over levels: the Newton iteration is pointwise in (cell, level), so
-    # all levels are solved at once instead of one level at a time, which reduces
-    # the number of (small) kernel launches by a factor of num_levels.
     fac1 = (1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0))[:, None]
     fac2 = (
         (8.0 / 5.0 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * math.pi)
