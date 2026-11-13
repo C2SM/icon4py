@@ -10,24 +10,14 @@ on:
   issue_comment:
     types: [created]
 
-  ## COMMENTED OUT: only for testing changes to this workflow.
-  ## It only works for PRs to `main` branch from branches in the upstream icon4py repo.
-  ## The other blocks marked like this one must be re-enabled with it.
-  # pull_request:
-  #   branches:
-  #     - main
-  ## END
-
-# No 'contents: write': a prompt injection in a diff must not become a way to
-# push. 'issues: write' is only needed for the reaction acknowledging a command.
+# No 'contents: write': a prompt injection in a diff must not become a way to push.
 permissions:
   contents: read
   issues: write
   pull-requests: write
 
-# No cancelling: a run joins its group when queued, before the job 'if' is
-# evaluated, so any comment on a PR would cancel its in-flight review. Comment
-# runs are keyed on the comment id so a later comment cannot evict a queued one.
+# Never cancel: runs join the group before the job 'if' is evaluated, so any
+# PR comment would cancel an in-flight review.
 concurrency:
   group: pr-agent-${{ github.event_name }}-${{ github.event.comment.id || github.event.pull_request.number }}
   cancel-in-progress: false
@@ -35,11 +25,6 @@ concurrency:
 jobs:
   pr-agent:
     # Structural filters only; authorization happens in the 'Authorize' step.
-    # Drafts are skipped so a PR is reviewed once, when ready. The author type
-    # is checked besides the sender's for bot PRs that a human marks as ready.
-    #
-    ## COMMENTED OUT: add "|| github.event_name == 'pull_request'" to the
-    ## 'pull_request_target' condition.
     if: >-
       github.event.sender.type != 'Bot'
       && (
@@ -55,21 +40,15 @@ jobs:
         )
       )
     runs-on: ubuntu-latest
-    # Backstop; the effective limit is on the 'Run PR Agent' step.
-    timeout-minutes: 45
+    timeout-minutes: 45 # Keep in sync with JOB_TIMEOUT below.
     steps:
-      # 'pull_request_target' ignores the fork-approval setting, so without
-      # this gate anyone opening a PR could spend the CSCS allocation.
-      # 'author_association' is not used: it hides private organization
-      # members and does not imply write access.
-      #
-      # An API failure is an error, not a denial, so a broken gate is visible.
+      # The only gate, since 'pull_request_target' ignores fork approval.
+      # Fails closed: an API error fails the job instead of denying silently.
       - name: Authorize
         id: auth
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          # Passed via env to avoid script injection.
           ACTOR: ${{ github.event_name == 'issue_comment' && github.event.comment.user.login || github.event.pull_request.user.login }}
         run: |
           if ! level=$(gh api "repos/${REPO}/collaborators/${ACTOR}/permission" \
@@ -90,11 +69,7 @@ jobs:
               ;;
           esac
 
-      # Models have no default on purpose. Validated here because the next
-      # step tolerates failure, which would hide a misconfiguration.
-      #
-      # 'openai/' selects LiteLLM's OpenAI-compatible route and is not part of
-      # the model id, so the variables hold ids as CSCS publishes them.
+      # Validated here because the next step tolerates failure.
       - name: Resolve models
         id: models
         if: steps.auth.outputs.allowed == 'true'
@@ -104,14 +79,12 @@ jobs:
           BUDGET: ${{ vars.PR_AGENT_TOKEN_BUDGET || '262144' }}
           OUTPUT: ${{ vars.PR_AGENT_MAX_OUTPUT_TOKENS || '100000' }}
           AI_TIMEOUT: ${{ vars.PR_AGENT_AI_TIMEOUT || '720' }}
-          # This job's 'timeout-minutes', which expressions cannot read.
           JOB_TIMEOUT: "45"
         run: |
           fail() {
             echo "::error::$1 See docs/development/pr_agent.md#configuration-variables."
             exit 1
           }
-          # Non-numeric values would break the '-gt' tests with an unhelpful error.
           positive() {
             case "$2" in
               '' | 0* | *[!0-9]*) : ;;
@@ -121,24 +94,19 @@ jobs:
           }
           [ -n "${MODEL}" ] || fail "Repository variable PR_AGENT_MODEL is not set."
           [ -n "${FALLBACKS}" ] || fail "Repository variable PR_AGENT_FALLBACK_MODELS is not set; use 'none' for no fallback."
-          # PR Agent reads a non-positive limit as "no limit": it sends no
-          # output cap and reserves too little for the answer, which truncates.
+          # PR Agent reads a non-positive limit as "no limit".
           positive PR_AGENT_TOKEN_BUDGET "${BUDGET}"
           positive PR_AGENT_MAX_OUTPUT_TOKENS "${OUTPUT}"
           positive PR_AGENT_AI_TIMEOUT "${AI_TIMEOUT}"
-          # Keeps the arithmetic below inside int64.
           [ "${AI_TIMEOUT}" -le "$(( JOB_TIMEOUT * 60 ))" ] || fail "PR_AGENT_AI_TIMEOUT (${AI_TIMEOUT}s) exceeds the ${JOB_TIMEOUT} min job limit."
-          # A reserve at or above the budget leaves no room for the diff.
           [ "${BUDGET}" -gt "${OUTPUT}" ] || fail "PR_AGENT_TOKEN_BUDGET (${BUDGET}) must be greater than PR_AGENT_MAX_OUTPUT_TOKENS (${OUTPUT})."
 
           fallbacks='[]'
           [ "${FALLBACKS}" = "none" ] || fallbacks=$(jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length > 0)) | map("openai/" + .)' <<<"${FALLBACKS}")
-          # Models can time out one after another; two minutes more for the
-          # diff fetch and publishing.
+          # Every model may time out in turn. A job timeout would cancel the run
+          # and turn it red, so the chain must fit under the job limit.
           chain=$(( 1 + $(jq 'length' <<<"${fallbacks}") ))
           step=$(( (chain * AI_TIMEOUT + 59) / 60 + 2 ))
-          # A job timeout is a cancellation, which 'continue-on-error' does not
-          # cover, so an unreachable step budget turns a tolerated miss red.
           [ "$(( step + 2 ))" -le "${JOB_TIMEOUT}" ] || fail "${chain} models at ${AI_TIMEOUT}s need ${step} min, leaving no margin under the ${JOB_TIMEOUT} min job limit. Lower PR_AGENT_AI_TIMEOUT, shorten PR_AGENT_FALLBACK_MODELS, or raise the job's timeout-minutes and JOB_TIMEOUT together."
 
           {
@@ -150,77 +118,66 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "::notice::Model openai/${MODEL}, fallbacks ${fallbacks}; context window ${BUDGET}, output reserve ${OUTPUT}, ${AI_TIMEOUT}s per model, ${step} min for the chain."
 
-      # Never add 'actions/checkout': this job holds a secret under
-      # 'pull_request_target', so it must not check out pull request code.
-      # PR Agent reads the diff through the GitHub API.
+      # Never add 'actions/checkout': this job holds a secret and must not run
+      # pull request code. PR Agent reads the diff through the GitHub API.
       - name: Run PR Agent
         id: pragent
         if: success() && steps.auth.outputs.allowed == 'true'
-        # The inference service has no availability guarantee, and an advisory
-        # review must not look like a CI failure.
         continue-on-error: true
-        # On the step, not the job, so a timeout is tolerated as well. A 429
-        # or 5xx replays the same model, so 'ai_timeout' alone does not bound
-        # this. 'fromJSON' because a step output is a string, and the runner
-        # drops a timeout that is not a number.
+        # 'fromJSON' because the runner ignores a timeout that is not a number.
         timeout-minutes: ${{ fromJSON(steps.models.outputs.step_timeout) }}
-        # Pinned by digest (tag '0.50.0-github_action') because the image
-        # receives the inference key.
+        # Tag '0.50.0-github_action', pinned because the image receives the key.
         uses: docker://pragent/pr-agent@sha256:548e894a88071180832b2f4233f734d0acd0db1a879e2fcbaa70bac8b8372ebe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # PR Agent only accepts the key and endpoint from the environment,
-          # so a pull request cannot redirect them. The key is shared with the
-          # weekly Slack summary workflow.
+          # Shared with the weekly Slack summary workflow.
           OPENAI.KEY: ${{ secrets.CSCS_INFERENCE_API_KEY }}
           OPENAI.API_BASE: ${{ vars.PR_AGENT_API_BASE || 'https://api.inference.cscs.ch/v1' }}
           config.model: openai/${{ vars.PR_AGENT_MODEL }}
           config.fallback_models: ${{ steps.models.outputs.fallbacks }}
-          # PR Agent uses the smaller of the two, so one value serves both.
           config.custom_model_max_tokens: ${{ steps.models.outputs.budget }}
           config.max_model_tokens: ${{ steps.models.outputs.budget }}
-          # Reasoning tokens count against this limit: too small a value
-          # yields an empty response.
           config.max_output_tokens: ${{ steps.models.outputs.output }}
-          # Open-weight models follow the output schema more reliably when the
-          # prompt examples are repeated.
+          # Helps open-weight models follow the output schema.
           config.duplicate_prompt_examples: "true"
-          # Reviews of this repository take longer than the 120 s default. On
-          # timeout, the fallback is tried instead of waiting again on the
-          # same model.
           config.ai_timeout: ${{ steps.models.outputs.ai_timeout }}
           config.retry_same_model_on_timeout: "false"
-          # '/describe' rewrites the PR body from model output and '/improve'
-          # is noisy, so both run only on request.
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "false"
           github_action_config.auto_improve: "false"
-          ## COMMENTED OUT: PR Agent does not auto-review on 'synchronize' by
-          ## default, and reads '.pr_agent.toml' from the default branch unless
-          ## PR_AGENT_CONFIG_BRANCH is set. Use only a literal branch name: one
-          ## derived from PR input (e.g. 'github.head_ref') would let a pull
-          ## request supply its own review policy.
-          # github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "synchronize"]'
-          # PR_AGENT_CONFIG_BRANCH: ci-pr-agent
-          ## END
-          # Not in '.pr_agent.toml': if fetching that file fails, PR Agent
-          # falls back to defaults that let model output write labels.
+          # Model output must not write labels or the PR body. Set here rather
+          # than in '.pr_agent.toml', which PR Agent skips if fetching it fails.
           pr_reviewer.enable_review_labels_effort: "false"
           pr_reviewer.enable_review_labels_security: "false"
-          # Also not in '.pr_agent.toml', but because PR Agent refuses this
-          # key from a repository file: it governs what a failure message may
-          # disclose, so only the host may enable it.
+          pr_description.publish_description_as_comment: "true"
+          # PR Agent accepts this key only from the host, not '.pr_agent.toml'.
           pr_reviewer.publish_error_details: "true"
 
-      # 'continue-on-error' makes a failed run look like a reviewed one;
-      # 'outcome' is the result before that rewrite.
-      - name: Report a failed PR Agent run
-        if: steps.pragent.outcome == 'failure'
+      # 'outcome' is the result before 'continue-on-error' turns it into success.
+      # A run started from a comment does not show up on the PR, so the failure
+      # is also reported there, in one comment that a later success removes.
+      - name: Report the PR Agent outcome on the PR
+        if: steps.pragent.outcome == 'failure' || steps.pragent.outcome == 'success'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number || github.event.issue.number }}
+          OUTCOME: ${{ steps.pragent.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          marker='<!-- pr-agent-run-failed -->'
+          existing=$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"${marker}\"))) | .id" | tail -n 1)
+          if [ "${OUTCOME}" = "success" ]; then
+            [ -z "${existing}" ] || gh api -X DELETE "repos/${REPO}/issues/comments/${existing}"
+            exit 0
+          fi
           echo "::warning title=PR Agent failed::No review was posted. See the 'Run PR Agent' log."
-          {
-            echo "### PR Agent failed or timed out"
-            echo
-            echo "No review was posted; the run is green because the check is advisory."
-            echo "The cause is in the \`Run PR Agent\` log; see docs/development/pr_agent.md#configuration-variables."
-          } >> "$GITHUB_STEP_SUMMARY"
+          body="${marker}
+          **PR Agent could not complete its last run** ([log](${RUN_URL})). The review is advisory, so nothing needs to be done; a user with write access can retry with \`/review\`."
+          if [ -n "${existing}" ]; then
+            gh api -X PATCH "repos/${REPO}/issues/comments/${existing}" -f body="${body}" --silent
+          else
+            gh api "repos/${REPO}/issues/${PR}/comments" -f body="${body}" --silent
+          fi
