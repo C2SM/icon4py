@@ -124,7 +124,7 @@ def _coefficient_field(
     """Three quadratic extrapolation coefficient rows, aligned to the levels they multiply."""
     return gtx.as_field(
         gtx.domain({horizontal_dim: (0, size), dims.KDim: (k_start, k_start + 3)}),
-        np.random.default_rng().uniform(size=(size, 3)),
+        data_alloc.rng.uniform(size=(size, 3)),
         dtype=wpfloat,
         allocator=data_alloc.allocator,
     )
