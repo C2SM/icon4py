@@ -25,17 +25,12 @@ from icon4py.model.common.grid import base, simple
 from icon4py.model.common.io import utils as io_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_output_sources
-from icon4py.model.testing.fixtures import backend
+from icon4py.model.testing.fixtures import backend, backend_like, grid, grid_manager
 
 
 def _dataarrays(fields: Mapping[str, field.Field]) -> dict[str, xr.DataArray]:
     """The fields as IO writes them."""
     return {name: io_utils.to_data_array(field_, to_host=True) for name, field_ in fields.items()}
-
-
-@pytest.fixture
-def grid() -> base.Grid:
-    return simple.simple_grid()
 
 
 @pytest.fixture

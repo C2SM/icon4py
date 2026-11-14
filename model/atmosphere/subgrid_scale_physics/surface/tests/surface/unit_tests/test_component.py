@@ -23,6 +23,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
 from icon4py.model.common import framework as fw
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import component_tests
+from icon4py.model.testing.fixtures import backend_like, grid, grid_manager
 
 
 _CONFIG = surface_config.SurfaceConfig(
