@@ -26,7 +26,7 @@ jobs:
       fallback_models: ${{ vars.PR_AGENT_FALLBACK_MODELS }}
       token_budget: ${{ vars.PR_AGENT_TOKEN_BUDGET }}
       max_output_tokens: ${{ vars.PR_AGENT_MAX_OUTPUT_TOKENS }}
-      ai_timeout: ${{ vars.PR_AGENT_AI_TIMEOUT }}
+      ai_timeout: "1" # TEST: force every model to time out
       docs_url: https://github.com/C2SM/icon4py/blob/main/docs/development/pr_agent.md
     secrets:
       inference_api_key: ${{ secrets.PR_AGENT_INFERENCE_API_KEY }}
