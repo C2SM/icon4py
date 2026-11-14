@@ -19,7 +19,7 @@ from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils import compute_airmass
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
@@ -347,6 +347,18 @@ class Icon4pyDriver:
                         diffusion_diagnostic_state,
                         prognostic_states.next,
                         self.model_time_variables.dtime_in_seconds,
+                    )
+                # Diffusion skips its halo exchange for NWP/AES forcing, relying on the physics
+                # to exchange afterwards. Without physics the halos would stay stale.
+                if self.granules.physics is None and self.granules.diffusion.config.iforcing in (
+                    diffusion.ForcingType.NWP,
+                    diffusion.ForcingType.AES,
+                ):
+                    self.exchange.exchange(
+                        dims.CellDim,
+                        prognostic_states.next.w,
+                        prognostic_states.next.theta_v,
+                        prognostic_states.next.exner,
                     )
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
@@ -816,7 +828,7 @@ def initialize_driver(
                 config=config.prescribed_tendencies,
                 grid=grid_manager.grid,
                 backend=backend,
-                rank=process_props.rank,
+                decomposition_info=decomposition_info,
             )
             if config.prescribed_tendencies.data_path is not None
             else None
@@ -872,6 +884,7 @@ def initialize_driver_states(
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
+        decomposition_info=icon4py_driver.decomposition_info,
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(
         grid=icon4py_driver.grid, allocator=allocator

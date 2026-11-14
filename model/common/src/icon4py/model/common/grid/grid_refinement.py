@@ -152,31 +152,40 @@ _LAST_BOUNDARY: dict[gtx.Dimension, h_grid.Zone] = {
 }
 
 
-def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
-    """There is a speciality in the setup of the ICON halos: generally halo points are located at the end of the arrays after all
-    points owned by a node. This is true for global grids and for a local area model for all points with a
-    refinement control value larger than (6, 2) for HALO level 1, (4,1) for HALO_LEVEL_2 and 2 for the
-    edges of HALO_LEVEL_3 (``refine_edges_atm`` in ``mo_setup_subdivision.f90``).
-
-    That is for the local area grid some (but not all!) halo points that are lateral boundary points are placed with the lateral boundary
-    domains rather than the halo. The reason for this is mysterious (to me) as well as what advantage it might have.
-
-    Disadvantage clearly is that in the LAM case the halos are **not contigous**.
+def is_placed_with_owned(
+    dim: gtx.Dimension, halo_levels: data_alloc.NDArray, refinement_ctrl: data_alloc.NDArray
+) -> data_alloc.NDArray:
     """
-    assert domain.zone.is_halo(), "Domain must be a halo Zone."
-    match domain.dim:
+    Mask of the points ICON places with the owned points instead of in the halo.
+
+    In a limited area grid ICON keeps the halo points that are close to the lateral boundary in the
+    lateral boundary zone of their refinement level, so that halo loops never reach them. Which ones
+    depends on the halo level (`flag2` in ICON) and on the raw `refin_ctl` value of the grid file
+    (`refine_*_atm` in `mo_setup_subdivision.f90`). Owned points are always placed with the owned
+    points. As a consequence, in a limited area grid the halo is **not contiguous**.
+
+    ICON erases the negative `refin_ctl` values only after this ordering, so they still matter here.
+    """
+    first = halo_levels == decomposition.DecompositionFlag.FIRST_HALO_LEVEL
+    halo = halo_levels != decomposition.DecompositionFlag.OWNED
+    match dim:
+        case dims.CellDim:
+            kept = (halo & (refinement_ctrl == 1)) | (first & (refinement_ctrl == 2))
         case dims.EdgeDim:
-            match domain.zone:
-                case h_grid.Zone.HALO:
-                    return 6
-                case h_grid.Zone.HALO_LEVEL_2:
-                    return 4
-                case _:
-                    return 2
-        case dims.CellDim | dims.VertexDim:
-            return 2 if domain.zone == h_grid.Zone.HALO else 1
+            # Following ICON (mo_setup_subdivision.f90, refine_edges): refin 1-4 edges are kept
+            # at any halo level; refin 5-6 and negative only at halo level 1.
+            kept = (halo & ((refinement_ctrl >= 1) & (refinement_ctrl <= 4))) | (
+                first & ((refinement_ctrl == 5) | (refinement_ctrl == 6) | (refinement_ctrl < 0))
+            )
+        case dims.VertexDim:
+            kept = (halo & (refinement_ctrl == 1)) | (
+                first & ((refinement_ctrl == 2) | (refinement_ctrl < 0))
+            )
         case _:
-            raise ValueError(f"Invalid domain: {domain}, must be a HALO domain")
+            raise ValueError(
+                f"Dimension must be one of the local horizontals: {list(dims.horizontal_dims())}"
+            )
+    return (halo_levels == decomposition.DecompositionFlag.OWNED) | kept
 
 
 def compute_domain_bounds(
@@ -198,8 +207,9 @@ def compute_domain_bounds(
     For a global model grid all points are unordered. `Zone` that do not exist for a global model grid
     return empty domains.
 
-    For distributed grids halo points build their own `Domain`and are located at the end of the field arrays, with the exception of
-    some points in the lateral boundary as described in (_refinement_level_placed_with_halo)
+    For distributed grids the halo points follow the owned points, level by level, except for the
+    lateral boundary halo points that ICON places with the owned points (see `is_placed_with_owned`).
+    This is the layout of `build_patch_start_end` in `mo_setup_subdivision.f90`.
 
     Args:
         dim: Dimension one of `CellDim`. `VertexDim`, `EdgeDim`
@@ -210,15 +220,10 @@ def compute_domain_bounds(
     assert dim.kind == gtx.DimensionKind.HORIZONTAL, (
         f"Dimension must be one of {list(dims.horizontal_dims())}"
     )
+    halo_levels = decomposition_info.halo_levels(dim)
+    with_owned = is_placed_with_owned(dim, halo_levels, refinement_fields[dim].ndarray)
     refinement_ctrl = convert_to_non_nested_refinement_values(refinement_fields[dim].ndarray, dim)
-    array_ns = data_alloc.array_namespace(refinement_ctrl)
-    owned = decomposition_info.owner_mask(dim)
-    halo_level_1 = decomposition_info.halo_level_mask(
-        dim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL
-    )
-    halo_level_2 = decomposition_info.halo_level_mask(
-        dim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL
-    )
+    array_ns = data_alloc.array_namespace(refinement_fields[dim].ndarray)
 
     start_indices = {}
     end_indices = {}
@@ -227,48 +232,18 @@ def compute_domain_bounds(
     start_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
     end_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
 
-    halo_domains = h_grid.get_halo_domains(dim)
-    upper_boundary_level_1 = _refinement_level_placed_with_halo(
-        h_grid.domain(dim)(h_grid.Zone.HALO)
-    )
-    not_lateral_boundary_1 = (refinement_ctrl < 1) | (refinement_ctrl > upper_boundary_level_1)
-    halo_region_1 = array_ns.nonzero(halo_level_1 & not_lateral_boundary_1)[0]
-    not_lateral_boundary_2 = (refinement_ctrl < 1) | (
-        refinement_ctrl
-        > _refinement_level_placed_with_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
-    )
-
-    halo_region_2 = array_ns.nonzero(halo_level_2 & not_lateral_boundary_2)[0]
-    start_halo_2, end_halo_2 = (
-        (array_ns.min(halo_region_2).item(), array_ns.max(halo_region_2).item() + 1)
-        if halo_region_2.size > 0
-        else (refinement_ctrl.size, refinement_ctrl.size)
-    )
-    for domain in halo_domains:
-        match domain.zone:
-            case h_grid.Zone.HALO:
-                start_index = (
-                    array_ns.min(halo_region_1).item() if halo_region_1.size > 0 else start_halo_2
-                )
-                end_index = start_halo_2
-            case h_grid.Zone.HALO_LEVEL_2:
-                start_index = start_halo_2
-                end_index = end_halo_2
-            case h_grid.Zone.HALO_LEVEL_3:
-                halo_level_3 = decomposition_info.halo_level_mask(
-                    dim, decomposition.DecompositionFlag.THIRD_HALO_LEVEL
-                )
-                not_lateral_boundary_3 = (refinement_ctrl < 1) | (
-                    refinement_ctrl > _refinement_level_placed_with_halo(domain)
-                )
-                halo_region_3 = array_ns.nonzero(halo_level_3 & not_lateral_boundary_3)[0]
-                start_index, end_index = (
-                    (array_ns.min(halo_region_3).item(), array_ns.max(halo_region_3).item() + 1)
-                    if halo_region_3.size > 0
-                    else (refinement_ctrl.size, refinement_ctrl.size)
-                )
-        start_indices[domain] = gtx.int32(start_index)  # type: ignore [attr-defined]
-        end_indices[domain] = gtx.int32(end_index)  # type: ignore [attr-defined]
+    # An empty halo level is placed at the end of the previous one, as in ICON.
+    previous_end = array_ns.sum(with_owned).item()
+    for domain in sorted(h_grid.get_halo_domains(dim), key=lambda d: d.zone.level):
+        found = array_ns.nonzero((halo_levels == domain.zone.level) & ~with_owned)[0]
+        start_index, end_index = (
+            (array_ns.min(found).item(), array_ns.max(found).item() + 1)
+            if found.size > 0
+            else (previous_end, previous_end)
+        )
+        start_indices[domain] = gtx.int32(start_index)
+        end_indices[domain] = gtx.int32(end_index)
+        previous_end = end_index
 
     ordered_domains = h_grid.get_ordered_domains(dim)
     for domain in ordered_domains:
@@ -277,7 +252,7 @@ def compute_domain_bounds(
             if domain.zone.is_lateral_boundary()
             else _LAST_BOUNDARY[dim].level + domain.zone.level
         )
-        found = array_ns.nonzero((refinement_ctrl == value) & owned)[0]
+        found = array_ns.nonzero((refinement_ctrl == value) & with_owned)[0]
         start_index, end_index = (
             (array_ns.min(found).item(), array_ns.max(found).item() + 1)
             if found.size > 0

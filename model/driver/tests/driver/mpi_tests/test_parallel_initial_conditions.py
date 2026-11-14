@@ -64,9 +64,6 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     backend: gtx_typing.Backend,
     download_ser_data: None,
 ) -> None:
-    if experiment.description.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
-
     atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11
     # NOTE: actually vn, w, exner, theta_v, rho have delta = 0.0 also on
     # distributed GPU, u,v do not because they are computed with RBF
@@ -98,7 +95,13 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     grid_file_path = grid_utils._download_grid_file(experiment.description.grid)
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
-    single_rank_config = experiment.config
+    if process_props.rank == 0:
+        dt_utils.download_experiment(experiment.description, single_rank_process_props)
+    process_props.comm.Barrier()
+    single_rank_config = driver_config.read_experiment_config_from_yaml(
+        dt_utils.get_path_for_experiment(experiment.description, single_rank_process_props)
+        / "config.yml"
+    )
     single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=single_rank_config.vertical_grid,
@@ -138,6 +141,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         global_reductions=single_rank_icon4py_driver.global_reductions,
         solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
         tracer_prep_adv_state=single_rank_tracer_prep_adv_state,
+        decomposition_info=single_rank_icon4py_driver.decomposition_info,
     )
     single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
@@ -156,7 +160,13 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         tracer_prep_adv_state=single_rank_tracer_prep_adv_state,
     )
 
-    multi_rank_config = experiment.config
+    # Topography/prescribed tendencies are read from the global (single-rank) data.
+    data_overrides = {
+        section: {"data_path": getattr(single_rank_config, section).data_path}
+        for section in ("initial_condition", "topography", "prescribed_tendencies")
+        if hasattr(getattr(single_rank_config, section), "data_path")
+    }
+    multi_rank_config = experiment.config.with_overrides(**data_overrides)
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=multi_rank_config.vertical_grid,
@@ -196,6 +206,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         global_reductions=multi_rank_icon4py_driver.global_reductions,
         solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
         tracer_prep_adv_state=multi_rank_tracer_prep_adv_state,
+        decomposition_info=multi_rank_icon4py_driver.decomposition_info,
     )
     multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=multi_rank_icon4py_driver.grid, allocator=allocator

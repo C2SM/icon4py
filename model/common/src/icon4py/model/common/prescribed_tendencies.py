@@ -33,7 +33,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import serialbox  # type: ignore[import-untyped]
 
-from icon4py.model.common import model_backends, time
+from icon4py.model.common import dimension as dims, model_backends, time
 from icon4py.model.common.states import nonhydro_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -41,6 +41,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid
 
 
@@ -60,14 +61,16 @@ class PrescribedTendencies:
         config: PrescribedTendenciesConfig,
         grid: icon_grid.IconGrid,
         backend: gtx_typing.Backend | None,
-        rank: int,
+        decomposition_info: decomposition_defs.DecompositionInfo,
     ) -> None:
         # data_path is None only for testcases, which do not construct this reader.
         assert config.data_path is not None
         self._grid = grid
         self._array_ns = data_alloc.import_array_ns(model_backends.get_allocator(backend))
+        self._cell_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.CellDim))
+        self._edge_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.EdgeDim))
         self._serializer = serialbox.Serializer(
-            serialbox.OpenModeKind.Read, str(config.data_path), f"icon_pydycore_rank{rank}"
+            serialbox.OpenModeKind.Read, str(config.data_path), "icon_pydycore_rank0"
         )
 
     def update(
@@ -102,33 +105,35 @@ class PrescribedTendencies:
 
         log.debug("Reading the prescribed tendencies of %s", date)
 
-        num_cells = self._grid.num_cells
-        num_edges = self._grid.num_edges
-
         # lateral boundary tendencies
-        self._fill(diagnostic_state_nh.grf_tend_rho, "grf_tend_rho", savepoint, num_cells)
-        self._fill(diagnostic_state_nh.grf_tend_thv, "grf_tend_thv", savepoint, num_cells)
-        self._fill(diagnostic_state_nh.grf_tend_w, "grf_tend_w", savepoint, num_cells)
-        self._fill(diagnostic_state_nh.grf_tend_vn, "grf_tend_vn", savepoint, num_edges)
+        self._fill(diagnostic_state_nh.grf_tend_rho, "grf_tend_rho", savepoint, self._cell_indices)
+        self._fill(diagnostic_state_nh.grf_tend_thv, "grf_tend_thv", savepoint, self._cell_indices)
+        self._fill(diagnostic_state_nh.grf_tend_w, "grf_tend_w", savepoint, self._cell_indices)
+        self._fill(diagnostic_state_nh.grf_tend_vn, "grf_tend_vn", savepoint, self._edge_indices)
         # slow physics tendencies
         self._fill(
             diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             "ddt_exner_phy",
             savepoint,
-            num_cells,
+            self._cell_indices,
         )
         self._fill(
             diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             "ddt_vn_phy",
             savepoint,
-            num_edges,
+            self._edge_indices,
         )
 
-    def _fill(self, field: gtx.Field, name: str, savepoint: serialbox.Savepoint, size: int) -> None:
-        # the serialized fields are padded to nproma
-        buffer = self._array_ns.squeeze(self._serializer.read(name, savepoint).astype(float))
+    def _fill(
+        self,
+        field: gtx.Field,
+        name: str,
+        savepoint: serialbox.Savepoint,
+        indices: data_alloc.NDArray,
+    ) -> None:
+        buffer = self._serializer.read(name, savepoint).astype(float).squeeze()
         field.ndarray[:, :] = self._array_ns.asarray(  # type: ignore[index] # NDArrayObject Protocol doesn't support this
-            buffer[:size, :]
+            buffer[indices, :]
         )
 
     def _available_nonhydro_init_dates(self) -> str:
