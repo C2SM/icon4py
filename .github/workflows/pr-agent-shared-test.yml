@@ -1,0 +1,32 @@
+name: PR Agent (shared workflow, TEST ONLY)
+
+# TEST ONLY, never merge: live test of GridTools/ci-workflows#3 in caller
+# test mode. Separate from pr-agent.yml so the in-repo workflow and its event
+# policy stay untouched.
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions: {}
+
+concurrency:
+  group: pr-agent-shared-test-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  pr-agent:
+    uses: GridTools/ci-workflows/.github/workflows/pr-agent.yml@e62981bd336bf0d6353b2c6017838544e271b327 # PR 3 head (test only)
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    with:
+      model: ${{ vars.PR_AGENT_MODEL }}
+      fallback_models: ${{ vars.PR_AGENT_FALLBACK_MODELS }}
+      token_budget: ${{ vars.PR_AGENT_TOKEN_BUDGET }}
+      max_output_tokens: ${{ vars.PR_AGENT_MAX_OUTPUT_TOKENS }}
+      ai_timeout: ${{ vars.PR_AGENT_AI_TIMEOUT }}
+      docs_url: https://github.com/C2SM/icon4py/blob/main/docs/development/pr_agent.md
+    secrets:
+      inference_api_key: ${{ secrets.PR_AGENT_INFERENCE_API_KEY }}
