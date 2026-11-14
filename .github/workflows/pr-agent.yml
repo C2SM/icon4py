@@ -77,7 +77,11 @@ jobs:
               /review | /improve | /ask | /describe | /help) ;;
               *) skip "Ignoring '${BODY%%[[:space:]]*}': only /review, /improve, /ask, /describe and /help are enabled." ;;
             esac
-            if grep -qE '(^|[[:space:]"])--' <<<"${BODY}"; then
+            # Check the body as PR Agent parses it (without '"' and '\') and
+            # refuse any '--' that does not follow a word character. No pipe:
+            # 'grep -q' exiting early would fail the pipeline.
+            stripped=$(LC_ALL=C tr -d '\042\134' <<<"${BODY}") # '"' and '\'
+            if LC_ALL=C grep -qE '(^|[^A-Za-z0-9_])--' <<<"${stripped}"; then
               skip "Ignoring the command: '--' setting arguments are not accepted."
             fi
           fi
