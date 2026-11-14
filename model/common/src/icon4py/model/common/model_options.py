@@ -72,6 +72,10 @@ def get_dace_options(
     # due to it falling into a less optimized code generation (on santis).
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
+    # TODO(edopao): The optimization pipeline takes extremly long (2h), it is possible
+    # that the optimization pipeline does not converge to a fix point.
+    if program_name == "compute_tracer_advection_after_horizontal_limiter":
+        optimization_args["disable_splitting"] = True
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
         if device != model_backends.DeviceType.ROCM:
