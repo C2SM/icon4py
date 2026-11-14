@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   pr-agent:
-    uses: GridTools/ci-workflows/.github/workflows/pr-agent.yml@e62981bd336bf0d6353b2c6017838544e271b327 # PR 3 head (test only)
+    uses: GridTools/ci-workflows/.github/workflows/pr-agent.yml@f49efd346e759af7ac773fc1373ff393d29ebbbe # PR 3 head (test only)
     permissions:
       contents: read
       issues: write
