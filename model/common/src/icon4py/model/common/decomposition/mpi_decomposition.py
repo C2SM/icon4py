@@ -485,10 +485,25 @@ class GlobalReductions(Reductions):
     def _sum_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
         return array_ns.asarray([dtype.type(0)])
 
+    @staticmethod
+    def _max_or_inf_if_not_finite(buffer: data_alloc.NDArray) -> data_alloc.ScalarLikeArray:
+        """Local maximum, replaced by +inf when it is NaN.
+
+        ``MPI.MAX`` compares with ``>``, which is false for NaN, so a NaN would survive the
+        reduction on some ranks only. +inf compares reliably and marks the buffer as non-finite.
+        """
+        array_ns = data_alloc.array_namespace(buffer)
+        local_max = array_ns.max(buffer)
+        return array_ns.where(array_ns.isfinite(local_max), local_max, array_ns.inf).astype(
+            buffer.dtype
+        )
+
     def _reduce(
         self,
         buffer: data_alloc.NDArray,
-        local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
+        local_reduction: Callable[
+            [data_alloc.NDArray], data_alloc.ScalarT | data_alloc.ScalarLikeArray
+        ],
         global_reduction: mpi4py.MPI.Op,
     ) -> state_utils.ScalarType:
         array_ns = data_alloc.array_namespace(buffer)
@@ -531,31 +546,41 @@ class GlobalReductions(Reductions):
         )
 
     def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        """Sum of the owned entries over all ranks.
+
+        Floating-point buffers are summed with the order-insensitive sum of ICON
+        (``decomp_defs.order_insensitive_sum``), so that the result is bitwise identical
+        to the single-rank sum of the same values, whatever the decomposition.
+        """
         buffer = self._prepare_buffer(buffer)
         array_ns = data_alloc.array_namespace(buffer)
         if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
-        return self._reduce(
-            buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
-            array_ns.sum,
-            mpi4py.MPI.SUM,
-        )
-
-    def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        buffer = self._prepare_buffer(buffer)
-        array_ns = data_alloc.array_namespace(buffer)
-        global_buffer_size = self._calc_buffer_size(buffer)
-        if global_buffer_size == 0:
-            raise ValueError("global_mean requires a non-empty buffer")
-
-        return (
-            self._reduce(
-                (buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)),
+        if not np.issubdtype(buffer.dtype, np.floating):
+            return self._reduce(
+                buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
                 array_ns.sum,
                 mpi4py.MPI.SUM,
             )
-            / global_buffer_size
+        abs_max = self._reduce(
+            array_ns.abs(buffer)
+            if buffer.size != 0
+            else self._sum_identity(buffer.dtype, array_ns),
+            self._max_or_inf_if_not_finite,
+            mpi4py.MPI.MAX,
         )
+        return decomp_defs.order_insensitive_sum(buffer, abs_max, allreduce=self._allreduce_exact)
+
+    def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        global_buffer_size = self._calc_buffer_size(self._prepare_buffer(buffer))
+        if global_buffer_size == 0:
+            raise ValueError("global_mean requires a non-empty buffer")
+        return self.sum(buffer) / global_buffer_size
+
+    def _allreduce_exact(self, value: int | float) -> int | float:
+        # the pickling ``allreduce`` adds Python numbers: exact for the integer total of the
+        # order-insensitive sum, unlike an int64 ``Allreduce``
+        return self.process_props.comm.allreduce(value, op=mpi4py.MPI.SUM)
 
 
 @decomp_defs.create_reduction.register(MPICommProcessProperties)

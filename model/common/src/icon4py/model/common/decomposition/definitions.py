@@ -12,9 +12,11 @@ import abc
 import dataclasses
 import functools
 import logging
+import math
 import warnings
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, ClassVar, Literal, Protocol, overload, runtime_checkable
+from typing import Any, ClassVar, Final, Literal, Protocol, overload, runtime_checkable
 
 import gt4py.next as gtx
 import numpy as np
@@ -569,28 +571,127 @@ class Reductions(Protocol):
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
 
 
+#: Fixed-point sum of ICON (``order_insensit_sum`` in ``mo_sync.f90``): every value is
+#: scaled by one common power of two and split into an integer part and a scaled fraction,
+#: both accumulated as integers. Integer addition is exact, so the result does not depend
+#: on the summation order, and a decomposed run reproduces the single-rank sum bitwise.
+#:
+#: ICON scales the values so that the largest magnitude lies below ``2**30``
+#: (``fact = 2**(30 - iexp)``). The integer part and the fraction then each fit in 30 bits:
+#: every value keeps 60 bits below the leading bit of the largest one, more than the 53 bits
+#: of a double, and the int64 accumulators cannot overflow before ``2**33`` elements.
+FIXED_POINT_BITS: Final[int] = 30
+#: ICON returns 0 when the binary exponent of the largest magnitude is below -980: the
+#: scale factor ``2**(30 - iexp)`` would exceed ``2**1010``, close to the largest double
+#: exponent (1023). Values that small count as zero.
+_MIN_FIXED_POINT_EXPONENT: Final[int] = -980
+
+
+def fixed_point_shift(abs_max: float) -> int:
+    """Binary shift that scales ``abs_max`` into ``[2**(FIXED_POINT_BITS - 1), 2**FIXED_POINT_BITS)``."""
+    return FIXED_POINT_BITS - math.frexp(abs_max)[1]
+
+
+def fixed_point_total(buffer: data_alloc.NDArray, shift: int) -> int:
+    """Exact integer total of ``buffer * 2**(shift + FIXED_POINT_BITS)``, every element truncated.
+
+    As in ICON, the integer parts and the scaled fractions of ``buffer * 2**shift`` are
+    accumulated separately in int64 (``isum``, ``fsum``); the two sums are then combined
+    into one Python integer, which cannot overflow.
+    """
+    array_ns = data_alloc.array_namespace(buffer)
+    scaled = array_ns.ldexp(buffer, shift)  # |scaled| < 2**FIXED_POINT_BITS
+    integer_part = scaled.astype(array_ns.int64)  # truncates towards zero like Fortran INT
+    fraction_part = array_ns.ldexp(scaled - integer_part, FIXED_POINT_BITS).astype(array_ns.int64)
+    # both parts are below 2**FIXED_POINT_BITS in magnitude, so the int64 sums cannot
+    # overflow for fewer than 2**33 elements
+    return (int(integer_part.sum()) << FIXED_POINT_BITS) + int(fraction_part.sum())
+
+
+def order_insensitive_sum(
+    buffer: data_alloc.NDArray,
+    abs_max: float,
+    allreduce: Callable[[int | float], int | float] | None = None,
+) -> float:
+    """Sum ``buffer`` independently of the order of its elements (ICON's ``order_insensit_sum``).
+
+    Args:
+        buffer: the local contributions.
+        abs_max: the largest magnitude over *all* contributions, those of other ranks included;
+            NaN or infinity when any contribution is.
+        allreduce: sums a Python number over all ranks, exactly when it is an integer;
+            ``None`` on a single rank.
+
+    Returns:
+        the sum, correctly rounded from the exact fixed-point total; 0 when ``abs_max`` is 0
+        or so small that ICON's scaling would overflow; NaN or infinity, propagated as by a
+        plain sum, when ``abs_max`` is not finite or the sum exceeds the largest double.
+
+    Example::
+
+        buffer        = [1234.5, 0.1]
+        abs_max       = 1234.5
+        shift         = 19
+        scaled        = buffer * 2**shift                         = [647_233_536, 52_428.8]
+        integer_part  = int(scaled)                               = [647_233_536, 52_428]
+        fraction_part = (scaled - integer_part) * 2**30           = [0, 858_993_459]
+        integer_sum   = sum(integer_part)                         = 647_285_964
+        fraction_sum  = sum(fraction_part)                        = 858_993_459
+        total         = integer_sum * 2**30 + fraction_sum        = 695_018_012_493_951_795
+        result        = total * 2**-(30 + shift)                  = 1234.6
+    """
+    if not math.isfinite(abs_max):
+        # some contribution is NaN or infinite: a plain sum propagates it
+        array_ns = data_alloc.array_namespace(buffer)
+        local_sum = float(array_ns.sum(buffer))
+        return allreduce(local_sum) if allreduce is not None else local_sum
+    if abs_max == 0.0 or math.frexp(abs_max)[1] < _MIN_FIXED_POINT_EXPONENT:
+        return 0.0
+    shift = fixed_point_shift(abs_max)
+    # exact total in units of 2**-(FIXED_POINT_BITS + shift); Python integers do not overflow
+    total: int | float = fixed_point_total(buffer, shift)
+    if allreduce is not None:
+        total = allreduce(total)
+    try:
+        return math.ldexp(float(total), -(FIXED_POINT_BITS + shift))
+    except OverflowError:
+        return math.copysign(math.inf, total)
+
+
 class SingleNodeReductions(Reductions):
     """Reductions for single-rank (non-distributed) runs.
 
     Single-rank runs have no halos, so all elements are owned and no masking
-    is needed. The entire buffer is reduced directly.
+    is needed. The entire buffer is reduced directly. Floating-point sums use the
+    order-insensitive sum of ICON, so that a distributed run reproduces them bitwise.
+    An empty buffer raises ``ValueError``, as in the distributed implementation.
     """
 
+    @staticmethod
+    def _require_non_empty(buffer: data_alloc.NDArray, name: str) -> None:
+        if buffer.size == 0:
+            raise ValueError(f"{name} requires a non-empty buffer")
+
     def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        self._require_non_empty(buffer, "global_min")
         array_ns = data_alloc.array_namespace(buffer)
         return array_ns.min(buffer).item()
 
     def max(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        self._require_non_empty(buffer, "global_max")
         array_ns = data_alloc.array_namespace(buffer)
         return array_ns.max(buffer).item()
 
     def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        self._require_non_empty(buffer, "global_sum")
         array_ns = data_alloc.array_namespace(buffer)
-        return array_ns.sum(buffer).item()
+        if not np.issubdtype(buffer.dtype, np.floating):
+            return array_ns.sum(buffer).item()
+        return order_insensitive_sum(buffer, float(array_ns.max(array_ns.abs(buffer))))
 
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        array_ns = data_alloc.array_namespace(buffer)
-        return array_ns.sum(buffer).item() / buffer.size
+        self._require_non_empty(buffer, "global_mean")
+        return self.sum(buffer) / buffer.size
 
 
 def get_runtype(with_mpi: bool = False) -> RunType:
