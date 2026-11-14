@@ -13,10 +13,12 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common.grid import (
+    base as base_grid,
     geometry,
     geometry_attributes,
     geometry_config,
     gridfile,
+    simple,
     vertical,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
@@ -154,3 +156,8 @@ def metrics_factory_from_savepoint(
     )
 
     yield factory
+
+
+@pytest.fixture
+def grid() -> base_grid.Grid:
+    return simple.simple_grid()

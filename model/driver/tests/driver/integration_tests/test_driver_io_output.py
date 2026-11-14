@@ -27,8 +27,8 @@ import xarray as xr
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.framework import states
 from icon4py.model.common.io import io as common_io
-from icon4py.model.common.states import tracer_states
 from icon4py.model.driver import (
     config as driver_config,
     driver,
@@ -52,7 +52,8 @@ def _open_output(path: pathlib.Path, output_backend: common_io.OutputBackend) ->
         case common_io.OutputBackend.NETCDF:
             return xr.open_dataset(path, decode_times=False)
         case common_io.OutputBackend.ZARR:
-            return xr.open_zarr(path, decode_times=False)
+            dataset: xr.Dataset = xr.open_zarr(path, decode_times=False)  # untyped in xarray
+            return dataset
 
 
 def _run_driver(
@@ -124,9 +125,9 @@ def test_driver_writes_output(
         assert "half_level" in ds["upward_air_velocity"].dims
         assert "edge" in ds["normal_velocity"].dims
         # diagnostics live on cells/full levels
-        assert "cell" in ds["temperature"].dims
+        assert "cell" in ds["air_temperature"].dims
         # a purely horizontal (surface) diagnostic
-        assert ds["surface_pressure"].dims == ("time", "cell")
+        assert ds["air_pressure_at_ground_level"].dims == ("time", "cell")
         assert ds.sizes["time"] == 2
 
 
@@ -151,7 +152,7 @@ def test_driver_writes_configured_field_groups(
             field_groups=[
                 common_io.FieldGroupIOConfig(
                     basename="winds",
-                    variables=["eastward_wind", "northward_wind", "surface_pressure"],
+                    variables=["eastward_wind", "northward_wind", "air_pressure_at_ground_level"],
                     output_interval=time.NumTimeSteps(2),
                     backend=common_io.OutputBackend.NETCDF,
                     mode=common_io.OutputMode.GATHER,
@@ -172,19 +173,23 @@ def test_driver_writes_configured_field_groups(
     assert not list(tmp_path.rglob(f"{OUTPUT_BASENAME}_*"))
     # the winds every second step: the initial state and step 2
     with _open_output(_find_one(tmp_path, "winds_*.nc"), common_io.OutputBackend.NETCDF) as ds:
-        assert {"eastward_wind", "northward_wind", "surface_pressure"} <= set(ds.variables)
+        assert {"eastward_wind", "northward_wind", "air_pressure_at_ground_level"} <= set(
+            ds.variables
+        )
         assert not set(driver_output_sources.PROGNOSTIC_VARIABLES) & set(ds.variables)
-        assert "temperature" not in ds.variables
+        assert "air_temperature" not in ds.variables
         assert ds.sizes["time"] == 2
         # the surface pressure is a purely horizontal field
-        assert ds["surface_pressure"].dims == ("time", "cell")
-        assert (ds["surface_pressure"].values > 0.0).all()
+        assert ds["air_pressure_at_ground_level"].dims == ("time", "cell")
+        assert (ds["air_pressure_at_ground_level"].values > 0.0).all()
     # the prognostics every step: the initial state and both steps
     with _open_output(
         _find_one(tmp_path, "prognostics_*.nc"), common_io.OutputBackend.NETCDF
     ) as ds:
         assert set(driver_output_sources.PROGNOSTIC_VARIABLES) <= set(ds.variables)
-        assert {"eastward_wind", "northward_wind", "surface_pressure"}.isdisjoint(ds.variables)
+        assert {"eastward_wind", "northward_wind", "air_pressure_at_ground_level"}.isdisjoint(
+            ds.variables
+        )
         assert ds.sizes["time"] == 3
 
 
@@ -206,14 +211,19 @@ def test_driver_writes_precipitation_from_muphys(
     config = config.with_overrides(
         driver={"end_of_simulation": time.NumTimeSteps(1)},
         # the physics needs all six moisture species; the JW initial condition fills qv
-        tracer_config=tracer_states.TracerConfig.all(),
+        tracer_config=states.TracerConfig.all(),
         muphys=muphys_config.MuphysConfig(),
         io=common_io.IOConfig(
             output_path=tmp_path / "io_driver_output",
             field_groups=[
                 common_io.FieldGroupIOConfig(
                     basename="precipitation",
-                    variables=["precipitation_flux", "rainfall_flux", "qv", "temperature"],
+                    variables=[
+                        "precipitation_flux",
+                        "rainfall_flux",
+                        "specific_humidity",
+                        "air_temperature",
+                    ],
                     backend=common_io.OutputBackend.NETCDF,
                     mode=common_io.OutputMode.GATHER,
                 ),
@@ -227,13 +237,13 @@ def test_driver_writes_precipitation_from_muphys(
         _find_one(tmp_path, "precipitation_*.nc"), common_io.OutputBackend.NETCDF
     ) as ds:
         assert ds.sizes["time"] == 2
-        for name in ("precipitation_flux", "rainfall_flux", "qv", "temperature"):
+        for name in ("precipitation_flux", "rainfall_flux", "specific_humidity", "air_temperature"):
             assert name in ds.variables, f"{name} missing from output"
             assert ds[name].dims == ("time", "level", "cell")
             assert np.isfinite(ds[name].values).all()
         assert ds["precipitation_flux"].attrs["standard_name"] == "precipitation_flux"
-        assert ds["qv"].attrs["standard_name"] == "specific_humidity"
+        assert ds["specific_humidity"].attrs["standard_name"] == "specific_humidity"
         # the physics buffers hold zeros before the process has run: the initial slice
         # of the fluxes is zero, the moist initial state is not
         assert not ds["precipitation_flux"].isel(time=0).values.any()
-        assert ds["qv"].isel(time=0).values.any()
+        assert ds["specific_humidity"].isel(time=0).values.any()

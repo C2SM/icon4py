@@ -12,7 +12,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends, time
+from icon4py.model.common import framework as fw, model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import (
@@ -165,10 +165,8 @@ def _run_driver_compare_single_multi_rank(
     }
     # the physics experiments validate the tracers too: stale tracer halos are exactly
     # what the physics driver's end-of-step exchange fixes
-    for tracer in single_rank_ds.tracers.current.active_fields():
-        compared[tracer.name] = tracer.field
-    for tracer in multi_rank_ds.tracers.current.active_fields():
-        multi_rank_compared[tracer.name] = tracer.field
+    compared.update(fw.fields(single_rank_ds.tracers.current))
+    multi_rank_compared.update(fw.fields(multi_rank_ds.tracers.current))
     single_rank_reference_fields: dict[str, object] = {
         field_name: field.asnumpy() for field_name, field in compared.items()
     }

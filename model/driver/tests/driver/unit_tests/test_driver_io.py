@@ -11,19 +11,19 @@
 import datetime
 import pathlib
 import uuid
-from collections.abc import Iterable
+from collections.abc import Mapping
 
+import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.exceptions as errors
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, field
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base, simple, vertical as v_grid
 from icon4py.model.common.io import io as common_io
-from icon4py.model.common.states import model as state_model, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import driver_diagnostics, driver_io, driver_output_sources
+from icon4py.model.driver import driver_diagnostics, driver_io
 
 from ..fixtures import ALL_OUTPUT_VARIABLES
 from .test_driver_diagnostics import (
@@ -31,7 +31,15 @@ from .test_driver_diagnostics import (
     make_diagnostic_state,
     uniform_prognostic_state,
 )
-from .test_driver_output_sources import allocated_physics_outputs, rainfall_outputs
+
+
+def rainfall_fields(grid: base.Grid) -> dict[str, field.Field]:
+    """The physics diagnostics of a run with a rainfall flux, as the physics driver offers them."""
+    return {"rainfall_flux": field.Field(qty.RainfallFluxOnCellK, _zero_cell_k(grid))}
+
+
+def _zero_cell_k(grid: base.Grid) -> gtx.Field:
+    return data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
 
 @pytest.fixture
@@ -98,8 +106,8 @@ def _assembler(
     grid: base.Grid,
     io_config: common_io.IOConfig,
     *,
-    tracer_config: tracer_states.TracerConfig | None = None,
-    physics_diagnostics: Iterable[physics_state.DiagnosticOutput] | None = None,
+    tracer_config: states.TracerConfig | None = None,
+    physics_fields: Mapping[str, field.Field] | None = None,
 ) -> driver_io.OutputStateAssembler:
     return driver_io.OutputStateAssembler(
         io_config=io_config,
@@ -107,7 +115,7 @@ def _assembler(
         backend=None,
         static_field_factories=StubStaticFields(grid),  # type: ignore[arg-type]  # stand-in serving the static fields
         tracer_config=tracer_config,
-        physics_diagnostics=physics_diagnostics,
+        physics_fields=physics_fields,
     )
 
 
@@ -119,24 +127,28 @@ def test_available_variables_are_the_prognostics_and_diagnostics(grid: base.Grid
 def test_available_variables_include_the_active_tracers(grid: base.Grid) -> None:
     assembler = _assembler(
         grid,
-        _io_config(("moisture", ["qv"])),
-        tracer_config=tracer_states.TracerConfig(qv=True, qc=True),
+        _io_config(("moisture", ["specific_humidity"])),
+        tracer_config=states.TracerConfig(qv=True, qc=True),
     )
-    assert assembler.available_variables == {*ALL_OUTPUT_VARIABLES, "qv", "qc"}
+    assert assembler.available_variables == {
+        *ALL_OUTPUT_VARIABLES,
+        "specific_humidity",
+        "specific_cloud_content",
+    }
 
 
 def test_available_variables_include_the_physics_diagnostic_outputs(grid: base.Grid) -> None:
     assembler = _assembler(
         grid,
         _io_config(("precipitation", ["rainfall_flux"])),
-        physics_diagnostics=allocated_physics_outputs(grid, rainfall_outputs()),
+        physics_fields=rainfall_fields(grid),
     )
     assert assembler.available_variables == {*ALL_OUTPUT_VARIABLES, "rainfall_flux"}
 
 
 def test_validate_output_variables_rejects_unknown_names() -> None:
     io_config = _io_config(("winds", ["eastward_wind", "foo", "bar"]))
-    sources = driver_io.output_variable_sources(tracer_config=None, physics_outputs={})
+    sources = driver_io.output_variable_sources(tracer_config=None, physics_fields={})
     with pytest.raises(errors.InvalidConfigError, match="field group 'winds': bar, foo") as err:
         driver_io.validate_output_variables(io_config, sources)
     # the message tells the user what is available
@@ -147,61 +159,59 @@ def test_validate_output_variables_rejects_ambiguous_names_only_when_requested(
     grid: base.Grid,
 ) -> None:
     # a physics output whose standard name is a prognostic variable name
-    clashing = state_model.FieldMetaData(
-        standard_name="air_density", units="kg m-3", dims=(dims.CellDim, dims.KDim)
-    )
-    sources = driver_io.output_variable_sources(
-        tracer_config=None,
-        physics_outputs=driver_output_sources.physics_diagnostic_outputs(
-            allocated_physics_outputs(grid, {"muphys": {"rho": clashing}})
-        ),
-    )
+    clashing = {"air_density": field.Field(qty.RhoOnCellK, _zero_cell_k(grid))}
+    sources = driver_io.output_variable_sources(tracer_config=None, physics_fields=clashing)
     assert sources["air_density"] == ["prognostic", "physics"]
 
-    driver_io.validate_output_variables(_io_config(("exner", ["exner_function"])), sources)
+    driver_io.validate_output_variables(
+        _io_config(("exner", ["dimensionless_exner_function"])), sources
+    )
     with pytest.raises(errors.InvalidConfigError, match="ambiguous: provided by the prognostic"):
         driver_io.validate_output_variables(_io_config(("rho", ["air_density"])), sources)
 
 
 def test_assembler_rejects_unknown_variables_at_setup(grid: base.Grid) -> None:
-    # no tracer is active, so 'qv' is not an output variable of this run
-    with pytest.raises(errors.InvalidConfigError, match="field group 'moisture': qv"):
-        _assembler(grid, _io_config(("moisture", ["qv"])))
+    # no tracer is active, so the specific humidity is not an output variable of this run
+    with pytest.raises(
+        errors.InvalidConfigError, match="field group 'moisture': specific_humidity"
+    ):
+        _assembler(grid, _io_config(("moisture", ["specific_humidity"])))
 
 
 def test_assembler_assembles_only_the_requested_variables(grid: base.Grid) -> None:
     prognostic_state = uniform_prognostic_state(grid)
-    tracer_state = tracer_states.TracerState(
-        qv=data_alloc.constant_field(grid, 0.01, dims.CellDim, dims.KDim)
+    tracer_state = states.TracerState(
+        qv=field.Field(
+            qty.QvOnCellK, data_alloc.constant_field(grid, 0.01, dims.CellDim, dims.KDim)
+        )
     )
+    requested = {
+        "air_density",
+        "specific_humidity",
+        "rainfall_flux",
+        "air_pressure_at_ground_level",
+    }
     assembler = _assembler(
         grid,
         _io_config(
-            ("prognostics", ["air_density", "eastward_wind", "surface_pressure"]),
-            ("moisture", ["qv", "rainfall_flux"]),
+            ("prognostics", ["air_density", "eastward_wind", "air_pressure_at_ground_level"]),
+            ("moisture", ["specific_humidity", "rainfall_flux"]),
         ),
-        tracer_config=tracer_states.TracerConfig(qv=True),
-        physics_diagnostics=allocated_physics_outputs(grid, rainfall_outputs()),
+        tracer_config=states.TracerConfig(qv=True),
+        physics_fields=rainfall_fields(grid),
     )
 
     diagnostic_state = make_diagnostic_state(grid)
-    state = assembler.assemble(
-        {"air_density", "qv", "rainfall_flux", "surface_pressure"},
-        prognostic_state,
-        tracer_state,
-        diagnostic_state,
-    )
-    assert set(state) == {"air_density", "qv", "rainfall_flux", "surface_pressure"}
-    assert state["qv"].attrs["standard_name"] == "specific_humidity"
-    assert state["rainfall_flux"].attrs["standard_name"] == "rainfall_flux"
-    assert state["rainfall_flux"].dims == ("cell", "level")
-    # a purely horizontal diagnostic
-    assert state["surface_pressure"].dims == ("cell",)
+    state = assembler.assemble(requested, prognostic_state, tracer_state, diagnostic_state)
+    assert set(state) == requested
+    for name, field_ in state.items():
+        assert field_.quantity.standard_name == name
+    assert state["specific_humidity"] is tracer_state.qv
 
     winds = assembler.assemble({"eastward_wind"}, prognostic_state, tracer_state, diagnostic_state)
     assert set(winds) == {"eastward_wind"}
     # the diagnostics are computed into the driver's diagnostic state
-    assert winds["eastward_wind"].data is diagnostic_state.u.ndarray
+    assert winds["eastward_wind"] is diagnostic_state.u
 
 
 def test_assembler_builds_no_diagnostics_computer_without_diagnostics(

@@ -19,11 +19,13 @@ import gt4py.next as gtx
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
+    framework as fw,
     model_backends,
     type_alias as ta,
 )
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
@@ -34,7 +36,6 @@ from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import interpolate_cell_field_to_edge
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.physics.thermodynamics import compute_pressure
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -146,8 +147,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
+    prognostic_state_now: states.PrognosticState,
+    tracer_state_now: states.TracerState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
@@ -343,7 +344,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     # Moist initialization only runs when transport is active. The only tracer we
     # need to set is qv; the hydrometeors (qc, qi, ...) keep their zero-initialized
     # value, so we don't touch them.
-    active_tracers = {name for name, _ in tracer_state_now.active_fields()}
+    active_tracers = set(fw.fields(tracer_state_now))
     if active_tracers:
         if tracer_state_now.qv is None:
             raise ValueError(

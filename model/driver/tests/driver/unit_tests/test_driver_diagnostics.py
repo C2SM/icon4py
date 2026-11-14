@@ -6,28 +6,31 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 """Unit tests for the output diagnostics (``driver_diagnostics``), data-free on the simple grid."""
 
-import copy
+from collections.abc import Mapping
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
+import xarray as xr
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, field, framework as fw
+from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
+from icon4py.model.common.io import utils as io_utils
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
-from icon4py.model.common.states import (
-    data as state_data,
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-    tracer_states,
-)
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import driver_diagnostics
+from icon4py.model.driver import driver_diagnostics, driver_output_sources as output_sources
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures import backend
+
+
+def _dataarrays(fields: Mapping[str, field.Field]) -> dict[str, xr.DataArray]:
+    """The fields as IO writes them."""
+    return {name: io_utils.to_data_array(field_, to_host=True) for name, field_ in fields.items()}
 
 
 @pytest.fixture
@@ -88,74 +91,75 @@ def _diagnostics_computer(
     )
 
 
-def make_diagnostic_state(grid: base.Grid) -> diagnostics.DiagnosticState:
+def make_diagnostic_state(grid: base.Grid) -> states.Diagnostics:
     """The driver's diagnostic state the output diagnostics are computed into."""
-    return diagnostics.initialize_diagnostic_state(grid, allocator=None)
+    return fw.allocate(states.Diagnostics, grid, None)
 
 
-def uniform_prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
+def uniform_prognostic_state(grid: base.Grid) -> states.PrognosticState:
     """A thermodynamically plausible uniform state (the zero state gives no pressure)."""
-    return prognostics.PrognosticState(
-        rho=data_alloc.constant_field(grid, 1.2, dims.CellDim, dims.KDim),
-        w=data_alloc.constant_field(grid, 0.5, dims.CellDim, dims.KHalfDim),
-        vn=data_alloc.constant_field(grid, VN, dims.EdgeDim, dims.KDim),
-        exner=data_alloc.constant_field(grid, 0.95, dims.CellDim, dims.KDim),
-        theta_v=data_alloc.constant_field(grid, 300.0, dims.CellDim, dims.KDim),
-    )
+    values = {"rho": 1.2, "w": 0.5, "vn": VN, "exner": 0.95, "theta_v": 300.0}
+    return fw.allocate(states.PrognosticState, grid, None, fill=lambda name, _: values[name])
 
 
 def test_diagnostic_data_is_host_numpy(
     grid: base.Grid,
     backend: gtx.typing.Backend | None,
 ) -> None:
-    """Same host-transfer guarantee for the diagnostic assembly path.
-
-    The diagnostic fields come from the (device-resident, on GPU backends) buffers of
-    the ``DiagnosticsComputer``; assembling them must also land host numpy arrays.
     """
-    diagnostic_fields = {
-        name: data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
-        )
-        for name in driver_diagnostics.DIAGNOSTIC_VARIABLES
-    }
-    state = driver_diagnostics.diagnostic_fields_to_dataarrays(diagnostic_fields)
+    The diagnostic fields come from the (device-resident, on GPU backends) buffers of the
+    driver's diagnostics; assembling them must land host numpy arrays.
+    """
+    diagnostic_state = fw.allocate(states.Diagnostics, grid, backend)
+    state = _dataarrays(output_sources.by_standard_name(diagnostic_state))
+    assert state
     for da in state.values():
         assert isinstance(da.data, np.ndarray)
 
 
 def test_diagnostics_computer_returns_only_the_requested_variables(grid: base.Grid) -> None:
-    computer = _diagnostics_computer(grid, ["pressure", "eastward_wind"])
+    computer = _diagnostics_computer(
+        grid, [driver_diagnostics.PRESSURE, driver_diagnostics.EASTWARD_WIND]
+    )
     prognostic_state = uniform_prognostic_state(grid)
     diagnostic_state = make_diagnostic_state(grid)
 
     fields = computer.compute(
-        prognostic_state, tracer_states.TracerState(), diagnostic_state, ["pressure"]
+        prognostic_state, states.TracerState(), diagnostic_state, [driver_diagnostics.PRESSURE]
     )
-    assert set(fields) == {"pressure"}
-    assert fields["pressure"] is diagnostic_state.pressure
-    assert (fields["pressure"].asnumpy() > 0.0).all()
+    assert set(fields) == {driver_diagnostics.PRESSURE}
+    assert fields[driver_diagnostics.PRESSURE] is diagnostic_state.pressure
+    assert (fields[driver_diagnostics.PRESSURE].asnumpy() > 0.0).all()
     # the wind program did not run: the diagnostic state's winds are untouched
     assert not diagnostic_state.u.asnumpy().any()
 
-    with pytest.raises(ValueError, match="not configured for this computer: temperature"):
+    with pytest.raises(
+        ValueError, match=f"not configured for this computer: {driver_diagnostics.TEMPERATURE}"
+    ):
         computer.compute(
-            prognostic_state, tracer_states.TracerState(), diagnostic_state, ["temperature"]
+            prognostic_state,
+            states.TracerState(),
+            diagnostic_state,
+            [driver_diagnostics.TEMPERATURE],
         )
 
 
 def test_diagnostics_computer_winds(grid: base.Grid) -> None:
     """Constant ``vn`` and coefficients: each wind is their product summed over the neighbors."""
-    requested = ["eastward_wind", "northward_wind"]
+    requested = [driver_diagnostics.EASTWARD_WIND, driver_diagnostics.NORTHWARD_WIND]
     fields = _diagnostics_computer(grid, requested).compute(
         uniform_prognostic_state(grid),
-        tracer_states.TracerState(),
+        states.TracerState(),
         make_diagnostic_state(grid),
         requested,
     )
     neighbors = grid.get_connectivity(dims.C2E2C2E).asnumpy().shape[1]
-    test_utils.assert_dallclose(fields["eastward_wind"].asnumpy(), neighbors * RBF_COEFF_C1 * VN)
-    test_utils.assert_dallclose(fields["northward_wind"].asnumpy(), neighbors * RBF_COEFF_C2 * VN)
+    test_utils.assert_dallclose(
+        fields[driver_diagnostics.EASTWARD_WIND].asnumpy(), neighbors * RBF_COEFF_C1 * VN
+    )
+    test_utils.assert_dallclose(
+        fields[driver_diagnostics.NORTHWARD_WIND].asnumpy(), neighbors * RBF_COEFF_C2 * VN
+    )
 
 
 def test_diagnostics_computer_rejects_unknown_variables(grid: base.Grid) -> None:
@@ -165,105 +169,106 @@ def test_diagnostics_computer_rejects_unknown_variables(grid: base.Grid) -> None
 
 def test_diagnostics_computer_surface_pressure(grid: base.Grid) -> None:
     """The surface pressure is a cell field: the bottom half-level row of the pressure program."""
-    requested = ["pressure", "surface_pressure"]
+    requested = [driver_diagnostics.PRESSURE, driver_diagnostics.SURFACE_PRESSURE]
     computer = _diagnostics_computer(grid, requested)
     diagnostic_state = make_diagnostic_state(grid)
 
     fields = computer.compute(
-        uniform_prognostic_state(grid), tracer_states.TracerState(), diagnostic_state, requested
+        uniform_prognostic_state(grid), states.TracerState(), diagnostic_state, requested
     )
 
-    surface_pressure = fields["surface_pressure"]
+    surface_pressure = fields[driver_diagnostics.SURFACE_PRESSURE]
+    assert surface_pressure.quantity is qty.SurfacePressureOnCell
     assert surface_pressure.domain.dims == (dims.CellDim,)
     assert surface_pressure.asnumpy().shape == (grid.num_cells,)
-    # the diagnostic state's view of the bottom row of its half-level pressure: no copy
+    # a view of the bottom row of the half-level pressure: no copy
     assert np.shares_memory(surface_pressure.ndarray, diagnostic_state.pressure_ifc.ndarray)
     test_utils.assert_dallclose(
         surface_pressure.asnumpy(), diagnostic_state.pressure_ifc.asnumpy()[:, -1]
     )
     # hydrostatic: the surface pressure exceeds the pressure of the lowest model level
-    assert (surface_pressure.asnumpy() > fields["pressure"].asnumpy()[:, -1]).all()
+    assert (surface_pressure.asnumpy() > fields[driver_diagnostics.PRESSURE].asnumpy()[:, -1]).all()
     # the surface pressure alone also runs the temperature and pressure programs
-    alone = _diagnostics_computer(grid, ["surface_pressure"]).compute(
+    alone = _diagnostics_computer(grid, [driver_diagnostics.SURFACE_PRESSURE]).compute(
         uniform_prognostic_state(grid),
-        tracer_states.TracerState(),
+        states.TracerState(),
         make_diagnostic_state(grid),
-        ["surface_pressure"],
+        [driver_diagnostics.SURFACE_PRESSURE],
     )
-    assert set(alone) == {"surface_pressure"}
-    test_utils.assert_dallclose(alone["surface_pressure"].asnumpy(), surface_pressure.asnumpy())
+    assert set(alone) == {driver_diagnostics.SURFACE_PRESSURE}
+    test_utils.assert_dallclose(
+        alone[driver_diagnostics.SURFACE_PRESSURE].asnumpy(), surface_pressure.asnumpy()
+    )
 
 
-def test_diagnostics_computer_reads_only_the_requested_fields(
-    grid: base.Grid, monkeypatch: pytest.MonkeyPatch
+def test_diagnostics_computer_runs_only_the_programs_of_the_requested_variables(
+    grid: base.Grid,
 ) -> None:
-    """A call for the winds does not touch the other diagnostics of the state."""
-
-    def _not_requested(self: diagnostics.DiagnosticState) -> gtx.Field:
-        raise AssertionError("the surface pressure was not requested")
-
-    monkeypatch.setattr(diagnostics.DiagnosticState, "surface_pressure", property(_not_requested))
-    computer = _diagnostics_computer(grid, ["eastward_wind", "surface_pressure"])
+    """A call for the winds does not run the pressure program."""
+    computer = _diagnostics_computer(
+        grid, [driver_diagnostics.EASTWARD_WIND, driver_diagnostics.SURFACE_PRESSURE]
+    )
+    diagnostic_state = make_diagnostic_state(grid)
 
     fields = computer.compute(
         uniform_prognostic_state(grid),
-        tracer_states.TracerState(),
-        make_diagnostic_state(grid),
-        ["eastward_wind"],
+        states.TracerState(),
+        diagnostic_state,
+        [driver_diagnostics.EASTWARD_WIND],
     )
 
-    assert set(fields) == {"eastward_wind"}
+    assert set(fields) == {driver_diagnostics.EASTWARD_WIND}
+    assert not diagnostic_state.pressure_ifc.asnumpy().any()
 
 
 def test_diagnostics_computer_uses_the_active_tracers(grid: base.Grid) -> None:
     """Moist air: the temperature falls below the virtual temperature; dry air: they agree."""
-    requested = ["temperature", "virtual_temperature"]
+    requested = [driver_diagnostics.TEMPERATURE, driver_diagnostics.VIRTUAL_TEMPERATURE]
     computer = _diagnostics_computer(grid, requested)
     prognostic_state = uniform_prognostic_state(grid)
     diagnostic_state = make_diagnostic_state(grid)
 
-    dry = computer.compute(
-        prognostic_state, tracer_states.TracerState(), diagnostic_state, requested
+    dry = computer.compute(prognostic_state, states.TracerState(), diagnostic_state, requested)
+    test_utils.assert_dallclose(
+        dry[driver_diagnostics.TEMPERATURE].asnumpy(),
+        dry[driver_diagnostics.VIRTUAL_TEMPERATURE].asnumpy(),
     )
-    test_utils.assert_dallclose(dry["temperature"].asnumpy(), dry["virtual_temperature"].asnumpy())
-    dry_temperature = dry["temperature"].asnumpy().copy()
+    dry_temperature = dry[driver_diagnostics.TEMPERATURE].asnumpy().copy()
 
-    moist_tracers = tracer_states.TracerState(
-        qv=data_alloc.constant_field(grid, 0.01, dims.CellDim, dims.KDim)
+    moist_tracers = states.TracerState(
+        qv=field.Field(
+            qty.QvOnCellK, data_alloc.constant_field(grid, 0.01, dims.CellDim, dims.KDim)
+        )
     )
     moist = computer.compute(prognostic_state, moist_tracers, diagnostic_state, requested)
-    test_utils.assert_dallclose(moist["virtual_temperature"].asnumpy(), dry_temperature)
-    assert (moist["temperature"].asnumpy() < moist["virtual_temperature"].asnumpy()).all()
+    test_utils.assert_dallclose(
+        moist[driver_diagnostics.VIRTUAL_TEMPERATURE].asnumpy(), dry_temperature
+    )
+    assert (
+        moist[driver_diagnostics.TEMPERATURE].asnumpy()
+        < moist[driver_diagnostics.VIRTUAL_TEMPERATURE].asnumpy()
+    ).all()
 
 
-def test_diagnostic_fields_to_dataarrays(grid: base.Grid) -> None:
-    """The diagnostic assembly mirrors the prognostic one: correct dims/metadata, host
-    numpy buffers, and the shared CF table is not mutated."""
-    before = copy.deepcopy(state_data.DIAGNOSTIC_CF_ATTRIBUTES)
+def test_diagnostic_dataarrays_carry_dims_and_attributes(grid: base.Grid) -> None:
+    """The diagnostics' DataArrays: correct dims and CF attributes, from their quantities."""
+    variables = list(driver_diagnostics.DIAGNOSTIC_VARIABLES)
+    fields = _diagnostics_computer(grid, variables).compute(
+        uniform_prognostic_state(grid), states.TracerState(), make_diagnostic_state(grid), variables
+    )
 
-    # cell/full-level fields, like what compute_diagnostics returns
-    def _zero_cell_k() -> gtx.Field:
-        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+    state = _dataarrays(fields)
 
-    fields = {name: _zero_cell_k() for name in driver_diagnostics.DIAGNOSTIC_VARIABLES}
-    # the surface pressure is a cell field
-    fields["surface_pressure"] = data_alloc.zero_field(grid, dims.CellDim, dtype=ta.wpfloat)
-    state = driver_diagnostics.diagnostic_fields_to_dataarrays(fields)
-
-    assert set(state.keys()) == set(driver_diagnostics.DIAGNOSTIC_VARIABLES)
+    assert set(state) == set(variables)
     for name, da in state.items():
-        if name == "surface_pressure":
+        if name == driver_diagnostics.SURFACE_PRESSURE:
             assert da.dims == ("cell",)
             assert da.shape == (grid.num_cells,)
         else:
             assert da.dims == ("cell", "level")
             assert da.shape == (grid.num_cells, grid.num_levels)
         assert isinstance(da.data, np.ndarray)
-
-    assert state["surface_pressure"].attrs["standard_name"] == "air_pressure_at_ground_level"
-    assert state["temperature"].attrs["standard_name"] == "air_temperature"
-    assert state["pressure"].attrs["units"] == "Pa"
-    assert state["eastward_wind"].attrs["location"] == "face"
-
-    # shared diagnostic CF table must be untouched
-    assert before == state_data.DIAGNOSTIC_CF_ATTRIBUTES
+        assert da.attrs["standard_name"] == name
+        assert "icon_var_name" not in da.attrs
+    assert state[driver_diagnostics.PRESSURE].attrs["units"] == "Pa"
+    assert state[driver_diagnostics.EASTWARD_WIND].attrs["location"] == "face"
