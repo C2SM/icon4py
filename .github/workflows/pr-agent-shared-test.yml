@@ -28,5 +28,6 @@ jobs:
       max_output_tokens: ${{ vars.PR_AGENT_MAX_OUTPUT_TOKENS }}
       ai_timeout: ${{ vars.PR_AGENT_AI_TIMEOUT }}
       docs_url: https://github.com/C2SM/icon4py/blob/main/docs/development/pr_agent.md
+      dry_run: true # TEST
     secrets:
       inference_api_key: ${{ secrets.PR_AGENT_INFERENCE_API_KEY }}
