@@ -178,10 +178,16 @@ def test_setup_program_specify_inputs(
 )
 def test_selected_fusion_options(program: str, expected: dict) -> None:
     descriptor = {"optimization_args": {"optimization_hooks": {}}}
-    options = model_options.get_dace_options(program, None, **descriptor)["optimization_args"]
-    assert all(options[key] == value for key, value in expected.items())
+    configured = model_options.get_dace_options(program, None, **descriptor)
+    options = configured["optimization_args"]
+    scan_keys = {"fuse_scan_inputs", "scan_fusion_scope"}
+    assert all(
+        (configured if key in scan_keys else options)[key] == value
+        for key, value in expected.items()
+    )
+    assert not (options.keys() & scan_keys)
     assert "vertical_split_shared_output_data" not in options
-    assert options.get("fuse_scan_inputs", False) == expected.get("fuse_scan_inputs", False)
+    assert configured.get("fuse_scan_inputs", False) == expected.get("fuse_scan_inputs", False)
     assert options.get("vertical_split_allow_shared_output", False) == expected.get(
         "vertical_split_allow_shared_output", False
     )
@@ -197,5 +203,11 @@ def test_selected_fusion_options(program: str, expected: dict) -> None:
     ],
 )
 def test_fusion_can_be_disabled(program: str, flag: str) -> None:
-    options = model_options.get_dace_options(program, None, optimization_args={flag: False})
-    assert options["optimization_args"][flag] is False
+    if flag == "fuse_scan_inputs":
+        descriptor = {flag: False, "scan_fusion_scope": "immediate"}
+        options = model_options.get_dace_options(program, None, **descriptor)
+        assert options[flag] is False
+        assert options["scan_fusion_scope"] == "immediate"
+    else:
+        options = model_options.get_dace_options(program, None, optimization_args={flag: False})
+        assert options["optimization_args"][flag] is False

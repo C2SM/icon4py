@@ -68,8 +68,8 @@ def test_solver_coefficients_reach_scan(stage: str, enabled: bool) -> None:
             backend={
                 "device": model_backends.CPU,
                 "use_metrics": False,
+                "fuse_scan_inputs": enabled,
                 "optimization_args": {
-                    "fuse_scan_inputs": enabled,
                     "optimization_hooks": {
                         gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre: capture_graph
                     },
