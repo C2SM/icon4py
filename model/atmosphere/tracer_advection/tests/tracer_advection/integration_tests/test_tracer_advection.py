@@ -162,7 +162,6 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
         metric_state=metric_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
-        even_timestep=even_timestep,
         backend=backend,
         exchange=decomposition.SingleNodeExchange(),
     )
@@ -183,6 +182,7 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
         p_tracer_now=p_tracer_now,
         p_tracer_new=p_tracer_new,
         dtime=dtime,
+        even_timestep=even_timestep,
     )
 
     diagnostic_state_ref = construct_diagnostic_exit_state(

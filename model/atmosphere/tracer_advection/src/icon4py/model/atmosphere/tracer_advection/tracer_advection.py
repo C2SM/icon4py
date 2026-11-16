@@ -133,6 +133,7 @@ class Advection(ABC):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
+        even_timestep: bool,
     ) -> None:
         """
         Run an tracer advection step.
@@ -143,6 +144,11 @@ class Advection(ABC):
             p_tracer_now: input argument, field that contains current tracer mass fraction
             p_tracer_new: output argument, field that contains new tracer mass fraction
             dtime: input argument, the time step
+            even_timestep: input argument, whether this is an even time step, counted from
+                one at the start of the simulation; selects the order of the Godunov
+                splitting (even: vertical then horizontal, odd: horizontal then vertical),
+                as lstep_even = MOD(k_step, 2) == 0 in ICON's step_advection; the same value
+                must be used for all tracers within a time step
 
         """
         ...
@@ -192,6 +198,7 @@ class NoAdvection(Advection):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
+        even_timestep: bool,
     ) -> None:
         log.debug("tracer_advection run - start")
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
@@ -222,7 +229,6 @@ class GodunovSplittingAdvection(Advection):
         metric_state: tracer_advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
         exchange: decomposition.ExchangeRuntime,
-        even_timestep: bool = False,
     ):
         log.debug("tracer_advection class init - start")
 
@@ -233,7 +239,6 @@ class GodunovSplittingAdvection(Advection):
         self._metric_state = metric_state
         self._backend = backend
         self._exchange = exchange
-        self._even_timestep = even_timestep  # originally jstep_adv(:)%marchuk_order = 1
 
         # density fields
         #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
@@ -301,6 +306,7 @@ class GodunovSplittingAdvection(Advection):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
+        even_timestep: bool,
     ) -> None:
         log.debug("tracer_advection run - start")
 
@@ -315,7 +321,7 @@ class GodunovSplittingAdvection(Advection):
         # reintegrate density for conservation of mass
         rhodz_in, horizontal_start = (
             (diagnostic_state.airmass_now, self._start_cell_lateral_boundary_level_2)
-            if self._even_timestep
+            if even_timestep
             else (diagnostic_state.airmass_new, self._start_cell_lateral_boundary_level_3)
         )
 
@@ -325,13 +331,13 @@ class GodunovSplittingAdvection(Advection):
             p_mflx_contra_v=prep_adv.mass_flx_ic,
             rhodz_out=self._rhodz_ast2,
             p_dtime=dtime,
-            even_timestep=self._even_timestep,
+            even_timestep=even_timestep,
             horizontal_start=horizontal_start,
         )
         log.debug("running stencil apply_density_increment - end")
 
         # Godunov splitting
-        if self._even_timestep:
+        if even_timestep:
             # vertical transport
             self._vertical_advection.run(
                 prep_adv=prep_adv,
@@ -341,7 +347,7 @@ class GodunovSplittingAdvection(Advection):
                 rhodz_new=self._rhodz_ast2,
                 p_mflx_tracer_v=diagnostic_state.vfl_tracer,
                 dtime=dtime,
-                even_timestep=self._even_timestep,
+                even_timestep=even_timestep,
             )
 
             # horizontal transport
@@ -376,7 +382,7 @@ class GodunovSplittingAdvection(Advection):
                 rhodz_new=diagnostic_state.airmass_new,
                 p_mflx_tracer_v=diagnostic_state.vfl_tracer,
                 dtime=dtime,
-                even_timestep=self._even_timestep,
+                even_timestep=even_timestep,
             )
 
         # update lateral boundaries with interpolated time tendencies
@@ -398,9 +404,6 @@ class GodunovSplittingAdvection(Advection):
             stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication of tracer tracer_advection field: p_tracer_new - end")
-
-        # finalize step
-        self._even_timestep = not self._even_timestep
 
         log.debug("tracer_advection run - end")
 
@@ -519,7 +522,6 @@ def convert_config_to_advection(
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime,
-    even_timestep: bool = False,
 ) -> Advection:
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
@@ -547,7 +549,6 @@ def convert_config_to_advection(
         metric_state=metric_state,
         backend=backend,
         exchange=exchange,
-        even_timestep=even_timestep,
     )
 
     return advection

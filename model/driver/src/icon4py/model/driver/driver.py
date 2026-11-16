@@ -355,18 +355,24 @@ class Icon4pyDriver:
         if self.granules.tracer_advection is not None:
             assert tracer_advection_diagnostic_state is not None
             assert tracer_prep_adv is not None
+            # the order of the Godunov splitting alternates between time steps, not between
+            # tracers: lstep_even = MOD(k_step, 2) == 0 in ICON's step_advection
+            even_timestep = self.model_time_variables.current_time_step % 2 == 0
             for tracer_current in tracers.current.active_fields():
                 tracer_next_field = getattr(tracers.next, tracer_current.name)
                 assert tracer_next_field is not None, (
                     f"tracer '{tracer_current.name}' active in current state but missing in next state"
                 )
-                log.debug(f"Running {self.granules.tracer_advection.__class__} for tracer {tracer_current.name}")
+                log.debug(
+                    f"Running {self.granules.tracer_advection.__class__} for tracer {tracer_current.name}"
+                )
                 self.granules.tracer_advection.run(
                     diagnostic_state=tracer_advection_diagnostic_state,
                     prep_adv=tracer_prep_adv,
                     p_tracer_now=tracer_current.field,
                     p_tracer_new=tracer_next_field,
                     dtime=self.model_time_variables.dtime_in_seconds,
+                    even_timestep=even_timestep,
                 )
 
         if self.granules.physics is not None:
@@ -917,6 +923,8 @@ def run_driver(
         process_props=process_props,
         backend=backend,
     )
+    # keep the fully resolved configuration of this run, next to its output if there is any
+    driver_utils.write_experiment_config(icon4py_driver.config, process_props)
     allocator = model_backends.get_allocator(backend)
     ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
     icon4py_driver.time_integration(ds)
