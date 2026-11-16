@@ -98,6 +98,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     def reference(
         grid: base.Grid,
         *,
+        rng: np.random.Generator,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         next_w: np.ndarray,
         next_rho: np.ndarray,
@@ -151,7 +152,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = np.arange(exner_dynamical_increment.shape[1])
 
-        rng = np.random.default_rng()
         vertical_mass_flux_at_cells_on_half_levels = rng.random(
             (end_cell_index_local, vert_idx.size + 1)
         )

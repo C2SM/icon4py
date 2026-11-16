@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import functools
+import logging
+import os
 from collections.abc import Callable
 from typing import Any
 
@@ -15,10 +17,33 @@ import gt4py.next.custom_layout_allocators as gtx_allocators
 import gt4py.next.typing as gtx_typing
 
 
+log = logging.getLogger(__name__)
+
 try:
     import cupy as cp  # type: ignore[import-not-found]
 except ImportError:
     cp = None
+
+
+def _warn_if_cub_accelerator_disabled() -> None:
+    """
+    Warn if CuPy runs without the CUB accelerator, which makes its reductions slow.
+
+    CuPy enables CUB by default on CUDA but no accelerators on ROCm, so the
+    default value of 'CUPY_ACCELERATORS' depends on the device.
+    """
+    if gtx.CUPY_DEVICE_TYPE is None:
+        return
+    default = "cub" if gtx.CUPY_DEVICE_TYPE == gtx.DeviceType.CUDA else ""
+    if "cub" not in os.environ.get("CUPY_ACCELERATORS", default).split(","):
+        log.warning(
+            'CUPY_ACCELERATORS does not include "cub", so CuPy reductions on GPUs have '
+            "degraded performance (on ROCm, CuPy enables no accelerators by default). "
+            "Set CUPY_ACCELERATORS=cub."
+        )
+
+
+_warn_if_cub_accelerator_disabled()
 
 
 def is_cupy_device(allocator: gtx_typing.Allocator | None) -> bool:
