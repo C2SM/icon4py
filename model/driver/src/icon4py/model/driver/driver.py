@@ -354,6 +354,9 @@ class Icon4pyDriver:
         if self.granules.tracer_advection is not None:
             assert tracer_advection_diagnostic_state is not None
             assert tracer_prep_adv is not None
+            # the order of the Godunov splitting alternates between time steps, not between
+            # tracers: lstep_even = MOD(k_step, 2) == 0 in ICON's step_advection
+            even_timestep = self.model_time_variables.current_time_step % 2 == 0
             for tracer_current in tracers.current.active_fields():
                 tracer_next_field = getattr(tracers.next, tracer_current.name)
                 assert tracer_next_field is not None, (
@@ -366,6 +369,7 @@ class Icon4pyDriver:
                     p_tracer_now=tracer_current.field,
                     p_tracer_new=tracer_next_field,
                     dtime=self.model_time_variables.dtime_in_seconds,
+                    even_timestep=even_timestep,
                 )
 
         if self.granules.physics is not None:
