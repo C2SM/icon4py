@@ -49,4 +49,8 @@ jobs:
 
             * `cscs-ci run benchmark-bencher`
 
+            **AI review**
+
+            An advisory AI review is posted automatically on non-draft PRs from authors with write access. Users with write access can request one on any PR by commenting `/review`, and can also use `/improve`, `/ask "<question>"` or `/describe`. See `docs/development/pr_agent.md`.
+
             For more detailed information please look at [CI in the EXCLAIM universe](https://github.com/C2SM/icon-exclaim/wiki).
