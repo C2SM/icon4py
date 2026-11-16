@@ -108,7 +108,7 @@ def test_setup_program_defaults(
 
 
 @pytest.mark.parametrize(
-    "backend_params, expected_backend",
+    "backend_params, canonical_backend_params",
     [
         (model_backends.BACKENDS["embedded"], model_backends.BACKENDS["embedded"]),
         (
@@ -116,15 +116,24 @@ def test_setup_program_defaults(
                 "backend_factory": model_backends.make_custom_dace_backend,
                 "device": model_backends.GPU,
             },
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.GPU,
+            },
         ),
         (
             {"backend_factory": model_backends.make_custom_dace_backend},
-            model_backends.make_custom_dace_backend(device=model_backends.CPU),
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.CPU,
+            },
         ),
         (
             {"device": model_backends.GPU},
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.GPU,
+            },
         ),
     ],
 )
@@ -133,9 +142,12 @@ def test_setup_program_specify_inputs(
     | model_backends.DeviceType
     | model_backends.BackendDescriptor
     | None,
-    expected_backend: gtx_typing.Backend | None,
+    canonical_backend_params: model_backends.BackendDescriptor | None,
 ) -> None:
     testee = setup_program(backend=backend_params, program=program_return_field)
+    # Built through `customize_backend` so that the expected backend carries the same
+    # device-specific default options (e.g. GPU block sizes) as the one under test.
+    expected_backend = customize_backend(None, canonical_backend_params)
     if expected_backend is None:
         expected_program = functools.partial(
             program_return_field.with_backend(expected_backend), offset_provider={}
