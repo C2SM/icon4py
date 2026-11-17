@@ -95,9 +95,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     grid_file_path = grid_utils._download_grid_file(experiment.description.grid)
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
-    if process_props.rank == 0:
-        dt_utils.download_experiment(experiment.description, single_rank_process_props)
-    process_props.comm.Barrier()
+    dt_utils.download_experiment(experiment.description, single_rank_process_props)
     single_rank_config = driver_config.read_experiment_config_from_yaml(
         dt_utils.get_path_for_experiment(experiment.description, single_rank_process_props)
         / "config.yml"
