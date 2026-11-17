@@ -9,7 +9,6 @@ import functools
 import logging
 from collections.abc import Callable
 from typing import Any
-import os
 
 import dace
 import gt4py.next as gtx
@@ -90,14 +89,12 @@ def _set_device_specific_dace_options(
             # Only needed when no external workspace is configured (neither via
             # the driver's 'backend_config' nor ICON4PY_BACKEND_WORKSPACE_SIZE);
             # the external workspace already avoids the runtime allocation overhead.
-            transient_disabled = os.environ.get("ICON4PY_DACE_PERSISTENT_DISABLE", "0")
-            if transient_disabled == "0":
-                optimization_args["transient_memory_mode"] = (
-                    gtx_transformations.TransientMemoryMode.PERSISTENT
-                )
-                if _WORKSPACE_SIZE_WARNING not in _emitted_warnings:
-                    _emitted_warnings.add(_WORKSPACE_SIZE_WARNING)
-                    log.warning(_WORKSPACE_SIZE_WARNING)
+            optimization_args["transient_memory_mode"] = (
+                gtx_transformations.TransientMemoryMode.PERSISTENT
+            )
+            if _WORKSPACE_SIZE_WARNING not in _emitted_warnings:
+                _emitted_warnings.add(_WORKSPACE_SIZE_WARNING)
+                log.warning(_WORKSPACE_SIZE_WARNING)
         # AMD MI300A: (256,1,1) for 2D maps gives ~20% speedup on the solver.
         # All threads on Cell dimension maximizes coalescing on MI300A.
         optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
@@ -105,11 +102,9 @@ def _set_device_specific_dace_options(
         # speedup on MI300A but it doesn't hurt either
         optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
         # Vertical blocking with length 4 is adding ~12% speedup on MI300A for dycore
-        disable_vlb = os.environ.get("ICON4PY_VLB_DISABLE", "0")
-        if disable_vlb == "0":
-            optimization_args["blocking_dims"] = list(dimension.vertical_dims())
-            optimization_args["blocking_size"] = 4
-            optimization_args["blocking_only_if_independent_nodes"] = False
+        optimization_args["blocking_dims"] = list(dimension.vertical_dims())
+        optimization_args["blocking_size"] = 4
+        optimization_args["blocking_only_if_independent_nodes"] = False
     elif device == model_backends.DeviceType.CUDA:
         optimization_args.setdefault("gpu_block_size_2d", (32, 8, 1))
         optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
