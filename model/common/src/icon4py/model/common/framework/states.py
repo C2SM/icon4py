@@ -85,7 +85,7 @@ class TracerConfig:
         """
         n = len(TRACERS)
         if not 0 <= ntracer <= n:
-            raise ValueError(f"ntracer must be between 0 and {n}, got {ntracer}")
+            raise ValueError(f"Invalid 'ntracer': must be between 0 and {n}, got {ntracer}.")
         return cls(**{name: i < ntracer for i, name in enumerate(TRACERS)})
 
     @property

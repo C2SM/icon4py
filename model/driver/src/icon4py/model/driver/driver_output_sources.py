@@ -30,7 +30,10 @@ from icon4py.model.common.framework import states
 def standard_name(quantity_: type[quantity.Quantity]) -> str:
     """The standard name of a quantity that is an output variable."""
     if quantity_.standard_name is None:
-        raise ValueError(f"'{quantity_.__name__}' has no standard name: it cannot be output")
+        raise ValueError(
+            f"Invalid output quantity: '{quantity_.__name__}' has no standard name, "
+            f"so it cannot be output."
+        )
     return quantity_.standard_name
 
 

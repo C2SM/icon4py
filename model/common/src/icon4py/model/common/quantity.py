@@ -54,7 +54,7 @@ class Quantity:
                 setattr(cls, name, value)
 
     def __new__(cls, *args: Any, **kwargs: Any) -> Any:
-        raise TypeError(f"'{cls.__name__}' is a type-level tag, not a value.")
+        raise TypeError(f"Invalid use: '{cls.__name__}' is a type-level tag, not a value.")
 
 
 # NOTE: temporary, replaced in part 07 (tendencies): `TendencyOf[Q]`, derived from its parent

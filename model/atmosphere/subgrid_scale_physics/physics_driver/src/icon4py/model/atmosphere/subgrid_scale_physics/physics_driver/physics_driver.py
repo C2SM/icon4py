@@ -108,7 +108,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             p.time_control.driver_dtime for p in processes if p.time_control.driver_dtime != dtime
         ]:
             raise ValueError(
-                f"the processes' time controls must use the driver's dtime {dtime}, got {mismatched}"
+                f"The processes' time controls must use the driver's dtime {dtime}, "
+                f"got: {mismatched}."
             )
         self.dtime = dtime
         self._grid = grid
@@ -126,7 +127,10 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             for name, field_ in fw.fields(process_output).items():
                 if field_.quantity in physics_state.COMPUTED_BY_PROCESSES:
                     if field_.quantity in self._computed_by_processes:
-                        raise ValueError(f"'{name}' is computed by more than one physics process")
+                        raise ValueError(
+                            f"Duplicate output: '{name}' is computed by more than one "
+                            f"physics process."
+                        )
                     self._computed_by_processes[field_.quantity] = field_
         self._state_leaves = {
             quantity: name
@@ -272,7 +276,9 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
                 if name is None:
                     continue
                 if name in fields:
-                    raise ValueError(f"'{name}' is an output of more than one physics process")
+                    raise ValueError(
+                        f"Duplicate output: '{name}' is an output of more than one physics process."
+                    )
                 fields[name] = field_
         return fields
 
@@ -389,8 +395,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         for name, tendency in fw.fields(output, kind=quantity.Tendency).items():
             if (target := targets.get(tendency.quantity)) is None:
                 raise ValueError(
-                    f"tendency output '{name}' is not the tendency of an advanced field; "
-                    f"expected one of {[q.__name__ for q in targets]}"
+                    f"Tendency output '{name}' is not the tendency of an advanced field, "
+                    f"expected one of: {[q.__name__ for q in targets]}."
                 )
             apply = (
                 self._apply_tendency_w
@@ -457,7 +463,8 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         if len(wind_tendencies) == 1:
             (declared,) = wind_tendencies
             raise ValueError(
-                f"the horizontal wind tendencies are applied as a pair; got only {declared.__name__}"
+                f"The horizontal wind tendencies are applied as a pair, "
+                f"got only '{declared.__name__}'."
             )
         if wind_tendencies:
             u, v = acc[qty.TendencyOfUOnCellK], acc[qty.TendencyOfVOnCellK]

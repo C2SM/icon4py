@@ -72,7 +72,7 @@ def fields(
 def require[Q: quantity.Quantity](field_: field.Field[Q] | None, name: str) -> field.Field[Q]:
     """The optional leaf `name`, which the caller needs present."""
     if field_ is None:
-        raise ValueError(f"'{name}' is required, but the state lacks it")
+        raise ValueError(f"Missing field: '{name}' is required, but the state lacks it.")
     return field_
 
 
@@ -190,8 +190,8 @@ def copy[S1: state.State, S2: state.State](
     unexpected = sorted(dst_fields.keys() - src_fields.keys())
     if missing or unexpected:
         raise ValueError(
-            "the states' present leaves must match on both sides; "
-            f"missing in the destination: {missing}; unexpected in it: {unexpected}"
+            "The states' present leaves must match on both sides; "
+            f"missing in the destination: {missing}; unexpected in it: {unexpected}."
         )
     for name, field_ in src_fields.items():
         dst_fields[name].ndarray[...] = field_.ndarray  # type: ignore[index]  # NDArrayObject declares no __setitem__

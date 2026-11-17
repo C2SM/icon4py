@@ -117,7 +117,8 @@ def validate_granule_state_consistency(
     if granules.solve_nonhydro is not None:
         if states.dycore_forcing is None or states.dycore_diagnostics is None:
             raise ValueError(
-                "solve_nonhydro granule is present but dycore_forcing or dycore_diagnostics is None."
+                "Invalid state: 'solve_nonhydro' granule is present but 'dycore_forcing' or "
+                "'dycore_diagnostics' is None."
             )
         if states.prep_advection_prognostic is None:
             raise ValueError(
@@ -130,7 +131,8 @@ def validate_granule_state_consistency(
             )
         if states.prep_advection_prognostic is None:
             raise ValueError(
-                "tracer_advection granule is present but prep_advection_prognostic state is None."
+                "Invalid state: 'tracer_advection' granule is present but "
+                "'prep_advection_prognostic' state is None."
             )
 
 

@@ -36,13 +36,14 @@ class ProcessTimeControl:
     def __post_init__(self, start_of_simulation: time.AbsoluteTime) -> None:
         if self.process_dtime <= time.RelativeTime(0) or self.process_dtime % self.driver_dtime:
             raise ValueError(
-                f"time-control process_dtime {self.process_dtime} must be a positive multiple "
-                f"of driver_dtime {self.driver_dtime}"
+                f"Time-control 'process_dtime' {self.process_dtime} must be a positive "
+                f"multiple of 'driver_dtime' {self.driver_dtime}."
             )
         if (self.window_start - start_of_simulation) % self.driver_dtime:
             raise ValueError(
-                f"time-control window_start {self.window_start} must be a whole number of "
-                f"driver_dtime {self.driver_dtime} from the simulation start {start_of_simulation}"
+                f"Time-control 'window_start' {self.window_start} must be a whole number of "
+                f"'driver_dtime' {self.driver_dtime} from the simulation start "
+                f"{start_of_simulation}."
             )
 
     @property
