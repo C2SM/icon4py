@@ -174,7 +174,9 @@ class DecompositionInfo:
         self._halo_levels[dim] = halo_levels
 
     def is_distributed(self) -> bool:
-        return max(self._halo_levels[dims.CellDim]).item() > DecompositionFlag.OWNED
+        halo_levels = self._halo_levels[dims.CellDim]
+        array_ns = data_alloc.array_namespace(halo_levels)
+        return array_ns.max(halo_levels).item() > DecompositionFlag.OWNED
 
     def is_identity(self) -> bool:
         """Whether the local numbering is the global one: all entries owned, in global order.
