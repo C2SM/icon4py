@@ -15,36 +15,47 @@ cd $ICON4PY_GIT_ROOT
 
 source .venv/bin/activate
 
-# Options from ICON
+# MPI options from ICON
+export MPICH_GPU_SUPPORT_ENABLED=1
 export CUDA_BUFFER_PAGE_IN_THRESHOLD_MS=0.001
 export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=0
 export FI_CXI_RX_MATCH_MODE=software
 export FI_MR_CACHE_MONITOR=disabled
 
+# Avoid caching CUDA kernels to avoid inode limit
 export CUDA_CACHE_DISABLE=1
-export CUPY_CACHE_IN_MEMORY=1
 
-export MPICH_GPU_SUPPORT_ENABLED=1
-export SRUN_CPUS_PER_TASK=$SLURM_CPUS_PER_TASK
-
-export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE="1"
-export GT4PY_BUILD_CACHE_LIFETIME=persistent
-# export DACE_compiler_build_folder_mode="development"
+# ICON4Py performance related options
+# Python optimization level
 export PYTHONOPTIMIZE=2
-# export GT4PY_ADD_COMPILATION_TRACE_MARKERS=1
-
+# External workspace storage per device (one large hip/cuMalloc allocation for temp variables in DaCe - necessary for MI300A perf)
+GIBS_EXTERNAL=48
+export ICON4PY_BACKEND_WORKSPACE_SIZE=$((${GIBS_EXTERNAL}*1073741824))
+# Set the logging level for ICON4Py driver to warning to avoid printing overhead when measuring. Requires the changes in `show_timer_report`
 export ICON4PY_DRIVER_LOGGING_LEVEL="warning"
 
+# Below values necessary to get meaningful runtime per gt4py program
+# export GT4PY_COLLECT_METRICS_LEVEL=10
+# export GT4PY_DUMP_METRICS_AT_EXIT=1
+# Add NVTX/ROCTX markers to each GT4Py program compiled with DaCe
+export GT4PY_ADD_GPU_TRACE_MARKERS="1"
+
+# GT4Py compilation options
+# Number of parallel compile jobs
+export GT4PY_BUILD_JOBS=${SLURM_CPUS_PER_TASK:-8}
+export GT4PY_BUILD_CACHE_LIFETIME=persistent
+export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE="1"
+# Keep DaCe src files
+# export GT4PY_KEEP_DACE_BUILD_FILES=1
+# Skip verbose DaCe warnings during compilation
+export GT4PY_SKIP_DACE_WARNINGS=1
+
+# UENV specific settings
 export LD_LIBRARY_PATH=/user-environment/linux-neoverse_v2/nvhpc-26.1-eyhld4lfk55ld66egsyukpzmvejqlqa2/Linux_aarch64/26.1/compilers/lib:$LD_LIBRARY_PATH
 export CC=$(which gcc)
 export CXX=$(which g++)
 export MPICH_CC=$(which gcc)
 export MPICH_CXX=$(which g++)
-export GHEX_USE_GPU=ON
-export GHEX_GPU_TYPE=NVIDIA
-export GHEX_GPU_ARCH="80;90"
-export GHEX_TRANSPORT_BACKEND=MPI
-export CUDA_CACHE_DISABLE=1
 
 # export ICON_GRID="./icon_grid_0025_R02B08_G.nc"
 export ICON_GRID="./icon_grid_0004_R02B07_G.nc"
@@ -62,19 +73,8 @@ elif [[ "$ICON_GRID" == *"R02B08"* ]]; then
     SUFFIX="R02B08"
 fi
 
-export ICON4PY_PROFILE_MARKERS=nvtx
-export GT4PY_COLLECT_METRICS_LEVEL=10
-export GT4PY_ADD_GPU_TRACE_MARKERS="1"
-
-GIBS_EXTERNAL=48
-export ICON4PY_BACKEND_WORKSPACE_SIZE=$((${GIBS_EXTERNAL}*1073741824)) # 64Gib external workspace storage per device
-
 export GT4PY_BUILD_CACHE_DIR_PREFIX="GH200_JW_external${GIBS_EXTERNAL}Gib_mpi_nvtx_${SUFFIX}_120lvl_${SLURM_NNODES}nodes"
 export VERSION_SUFFIX="v5"
-
-export GT4PY_SKIP_DACE_WARNINGS=0
-
-export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 
 echo "Executing JW4Py on ${SLURM_NNODES} GH200 nodes to check the WALL CLOCK timer reported at the end of the run (MPI)"
 
@@ -86,8 +86,8 @@ echo "Variables used for this run:"
 printenv | grep -E '^(SLURM_|ICON4PY_|GT4PY_|GHEX_|NCCL_|CUDA_|CUPY_|FI_)' | sort
 
 if [[ ! -d ${GT4PY_BUILD_CACHE_DIR} ]]; then
-    srun -u --cpu-bind=cores --gres-flags=allow-task-sharing \
-        bash -c 'printenv TMPDIR; export CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; \
+    srun -u --cpus-per-task=$SLURM_CPUS_PER_TASK --cpu-bind=cores --gres-flags=allow-task-sharing \
+        bash -c 'export CUPY_CACHE_DIR=$(pwd)/cupy_cache/rank_$SLURM_PROCID; export CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; \
         icon4py-driver \
         --config-file-path ${CONFIG_DIR}/config.yml \
         --grid-file-path $(realpath ${ICON_GRID}) \
@@ -99,19 +99,21 @@ fi
 
 export NSYS_REPORT_DIR=$(pwd)/nsys_reports
 export NSYS_REPORT_SUFFIX="_mpi_nvtx_zgradpnewimpl"
+# Way to pass extra sampling options to `nsys profile`
 # if [ "${SLURM_PROCID}" = "0" ]; then
 #     SAMPLE_OPTS="--sample=process-tree --cpuctxsw=process-tree --python-sampling=true --python-backtrace=cuda"
 # else
 #     SAMPLE_OPTS="--sample=none"
 # fi
-SAMPLE_OPTS=""
+SAMPLE_OPTS="--sample=none"
+# To be used with the added annotations from this branch
+export ICON4PY_PROFILE_MARKERS=nvtx
 
 mkdir -p ${NSYS_REPORT_DIR}
-srun -u --cpu-bind=cores --gres-flags=allow-task-sharing \
-    bash -c 'printenv TMPDIR; export CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; nsys profile \
+srun -u --cpus-per-task=$SLURM_CPUS_PER_TASK --cpu-bind=cores --gres-flags=allow-task-sharing \
+    bash -c 'export CUPY_CACHE_DIR=$(pwd)/cupy_cache/rank_$SLURM_PROCID; export CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; nsys profile \
     --trace=nvtx,cuda,mpi \
     --mpi-impl=mpich \
-    --sample=none \
     --force-overwrite=true \
     -o ${NSYS_REPORT_DIR}/${GT4PY_BUILD_CACHE_DIR}_rank%q{SLURM_PROCID}${NSYS_REPORT_SUFFIX} \
     ${SAMPLE_OPTS} \
@@ -124,4 +126,3 @@ srun -u --cpu-bind=cores --gres-flags=allow-task-sharing \
     --no-enable-output'
 
 rm -rf ${OUTPUT_PATH}
-
