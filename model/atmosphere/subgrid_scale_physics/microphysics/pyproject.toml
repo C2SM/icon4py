@@ -27,7 +27,7 @@ dependencies = [
   # workspace members
   "icon4py-common~=0.5.0",
   # external dependencies
-  "gt4py==1.2.3",
+  "gt4py==1.2.4",
   'packaging>=20.0'
 ]
 description = "ICON microphysics."

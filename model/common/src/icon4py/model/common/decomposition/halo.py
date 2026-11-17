@@ -191,21 +191,36 @@ class IconLikeHaloConstructor(HaloConstructor):
             updated owner mask
         """
         updated_owner_mask = owner_mask.copy()
-        for index in indices_on_cutting_line:
-            local_index = self._xp.nonzero(all_indices == index)[0][0]
-            neighbors = target_connectivity[index]
-            # Connectivities may have invalid neighbors, filter them out to
-            # avoid including cells that may not be neighbors.
-            neighbors = neighbors[neighbors >= 0]
-            owning_ranks = cell_to_rank[neighbors]
-            assert self._xp.unique(owning_ranks).size > 1, (
-                f"rank {self._process_props.rank}: all neighboring cells {target_connectivity[index]} of index {index} are owned by the same rank {owning_ranks}"
+        if indices_on_cutting_line.size == 0:
+            return updated_owner_mask
+        # Vectorized over all elements on the cutting line, to avoid a host
+        # synchronization per element.
+        sorter = self._xp.argsort(all_indices)
+        local_indices = sorter[
+            self._xp.searchsorted(all_indices, indices_on_cutting_line, sorter=sorter)
+        ]
+        assert (all_indices[local_indices] == indices_on_cutting_line).all(), (
+            f"rank {self._process_props.rank}: not all indices on the cutting line are in the local indices"
+        )
+        neighbors = target_connectivity[indices_on_cutting_line]
+        # Connectivities may have invalid neighbors, mask them out to
+        # avoid including cells that may not be neighbors.
+        valid_neighbors = neighbors >= 0
+        owning_ranks = self._xp.where(valid_neighbors, cell_to_rank[neighbors], -1)
+        max_owning_rank = owning_ranks.max(axis=1)
+        assert (
+            max_owning_rank
+            > self._xp.where(valid_neighbors, owning_ranks, self._process_props.comm_size).min(
+                axis=1
             )
-            assert self._process_props.rank in owning_ranks, (
-                f"rank {self._process_props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
-            )
-            # assign the index to the rank with the higher rank
-            updated_owner_mask[local_index] = max(owning_ranks) <= self._process_props.rank
+        ).all(), (
+            f"rank {self._process_props.rank}: some elements on the cutting line have all neighboring cells owned by the same rank"
+        )
+        assert (owning_ranks == self._process_props.rank).any(axis=1).all(), (
+            f"rank {self._process_props.rank}: some elements on the cutting line have no neighboring cell owned by me"
+        )
+        # assign the index to the rank with the higher rank
+        updated_owner_mask[local_indices] = max_owning_rank <= self._process_props.rank
         return updated_owner_mask
 
     def _set_decomposition_info_dimension(
