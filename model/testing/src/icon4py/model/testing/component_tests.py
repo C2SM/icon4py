@@ -10,9 +10,10 @@
 Base classes for the contract tests of typed components: the states they take and return,
 not their numerics.
 
-A suite subclasses `ComponentTest` and provides a `component` fixture. It inherits the
-tests every `fw.Component` must pass, and adds its own as ordinary methods. A suite of a
-component that has a `collect_input` also subclasses `CollectInputTest`.
+A suite subclasses `ComponentTest`, provides a `component` fixture and imports the `grid`
+fixture of `icon4py.model.testing.fixtures`. It inherits the tests every `fw.Component` must
+pass, and adds its own as ordinary methods. A suite of a component that has a `collect_input`
+also subclasses `CollectInputTest`.
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import framework as fw
-from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -65,13 +66,9 @@ class ComponentTest:
     The `run(input, output) -> output` contract of `fw.Component`.
 
     `component` is the subclass's fixture, and it can build the states needed
-    by its constructor with `random_dataclass` defined above. `grid`, `input`
-    and `output` default to states on a simple grid, and can be overridden.
+    by its constructor with `random_dataclass` defined above. `input` and `output`
+    default to random states on `grid`, the testing fixture, and can be overridden.
     """
-
-    @pytest.fixture
-    def grid(self) -> base_grid.Grid:
-        return simple.simple_grid()
 
     @pytest.fixture
     def input(self, component: fw.Component, grid: base_grid.Grid) -> fw.State:

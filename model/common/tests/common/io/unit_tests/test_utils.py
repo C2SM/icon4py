@@ -6,16 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import icon4py.model.common.grid.simple as simple_grid
 from icon4py.model.common import dimension as dims, field
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.io import ugrid, utils
 from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.fixtures import backend_like, grid, grid_manager
 
 
-def test_data_array_has_ugrid_and_cf_attributes():
-    grid = simple_grid.simple_grid()
+def test_data_array_has_ugrid_and_cf_attributes(grid):
     buffer = field.Field(qty.RhoOnCellK, data_alloc.random_field(grid, dims.CellDim, dims.KDim))
     data_array = utils.to_data_array(buffer)
     assert data_array.attrs["units"] == "kg m-3"

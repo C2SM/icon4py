@@ -22,6 +22,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
 from icon4py.model.common import dimension as dims, field, framework as fw
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.testing.fixtures import backend_like, grid, grid_manager
 
 from .utils import (
     DT,
@@ -54,11 +55,6 @@ class WindOutput(fw.State):
 
 class LoneWindOutput(fw.State):
     tend_u: field.Field[qty.TendencyOfUOnCellK]
-
-
-@pytest.fixture
-def grid() -> base_grid.Grid:
-    return simple.simple_grid()
 
 
 def _qv(tracer_state: states.TracerState) -> np.ndarray:
@@ -195,7 +191,9 @@ def test_run_advances_the_physics_state_after_each_process(grid: base_grid.Grid)
     physics = driver(grid, [process_a, process_b])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
-    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
+    physics.run(
+        make_input(prognostic, tracer_state), output=make_output(grid, prognostic, tracer_state)
+    )
 
     # sequential coupling: one physics state, diagnosed once and advanced in place
     assert len(recorder_a.states) == 1
@@ -225,10 +223,12 @@ def test_accumulators_are_zeroed_between_steps(grid: base_grid.Grid) -> None:
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid, qv=1e-3)
 
-    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
+    physics.run(
+        make_input(prognostic, tracer_state), output=make_output(grid, prognostic, tracer_state)
+    )
     physics.run(
         make_input(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        output=make_output(prognostic, tracer_state),
+        output=make_output(grid, prognostic, tracer_state),
     )
 
     np.testing.assert_allclose(_qv(tracer_state), 1e-3 + 2 * DT.total_seconds() * 1e-7, rtol=1e-12)
@@ -248,12 +248,12 @@ def test_inactive_in_window_recycles_the_last_output(grid: base_grid.Grid) -> No
     # step 1: active (step start == T0), computes
     physics.run(
         make_input(prognostic, tracer_state, simulation_current_datetime=T0 + DT),
-        output=make_output(prognostic, tracer_state),
+        output=make_output(grid, prognostic, tracer_state),
     )
     # step 2: in the window but not active (step start == T0 + DT), reuses the last output
     physics.run(
         make_input(prognostic, tracer_state, simulation_current_datetime=T0 + 2 * DT),
-        output=make_output(prognostic, tracer_state),
+        output=make_output(grid, prognostic, tracer_state),
     )
 
     # the physics state reaches the process only on the step it computes
@@ -267,7 +267,9 @@ def test_run_requires_every_moisture_species(grid: base_grid.Grid) -> None:
     without_qc = dataclasses.replace(tracer_state, qc=None)
 
     with pytest.raises(ValueError, match="qc"):
-        physics.run(make_input(prognostic, without_qc), output=make_output(prognostic, without_qc))
+        physics.run(
+            make_input(prognostic, without_qc), output=make_output(grid, prognostic, without_qc)
+        )
 
 
 def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
@@ -277,14 +279,14 @@ def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
     new_prognostic, new_tracers = prognostics(grid, theta_v=0.0), tracers(grid, qv=0.0)
 
     physics.run(
-        make_input(prognostic, tracer_state), output=make_output(new_prognostic, new_tracers)
+        make_input(prognostic, tracer_state), output=make_output(grid, new_prognostic, new_tracers)
     )
 
     # The input is read only, `output` continues it: as the same run done in place
     in_place_prognostic, in_place_tracers = prognostics(grid), tracers(grid, qv=1e-3)
     driver(grid, [process]).run(
         make_input(in_place_prognostic, in_place_tracers),
-        output=make_output(in_place_prognostic, in_place_tracers),
+        output=make_output(grid, in_place_prognostic, in_place_tracers),
     )
     np.testing.assert_array_equal(_qv(tracer_state), 1e-3)
     np.testing.assert_array_equal(prognostic.theta_v.asnumpy(), 300.0)
@@ -302,7 +304,9 @@ def test_run_projects_the_wind_tendencies_onto_vn(grid: base_grid.Grid) -> None:
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
-    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
+    physics.run(
+        make_input(prognostic, tracer_state), output=make_output(grid, prognostic, tracer_state)
+    )
 
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * DT.total_seconds(), rtol=1e-12)
 
@@ -316,7 +320,7 @@ def test_run_rejects_a_lone_horizontal_wind_tendency(grid: base_grid.Grid) -> No
 
     with pytest.raises(ValueError, match="applied as a pair"):
         physics.run(
-            make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state)
+            make_input(prognostic, tracer_state), output=make_output(grid, prognostic, tracer_state)
         )
 
 
@@ -341,7 +345,9 @@ def test_diagnose_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Gr
     driver_input = make_input(prognostic, tracer_state, air_mass=air_mass)
     diagnostics = fw.allocate(states.Diagnostics, grid, None)
 
-    physics.run(driver_input, output=make_output(prognostic, tracer_state, diagnostics=diagnostics))
+    physics.run(
+        driver_input, output=make_output(grid, prognostic, tracer_state, diagnostics=diagnostics)
+    )
 
     (state,) = recorder.states
     # no copies: the prognostics and tracers as given, the diagnostics in the driver's buffers
@@ -360,7 +366,7 @@ def test_run_rejects_a_tendency_of_no_advanced_field(grid: base_grid.Grid) -> No
 
     with pytest.raises(ValueError, match="'tend_vn' is not the tendency of an advanced field"):
         physics.run(
-            make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state)
+            make_input(prognostic, tracer_state), output=make_output(grid, prognostic, tracer_state)
         )
 
 
@@ -378,7 +384,7 @@ def test_run_syncs_the_halos_at_entry_the_wind_sums_and_what_it_wrote(
 
     physics.run(
         make_input(prognostic, tracer_state),
-        output=make_output(prognostic, tracer_state, perturbed_exner=perturbed_exner),
+        output=make_output(grid, prognostic, tracer_state, perturbed_exner=perturbed_exner),
     )
 
     # identity, not equality: the syncs must target the very buffers that were read and written,
@@ -410,7 +416,9 @@ def test_a_process_output_is_offered_to_the_others_through_the_physics_state(
     physics = driver(grid, [provider, reader])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
-    physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
+    physics.run(
+        make_input(prognostic, tracer_state), output=make_output(grid, prognostic, tracer_state)
+    )
 
     (state,) = recorder.states
     assert state.sensible_heat_flux is physics._process_outputs[provider].sensible_heat_flux

@@ -20,10 +20,11 @@ import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, field
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.framework import quantities as qty, states
-from icon4py.model.common.grid import base, simple, vertical as v_grid
+from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_diagnostics, driver_io
+from icon4py.model.testing.fixtures import backend_like, grid, grid_manager
 
 from ..fixtures import ALL_OUTPUT_VARIABLES
 from .test_driver_diagnostics import (
@@ -40,11 +41,6 @@ def rainfall_fields(grid: base.Grid) -> dict[str, field.Field]:
 
 def _zero_cell_k(grid: base.Grid) -> gtx.Field:
     return data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-
-
-@pytest.fixture
-def grid() -> base.Grid:
-    return simple.simple_grid()
 
 
 def test_create_io_monitor_passes_the_io_config(

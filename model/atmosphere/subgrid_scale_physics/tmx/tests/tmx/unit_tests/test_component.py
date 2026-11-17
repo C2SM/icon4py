@@ -25,6 +25,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid, simple, states as grid_states
 from icon4py.model.common.states import surface_flux_state
 from icon4py.model.testing import component_tests
+from icon4py.model.testing.fixtures import backend_like, grid, grid_manager
 
 
 _FLUXES = tuple(field.name for field in dataclasses.fields(surface_flux_state.SurfaceFluxState))

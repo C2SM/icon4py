@@ -42,6 +42,7 @@ from icon4py.model.common.io.io import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils
+from icon4py.model.testing.fixtures import backend_like, grid, grid_manager
 
 from ...fixtures import test_path
 from .. import utils as test_io_utils
@@ -85,22 +86,22 @@ def is_valid_uxgrid(file: pathlib.Path | str) -> bool:
         return False
 
 
-def test_io_monitor_create_output_path(single_group_config: IOConfig) -> None:
-    vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
+def test_io_monitor_create_output_path(single_group_config: IOConfig, grid: base.Grid) -> None:
+    vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
             (dims.KHalfDim,),
-            np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1),  # type: ignore[arg-type]
+            np.linspace(12000.0, 0.0, grid.num_levels + 1),  # type: ignore[arg-type]
         ),
         vct_b=None,
     )
     monitor = IOMonitor(
         config=single_group_config,
         vertical_size=vertical_params,
-        horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+        horizontal_size=grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
-        grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+        grid_id=uuid.UUID(grid.id),
         dtime=time.RelativeTime(hours=1),
         process_props=decomposition_defs.SingleNodeProcessProperties(),
         decomposition_info=None,
@@ -109,13 +110,13 @@ def test_io_monitor_create_output_path(single_group_config: IOConfig) -> None:
     assert monitor.path.is_dir()
 
 
-def test_io_monitor_write_ugrid_file(single_group_config: IOConfig) -> None:
-    vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
+def test_io_monitor_write_ugrid_file(single_group_config: IOConfig, grid: base.Grid) -> None:
+    vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
             (dims.KHalfDim,),
-            np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1),  # type: ignore[arg-type]
+            np.linspace(12000.0, 0.0, grid.num_levels + 1),  # type: ignore[arg-type]
         ),
         vct_b=None,
     )
@@ -123,9 +124,9 @@ def test_io_monitor_write_ugrid_file(single_group_config: IOConfig) -> None:
     monitor = IOMonitor(
         config=single_group_config,
         vertical_size=vertical_params,
-        horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+        horizontal_size=grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
-        grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+        grid_id=uuid.UUID(grid.id),
         dtime=time.RelativeTime(hours=1),
         process_props=decomposition_defs.SingleNodeProcessProperties(),
         decomposition_info=None,
@@ -265,17 +266,19 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
                 )
 
 
-def test_fieldgroup_monitor_refuses_to_overwrite_existing_output(test_path: pathlib.Path) -> None:
+def test_fieldgroup_monitor_refuses_to_overwrite_existing_output(
+    test_path: pathlib.Path, grid: base.Grid
+) -> None:
     # a first run writes ..._0001.nc; a second run sharing the directory must not
     # silently overwrite it -- the per-run file counter restarts at 0.
-    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    state = test_io_utils.model_state(grid)
     current_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
 
-    _, first_monitor = create_field_group_monitor(test_path, test_io_utils.simple_grid)
+    _, first_monitor = create_field_group_monitor(test_path, grid)
     first_monitor.store(state, current_time)
     first_monitor.close()
 
-    _, second_monitor = create_field_group_monitor(test_path, test_io_utils.simple_grid)
+    _, second_monitor = create_field_group_monitor(test_path, grid)
     with pytest.raises(errors.InvalidConfigError, match="already exists"):
         second_monitor.store(state, current_time)
 
@@ -293,12 +296,14 @@ def read_back_as_uxarray(path: pathlib.Path) -> Any:
     return uxds
 
 
-def test_fieldgroup_monitor_writes_only_on_interval_steps(test_path: pathlib.Path) -> None:
+def test_fieldgroup_monitor_writes_only_on_interval_steps(
+    test_path: pathlib.Path, grid: base.Grid
+) -> None:
     # output every 3rd step: output is written at first time step, no output at second and third time steps
     _, group_monitor = create_field_group_monitor(
-        test_path, test_io_utils.simple_grid, output_interval=time.NumTimeSteps(3)
+        test_path, grid, output_interval=time.NumTimeSteps(3)
     )
-    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    state = test_io_utils.model_state(grid)
     step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
     group_monitor.store(state, step_time)
     assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 1
@@ -308,12 +313,14 @@ def test_fieldgroup_monitor_writes_only_on_interval_steps(test_path: pathlib.Pat
     assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 1
 
 
-def test_fieldgroup_monitor_records_phase_timings_per_capture(test_path: pathlib.Path) -> None:
+def test_fieldgroup_monitor_records_phase_timings_per_capture(
+    test_path: pathlib.Path, grid: base.Grid
+) -> None:
     # one (distribute, write) sample pair per capture step, none for skipped steps
     _, group_monitor = create_field_group_monitor(
-        test_path, test_io_utils.simple_grid, output_interval=time.NumTimeSteps(2)
+        test_path, grid, output_interval=time.NumTimeSteps(2)
     )
-    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    state = test_io_utils.model_state(grid)
     step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
     for step in range(4):
         group_monitor.store(state, step_time + step * dt.timedelta(hours=1))
@@ -337,12 +344,12 @@ def create_field_group_monitor(
         backend=OutputBackend.NETCDF,
         mode=OutputMode.GATHER,
     )
-    vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
+    vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
             (dims.KHalfDim,),
-            np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1),  # type: ignore[arg-type]
+            np.linspace(12000.0, 0.0, grid.num_levels + 1),  # type: ignore[arg-type]
         ),
         vct_b=None,
     )
@@ -400,19 +407,21 @@ def test_fieldgroup_config_validate_basename(
     assert message in str(err.value)
 
 
-def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path: pathlib.Path) -> None:
+def test_fieldgroup_monitor_constructs_output_path_and_filepattern(
+    test_path: pathlib.Path, grid: base.Grid
+) -> None:
     config = FieldGroupIOConfig(
         basename="vars/prognostics",
         output_interval=time.NumTimeSteps(1),
         variables=["dimensionless_exner_function", "air_density"],
     )
-    vertical_size = test_io_utils.simple_grid.config.vertical_size
-    horizontal_size = test_io_utils.simple_grid.config.horizontal_config
+    vertical_size = grid.config.vertical_size
+    horizontal_size = grid.config.horizontal_config
     group_monitor = FieldGroupMonitor(
         config=config,
         vertical=vertical_size,  # type: ignore[arg-type]  # vertical is unused in this test
         distribution=distributed.SingleNodeDistribution(horizontal_size),
-        grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+        grid_id=uuid.UUID(grid.id),
         output_path=test_path,
         dtime=time.RelativeTime(hours=1),
         process_props=decomposition_defs.SingleNodeProcessProperties(),
@@ -462,7 +471,7 @@ class _SingleRankBlockDistribution:
 
 
 def test_fieldgroup_monitor_wires_rank_blocks_into_netcdf_writer(
-    test_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    test_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, grid: base.Grid
 ) -> None:
     """Pin the monitor-to-writer wiring of distributed netCDF output.
 
@@ -472,7 +481,6 @@ def test_fieldgroup_monitor_wires_rank_blocks_into_netcdf_writer(
     (global-index coordinates end up in the file) and the monitor's communicator.
     """
     monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: None)
-    grid = test_io_utils.simple_grid
     config = FieldGroupIOConfig(
         basename="rank_block",
         output_interval=time.NumTimeSteps(1),
@@ -509,26 +517,28 @@ def test_fieldgroup_monitor_wires_rank_blocks_into_netcdf_writer(
         assert ds["air_density"].shape == (1, grid.num_levels, grid.num_cells)
 
 
-def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path: pathlib.Path) -> None:
+def test_fieldgroup_monitor_throw_exception_on_missing_field(
+    test_path: pathlib.Path, grid: base.Grid
+) -> None:
     config = FieldGroupIOConfig(
         basename="vars/prognostics",
         output_interval=time.NumTimeSteps(1),
         variables=["dimensionless_exner_function", "air_density", "foo"],
     )
-    vertical_size = test_io_utils.simple_grid.config.vertical_size
-    horizontal_size = test_io_utils.simple_grid.config.horizontal_config
+    vertical_size = grid.config.vertical_size
+    horizontal_size = grid.config.horizontal_config
     group_monitor = FieldGroupMonitor(
         config=config,
         vertical=vertical_size,  # type: ignore[arg-type]  # vertical is unused in this test
         distribution=distributed.SingleNodeDistribution(horizontal_size),
-        grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+        grid_id=uuid.UUID(grid.id),
         output_path=test_path,
         dtime=time.RelativeTime(hours=1),
         process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
         group_monitor.store(
-            test_io_utils.model_state(test_io_utils.simple_grid),
+            test_io_utils.model_state(grid),
             dt.datetime.fromisoformat("2023-04-04T11:00:00"),
         )
 
@@ -543,15 +553,17 @@ def test_fieldgroup_config_rejects_invalid_interval() -> None:
         )
 
 
-def test_fieldgroup_monitor_time_interval_normalized_to_steps(test_path: pathlib.Path) -> None:
+def test_fieldgroup_monitor_time_interval_normalized_to_steps(
+    test_path: pathlib.Path, grid: base.Grid
+) -> None:
     # a 3-hour interval with a 1-hour time step fires every 3rd step
     _, group_monitor = create_field_group_monitor(
         test_path,
-        test_io_utils.simple_grid,
+        grid,
         output_interval=time.RelativeTime(hours=3),
         dtime=time.RelativeTime(hours=1),
     )
-    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    state = test_io_utils.model_state(grid)
     step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
     # first step: output is written
     group_monitor.store(state, step_time)
@@ -562,11 +574,13 @@ def test_fieldgroup_monitor_time_interval_normalized_to_steps(test_path: pathlib
     assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 1
 
 
-def test_fieldgroup_monitor_interval_shorter_than_dtime_raises(test_path: pathlib.Path) -> None:
+def test_fieldgroup_monitor_interval_shorter_than_dtime_raises(
+    test_path: pathlib.Path, grid: base.Grid
+) -> None:
     with pytest.raises(errors.InvalidConfigError, match="shorter than the model time step"):
         create_field_group_monitor(
             test_path,
-            test_io_utils.simple_grid,
+            grid,
             output_interval=time.RelativeTime(minutes=30),
             dtime=time.RelativeTime(hours=1),
         )
@@ -664,9 +678,10 @@ def test_fieldgroup_config_block_alignment_is_shard_then_chunk_then_one() -> Non
     assert sharded.block_alignment == 8
 
 
-def test_fieldgroup_monitor_wires_chunking_into_zarr_writer(test_path: pathlib.Path) -> None:
+def test_fieldgroup_monitor_wires_chunking_into_zarr_writer(
+    test_path: pathlib.Path, grid: base.Grid
+) -> None:
     """Pin that the configured chunk/shard sizes reach the store layout."""
-    grid = test_io_utils.simple_grid
     config = FieldGroupIOConfig(
         basename="chunked",
         output_interval=time.NumTimeSteps(1),
@@ -723,18 +738,20 @@ def test_fieldgroup_config_accepts_distributed_netcdf_on_any_installation(
     assert config.mode is OutputMode.DISTRIBUTED
 
 
-def test_fieldgroup_monitor_interval_not_multiple_of_dtime_raises(test_path: pathlib.Path) -> None:
+def test_fieldgroup_monitor_interval_not_multiple_of_dtime_raises(
+    test_path: pathlib.Path, grid: base.Grid
+) -> None:
     with pytest.raises(errors.InvalidConfigError, match="not a multiple"):
         create_field_group_monitor(
             test_path,
-            test_io_utils.simple_grid,
+            grid,
             output_interval=time.RelativeTime(minutes=90),
             dtime=time.RelativeTime(hours=1),
         )
 
 
-def _simple_grid_vertical() -> v_grid.VerticalGrid:
-    num_levels = test_io_utils.simple_grid.num_levels
+def _simple_grid_vertical(grid: base.Grid) -> v_grid.VerticalGrid:
+    num_levels = grid.num_levels
     return v_grid.VerticalGrid(
         config=v_grid.VerticalGridConfig(num_levels=num_levels),
         vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, num_levels + 1)),  # type: ignore[arg-type]
@@ -743,23 +760,25 @@ def _simple_grid_vertical() -> v_grid.VerticalGrid:
 
 
 def test_io_monitor_ugrid_failure_raises_runtime_error(
-    test_path: pathlib.Path, single_group_config: IOConfig
+    test_path: pathlib.Path, single_group_config: IOConfig, grid: base.Grid
 ) -> None:
     # a broken grid file must fail loudly (and, in a distributed run, on all ranks)
     with pytest.raises(RuntimeError, match="UGRID topology"):
         IOMonitor(
             config=single_group_config,
-            vertical_size=_simple_grid_vertical(),
-            horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+            vertical_size=_simple_grid_vertical(grid),
+            horizontal_size=grid.config.horizontal_config,
             grid_file_name=test_path / "does_not_exist.nc",
-            grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+            grid_id=uuid.UUID(grid.id),
             dtime=time.RelativeTime(hours=1),
             process_props=decomposition_defs.SingleNodeProcessProperties(),
             decomposition_info=None,
         )
 
 
-def test_io_config_time_properties_reach_field_group_monitors(test_path: pathlib.Path) -> None:
+def test_io_config_time_properties_reach_field_group_monitors(
+    test_path: pathlib.Path, grid: base.Grid
+) -> None:
     config = IOConfig(
         output_path=test_path / "output",
         field_groups=[FieldGroupIOConfig(basename="t", variables=["air_density"])],
@@ -768,10 +787,10 @@ def test_io_config_time_properties_reach_field_group_monitors(test_path: pathlib
     )
     monitor = IOMonitor(
         config=config,
-        vertical_size=_simple_grid_vertical(),
-        horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+        vertical_size=_simple_grid_vertical(grid),
+        horizontal_size=grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
-        grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+        grid_id=uuid.UUID(grid.id),
         dtime=time.RelativeTime(hours=1),
         process_props=decomposition_defs.SingleNodeProcessProperties(),
         decomposition_info=None,
@@ -818,6 +837,7 @@ class _TwoRankProcessProperties:
 
 def test_io_monitor_builds_alignment_aware_rank_block_distributions(
     test_path: pathlib.Path,
+    grid: base.Grid,
 ) -> None:
     """Distributed groups get alignment-rounded blocks; equal alignments share one instance."""
     sharded = dict(
@@ -842,10 +862,10 @@ def test_io_monitor_builds_alignment_aware_rank_block_distributions(
     )
     monitor = IOMonitor(
         config=config,
-        vertical_size=_simple_grid_vertical(),
-        horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+        vertical_size=_simple_grid_vertical(grid),
+        horizontal_size=grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
-        grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+        grid_id=uuid.UUID(grid.id),
         dtime=time.RelativeTime(hours=1),
         process_props=_TwoRankProcessProperties(),
         decomposition_info=synthetic_decomposition_info(),
@@ -915,7 +935,7 @@ def test_fieldgroup_config_rejects_non_integer_timesteps_per_file(value: object)
         )
 
 
-def test_io_monitor_variables_at_capture_time(test_path: pathlib.Path) -> None:
+def test_io_monitor_variables_at_capture_time(test_path: pathlib.Path, grid: base.Grid) -> None:
     """The union of the variables of the groups capturing at the current store call."""
     config = IOConfig(
         output_path=test_path / "output",
@@ -937,15 +957,15 @@ def test_io_monitor_variables_at_capture_time(test_path: pathlib.Path) -> None:
     )
     monitor = IOMonitor(
         config=config,
-        vertical_size=_simple_grid_vertical(),
-        horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+        vertical_size=_simple_grid_vertical(grid),
+        horizontal_size=grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
-        grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+        grid_id=uuid.UUID(grid.id),
         dtime=time.RelativeTime(hours=1),
         process_props=decomposition_defs.SingleNodeProcessProperties(),
         decomposition_info=None,
     )
-    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    state = test_io_utils.model_state(grid)
     step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
 
     # the predicate is pure: asking twice gives the same answer
@@ -958,9 +978,8 @@ def test_io_monitor_variables_at_capture_time(test_path: pathlib.Path) -> None:
     monitor.close()
 
 
-def test_io_monitor_writes_horizontal_only_fields(test_path: pathlib.Path) -> None:
+def test_io_monitor_writes_horizontal_only_fields(test_path: pathlib.Path, grid: base.Grid) -> None:
     """A purely horizontal (surface) field is written as (time, cell) next to the 3D ones."""
-    grid = test_io_utils.simple_grid
     state = test_io_utils.model_state(grid)
     state["surface_pressure"] = field.Field(
         qty.SurfacePressureOnCell, data_alloc.random_field(grid, dims.CellDim)
@@ -978,7 +997,7 @@ def test_io_monitor_writes_horizontal_only_fields(test_path: pathlib.Path) -> No
     )
     monitor = IOMonitor(
         config=config,
-        vertical_size=_simple_grid_vertical(),
+        vertical_size=_simple_grid_vertical(grid),
         horizontal_size=grid.config.horizontal_config,
         grid_file_name=test_io_utils.grid_file,
         grid_id=uuid.UUID(grid.id),

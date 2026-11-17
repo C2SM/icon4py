@@ -10,12 +10,8 @@ import pytest
 
 from icon4py.model.common import framework as fw
 from icon4py.model.common.framework import states
-from icon4py.model.common.grid import base as base_grid, simple
-
-
-@pytest.fixture
-def grid() -> base_grid.Grid:
-    return simple.simple_grid()
+from icon4py.model.common.grid import base as base_grid
+from icon4py.model.testing.fixtures import backend_like, grid, grid_manager
 
 
 def test_tracer_state_allocates_the_configured_tracers_only(grid: base_grid.Grid) -> None:

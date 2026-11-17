@@ -31,6 +31,7 @@ from icon4py.model.common.io import (
 from icon4py.model.common.states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
+from icon4py.model.testing.fixtures import backend_like, grid, grid_manager
 
 from ...fixtures import random_name, test_path
 from .. import utils as test_io_utils
@@ -50,7 +51,7 @@ def _vertical_params(grid: grid_def.Grid) -> v_grid.VerticalGrid:
 def initialized_writer(
     test_path: pathlib.Path,
     random_name: str,
-    grid: grid_def.Grid = test_io_utils.simple_grid,
+    grid: grid_def.Grid,
     horizontal_chunk_size: int | None = None,
 ) -> tuple[netcdf_writers.NETCDFWriter, grid_def.Grid]:
     horizontal = grid.config.horizontal_config
@@ -71,8 +72,8 @@ def initialized_writer(
     return writer, grid
 
 
-def test_initialize_writer_time_var(test_path, random_name):
-    dataset, _ = initialized_writer(test_path, random_name)
+def test_initialize_writer_time_var(test_path, random_name, grid: grid_def.Grid):
+    dataset, _ = initialized_writer(test_path, random_name, grid)
     time_var = dataset.variables[writers.TIME]
     assert time_var.dimensions == ("time",)
     assert time_var.units == "seconds since 1970-01-01 00:00:00"
@@ -82,8 +83,8 @@ def test_initialize_writer_time_var(test_path, random_name):
     assert len(time_var) == 0
 
 
-def test_initialize_writer_vertical_model_levels(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_initialize_writer_vertical_model_levels(test_path, random_name, grid: grid_def.Grid):
+    dataset, grid = initialized_writer(test_path, random_name, grid)
     vertical = dataset.variables[writers.MODEL_LEVEL]
     assert vertical.units == "1"
     assert vertical.dimensions == (writers.MODEL_LEVEL,)
@@ -94,8 +95,8 @@ def test_initialize_writer_vertical_model_levels(test_path, random_name):
     assert np.all(vertical == np.arange(grid.num_levels))
 
 
-def test_initialize_writer_half_levels(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_initialize_writer_half_levels(test_path, random_name, grid: grid_def.Grid):
+    dataset, grid = initialized_writer(test_path, random_name, grid)
     half_levels = dataset.variables[writers.MODEL_HALF_LEVEL]
     assert half_levels.units == "1"
     assert half_levels.datatype == np.int32
@@ -105,8 +106,8 @@ def test_initialize_writer_half_levels(test_path, random_name):
     assert np.all(half_levels == np.arange(grid.num_levels + 1))
 
 
-def test_initialize_writer_heights(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_initialize_writer_heights(test_path, random_name, grid: grid_def.Grid):
+    dataset, grid = initialized_writer(test_path, random_name, grid)
     heights = dataset.variables["height"]
     assert heights.units == "m"
     assert heights.datatype == np.float64
@@ -117,8 +118,8 @@ def test_initialize_writer_heights(test_path, random_name):
     assert heights[-1] == 0.0
 
 
-def test_writer_append_timeslice(test_path, random_name):
-    writer, _ = initialized_writer(test_path, random_name)
+def test_writer_append_timeslice(test_path, random_name, grid: grid_def.Grid):
+    writer, _ = initialized_writer(test_path, random_name, grid)
     time = datetime.now()
     assert len(writer.variables[writers.TIME]) == 0
     slice1 = {}
@@ -138,8 +139,8 @@ def test_writer_append_timeslice(test_path, random_name):
     )
 
 
-def test_writer_append_timeslice_create_new_var(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_writer_append_timeslice_create_new_var(test_path, random_name, grid: grid_def.Grid):
+    dataset, grid = initialized_writer(test_path, random_name, grid)
     time = datetime.now()
     assert len(dataset.variables[writers.TIME]) == 0
     assert "air_density" not in dataset.variables
@@ -161,8 +162,8 @@ def test_writer_append_timeslice_create_new_var(test_path, random_name):
     test_utils.assert_dallclose(dataset.variables["air_density"][0], state["air_density"].data.T)
 
 
-def test_writer_append_timeslice_to_existing_var(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_writer_append_timeslice_to_existing_var(test_path, random_name, grid: grid_def.Grid):
+    dataset, grid = initialized_writer(test_path, random_name, grid)
     time = datetime.now()
     state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     dataset.append(state, time)
@@ -187,7 +188,7 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
 def initialized_zarr_writer(
     test_path: pathlib.Path,
     random_name: str,
-    grid: grid_def.Grid = test_io_utils.simple_grid,
+    grid: grid_def.Grid,
     *,
     rank_blocks: dict[str, distributed.RankBlock] | None = None,
     horizontal: grid_def.HorizontalGridSize | None = None,
@@ -212,10 +213,11 @@ def initialized_zarr_writer(
     return writer, store_path
 
 
-def test_zarr_writer_initialize_coordinates(test_path: pathlib.Path, random_name: str) -> None:
-    writer, store_path = initialized_zarr_writer(test_path, random_name)
+def test_zarr_writer_initialize_coordinates(
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
+) -> None:
+    writer, store_path = initialized_zarr_writer(test_path, random_name, grid)
     writer.close()
-    grid = test_io_utils.simple_grid
     assert zarr.open_group(store_path, mode="r").metadata.zarr_format == 3
     with xr.open_zarr(store_path) as ds:
         assert ds.attrs["title"] == "test"
@@ -228,10 +230,9 @@ def test_zarr_writer_initialize_coordinates(test_path: pathlib.Path, random_name
 
 
 def test_zarr_writer_append_timeslice_create_new_var(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
-    writer, store_path = initialized_zarr_writer(test_path, random_name)
-    grid = test_io_utils.simple_grid
+    writer, store_path = initialized_zarr_writer(test_path, random_name, grid)
     state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     writer.close()
@@ -247,10 +248,9 @@ def test_zarr_writer_append_timeslice_create_new_var(
 
 
 def test_zarr_writer_append_timeslice_to_existing_var(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
-    writer, store_path = initialized_zarr_writer(test_path, random_name)
-    grid = test_io_utils.simple_grid
+    writer, store_path = initialized_zarr_writer(test_path, random_name, grid)
     state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     first_time = datetime.now()
     writer.append(state, first_time)
@@ -271,13 +271,15 @@ def test_zarr_writer_append_timeslice_to_existing_var(
         test_utils.assert_dallclose(ds[writers.TIME].values, expected_times)
 
 
-def test_zarr_writer_refuses_to_overwrite(test_path: pathlib.Path, random_name: str) -> None:
-    writer, store_path = initialized_zarr_writer(test_path, random_name)
+def test_zarr_writer_refuses_to_overwrite(
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
+) -> None:
+    writer, store_path = initialized_zarr_writer(test_path, random_name, grid)
     writer.close()
     duplicate = zarr_writers.ZarrWriter(
         file_name=store_path,
-        vertical=_vertical_params(test_io_utils.simple_grid),
-        horizontal=test_io_utils.simple_grid.config.horizontal_config,
+        vertical=_vertical_params(grid),
+        horizontal=grid.config.horizontal_config,
         time_properties=writers.TimeProperties(
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
         ),
@@ -314,7 +316,7 @@ class _NonRootProcessProperties:
 
 
 def test_zarr_writer_root_failure_reaches_non_root_ranks(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     """A store-creation failure on the root rank raises on the other ranks too.
 
@@ -326,8 +328,8 @@ def test_zarr_writer_root_failure_reaches_non_root_ranks(
     """
     non_root = zarr_writers.ZarrWriter(
         file_name=test_path / f"{random_name}.zarr",
-        vertical=_vertical_params(test_io_utils.simple_grid),
-        horizontal=test_io_utils.simple_grid.config.horizontal_config,
+        vertical=_vertical_params(grid),
+        horizontal=grid.config.horizontal_config,
         time_properties=writers.TimeProperties(
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
         ),
@@ -342,12 +344,11 @@ def test_zarr_writer_root_failure_reaches_non_root_ranks(
 
 
 def test_zarr_writer_rank_block_writes_padded_block(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # single-rank rank-block layout with padding: the store's horizontal axes are the
     # padded sizes, data lands in the rank's block, padding stays NaN and the
     # global-index coordinates mark it with -1
-    grid = test_io_utils.simple_grid
     padding = 3
     rank_blocks = {
         dim_name: distributed.RankBlock(
@@ -404,12 +405,11 @@ def test_zarr_writer_rank_block_writes_padded_block(
 
 
 def test_zarr_writer_rank_block_writes_at_nonzero_start(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # store view of a non-root rank: its block starts at rank * block size; data and
     # global indices must land inside the block only, everything before and after
     # stays padding
-    grid = test_io_utils.simple_grid
     rank = 1
     rank_blocks = {}
     for dim_name, size in (
@@ -452,14 +452,13 @@ def test_zarr_writer_rank_block_writes_at_nonzero_start(
 
 
 def test_zarr_writer_horizontal_chunk_and_shard_sizes(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # a serial store with configured chunking/sharding: the horizontal axes split into
     # chunks of the configured size, grouped into shards of whole chunks; the data
     # content is independent of the layout
-    grid = test_io_utils.simple_grid
     writer, store_path = initialized_zarr_writer(
-        test_path, random_name, horizontal_chunk_size=4, horizontal_shard_size=8
+        test_path, random_name, grid, horizontal_chunk_size=4, horizontal_shard_size=8
     )
     state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
@@ -473,11 +472,10 @@ def test_zarr_writer_horizontal_chunk_and_shard_sizes(
 
 
 def test_zarr_writer_rank_block_chunk_and_shard_sizes(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # rank-block store with sub-chunked, sharded blocks (block size a multiple of
     # the shard size); data, padding and global indices are unchanged
-    grid = test_io_utils.simple_grid
     chunk_size, shard_size = 3, 6
     rank_blocks = {}
     for dim_name, size in (
@@ -531,14 +529,14 @@ def test_zarr_writer_rank_block_chunk_and_shard_sizes(
 
 
 def test_zarr_writer_rejects_chunks_crossing_rank_blocks(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # a block size of 10 is no multiple of a chunk size of 4
     with pytest.raises(ValueError, match="not a multiple"):
         zarr_writers.ZarrWriter(
             file_name=test_path / f"{random_name}.zarr",
-            vertical=_vertical_params(test_io_utils.simple_grid),
-            horizontal=test_io_utils.simple_grid.config.horizontal_config,
+            vertical=_vertical_params(grid),
+            horizontal=grid.config.horizontal_config,
             time_properties=writers.TimeProperties(
                 cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
             ),
@@ -552,8 +550,9 @@ def test_zarr_writer_rejects_chunks_crossing_rank_blocks(
 def test_initialize_writer_create_dimensions(
     test_path,
     random_name,
+    grid: grid_def.Grid,
 ):
-    writer, grid = initialized_writer(test_path, random_name)
+    writer, grid = initialized_writer(test_path, random_name, grid)
 
     assert writer["title"] == "test"
     assert writer["institution"] == "EXCLAIM - ETH Zurich"
@@ -598,13 +597,12 @@ def initialized_netcdf_rank_block_writer(
 
 
 def test_netcdf_writer_rank_block_writes_padded_block(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # the netCDF twin of the zarr rank-block test: padded horizontal axes, data in the
     # rank's block, NaN data padding, -1 global-index padding. A single-rank
     # communicator uses a serial file handle, so the layout is exercised without an
     # MPI-parallel netCDF4 installation.
-    grid = test_io_utils.simple_grid
     padding = 3
     rank_blocks = {
         dim_name: distributed.RankBlock(
@@ -658,13 +656,12 @@ def test_netcdf_writer_rank_block_writes_padded_block(
 
 
 def test_netcdf_writer_rank_block_writes_at_nonzero_start(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # file view of a non-root rank: its block starts at rank * block size; data and
     # global indices must land inside the block only. Unlike the zarr store (whose fill value
     # covers the whole array), regions of other ranks are simply not written by this
     # rank -- in a real run every rank covers its own block.
-    grid = test_io_utils.simple_grid
     rank = 1
     rank_blocks = {}
     for dim_name, size in (
@@ -711,9 +708,11 @@ def test_netcdf_writer_rank_block_writes_at_nonzero_start(
         )
 
 
-def test_netcdf_writer_horizontal_chunk_size(test_path: pathlib.Path, random_name: str) -> None:
+def test_netcdf_writer_horizontal_chunk_size(
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
+) -> None:
     # a serial file is chunked only when configured
-    writer, grid = initialized_writer(test_path, random_name, horizontal_chunk_size=4)
+    writer, grid = initialized_writer(test_path, random_name, grid, horizontal_chunk_size=4)
     state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     assert writer.variables["air_density"].chunking() == [1, grid.num_levels, 4]
@@ -721,11 +720,11 @@ def test_netcdf_writer_horizontal_chunk_size(test_path: pathlib.Path, random_nam
 
 
 def test_netcdf_writer_horizontal_chunk_size_clamped_to_axis(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # netCDF rejects chunks larger than a fixed dimension: an oversized configured
     # chunk is clamped to the axis size
-    writer, grid = initialized_writer(test_path, random_name, horizontal_chunk_size=10_000)
+    writer, grid = initialized_writer(test_path, random_name, grid, horizontal_chunk_size=10_000)
     state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     assert writer.variables["air_density"].chunking() == [1, grid.num_levels, grid.num_cells]
@@ -733,12 +732,11 @@ def test_netcdf_writer_horizontal_chunk_size_clamped_to_axis(
 
 
 def test_netcdf_writer_rank_block_horizontal_chunk_size(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # rank-block file with sub-chunked blocks: the chunk size divides every block size
     # (padded sizes 21/30/12), so chunks never cross block boundaries; data and
     # padding are unchanged
-    grid = test_io_utils.simple_grid
     padding = 3
     chunk_size = 3
     rank_blocks = {
@@ -782,14 +780,14 @@ def test_netcdf_writer_rank_block_horizontal_chunk_size(
 
 
 def test_netcdf_writer_rejects_chunks_crossing_rank_blocks(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # a block size of 10 is no multiple of a chunk size of 4
     with pytest.raises(ValueError, match="not a multiple"):
         netcdf_writers.NETCDFWriter(
             file_name=test_path / f"{random_name}.nc",
-            vertical=_vertical_params(test_io_utils.simple_grid),
-            horizontal=test_io_utils.simple_grid.config.horizontal_config,
+            vertical=_vertical_params(grid),
+            horizontal=grid.config.horizontal_config,
             time_properties=writers.TimeProperties(
                 cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
             ),
@@ -813,7 +811,7 @@ class _TwoRankProcessProperties:
 
 
 def test_netcdf_writer_rejects_multi_rank_blocks_without_parallel_support(
-    test_path: pathlib.Path, random_name: str, monkeypatch: pytest.MonkeyPatch
+    test_path: pathlib.Path, random_name: str, monkeypatch: pytest.MonkeyPatch, grid: grid_def.Grid
 ) -> None:
     # patched instead of relying on the local installation: PyPI wheels are always
     # serial, but the test must also pass on a machine with a parallel build
@@ -821,8 +819,8 @@ def test_netcdf_writer_rejects_multi_rank_blocks_without_parallel_support(
     with pytest.raises(RuntimeError) as err:
         netcdf_writers.NETCDFWriter(
             file_name=test_path / f"{random_name}.nc",
-            vertical=_vertical_params(test_io_utils.simple_grid),
-            horizontal=test_io_utils.simple_grid.config.horizontal_config,
+            vertical=_vertical_params(grid),
+            horizontal=grid.config.horizontal_config,
             time_properties=writers.TimeProperties(
                 cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
             ),
@@ -917,14 +915,14 @@ def _single_rank_block(size: int) -> dict[str, distributed.RankBlock]:
 
 
 def test_zarr_writer_rejects_shards_crossing_rank_blocks(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # a block size of 24 holds whole chunks of 8 but not whole shards of 16
     with pytest.raises(ValueError, match="shard"):
         zarr_writers.ZarrWriter(
             file_name=test_path / f"{random_name}.zarr",
-            vertical=_vertical_params(test_io_utils.simple_grid),
-            horizontal=test_io_utils.simple_grid.config.horizontal_config,
+            vertical=_vertical_params(grid),
+            horizontal=grid.config.horizontal_config,
             time_properties=writers.TimeProperties(
                 cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
             ),
@@ -937,15 +935,15 @@ def test_zarr_writer_rejects_shards_crossing_rank_blocks(
 
 
 def test_zarr_writer_rejects_shard_without_dividing_chunk(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # every rank must reject the layout at construction; zarr itself would raise on
     # the root rank only, inside a pre-barrier store operation
     with pytest.raises(ValueError, match="shard size"):
         zarr_writers.ZarrWriter(
             file_name=test_path / f"{random_name}.zarr",
-            vertical=_vertical_params(test_io_utils.simple_grid),
-            horizontal=test_io_utils.simple_grid.config.horizontal_config,
+            vertical=_vertical_params(grid),
+            horizontal=grid.config.horizontal_config,
             time_properties=writers.TimeProperties(
                 cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
             ),
@@ -958,12 +956,11 @@ def test_zarr_writer_rejects_shard_without_dividing_chunk(
 
 
 def test_zarr_writer_append_invalid_field_leaves_store_unchanged(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # a bad field must raise before any store mutation (identically on every rank in
     # rank-block mode), or the store would keep a phantom time slice
-    writer, store_path = initialized_zarr_writer(test_path, random_name)
-    grid = test_io_utils.simple_grid
+    writer, store_path = initialized_zarr_writer(test_path, random_name, grid)
     no_attrs = xr.DataArray(np.zeros((grid.num_cells, grid.num_levels)), dims=("cell", "level"))
     with pytest.raises(ValueError, match="missing the CF attributes"):
         writer.append({"air_density": no_attrs}, datetime.now())
@@ -976,9 +973,9 @@ def test_zarr_writer_append_invalid_field_leaves_store_unchanged(
 
 
 def test_netcdf_writer_append_invalid_field_leaves_file_unchanged(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
-    writer, grid = initialized_writer(test_path, random_name)
+    writer, grid = initialized_writer(test_path, random_name, grid)
     no_attrs = xr.DataArray(np.zeros((grid.num_cells, grid.num_levels)), dims=("cell", "level"))
     with pytest.raises(ValueError, match="missing the CF attributes"):
         writer.append({"air_density": no_attrs}, datetime.now())
@@ -987,11 +984,11 @@ def test_netcdf_writer_append_invalid_field_leaves_file_unchanged(
 
 
 def test_netcdf_writer_append_two_fields_sharing_standard_name(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # variables resolve by name (like the zarr writer): a shared standard_name must
     # yield two variables, not silently overwrite the first
-    writer, grid = initialized_writer(test_path, random_name)
+    writer, grid = initialized_writer(test_path, random_name, grid)
     field = test_io_utils.model_dataarrays(grid)["air_density"]
     writer.append({"air_density": field, "air_density_copy": field.copy(deep=True)}, datetime.now())
     assert "air_density" in writer.variables
@@ -1034,10 +1031,10 @@ def _padded_rank_blocks(
 
 
 def test_netcdf_writer_writes_horizontal_only_fields(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     """A surface field is a (time, cell) variable next to the (time, level, cell) ones."""
-    writer, grid = initialized_writer(test_path, random_name)
+    writer, grid = initialized_writer(test_path, random_name, grid)
     state = {
         "surface_pressure": _surface_field(grid),
         "air_density": test_io_utils.model_dataarrays(grid)["air_density"],
@@ -1059,9 +1056,8 @@ def test_netcdf_writer_writes_horizontal_only_fields(
 
 
 def test_zarr_writer_writes_horizontal_only_fields(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
-    grid = test_io_utils.simple_grid
     writer, store_path = initialized_zarr_writer(test_path, random_name, grid)
     state = {"surface_pressure": _surface_field(grid)}
     writer.append(state, datetime.now())
@@ -1077,11 +1073,10 @@ def test_zarr_writer_writes_horizontal_only_fields(
 
 
 def test_netcdf_writer_rank_block_pads_horizontal_only_fields(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
     # the rank-block layout of a surface field: data in the rank's block, NaN padding,
     # one chunk per block along the only (horizontal) axis
-    grid = test_io_utils.simple_grid
     padding = 3
     rank_blocks, padded_horizontal = _padded_rank_blocks(grid, padding)
     writer, file_path = initialized_netcdf_rank_block_writer(
@@ -1103,9 +1098,8 @@ def test_netcdf_writer_rank_block_pads_horizontal_only_fields(
 
 
 def test_zarr_writer_rank_block_pads_horizontal_only_fields(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid
 ) -> None:
-    grid = test_io_utils.simple_grid
     padding = 3
     rank_blocks, padded_horizontal = _padded_rank_blocks(grid, padding)
     writer, store_path = initialized_zarr_writer(
