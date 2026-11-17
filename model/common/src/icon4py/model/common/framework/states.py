@@ -15,11 +15,11 @@ import datetime
 from collections.abc import Iterator
 from typing import Final
 
-from icon4py.model.common import field, framework as fw, utils as common_utils
+from icon4py.model.common import field, state, utils as common_utils
 from icon4py.model.common.framework import quantities as qty
 
 
-class PrognosticState(fw.State):
+class PrognosticState(state.State):
     """ICON's t_nh_prog without the tracers: advanced once per dynamics substep."""
 
     rho: field.Field[qty.RhoOnCellK]
@@ -29,7 +29,7 @@ class PrognosticState(fw.State):
     theta_v: field.Field[qty.ThetaVOnCellK]
 
 
-class TracerState(fw.State):
+class TracerState(state.State):
     """
     The tracers of ICON's t_nh_prog, advanced once per model time step.
 
@@ -110,7 +110,7 @@ class TracerConfig:
         return names if names else "none"
 
 
-class PrepAdvection(fw.State):
+class PrepAdvection(state.State):
     """The fluxes the dycore accumulates over the substeps for the tracer advection."""
 
     # TODO(jcanton, msimberg): part 02 fix this. If vn_traj keeps sharing VnOnEdgeK with vn, `collect`
@@ -128,7 +128,7 @@ class PrepAdvection(fw.State):
     """Declared as vol_flx_ic in ICON."""
 
 
-class DycoreForcing(fw.State):
+class DycoreForcing(state.State):
     """
     The tendencies and increments the dycore reads but does not produce.
 
@@ -155,7 +155,7 @@ class DycoreForcing(fw.State):
     """Declared as exner_incr in ICON."""
 
 
-class DycoreDiagnostics(fw.State):
+class DycoreDiagnostics(state.State):
     """
     The diagnostics the dycore keeps from one substep to the next, owned by the driver.
 
@@ -198,7 +198,7 @@ class DycoreDiagnostics(fw.State):
     """Declared as mass_fl_e in ICON."""
 
 
-class DiffusionDiagnostics(fw.State):
+class DiffusionDiagnostics(state.State):
     """The diagnostics of the diffusion (turbulence fields of ICON's t_nh_diag), owned by the driver."""
 
     hdef_ic: field.Field[qty.HorizontalWindDeformationOnCellKHalf]
@@ -207,7 +207,7 @@ class DiffusionDiagnostics(fw.State):
     dwdy: field.Field[qty.MeridionalGradientOfWOnCellKHalf]
 
 
-class AdvectionDiagnostics(fw.State):
+class AdvectionDiagnostics(state.State):
     """The diagnostics of the tracer advection, owned by the driver."""
 
     airmass_now: field.Field[qty.AirMassOnCellK]
@@ -217,7 +217,7 @@ class AdvectionDiagnostics(fw.State):
     vfl_tracer: field.Field[qty.VerticalTracerFluxOnCellKHalf]
 
 
-class Diagnostics(fw.State):
+class Diagnostics(state.State):
     """ICON's t_nh_diag fields the physics reads and the output writes."""
 
     pressure: field.Field[qty.PressureOnCellK]

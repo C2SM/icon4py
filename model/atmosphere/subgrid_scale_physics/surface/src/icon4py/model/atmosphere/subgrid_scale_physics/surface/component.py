@@ -14,7 +14,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import surface, surface_states
-from icon4py.model.common import dimension as dims, field, framework as fw
+from icon4py.model.common import dimension as dims, field, framework as fw, state
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.states import surface_flux_state
 
@@ -34,11 +34,11 @@ class Surface(fw.Component["Surface.Input", "Surface.Output"]):
     the atmosphere. It produces no tendencies.
     """
 
-    class Input(fw.State):
+    class Input(state.State):
         pressure_ifc: field.Field[qty.PressureOnCellKHalf]
         temperature: field.Field[qty.TemperatureOnCellK]
 
-    class Output(fw.State):
+    class Output(state.State):
         evapotranspiration: field.Field[qty.EvapotranspirationOnCell]
         """Declared as evap in ICON."""
         sensible_heat_flux: field.Field[qty.SensibleHeatFluxOnCell]

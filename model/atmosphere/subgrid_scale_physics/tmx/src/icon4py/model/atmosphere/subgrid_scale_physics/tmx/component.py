@@ -14,7 +14,7 @@ import dataclasses
 from typing import TYPE_CHECKING
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
-from icon4py.model.common import field, framework as fw, model_backends, type_alias as ta
+from icon4py.model.common import field, framework as fw, model_backends, state, type_alias as ta
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.states import surface_flux_state
 
@@ -44,7 +44,7 @@ class Tmx(fw.Component["Tmx.Input", "Tmx.Output"]):
     # tmx is the only process which returns zero tendencies on those steps
     # (possible fortran bug under investigation)
 
-    class Input(fw.State):
+    class Input(state.State):
         temperature: field.Field[qty.TemperatureOnCellK]
         virtual_temperature: field.Field[qty.VirtualTemperatureOnCellK]
         pressure: field.Field[qty.PressureOnCellK]
@@ -68,7 +68,7 @@ class Tmx(fw.Component["Tmx.Input", "Tmx.Output"]):
         thermal_energy_flux: field.Field[qty.ThermalEnergyFluxOnCell]
         vapor_energy_flux: field.Field[qty.VaporEnergyFluxOnCell]
 
-    class Output(fw.State):
+    class Output(state.State):
         tend_temperature: field.Field[qty.TendencyOfTemperatureOnCellK]
         tend_qv: field.Field[qty.TendencyOfQvOnCellK]
         tend_qc: field.Field[qty.TendencyOfQcOnCellK]

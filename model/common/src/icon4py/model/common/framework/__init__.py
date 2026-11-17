@@ -13,11 +13,11 @@ import functools
 import types
 import typing
 from collections.abc import Callable, Collection, Sequence
-from typing import Any, Protocol, dataclass_transform
+from typing import Any, Protocol
 
 import gt4py.next as gtx
 
-from icon4py.model.common import field, quantity, type_alias as ta, utils as common_utils
+from icon4py.model.common import field, quantity, state, type_alias as ta, utils as common_utils
 from icon4py.model.common.utils import data_allocation
 
 
@@ -45,32 +45,10 @@ def zeros[Q: quantity.Quantity](
     )
 
 
-# ------------------------------------------------------------------------------
-# State: a frozen dataclass of typed leaves
-# ------------------------------------------------------------------------------
-@dataclass_transform(frozen_default=True, kw_only_default=True, eq_default=False)
-class State:
-    """
-    A frozen, keyword-only dataclass of typed leaves.
-
-    `Field` leaves are read back from the annotations; plain leaves (floats, ints,
-    datetimes) are ordinary fields and are not listed. A leaf annotated `Field[Q] | None`
-    is optional: `allocate` may leave it None; `fields()` skips it.
-
-    A state is not a `Mapping`: the present leaves of an instance are read back as a
-    mapping by the `fields()` free function, next to `allocate` and `copy`. States are
-    identity-equal and hashable, the `eq=False` dataclass choice.
-    """
-
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        dataclasses.dataclass(frozen=True, eq=False, kw_only=True)(cls)
-
-
 # TODO(msimberg): The exclude argument should be removed and filtering should be
 # done by the caller, e.g. with `filter`.
 def fields(
-    state: State,
+    state: state.State,
     kind: type[quantity.Quantity] = quantity.Quantity,
     exclude: type[quantity.Quantity] | None = None,
 ) -> dict[str, field.Field]:
@@ -118,9 +96,9 @@ def _declaration(name: str, hint: Any) -> tuple[str, type[quantity.Quantity], bo
 
 
 @functools.cache
-def _declarations(cls: type[State]) -> Sequence[tuple[str, type[quantity.Quantity], bool]]:
+def _declarations(cls: type[state.State]) -> Sequence[tuple[str, type[quantity.Quantity], bool]]:
     """
-    The `(name, quantity, optional)` triples of a `State` class's `Field` leaves, in
+    The `(name, quantity, optional)` triples of a `state.State` class's `Field` leaves, in
     declaration order. Cached because `typing.get_type_hints` evaluates the annotations,
     which are strings here, and `fields()` runs per step in the driver.
 
@@ -137,9 +115,9 @@ def _declarations(cls: type[State]) -> Sequence[tuple[str, type[quantity.Quantit
 
 @functools.cache
 def _pairs(
-    cls: type[State],
+    cls: type[state.State],
 ) -> Sequence[tuple[str, type[common_utils.Pair], type[quantity.Quantity]]]:
-    """The `(name, pair type, quantity)` triples of a `State` class's `Pair[Field[Q]]` leaves."""
+    """The `(name, pair type, quantity)` triples of a `state.State` class's `Pair[Field[Q]]` leaves."""
     hints = typing.get_type_hints(cls)
     pairs = []
     for field_ in dataclasses.fields(cls):  # type: ignore[arg-type]
@@ -151,16 +129,16 @@ def _pairs(
     return tuple(pairs)
 
 
-def leaf_quantities(cls: type[State]) -> dict[str, type[quantity.Quantity]]:
-    """The quantity of each `Field` leaf of a `State` class, by name, in declaration order."""
+def leaf_quantities(cls: type[state.State]) -> dict[str, type[quantity.Quantity]]:
+    """The quantity of each `Field` leaf of a `state.State` class, by name, in declaration order."""
     return {name: quantity_ for name, quantity_, _ in _declarations(cls)}  # type: ignore[arg-type]
 
 
-class Empty(State):
+class Empty(state.State):
     pass
 
 
-def allocate[S: State](
+def allocate[S: state.State](
     cls: type[S],
     grid: base_grid.Grid,
     allocator: gtx_typing.Allocator | None,
@@ -196,7 +174,7 @@ def allocate[S: State](
     return cls(**values, **plain)
 
 
-def copy[S1: State, S2: State](
+def copy[S1: state.State, S2: state.State](
     src: S1, dst: S2, kind: type[quantity.Quantity] = quantity.Quantity
 ) -> S2:
     """
@@ -225,11 +203,11 @@ def copy[S1: State, S2: State](
 # ------------------------------------------------------------------------------
 
 
-class Component[I: State, O: State](Protocol):
+class Component[I: state.State, O: state.State](Protocol):
     """
     `run(input, output) -> output`, the only method a component implements.
 
-    A component declares its two states, as class attributes (`class Input(fw.State)`) or as
+    A component declares its two states, as class attributes (`class Input(fw.state.State)`) or as
     instance attributes assigned at construction; a component that writes nothing declares
     `Output = fw.Empty`. The protocol has no implementation: the constructor is each
     component's own.
@@ -245,7 +223,7 @@ class Component[I: State, O: State](Protocol):
     def run(self, input: I, output: O) -> O: ...
 
 
-def copy_to_output(input: State, output: State) -> None:
+def copy_to_output(input: state.State, output: state.State) -> None:
     """
     Copy the leaves `input` and `output` share into `output`, unless they share a buffer.
 

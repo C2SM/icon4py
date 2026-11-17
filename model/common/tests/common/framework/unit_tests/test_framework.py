@@ -14,6 +14,7 @@ from icon4py.model.common import (
     field,
     framework as fw,
     quantity,
+    state,
     type_alias as ta,
     utils as common_utils,
 )
@@ -23,29 +24,29 @@ from tests.common.fixtures import grid
 from tests.common.unit_tests.utils import Pressure, Salt, TendencyOfPressure, Vt
 
 
-class Column(fw.State):
+class Column(state.State):
     pressure: field.Field[Pressure]
     salt: field.Field[Salt]
     dtime: float
 
 
-class Tracers(fw.State):
+class Tracers(state.State):
     pressure: field.Field[Pressure]
     salt: field.Field[Salt] | None = None
     vt: field.Field[Vt] | None = None
 
 
-class Budget(fw.State):
+class Budget(state.State):
     pressure: field.Field[Pressure]
     tend_pressure: field.Field[TendencyOfPressure]
     salt: field.Field[Salt] | None = None
 
 
 class Halve(fw.Component["Halve.Input", "Halve.Output"]):
-    class Input(fw.State):
+    class Input(state.State):
         pressure: field.Field[Pressure]
 
-    class Output(fw.State):
+    class Output(state.State):
         pressure: field.Field[Pressure]
 
     def run(self, input: Input, output: Output) -> Output:
@@ -125,7 +126,7 @@ def test_optional_leaves_left_none_are_not_fields(grid: base_grid.Grid) -> None:
 
 
 def test_allocate_follows_the_declared_dims(grid: base_grid.Grid) -> None:
-    class Fields(fw.State):
+    class Fields(state.State):
         pressure: field.Field[Pressure]
         salt: field.Field[Salt]
         salt_pc: common_utils.PredictorCorrectorPair[field.Field[Salt]]

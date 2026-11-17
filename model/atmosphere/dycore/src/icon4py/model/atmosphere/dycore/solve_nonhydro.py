@@ -57,6 +57,7 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     framework as fw,
     model_backends,
+    state,
     type_alias as ta,
 )
 from icon4py.model.common.config import options as common_conf_opt
@@ -406,7 +407,7 @@ def _update_max_vertical_cfl(
 
 
 class SolveNonhydro(fw.Component):
-    class Input(fw.State):
+    class Input(state.State):
         rho: field.Field[qty.RhoOnCellK]
         w: field.Field[qty.WOnCellKHalf]
         vn: field.Field[qty.VnOnEdgeK]
@@ -433,7 +434,7 @@ class SolveNonhydro(fw.Component):
         is_iau_active: bool = False
         iau_wgt_dyn: float = 0.0
 
-    class Output(fw.State):
+    class Output(state.State):
         rho: field.Field[qty.RhoOnCellK]
         w: field.Field[qty.WOnCellKHalf]
         vn: field.Field[qty.VnOnEdgeK]

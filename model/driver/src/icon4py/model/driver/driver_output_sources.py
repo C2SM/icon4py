@@ -21,7 +21,7 @@ a field whose quantity has no standard name is not offered.
 
 from typing import Final
 
-from icon4py.model.common import field, framework as fw, quantity
+from icon4py.model.common import field, framework as fw, quantity, state
 from icon4py.model.common.framework import states
 
 
@@ -34,7 +34,7 @@ def standard_name(quantity_: type[quantity.Quantity]) -> str:
     return quantity_.standard_name
 
 
-def standard_names(cls: type[fw.State]) -> dict[str, str]:
+def standard_names(cls: type[state.State]) -> dict[str, str]:
     """The standard name of each leaf of a `State` class that has one, by leaf name."""
     return {
         name: standard_name_
@@ -43,7 +43,7 @@ def standard_names(cls: type[fw.State]) -> dict[str, str]:
     }
 
 
-def by_standard_name(state: fw.State) -> dict[str, field.Field]:
+def by_standard_name(state: state.State) -> dict[str, field.Field]:
     """The present leaves of a state that have a standard name, by that name."""
     return {
         name: field_

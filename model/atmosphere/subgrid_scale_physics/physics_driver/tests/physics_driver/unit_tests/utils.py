@@ -23,7 +23,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     process_time_control,
     static_fields,
 )
-from icon4py.model.common import dimension as dims, field, framework as fw
+from icon4py.model.common import dimension as dims, field, framework as fw, state
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base as base_grid, simple
@@ -146,7 +146,7 @@ def make_output(
     )
 
 
-def filled[S: fw.State](cls: type[S], grid: base_grid.Grid, **values: float) -> S:
+def filled[S: state.State](cls: type[S], grid: base_grid.Grid, **values: float) -> S:
     """A state of `cls` with the given uniform leaves, zero elsewhere."""
     return fw.allocate(cls, grid, None, fill=lambda name, _: values.get(name, 0.0))
 
@@ -158,7 +158,7 @@ def zero_physics_state(
     return fw.allocate(physics_state.PhysicsState, grid, None, step_start=step_start)
 
 
-class Recorder(fw.Component[physics_state.PhysicsState, fw.State]):
+class Recorder(fw.Component[physics_state.PhysicsState, state.State]):
     """
     A component that writes fixed values into the leaves of its output and records the physics
     states it ran on, with a copy of the qv each one read.
@@ -169,14 +169,14 @@ class Recorder(fw.Component[physics_state.PhysicsState, fw.State]):
     """
 
     Input = physics_state.PhysicsState
-    Output = fw.State
+    Output = state.State
 
     def __init__(self, values: dict[str, float]) -> None:
         self.values = values
         self.states: list[physics_state.PhysicsState] = []
         self.qv_read: list[np.ndarray] = []
 
-    def run(self, input: physics_state.PhysicsState, output: fw.State) -> fw.State:
+    def run(self, input: physics_state.PhysicsState, output: state.State) -> state.State:
         self.states.append(input)
         self.qv_read.append(input.qv.asnumpy().copy())
         for name, value in self.values.items():
@@ -185,11 +185,11 @@ class Recorder(fw.Component[physics_state.PhysicsState, fw.State]):
 
 
 def recording(
-    output: type[fw.State],
+    output: type[state.State],
     values: dict[str, float],
     time_control: process_time_control.ProcessTimeControl,
     grid: base_grid.Grid,
-) -> tuple[physics_process.PhysicsProcess[physics_state.PhysicsState, fw.State], Recorder]:
+) -> tuple[physics_process.PhysicsProcess[physics_state.PhysicsState, state.State], Recorder]:
     """A process running a `Recorder` that writes `values` into its `output`-shaped outputs,
     on the whole physics state. The process's cache is allocated on `grid`."""
 

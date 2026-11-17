@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from icon4py.model.common import dimension as dims, field, framework as fw
+from icon4py.model.common import dimension as dims, field, framework as fw, state
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.io import utils as io_utils
@@ -109,7 +109,7 @@ def test_dataarrays_carry_cf_and_ugrid_metadata(
 
 
 def test_a_leaf_without_a_standard_name_is_not_offered() -> None:
-    class _State(fw.State):
+    class _State(state.State):
         rho: field.Field[qty.RhoOnCellK]
         rho_ic: field.Field[qty.RhoOnCellKHalf]
 

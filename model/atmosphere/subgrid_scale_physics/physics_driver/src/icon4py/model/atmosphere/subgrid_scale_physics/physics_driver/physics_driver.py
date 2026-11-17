@@ -25,6 +25,7 @@ from icon4py.model.common import (
     model_backends,
     model_options,
     quantity,
+    state,
     time,
 )
 from icon4py.model.common.framework import quantities as qty, states
@@ -58,7 +59,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
     halos of what the physics wrote are synced.
     """
 
-    class Input(fw.State):
+    class Input(state.State):
         vn: field.Field[qty.VnOnEdgeK]
         w: field.Field[qty.WOnCellKHalf]
         exner: field.Field[qty.ExnerOnCellK]
@@ -73,7 +74,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         air_mass: field.Field[qty.AirMassOnCellK] | None = None
         simulation_current_datetime: time.AbsoluteTime
 
-    class Output(fw.State):
+    class Output(state.State):
         vn: field.Field[qty.VnOnEdgeK]
         w: field.Field[qty.WOnCellKHalf]
         exner: field.Field[qty.ExnerOnCellK]
@@ -113,7 +114,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self._grid = grid
         self._exchange = exchange
         self._allocator = model_backends.get_allocator(backend)
-        self._process_outputs: dict[physics_process.PhysicsProcess, fw.State] = {
+        self._process_outputs: dict[physics_process.PhysicsProcess, state.State] = {
             process: fw.allocate(process.Output, self._grid, self._allocator)
             for process in processes
         }
@@ -350,7 +351,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         for accumulator in self.accumulators.values():
             accumulator.ndarray[...] = 0.0  # type: ignore[index]
 
-    def _accumulate_tendencies(self, output: fw.State) -> None:
+    def _accumulate_tendencies(self, output: state.State) -> None:
         """
         Add every `Tendency` leaf of a process output to the sum of its quantity.
 
@@ -364,7 +365,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
             accumulator.ndarray[...] += field_.ndarray  # type: ignore[index]
 
     def _update_state(
-        self, state: physics_state.PhysicsState, output: fw.State, dt_seconds: float
+        self, state: physics_state.PhysicsState, output: state.State, dt_seconds: float
     ) -> None:
         """
         Add a process's tendencies to the physics state in place: field += dt * tendency.

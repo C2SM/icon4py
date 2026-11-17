@@ -24,6 +24,7 @@ from icon4py.model.common import (
     framework as fw,
     model_backends,
     model_options,
+    state,
     time,
     type_alias as ta,
 )
@@ -45,7 +46,7 @@ class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
     The Component interface to the muphys microphysics.
     """
 
-    class Input(fw.State):
+    class Input(state.State):
         te: field.Field[qty.TemperatureOnCellK]
         p: field.Field[qty.PressureOnCellK]
         rho: field.Field[qty.RhoOnCellK]
@@ -56,7 +57,7 @@ class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
         qs: field.Field[qty.QsOnCellK]
         qg: field.Field[qty.QgOnCellK]
 
-    class Output(fw.State):
+    class Output(state.State):
         tend_temperature: field.Field[qty.TendencyOfTemperatureOnCellK]
         tend_qv: field.Field[qty.TendencyOfQvOnCellK]
         tend_qc: field.Field[qty.TendencyOfQcOnCellK]

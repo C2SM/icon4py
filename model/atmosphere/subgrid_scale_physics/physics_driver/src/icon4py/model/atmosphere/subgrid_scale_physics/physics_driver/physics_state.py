@@ -10,14 +10,14 @@
 
 from typing import Final
 
-from icon4py.model.common import field, framework as fw, quantity, time
+from icon4py.model.common import field, quantity, state, time
 from icon4py.model.common.framework import quantities as qty
 
 
 # NOTE: temporary, replaced in part 02 (collect): the processes collect from the physics
 # driver's `Input`, its `Diagnostics` and the other processes' `Output` directly, and the
 # physics state goes.
-class PhysicsState(fw.State):
+class PhysicsState(state.State):
     """
     The state the physics processes read and advance in one step (ICON's dyn2phy).
 

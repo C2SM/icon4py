@@ -37,6 +37,7 @@ from icon4py.model.common import (
     field,
     framework as fw,
     model_backends,
+    state,
     type_alias as ta,
 )
 from icon4py.model.common.config import config_io, options as common_conf_opt
@@ -454,7 +455,7 @@ class Diffusion(fw.Component):
     passes the same buffers as input and output.
     """
 
-    class Input(fw.State):
+    class Input(state.State):
         vn: field.Field[qty.VnOnEdgeK]
         w: field.Field[qty.WOnCellKHalf]
         exner: field.Field[qty.ExnerOnCellK]
@@ -462,7 +463,7 @@ class Diffusion(fw.Component):
         dtime: float
         initial_run: bool = False
 
-    class Output(fw.State):
+    class Output(state.State):
         vn: field.Field[qty.VnOnEdgeK]
         w: field.Field[qty.WOnCellKHalf]
         exner: field.Field[qty.ExnerOnCellK]

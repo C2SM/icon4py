@@ -26,7 +26,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import framework as fw
+from icon4py.model.common import framework as fw, state
 from icon4py.model.common.grid import base as base_grid, simple
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -74,7 +74,7 @@ class ComponentTest:
         return simple.simple_grid()
 
     @pytest.fixture
-    def input(self, component: fw.Component, grid: base_grid.Grid) -> fw.State:
+    def input(self, component: fw.Component, grid: base_grid.Grid) -> state.State:
         # random, so that a misplaced read shows; positive, so that a scheme dividing by them stays finite
         return fw.allocate(
             component.Input,
@@ -84,11 +84,11 @@ class ComponentTest:
         )
 
     @pytest.fixture
-    def output(self, component: fw.Component, grid: base_grid.Grid) -> fw.State:
+    def output(self, component: fw.Component, grid: base_grid.Grid) -> state.State:
         return fw.allocate(component.Output, grid, None)
 
     def test_run_returns_the_output_it_is_given(
-        self, component: fw.Component, input: fw.State, output: fw.State
+        self, component: fw.Component, input: state.State, output: state.State
     ) -> None:
         assert component.run(input, output) is output
 
@@ -96,8 +96,8 @@ class ComponentTest:
         self,
         component: fw.Component,
         grid: base_grid.Grid,
-        input: fw.State,
-        output: fw.State,
+        input: state.State,
+        output: state.State,
     ) -> None:
         before = fw.copy(input, fw.allocate(type(input), grid, None))
 
@@ -119,10 +119,10 @@ class CollectInputTest:
     """
 
     @staticmethod
-    def collect_input(state: Any) -> fw.State:
+    def collect_input(state: Any) -> state.State:
         raise NotImplementedError
 
-    def test_collect_input_views_the_state(self, state: fw.State) -> None:
+    def test_collect_input_views_the_state(self, state: state.State) -> None:
         input = self.collect_input(state)
 
         leaves = fw.fields(state).values()

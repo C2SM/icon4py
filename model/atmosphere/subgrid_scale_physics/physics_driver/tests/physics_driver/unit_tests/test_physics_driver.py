@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_process,
     physics_state,
 )
-from icon4py.model.common import dimension as dims, field, framework as fw
+from icon4py.model.common import dimension as dims, field, framework as fw, state
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base as base_grid, simple
 
@@ -40,19 +40,19 @@ from .utils import (
 )
 
 
-class MoistOutput(fw.State):
+class MoistOutput(state.State):
     """A process output with a tendency and a diagnostic."""
 
     tend_qv: field.Field[qty.TendencyOfQvOnCellK]
     pflx: field.Field[qty.PrecipitationFluxOnCellK]
 
 
-class WindOutput(fw.State):
+class WindOutput(state.State):
     tend_u: field.Field[qty.TendencyOfUOnCellK]
     tend_v: field.Field[qty.TendencyOfVOnCellK]
 
 
-class LoneWindOutput(fw.State):
+class LoneWindOutput(state.State):
     tend_u: field.Field[qty.TendencyOfUOnCellK]
 
 
@@ -320,15 +320,15 @@ def test_run_rejects_a_lone_horizontal_wind_tendency(grid: base_grid.Grid) -> No
         )
 
 
-class TemperatureOutput(fw.State):
+class TemperatureOutput(state.State):
     tend_temperature: field.Field[qty.TendencyOfTemperatureOnCellK]
 
 
-class VnTendencyOutput(fw.State):
+class VnTendencyOutput(state.State):
     tend_vn: field.Field[qty.TendencyOfVnOnEdgeK]
 
 
-class FluxOutput(fw.State):
+class FluxOutput(state.State):
     sensible_heat_flux: field.Field[qty.SensibleHeatFluxOnCell]
     tend_qv: field.Field[qty.TendencyOfQvOnCellK]
 

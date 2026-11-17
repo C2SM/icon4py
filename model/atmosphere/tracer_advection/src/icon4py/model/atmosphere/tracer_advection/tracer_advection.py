@@ -34,6 +34,7 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     framework as fw,
     model_backends,
+    state,
     type_alias as ta,
 )
 from icon4py.model.common.config import config_io
@@ -132,7 +133,7 @@ class Advection(fw.Component, ABC):
 
     _exchange: decomposition.ExchangeRuntime
 
-    class Input(fw.State):
+    class Input(state.State):
         qv: field.Field[qty.QvOnCellK] | None = None
         qc: field.Field[qty.QcOnCellK] | None = None
         qi: field.Field[qty.QiOnCellK] | None = None
@@ -147,7 +148,7 @@ class Advection(fw.Component, ABC):
         mass_flx_ic: field.Field[qty.VerticalMassFluxOnCellKHalf]
         dtime: float
 
-    class Output(fw.State):
+    class Output(state.State):
         qv: field.Field[qty.QvOnCellK] | None = None
         qc: field.Field[qty.QcOnCellK] | None = None
         qi: field.Field[qty.QiOnCellK] | None = None

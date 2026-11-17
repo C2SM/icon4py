@@ -41,6 +41,7 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     framework as fw,
     model_backends,
+    state,
     time,
     type_alias as ta,
 )
@@ -488,7 +489,7 @@ def initialize_granules(
 
     # NOTE: temporary, replaced in part 02 (collect): the process collects its component's
     # `Input` by quantity, and the `collect_input` functions go.
-    def process[I: fw.State, O: fw.State](
+    def process[I: state.State, O: state.State](
         component: fw.Component[I, O],
         collect_input: Callable[[physics_state.PhysicsState], I],
     ) -> physics_process.PhysicsProcess[I, O]:
