@@ -86,7 +86,7 @@ echo "Variables used for this run:"
 printenv | grep -E '^(SLURM_|ICON4PY_|GT4PY_|GHEX_|NCCL_|CUDA_|CUPY_|FI_)' | sort
 
 srun -u --cpus-per-task=$SLURM_CPUS_PER_TASK --cpu-bind=cores --gres-flags=allow-task-sharing \
-    bash -c 'export CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; \
+    bash -c 'export CUPY_CACHE_DIR=$(pwd)/cupy_cache/rank_$SLURM_PROCID; export CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; \
     icon4py-driver \
     --config-file-path ${CONFIG_DIR}/config.yml \
     --grid-file-path $(realpath ${ICON_GRID}) \
