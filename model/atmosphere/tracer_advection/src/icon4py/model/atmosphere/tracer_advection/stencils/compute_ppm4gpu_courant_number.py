@@ -38,13 +38,13 @@ def _compute_courant_number_below(
         dims.KHalfDim <= nlev - 1, p_cellmass_now(dims.KHalfDim + 0.5), wpfloat(0.0)
     )
     p_cellmass_p1 = concat_where(
-        dims.KHalfDim <= nlev - 2, p_cellmass_now(dims.KHalfDim + 1.5), wpfloat(0.0)
+        dims.KHalfDim <= nlev - 1, p_cellmass_now(dims.KHalfDim + 1.5), wpfloat(0.0)
     )
     p_cellmass_p2 = concat_where(
-        dims.KHalfDim <= nlev - 3, p_cellmass_now(dims.KHalfDim + 2.5), wpfloat(0.0)
+        dims.KHalfDim <= nlev - 2, p_cellmass_now(dims.KHalfDim + 2.5), wpfloat(0.0)
     )
     p_cellmass_p3 = concat_where(
-        dims.KHalfDim <= nlev - 4, p_cellmass_now(dims.KHalfDim + 3.5), wpfloat(0.0)
+        dims.KHalfDim <= nlev - 3, p_cellmass_now(dims.KHalfDim + 3.5), wpfloat(0.0)
     )
     p_cellmass_p4 = concat_where(
         dims.KHalfDim <= nlev - 4, p_cellmass_now(dims.KHalfDim + 4.5), wpfloat(0.0)
