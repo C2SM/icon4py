@@ -20,7 +20,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.io import io_servers
+from icon4py.model.common.io import io_ranks as common_io_ranks
 from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 
 
@@ -83,13 +83,19 @@ def main(
     config = driver_config.read_experiment_config_from_yaml(config_file_path)
 
     io_ranks = split_io_ranks(config, process_props)
-    # each role logs with its own rank numbering and communicator name
+    # From here on a rank works on the communicator of its role only: the model (grid
+    # manager, halo exchanges, reductions) on the compute ranks', the output stack on the
+    # IO ranks'. The run's communicator is kept for one purpose, aborting both roles
+    # together ('_abort_run_on_failure'). Each role logs with its own rank numbering
+    # and communicator name.
     role_props = process_props if io_ranks is None else io_ranks.process_props
     driver_utils.configure_logging(
         logging_level=log_level,
         print_distributed_debug_msg=print_distributed_debug_msg,
         process_props=role_props,
     )
+    if io_ranks is not None and not io_ranks.is_io_rank and role_props.rank == 0:
+        common_io_ranks.log_layout(io_ranks.assignment)
 
     with _abort_run_on_failure(io_ranks, process_props):
         if io_ranks is not None and io_ranks.is_io_rank:
@@ -121,20 +127,23 @@ def main(
 
 def split_io_ranks(
     config: driver_config.ExperimentConfig, process_props: decomposition_defs.ProcessProperties
-) -> mpi_decomp.IORankSplit | None:
+) -> common_io_ranks.IORankSplit | None:
     """Split the run's communicator for the dedicated IO ranks of the ``io`` section; None without.
 
     Collective on the communicator.
     """
     if config.io is None or not config.io.has_dedicated_io_ranks:
         return None
-    assignment = io_servers.assign_io_ranks(config.io, mpi_decomp.allgather_node_ids(process_props))
-    return mpi_decomp.split_io_ranks(process_props, assignment)
+    assignment = common_io_ranks.assign_io_ranks(
+        config.io, common_io_ranks.allgather_node_ids(process_props)
+    )
+    return common_io_ranks.split_io_ranks(process_props, assignment)
 
 
 @contextlib.contextmanager
 def _abort_run_on_failure(
-    io_ranks: mpi_decomp.IORankSplit | None, process_props: decomposition_defs.ProcessProperties
+    io_ranks: common_io_ranks.IORankSplit | None,
+    process_props: decomposition_defs.ProcessProperties,
 ) -> Iterator[None]:
     """With dedicated IO ranks, abort the whole run when this rank fails.
 

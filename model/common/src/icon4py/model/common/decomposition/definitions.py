@@ -183,7 +183,9 @@ class DecompositionInfo:
         the identity ``0..n-1``: the undecomposed grid of a serial run, written as is
         by ``io.IOMonitor``. False for a decomposed part (halos), and for the whole
         grid in a permuted order -- the local state of a single dedicated IO rank
-        serving several compute ranks (``io.io_servers``).
+        serving several compute ranks (``io.io_servers``). Compares every global
+        index, so it is meant for setup: ``io.IOMonitor`` evaluates it once, at
+        construction.
         """
         for dim, global_index in self._global_index.items():
             xp = data_alloc.array_namespace(global_index)

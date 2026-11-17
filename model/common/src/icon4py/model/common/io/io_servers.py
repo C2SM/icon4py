@@ -9,11 +9,11 @@
 """Output through dedicated IO ranks.
 
 The communicator of a run is split into compute ranks and IO ranks
-(``decomposition.mpi_decomposition.split_io_ranks``). The compute ranks run the model
+(``io_ranks.split_io_ranks``). The compute ranks run the model
 and, at every capture step, ship their owned entries of the output fields to the IO rank
 serving them (:class:`IOClient`, the compute side's output monitor); the IO ranks
 receive them and write (:class:`IOServer`). Which ranks write and who serves whom
-follows from the output configuration (:func:`assign_io_ranks`). By default the last
+follows from the output configuration (``io_ranks.assign_io_ranks``). By default the last
 ``IOConfig.io_ranks_per_node`` ranks of every node write: a compute rank ships to an
 IO rank on its own node, and the node's compute ranks are shared evenly among its IO
 ranks. Alternatively ``IOConfig.io_ranks`` ranks write in total, on the nodes holding
@@ -78,7 +78,7 @@ import xarray as xr
 
 from icon4py.model.common import exceptions, time
 from icon4py.model.common.components import monitor
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base
 from icon4py.model.common.io import distributed, io, writers
 
@@ -99,27 +99,6 @@ MAX_IN_FLIGHT_CAPTURES: Final[int] = 2
 _SETUP_TAG: Final[int] = 1
 _HEADER_TAG: Final[int] = 2
 _DATA_TAG: Final[int] = 3
-
-
-def assign_io_ranks(
-    config: io.IOConfig, node_ids: Sequence[int]
-) -> mpi_decomposition.IORankAssignment:
-    """Choose the dedicated IO ranks an output configuration asks for.
-
-    ``node_ids[rank]`` identifies the node of every rank of the communicator to split
-    (``mpi_decomposition.allgather_node_ids``); the result is what
-    ``mpi_decomposition.split_io_ranks`` splits it by. ``io_ranks_per_node`` puts IO
-    ranks on every node; ``io_ranks`` is their total number, taken from the nodes
-    holding the most ranks.
-
-    Raises:
-        InvalidConfigError: if the configuration dedicates no ranks to output, or the
-            run has too few ranks for them (see the ``mpi_decomposition.assign_*``
-            functions).
-    """
-    if config.io_ranks_per_node > 0:
-        return mpi_decomposition.assign_io_ranks_per_node(node_ids, config.io_ranks_per_node)
-    return mpi_decomposition.assign_io_ranks_on_fullest_nodes(node_ids, config.io_ranks)
 
 
 def _object_messages(obj: Any) -> list[np.ndarray]:

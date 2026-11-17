@@ -535,6 +535,14 @@ class IOMonitor(monitor.Monitor):
         self._decomposition_info = decomposition_info
         self._horizontal_size = horizontal_size
         self._output_path = config.output_path
+        # Whether this (single) rank's state is the undecomposed grid, written as is. Not
+        # so for a single dedicated IO rank serving several compute ranks
+        # (``io_servers.IOServer``): its state is the whole grid in a permuted order,
+        # written through the ``mode``'s distribution. Decided once: ``is_identity``
+        # compares the whole global index.
+        self._writes_undecomposed_state = process_props.is_single_rank() and (
+            decomposition_info is None or decomposition_info.is_identity()
+        )
         self._distributions: dict[tuple[OutputMode, int], distributed.OutputDistribution] = {}
         self._timings_logged = False
         self._initialize_output()
@@ -562,11 +570,11 @@ class IOMonitor(monitor.Monitor):
         ``RankBlockDistribution``); for other modes it is normalized to 1 so groups
         share one instance.
         """
-        if self._writes_undecomposed_state() or mode == OutputMode.GATHER:
+        if self._writes_undecomposed_state or mode == OutputMode.GATHER:
             block_alignment = 1
         key = (mode, block_alignment)
         if key not in self._distributions:
-            if self._writes_undecomposed_state():
+            if self._writes_undecomposed_state:
                 distribution: distributed.OutputDistribution = distributed.SingleNodeDistribution(
                     self._horizontal_size
                 )
@@ -584,16 +592,6 @@ class IOMonitor(monitor.Monitor):
                 )
             self._distributions[key] = distribution
         return self._distributions[key]
-
-    def _writes_undecomposed_state(self) -> bool:
-        """Whether this (single) rank's state is the undecomposed grid, written as is.
-
-        Not so for a single dedicated IO rank (``io_servers.IOServer``): its state is
-        the whole grid in a permuted order, written through the ``mode``'s distribution.
-        """
-        return self._process_props.is_single_rank() and (
-            self._decomposition_info is None or self._decomposition_info.is_identity()
-        )
 
     def _initialize_output(self) -> None:
         self._create_output_dir()

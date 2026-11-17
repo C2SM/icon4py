@@ -32,10 +32,7 @@ from icon4py.model.common import (
     topography,
     type_alias as ta,
 )
-from icon4py.model.common.decomposition import (
-    definitions as decomposition_defs,
-    mpi_decomposition as mpi_decomp,
-)
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
     grid_manager as gm,
@@ -43,7 +40,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initial_condition import apply as ic_apply
-from icon4py.model.common.io import io as common_io
+from icon4py.model.common.io import io as common_io, io_ranks as common_io_ranks
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -718,7 +715,7 @@ def initialize_driver(
     grid_manager: gm.GridManager,
     process_props: decomposition_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
-    io_ranks: mpi_decomp.IORankSplit | None,
+    io_ranks: common_io_ranks.IORankSplit | None,
 ) -> Icon4pyDriver:
     """Set up the model on this (compute) rank.
 
@@ -914,7 +911,7 @@ def run_driver(
     grid_manager: gm.GridManager,
     process_props: decomposition_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
-    io_ranks: mpi_decomp.IORankSplit | None,
+    io_ranks: common_io_ranks.IORankSplit | None,
 ) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
     icon4py_driver = initialize_driver(
         config=config,

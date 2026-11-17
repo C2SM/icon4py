@@ -172,9 +172,9 @@ shared netCDF file, which the installed `netCDF4` package must support:
 
 Instead of writing themselves, the ranks running the model can ship their output to
 dedicated IO ranks (`io_servers`): the run's communicator is split
-(`decomposition.mpi_decomposition.split_io_ranks`) into compute ranks and IO ranks, and
-the two roles talk through an inter-communicator. The launcher provides the tasks of
-both roles; the `IOConfig` says which of them write (`io_servers.assign_io_ranks`):
+(`io_ranks.split_io_ranks`) into compute ranks and IO ranks, and the two roles talk
+through an inter-communicator. The launcher provides the tasks of both roles; the
+`IOConfig` says which of them write (`io_ranks.assign_io_ranks`):
 
 - `io_ranks_per_node: k`, the default way: on every node the last `k` ranks. The nodes
   are found through MPI's shared-memory split, so the choice does not depend on how the
@@ -187,11 +187,18 @@ both roles; the `IOConfig` says which of them write (`io_servers.assign_io_ranks
   ranks of the nodes holding the most ranks, spread evenly over equally full nodes.
   Launched with `n` tasks more than compute ranks, a run turns exactly the surplus
   tasks into IO ranks, on whichever nodes the launcher placed them, and every node
-  keeps its compute ranks (e.g. 42 tasks on ten nodes with four GPUs each and
+  keeps its compute ranks (e.g. 18 tasks on four nodes with four GPUs each and
   `io_ranks: 2`: two nodes get a fifth task, which writes). A compute rank still ships
   to an IO rank on its own node if there is one; the compute ranks of the other nodes
   ship across nodes, in contiguous blocks that level the number of compute ranks per
   IO rank.
+
+The IO ranks are taken from the tasks the launcher provides, whatever their number, so a
+launch that does not match the configuration still runs: one IO rank more than surplus
+tasks takes a compute rank from some node, whose accelerator then idles. The layout is
+therefore reported (`io_ranks.log_layout`, called by the driver at startup): the compute
+and IO ranks of every node, e.g. `4+1 (x2), 4+0 (x8)`, and a warning when the nodes hold
+unequal numbers of compute ranks.
 
 - The compute ranks use an `IOClient` as their output monitor; it offers the interface
   of the `IOMonitor` (`store`, `variables_at_capture_time`, `close`, see

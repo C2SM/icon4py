@@ -27,8 +27,13 @@ import pytest
 import xarray as xr
 
 from icon4py.model.common import model_backends, time
-from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.common.io import io as common_io, netcdf_writers, writers
+from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.io import (
+    io as common_io,
+    io_ranks as common_io_ranks,
+    netcdf_writers,
+    writers,
+)
 from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -233,7 +238,7 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
     """
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
-    node_ids = mpi_decomposition.allgather_node_ids(process_props)
+    node_ids = common_io_ranks.allgather_node_ids(process_props)
     if min(collections.Counter(node_ids).values()) < 2:
         pytest.skip("needs at least two ranks per node")
     io_ranks_per_node = 1
@@ -252,8 +257,8 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
         config_file_path=config_file_path,
     )
 
-    io_ranks = mpi_decomposition.split_io_ranks(
-        process_props, mpi_decomposition.assign_io_ranks_per_node(node_ids, io_ranks_per_node)
+    io_ranks = common_io_ranks.split_io_ranks(
+        process_props, common_io_ranks.assign_io_ranks_per_node(node_ids, io_ranks_per_node)
     )
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(

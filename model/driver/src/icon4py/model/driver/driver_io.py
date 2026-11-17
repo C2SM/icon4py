@@ -30,12 +30,14 @@ import xarray as xr
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.common import exceptions, model_backends, time
-from icon4py.model.common.decomposition import (
-    definitions as decomposition_defs,
-    mpi_decomposition as mpi_decomp,
-)
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
-from icon4py.model.common.io import distributed, io as common_io, io_servers
+from icon4py.model.common.io import (
+    distributed,
+    io as common_io,
+    io_ranks as common_io_ranks,
+    io_servers,
+)
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -207,7 +209,7 @@ def create_io_monitor(
     dtime: time.RelativeTime,
     process_props: decomposition_defs.ProcessProperties,
     decomposition_info: decomposition_defs.DecompositionInfo | None,
-    io_ranks: mpi_decomp.IORankSplit | None,
+    io_ranks: common_io_ranks.IORankSplit | None,
 ) -> common_io.OutputMonitor:
     """Build the output monitor writing the field groups of ``io_config`` below its
     ``output_path``.
@@ -267,7 +269,7 @@ def run_io_server(
     *,
     config: driver_config.ExperimentConfig,
     grid_file_path: pathlib.Path,
-    io_ranks: mpi_decomp.IORankSplit,
+    io_ranks: common_io_ranks.IORankSplit,
 ) -> None:
     """Run this dedicated IO rank: write the compute ranks' output until they finish.
 

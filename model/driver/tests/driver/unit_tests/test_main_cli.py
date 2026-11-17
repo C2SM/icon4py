@@ -18,10 +18,8 @@ import pytest
 from typer.testing import CliRunner, Result
 
 from icon4py.model.common import model_backends
-from icon4py.model.common.decomposition import (
-    definitions as decomp_defs,
-    mpi_decomposition as mpi_decomp,
-)
+from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.io import io_ranks as common_io_ranks
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils, main
 
@@ -146,10 +144,11 @@ def test_main_cli_reads_the_io_section(backend_name: str, tmp_path: pathlib.Path
 # --------------------------------------------------------------------------------------
 
 
-def _io_rank_split(is_io_rank: bool) -> mpi_decomp.IORankSplit:
+def _io_rank_split(is_io_rank: bool) -> common_io_ranks.IORankSplit:
     # neither the role communicator nor the inter-communicator is touched: the grid
     # manager, the driver run and the IO server are mocked away
-    return mpi_decomp.IORankSplit(
+    return common_io_ranks.IORankSplit(
+        assignment=common_io_ranks.assign_io_ranks_per_node(_NODE_IDS, 1),
         is_io_rank=is_io_rank,
         process_props=decomp_defs.SingleNodeProcessProperties(),  # type: ignore[arg-type]  # stand-in for the role communicator
         intercomm=object(),  # type: ignore[arg-type]  # not used
@@ -164,11 +163,11 @@ _NODE_IDS = [0] * 5 + [1] * 4
 
 
 @contextlib.contextmanager
-def _mocked_split(split: mpi_decomp.IORankSplit) -> Iterator[mock.MagicMock]:
+def _mocked_split(split: common_io_ranks.IORankSplit) -> Iterator[mock.MagicMock]:
     """Mock the split of a run on ``_NODE_IDS`` away; yields the mock, which returns ``split``."""
     with (
-        mock.patch.object(mpi_decomp, "allgather_node_ids", return_value=_NODE_IDS),
-        mock.patch.object(mpi_decomp, "split_io_ranks", return_value=split) as mock_split,
+        mock.patch.object(common_io_ranks, "allgather_node_ids", return_value=_NODE_IDS),
+        mock.patch.object(common_io_ranks, "split_io_ranks", return_value=split) as mock_split,
     ):
         yield mock_split
 
@@ -236,6 +235,24 @@ def test_main_cli_io_rank_runs_the_io_server(backend_name: str, tmp_path: pathli
         "winds",
         "precipitation",
     ]
+
+
+@pytest.mark.parametrize("is_io_rank", [False, True], ids=["compute-rank", "io-rank"])
+def test_main_cli_logs_the_layout_of_the_roles_once(
+    backend_name: str, tmp_path: pathlib.Path, is_io_rank: bool
+) -> None:
+    """Rank 0 of the compute ranks logs where the roles run; the IO ranks do not repeat it."""
+    split = _io_rank_split(is_io_rank=is_io_rank)
+    with (
+        _mocked_split(split),
+        mock.patch.object(driver_io, "run_io_server"),
+        mock.patch.object(common_io_ranks, "log_layout") as mock_log_layout,
+    ):
+        _run_cli(_config_file_with_io_ranks(tmp_path, io_ranks_per_node=1), backend_name)
+    if is_io_rank:
+        mock_log_layout.assert_not_called()
+    else:
+        mock_log_layout.assert_called_once_with(split.assignment)
 
 
 def _process_props_with_mock_comm() -> mock.MagicMock:

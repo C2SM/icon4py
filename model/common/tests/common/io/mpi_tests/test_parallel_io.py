@@ -31,11 +31,12 @@ import zarr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time as common_time
-from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import (
     distributed,
     io as common_io,
+    io_ranks,
     io_servers,
     netcdf_writers,
     writers,
@@ -403,16 +404,14 @@ def test_io_rank_output_synthetic_decomposition(
         io_ranks=num_io_ranks if in_total else 0,
     )
     try:
-        assignment = io_servers.assign_io_ranks(
-            config, mpi_decomposition.allgather_node_ids(process_props)
-        )
+        assignment = io_ranks.assign_io_ranks(config, io_ranks.allgather_node_ids(process_props))
     except errors.InvalidConfigError as error:
         pytest.skip(f"too few ranks for these IO ranks: {error}")
     # the synthetic decomposition needs two compute ranks (one of them empty)
     if len(assignment.compute_ranks) < 2:
         pytest.skip("needs two compute ranks")
     dtime = common_time.RelativeTime(hours=1)
-    split = mpi_decomposition.split_io_ranks(process_props, assignment)
+    split = io_ranks.split_io_ranks(process_props, assignment)
 
     if split.is_io_rank:
         server = io_servers.IOServer(split.intercomm, served_ranks=split.served_compute_ranks)

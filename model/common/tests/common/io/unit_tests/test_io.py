@@ -13,6 +13,7 @@ import re
 import textwrap
 import uuid
 from typing import Any
+from unittest import mock
 
 import cattrs
 import gt4py.next as gtx
@@ -859,6 +860,41 @@ def test_io_monitor_builds_alignment_aware_rank_block_distributions(
     assert aligned.rank_blocks["cell"].size == 8
     assert aligned.rank_blocks["cell"].padded_size == 16
     assert unaligned.rank_blocks["cell"].size == 4
+
+
+def test_io_monitor_decides_once_whether_its_state_is_the_undecomposed_grid(
+    test_path: pathlib.Path,
+) -> None:
+    """The identity check compares whole index arrays: one evaluation, however many groups."""
+    config = IOConfig(
+        output_path=test_path / "output",
+        field_groups=[
+            FieldGroupIOConfig(
+                basename=basename, variables=["air_density"], backend=OutputBackend.ZARR, mode=mode
+            )
+            for basename, mode in (("a", OutputMode.DISTRIBUTED), ("b", OutputMode.GATHER))
+        ],
+    )
+    is_identity = decomposition_defs.DecompositionInfo.is_identity
+    with mock.patch.object(
+        decomposition_defs.DecompositionInfo, "is_identity", autospec=True, side_effect=is_identity
+    ) as mock_is_identity:
+        monitor = IOMonitor(
+            config=config,
+            vertical_size=_simple_grid_vertical(),
+            horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+            grid_file_name=test_io_utils.grid_file,
+            grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+            dtime=time.RelativeTime(hours=1),
+            process_props=decomposition_defs.SingleNodeProcessProperties(),
+            decomposition_info=synthetic_decomposition_info(),
+        )
+    mock_is_identity.assert_called_once()
+    # a single rank whose entries are not the undecomposed grid writes through the
+    # distribution of every group's mode
+    rank_block, gather = (m._distribution for m in monitor._group_monitors)
+    assert isinstance(rank_block, distributed.RankBlockDistribution)
+    assert isinstance(gather, distributed.GatherDistribution)
 
 
 def test_io_config_requires_field_groups() -> None:

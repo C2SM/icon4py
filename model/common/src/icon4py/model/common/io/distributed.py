@@ -203,14 +203,15 @@ def global_horizontal_size(
 
     A rank's grid holds its halos too, so its sizes differ between the ranks of a
     decomposed run; the owned entries summed over the communicator are the global
-    sizes, equal on every rank. Collective on the communicator (one allgather per
-    dimension); on a single-rank communicator it is the rank's owned counts.
+    sizes, equal on every rank. Only the owned count of every dimension is exchanged,
+    so the owner masks are counted where they live (host or device). Collective on the
+    communicator (one allgather per dimension); on a single-rank communicator it is the
+    rank's owned counts.
     """
-    info = decomposition_info.as_host()
     counts = {
         dim: int(
             mpi_decomposition.allgather_entry_counts(
-                process_props, owned_global_index(info, dim).shape[0], array_ns=np
+                process_props, int(decomposition_info.owner_mask(dim).sum()), array_ns=np
             ).sum()
         )
         for dim in HORIZONTAL_DIM_NAMES

@@ -20,9 +20,9 @@ import pytest
 import icon4py.model.common.exceptions as errors
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition_defs, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base, simple, vertical as v_grid
-from icon4py.model.common.io import io as common_io, io_servers
+from icon4py.model.common.io import io as common_io, io_ranks as common_io_ranks, io_servers
 from icon4py.model.common.states import model as state_model, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_diagnostics, driver_io, driver_output_sources
@@ -119,7 +119,8 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
 
     monkeypatch.setattr(io_servers, "IOClient", _RecordingClient)
     intercomm = object()
-    io_ranks = mpi_decomposition.IORankSplit(
+    io_ranks = common_io_ranks.IORankSplit(
+        assignment=common_io_ranks.assign_io_ranks_per_node([0, 0], 1),
         is_io_rank=False,
         process_props=None,  # type: ignore[arg-type]  # not used by the recorder
         intercomm=intercomm,  # type: ignore[arg-type]  # not used by the recorder

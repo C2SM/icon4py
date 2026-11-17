@@ -6,15 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""MPI-free tests of the choice of dedicated IO ranks (``mpi_decomposition``)."""
+"""MPI-free tests of the choice of dedicated IO ranks (``io.io_ranks``)."""
 
 import collections
+import logging
+import pathlib
 from collections.abc import Callable
 
 import pytest
 
 import icon4py.model.common.exceptions as errors
-from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
+from icon4py.model.common import time as common_time
+from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.io import io as common_io, io_ranks
 
 
 def block_layout(ranks_per_node: int, num_nodes: int) -> list[int]:
@@ -27,7 +31,7 @@ def cyclic_layout(ranks_per_node: int, num_nodes: int) -> list[int]:
     return [rank % num_nodes for rank in range(ranks_per_node * num_nodes)]
 
 
-def served_ranks(assignment: mpi_decomposition.IORankAssignment) -> dict[int, list[int]]:
+def served_ranks(assignment: io_ranks.IORankAssignment) -> dict[int, list[int]]:
     """The compute ranks every IO rank serves, all as ranks of the split communicator."""
     return {
         rank: [
@@ -52,7 +56,7 @@ def served_ranks(assignment: mpi_decomposition.IORankAssignment) -> dict[int, li
 def test_assign_io_ranks_puts_io_ranks_on_every_node(
     node_ids: list[int], io_ranks_per_node: int
 ) -> None:
-    assignment = mpi_decomposition.assign_io_ranks_per_node(node_ids, io_ranks_per_node)
+    assignment = io_ranks.assign_io_ranks_per_node(node_ids, io_ranks_per_node)
     ranks_of_node = collections.defaultdict(list)
     for rank, node in enumerate(node_ids):
         ranks_of_node[node].append(rank)
@@ -88,7 +92,7 @@ def test_assign_io_ranks_puts_io_ranks_on_every_node(
 
 
 def test_assign_io_ranks_single_node_takes_the_last_ranks() -> None:
-    assignment = mpi_decomposition.assign_io_ranks_per_node([0] * 6, 2)
+    assignment = io_ranks.assign_io_ranks_per_node([0] * 6, 2)
     assert assignment.io_ranks == (4, 5)
     assert assignment.compute_ranks == (0, 1, 2, 3)
     assert [assignment.io_rank_of(compute_rank) for compute_rank in range(4)] == [0, 0, 1, 1]
@@ -99,9 +103,9 @@ def test_assign_io_ranks_single_node_takes_the_last_ranks() -> None:
 def test_assign_io_ranks_rejects_nodes_short_of_compute_ranks() -> None:
     # the node of rank 4 has two ranks: two IO ranks would leave it no compute rank
     with pytest.raises(errors.InvalidConfigError, match="node of rank 4 has 2 ranks"):
-        mpi_decomposition.assign_io_ranks_per_node([0, 0, 0, 0, 1, 1], 2)
+        io_ranks.assign_io_ranks_per_node([0, 0, 0, 0, 1, 1], 2)
     with pytest.raises(errors.InvalidConfigError, match="at least 1"):
-        mpi_decomposition.assign_io_ranks_per_node([0, 0], 0)
+        io_ranks.assign_io_ranks_per_node([0, 0], 0)
 
 
 # --------------------------------------------------------------------------------------
@@ -113,7 +117,7 @@ def test_fullest_nodes_turn_the_surplus_tasks_into_io_ranks() -> None:
     # ten nodes with four compute ranks each and two tasks more, which the launcher
     # put on the first two nodes
     node_ids = [0] * 5 + [1] * 5 + [node for node in range(2, 10) for _ in range(4)]
-    assignment = mpi_decomposition.assign_io_ranks_on_fullest_nodes(node_ids, 2)
+    assignment = io_ranks.assign_io_ranks_on_fullest_nodes(node_ids, 2)
 
     # the fifth task of the two fuller nodes writes: every node keeps four compute ranks
     assert assignment.io_ranks == (4, 9)
@@ -132,14 +136,14 @@ def test_fullest_nodes_turn_the_surplus_tasks_into_io_ranks() -> None:
 def test_fullest_nodes_are_found_wherever_the_surplus_tasks_are() -> None:
     # four nodes with cyclically placed ranks; the nodes 1 and 3 hold a rank more
     node_ids = [0, 1, 2, 3, 0, 1, 2, 3, 1, 3]
-    assignment = mpi_decomposition.assign_io_ranks_on_fullest_nodes(node_ids, 2)
+    assignment = io_ranks.assign_io_ranks_on_fullest_nodes(node_ids, 2)
     assert assignment.io_ranks == (8, 9)
     assert served_ranks(assignment) == {8: [0, 1, 4, 5], 9: [2, 3, 6, 7]}
 
 
 def test_fullest_nodes_spread_the_io_ranks_over_equally_full_nodes() -> None:
     # no node holds more ranks than the others: the nodes 0 and 5 give their last rank
-    assignment = mpi_decomposition.assign_io_ranks_on_fullest_nodes(block_layout(4, 10), 2)
+    assignment = io_ranks.assign_io_ranks_on_fullest_nodes(block_layout(4, 10), 2)
     assert assignment.io_ranks == (3, 23)
     assert served_ranks(assignment) == {
         3: [0, 1, 2, *range(4, 20)],
@@ -156,24 +160,24 @@ def test_fullest_nodes_with_the_same_surplus_on_every_node_are_the_per_node_choi
     node_ids: list[int], io_ranks_per_node: int
 ) -> None:
     num_io_ranks = io_ranks_per_node * len(set(node_ids))
-    assert mpi_decomposition.assign_io_ranks_on_fullest_nodes(
+    assert io_ranks.assign_io_ranks_on_fullest_nodes(
         node_ids, num_io_ranks
-    ) == mpi_decomposition.assign_io_ranks_per_node(node_ids, io_ranks_per_node)
+    ) == io_ranks.assign_io_ranks_per_node(node_ids, io_ranks_per_node)
 
 
 def test_fullest_nodes_reject_runs_short_of_compute_ranks() -> None:
     with pytest.raises(errors.InvalidConfigError, match="at least 1"):
-        mpi_decomposition.assign_io_ranks_on_fullest_nodes([0, 0], 0)
+        io_ranks.assign_io_ranks_on_fullest_nodes([0, 0], 0)
     # three IO ranks need three compute ranks
     with pytest.raises(errors.InvalidConfigError, match="run has 5 ranks"):
-        mpi_decomposition.assign_io_ranks_on_fullest_nodes([0, 0, 0, 1, 1], 3)
+        io_ranks.assign_io_ranks_on_fullest_nodes([0, 0, 0, 1, 1], 3)
 
 
 def test_io_rank_without_a_compute_rank_is_rejected() -> None:
     # two nodes with three ranks each: the first is left with one compute rank for its
     # two IO ranks, and the compute ranks of the other ship to its own IO rank
     with pytest.raises(errors.InvalidConfigError, match="Rank 2 would be an IO rank without"):
-        mpi_decomposition.assign_io_ranks_on_fullest_nodes([0, 0, 0, 1, 1, 1], 3)
+        io_ranks.assign_io_ranks_on_fullest_nodes([0, 0, 0, 1, 1, 1], 3)
 
 
 # --------------------------------------------------------------------------------------
@@ -184,8 +188,8 @@ def test_io_rank_without_a_compute_rank_is_rejected() -> None:
 @pytest.mark.parametrize(
     "assign",
     [
-        mpi_decomposition.assign_io_ranks_per_node,
-        mpi_decomposition.assign_io_ranks_on_fullest_nodes,
+        io_ranks.assign_io_ranks_per_node,
+        io_ranks.assign_io_ranks_on_fullest_nodes,
     ],
 )
 @pytest.mark.parametrize(
@@ -194,7 +198,7 @@ def test_io_rank_without_a_compute_rank_is_rejected() -> None:
     ids=["block", "cyclic", "uneven"],
 )
 def test_every_choice_partitions_the_ranks_and_serves_all_compute_ranks(
-    assign: Callable[[list[int], int], mpi_decomposition.IORankAssignment], node_ids: list[int]
+    assign: Callable[[list[int], int], io_ranks.IORankAssignment], node_ids: list[int]
 ) -> None:
     assignment = assign(node_ids, 2)
     assert sorted(assignment.compute_ranks + assignment.io_ranks) == list(range(len(node_ids)))
@@ -208,10 +212,129 @@ def test_every_choice_partitions_the_ranks_and_serves_all_compute_ranks(
 
 
 def test_node_ids_of_a_single_rank_run_need_no_mpi() -> None:
-    assert mpi_decomposition.allgather_node_ids(decomp_defs.SingleNodeProcessProperties()) == [0]
+    assert io_ranks.allgather_node_ids(decomp_defs.SingleNodeProcessProperties()) == [0]
 
 
 def test_split_io_ranks_requires_an_mpi_run() -> None:
-    assignment = mpi_decomposition.assign_io_ranks_per_node([0, 0], 1)
+    assignment = io_ranks.assign_io_ranks_per_node([0, 0], 1)
     with pytest.raises(errors.InvalidConfigError, match="require an MPI run"):
-        mpi_decomposition.split_io_ranks(decomp_defs.SingleNodeProcessProperties(), assignment)
+        io_ranks.split_io_ranks(decomp_defs.SingleNodeProcessProperties(), assignment)
+
+
+# --------------------------------------------------------------------------------------
+# the choice an output configuration asks for
+# --------------------------------------------------------------------------------------
+
+
+def io_config(*, io_ranks_per_node: int = 0, num_io_ranks: int = 0) -> common_io.IOConfig:
+    return common_io.IOConfig(
+        output_path=pathlib.Path("output"),
+        field_groups=[
+            common_io.FieldGroupIOConfig(
+                basename="output",
+                variables=["air_density"],
+                output_interval=common_time.NumTimeSteps(1),
+            )
+        ],
+        io_ranks_per_node=io_ranks_per_node,
+        io_ranks=num_io_ranks,
+    )
+
+
+def test_assign_io_ranks_follows_the_output_configuration() -> None:
+    # two nodes, the first with one rank more
+    node_ids = [0] * 5 + [1] * 4
+    per_node = io_ranks.assign_io_ranks(io_config(io_ranks_per_node=1), node_ids)
+    assert per_node == io_ranks.assign_io_ranks_per_node(node_ids, 1)
+    assert per_node.io_ranks == (4, 8)
+
+    # a total number of IO ranks: on the fullest nodes
+    in_total = io_ranks.assign_io_ranks(io_config(num_io_ranks=1), node_ids)
+    assert in_total == io_ranks.assign_io_ranks_on_fullest_nodes(node_ids, 1)
+    assert in_total.io_ranks == (4,)
+
+    with pytest.raises(errors.InvalidConfigError, match="at least 1"):
+        io_ranks.assign_io_ranks(io_config(), node_ids)
+
+
+# --------------------------------------------------------------------------------------
+# the layout of the roles on the nodes
+# --------------------------------------------------------------------------------------
+
+
+def tasks_per_node(*num_tasks: int) -> list[int]:
+    """Block placement of the given numbers of tasks on consecutive nodes."""
+    return [node for node, count in enumerate(num_tasks) for _ in range(count)]
+
+
+@pytest.mark.parametrize(
+    "assignment, num_ranks_per_node, layout",
+    [
+        (
+            io_ranks.assign_io_ranks_per_node(block_layout(5, 10), 1),
+            [(4, 1)] * 10,
+            "40 compute rank(s) and 10 IO rank(s) on 10 node(s); compute+IO ranks per node: "
+            "4+1 (x10)",
+        ),
+        (
+            io_ranks.assign_io_ranks_on_fullest_nodes(tasks_per_node(5, 5, *[4] * 8), 2),
+            [(4, 1)] * 2 + [(4, 0)] * 8,
+            "40 compute rank(s) and 2 IO rank(s) on 10 node(s); compute+IO ranks per node: "
+            "4+1 (x2), 4+0 (x8)",
+        ),
+        (
+            io_ranks.assign_io_ranks_on_fullest_nodes(tasks_per_node(5, 5, *[4] * 8), 3),
+            [(3, 2), (4, 1)] + [(4, 0)] * 8,
+            "39 compute rank(s) and 3 IO rank(s) on 10 node(s); compute+IO ranks per node: "
+            "3+2, 4+1, 4+0 (x8)",
+        ),
+        (
+            io_ranks.assign_io_ranks_per_node(cyclic_layout(5, 2), 1),
+            [(4, 1)] * 2,
+            "8 compute rank(s) and 2 IO rank(s) on 2 node(s); compute+IO ranks per node: 4+1 (x2)",
+        ),
+    ],
+    ids=["one-per-node", "surplus-tasks", "one-io-rank-too-many", "cyclic"],
+)
+def test_layout_counts_the_ranks_of_both_roles_per_node(
+    assignment: io_ranks.IORankAssignment, num_ranks_per_node: list[tuple[int, int]], layout: str
+) -> None:
+    assert io_ranks.num_ranks_per_node(assignment) == num_ranks_per_node
+    assert io_ranks.describe_layout(assignment) == layout
+
+
+def test_log_layout_is_silent_about_evenly_filled_nodes(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    assignment = io_ranks.assign_io_ranks_on_fullest_nodes(tasks_per_node(5, 5, 4, 4), 2)
+    with caplog.at_level(logging.INFO, logger=io_ranks.__name__):
+        io_ranks.log_layout(assignment)
+    assert [(record.levelno, record.getMessage()) for record in caplog.records] == [
+        (logging.INFO, f"Dedicated IO ranks: {io_ranks.describe_layout(assignment)}.")
+    ]
+
+
+@pytest.mark.parametrize(
+    "assignment, fewest, most",
+    [
+        # one IO rank more than surplus tasks: it takes a compute rank of the first node
+        (io_ranks.assign_io_ranks_on_fullest_nodes(tasks_per_node(5, 5, 4, 4), 3), 3, 4),
+        # IO ranks on every node of a launch with surplus tasks on two nodes only
+        (io_ranks.assign_io_ranks_per_node(tasks_per_node(5, 5, 4, 4), 1), 3, 4),
+        # the surplus tasks on nodes of their own are not the IO ranks
+        (io_ranks.assign_io_ranks_on_fullest_nodes(tasks_per_node(4, 4, 4, 1), 1), 1, 4),
+    ],
+    ids=["one-io-rank-too-many", "per-node-on-uneven-launch", "single-task-node"],
+)
+def test_log_layout_warns_about_unequal_numbers_of_compute_ranks(
+    assignment: io_ranks.IORankAssignment,
+    fewest: int,
+    most: int,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.INFO, logger=io_ranks.__name__):
+        io_ranks.log_layout(assignment)
+    info, warning = caplog.records
+    assert info.levelno == logging.INFO
+    assert warning.levelno == logging.WARNING
+    assert f"between {fewest} and {most}" in warning.getMessage()
