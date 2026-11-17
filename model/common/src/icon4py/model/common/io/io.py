@@ -366,6 +366,75 @@ class FieldGroupIOConfig:
         self._validate_basename()
 
 
+def _validate_io_rank_count(count: int) -> None:
+    # bool is a subclass of int, but is not a rank count
+    if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+        raise exceptions.InvalidConfigError(
+            f"Invalid 'count' of dedicated IO ranks: must be a positive integer, got {count!r}."
+        )
+
+
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class IORanksPerNode:
+    """
+    Dedicated IO ranks on every node: the last ranks of each node write for the
+    compute ranks of that node, so no output crosses nodes.
+
+    Validated on construction.
+    """
+
+    count: Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Number of MPI ranks per node dedicated to output. Needs an MPI run with at "
+                "least twice as many ranks on every node."
+            ),
+        ),
+    ] = 1
+
+    def __post_init__(self) -> None:
+        _validate_io_rank_count(self.count)
+
+    @classmethod
+    def __examples__(cls) -> Iterator[tuple[Self, type[Self]]]:
+        """One IO rank per node, for the configuration documentation."""
+        yield cls(count=1), cls
+
+
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class IORanksInTotal:
+    """
+    A total number of dedicated IO ranks, for fewer IO ranks than nodes: the last
+    ranks of the nodes holding the most ranks write, so with as many tasks more than
+    compute ranks the surplus tasks do. A compute rank ships to an IO rank on its own
+    node if there is one, otherwise to one on another node.
+
+    Validated on construction.
+    """
+
+    count: Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description="Total number of MPI ranks dedicated to output.",
+        ),
+    ]
+
+    def __post_init__(self) -> None:
+        _validate_io_rank_count(self.count)
+
+    @classmethod
+    def __examples__(cls) -> Iterator[tuple[Self, type[Self]]]:
+        """Two IO ranks in total, for the configuration documentation."""
+        yield cls(count=2), cls
+
+
+#: Which ranks of an MPI run are dedicated to output (see ``io_ranks.assign_io_ranks``).
+IORanks: TypeAlias = IORanksPerNode | IORanksInTotal  # noqa: UP040
+
+config_io.register_config_union(IORanks, {"per_node": IORanksPerNode, "total": IORanksInTotal})
+
+
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class IOConfig:
     """
@@ -407,48 +476,23 @@ class IOConfig:
             description="Calendar of the time coordinate in the data files.",
         ),
     ] = cf_utils.DEFAULT_CALENDAR
-    io_ranks_per_node: Annotated[
-        int,
-        common_conf_opt.ConfigOption(
-            description=(
-                "Number of MPI ranks per node dedicated to output (0: the ranks running the "
-                "model write themselves). The last ranks of every node become IO ranks: the "
-                "node's compute ranks ship their output fields to them and continue while the "
-                "IO ranks write (see 'Dedicated IO ranks' in 'icon4py.model.common.io'). Needs "
-                "an MPI run with at least twice as many ranks per node."
-            ),
-        ),
-    ] = 0
     io_ranks: Annotated[
-        int,
+        IORanks | None,
         common_conf_opt.ConfigOption(
             description=(
-                "Total number of MPI ranks dedicated to output, instead of "
-                "'io_ranks_per_node' (the two exclude each other; 0: not used), for fewer IO "
-                "ranks than nodes. The IO ranks are the last ranks of the nodes holding the "
-                "most ranks, so with 'io_ranks' tasks more than compute ranks the surplus tasks "
-                "write. A compute rank ships to an IO rank on its own node if there is one, "
-                "otherwise to one on another node."
+                "MPI ranks dedicated to output: 'type: per_node' for IO ranks on every node, "
+                "'type: total' for a total number of them. The compute ranks ship their "
+                "output fields to the IO ranks and continue while those write (see 'Dedicated "
+                "IO ranks' in 'icon4py.model.common.io'). Left empty, the ranks running the "
+                "model write themselves."
             ),
         ),
-    ] = 0
+    ] = None
 
     def __post_init__(self) -> None:
         if not self.field_groups:
             raise exceptions.InvalidConfigError(
                 "Invalid 'field_groups': at least one output field group is required."
-            )
-        for name in ("io_ranks_per_node", "io_ranks"):
-            value = getattr(self, name)
-            # bool is a subclass of int, but is not a rank count
-            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-                raise exceptions.InvalidConfigError(
-                    f"Invalid '{name}': must be a non-negative integer, got {value!r}."
-                )
-        if self.io_ranks_per_node > 0 and self.io_ranks > 0:
-            raise exceptions.InvalidConfigError(
-                "Invalid 'io_ranks': 'io_ranks_per_node' and 'io_ranks' exclude each other "
-                "(IO ranks on every node, or a total number of them)."
             )
         # compared as paths: './winds' and 'winds' name the same file series
         basenames = [normalized_basename(group.basename) for group in self.field_groups]
@@ -468,11 +512,6 @@ class IOConfig:
             ),
             cls,
         )
-
-    @property
-    def has_dedicated_io_ranks(self) -> bool:
-        """Whether ranks are dedicated to output (``io_ranks_per_node`` or ``io_ranks``)."""
-        return self.io_ranks_per_node > 0 or self.io_ranks > 0
 
 
 class OutputMonitor(monitor.Monitor, Protocol):

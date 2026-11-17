@@ -72,6 +72,11 @@ class UnionConfig:
 
 
 @dataclasses.dataclass
+class OptionalUnionConfig:
+    union: ExampleConfig | AlternativeConfig | None = None
+
+
+@dataclasses.dataclass
 class EndtimeConfig:
     endtime: time.EndOfSimulation
 
@@ -310,6 +315,32 @@ def test_dispatch_shared_clash_raises() -> None:
             ),
             SharedConfig,
         )
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        OptionalUnionConfig(),
+        OptionalUnionConfig(union=ExampleConfig(True, 42)),
+        OptionalUnionConfig(union=AlternativeConfig(7)),
+    ],
+    ids=["none", "example", "alt"],
+)
+def test_config_union_optional_form_roundtrip(config: OptionalUnionConfig) -> None:
+    yaml_str = config_io.write_yaml_str(config)
+    assert config_io.read_yaml_str(yaml_str, OptionalUnionConfig) == config
+
+
+def test_config_union_optional_form_reads_an_empty_entry_as_none() -> None:
+    assert config_io.write_yaml_str(OptionalUnionConfig()) == "union:\n"
+    assert config_io.read_yaml_str("union:\n", OptionalUnionConfig) == OptionalUnionConfig()
+    assert config_io.read_yaml_str("{}\n", OptionalUnionConfig) == OptionalUnionConfig()
+
+
+@pytest.mark.parametrize("yaml_str", ["41\n", "required_flag: true\n"], ids=["scalar", "untagged"])
+def test_config_union_rejects_untagged_value(yaml_str: str) -> None:
+    with pytest.raises(TypeError, match="mapping with a 'type' entry"):
+        config_io.read_yaml_str(yaml_str, CONFIG_UNION.__value__)
 
 
 def test_time_union_rejects_unsupported_tag() -> None:

@@ -13,12 +13,12 @@ The communicator of a run is split into compute ranks and IO ranks
 and, at every capture step, ship their owned entries of the output fields to the IO rank
 serving them (:class:`IOClient`, the compute side's output monitor); the IO ranks
 receive them and write (:class:`IOServer`). Which ranks write and who serves whom
-follows from the output configuration (``io_ranks.assign_io_ranks``). By default the last
-``IOConfig.io_ranks_per_node`` ranks of every node write: a compute rank ships to an
-IO rank on its own node, and the node's compute ranks are shared evenly among its IO
-ranks. Alternatively ``IOConfig.io_ranks`` ranks write in total, on the nodes holding
-the most ranks: a compute rank then ships on its node where that has an IO rank and
-across nodes otherwise.
+follows from the output configuration (``IOConfig.io_ranks``, see
+``io_ranks.assign_io_ranks``). Either the last ranks of every node write
+(``io.IORanksPerNode``): a compute rank ships to an IO rank on its own node, and the
+node's compute ranks are shared evenly among its IO ranks. Or a total number of ranks
+write (``io.IORanksInTotal``), on the nodes holding the most ranks: a compute rank then
+ships on its node where that has an IO rank and across nodes otherwise.
 
 An IO rank writes through the ordinary output stack, on the IO ranks' communicator:
 its local state is the concatenation of the owned entries of the compute ranks it

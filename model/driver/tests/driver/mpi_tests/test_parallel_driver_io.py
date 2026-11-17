@@ -270,7 +270,7 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
                 backend=output_backend,
                 mode=output_mode,
             ),
-            io_ranks_per_node=io_ranks_per_node,
+            io_ranks=common_io.IORanksPerNode(count=io_ranks_per_node),
         ),
     )
     output_path: pathlib.Path | None = None

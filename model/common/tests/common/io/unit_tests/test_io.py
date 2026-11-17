@@ -35,6 +35,8 @@ from icon4py.model.common.io.io import (
     FieldGroupMonitor,
     IOConfig,
     IOMonitor,
+    IORanksInTotal,
+    IORanksPerNode,
     OutputBackend,
     OutputInterval,
     OutputMode,
@@ -1112,8 +1114,9 @@ def test_io_config_yaml_roundtrip_two_groups() -> None:
             nc_comment: ICON inspired code in Python and GT4Py
         time_units: seconds since 1970-01-01 00:00:00
         calendar: proleptic_gregorian
-        io_ranks_per_node: 0
-        io_ranks: 2
+        io_ranks:
+          type: total
+          count: 2
         """
     )
     config = config_io.read_yaml_str(yaml_str, IOConfig)
@@ -1123,8 +1126,7 @@ def test_io_config_yaml_roundtrip_two_groups() -> None:
     assert config.field_groups[1].backend is OutputBackend.NETCDF
     assert config.field_groups[1].mode is OutputMode.GATHER
     assert config.field_groups[1].timesteps_per_file == 0
-    assert config.io_ranks_per_node == 0
-    assert config.io_ranks == 2
+    assert config.io_ranks == IORanksInTotal(count=2)
     assert config_io.write_yaml_str(config) == yaml_str
 
 
@@ -1151,26 +1153,57 @@ def test_output_schedule_normalizes_time_deltas() -> None:
         OutputSchedule(time.RelativeTime(minutes=90), dtime)
 
 
-@pytest.mark.parametrize("value", [-1, True, 1.5])
-def test_io_config_rejects_invalid_io_ranks_per_node(value: object) -> None:
-    group = FieldGroupIOConfig(basename="single", variables=["air_density"])
-    with pytest.raises(errors.InvalidConfigError, match="'io_ranks_per_node'"):
-        IOConfig(field_groups=[group], io_ranks_per_node=value)  # type: ignore[arg-type]  # invalid on purpose
-    with pytest.raises(errors.InvalidConfigError, match="'io_ranks'"):
-        IOConfig(field_groups=[group], io_ranks=value)  # type: ignore[arg-type]  # invalid on purpose
-    assert IOConfig(field_groups=[group]).io_ranks_per_node == 0
-    assert IOConfig(field_groups=[group], io_ranks_per_node=2).io_ranks_per_node == 2
+@pytest.mark.parametrize("io_ranks_type", [IORanksPerNode, IORanksInTotal])
+@pytest.mark.parametrize("count", [0, -1, True, 1.5])
+def test_io_ranks_reject_invalid_counts(
+    io_ranks_type: type[IORanksPerNode | IORanksInTotal], count: object
+) -> None:
+    with pytest.raises(errors.InvalidConfigError, match="'count'"):
+        io_ranks_type(count=count)  # type: ignore[arg-type]  # invalid on purpose
 
 
-def test_io_config_dedicates_io_ranks_per_node_or_in_total() -> None:
+def test_io_config_dedicates_no_ranks_to_output_by_default() -> None:
     group = FieldGroupIOConfig(basename="single", variables=["air_density"])
     # by default the ranks running the model write themselves
-    default = IOConfig(field_groups=[group])
-    assert not default.has_dedicated_io_ranks
-    assert default.io_ranks == 0
-    assert IOConfig(field_groups=[group], io_ranks_per_node=2).has_dedicated_io_ranks
-    in_total = IOConfig(field_groups=[group], io_ranks=2)
-    assert in_total.io_ranks == 2 and in_total.has_dedicated_io_ranks
+    assert IOConfig(field_groups=[group]).io_ranks is None
+    assert IORanksPerNode().count == 1
+    in_total = IOConfig(field_groups=[group], io_ranks=IORanksInTotal(count=2))
+    assert in_total.io_ranks == IORanksInTotal(count=2)
 
-    with pytest.raises(errors.InvalidConfigError, match="exclude each other"):
-        IOConfig(field_groups=[group], io_ranks_per_node=1, io_ranks=2)
+
+_SINGLE_GROUP_YAML = "field_groups:\n  - basename: single\n    variables: [air_density]\n"
+
+
+@pytest.mark.parametrize(
+    "io_ranks_yaml, io_ranks",
+    [
+        ("", None),
+        ("io_ranks:\n", None),
+        ("io_ranks: {type: per_node}\n", IORanksPerNode(count=1)),
+        ("io_ranks: {type: per_node, count: 2}\n", IORanksPerNode(count=2)),
+        ("io_ranks: {type: total, count: 3}\n", IORanksInTotal(count=3)),
+    ],
+    ids=["absent", "empty", "per-node-default", "per-node", "total"],
+)
+def test_io_config_yaml_reads_the_tagged_io_ranks(
+    io_ranks_yaml: str, io_ranks: IORanksPerNode | IORanksInTotal | None
+) -> None:
+    config = config_io.read_yaml_str(_SINGLE_GROUP_YAML + io_ranks_yaml, IOConfig)
+    assert config.io_ranks == io_ranks
+
+
+@pytest.mark.parametrize(
+    "io_ranks_yaml",
+    [
+        "io_ranks: 2\n",
+        "io_ranks: {count: 2}\n",
+        "io_ranks: {type: last_ranks, count: 2}\n",
+        "io_ranks: {type: total}\n",
+        "io_ranks: {type: total, count: 0}\n",
+        "io_ranks_per_node: 1\n",
+    ],
+    ids=["untagged-number", "untagged", "unknown-type", "missing-count", "zero", "former-option"],
+)
+def test_io_config_yaml_rejects_invalid_io_ranks(io_ranks_yaml: str) -> None:
+    with pytest.raises(cattrs.ClassValidationError):
+        config_io.read_yaml_str(_SINGLE_GROUP_YAML + io_ranks_yaml, IOConfig)

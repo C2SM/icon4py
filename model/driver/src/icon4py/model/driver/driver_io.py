@@ -15,8 +15,7 @@ capturing field groups request from their sources (``driver_output_sources`` and
 the ``IOConfig`` against them at setup; :func:`create_io_monitor` builds the output
 monitor that writes one file series per field group: an ``IOMonitor`` when the ranks
 write themselves, an ``IOClient`` shipping the fields to dedicated IO ranks
-(``IOConfig.io_ranks_per_node`` or ``IOConfig.io_ranks``), whose side is
-:func:`run_io_server`.
+(``IOConfig.io_ranks``), whose side is :func:`run_io_server`.
 """
 
 import logging
@@ -224,14 +223,12 @@ def create_io_monitor(
     compute ranks', and the client ships the sizes of the undecomposed grid (summed
     over the compute communicator, so this is collective on it). None: the ranks write
     themselves (``IOMonitor``). Either way the split must agree with the dedicated IO
-    ranks of ``io_config`` (``io_ranks_per_node`` or ``io_ranks``), the setting it was
-    made for.
+    ranks of ``io_config`` (``io_ranks``), the setting it was made for.
     """
-    if (io_ranks is None) == io_config.has_dedicated_io_ranks:
+    if (io_ranks is None) != (io_config.io_ranks is None):
         raise ValueError(
             "The communicator split and the dedicated IO ranks of the output configuration "
-            "('io_ranks_per_node' or 'io_ranks') must agree: IO ranks with both or with "
-            "neither."
+            "('io_ranks') must agree: IO ranks with both or with neither."
         )
     # Grid.id holds the file's `uuidOfHGrid` as a string; the IO layer wants a UUID.
     grid_id = uuid.UUID(grid.id)

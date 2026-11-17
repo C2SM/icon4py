@@ -46,20 +46,15 @@ def _config_file_with_io_section(directory: pathlib.Path) -> pathlib.Path:
 
 
 def _config_file_with_io_ranks(
-    directory: pathlib.Path,
-    *,
-    io_ranks_per_node: int = 0,
-    io_ranks: int = 0,
+    directory: pathlib.Path, io_ranks_type: str, count: int
 ) -> pathlib.Path:
     """The configuration with the 'io' section, dedicating ranks to output as given."""
     config_file = _config_file_with_io_section(directory)
     text = config_file.read_text()
-    defaults = "  io_ranks_per_node: 0\n  io_ranks: 0\n"
-    assert text.count(defaults) == 1
+    default = "  io_ranks:\n"
+    assert text.count(default) == 1
     config_file.write_text(
-        text.replace(
-            defaults, f"  io_ranks_per_node: {io_ranks_per_node}\n  io_ranks: {io_ranks}\n"
-        )
+        text.replace(default, f"  io_ranks:\n    type: {io_ranks_type}\n    count: {count}\n")
     )
     return config_file
 
@@ -183,27 +178,24 @@ def test_split_io_ranks_without_io_ranks_leaves_the_communicator_alone(
     with_output = driver_config.read_experiment_config_from_yaml(
         _config_file_with_io_section(tmp_path)
     )
-    assert with_output.io is not None and not with_output.io.has_dedicated_io_ranks
+    assert with_output.io is not None and with_output.io.io_ranks is None
     assert main.split_io_ranks(with_output, process_props) is None
 
 
 @pytest.mark.parametrize(
-    "io_ranks_per_node, io_ranks, expected_io_ranks",
-    [(1, 0, (4, 8)), (0, 1, (4,))],
+    "io_ranks_type, expected_io_ranks",
+    [("per_node", (4, 8)), ("total", (4,))],
     ids=["per-node", "in-total"],
 )
 def test_main_cli_compute_rank_runs_the_driver_on_its_role_communicator(
     backend_name: str,
     tmp_path: pathlib.Path,
     *,
-    io_ranks_per_node: int,
-    io_ranks: int,
+    io_ranks_type: str,
     expected_io_ranks: tuple[int, ...],
 ) -> None:
     split = _io_rank_split(is_io_rank=False)
-    config_file = _config_file_with_io_ranks(
-        tmp_path, io_ranks_per_node=io_ranks_per_node, io_ranks=io_ranks
-    )
+    config_file = _config_file_with_io_ranks(tmp_path, io_ranks_type, 1)
     with _mocked_split(split) as mock_split:
         _, mock_run_driver = _run_cli(config_file, backend_name)
     # the communicator is split by the IO ranks the configuration asks for
@@ -213,12 +205,12 @@ def test_main_cli_compute_rank_runs_the_driver_on_its_role_communicator(
     assert kwargs["io_ranks"] is split
     # the model (and its grid decomposition) runs on the compute communicator
     assert kwargs["process_props"] is split.process_props
-    assert kwargs["config"].io.has_dedicated_io_ranks
+    assert kwargs["config"].io.io_ranks is not None
 
 
 def test_main_cli_io_rank_runs_the_io_server(backend_name: str, tmp_path: pathlib.Path) -> None:
     split = _io_rank_split(is_io_rank=True)
-    config_file = _config_file_with_io_ranks(tmp_path, io_ranks_per_node=2)
+    config_file = _config_file_with_io_ranks(tmp_path, "per_node", 2)
     with (
         _mocked_split(split),
         mock.patch.object(driver_io, "run_io_server") as mock_run_io_server,
@@ -248,7 +240,7 @@ def test_main_cli_logs_the_layout_of_the_roles_once(
         mock.patch.object(driver_io, "run_io_server"),
         mock.patch.object(common_io_ranks, "log_layout") as mock_log_layout,
     ):
-        _run_cli(_config_file_with_io_ranks(tmp_path, io_ranks_per_node=1), backend_name)
+        _run_cli(_config_file_with_io_ranks(tmp_path, "per_node", 1), backend_name)
     if is_io_rank:
         mock_log_layout.assert_not_called()
     else:
@@ -273,7 +265,7 @@ def test_main_cli_failure_with_io_ranks_aborts_the_run(
         mock.patch.object(driver_io, "run_io_server", side_effect=failure if is_io_rank else None),
     ):
         result, _, _ = _invoke_cli(
-            _config_file_with_io_ranks(tmp_path, io_ranks_per_node=1),
+            _config_file_with_io_ranks(tmp_path, "per_node", 1),
             backend_name,
             run_driver_error=None if is_io_rank else failure,
         )

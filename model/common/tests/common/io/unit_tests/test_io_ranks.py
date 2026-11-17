@@ -10,13 +10,11 @@
 
 import collections
 import logging
-import pathlib
 from collections.abc import Callable
 
 import pytest
 
 import icon4py.model.common.exceptions as errors
-from icon4py.model.common import time as common_time
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.io import io as common_io, io_ranks
 
@@ -226,35 +224,17 @@ def test_split_io_ranks_requires_an_mpi_run() -> None:
 # --------------------------------------------------------------------------------------
 
 
-def io_config(*, io_ranks_per_node: int = 0, num_io_ranks: int = 0) -> common_io.IOConfig:
-    return common_io.IOConfig(
-        output_path=pathlib.Path("output"),
-        field_groups=[
-            common_io.FieldGroupIOConfig(
-                basename="output",
-                variables=["air_density"],
-                output_interval=common_time.NumTimeSteps(1),
-            )
-        ],
-        io_ranks_per_node=io_ranks_per_node,
-        io_ranks=num_io_ranks,
-    )
-
-
 def test_assign_io_ranks_follows_the_output_configuration() -> None:
     # two nodes, the first with one rank more
     node_ids = [0] * 5 + [1] * 4
-    per_node = io_ranks.assign_io_ranks(io_config(io_ranks_per_node=1), node_ids)
+    per_node = io_ranks.assign_io_ranks(common_io.IORanksPerNode(count=1), node_ids)
     assert per_node == io_ranks.assign_io_ranks_per_node(node_ids, 1)
     assert per_node.io_ranks == (4, 8)
 
     # a total number of IO ranks: on the fullest nodes
-    in_total = io_ranks.assign_io_ranks(io_config(num_io_ranks=1), node_ids)
+    in_total = io_ranks.assign_io_ranks(common_io.IORanksInTotal(count=1), node_ids)
     assert in_total == io_ranks.assign_io_ranks_on_fullest_nodes(node_ids, 1)
     assert in_total.io_ranks == (4,)
-
-    with pytest.raises(errors.InvalidConfigError, match="at least 1"):
-        io_ranks.assign_io_ranks(io_config(), node_ids)
 
 
 # --------------------------------------------------------------------------------------

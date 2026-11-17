@@ -8,8 +8,7 @@
 
 """The dedicated IO ranks of a run: which ranks write, and the communicators of the two roles.
 
-A run with dedicated IO ranks (``IOConfig.io_ranks_per_node`` or ``IOConfig.io_ranks``)
-sets them up in three steps: ``allgather_node_ids`` finds the node of every rank of the
+A run with dedicated IO ranks (``IOConfig.io_ranks``) sets them up in three steps: ``allgather_node_ids`` finds the node of every rank of the
 run's communicator, ``assign_io_ranks`` chooses the IO ranks and the compute ranks each
 of them serves (:class:`IORankAssignment`, a function of the nodes alone), and
 ``split_io_ranks`` builds the communicator of either role and the inter-communicator
@@ -226,21 +225,23 @@ def assign_io_ranks_on_fullest_nodes(
     return _serve_compute_ranks(node_ids, io_ranks)
 
 
-def assign_io_ranks(config: io.IOConfig, node_ids: Sequence[int]) -> IORankAssignment:
-    """Choose the dedicated IO ranks an output configuration asks for.
+def assign_io_ranks(io_ranks: io.IORanks, node_ids: Sequence[int]) -> IORankAssignment:
+    """Choose the dedicated IO ranks an output configuration asks for (``IOConfig.io_ranks``).
 
     ``node_ids[rank]`` identifies the node of every rank of the communicator to split
     (``allgather_node_ids``); the result is what ``split_io_ranks`` splits it by.
-    ``io_ranks_per_node`` puts IO ranks on every node; ``io_ranks`` is their total
-    number, taken from the nodes holding the most ranks.
+    ``IORanksPerNode`` puts IO ranks on every node; ``IORanksInTotal`` gives their
+    total number, taken from the nodes holding the most ranks.
 
     Raises:
-        InvalidConfigError: if the configuration dedicates no ranks to output, or the
-            run has too few ranks for them (see the ``assign_*`` functions).
+        InvalidConfigError: if the run has too few ranks for the IO ranks (see the
+            ``assign_*`` functions).
     """
-    if config.io_ranks_per_node > 0:
-        return assign_io_ranks_per_node(node_ids, config.io_ranks_per_node)
-    return assign_io_ranks_on_fullest_nodes(node_ids, config.io_ranks)
+    match io_ranks:
+        case io.IORanksPerNode(count=count):
+            return assign_io_ranks_per_node(node_ids, count)
+        case io.IORanksInTotal(count=count):
+            return assign_io_ranks_on_fullest_nodes(node_ids, count)
 
 
 def num_ranks_per_node(assignment: IORankAssignment) -> list[tuple[int, int]]:
@@ -293,8 +294,7 @@ def log_layout(assignment: IORankAssignment) -> None:
         log.warning(
             f"The nodes hold unequal numbers of compute ranks (between {min(num_compute_ranks)} "
             f"and {max(num_compute_ranks)}, see the layout above): check that the launched "
-            f"tasks match the dedicated IO ranks of the configuration ('io_ranks_per_node' or "
-            f"'io_ranks')."
+            f"tasks match the dedicated IO ranks of the configuration ('io_ranks')."
         )
 
 

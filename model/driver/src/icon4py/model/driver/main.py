@@ -71,7 +71,7 @@ def main(
     The configuration, output included (its ``io`` section), is read from the YAML
     file at ``config_file_path``; the driver is initialized, an initial condition is
     generated, and the time integration is run. With dedicated IO ranks
-    (``io.io_ranks_per_node`` or ``io.io_ranks``) the run's communicator is split first:
+    (``io.io_ranks``) the run's communicator is split first:
     the IO ranks only receive and write the compute ranks' output, and a failure on any
     rank aborts the whole run (``_abort_run_on_failure``).
     """
@@ -132,10 +132,10 @@ def split_io_ranks(
 
     Collective on the communicator.
     """
-    if config.io is None or not config.io.has_dedicated_io_ranks:
+    if config.io is None or config.io.io_ranks is None:
         return None
     assignment = common_io_ranks.assign_io_ranks(
-        config.io, common_io_ranks.allgather_node_ids(process_props)
+        config.io.io_ranks, common_io_ranks.allgather_node_ids(process_props)
     )
     return common_io_ranks.split_io_ranks(process_props, assignment)
 

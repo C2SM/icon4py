@@ -12,7 +12,7 @@ output: in MPI runs the ranks write either through the root rank (`gather` mode)
 or each into its own block of a shared store (`distributed` mode, the default;
 see `icon4py.model.common.io`). Which variables are written, how often and into
 which files is configured in field groups (see [Output](#output)). Optionally,
-some ranks are dedicated to output (`io.io_ranks_per_node`): the ranks running the
+some ranks are dedicated to output (`io.io_ranks`): the ranks running the
 model ship their fields to them and continue while the IO ranks write (see
 [Dedicated IO ranks](#dedicated-io-ranks)).
 
@@ -46,21 +46,9 @@ mpirun -np 4 icon4py-driver \
     --icon4py-backend gtfn_cpu
 ```
 
-With dedicated IO ranks (`io_ranks_per_node` in the `io` section) the launcher
-provides the compute *and* the IO ranks: on every node the last ranks only write.
-Here two nodes with four GPUs each run four compute ranks and one IO rank per node,
-i.e. ten tasks with `io_ranks_per_node: 1`; with the usual block placement, ranks 4
-and 9 write:
-
-```bash
-mpirun -np 10 icon4py-driver \
-    --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
-    --config-file-path $CONFIG_FOLDER \
-    --icon4py-backend gtfn_cpu
-```
-
-Fewer IO ranks than nodes are launched as described in
-[Dedicated IO ranks](#dedicated-io-ranks).
+With dedicated IO ranks (`io_ranks` in the `io` section) the launcher provides the
+compute *and* the IO ranks; [Dedicated IO ranks](#dedicated-io-ranks) describes how to
+launch them.
 
 ## Output
 
@@ -126,14 +114,16 @@ There are two ways to say which ranks write. The examples below were run as show
 four nodes with four GPUs each (one GPU per 72-core socket, Slurm, Cray MPICH), with
 four compute ranks per node (`C` computes, `O` writes).
 
-**IO ranks on every node** (`io_ranks_per_node`, the default way). On every node the
+**IO ranks on every node** (`type: per_node`). On every node the
 last ranks write for the compute ranks of that node, so no output crosses the
 network. Every node needs at least twice as many ranks as IO ranks; launch one task
 per node more than compute ranks:
 
 ```yaml
 io:
-  io_ranks_per_node: 1
+  io_ranks:
+    type: per_node
+    count: 1
 ```
 
 ```bash
@@ -141,7 +131,7 @@ io:
 srun --ntasks-per-node=5 --cpu-bind=sockets ./select_gpu.sh icon4py-driver ...
 ```
 
-**A total number of IO ranks** (`io_ranks`), for fewer IO ranks than nodes. The IO
+**A total number of IO ranks** (`type: total`), for fewer IO ranks than nodes. The IO
 ranks are the last ranks of the nodes holding the most ranks, so launch as many tasks
 more than compute ranks. Slurm fills the nodes in order and puts the surplus tasks on
 the first ones (`SLURM_TASKS_PER_NODE` reads `5(x2),4(x2)` here), and these two tasks
@@ -150,7 +140,9 @@ other nodes are shared evenly between the two IO ranks:
 
 ```yaml
 io:
-  io_ranks: 2
+  io_ranks:
+    type: total
+    count: 2
 ```
 
 ```bash
@@ -202,7 +194,7 @@ node:
 Dedicated IO ranks: 16 compute rank(s) and 2 IO rank(s) on 4 node(s); compute+IO ranks per node: 4+1 (x2), 4+0 (x2).
 ```
 
-A launch that does not match the configuration still runs. With `io_ranks: 3` the 18
+A launch that does not match the configuration still runs. With a `count` of 3 the 18
 tasks above give `3+2, 4+1, 4+0 (x2)`: the third IO rank takes a compute rank from
 the first node, the model runs on 15 ranks and one GPU idles. The driver then warns
 that the nodes hold unequal numbers of compute ranks. IO rank 0 also logs the node it
@@ -217,8 +209,8 @@ cores left over on every socket) in exchange for cores no compute rank shares. W
 the default chunking, one chunk per rank block, the cores made no difference (3.7 to
 4.0 s per capture).
 
-`io_ranks_per_node` and `io_ranks` exclude each other, and every IO rank needs at
-least one compute rank to serve.
+Without `io_ranks` the ranks running the model write themselves. Every IO rank needs
+at least one compute rank to serve.
 
 ## Configuration directory
 

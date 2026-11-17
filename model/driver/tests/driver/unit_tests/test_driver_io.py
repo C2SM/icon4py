@@ -145,7 +145,7 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
     io_config = common_io.IOConfig(
         output_path=tmp_path,
         field_groups=[common_io.FieldGroupIOConfig(basename="a", variables=["air_density"])],
-        io_ranks_per_node=1,
+        io_ranks=common_io.IORanksPerNode(count=1),
     )
 
     io_monitor = driver_io.create_io_monitor(
@@ -186,9 +186,9 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
     # the split and the configured IO ranks (on every node or in total) must agree, in
     # both directions
     for mismatched_config, mismatched_split in (
-        (dataclasses.replace(io_config, io_ranks_per_node=0), io_ranks),
+        (dataclasses.replace(io_config, io_ranks=None), io_ranks),
         (io_config, None),
-        (dataclasses.replace(io_config, io_ranks_per_node=0, io_ranks=1), None),
+        (dataclasses.replace(io_config, io_ranks=common_io.IORanksInTotal(count=1)), None),
     ):
         with pytest.raises(ValueError, match="must agree"):
             driver_io.create_io_monitor(

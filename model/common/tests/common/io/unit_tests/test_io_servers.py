@@ -220,7 +220,7 @@ def io_config(
                 mode=mode,
             )
         ],
-        io_ranks_per_node=1,
+        io_ranks=common_io.IORanksPerNode(count=1),
     )
 
 

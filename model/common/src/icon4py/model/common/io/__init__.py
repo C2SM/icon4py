@@ -41,8 +41,7 @@ The IO module is configured with an `IOConfig` holding
 - `field_groups`: list of field group configurations (see below); at least one, with unique `basename`s.
 - `time_units` (optional, default is "seconds since 1970-01-01 00:00:00"): unit of the time coordinate in the data files.
 - `calendar` (optional, default is "proleptic_gregorian"): calendar of the time coordinate in the data files.
-- `io_ranks_per_node` (optional, default is 0): number of MPI ranks per node dedicated to output, see "Dedicated IO ranks" below. The program running the model splits the communicator accordingly (the driver's `main` does); the module itself only carries the value.
-- `io_ranks` (optional, default is 0): total number of MPI ranks dedicated to output, the alternative to `io_ranks_per_node` for fewer IO ranks than nodes, see "Dedicated IO ranks" below; the two options exclude each other.
+- `io_ranks` (optional, default is none): the MPI ranks dedicated to output, see "Dedicated IO ranks" below. Either `IORanksPerNode` (`type: per_node` in YAML) with the `count` of IO ranks on every node, or `IORanksInTotal` (`type: total`) with their total `count`, for fewer IO ranks than nodes. The program running the model splits the communicator accordingly (the driver's `main` does); the module itself only carries the value.
 
 A field group is a set of variables written on the same schedule into the same file series; it is configured with
 
@@ -176,19 +175,20 @@ dedicated IO ranks (`io_servers`): the run's communicator is split
 through an inter-communicator. The launcher provides the tasks of both roles; the
 `IOConfig` says which of them write (`io_ranks.assign_io_ranks`):
 
-- `io_ranks_per_node: k`, the default way: on every node the last `k` ranks. The nodes
+- `IORanksPerNode(count=k)`: on every node the last `k` ranks. The nodes
   are found through MPI's shared-memory split, so the choice does not depend on how the
   launcher places the ranks: a compute rank always ships to an IO rank on its own node,
   and the node's compute ranks are shared evenly among its IO ranks. With the launcher's
   usual block placement and one task per node more than compute ranks (e.g. five tasks
-  on a node with four GPUs and `io_ranks_per_node: 1`), the IO rank is the node's last
+  on a node with four GPUs and one IO rank per node), the IO rank is the node's last
   task and every compute rank keeps a GPU of its own.
-- `io_ranks: n`: `n` ranks in total, for fewer IO ranks than nodes. They are the last
-  ranks of the nodes holding the most ranks, spread evenly over equally full nodes.
-  Launched with `n` tasks more than compute ranks, a run turns exactly the surplus
-  tasks into IO ranks, on whichever nodes the launcher placed them, and every node
-  keeps its compute ranks (e.g. 18 tasks on four nodes with four GPUs each and
-  `io_ranks: 2`: two nodes get a fifth task, which writes). A compute rank still ships
+- `IORanksInTotal(count=n)`: `n` ranks in total, for fewer IO ranks than nodes. They
+  are the last ranks of the nodes holding the most ranks, spread evenly over equally
+  full nodes. Launched with `n` tasks more than compute ranks, a run turns exactly the
+  surplus tasks into IO ranks, on whichever nodes the launcher placed them, and every
+  node keeps its compute ranks (e.g. 18 tasks on four nodes with four GPUs each and
+  two IO ranks in total: two nodes get a fifth task, which writes). A compute rank
+  still ships
   to an IO rank on its own node if there is one; the compute ranks of the other nodes
   ship across nodes, in contiguous blocks that level the number of compute ranks per
   IO rank.

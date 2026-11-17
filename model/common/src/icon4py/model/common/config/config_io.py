@@ -37,10 +37,14 @@ class IndentSequencesDumper(yaml.Dumper):
 
 @dataclasses.dataclass
 class ConfigUnionStructurer[T]:
-    union_type: type[T]
+    union_type: types.UnionType
     type_map: typing.Mapping[str, type[T]]
 
     def __call__(self, spec: dict, _: typing.Any) -> T:
+        if not isinstance(spec, dict) or "type" not in spec:
+            raise TypeError(
+                f"Expected a mapping with a 'type' entry for '{self.union_type}', got {spec!r}."
+            )
         config_type = spec.pop("type")
         if config_type not in self.type_map:
             raise TypeError(f"Unsupported type spec for {self.union_type}: {config_type}")
@@ -227,7 +231,9 @@ register_time_union(
 )
 
 
-def register_config_union[T](union_type: type[T], mapping: typing.Mapping[str, type[T]]) -> None:
+def register_config_union[T](
+    union_type: types.UnionType, mapping: typing.Mapping[str, type[T]]
+) -> None:
     """Register the tagged YAML form of a union of config classes.
 
     The member is picked by the ``type`` tag, written next to the member's own options,
@@ -237,14 +243,22 @@ def register_config_union[T](union_type: type[T], mapping: typing.Mapping[str, t
           type: jablonowski_williamson
           p_sfc: 100000.0
 
-    ``mapping`` gives the tag of every member class of ``union_type``.
+    ``mapping`` gives the tag of every member class of ``union_type``. The optional
+    form ``union_type | None`` is registered along: an entry left empty is None.
     """
     inverse_mapping: dict[type[T], str] = {v: k for k, v in mapping.items()}
+    structure = ConfigUnionStructurer(union_type=union_type, type_map=mapping)
 
     def unstructure(instance: T) -> dict:
         return {"type": inverse_mapping[type(instance)], **CONV.unstructure(instance)}
 
-    CONV.register_structure_hook(
-        union_type, ConfigUnionStructurer(union_type=union_type, type_map=mapping)
-    )
+    def structure_optional(spec: dict | None, _: typing.Any) -> T | None:
+        return None if spec is None else structure(spec, _)
+
+    def unstructure_optional(instance: T | None) -> dict | None:
+        return None if instance is None else unstructure(instance)
+
+    CONV.register_structure_hook(union_type, structure)
     CONV.register_unstructure_hook(union_type, unstructure)
+    CONV.register_structure_hook(union_type | None, structure_optional)
+    CONV.register_unstructure_hook(union_type | None, unstructure_optional)

@@ -400,11 +400,17 @@ def test_io_rank_output_synthetic_decomposition(
                 mode=output_mode,
             )
         ],
-        io_ranks_per_node=0 if in_total else num_io_ranks,
-        io_ranks=num_io_ranks if in_total else 0,
+        io_ranks=(
+            common_io.IORanksInTotal(count=num_io_ranks)
+            if in_total
+            else common_io.IORanksPerNode(count=num_io_ranks)
+        ),
     )
+    assert config.io_ranks is not None
     try:
-        assignment = io_ranks.assign_io_ranks(config, io_ranks.allgather_node_ids(process_props))
+        assignment = io_ranks.assign_io_ranks(
+            config.io_ranks, io_ranks.allgather_node_ids(process_props)
+        )
     except errors.InvalidConfigError as error:
         pytest.skip(f"too few ranks for these IO ranks: {error}")
     # the synthetic decomposition needs two compute ranks (one of them empty)
