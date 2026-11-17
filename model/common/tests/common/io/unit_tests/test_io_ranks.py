@@ -10,6 +10,7 @@
 
 import collections
 import logging
+import signal
 from collections.abc import Callable
 from unittest import mock
 
@@ -296,29 +297,57 @@ def test_log_layout_is_silent_about_evenly_filled_nodes(
 
 
 @pytest.mark.parametrize(
-    "assignment, fewest, most",
+    "assignment, per_node",
     [
         # one IO rank more than surplus tasks: it takes a compute rank of the first node
-        (io_ranks.assign_io_ranks_on_fullest_nodes(tasks_per_node(5, 5, 4, 4), 3), 3, 4),
+        (
+            io_ranks.assign_io_ranks_on_fullest_nodes(tasks_per_node(5, 5, 4, 4), 3),
+            "3+2, 4+1, 4+0 (x2)",
+        ),
         # IO ranks on every node of a launch with surplus tasks on two nodes only
-        (io_ranks.assign_io_ranks_per_node(tasks_per_node(5, 5, 4, 4), 1), 3, 4),
+        (io_ranks.assign_io_ranks_per_node(tasks_per_node(5, 5, 4, 4), 1), "4+1 (x2), 3+1 (x2)"),
         # the surplus tasks on nodes of their own are not the IO ranks
-        (io_ranks.assign_io_ranks_on_fullest_nodes(tasks_per_node(4, 4, 4, 1), 1), 1, 4),
+        (
+            io_ranks.assign_io_ranks_on_fullest_nodes(tasks_per_node(4, 4, 4, 1), 1),
+            "3+1, 4+0 (x2), 1+0",
+        ),
     ],
     ids=["one-io-rank-too-many", "per-node-on-uneven-launch", "single-task-node"],
 )
 def test_log_layout_warns_about_unequal_numbers_of_compute_ranks(
     assignment: io_ranks.IORankAssignment,
-    fewest: int,
-    most: int,
+    per_node: str,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    # the warning carries the layout itself: it is still there when INFO is filtered out
+    with caplog.at_level(logging.WARNING, logger=io_ranks.__name__):
+        io_ranks.log_layout(assignment)
+    (warning,) = caplog.records
+    assert warning.levelno == logging.WARNING
+    assert "unequal numbers of compute ranks" in warning.getMessage()
+    assert f"compute+IO ranks per node: {per_node})" in warning.getMessage()
+
+
+@pytest.mark.parametrize(
+    "assignment, per_node",
+    [
+        # no task for the IO rank: it takes a compute rank on every node
+        (io_ranks.assign_io_ranks_per_node(tasks_per_node(4, 4, 4, 4), 1), "3+1 (x4)"),
+        (io_ranks.assign_io_ranks_on_fullest_nodes(tasks_per_node(4, 4, 4, 4), 4), "3+1 (x4)"),
+    ],
+    ids=["per-node", "total"],
+)
+def test_log_layout_cannot_warn_about_a_launch_short_of_tasks_on_every_node(
+    assignment: io_ranks.IORankAssignment,
+    per_node: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The nodes hold equal numbers of compute ranks: only the layout line shows the launch."""
     with caplog.at_level(logging.INFO, logger=io_ranks.__name__):
         io_ranks.log_layout(assignment)
-    info, warning = caplog.records
+    (info,) = caplog.records
     assert info.levelno == logging.INFO
-    assert warning.levelno == logging.WARNING
-    assert f"between {fewest} and {most}" in warning.getMessage()
+    assert info.getMessage().endswith(f"compute+IO ranks per node: {per_node}.")
 
 
 # --------------------------------------------------------------------------------------
@@ -375,6 +404,21 @@ def test_no_io_ranks_let_a_failure_propagate_and_report_nothing(
     with caplog.at_level(logging.INFO, logger=io_ranks.__name__):
         rank_roles.report_layout()
     assert not caplog.records
+
+
+def test_abort_arms_an_alarm_that_outlives_a_blocked_abort() -> None:
+    """The alarm is pending while ``Abort`` runs and is cancelled if that returns."""
+    pending: list[int] = []
+    comm = mock.MagicMock()
+    # signal.alarm(0) cancels the pending alarm and returns the seconds it had left
+    comm.Abort.side_effect = lambda _: pending.append(signal.alarm(0))
+    try:
+        io_ranks._abort(comm)
+    finally:
+        signal.alarm(0)
+    comm.Abort.assert_called_once_with(1)
+    assert 0 < pending[0] <= io_ranks._ABORT_GRACE_SECONDS
+    assert signal.alarm(0) == 0  # nothing left pending once the abort returned
 
 
 def io_rank_split(

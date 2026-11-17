@@ -13,7 +13,8 @@ mailboxes are queues, so several compute ranks and one IO rank run in one proces
 (the IO rank on a thread). This exercises the whole protocol -- setup, capture
 headers and data, shutdown, mismatch detection -- and the IO side's monitor stack on
 a served (permuted, halo-free) decomposition, including the single-IO-rank case where
-the store must not be written as if it were the undecomposed grid.
+the store must not be written as if it were the undecomposed grid. The in-flight
+bound of the compute side is tested against a recording stand-in.
 """
 
 import collections
@@ -25,6 +26,7 @@ import queue
 import threading
 import uuid
 from collections.abc import Sequence
+from unittest import mock
 
 import gt4py.next as gtx
 import numpy as np
@@ -104,7 +106,7 @@ class _FakeIntercomm:
     def Send(self, buffer: np.ndarray, dest: int, tag: int) -> None:
         self._outbox(dest, tag).put(np.array(buffer, copy=True))
 
-    def Isend(self, buffer: np.ndarray, dest: int, tag: int) -> _CompletedRequest:
+    def Issend(self, buffer: np.ndarray, dest: int, tag: int) -> _CompletedRequest:
         self.Send(buffer, dest, tag)
         return _CompletedRequest()
 
@@ -202,6 +204,24 @@ def synthetic_state(info: decomp_defs.DecompositionInfo, step: int) -> dict[str,
     return state
 
 
+def field_group(  # noqa: PLR0917 [too-many-positional-arguments]
+    backend: common_io.OutputBackend,
+    mode: common_io.OutputMode,
+    output_interval: common_io.OutputInterval = common_time.NumTimeSteps(1),
+    basename: str = "synthetic_output",
+    variables: Sequence[str] = tuple(VARIABLES),
+    timesteps_per_file: int = 2,  # forces a file rollover at the third capture step
+) -> common_io.FieldGroupIOConfig:
+    return common_io.FieldGroupIOConfig(
+        basename=basename,
+        variables=list(variables),
+        output_interval=output_interval,
+        timesteps_per_file=timesteps_per_file,
+        backend=backend,
+        mode=mode,
+    )
+
+
 def io_config(
     output_path: pathlib.Path,
     backend: common_io.OutputBackend,
@@ -210,16 +230,7 @@ def io_config(
 ) -> common_io.IOConfig:
     return common_io.IOConfig(
         output_path=output_path,
-        field_groups=[
-            common_io.FieldGroupIOConfig(
-                basename="synthetic_output",
-                variables=list(VARIABLES),
-                output_interval=output_interval,
-                timesteps_per_file=2,  # forces a file rollover at the third capture step
-                backend=backend,
-                mode=mode,
-            )
-        ],
+        field_groups=[field_group(backend, mode, output_interval)],
         io_ranks=common_io.IORanksPerNode(count=1),
     )
 
@@ -300,11 +311,16 @@ def make_clients(
 
 
 def assert_dataset_is_exact(
-    dataset: xr.Dataset, steps: Sequence[int], global_index: dict[str, np.ndarray]
+    dataset: xr.Dataset,
+    steps: Sequence[int],
+    global_index: dict[str, np.ndarray],
+    variables: Sequence[str] = tuple(VARIABLES),
 ) -> None:
     """Reassemble to global order and compare exactly against the analytic values."""
     assert dataset.sizes["time"] == len(steps)
-    for name, (dim_name, num_levels) in VARIABLES.items():
+    assert set(variables) == set(dataset.data_vars) & set(VARIABLES)
+    for name in variables:
+        dim_name, num_levels = VARIABLES[name]
         values = dataset[name].values
         index = global_index[dim_name]
         valid = index >= 0
@@ -433,17 +449,21 @@ def test_io_rank_rejects_compute_ranks_at_different_capture_steps(tmp_path: path
         server.join()
 
 
-def test_io_rank_rejects_differing_setups(tmp_path: pathlib.Path) -> None:
+@pytest.mark.parametrize("differing", ["config", "grid_id", "horizontal_size"])
+def test_io_rank_rejects_differing_setups(differing: str, tmp_path: pathlib.Path) -> None:
     compute_intercomms, (io_intercomm,) = fake_intercomms(NUM_COMPUTE_RANKS, 1)
     config = io_config(tmp_path, common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED)
-    other_config = dataclasses.replace(config, output_path=tmp_path / "elsewhere")
+    setup = {"config": config, "grid_id": GRID_ID, "horizontal_size": horizontal_size()}
+    other = {
+        "config": dataclasses.replace(config, output_path=tmp_path / "elsewhere"),
+        "grid_id": uuid.UUID("00000000-0000-0000-0000-00000000d1d1"),
+        "horizontal_size": dataclasses.replace(horizontal_size(), num_cells=18),
+    }
     server = ServerThread(io_intercomm)
     for rank, intercomm in enumerate(compute_intercomms):
         io_servers.IOClient(
-            config=config if rank == 0 else other_config,
+            **(setup if rank == 0 else setup | {differing: other[differing]}),
             dtime=DTIME,
-            grid_id=GRID_ID,
-            horizontal_size=horizontal_size(),
             decomposition_info=synthetic_decomposition_info(rank),
             intercomm=intercomm,  # type: ignore[arg-type]  # in-process stand-in
             io_rank=0,
@@ -457,3 +477,185 @@ def test_io_server_requires_a_served_compute_rank() -> None:
     io_servers.IOServer(io_intercomm, served_ranks=(0,))  # type: ignore[arg-type]  # in-process stand-in
     with pytest.raises(errors.InvalidConfigError, match="serves no compute rank"):
         io_servers.IOServer(io_intercomm, served_ranks=())  # type: ignore[arg-type]  # in-process stand-in
+
+
+def test_io_rank_writes_field_groups_with_different_schedules(tmp_path: pathlib.Path) -> None:
+    """Two groups sharing a variable: one captures every step, the other every second.
+
+    A capture step ships the union of the capturing groups' variables once, and the IO
+    rank writes every group from it.
+    """
+    backend, mode = common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED
+    groups = {
+        "every_step": (1, ("air_density", "surface_pressure")),
+        "every_second_step": (2, ("air_density", "normal_velocity")),
+    }
+    config = common_io.IOConfig(
+        output_path=tmp_path,
+        field_groups=[
+            field_group(
+                backend,
+                mode,
+                common_time.NumTimeSteps(interval),
+                basename=basename,
+                variables=variables,
+                timesteps_per_file=0,
+            )
+            for basename, (interval, variables) in groups.items()
+        ],
+        io_ranks=common_io.IORanksPerNode(count=1),
+    )
+    compute_intercomms, (io_intercomm,) = fake_intercomms(NUM_COMPUTE_RANKS, 1)
+    server = ServerThread(io_intercomm)
+    clients, infos = make_clients(config, compute_intercomms)
+
+    num_steps = 4
+    for step in range(num_steps):
+        model_time = dt.datetime(2000, 1, 1) + step * dt.timedelta(hours=1)
+        for client, info in zip(clients, infos, strict=True):
+            expected = set(VARIABLES) if step % 2 == 0 else set(groups["every_step"][1])
+            assert client.variables_at_capture_time() == expected
+            client.store(synthetic_state(info, step), model_time)
+    for client in clients:
+        client.close()
+    server.join()
+
+    for basename, (interval, variables) in groups.items():
+        (path,) = tmp_path.glob(f"{basename}_*{common_io.FILE_SUFFIXES[backend]}")
+        with xr.open_zarr(path, decode_times=False, mask_and_scale=False) as dataset:
+            global_index = {
+                dim_name: dataset[f"{writers.GLOBAL_INDEX_PREFIX}_{dim_name}"].values
+                for dim_name in {VARIABLES[name][0] for name in variables}
+            }
+            assert_dataset_is_exact(dataset, range(0, num_steps, interval), global_index, variables)
+
+
+# ------------------------------------------------------------------------------------
+# The in-flight bound of the compute side
+# ------------------------------------------------------------------------------------
+
+
+class _RecordingIntercomm:
+    """Inter-communicator stand-in of a compute rank that records what ``IOClient`` does.
+
+    Nothing is delivered. ``events`` lists ``("send", capture)`` for the first message
+    of every capture and ``("wait", capture)`` when a request of that capture is first
+    waited for; captures are counted from 0 by their header messages.
+    """
+
+    def __init__(self) -> None:
+        self.events: list[tuple[str, int]] = []
+        self._num_captures = 0
+        self._header_messages = 0
+
+    def Get_rank(self) -> int:
+        return 0
+
+    def Send(self, buffer: np.ndarray, dest: int, tag: int) -> None:
+        pass  # the setup and the shutdown header
+
+    def Issend(self, buffer: np.ndarray, dest: int, tag: int) -> mock.Mock:
+        if tag == io_servers._HEADER_TAG:
+            # a header travels as two messages (size, bytes)
+            if self._header_messages % 2 == 0:
+                self.events.append(("send", self._num_captures))
+                self._num_captures += 1
+            self._header_messages += 1
+        capture = self._num_captures - 1
+
+        def wait() -> None:
+            if ("wait", capture) not in self.events:
+                self.events.append(("wait", capture))
+
+        return mock.Mock(Wait=wait)
+
+
+def test_client_keeps_at_most_the_bound_of_captures_in_flight(tmp_path: pathlib.Path) -> None:
+    """``store`` waits for the oldest capture before it stages and posts one beyond the bound."""
+    intercomm = _RecordingIntercomm()
+    info = synthetic_decomposition_info(0)
+    client = io_servers.IOClient(
+        config=io_config(tmp_path, common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED),
+        dtime=DTIME,
+        grid_id=GRID_ID,
+        horizontal_size=horizontal_size(),
+        decomposition_info=info,
+        intercomm=intercomm,  # type: ignore[arg-type]  # recording stand-in
+        io_rank=0,
+    )
+    bound = io_servers.MAX_IN_FLIGHT_CAPTURES
+    num_captures = bound + 3
+    staged: list[int] = []
+    owned_entries = io_servers.distributed.owned_entries
+
+    def staging_owned_entries(*args: object) -> np.ndarray:
+        # the host copies of a capture are made while at most bound - 1 captures are in flight
+        staged.append(len(client._in_flight))
+        return owned_entries(*args)  # type: ignore[arg-type]
+
+    with mock.patch.object(io_servers.distributed, "owned_entries", staging_owned_entries):
+        for step in range(num_captures):
+            client.store(synthetic_state(info, step), dt.datetime(2000, 1, 1, step))
+            assert len(client._in_flight) <= bound
+
+    assert len(staged) == num_captures * len(VARIABLES)
+    assert max(staged) == bound - 1
+    # capture k is waited for right before capture k + bound is sent, and not earlier
+    expected = [("send", capture) for capture in range(bound)]
+    for capture in range(bound, num_captures):
+        expected += [("wait", capture - bound), ("send", capture)]
+    assert intercomm.events == expected
+
+    client.close()
+    # closing waits for the captures still in flight, oldest first
+    assert intercomm.events[len(expected) :] == [
+        ("wait", capture) for capture in range(num_captures - bound, num_captures)
+    ]
+    assert not client._in_flight
+
+
+# ------------------------------------------------------------------------------------
+# The serve loop and the output monitor
+# ------------------------------------------------------------------------------------
+
+
+def test_serve_closes_the_monitor_only_when_the_compute_ranks_closed(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A failing IO rank must reach the abort without a collective call in between.
+
+    Closing a parallel netCDF file is collective on the IO ranks: an IO rank failing
+    alone must leave its monitor open.
+    """
+    config = io_config(tmp_path, common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED)
+
+    def serve(io_monitor: mock.Mock, *, capture: bool) -> None:
+        (compute_intercomm,), (io_intercomm,) = fake_intercomms(1, 1)
+        info = synthetic_decomposition_info(0)
+        client = io_servers.IOClient(
+            config=config,
+            dtime=DTIME,
+            grid_id=GRID_ID,
+            horizontal_size=horizontal_size(),
+            decomposition_info=info,
+            intercomm=compute_intercomm,  # type: ignore[arg-type]  # in-process stand-in
+            io_rank=0,
+        )
+        if capture:
+            client.store(synthetic_state(info, 0), dt.datetime(2000, 1, 1))
+        client.close()
+        server = io_servers.IOServer(io_intercomm, served_ranks=(0,))  # type: ignore[arg-type]  # in-process stand-in
+        server.receive_setup()
+        server.serve(io_monitor)
+
+    failing = mock.Mock(capture=mock.Mock(side_effect=OSError("disk full")))
+    with pytest.raises(OSError, match="disk full"):
+        serve(failing, capture=True)
+    failing.capture.assert_called_once()
+    failing.close.assert_not_called()
+
+    finishing = mock.Mock()
+    serve(finishing, capture=True)
+    finishing.capture.assert_called_once()
+    finishing.report_timings.assert_called_once()
+    finishing.close.assert_called_once()

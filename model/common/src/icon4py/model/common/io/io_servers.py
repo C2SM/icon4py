@@ -25,16 +25,19 @@ its local state is the concatenation of the owned entries of the compute ranks i
 serves -- a decomposition without halos (``IOServer.receive_setup``) -- so the
 distributions of ``io.distributed`` (gathered or rank-block output, per the group's
 ``mode``) and both writers apply unchanged. With a single IO rank the rank-block store
-has one block; the mode still selects the layout.
+has one block; the mode still selects the layout (unless that IO rank serves one
+compute rank owning the whole grid in global order: an undecomposed state, written as
+a serial run writes it).
 
 The compute side is asynchronous: ``store`` strips the halos into a fresh host buffer
 per field (``distributed.owned_entries``, as the rank-block distribution does), posts
 nonblocking sends of these buffers and returns; the transfer overlaps the following
-model steps and completes as the MPI library progresses it. At most
-``MAX_IN_FLIGHT_CAPTURES`` capture steps are in flight per compute rank; at that
-bound ``store`` blocks until the oldest transfer completed (phase
-``io.PHASE_SEND_WAIT`` -- the signal that the IO ranks do not keep up). No thread is
-involved on either side.
+model steps and completes as the MPI library progresses it. The sends are synchronous
+(``MPI_Issend``): a transfer completes once the IO rank has received it, whatever the
+size of its messages. At most ``MAX_IN_FLIGHT_CAPTURES`` capture steps are in flight
+per compute rank; at that bound ``store`` blocks until the IO rank has received the
+oldest one (phase ``io.PHASE_SEND_WAIT`` -- the signal that the IO ranks do not keep
+up). No thread is involved on either side.
 
 Protocol (point-to-point on the inter-communicator, addressed by the rank in the other
 role's communicator): at construction every compute rank sends its :class:`ClientSetup`
@@ -44,9 +47,10 @@ capture step it sends a :class:`CaptureHeader` followed by one message per outpu
 variable, in header order; the messages of one source arrive in order, so the IO rank
 receives them deterministically without any tags beyond the three message kinds.
 ``IOClient.close`` completes the transfers and sends an empty header, which ends the
-IO rank's ``serve`` loop. Every message is a buffered send and receive: the setup and
-the headers travel as a size message followed by their pickled bytes (``_send_object``
-and friends) rather than through mpi4py's object send and receive, whose receive goes
+IO rank's ``serve`` loop. Every message travels through mpi4py's buffer interface
+(``Send``, ``Issend``, ``Recv``): the setup and the headers as a size message followed
+by their pickled bytes (``_send_object`` and friends) rather than through mpi4py's
+object send and receive, whose receive goes
 through a matched probe (``MPI_Mprobe``) that hung under Open MPI 5 with libfabric's
 CXI provider on the CI machines (2026-11).
 
@@ -55,9 +59,10 @@ the setup or the next capture of its compute ranks, so a compute rank that fails
 before closing its client leaves it waiting; compute ranks block at the in-flight
 bound at the latest once their IO rank failed. A program using dedicated IO ranks must
 therefore abort the run when any rank fails (``io_ranks.IORankSplit.abort_on_failure``,
-which the driver's ``main`` runs in). A client closed cleanly, also on an error path,
-lets its IO rank finish: ``close`` completes the transfers and sends the shutdown
-header. Every check that must fail on all IO ranks together (existing output files,
+which the driver's ``main`` runs in), and nothing collective may stand between the
+failure and the abort: a failing IO rank does not close its files (``IOServer.serve``).
+A client closed cleanly, also on an error path, lets its IO rank finish: ``close``
+completes the transfers and sends the shutdown header. Every check that must fail on all IO ranks together (existing output files,
 mismatching store metadata) is collective on their communicator through the ordinary
 output stack.
 """
@@ -90,10 +95,12 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-#: Upper bound of the capture steps a compute rank keeps in flight to its IO rank. A
-#: transfer holds host copies of one capture step's fields, so the bound also caps the
-#: staging memory at this many captures. At the bound, ``IOClient.store`` blocks until
-#: the oldest transfer completed (phase ``io.PHASE_SEND_WAIT``).
+#: Upper bound of the capture steps a compute rank keeps in flight to its IO rank, i.e.
+#: posted and not yet received by it. A transfer holds host copies of one capture step's
+#: fields, and ``IOClient.store`` waits for a free slot before it copies the next
+#: capture (phase ``io.PHASE_SEND_WAIT``), so the bound also caps the staging memory at
+#: this many captures. The copies of a received capture are released when its slot is
+#: needed, or at ``close``.
 MAX_IN_FLIGHT_CAPTURES: Final[int] = 2
 
 #: Message kinds on the inter-communicator (MPI tags).
@@ -109,26 +116,26 @@ def _object_messages(obj: Any) -> list[np.ndarray]:
 
 
 def _send_object(comm: mpi4py.MPI.Intercomm, obj: Any, dest: int, tag: int) -> None:
-    """Send a picklable object as buffered messages (blocking)."""
+    """Send a picklable object as two buffer messages (blocking)."""
     for buffer in _object_messages(obj):
         comm.Send(buffer, dest=dest, tag=tag)
 
 
-def _isend_object(
+def _issend_object(
     comm: mpi4py.MPI.Intercomm, obj: Any, dest: int, tag: int
 ) -> tuple[list[mpi4py.MPI.Request], list[np.ndarray]]:
-    """Post the sends of a picklable object; the buffers must outlive the requests."""
+    """Post the synchronous sends of a picklable object; the buffers must outlive the requests."""
     buffers = _object_messages(obj)
-    return [comm.Isend(buffer, dest=dest, tag=tag) for buffer in buffers], buffers
+    return [comm.Issend(buffer, dest=dest, tag=tag) for buffer in buffers], buffers
 
 
 def _recv_object(comm: mpi4py.MPI.Intercomm, source: int, tag: int) -> Any:
-    """Receive an object sent by ``_send_object`` or ``_isend_object`` (blocking)."""
+    """Receive an object sent by ``_send_object`` or ``_issend_object`` (blocking)."""
     size = np.empty(1, dtype=np.int64)
     comm.Recv(size, source=source, tag=tag)
     payload = np.empty(int(size[0]), dtype=np.uint8)
     comm.Recv(payload, source=source, tag=tag)
-    return pickle.loads(payload.tobytes())
+    return pickle.loads(memoryview(payload))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -277,9 +284,9 @@ class IOClient(monitor.Monitor):
     ) -> None:
         """Advance the schedules; at a capture step ship the capturing groups' fields.
 
-        Blocks only when ``MAX_IN_FLIGHT_CAPTURES`` capture steps are still in flight
-        (phase "send_wait"). The shipped data is a copy, so the model may mutate the
-        state right after this returns.
+        Blocks only when the IO rank has not yet received ``MAX_IN_FLIGHT_CAPTURES``
+        earlier capture steps (phase "send_wait", part of the phase "send"). The shipped
+        data is a copy, so the model may mutate the state right after this returns.
         """
         groups = tuple(
             index for index, schedule in enumerate(self._schedules) if schedule.at_capture_time()
@@ -304,6 +311,11 @@ class IOClient(monitor.Monitor):
 
         log.info(f"Shipping fields {names} at {model_time} to IO rank {self._io_rank}")
 
+        # a free slot first: the copies below would otherwise come on top of the bound
+        start = timeit.default_timer()
+        self._wait_for_slot()
+        waited = timeit.default_timer() - start
+
         start = timeit.default_timer()
         buffers: list[np.ndarray] = []
         variables: dict[str, VariableSpec] = {}
@@ -325,19 +337,18 @@ class IOClient(monitor.Monitor):
         self._phase_seconds[io.PHASE_DISTRIBUTE].append(timeit.default_timer() - start)
 
         start = timeit.default_timer()
-        self._wait_for_slot()
         header = CaptureHeader(model_time=model_time, groups=groups, variables=variables)
-        requests, header_buffers = _isend_object(
+        requests, header_buffers = _issend_object(
             self._intercomm, header, self._io_rank, _HEADER_TAG
         )
         requests.extend(
-            self._intercomm.Isend(buffer, dest=self._io_rank, tag=_DATA_TAG) for buffer in buffers
+            self._intercomm.Issend(buffer, dest=self._io_rank, tag=_DATA_TAG) for buffer in buffers
         )
         self._in_flight.append(_Transfer(requests, header_buffers + buffers))
-        self._phase_seconds[io.PHASE_SEND].append(timeit.default_timer() - start)
+        self._phase_seconds[io.PHASE_SEND].append(waited + timeit.default_timer() - start)
 
     def _wait_for_slot(self) -> None:
-        """Complete the oldest transfers until fewer than the bound are in flight."""
+        """Wait until the IO rank received the oldest transfers: fewer than the bound stay in flight."""
         start = timeit.default_timer()
         while len(self._in_flight) >= MAX_IN_FLIGHT_CAPTURES:
             self._in_flight.popleft().wait()
@@ -457,16 +468,17 @@ class IOServer:
         """Receive capture steps and write them until every served compute rank closed.
 
         ``io_monitor`` must be built from ``receive_setup`` (its process properties are
-        the IO ranks'); it is closed when this returns, also on failure -- an IO-side
-        error propagates and the program must abort the run (module docstring).
+        the IO ranks'); it is closed when this returns. An IO-side error propagates with
+        the monitor left open, and the program must abort the run (module docstring):
+        closing a parallel netCDF file is collective on the IO ranks, so an IO rank
+        failing alone would wait in the close for the others, which are still serving,
+        and never reach the abort.
         """
-        try:
-            while (header := self._receive_header()) is not None:
-                state = self._receive_state(header)
-                io_monitor.capture(state, header.model_time, header.groups)
-            io_monitor.report_timings()
-        finally:
-            io_monitor.close()
+        while (header := self._receive_header()) is not None:
+            state = self._receive_state(header)
+            io_monitor.capture(state, header.model_time, header.groups)
+        io_monitor.report_timings()
+        io_monitor.close()
 
     def _receive_header(self) -> CaptureHeader | None:
         """The next capture header, None once the compute ranks closed.

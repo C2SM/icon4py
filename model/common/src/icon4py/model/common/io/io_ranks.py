@@ -12,9 +12,10 @@ Every run has its :class:`RankRoles`, built by ``create_rank_roles`` from the ou
 configuration: :class:`NoIORanks` when the ranks running the model write themselves,
 an :class:`IORankSplit` when some ranks are dedicated to output.
 
-A run with dedicated IO ranks (``IOConfig.io_ranks``) sets them up in three steps: ``allgather_node_ids`` finds the node of every rank of the
-run's communicator, ``assign_io_ranks`` chooses the IO ranks and the compute ranks each
-of them serves (:class:`IORankAssignment`, a function of the nodes alone), and
+A run with dedicated IO ranks (``IOConfig.io_ranks``) sets them up in three steps:
+``allgather_node_ids`` finds the node of every rank of the run's communicator,
+``assign_io_ranks`` chooses the IO ranks and the compute ranks each of them serves
+(:class:`IORankAssignment`, a function of the nodes alone), and
 ``split_io_ranks`` builds the communicator of either role and the inter-communicator
 between them (:class:`IORankSplit`). The protocol the two roles speak is in
 ``io_servers``.
@@ -25,6 +26,7 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import logging
+import signal
 from collections.abc import Collection, Iterator, Sequence
 from typing import TYPE_CHECKING, Final, Protocol
 
@@ -43,6 +45,9 @@ log = logging.getLogger(__name__)
 #: distributed log records (``ProcessProperties.comm_name``).
 COMPUTE_COMM_NAME: Final[str] = "compute"
 IO_COMM_NAME: Final[str] = "io"
+
+#: Seconds a rank may live on after it called ``MPI_Abort`` (see ``_abort``).
+_ABORT_GRACE_SECONDS: Final[int] = 10
 
 
 def _balanced_blocks(items: Sequence[int], num_blocks: int) -> list[tuple[int, ...]]:
@@ -190,12 +195,15 @@ def assign_io_ranks_on_fullest_nodes(
     """Choose ``num_io_ranks`` dedicated IO ranks in total: the last ranks of the fullest nodes.
 
     The IO ranks are taken one at a time, always the last remaining rank of the
-    fullest node; among equally full nodes they are spread evenly, in node order. A
-    run launched with ``num_io_ranks`` tasks more than compute ranks thus turns
-    exactly the surplus tasks into IO ranks, on whichever nodes the launcher placed
-    them, and every node keeps its compute ranks. A compute rank ships to an IO rank
-    on its own node if there is one, otherwise across nodes (see
-    ``_serve_compute_ranks``). ``node_ids`` as in ``assign_io_ranks_per_node``.
+    fullest node; when fewer IO ranks are left than there are equally full nodes, they
+    are spread evenly over these, in node order. A run launched with ``num_io_ranks``
+    tasks more than compute ranks, the surplus tasks on nodes that also hold compute
+    ranks (where a launcher filling the nodes in order puts them), thus turns exactly
+    the surplus tasks into IO ranks, and every node keeps its compute ranks. Surplus
+    tasks on nodes of their own are not recognized: such a node is never the fullest,
+    so its tasks compute and the IO ranks are taken from the other nodes. A compute
+    rank ships to an IO rank on its own node if there is one, otherwise across nodes
+    (see ``_serve_compute_ranks``). ``node_ids`` as in ``assign_io_ranks_per_node``.
 
     Raises:
         InvalidConfigError: if ``num_io_ranks`` is not positive, or the run has fewer
@@ -291,15 +299,17 @@ def log_layout(assignment: IORankAssignment) -> None:
     The IO ranks are taken from the tasks the launcher provides, so a launch that does
     not match the configuration still runs: one IO rank too many takes a compute rank
     from some node, whose accelerator then idles. Nodes holding unequal numbers of
-    compute ranks are the sign of it, hence the warning. To be called on one rank.
+    compute ranks are the sign of it, hence the warning. A launch that is short of the
+    same number of tasks on every node (e.g. no task for the IO rank at all) cannot be
+    told from an intended one: only the logged layout shows it. To be called on one rank.
     """
-    log.info(f"Dedicated IO ranks: {describe_layout(assignment)}.")
+    layout = describe_layout(assignment)
+    log.info(f"Dedicated IO ranks: {layout}.")
     num_compute_ranks = [num_compute for num_compute, _ in num_ranks_per_node(assignment)]
     if min(num_compute_ranks) != max(num_compute_ranks):
         log.warning(
-            f"The nodes hold unequal numbers of compute ranks (between {min(num_compute_ranks)} "
-            f"and {max(num_compute_ranks)}, see the layout above): check that the launched "
-            f"tasks match the dedicated IO ranks of the configuration ('io_ranks')."
+            f"The nodes hold unequal numbers of compute ranks ({layout}): check that the "
+            f"launched tasks match the dedicated IO ranks of the configuration ('io_ranks')."
         )
 
 
@@ -321,6 +331,25 @@ def allgather_node_ids(process_props: decomposition.ProcessProperties) -> list[i
     finally:
         node_comm.Free()
     return comm.allgather(node_id)
+
+
+def _abort(comm: mpi4py.MPI.Comm) -> None:
+    """Abort the ranks of ``comm``; this process does not outlive it.
+
+    ``MPI_Abort`` alone is not enough: it ends the process through ``exit``, and an
+    exit handler can block. With a parallel netCDF file open, HDF5's handler closes the
+    file, which is collective (a barrier) on ranks that never join: a dedicated IO rank
+    that failed alone called the abort and the job hung all the same (Cray MPICH 9.1
+    under Slurm, which ends the job only once the rank has exited; 2026-11). The
+    handler runs with the interpreter lock held, so no Python thread could step in. An
+    alarm therefore ends the process if the abort has not done so in time, and the
+    launcher ends the job for the rank that was killed.
+    """
+    signal.alarm(_ABORT_GRACE_SECONDS)  # default action of SIGALRM: terminate the process
+    try:
+        comm.Abort(1)
+    finally:
+        signal.alarm(0)  # only reached with a stand-in communicator
 
 
 class RankRoles(Protocol):
@@ -420,14 +449,15 @@ class IORankSplit:
         the next capture of its compute ranks, and compute ranks block at the in-flight
         bound once their IO rank stopped receiving. The failing rank would then wait in
         MPI's shutdown for ranks that never get there, and the job would hang instead
-        of failing. The abort may interrupt IO ranks writing their last captures.
+        of failing. The abort may interrupt IO ranks writing their last captures, and
+        it does not wait for this rank's own exit handlers (``_abort``).
         """
         try:
             yield
         except BaseException:
             role = "IO" if self.is_io_rank else "Compute"
             log.exception(f"{role} rank {self.process_props.rank} failed; aborting the run.")
-            self.run_props.comm.Abort(1)
+            _abort(self.run_props.comm)
             raise
 
 

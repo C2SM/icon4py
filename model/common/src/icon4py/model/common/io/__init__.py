@@ -187,45 +187,52 @@ to do when the rank fails). The launcher provides the tasks of both roles; the
   task and every compute rank keeps a GPU of its own.
 - `IORanksInTotal(count=n)`: `n` ranks in total, for fewer IO ranks than nodes. They
   are the last ranks of the nodes holding the most ranks, spread evenly over equally
-  full nodes. Launched with `n` tasks more than compute ranks, a run turns exactly the
-  surplus tasks into IO ranks, on whichever nodes the launcher placed them, and every
-  node keeps its compute ranks (e.g. 18 tasks on four nodes with four GPUs each and
-  two IO ranks in total: two nodes get a fifth task, which writes). A compute rank
-  still ships
-  to an IO rank on its own node if there is one; the compute ranks of the other nodes
-  ship across nodes, in contiguous blocks that level the number of compute ranks per
-  IO rank.
+  full nodes. Launched with `n` tasks more than compute ranks, the surplus tasks on
+  nodes that also hold compute ranks, a run turns exactly the surplus tasks into IO
+  ranks and every node keeps its compute ranks (e.g. 18 tasks on four nodes with four
+  GPUs each and two IO ranks in total: two nodes get a fifth task, which writes).
+  Surplus tasks on nodes of their own are not recognized: they compute, and the IO
+  ranks are taken from the other nodes. A compute rank still ships to an IO rank on
+  its own node if there is one; the compute ranks of the other nodes ship across
+  nodes, in contiguous blocks that level the number of compute ranks per IO rank.
 
 The IO ranks are taken from the tasks the launcher provides, whatever their number, so a
 launch that does not match the configuration still runs: one IO rank more than surplus
 tasks takes a compute rank from some node, whose accelerator then idles. The layout is
 therefore reported (`RankRoles.report_layout`, called by the driver at startup): the
 compute and IO ranks of every node, e.g. `4+1 (x2), 4+0 (x8)`, and a warning when the
-nodes hold unequal numbers of compute ranks.
+nodes hold unequal numbers of compute ranks. A launch short of the same number of tasks
+on every node (e.g. four tasks per node where five were meant gives `3+1` everywhere)
+is not warned about: only the layout shows it.
 
 - The compute ranks use an `IOClient` as their output monitor; it offers the interface
   of the `IOMonitor` (`store`, `variables_at_capture_time`, `close`, see
   `OutputMonitor`). At a capture step it strips the halos of the capturing groups'
   fields into host buffers, posts nonblocking sends to its IO rank and returns: the
-  transfer overlaps the following model steps. At most
+  transfer overlaps the following model steps. The sends are synchronous, so a transfer
+  completes once the IO rank has received it. At most
   `io_servers.MAX_IN_FLIGHT_CAPTURES` capture steps are in flight per compute rank;
-  at that bound `store` blocks until the oldest transfer completed (timed as the phase
-  `"send_wait"`, the signal that the IO ranks do not keep up).
+  at that bound `store` blocks until the IO rank has received the oldest one (timed as
+  the phase `"send_wait"`, the signal that the IO ranks do not keep up).
 - Every IO rank holds the concatenation of the owned entries of the compute ranks it
   serves as its local state -- a decomposition without halos. It writes
   through the ordinary stack on the IO ranks' communicator (an `IOServer` feeding an
   `IOMonitor`): `mode`, `backend` and the chunking options apply unchanged, the rank
   blocks of a `"distributed"` store being those of the IO ranks. A single IO rank thus
   writes a one-block rank-block store, or -- in `"gather"` mode -- a plain serial file
-  in global order. Distributed netCDF still needs the parallel installation, on the IO
-  ranks, once there is more than one.
+  in global order (a single IO rank serving a single compute rank holds the
+  undecomposed grid and writes it as a serial run does, whatever the mode).
+  Distributed netCDF still needs the parallel installation, on the IO ranks, once
+  there is more than one.
 - The compute ranks define the output: their configuration is shipped to the IO ranks
-  at setup, so the two sides cannot diverge. The IO ranks need nothing but the
-  vertical grid and the grid file (for the UGRID topology).
+  at setup, so the two sides cannot diverge. Of their own, the IO ranks need only the
+  vertical grid, the model time step and the grid file (for the UGRID topology).
 - Failure envelope: neither role can observe the other's failure (an IO rank waits for
   its compute ranks, compute ranks wait at the in-flight bound for their IO rank), so a
   program using dedicated IO ranks must abort the run when any rank fails:
-  `RankRoles.abort_on_failure` does, and the driver's `main` runs inside it.
+  `RankRoles.abort_on_failure` does, and the driver's `main` runs inside it. A failing
+  IO rank leaves its files open, since closing a parallel netCDF file is collective
+  and would wait for the other IO ranks in place of aborting.
 
 ### Restrictions
 

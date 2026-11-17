@@ -197,8 +197,11 @@ Dedicated IO ranks: 16 compute rank(s) and 2 IO rank(s) on 4 node(s); compute+IO
 A launch that does not match the configuration still runs. With a `count` of 3 the 18
 tasks above give `3+2, 4+1, 4+0 (x2)`: the third IO rank takes a compute rank from
 the first node, the model runs on 15 ranks and one GPU idles. The driver then warns
-that the nodes hold unequal numbers of compute ranks. IO rank 0 also logs the node it
-runs on and the compute ranks it serves.
+that the nodes hold unequal numbers of compute ranks. It cannot warn when every node
+is short of the same number of tasks: `--ntasks-per-node=4` in the first example gives
+`3+1 (x4)`, three compute ranks and an idle GPU on every node, and only the layout
+line shows it. IO rank 0 also logs the node it runs on and the compute ranks it
+serves, once the compute ranks have initialized.
 
 The IO rank needs few cores, on one socket. With output at every step (four compute
 ranks shipping about 1 GB per capture to one IO rank, zarr with

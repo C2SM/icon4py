@@ -118,8 +118,9 @@ class OutputSchedule:
     output interval (a time delta is normalized to steps with the model time step, see
     ``_interval_in_steps``), so the very first step -- the initial state -- is always
     captured. ``at_capture_time`` is a pure predicate and ``advance`` the only mutation.
-    The schedule holds nothing but the step counter, so the compute and the IO side of
-    a run with dedicated IO ranks (``io_servers``) each keep one without exchanging it.
+    The schedule holds nothing but the step counter. In a run with dedicated IO ranks
+    (``io_servers``) the compute ranks evaluate it; the IO ranks write the capture steps
+    they receive.
     """
 
     def __init__(self, output_interval: OutputInterval, dtime: time.RelativeTime):
@@ -430,6 +431,8 @@ class IORanksInTotal:
 
 
 #: Which ranks of an MPI run are dedicated to output (see ``io_ranks.assign_io_ranks``).
+#: A plain union, like ``OutputInterval``: ``IORanks | None`` is then itself a union,
+#: which the configuration reader and the documentation generator handle.
 IORanks: TypeAlias = IORanksPerNode | IORanksInTotal  # noqa: UP040
 
 config_io.register_config_union(IORanks, {"per_node": IORanksPerNode, "total": IORanksInTotal})
@@ -687,10 +690,12 @@ class IOMonitor(monitor.Monitor):
     def close(self) -> None:
         """Close all field-group writers.
 
-        Safe to call from error paths: no communication of its own. Exception: closing
-        a parallel netCDF file is collective, but IO-layer errors raise on all ranks
-        together (see e.g. ``FieldGroupMonitor._refuse_to_overwrite``), so the ranks
-        still close in lockstep.
+        No communication of its own, with one exception: closing a parallel netCDF file
+        is collective. It is therefore safe after the IO-layer errors that raise on all
+        ranks together (see e.g. ``FieldGroupMonitor._refuse_to_overwrite``), where the
+        ranks still close in lockstep, but not after a failure of this rank alone: the
+        other ranks are not at the close, and the rank has to abort the run instead (as
+        a dedicated IO rank does, ``io_servers.IOServer.serve``).
         """
         for m in self._group_monitors:
             m.close()

@@ -271,23 +271,28 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
     )
     rank_roles = common_io_ranks.create_rank_roles(config.io, process_props)
     output_path: pathlib.Path | None = None
-    if rank_roles.is_io_rank:
-        driver_io.run_io_server(config=config, grid_file_path=grid_file_path, rank_roles=rank_roles)
-    else:
-        grid_manager = driver_utils.create_grid_manager(
-            grid_file_path=grid_file_path,
-            vertical_grid_config=config.vertical_grid,
-            allocator=model_backends.get_allocator(backend),
-            process_props=rank_roles.process_props,
-        )
-        _, icon4py_driver = driver.run_driver(
-            config=config,
-            grid_manager=grid_manager,
-            backend=backend,
-            rank_roles=rank_roles,
-        )
-        assert icon4py_driver.config.io is not None
-        output_path = icon4py_driver.config.io.output_path
+    # as in ``main``: a rank failing in its role aborts the run, since the ranks of the
+    # other role would wait for it until the job's time limit
+    with rank_roles.abort_on_failure():
+        if rank_roles.is_io_rank:
+            driver_io.run_io_server(
+                config=config, grid_file_path=grid_file_path, rank_roles=rank_roles
+            )
+        else:
+            grid_manager = driver_utils.create_grid_manager(
+                grid_file_path=grid_file_path,
+                vertical_grid_config=config.vertical_grid,
+                allocator=model_backends.get_allocator(backend),
+                process_props=rank_roles.process_props,
+            )
+            _, icon4py_driver = driver.run_driver(
+                config=config,
+                grid_manager=grid_manager,
+                backend=backend,
+                rank_roles=rank_roles,
+            )
+            assert icon4py_driver.config.io is not None
+            output_path = icon4py_driver.config.io.output_path
 
     # the IO ranks must have finished writing before the root rank reads the stores
     process_props.comm.Barrier()
