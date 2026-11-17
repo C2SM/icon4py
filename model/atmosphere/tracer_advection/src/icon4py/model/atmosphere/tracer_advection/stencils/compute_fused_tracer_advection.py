@@ -140,7 +140,7 @@ def _compute_ppm4gpu_flux(
     l_limit = (
         _compute_vertical_parabola_limiter_condition(p_face=p_face, p_cc=p_cc)
         if itype_vlimit == 1
-        else broadcast(gtx.int32(0), (dims.CellDim, dims.KDim))
+        else broadcast(0, (dims.CellDim, dims.KDim))
     )
     z_face_up, z_face_low = _limit_vertical_parabola_semi_monotonically(
         l_limit=l_limit, p_face=p_face, p_cc=p_cc

@@ -25,7 +25,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_adv
     compute_tracer_advection_before_horizontal_limiter,
 )
 from icon4py.model.atmosphere.tracer_advection.tracer_advection import HorizontalAdvectionType
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
@@ -135,7 +135,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             rhodz_now, p_mflx_contra_v, deepatmo_divzl, deepatmo_divzu, p_dtime, True
         )
 
-        _p_mflx_tracer_v = np.zeros_like(p_mflx_contra_v)
         r_m = np.ones((grid.num_cells, grid.num_levels), dtype=rhodz_now.dtype)
         p_mflx_tracer_h_unlimited = np.zeros(
             (grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype
@@ -143,7 +142,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         p_tracer_after_vertical = integrate_tracer_vertically_numpy(
             p_tracer_now,
             rhodz_now,
-            _p_mflx_tracer_v,
+            p_mflx_contra_v,
             deepatmo_divzl,
             deepatmo_divzu,
             rhodz_ast2,
@@ -206,8 +205,10 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
 
     @stencil_tests.input_data_fixture(
         params=[
-            gtx.int32(HorizontalAdvectionType.FIRST_ORDER_UPWIND.value),
-            gtx.int32(HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value),
+            (gtx.int32(HorizontalAdvectionType.FIRST_ORDER_UPWIND.value), gtx.int32(0)),
+            (gtx.int32(HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value), gtx.int32(0)),
+            (gtx.int32(HorizontalAdvectionType.FIRST_ORDER_UPWIND.value), gtx.int32(2)),
+            (gtx.int32(HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value), gtx.int32(2)),
         ]
     )
     def input_data(
@@ -215,6 +216,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         grid: base.Grid,
         request: pytest.FixtureRequest,
     ) -> dict:
+        ihadv_tracer, ivadv_tracer = request.param
         rhodz_now = data_alloc.random_field(dims.CellDim, dims.KDim)
         rhodz_new = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
@@ -256,8 +258,8 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             deepatmo_divzl=deepatmo_divzl,
             deepatmo_divzu=deepatmo_divzu,
             k=k,
-            ivadv_tracer=gtx.int32(0),
-            ihadv_tracer=request.param,
+            ivadv_tracer=ivadv_tracer,
+            ihadv_tracer=ihadv_tracer,
             itype_hlimit=gtx.int32(4),
             iadv_slev_jt=gtx.int32(0),
             rbf_vec_coeff_e=rbf_vec_coeff_e,
@@ -270,8 +272,8 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             lsq_pseudoinv_1=lsq_pseudoinv_1,
             lsq_pseudoinv_2=lsq_pseudoinv_2,
             geofac_div=geofac_div,
-            wp_eps=np.float64(1e-9),
-            p_dtime=np.float64(5.0),
+            wp_eps=ta.wpfloat(1e-9),
+            p_dtime=ta.wpfloat(5.0),
             do_vertical_first=True,
             start_cell_lateral_boundary_level_2=gtx.int32(0),
             end_cell_local=gtx.int32(grid.num_cells),
@@ -450,8 +452,8 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
             lsq_pseudoinv_1=lsq_pseudoinv_1,
             lsq_pseudoinv_2=lsq_pseudoinv_2,
             geofac_div=geofac_div,
-            wp_eps=np.float64(1e-9),
-            p_dtime=np.float64(5.0),
+            wp_eps=ta.wpfloat(1e-9),
+            p_dtime=ta.wpfloat(5.0),
             do_vertical_first=False,
             start_cell_lateral_boundary_level_2=gtx.int32(0),
             end_cell_local=gtx.int32(grid.num_cells),

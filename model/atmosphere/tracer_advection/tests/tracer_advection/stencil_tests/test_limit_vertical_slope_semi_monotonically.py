@@ -33,6 +33,7 @@ def limit_vertical_slope_semi_monotonically_numpy(
     return np.where(z_slope[:, 1:-1] >= 0.0, slope_l, -slope_l)
 
 
+@pytest.mark.uses_concat_where
 class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
     PROGRAM = limit_vertical_slope_semi_monotonically
     OUTPUTS = (stencil_tests.Output("z_slope", gtslice=(slice(None), slice(1, -1))),)
