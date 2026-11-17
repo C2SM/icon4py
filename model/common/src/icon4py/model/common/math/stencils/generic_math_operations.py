@@ -19,7 +19,7 @@ from icon4py.model.common.math.operators import (
 )
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_difference_on_cell_k(
     field_a: fa.CellKField[ta.wpfloat],
     field_b: fa.CellKField[ta.vpfloat],
@@ -40,7 +40,7 @@ def compute_difference_on_cell_k(
     )
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_field_a_plus_coeff_times_field_b_on_cell_k(
     field_a: fa.CellKField[ta.wpfloat],
     coeff: ta.wpfloat,
@@ -63,7 +63,7 @@ def compute_field_a_plus_coeff_times_field_b_on_cell_k(
     )
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_field_a_plus_coeff_times_field_b_on_cell_khalf(
     field_a: fa.CellKHalfField[ta.wpfloat],
     coeff: ta.wpfloat,
@@ -86,7 +86,7 @@ def compute_field_a_plus_coeff_times_field_b_on_cell_khalf(
     )
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_field_a_plus_coeff_times_field_b_on_edge_k(
     field_a: fa.EdgeKField[ta.wpfloat],
     coeff: ta.wpfloat,
