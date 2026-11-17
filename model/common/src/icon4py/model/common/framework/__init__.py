@@ -67,6 +67,8 @@ class State:
         dataclasses.dataclass(frozen=True, eq=False, kw_only=True)(cls)
 
 
+# TODO(msimberg): The exclude argument should be removed and filtering should be
+# done by the caller, e.g. with `filter`.
 def fields(
     state: State,
     kind: type[quantity.Quantity] = quantity.Quantity,
