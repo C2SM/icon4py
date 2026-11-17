@@ -29,3 +29,7 @@ class State:
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
         dataclasses.dataclass(frozen=True, eq=False, kw_only=True)(cls)
+
+
+class Empty(State):
+    pass

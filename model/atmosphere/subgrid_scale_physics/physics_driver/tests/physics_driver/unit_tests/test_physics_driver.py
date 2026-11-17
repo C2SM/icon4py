@@ -334,7 +334,7 @@ class FluxOutput(state.State):
 
 
 def test_diagnose_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Grid) -> None:
-    process, recorder = recording(fw.Empty, {}, time_control(), grid)
+    process, recorder = recording(state.Empty, {}, time_control(), grid)
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
     air_mass = fw.zeros(qty.AirMassOnCellK, grid, None)
@@ -343,14 +343,14 @@ def test_diagnose_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Gr
 
     physics.run(driver_input, output=make_output(prognostic, tracer_state, diagnostics=diagnostics))
 
-    (state,) = recorder.states
+    (some_state,) = recorder.states
     # no copies: the prognostics and tracers as given, the diagnostics in the driver's buffers
     for name in ("vn", "w", "exner", "theta_v", "rho", "air_mass", *states.TRACERS):
         assert getattr(state, name) is getattr(driver_input, name), name
     for name, field_ in fw.fields(diagnostics).items():
         assert getattr(state, name) is field_, name
     # without a surface process the fluxes are absent
-    assert state.sensible_heat_flux is None
+    assert some_state.sensible_heat_flux is None
 
 
 def test_run_rejects_a_tendency_of_no_advanced_field(grid: base_grid.Grid) -> None:
@@ -383,10 +383,10 @@ def test_run_syncs_the_halos_at_entry_the_wind_sums_and_what_it_wrote(
 
     # identity, not equality: the syncs must target the very buffers that were read and written,
     # and the wind sums before they are projected onto vn
-    (state,) = recorder.states
+    (some_state,) = recorder.states
     sums = physics.accumulators
     assert exchange.events == [
-        (dims.CellDim, [id(prognostic.rho), id(state.u), id(state.v), id(prognostic.w)]),
+        (dims.CellDim, [id(prognostic.rho), id(some_state.u), id(some_state.v), id(prognostic.w)]),
         (dims.CellDim, [id(sums[qty.TendencyOfUOnCellK]), id(sums[qty.TendencyOfVOnCellK])]),
         (
             dims.CellDim,
@@ -406,15 +406,15 @@ def test_a_process_output_is_offered_to_the_others_through_the_physics_state(
     grid: base_grid.Grid,
 ) -> None:
     provider, _ = recording(FluxOutput, {"sensible_heat_flux": 5.0}, time_control(), grid)
-    reader, recorder = recording(fw.Empty, {}, time_control(), grid)
+    reader, recorder = recording(state.Empty, {}, time_control(), grid)
     physics = driver(grid, [provider, reader])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
 
     physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
 
-    (state,) = recorder.states
-    assert state.sensible_heat_flux is physics._process_outputs[provider].sensible_heat_flux
-    np.testing.assert_array_equal(state.sensible_heat_flux.asnumpy(), 5.0)
+    (some_state,) = recorder.states
+    assert some_state.sensible_heat_flux is physics._process_outputs[provider].sensible_heat_flux
+    np.testing.assert_array_equal(some_state.sensible_heat_flux.asnumpy(), 5.0)
 
 
 def test_a_second_provider_of_a_physics_state_leaf_is_rejected(grid: base_grid.Grid) -> None:
@@ -436,8 +436,8 @@ def test_diagnostic_fields_are_keyed_by_standard_name_and_skip_the_tendencies(
     assert field_ is physics._process_outputs[process].sensible_heat_flux
 
 
-def _empty(state: physics_state.PhysicsState) -> fw.Empty:
-    return fw.Empty()
+def _empty(_: physics_state.PhysicsState) -> state.Empty:
+    return state.Empty()
 
 
 def static_checks() -> None:

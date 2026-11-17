@@ -134,10 +134,6 @@ def leaf_quantities(cls: type[state.State]) -> dict[str, type[quantity.Quantity]
     return {name: quantity_ for name, quantity_, _ in _declarations(cls)}  # type: ignore[arg-type]
 
 
-class Empty(state.State):
-    pass
-
-
 def allocate[S: state.State](
     cls: type[S],
     grid: base_grid.Grid,
