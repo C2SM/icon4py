@@ -54,7 +54,7 @@ echo "GT4PY_BUILD_CACHE_DIR: ${GT4PY_BUILD_CACHE_DIR}"
 
 export NSYS_OUTPUT_FILENAME="${GT4PY_BUILD_CACHE_DIR}"
 
-# nsys profile --trace=nvtx,cuda,mpi --mpi-impl=mpich  --sample=none --force-overwrite=true -o NSYS_OUTPUT_FILENAME \
+# nsys profile --trace=nvtx,cuda,mpi --mpi-impl=mpich  --sample=none --force-overwrite=true -o $NSYS_OUTPUT_FILENAME \
 python3 -m pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
