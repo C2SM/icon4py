@@ -139,11 +139,10 @@ class GridManager:
         geometry_type: icon.GeometryType,
     ) -> CoordinateDict:
         # global_index() returns CuPy on GPU backends; the reader expects numpy.
-        cell_indices_arr = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
-        edge_indices_arr = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
-        vertex_indices_arr = data_alloc.as_numpy(
-            self._decomposition_info.global_index(dims.VertexDim)
-        )
+        cell_indices_arr = self._decomposition_info.global_index(dims.CellDim)
+        edge_indices_arr = self._decomposition_info.global_index(dims.EdgeDim)
+        vertex_indices_arr = self._decomposition_info.global_index(dims.VertexDim)
+
         coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -254,11 +253,10 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
-        cell_indices_arr = data_alloc.as_numpy(self._decomposition_info.global_index(dims.CellDim))
-        edge_indices_arr = data_alloc.as_numpy(self._decomposition_info.global_index(dims.EdgeDim))
-        vertex_indices_arr = data_alloc.as_numpy(
-            self._decomposition_info.global_index(dims.VertexDim)
-        )
+        cell_indices_arr = self._decomposition_info.global_index(dims.CellDim)
+        edge_indices_arr = self._decomposition_info.global_index(dims.EdgeDim)
+        vertex_indices_arr = self._decomposition_info.global_index(dims.VertexDim)
+
         vertex_to_edge = self._get_index_field(
             gridfile.ConnectivityName.V2E, indices=vertex_indices_arr
         )
@@ -363,7 +361,7 @@ class GridManager:
                 (dim,),
                 self._reader.int_variable(
                     name,
-                    indices=data_alloc.as_numpy(self._decomposition_info.global_index(dim)),
+                    indices=self._decomposition_info.global_index(dim),
                     transpose=False,
                     apply_offset=False,
                 ),
@@ -509,7 +507,7 @@ class GridManager:
             return {
                 k: halo.global_to_local(
                     self._decomposition_info.global_index(k.source),
-                    v[data_alloc.as_numpy(self._decomposition_info.global_index(k.target[0]))],
+                    v[self._decomposition_info.global_index(k.target[0])],
                 )
                 for k, v in neighbor_tables_global.items()
             }
