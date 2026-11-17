@@ -170,14 +170,18 @@ def is_placed_with_owned(
     halo = halo_levels != decomposition.DecompositionFlag.OWNED
     match dim:
         case dims.CellDim:
+            # Following ICON (mo_setup_subdivision.f90, refine_cells_atm):
+            # refin 1 cells are kept at any halo level; refin 2 only at halo level 1.
             kept = (halo & (refinement_ctrl == 1)) | (first & (refinement_ctrl == 2))
         case dims.EdgeDim:
-            # Following ICON (mo_setup_subdivision.f90, refine_edges): refin 1-4 edges are kept
-            # at any halo level; refin 5-6 and negative only at halo level 1.
+            # Following ICON (mo_setup_subdivision.f90, refine_edges):
+            # refin 1-4 edges are kept at any halo level; refin 5-6 and negative only at halo level 1.
             kept = (halo & ((refinement_ctrl >= 1) & (refinement_ctrl <= 4))) | (
                 first & ((refinement_ctrl == 5) | (refinement_ctrl == 6) | (refinement_ctrl < 0))
             )
         case dims.VertexDim:
+            # Following ICON (mo_setup_subdivision.f90, refine_verts_atm):
+            # refin 1 vertices are kept at any halo level; refin 2 and negative only at halo level 1.
             kept = (halo & (refinement_ctrl == 1)) | (
                 first & ((refinement_ctrl == 2) | (refinement_ctrl < 0))
             )

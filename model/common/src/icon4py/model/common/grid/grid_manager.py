@@ -35,7 +35,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 _log = logging.getLogger(__name__)
 _single_node_decomposer = decomp.SingleNodeDecomposer()
 _fortran_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
-_refinement_control_dims = {
+_refinement_control_dims_to_names = {
     dims.CellDim: gridfile.GridRefinementName.CONTROL_CELLS,
     dims.EdgeDim: gridfile.GridRefinementName.CONTROL_EDGES,
     dims.VertexDim: gridfile.GridRefinementName.CONTROL_VERTICES,
@@ -369,7 +369,7 @@ class GridManager:
                 ),
                 allocator=allocator,
             )
-            for dim, name in _refinement_control_dims.items()
+            for dim, name in _refinement_control_dims_to_names.items()
         }
         return refinement_control_fields
 
@@ -436,7 +436,7 @@ class GridManager:
         # HALO CONSTRUCTION
         refinement_control = {
             dim: xp.asarray(self._reader.int_variable(name, transpose=False, apply_offset=False))
-            for dim, name in _refinement_control_dims.items()
+            for dim, name in _refinement_control_dims_to_names.items()
         }
         halo_constructor = halo.get_halo_constructor(
             process_props=process_props,
