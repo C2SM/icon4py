@@ -107,13 +107,13 @@ def _compute_courant_number_above(
         dims.KHalfDim >= slevp1_ti + 1, p_cellmass_now(dims.KHalfDim - 0.5), wpfloat(0.0)
     )
     p_cellmass_m1 = concat_where(
-        dims.KHalfDim >= slevp1_ti + 2, p_cellmass_now(dims.KHalfDim - 1.5), wpfloat(0.0)
+        dims.KHalfDim >= slevp1_ti + 1, p_cellmass_now(dims.KHalfDim - 1.5), wpfloat(0.0)
     )
     p_cellmass_m2 = concat_where(
-        dims.KHalfDim >= slevp1_ti + 3, p_cellmass_now(dims.KHalfDim - 2.5), wpfloat(0.0)
+        dims.KHalfDim >= slevp1_ti + 2, p_cellmass_now(dims.KHalfDim - 2.5), wpfloat(0.0)
     )
     p_cellmass_m3 = concat_where(
-        dims.KHalfDim >= slevp1_ti + 4, p_cellmass_now(dims.KHalfDim - 3.5), wpfloat(0.0)
+        dims.KHalfDim >= slevp1_ti + 3, p_cellmass_now(dims.KHalfDim - 3.5), wpfloat(0.0)
     )
     p_cellmass_m4 = concat_where(
         dims.KHalfDim >= slevp1_ti + 4, p_cellmass_now(dims.KHalfDim - 4.5), wpfloat(0.0)
