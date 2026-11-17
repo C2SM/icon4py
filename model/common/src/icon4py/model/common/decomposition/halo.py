@@ -62,17 +62,18 @@ class IconLikeHaloConstructor(HaloConstructor):
         self,
         process_props: defs.ProcessProperties,
         connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
+        refinement_control: dict[gtx.Dimension, data_alloc.NDArray],
         allocator: gtx_typing.Allocator | None = None,
-        refinement_control: dict[gtx.Dimension, data_alloc.NDArray] | None = None,
     ):
         """
 
         Args:
             process_props: contains information on the communicator and local compute node.
             connectivities: connectivity arrays needed to construct the halos
+            refinement_control: raw `refin_ctl` values of the full grid. Used by
+                is_placed_with_owned to decide which halo points to keep in the
+                owned block. Pass zeros for all dimensions on non-LAM grids.
             allocator: GT4Py buffer allocator
-            refinement_control: raw `refin_ctl` values of the full grid, needed for limited area
-                grids. Without it all points are treated as interior points.
         """
         self._xp = data_alloc.import_array_ns(allocator)
         self._process_props = process_props
@@ -255,11 +256,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         assert (halo_levels[third_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value).all()
         halo_levels[third_halo_level_mask] = defs.DecompositionFlag.THIRD_HALO_LEVEL
 
-        refinement = (
-            self._refinement_control[dim][all_indices]
-            if self._refinement_control is not None
-            else self._xp.zeros_like(all_indices)
-        )
+        refinement = self._refinement_control[dim][all_indices]
         with_owned = grid_refinement.is_placed_with_owned(dim, halo_levels, refinement)
         front = self._xp.nonzero(with_owned)[0]
         order = self._xp.concatenate(
@@ -500,8 +497,8 @@ def get_halo_constructor(
     process_props: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
     connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
-    allocator: gtx_typing.Allocator | None,
-    refinement_control: dict[gtx.Dimension, data_alloc.NDArray] | None = None,
+    refinement_control: dict[gtx.Dimension, data_alloc.NDArray],
+    allocator: gtx_typing.Allocator | None = None,
 ) -> HaloConstructor:
     """
     Factory method to create the halo constructor.
@@ -511,10 +508,11 @@ def get_halo_constructor(
     parameter
     Args:
         process_props:
-        full_grid_size
-        allocator:
+        full_grid_size:
         connectivities:
-        refinement_control: raw `refin_ctl` values of the full grid
+        refinement_control: raw `refin_ctl` values of the full grid. Pass zeros
+            for all dimensions on non-LAM grids.
+        allocator:
 
     Returns: a HaloConstructor suitable for the process_props
 
@@ -528,8 +526,8 @@ def get_halo_constructor(
     return IconLikeHaloConstructor(
         process_props=process_props,
         connectivities=connectivities,
-        allocator=allocator,
         refinement_control=refinement_control,
+        allocator=allocator,
     )
 
 

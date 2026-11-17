@@ -138,10 +138,9 @@ class GridManager:
         allocator: gtx_typing.Allocator,
         geometry_type: icon.GeometryType,
     ) -> CoordinateDict:
-        # global_index() returns CuPy on GPU backends; the reader expects numpy.
-        cell_indices_arr = self._decomposition_info.global_index(dims.CellDim)
-        edge_indices_arr = self._decomposition_info.global_index(dims.EdgeDim)
-        vertex_indices_arr = self._decomposition_info.global_index(dims.VertexDim)
+        local_cell_indices = self._decomposition_info.global_index(dims.CellDim)
+        local_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
+        local_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
 
         coordinates = {
             dims.CellDim: {
@@ -149,7 +148,7 @@ class GridManager:
                     (dims.CellDim,),
                     self._reader.variable(
                         gridfile.CoordinateName.CELL_LATITUDE,
-                        indices=cell_indices_arr,
+                        indices=local_cell_indices,
                     ),
                     allocator=allocator,
                 ),
@@ -157,7 +156,7 @@ class GridManager:
                     (dims.CellDim,),
                     self._reader.variable(
                         gridfile.CoordinateName.CELL_LONGITUDE,
-                        indices=cell_indices_arr,
+                        indices=local_cell_indices,
                     ),
                     allocator=allocator,
                 ),
@@ -167,7 +166,7 @@ class GridManager:
                     (dims.EdgeDim,),
                     self._reader.variable(
                         gridfile.CoordinateName.EDGE_LATITUDE,
-                        indices=edge_indices_arr,
+                        indices=local_edge_indices,
                     ),
                     allocator=allocator,
                 ),
@@ -175,7 +174,7 @@ class GridManager:
                     (dims.EdgeDim,),
                     self._reader.variable(
                         gridfile.CoordinateName.EDGE_LONGITUDE,
-                        indices=edge_indices_arr,
+                        indices=local_edge_indices,
                     ),
                     allocator=allocator,
                 ),
@@ -185,7 +184,7 @@ class GridManager:
                     (dims.VertexDim,),
                     self._reader.variable(
                         gridfile.CoordinateName.VERTEX_LATITUDE,
-                        indices=vertex_indices_arr,
+                        indices=local_vertex_indices,
                     ),
                     allocator=allocator,
                 ),
@@ -193,7 +192,7 @@ class GridManager:
                     (dims.VertexDim,),
                     self._reader.variable(
                         gridfile.CoordinateName.VERTEX_LONGITUDE,
-                        indices=vertex_indices_arr,
+                        indices=local_vertex_indices,
                     ),
                     allocator=allocator,
                 ),
@@ -203,47 +202,53 @@ class GridManager:
         if geometry_type == icon.GeometryType.TORUS:
             coordinates[dims.CellDim]["x"] = gtx.as_field(
                 (dims.CellDim,),
-                self._reader.variable(gridfile.CoordinateName.CELL_X, indices=cell_indices_arr),
+                self._reader.variable(gridfile.CoordinateName.CELL_X, indices=local_cell_indices),
                 allocator=allocator,
             )
             coordinates[dims.CellDim]["y"] = gtx.as_field(
                 (dims.CellDim,),
-                self._reader.variable(gridfile.CoordinateName.CELL_Y, indices=cell_indices_arr),
+                self._reader.variable(gridfile.CoordinateName.CELL_Y, indices=local_cell_indices),
                 allocator=allocator,
             )
             coordinates[dims.CellDim]["z"] = gtx.as_field(
                 (dims.CellDim,),
-                self._reader.variable(gridfile.CoordinateName.CELL_Z, indices=cell_indices_arr),
+                self._reader.variable(gridfile.CoordinateName.CELL_Z, indices=local_cell_indices),
                 allocator=allocator,
             )
             coordinates[dims.EdgeDim]["x"] = gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.CoordinateName.EDGE_X, indices=edge_indices_arr),
+                self._reader.variable(gridfile.CoordinateName.EDGE_X, indices=local_edge_indices),
                 allocator=allocator,
             )
             coordinates[dims.EdgeDim]["y"] = gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.CoordinateName.EDGE_Y, indices=edge_indices_arr),
+                self._reader.variable(gridfile.CoordinateName.EDGE_Y, indices=local_edge_indices),
                 allocator=allocator,
             )
             coordinates[dims.EdgeDim]["z"] = gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.CoordinateName.EDGE_Z, indices=edge_indices_arr),
+                self._reader.variable(gridfile.CoordinateName.EDGE_Z, indices=local_edge_indices),
                 allocator=allocator,
             )
             coordinates[dims.VertexDim]["x"] = gtx.as_field(
                 (dims.VertexDim,),
-                self._reader.variable(gridfile.CoordinateName.VERTEX_X, indices=vertex_indices_arr),
+                self._reader.variable(
+                    gridfile.CoordinateName.VERTEX_X, indices=local_vertex_indices
+                ),
                 allocator=allocator,
             )
             coordinates[dims.VertexDim]["y"] = gtx.as_field(
                 (dims.VertexDim,),
-                self._reader.variable(gridfile.CoordinateName.VERTEX_Y, indices=vertex_indices_arr),
+                self._reader.variable(
+                    gridfile.CoordinateName.VERTEX_Y, indices=local_vertex_indices
+                ),
                 allocator=allocator,
             )
             coordinates[dims.VertexDim]["z"] = gtx.as_field(
                 (dims.VertexDim,),
-                self._reader.variable(gridfile.CoordinateName.VERTEX_Z, indices=vertex_indices_arr),
+                self._reader.variable(
+                    gridfile.CoordinateName.VERTEX_Z, indices=local_vertex_indices
+                ),
                 allocator=allocator,
             )
 
@@ -253,12 +258,12 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
-        cell_indices_arr = self._decomposition_info.global_index(dims.CellDim)
-        edge_indices_arr = self._decomposition_info.global_index(dims.EdgeDim)
-        vertex_indices_arr = self._decomposition_info.global_index(dims.VertexDim)
+        local_cell_indices = self._decomposition_info.global_index(dims.CellDim)
+        local_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
+        local_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
 
         vertex_to_edge = self._get_index_field(
-            gridfile.ConnectivityName.V2E, indices=vertex_indices_arr
+            gridfile.ConnectivityName.V2E, indices=local_vertex_indices
         )
         vertex_edge_orientation = np.where(
             vertex_to_edge != gridfile.GridFile.INVALID_INDEX,
@@ -266,7 +271,7 @@ class GridManager:
                 gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
                 transpose=True,
                 apply_offset=False,
-                indices=vertex_indices_arr,
+                indices=local_vertex_indices,
             ),
             0,
         )
@@ -275,24 +280,28 @@ class GridManager:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
             gridfile.GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,),
-                self._reader.variable(gridfile.GeometryName.CELL_AREA, indices=cell_indices_arr),
+                self._reader.variable(gridfile.GeometryName.CELL_AREA, indices=local_cell_indices),
                 allocator=allocator,
             ),
             # TODO(halungge): easily computed from a neighbor_sum V2C over the cell areas?
             gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
                 (dims.VertexDim,),
-                self._reader.variable(gridfile.GeometryName.DUAL_AREA, indices=vertex_indices_arr),
+                self._reader.variable(
+                    gridfile.GeometryName.DUAL_AREA, indices=local_vertex_indices
+                ),
                 allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_LENGTH.value: gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.EDGE_LENGTH, indices=edge_indices_arr),
+                self._reader.variable(
+                    gridfile.GeometryName.EDGE_LENGTH, indices=local_edge_indices
+                ),
                 allocator=allocator,
             ),
             gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(
-                    gridfile.GeometryName.DUAL_EDGE_LENGTH, indices=edge_indices_arr
+                    gridfile.GeometryName.DUAL_EDGE_LENGTH, indices=local_edge_indices
                 ),
                 allocator=allocator,
             ),
@@ -302,7 +311,7 @@ class GridManager:
                     self._reader.variable(
                         gridfile.GeometryName.EDGE_CELL_DISTANCE,
                         transpose=True,
-                        indices=edge_indices_arr,
+                        indices=local_edge_indices,
                     ),
                     nan=0.0,
                 ),
@@ -313,7 +322,7 @@ class GridManager:
                 self._reader.variable(
                     gridfile.GeometryName.EDGE_VERTEX_DISTANCE,
                     transpose=True,
-                    indices=edge_indices_arr,
+                    indices=local_edge_indices,
                 ),
                 allocator=allocator,
             ),
@@ -321,7 +330,7 @@ class GridManager:
             gridfile.GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(
-                    gridfile.GeometryName.TANGENT_ORIENTATION, indices=edge_indices_arr
+                    gridfile.GeometryName.TANGENT_ORIENTATION, indices=local_edge_indices
                 ),
                 allocator=allocator,
             ),
@@ -330,7 +339,7 @@ class GridManager:
                 self._reader.variable(
                     gridfile.GeometryName.CELL_NORMAL_ORIENTATION,
                     transpose=True,
-                    indices=cell_indices_arr,
+                    indices=local_cell_indices,
                 ),
                 allocator=allocator,
             ),
@@ -346,10 +355,12 @@ class GridManager:
         allocator: gtx_typing.Allocator,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
-        Reads the refinement control fields from the grid file.
+        Reads the local refinement control fields from the grid file as GT4Py fields.
 
-        Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
-        see [grid_refinement.py](grid_refinement.py)
+        These are indexed by the local global_index for each dimension and are
+        used after halo construction for domain bound computation. See also
+        _read_global_refinement_control for the full-grid raw arrays needed
+        before halo construction.
 
         Args:
             allocator: Allocator to use for reading the fields.
@@ -370,6 +381,28 @@ class GridManager:
             for dim, name in _refinement_control_dims_to_names.items()
         }
         return refinement_control_fields
+
+    def _read_global_refinement_control(self, array_ns) -> dict[gtx.Dimension, data_alloc.NDArray]:
+        """
+        Reads the full-grid raw refinement control arrays from the grid file.
+
+        Unlike _read_grid_refinement_fields, this reads the entire (non-distributed)
+        arrays without index selection, and returns raw ndarrays rather than GT4Py
+        fields. These are needed before halo construction so the halo constructor
+        can use them to decide which halo points to keep in the owned block
+        (is_placed_with_owned).
+
+        Args:
+            array_ns: array namespace (numpy or cupy) to use for array creation.
+        Returns:
+            dict[gtx.Dimension, NDArray]: full-grid refinement control arrays for each dimension.
+        """
+        return {
+            dim: array_ns.asarray(
+                self._reader.int_variable(name, transpose=False, apply_offset=False)
+            )
+            for dim, name in _refinement_control_dims_to_names.items()
+        }
 
     @property
     def file_path(self) -> str:
@@ -432,16 +465,13 @@ class GridManager:
         cells_to_rank_mapping = decomposer(cell_to_cell_neighbors, process_props.comm_size)
 
         # HALO CONSTRUCTION
-        refinement_control = {
-            dim: xp.asarray(self._reader.int_variable(name, transpose=False, apply_offset=False))
-            for dim, name in _refinement_control_dims_to_names.items()
-        }
+        global_refinement_control = self._read_global_refinement_control(xp)
         halo_constructor = halo.get_halo_constructor(
             process_props=process_props,
             full_grid_size=global_size,
             connectivities=global_neighbor_tables,
+            refinement_control=global_refinement_control,
             allocator=allocator,
-            refinement_control=refinement_control,
         )
 
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
@@ -466,7 +496,7 @@ class GridManager:
                 & refinement.is_placed_with_owned(
                     dims.EdgeDim,
                     self._decomposition_info.halo_levels(dims.EdgeDim),
-                    refinement_control[dims.EdgeDim][edges],
+                    global_refinement_control[dims.EdgeDim][edges],
                 )[:, None]
             )
             neighbor_tables[dims.E2C] = xp.where(patched, e2c[:, ::-1], e2c)

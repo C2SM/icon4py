@@ -122,9 +122,7 @@ def _run_driver_compare_single_multi_rank(
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
-    if process_props.rank == 0:
-        dt_utils.download_experiment(experiment_description, single_rank_process_props)
-    process_props.comm.Barrier()
+    dt_utils.download_experiment(experiment_description, single_rank_process_props)
 
     single_rank_config_path = dt_utils.get_path_for_experiment(
         experiment_description, single_rank_process_props
