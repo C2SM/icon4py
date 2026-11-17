@@ -6,20 +6,23 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests of the SurfaceComponent wrapper: the component contract, not the physics."""
+"""Tests of the typed surface component: the component contract, not the physics."""
 
 import datetime
+from typing import Any
 
 import numpy as np
+import pytest
 
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
     component as surface_component,
     config as surface_config,
-    data as surface_data,
+    surface_states,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import simple
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common import framework as fw
+from icon4py.model.common.grid import base as base_grid
+from icon4py.model.testing import component_tests
 
 
 _CONFIG = surface_config.SurfaceConfig(
@@ -28,39 +31,59 @@ _CONFIG = surface_config.SurfaceConfig(
     kinematic_latent_heat_flux=0.0,
     sea_surface_temperature=303.15,
 )
-_TIME = datetime.datetime(2008, 9, 1, tzinfo=datetime.UTC)
 
 
-def _inputs(grid):
-    return {
-        "surface_pressure": data_alloc.constant_field(grid, 1.0e5, dims.CellDim),
-        "temperature": data_alloc.constant_field(grid, 300.0, dims.CellDim),
-    }
+class TestSurface(component_tests.ComponentTest, component_tests.CollectInputTest):
+    collect_input = staticmethod(surface_component.collect_input)
 
+    @pytest.fixture
+    def component(self, grid: base_grid.Grid) -> surface_component.Surface:
+        return surface_component.Surface(grid=grid, config=_CONFIG)
 
-def test_call_returns_the_declared_outputs_from_its_own_buffers():
-    grid = simple.simple_grid()
-    component = surface_component.SurfaceComponent(grid=grid, config=_CONFIG)
+    @pytest.fixture
+    def state(self, grid: base_grid.Grid) -> physics_state.PhysicsState:
+        return fw.allocate(
+            physics_state.PhysicsState, grid, None, step_start=datetime.datetime(2008, 9, 1)
+        )
 
-    outputs = component(_inputs(grid), _TIME)
+    def test_run_writes_the_fluxes_and_the_surface_temperature(
+        self,
+        component: surface_component.Surface,
+        grid: base_grid.Grid,
+        output: surface_component.Surface.Output,
+    ) -> None:
+        values = {"pressure_ifc": 1.0e5, "temperature": 300.0}
+        input = fw.allocate(
+            surface_component.Surface.Input, grid, None, fill=lambda name, _: values[name]
+        )
 
-    assert set(outputs) == set(surface_data.OUTPUTS_PROPERTIES)
-    assert np.all(outputs["sensible_heat_flux"].asnumpy() != 0.0)
-    assert np.all(outputs["surface_temperature"].asnumpy() == 303.15)
+        component.run(input, output)
 
+        assert np.all(output.sensible_heat_flux.asnumpy() != 0.0)
+        assert np.all(output.surface_temperature.asnumpy() == 303.15)
 
-def test_bound_buffers_are_written_in_place():
-    grid = simple.simple_grid()
-    component = surface_component.SurfaceComponent(grid=grid, config=_CONFIG)
-    buffers = {
-        name: data_alloc.zero_field(grid, dims.CellDim) for name in surface_data.OUTPUTS_PROPERTIES
-    }
-    component.bind_output_buffers(buffers)
-    # the constant surface temperature is filled at binding time
-    assert np.all(buffers["surface_temperature"].asnumpy() == 303.15)
+    def test_run_hands_the_scheme_views_of_the_lowest_levels(
+        self,
+        grid: base_grid.Grid,
+        input: surface_component.Surface.Input,
+        output: surface_component.Surface.Output,
+    ) -> None:
+        seen: list[surface_states.SurfaceInputState] = []
 
-    outputs = component(_inputs(grid), _TIME)
+        def compute(*, input_state: surface_states.SurfaceInputState, **_: Any) -> None:
+            seen.append(input_state)
 
-    for name, buffer in buffers.items():
-        assert outputs[name] is buffer
-    assert np.all(buffers["sensible_heat_flux"].asnumpy() != 0.0)
+        component = surface_component.Surface(grid=grid, config=_CONFIG, compute=compute)
+
+        component.run(input, output)
+
+        (scheme_input,) = seen
+        np.testing.assert_array_equal(
+            scheme_input.surface_pressure.asnumpy(),
+            input.pressure_ifc.asnumpy()[:, grid.num_levels],
+        )
+        np.testing.assert_array_equal(
+            scheme_input.temperature.asnumpy(), input.temperature.asnumpy()[:, grid.num_levels - 1]
+        )
+        assert np.shares_memory(scheme_input.surface_pressure.ndarray, input.pressure_ifc.ndarray)
+        assert np.shares_memory(scheme_input.temperature.ndarray, input.temperature.ndarray)

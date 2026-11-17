@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 from gt4py.next import typing as gtx_typing
 
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
+from icon4py.model.atmosphere.dycore import solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import (
@@ -22,7 +22,6 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox, test_utils
 
 from .. import utils
@@ -103,16 +102,15 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = savepoint_nonhydro_init.dtime()
     prepare_fluxes_for_advection = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=savepoint_nonhydro_init.vn_traj(),
-        mass_flx_me=savepoint_nonhydro_init.mass_flx_me(),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=savepoint_nonhydro_init.mass_flx_ic(),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
-        ),
+    prep_adv = utils.construct_prep_advection_state_from_savepoint(
+        savepoint_nonhydro_init, icon_grid, backend
     )
-
-    diagnostic_state_nh = utils.construct_diagnostics(savepoint_nonhydro_init, icon_grid, backend)
+    forcing = utils.construct_forcing_state_from_savepoint(
+        savepoint_nonhydro_init, icon_grid, backend
+    )
+    diagnostic_state_nh = utils.construct_dycore_diagnostic_state_from_savepoint(
+        savepoint_nonhydro_init
+    )
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
@@ -121,7 +119,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    prognostic_states = utils.create_prognostic_states(savepoint_nonhydro_init)
+    prognostic_states = utils.construct_prognostic_states_from_savepoint(savepoint_nonhydro_init)
 
     exchange = definitions.create_exchange(process_props, decomposition_info)
 
@@ -144,19 +142,21 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         f"rank={process_props.rank}/{process_props.comm_size}:  entering : solve_nonhydro.time_step"
     )
 
-    solve_nonhydro.time_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        prep_adv=prep_adv,
-        second_order_divdamp_factor=second_order_divdamp_factor,
-        dtime=dtime,
-        ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
-        at_initial_timestep=at_initial_timestep,
-        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
-        at_first_substep=(substep_init == 1),
-        at_last_substep=(substep_init == experiment.config.driver.ndyn_substeps),
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
+    solve_nonhydro.run(
+        utils.dycore_input(
+            prognostic_states.current,
+            forcing,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            dtime=dtime,
+            ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
+            at_initial_timestep=at_initial_timestep,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
+            at_first_substep=(substep_init == 1),
+            at_last_substep=(substep_init == experiment.config.driver.ndyn_substeps),
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
+        ),
+        utils.dycore_output(prognostic_states.next, prep_adv, diagnostic_state_nh),
     )
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: dycore step run ")
 

@@ -11,19 +11,12 @@ from __future__ import annotations
 import dataclasses
 import enum
 import logging
-from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.config import config_io
-from icon4py.model.common.utils import data_allocation as data_alloc
 
-
-if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.common.grid import base as grid_base
 
 log = logging.getLogger(__name__)
 
@@ -215,50 +208,3 @@ class MetricStateNonHydro:
     coeff1_dwdz: fa.CellKField[ta.vpfloat]
     coeff2_dwdz: fa.CellKField[ta.vpfloat]
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat]
-
-
-@dataclasses.dataclass
-class PrepAdvection:
-    """Dataclass used in SolveNonHydro that pre-calculates fields during the dynamical substepping that are later needed in tracer advection."""
-
-    vn_traj: fa.EdgeKField[ta.wpfloat]
-    mass_flx_me: fa.EdgeKField[ta.wpfloat]
-    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat]
-    """
-    Declared as mass_flx_ic in ICON.
-    """
-    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat]
-    """
-    Declared as vol_flx_ic in ICON.
-    """
-
-
-def initialize_prep_advection(
-    grid: grid_base.Grid, allocator: gtx_typing.Allocator
-) -> PrepAdvection:
-    vn_traj = data_alloc.zero_field(
-        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-    )
-    mass_flx_me = data_alloc.zero_field(
-        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-    )
-    dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KHalfDim,
-        allocator=allocator,
-        dtype=ta.wpfloat,
-    )
-    dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KHalfDim,
-        allocator=allocator,
-        dtype=ta.wpfloat,
-    )
-    return PrepAdvection(
-        vn_traj=vn_traj,
-        mass_flx_me=mass_flx_me,
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
-    )

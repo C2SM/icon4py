@@ -12,7 +12,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends, type_alias as ta
+from icon4py.model.common import framework as fw, model_backends, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import (
@@ -237,9 +237,9 @@ def test_driver(
             "theta_v": savepoint_time_step_exit.theta_v(),
         }
 
-    for tracer in ds.tracers.current.active_fields():
-        computed[tracer.name] = tracer.field
-        references[tracer.name] = getattr(savepoint_time_step_exit, tracer.name)()
+    for name, tracer in fw.fields(ds.tracers.current).items():
+        computed[name] = tracer
+        references[name] = getattr(savepoint_time_step_exit, name)()
 
     tolerances = _TOLERANCES[experiment_description]
 

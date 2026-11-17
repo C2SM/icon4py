@@ -82,7 +82,7 @@ class OutputDistribution(Protocol):
         """Assemble the state to write on this rank (None if this rank does not write).
 
         Expects every field with its horizontal (cell/edge/vertex) dimension *first*,
-        as the model state is assembled (``io.utils.to_data_array``): the owner masks
+        as ``io.utils.to_data_array`` builds it: the owner masks
         are applied along the leading axis. The writers reorder to the CF/COARDS
         horizontal-last layout afterwards (``writers.canonicalize_time_slice``);
         this method never receives canonicalized fields.

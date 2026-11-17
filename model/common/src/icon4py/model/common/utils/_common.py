@@ -220,13 +220,13 @@ class Pair[T]:  # noqa: PLW1641 [eq-without-hash]
 
 
 class PredictorCorrectorPair(Pair[T]):
-    predictor = Pair.first
-    corrector = Pair.second
+    predictor: T = Pair.first  # type: ignore[assignment]  # a named_property accessor typed as its value
+    corrector: T = Pair.second  # type: ignore[assignment]
 
 
 class TimeStepPair(Pair[T]):
-    current: named_property = Pair.frozen_first
-    next: named_property = Pair.frozen_second
+    current: T = Pair.frozen_first  # type: ignore[assignment]  # a named_property accessor typed as its value
+    next: T = Pair.frozen_second  # type: ignore[assignment]
 
 
 def chainable[T, **P](

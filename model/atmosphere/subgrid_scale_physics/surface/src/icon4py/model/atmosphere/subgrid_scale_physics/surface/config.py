@@ -54,6 +54,7 @@ class SurfaceConfig:
         ),
     ] = 0.0
 
+    # TODO (jcanton, yiluchen1066): make this shared with the initial condition jw_temp0 for consistency
     sea_surface_temperature: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
