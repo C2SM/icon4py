@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import functools
+import os
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
@@ -335,8 +336,13 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         prepare_fluxes_for_advection=prepare_fluxes_for_advection,
     )
 
-    benchmark(
+    # `setup` runs untimed before every round: the first call waits for all pending
+    # compilations, including variants first triggered by a warmup round.
+    benchmark.pedantic(
         solve_nonhydro_timestep_variants,
-        at_first_substep=at_first_substep,
-        at_last_substep=at_last_substep,
+        kwargs={"at_first_substep": at_first_substep, "at_last_substep": at_last_substep},
+        setup=gtx.wait_for_compilation,
+        rounds=int(os.getenv("ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS", "3")),
+        warmup_rounds=int(os.getenv("ICON4PY_STENCIL_TEST_WARMUP_ROUNDS", "1")),
+        iterations=1,
     )
