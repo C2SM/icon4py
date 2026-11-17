@@ -172,7 +172,10 @@ shared netCDF file, which the installed `netCDF4` package must support:
 Instead of writing themselves, the ranks running the model can ship their output to
 dedicated IO ranks (`io_servers`): the run's communicator is split
 (`io_ranks.split_io_ranks`) into compute ranks and IO ranks, and the two roles talk
-through an inter-communicator. The launcher provides the tasks of both roles; the
+through an inter-communicator. A program gets the roles of its ranks from
+`io_ranks.create_rank_roles`, whether or not the run dedicates ranks to output
+(`io_ranks.RankRoles`: this rank's role, the communicator the role works on, and what
+to do when the rank fails). The launcher provides the tasks of both roles; the
 `IOConfig` says which of them write (`io_ranks.assign_io_ranks`):
 
 - `IORanksPerNode(count=k)`: on every node the last `k` ranks. The nodes
@@ -196,9 +199,9 @@ through an inter-communicator. The launcher provides the tasks of both roles; th
 The IO ranks are taken from the tasks the launcher provides, whatever their number, so a
 launch that does not match the configuration still runs: one IO rank more than surplus
 tasks takes a compute rank from some node, whose accelerator then idles. The layout is
-therefore reported (`io_ranks.log_layout`, called by the driver at startup): the compute
-and IO ranks of every node, e.g. `4+1 (x2), 4+0 (x8)`, and a warning when the nodes hold
-unequal numbers of compute ranks.
+therefore reported (`RankRoles.report_layout`, called by the driver at startup): the
+compute and IO ranks of every node, e.g. `4+1 (x2), 4+0 (x8)`, and a warning when the
+nodes hold unequal numbers of compute ranks.
 
 - The compute ranks use an `IOClient` as their output monitor; it offers the interface
   of the `IOMonitor` (`store`, `variables_at_capture_time`, `close`, see
@@ -221,8 +224,8 @@ unequal numbers of compute ranks.
   vertical grid and the grid file (for the UGRID topology).
 - Failure envelope: neither role can observe the other's failure (an IO rank waits for
   its compute ranks, compute ranks wait at the in-flight bound for their IO rank), so a
-  program using dedicated IO ranks must abort the run when any rank fails; the driver's
-  `main` does.
+  program using dedicated IO ranks must abort the run when any rank fails:
+  `RankRoles.abort_on_failure` does, and the driver's `main` runs inside it.
 
 ### Restrictions
 

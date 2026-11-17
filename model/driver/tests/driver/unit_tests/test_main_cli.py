@@ -116,8 +116,8 @@ def test_main_cli(backend: gtx_typing.Backend, backend_name: str) -> None:
     run_driver_kwargs = mock_run_driver.call_args.kwargs
     assert run_driver_kwargs["grid_manager"] is mock_grid_manager
     assert data_alloc.backend_name(run_driver_kwargs["backend"]) == data_alloc.backend_name(backend)
-    # no dedicated IO ranks: the run's communicator is used as is
-    assert run_driver_kwargs["io_ranks"] is None
+    # no dedicated IO ranks: every rank runs the model, on the run's communicator
+    assert isinstance(run_driver_kwargs["rank_roles"], common_io_ranks.NoIORanks)
     config = _run_config(mock_run_driver)
     assert config.driver.experiment_name == "foo"
     # no 'io' section in the file: no output
@@ -139,10 +139,16 @@ def test_main_cli_reads_the_io_section(backend_name: str, tmp_path: pathlib.Path
 # --------------------------------------------------------------------------------------
 
 
-def _io_rank_split(is_io_rank: bool) -> common_io_ranks.IORankSplit:
+_SINGLE_NODE_PROPS = decomp_defs.SingleNodeProcessProperties()
+
+
+def _io_rank_split(
+    is_io_rank: bool, run_props: decomp_defs.ProcessProperties = _SINGLE_NODE_PROPS
+) -> common_io_ranks.IORankSplit:
     # neither the role communicator nor the inter-communicator is touched: the grid
     # manager, the driver run and the IO server are mocked away
     return common_io_ranks.IORankSplit(
+        run_props=run_props,
         assignment=common_io_ranks.assign_io_ranks_per_node(_NODE_IDS, 1),
         is_io_rank=is_io_rank,
         process_props=decomp_defs.SingleNodeProcessProperties(),  # type: ignore[arg-type]  # stand-in for the role communicator
@@ -167,19 +173,16 @@ def _mocked_split(split: common_io_ranks.IORankSplit) -> Iterator[mock.MagicMock
         yield mock_split
 
 
-def test_split_io_ranks_without_io_ranks_leaves_the_communicator_alone(
-    tmp_path: pathlib.Path,
+def test_main_cli_output_without_io_ranks_leaves_the_communicator_alone(
+    backend_name: str, tmp_path: pathlib.Path
 ) -> None:
-    process_props = decomp_defs.SingleNodeProcessProperties()
-    # no output at all, and output written by the ranks running the model themselves
-    without_output = driver_config.read_experiment_config_from_yaml(_TEST_CONFIG_FILE)
-    assert without_output.io is None
-    assert main.split_io_ranks(without_output, process_props) is None
-    with_output = driver_config.read_experiment_config_from_yaml(
-        _config_file_with_io_section(tmp_path)
-    )
-    assert with_output.io is not None and with_output.io.io_ranks is None
-    assert main.split_io_ranks(with_output, process_props) is None
+    """Output written by the ranks running the model themselves: no split."""
+    with _mocked_split(_io_rank_split(is_io_rank=False)) as mock_split:
+        _, mock_run_driver = _run_cli(_config_file_with_io_section(tmp_path), backend_name)
+    mock_split.assert_not_called()
+    kwargs = mock_run_driver.call_args.kwargs
+    assert kwargs["config"].io is not None and kwargs["config"].io.io_ranks is None
+    assert isinstance(kwargs["rank_roles"], common_io_ranks.NoIORanks)
 
 
 @pytest.mark.parametrize(
@@ -202,9 +205,8 @@ def test_main_cli_compute_rank_runs_the_driver_on_its_role_communicator(
     mock_split.assert_called_once()
     assert mock_split.call_args.args[1].io_ranks == expected_io_ranks
     kwargs = mock_run_driver.call_args.kwargs
-    assert kwargs["io_ranks"] is split
-    # the model (and its grid decomposition) runs on the compute communicator
-    assert kwargs["process_props"] is split.process_props
+    # the model runs with the roles of the split, i.e. on the compute communicator
+    assert kwargs["rank_roles"] is split
     assert kwargs["config"].io.io_ranks is not None
 
 
@@ -219,7 +221,7 @@ def test_main_cli_io_rank_runs_the_io_server(backend_name: str, tmp_path: pathli
     mock_run_driver.assert_not_called()
     mock_run_io_server.assert_called_once()
     kwargs = mock_run_io_server.call_args.kwargs
-    assert kwargs["io_ranks"] is split
+    assert kwargs["rank_roles"] is split
     assert kwargs["grid_file_path"] == config_file.parent / "dummy_grid.nc"
     # the IO rank reads the same experiment configuration (for the vertical grid)
     assert kwargs["config"].io is not None
@@ -261,7 +263,7 @@ def test_main_cli_failure_with_io_ranks_aborts_the_run(
     failure = RuntimeError("the rank failed")
     with (
         mock.patch.object(decomp_defs, "get_process_properties", return_value=process_props),
-        _mocked_split(_io_rank_split(is_io_rank=is_io_rank)),
+        _mocked_split(_io_rank_split(is_io_rank=is_io_rank, run_props=process_props)),
         mock.patch.object(driver_io, "run_io_server", side_effect=failure if is_io_rank else None),
     ):
         result, _, _ = _invoke_cli(

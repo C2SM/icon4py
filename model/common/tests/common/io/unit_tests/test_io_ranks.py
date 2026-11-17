@@ -11,6 +11,7 @@
 import collections
 import logging
 from collections.abc import Callable
+from unittest import mock
 
 import pytest
 
@@ -318,3 +319,110 @@ def test_log_layout_warns_about_unequal_numbers_of_compute_ranks(
     assert info.levelno == logging.INFO
     assert warning.levelno == logging.WARNING
     assert f"between {fewest} and {most}" in warning.getMessage()
+
+
+# --------------------------------------------------------------------------------------
+# the roles of the ranks of a run
+# --------------------------------------------------------------------------------------
+
+
+def output_config(io_ranks_config: common_io.IORanks | None) -> common_io.IOConfig:
+    return common_io.IOConfig(
+        field_groups=[common_io.FieldGroupIOConfig(basename="output", variables=["air_density"])],
+        io_ranks=io_ranks_config,
+    )
+
+
+@pytest.mark.parametrize("io_config", [None, output_config(None)], ids=["no-output", "no-io-ranks"])
+def test_rank_roles_without_io_ranks_leave_the_communicator_alone(
+    io_config: common_io.IOConfig | None,
+) -> None:
+    process_props = decomp_defs.SingleNodeProcessProperties()
+    rank_roles = io_ranks.create_rank_roles(io_config, process_props)
+    assert isinstance(rank_roles, io_ranks.NoIORanks)
+    assert not rank_roles.is_io_rank
+    # every rank runs the model on the run's communicator
+    assert rank_roles.process_props is process_props
+
+
+def test_rank_roles_with_io_ranks_split_the_communicator_as_configured() -> None:
+    process_props = decomp_defs.SingleNodeProcessProperties()
+    node_ids = tasks_per_node(5, 4)
+    with (
+        mock.patch.object(io_ranks, "allgather_node_ids", return_value=node_ids),
+        mock.patch.object(io_ranks, "split_io_ranks") as mock_split,
+    ):
+        rank_roles = io_ranks.create_rank_roles(
+            output_config(common_io.IORanksInTotal(count=1)), process_props
+        )
+    assert rank_roles is mock_split.return_value
+    mock_split.assert_called_once_with(
+        process_props, io_ranks.assign_io_ranks_on_fullest_nodes(node_ids, 1)
+    )
+
+
+def test_no_io_ranks_let_a_failure_propagate_and_report_nothing(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    process_props = mock.MagicMock(rank=0, comm_size=4)
+    rank_roles = io_ranks.NoIORanks(process_props)
+    failure = RuntimeError("the model failed")
+    with pytest.raises(RuntimeError) as raised, rank_roles.abort_on_failure():
+        raise failure
+    assert raised.value is failure
+    # every rank raises the failure itself: nobody aborts the others
+    process_props.comm.Abort.assert_not_called()
+    with caplog.at_level(logging.INFO, logger=io_ranks.__name__):
+        rank_roles.report_layout()
+    assert not caplog.records
+
+
+def io_rank_split(
+    *, is_io_rank: bool, role_rank: int, run_props: mock.MagicMock
+) -> io_ranks.IORankSplit:
+    """A split of a 5+4 run whose communicators are stand-ins."""
+    return io_ranks.IORankSplit(
+        run_props=run_props,
+        assignment=io_ranks.assign_io_ranks_per_node(tasks_per_node(5, 4), 1),
+        is_io_rank=is_io_rank,
+        process_props=mock.MagicMock(rank=role_rank),
+        intercomm=mock.MagicMock(),
+        io_rank=None if is_io_rank else 0,
+        served_compute_ranks=(0, 1, 2, 3) if is_io_rank else (),
+    )
+
+
+@pytest.mark.parametrize("is_io_rank", [False, True], ids=["compute-rank", "io-rank"])
+def test_io_rank_split_aborts_the_whole_run_on_failure(is_io_rank: bool) -> None:
+    run_props = mock.MagicMock()
+    rank_roles = io_rank_split(is_io_rank=is_io_rank, role_rank=1, run_props=run_props)
+    failure = RuntimeError("the rank failed")
+    with pytest.raises(RuntimeError) as raised, rank_roles.abort_on_failure():
+        raise failure
+    assert raised.value is failure
+    # neither role can observe the other's failure: all ranks of both roles go down
+    run_props.comm.Abort.assert_called_once_with(1)
+    rank_roles.process_props.comm.Abort.assert_not_called()
+
+    with rank_roles.abort_on_failure():
+        pass
+    run_props.comm.Abort.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "is_io_rank, role_rank, reports",
+    [(False, 0, True), (False, 1, False), (True, 0, False)],
+    ids=["compute-rank-0", "other-compute-rank", "io-rank-0"],
+)
+def test_io_rank_split_reports_the_layout_on_one_rank(
+    is_io_rank: bool, role_rank: int, reports: bool
+) -> None:
+    rank_roles = io_rank_split(
+        is_io_rank=is_io_rank, role_rank=role_rank, run_props=mock.MagicMock()
+    )
+    with mock.patch.object(io_ranks, "log_layout") as mock_log_layout:
+        rank_roles.report_layout()
+    if reports:
+        mock_log_layout.assert_called_once_with(rank_roles.assignment)
+    else:
+        mock_log_layout.assert_not_called()

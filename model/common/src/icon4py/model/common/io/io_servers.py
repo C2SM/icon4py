@@ -54,11 +54,12 @@ Failure envelope: neither role can observe the other's failure. An IO rank waits
 the setup or the next capture of its compute ranks, so a compute rank that fails
 before closing its client leaves it waiting; compute ranks block at the in-flight
 bound at the latest once their IO rank failed. A program using dedicated IO ranks must
-therefore abort the run when any rank fails (the driver's ``main`` does). A client
-closed cleanly, also on an error path, lets its IO rank finish: ``close`` completes
-the transfers and sends the shutdown header. Every check that must fail on all IO
-ranks together (existing output files, mismatching store metadata) is collective on
-their communicator through the ordinary output stack.
+therefore abort the run when any rank fails (``io_ranks.IORankSplit.abort_on_failure``,
+which the driver's ``main`` runs in). A client closed cleanly, also on an error path,
+lets its IO rank finish: ``close`` completes the transfers and sends the shutdown
+header. Every check that must fail on all IO ranks together (existing output files,
+mismatching store metadata) is collective on their communicator through the ordinary
+output stack.
 """
 
 from __future__ import annotations

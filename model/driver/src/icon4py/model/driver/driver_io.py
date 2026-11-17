@@ -206,36 +206,28 @@ def create_io_monitor(
     grid: grid_base.Grid,
     vertical_grid: v_grid.VerticalGrid,
     dtime: time.RelativeTime,
-    process_props: decomposition_defs.ProcessProperties,
     decomposition_info: decomposition_defs.DecompositionInfo | None,
-    io_ranks: common_io_ranks.IORankSplit | None,
+    rank_roles: common_io_ranks.RankRoles,
 ) -> common_io.OutputMonitor:
     """Build the output monitor writing the field groups of ``io_config`` below its
     ``output_path``.
 
-    In a distributed run (multi-rank ``process_props``) ``decomposition_info`` is
-    required; each group's ``mode`` selects how the ranks write (see
-    ``common_io.OutputMode``).
+    The monitor works on the communicator of ``rank_roles``. In a distributed run (a
+    multi-rank communicator) ``decomposition_info`` is required; each group's ``mode``
+    selects how the ranks write (see ``common_io.OutputMode``).
 
-    With dedicated IO ranks (``io_ranks`` given, on a compute rank) the monitor is an
-    ``IOClient`` shipping the fields to this rank's IO rank, which writes them with
-    this very configuration (see ``run_io_server``); ``process_props`` are then the
-    compute ranks', and the client ships the sizes of the undecomposed grid (summed
-    over the compute communicator, so this is collective on it). None: the ranks write
-    themselves (``IOMonitor``). Either way the split must agree with the dedicated IO
-    ranks of ``io_config`` (``io_ranks``), the setting it was made for.
+    Without dedicated IO ranks the ranks write themselves (``IOMonitor``). With them
+    (an ``IORankSplit``, on a compute rank) the monitor is an ``IOClient`` shipping the
+    fields to this rank's IO rank, which writes them with this very configuration (see
+    ``run_io_server``); the client ships the sizes of the undecomposed grid (summed
+    over the compute communicator, so this is collective on it).
     """
-    if (io_ranks is None) != (io_config.io_ranks is None):
-        raise ValueError(
-            "The communicator split and the dedicated IO ranks of the output configuration "
-            "('io_ranks') must agree: IO ranks with both or with neither."
-        )
     # Grid.id holds the file's `uuidOfHGrid` as a string; the IO layer wants a UUID.
     grid_id = uuid.UUID(grid.id)
-    if io_ranks is not None:
+    if isinstance(rank_roles, common_io_ranks.IORankSplit):
         if decomposition_info is None:
             raise ValueError("Output through dedicated IO ranks requires 'decomposition_info'.")
-        if io_ranks.io_rank is None:
+        if rank_roles.io_rank is None:
             raise ValueError(
                 "The output monitor is built on the compute ranks; this rank is an IO rank."
             )
@@ -245,10 +237,12 @@ def create_io_monitor(
             grid_id=grid_id,
             # the rank's grid holds its halos, so its sizes differ between the compute
             # ranks; the IO rank gets the undecomposed sizes, equal on all of them
-            horizontal_size=distributed.global_horizontal_size(process_props, decomposition_info),
+            horizontal_size=distributed.global_horizontal_size(
+                rank_roles.process_props, decomposition_info
+            ),
             decomposition_info=decomposition_info,
-            intercomm=io_ranks.intercomm,
-            io_rank=io_ranks.io_rank,
+            intercomm=rank_roles.intercomm,
+            io_rank=rank_roles.io_rank,
         )
     return common_io.IOMonitor(
         config=io_config,
@@ -257,7 +251,7 @@ def create_io_monitor(
         grid_file_name=grid_file_path,
         grid_id=grid_id,
         dtime=dtime,
-        process_props=process_props,
+        process_props=rank_roles.process_props,
         decomposition_info=decomposition_info,
     )
 
@@ -266,7 +260,7 @@ def run_io_server(
     *,
     config: driver_config.ExperimentConfig,
     grid_file_path: pathlib.Path,
-    io_ranks: common_io_ranks.IORankSplit,
+    rank_roles: common_io_ranks.RankRoles,
 ) -> None:
     """Run this dedicated IO rank: write the compute ranks' output until they finish.
 
@@ -277,11 +271,16 @@ def run_io_server(
     device), and the grid file for the UGRID topology. Raises on any IO-side failure;
     the caller must abort the run, since the compute ranks cannot observe the failure
     (see ``io_servers``).
+
+    Raises:
+        ValueError: if this rank is not a dedicated IO rank.
     """
-    server = io_servers.IOServer(io_ranks.intercomm, served_ranks=io_ranks.served_compute_ranks)
+    if not isinstance(rank_roles, common_io_ranks.IORankSplit) or not rank_roles.is_io_rank:
+        raise ValueError("The IO server runs on dedicated IO ranks; this rank is not one.")
+    server = io_servers.IOServer(rank_roles.intercomm, served_ranks=rank_roles.served_compute_ranks)
     setup = server.receive_setup()
     log.info(
-        f"IO rank {io_ranks.process_props.rank} on node '{platform.node()}' serves compute "
+        f"IO rank {rank_roles.process_props.rank} on node '{platform.node()}' serves compute "
         f"ranks {list(server.served_ranks)}"
     )
     vertical_grid = driver_utils.create_vertical_grid(
@@ -295,7 +294,7 @@ def run_io_server(
         grid_file_name=grid_file_path,
         grid_id=setup.grid_id,
         dtime=config.driver.dtime,
-        process_props=io_ranks.process_props,
+        process_props=rank_roles.process_props,
         decomposition_info=setup.decomposition_info,
     )
     server.serve(io_monitor)

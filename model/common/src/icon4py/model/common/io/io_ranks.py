@@ -8,6 +8,10 @@
 
 """The dedicated IO ranks of a run: which ranks write, and the communicators of the two roles.
 
+Every run has its :class:`RankRoles`, built by ``create_rank_roles`` from the output
+configuration: :class:`NoIORanks` when the ranks running the model write themselves,
+an :class:`IORankSplit` when some ranks are dedicated to output.
+
 A run with dedicated IO ranks (``IOConfig.io_ranks``) sets them up in three steps: ``allgather_node_ids`` finds the node of every rank of the
 run's communicator, ``assign_io_ranks`` chooses the IO ranks and the compute ranks each
 of them serves (:class:`IORankAssignment`, a function of the nodes alone), and
@@ -18,10 +22,11 @@ between them (:class:`IORankSplit`). The protocol the two roles speak is in
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import logging
-from collections.abc import Collection, Sequence
-from typing import TYPE_CHECKING, Final
+from collections.abc import Collection, Iterator, Sequence
+from typing import TYPE_CHECKING, Final, Protocol
 
 from icon4py.model.common import exceptions
 from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
@@ -318,6 +323,56 @@ def allgather_node_ids(process_props: decomposition.ProcessProperties) -> list[i
     return comm.allgather(node_id)
 
 
+class RankRoles(Protocol):
+    """The role of this rank in a run and the communicator the role works on.
+
+    Whether or not a run dedicates ranks to output, a rank asks the same questions of
+    its roles: with dedicated IO ranks the answers come from an :class:`IORankSplit`,
+    without from :class:`NoIORanks`.
+    """
+
+    @property
+    def is_io_rank(self) -> bool:
+        """Whether this rank only writes output; never so without dedicated IO ranks."""
+        ...
+
+    @property
+    def process_props(self) -> decomposition.ProcessProperties:
+        """Process properties of the communicator this rank's role works on."""
+        ...
+
+    def report_layout(self) -> None:
+        """Log where the ranks of the roles run, on one rank of the run."""
+        ...
+
+    def abort_on_failure(self) -> contextlib.AbstractContextManager[None]:
+        """Context in which a failure of this rank must not leave other ranks waiting."""
+        ...
+
+
+@dataclasses.dataclass(frozen=True)
+class NoIORanks:
+    """The roles of a run without dedicated IO ranks: every rank runs the model and writes.
+
+    Attributes:
+        process_props: process properties of the run's communicator.
+    """
+
+    process_props: decomposition.ProcessProperties
+
+    @property
+    def is_io_rank(self) -> bool:
+        return False
+
+    def report_layout(self) -> None:
+        """Nothing to report: all ranks have the same role."""
+
+    @contextlib.contextmanager
+    def abort_on_failure(self) -> Iterator[None]:
+        """A failure propagates unchanged: no rank waits for another role."""
+        yield
+
+
 @dataclasses.dataclass(frozen=True)
 class IORankSplit:
     """A communicator split into compute ranks and dedicated IO ranks.
@@ -330,6 +385,8 @@ class IORankSplit:
     IO ranks exist.
 
     Attributes:
+        run_props: process properties of the communicator that was split. After the
+            split it serves a single purpose, aborting the ranks of both roles together.
         assignment: the choice of IO ranks the communicator was split by.
         is_io_rank: whether this rank is a dedicated IO rank.
         process_props: process properties of this rank's role communicator (compute or
@@ -342,12 +399,36 @@ class IORankSplit:
             communicator) it serves, in increasing order; empty on a compute rank.
     """
 
+    run_props: decomposition.ProcessProperties
     assignment: IORankAssignment
     is_io_rank: bool
     process_props: mpi_decomposition.MPICommProcessProperties
     intercomm: mpi4py.MPI.Intercomm
     io_rank: int | None
     served_compute_ranks: tuple[int, ...]
+
+    def report_layout(self) -> None:
+        """Log the compute and IO ranks of every node, on rank 0 of the compute ranks."""
+        if not self.is_io_rank and self.process_props.rank == 0:
+            log_layout(self.assignment)
+
+    @contextlib.contextmanager
+    def abort_on_failure(self) -> Iterator[None]:
+        """Abort the whole run when this rank fails.
+
+        Neither role can observe the other's failure: an IO rank waits for the setup or
+        the next capture of its compute ranks, and compute ranks block at the in-flight
+        bound once their IO rank stopped receiving. The failing rank would then wait in
+        MPI's shutdown for ranks that never get there, and the job would hang instead
+        of failing. The abort may interrupt IO ranks writing their last captures.
+        """
+        try:
+            yield
+        except BaseException:
+            role = "IO" if self.is_io_rank else "Compute"
+            log.exception(f"{role} rank {self.process_props.rank} failed; aborting the run.")
+            self.run_props.comm.Abort(1)
+            raise
 
 
 def split_io_ranks(
@@ -378,6 +459,7 @@ def split_io_ranks(
     )
     role_props = mpi_decomposition.MPICommProcessProperties(role_comm)
     return IORankSplit(
+        run_props=process_props,
         assignment=assignment,
         is_io_rank=is_io_rank,
         process_props=role_props,
@@ -385,3 +467,18 @@ def split_io_ranks(
         io_rank=None if is_io_rank else assignment.io_rank_of(role_props.rank),
         served_compute_ranks=assignment.served_compute_ranks(role_props.rank) if is_io_rank else (),
     )
+
+
+def create_rank_roles(
+    io_config: io.IOConfig | None, process_props: decomposition.ProcessProperties
+) -> RankRoles:
+    """The roles of the ranks of a run, from its output configuration.
+
+    Without output, or without dedicated IO ranks in it (``IOConfig.io_ranks``), every
+    rank runs the model on the communicator of ``process_props``. Otherwise that
+    communicator is split into compute ranks and IO ranks (collective on it).
+    """
+    if io_config is None or io_config.io_ranks is None:
+        return NoIORanks(process_props)
+    assignment = assign_io_ranks(io_config.io_ranks, allgather_node_ids(process_props))
+    return split_io_ranks(process_props, assignment)

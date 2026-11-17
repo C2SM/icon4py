@@ -25,7 +25,12 @@ from icon4py.model.common.grid import base, simple, vertical as v_grid
 from icon4py.model.common.io import io as common_io, io_ranks as common_io_ranks, io_servers
 from icon4py.model.common.states import model as state_model, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import driver_diagnostics, driver_io, driver_output_sources
+from icon4py.model.driver import (
+    config as driver_config,
+    driver_diagnostics,
+    driver_io,
+    driver_output_sources,
+)
 
 from ..fixtures import ALL_OUTPUT_VARIABLES
 from .test_driver_diagnostics import (
@@ -76,9 +81,8 @@ def test_create_io_monitor_passes_the_io_config(
         grid=grid,
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
         dtime=datetime.timedelta(seconds=1),
-        process_props=decomposition_defs.SingleNodeProcessProperties(),
         decomposition_info=None,
-        io_ranks=None,
+        rank_roles=common_io_ranks.NoIORanks(decomposition_defs.SingleNodeProcessProperties()),
     )
 
     # the configuration carries the output directory
@@ -120,9 +124,10 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
     monkeypatch.setattr(io_servers, "IOClient", _RecordingClient)
     intercomm = object()
     io_ranks = common_io_ranks.IORankSplit(
+        run_props=decomposition_defs.SingleNodeProcessProperties(),
         assignment=common_io_ranks.assign_io_ranks_per_node([0, 0], 1),
         is_io_rank=False,
-        process_props=None,  # type: ignore[arg-type]  # not used by the recorder
+        process_props=decomposition_defs.SingleNodeProcessProperties(),  # type: ignore[arg-type]  # stand-in for the compute communicator
         intercomm=intercomm,  # type: ignore[arg-type]  # not used by the recorder
         io_rank=3,
         served_compute_ranks=(),
@@ -154,9 +159,8 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
         grid=grid,
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
         dtime=datetime.timedelta(seconds=1),
-        process_props=decomposition_defs.SingleNodeProcessProperties(),
         decomposition_info=decomposition_info,
-        io_ranks=io_ranks,
+        rank_roles=io_ranks,
     )
     assert isinstance(io_monitor, _RecordingClient)
     assert recorded["config"] is io_config
@@ -179,28 +183,48 @@ def test_create_io_monitor_builds_a_client_with_io_ranks(
             grid=grid,
             vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
             dtime=datetime.timedelta(seconds=1),
-            process_props=decomposition_defs.SingleNodeProcessProperties(),
             decomposition_info=None,
-            io_ranks=io_ranks,
+            rank_roles=io_ranks,
         )
-    # the split and the configured IO ranks (on every node or in total) must agree, in
-    # both directions
-    for mismatched_config, mismatched_split in (
-        (dataclasses.replace(io_config, io_ranks=None), io_ranks),
-        (io_config, None),
-        (dataclasses.replace(io_config, io_ranks=common_io.IORanksInTotal(count=1)), None),
-    ):
-        with pytest.raises(ValueError, match="must agree"):
-            driver_io.create_io_monitor(
-                io_config=mismatched_config,
-                grid_file_path=tmp_path / "grid.nc",
-                grid=grid,
-                vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
-                dtime=datetime.timedelta(seconds=1),
-                process_props=decomposition_defs.SingleNodeProcessProperties(),
-                decomposition_info=decomposition_info,
-                io_ranks=mismatched_split,
-            )
+    # the monitor is the compute ranks' side: an IO rank has no IO rank to ship to
+    with pytest.raises(ValueError, match="this rank is an IO rank"):
+        driver_io.create_io_monitor(
+            io_config=io_config,
+            grid_file_path=tmp_path / "grid.nc",
+            grid=grid,
+            vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
+            dtime=datetime.timedelta(seconds=1),
+            decomposition_info=decomposition_info,
+            rank_roles=dataclasses.replace(io_ranks, is_io_rank=True, io_rank=None),
+        )
+
+
+@pytest.mark.parametrize(
+    "rank_roles",
+    [
+        common_io_ranks.NoIORanks(decomposition_defs.SingleNodeProcessProperties()),
+        common_io_ranks.IORankSplit(
+            run_props=decomposition_defs.SingleNodeProcessProperties(),
+            assignment=common_io_ranks.assign_io_ranks_per_node([0, 0], 1),
+            is_io_rank=False,
+            process_props=decomposition_defs.SingleNodeProcessProperties(),  # type: ignore[arg-type]  # stand-in for the compute communicator
+            intercomm=object(),  # type: ignore[arg-type]  # not used
+            io_rank=0,
+            served_compute_ranks=(),
+        ),
+    ],
+    ids=["no-io-ranks", "compute-rank"],
+)
+def test_run_io_server_runs_on_io_ranks_only(
+    rank_roles: common_io_ranks.RankRoles, tmp_path: pathlib.Path
+) -> None:
+    config = driver_config.read_experiment_config_from_yaml(
+        pathlib.Path(__file__).parent / "data" / "test_config.yml"
+    )
+    with pytest.raises(ValueError, match="runs on dedicated IO ranks"):
+        driver_io.run_io_server(
+            config=config, grid_file_path=tmp_path / "grid.nc", rank_roles=rank_roles
+        )
 
 
 def _io_config(*groups: tuple[str, list[str]]) -> common_io.IOConfig:

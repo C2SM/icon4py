@@ -96,9 +96,8 @@ def _run_driver_with_output(
     _, icon4py_driver = driver.run_driver(
         config=config,
         grid_manager=grid_manager,
-        process_props=process_props,
         backend=backend,
-        io_ranks=None,
+        rank_roles=common_io_ranks.NoIORanks(process_props),
     )
     assert icon4py_driver.config.io is not None
     return icon4py_driver.config.io.output_path
@@ -230,9 +229,9 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
 ) -> None:
     """One rank per node becomes its IO rank; the model runs on the others and ships to it.
 
-    The compute ranks run the driver on the compute communicator (``io_ranks`` given),
-    the IO ranks run ``driver_io.run_io_server`` -- exactly the two branches of
-    ``main`` -- and the files must reproduce the single-rank reference. With more
+    The roles come from the output configuration as in ``main``: the compute ranks
+    run the driver on the compute communicator, the IO ranks run
+    ``driver_io.run_io_server``, and the files must reproduce the single-rank reference. With more
     than two ranks per node, an IO rank serves several compute ranks whose local
     grids differ (halos) while their shipped setups must agree.
     """
@@ -257,9 +256,6 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
         config_file_path=config_file_path,
     )
 
-    io_ranks = common_io_ranks.split_io_ranks(
-        process_props, common_io_ranks.assign_io_ranks_per_node(node_ids, io_ranks_per_node)
-    )
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
     config = config.with_overrides(
         driver={"end_of_simulation": time.NumTimeSteps(1)},
@@ -273,22 +269,22 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
             io_ranks=common_io.IORanksPerNode(count=io_ranks_per_node),
         ),
     )
+    rank_roles = common_io_ranks.create_rank_roles(config.io, process_props)
     output_path: pathlib.Path | None = None
-    if io_ranks.is_io_rank:
-        driver_io.run_io_server(config=config, grid_file_path=grid_file_path, io_ranks=io_ranks)
+    if rank_roles.is_io_rank:
+        driver_io.run_io_server(config=config, grid_file_path=grid_file_path, rank_roles=rank_roles)
     else:
         grid_manager = driver_utils.create_grid_manager(
             grid_file_path=grid_file_path,
             vertical_grid_config=config.vertical_grid,
             allocator=model_backends.get_allocator(backend),
-            process_props=io_ranks.process_props,
+            process_props=rank_roles.process_props,
         )
         _, icon4py_driver = driver.run_driver(
             config=config,
             grid_manager=grid_manager,
-            process_props=io_ranks.process_props,
             backend=backend,
-            io_ranks=io_ranks,
+            rank_roles=rank_roles,
         )
         assert icon4py_driver.config.io is not None
         output_path = icon4py_driver.config.io.output_path

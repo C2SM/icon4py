@@ -68,6 +68,8 @@ def test_split_io_ranks_roles_and_intercomm(
     split = io_ranks.split_io_ranks(process_props, assignment)
 
     # the roles follow the assignment; each role is one communicator keeping the rank order
+    assert split.run_props is process_props
+    assert split.assignment is assignment
     assert split.is_io_rank == (process_props.rank in assignment.io_ranks)
     role_ranks = assignment.io_ranks if split.is_io_rank else assignment.compute_ranks
     expected_name = io_ranks.IO_COMM_NAME if split.is_io_rank else io_ranks.COMPUTE_COMM_NAME
