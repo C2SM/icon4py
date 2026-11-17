@@ -2,6 +2,7 @@
 #SBATCH --job-name=dycore_benchmark_gh200
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
+#SBATCH --gpus-per-task=1
 #SBATCH --time=02:00:00
 #SBATCH --uenv=icon/26.7:v1@santis,/iopsstor/scratch/cscs/ioannmag/ICON4PY/icon4py-amd-benchmarks/py_venv_cuda_mpi4.squashfs:/iopsstor/scratch/cscs/ioannmag/ICON4PY/icon4py-amd-benchmarks/.venv_cuda
 #SBATCH --view=default
