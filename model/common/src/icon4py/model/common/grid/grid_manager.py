@@ -382,7 +382,9 @@ class GridManager:
         }
         return refinement_control_fields
 
-    def _read_global_refinement_control(self, array_ns) -> dict[gtx.Dimension, data_alloc.NDArray]:
+    def _read_global_grid_refinement_fields(
+        self, array_ns
+    ) -> dict[gtx.Dimension, data_alloc.NDArray]:
         """
         Reads the full-grid raw refinement control arrays from the grid file.
 
@@ -465,7 +467,7 @@ class GridManager:
         cells_to_rank_mapping = decomposer(cell_to_cell_neighbors, process_props.comm_size)
 
         # HALO CONSTRUCTION
-        global_refinement_control = self._read_global_refinement_control(xp)
+        global_refinement_control = self._read_global_grid_refinement_fields(xp)
         halo_constructor = halo.get_halo_constructor(
             process_props=process_props,
             full_grid_size=global_size,

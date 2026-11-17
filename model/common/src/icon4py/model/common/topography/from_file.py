@@ -49,13 +49,13 @@ def read_from_file(
 
     Always reads from the single-rank (global) serialbox archive
     ``icon_pydycore_rank0`` and selects local rows using the rank's global
-    cell indices.  The caller is responsible for pointing ``config.data_path``
+    cell indices. The caller is responsible for pointing ``config.data_path``
     at the single-rank ser_data directory (``mpitask1_*``), which contains
     the full global topography field.
 
-    ``local_indices`` is converted to numpy before indexing because on GPU
-    backends ``decomposition_info.global_index()`` returns a CuPy array,
-    which cannot index a numpy serialbox buffer.
+    ``ser.read`` always returns a numpy array; it is moved to the device via
+    ``array_ns.asarray`` before indexing so that the selection stays on the
+    device on GPU backends.
     """
     allocator = model_backends.get_allocator(backend)
     array_ns = data_alloc.import_array_ns(allocator)
@@ -66,10 +66,8 @@ def read_from_file(
     sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()
     log.debug(f"Reading topography from {data_path} / icon_pydycore_rank0")
 
-    local_indices = data_alloc.as_numpy(
-        grid_manager.decomposition_info.global_index(
-            dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.ALL
-        )
+    local_indices = grid_manager.decomposition_info.global_index(
+        dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.ALL
     )
-    global_topo = np.squeeze(ser.read("topography", sp).astype(float))
-    return array_ns.asarray(global_topo[local_indices])
+    global_topo = array_ns.asarray(np.squeeze(ser.read("topography", sp).astype(float)))
+    return global_topo[local_indices]
