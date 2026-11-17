@@ -200,8 +200,9 @@ def assign_io_ranks_on_fullest_nodes(
     tasks more than compute ranks, the surplus tasks on nodes that also hold compute
     ranks (where a launcher filling the nodes in order puts them), thus turns exactly
     the surplus tasks into IO ranks, and every node keeps its compute ranks. Surplus
-    tasks on nodes of their own are not recognized: such a node is never the fullest,
-    so its tasks compute and the IO ranks are taken from the other nodes. A compute
+    tasks on nodes of their own are not recognized: the IO ranks are taken from the
+    fullest nodes, whatever their tasks were meant for (a single surplus task on a
+    node of its own computes, and the IO rank is taken from another node). A compute
     rank ships to an IO rank on its own node if there is one, otherwise across nodes
     (see ``_serve_compute_ranks``). ``node_ids`` as in ``assign_io_ranks_per_node``.
 
@@ -334,7 +335,7 @@ def allgather_node_ids(process_props: decomposition.ProcessProperties) -> list[i
 
 
 def _abort(comm: mpi4py.MPI.Comm) -> None:
-    """Abort the ranks of ``comm``; this process does not outlive it.
+    """Abort the ranks of ``comm``, with an alarm that ends this process if the abort does not.
 
     ``MPI_Abort`` alone is not enough: it ends the process through ``exit``, and an
     exit handler can block. With a parallel netCDF file open, HDF5's handler closes the
@@ -344,12 +345,14 @@ def _abort(comm: mpi4py.MPI.Comm) -> None:
     handler runs with the interpreter lock held, so no Python thread could step in. An
     alarm therefore ends the process if the abort has not done so in time, and the
     launcher ends the job for the rank that was killed.
+
+    The alarm relies on the default action of ``SIGALRM`` (terminate the process): a
+    Python-level handler for it could not run either. It stays armed when the abort
+    returns or raises, since the rank then heads for MPI's shutdown, where it would
+    wait for the other ranks.
     """
-    signal.alarm(_ABORT_GRACE_SECONDS)  # default action of SIGALRM: terminate the process
-    try:
-        comm.Abort(1)
-    finally:
-        signal.alarm(0)  # only reached with a stand-in communicator
+    signal.alarm(_ABORT_GRACE_SECONDS)
+    comm.Abort(1)
 
 
 class RankRoles(Protocol):
@@ -450,7 +453,7 @@ class IORankSplit:
         bound once their IO rank stopped receiving. The failing rank would then wait in
         MPI's shutdown for ranks that never get there, and the job would hang instead
         of failing. The abort may interrupt IO ranks writing their last captures, and
-        it does not wait for this rank's own exit handlers (``_abort``).
+        it waits for this rank's own exit handlers for a few seconds only (``_abort``).
         """
         try:
             yield

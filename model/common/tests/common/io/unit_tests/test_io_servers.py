@@ -25,7 +25,7 @@ import pathlib
 import queue
 import threading
 import uuid
-from collections.abc import Sequence
+from collections.abc import Callable, Iterator, Sequence
 from unittest import mock
 
 import gt4py.next as gtx
@@ -70,7 +70,8 @@ class _FakeIntercomm:
     """Inter-communicator stand-in: one queue per (receiver role, receiver, sender, tag).
 
     Sends copy their payload (as MPI does eventually) and complete immediately;
-    receives block on the queue, so the IO rank can run on a thread.
+    receives block on the queue, so the IO rank can run on a thread, until a message
+    arrives or the communicator is disconnected.
     """
 
     def __init__(
@@ -86,6 +87,7 @@ class _FakeIntercomm:
         self._rank = rank
         self._local_size = local_size
         self._remote_size = remote_size
+        self._disconnected = threading.Event()
 
     def Get_rank(self) -> int:
         return self._rank
@@ -111,7 +113,19 @@ class _FakeIntercomm:
         return _CompletedRequest()
 
     def Recv(self, buffer: np.ndarray, source: int, tag: int) -> None:
-        buffer[...] = self._inbox(source, tag).get()
+        inbox = self._inbox(source, tag)
+        while True:
+            try:
+                buffer[...] = inbox.get(timeout=0.05)
+            except queue.Empty:
+                if self._disconnected.is_set():
+                    raise ConnectionError("the inter-communicator was disconnected") from None
+            else:
+                return
+
+    def disconnect(self) -> None:
+        """Receives that find no message raise from now on."""
+        self._disconnected.set()
 
 
 def fake_intercomms(
@@ -258,6 +272,7 @@ class ServerThread:
     """
 
     def __init__(self, intercomm: _FakeIntercomm):
+        self._intercomm = intercomm
         self.server = io_servers.IOServer(
             intercomm,  # type: ignore[arg-type]  # in-process stand-in
             served_ranks=range(NUM_COMPUTE_RANKS),
@@ -289,6 +304,29 @@ class ServerThread:
         assert not self._thread.is_alive(), "the IO rank did not finish"
         if self._failure is not None:
             raise self._failure
+
+    def stop(self) -> None:
+        """End an IO rank that still waits for its compute ranks."""
+        self._intercomm.disconnect()
+        self._thread.join(timeout=60)
+
+
+@pytest.fixture
+def start_server() -> Iterator[Callable[[_FakeIntercomm], ServerThread]]:
+    """Starts IO ranks on threads and ends them with the test.
+
+    A test failing on the compute side would otherwise leave its IO rank running into
+    the following tests, and the HDF5 library of a serial netCDF4 is not thread-safe.
+    """
+    servers: list[ServerThread] = []
+
+    def start(intercomm: _FakeIntercomm) -> ServerThread:
+        servers.append(ServerThread(intercomm))
+        return servers[-1]
+
+    yield start
+    for server in servers:
+        server.stop()
 
 
 def make_clients(
@@ -354,7 +392,10 @@ def assert_dataset_is_exact(
     ],
 )
 def test_io_rank_writes_the_shipped_captures_exactly(
-    backend: common_io.OutputBackend, mode: common_io.OutputMode, tmp_path: pathlib.Path
+    backend: common_io.OutputBackend,
+    mode: common_io.OutputMode,
+    tmp_path: pathlib.Path,
+    start_server: Callable[[_FakeIntercomm], ServerThread],
 ) -> None:
     """Three compute ranks ship every second step to one IO rank, which writes them.
 
@@ -365,7 +406,7 @@ def test_io_rank_writes_the_shipped_captures_exactly(
     """
     compute_intercomms, (io_intercomm,) = fake_intercomms(NUM_COMPUTE_RANKS, 1)
     config = io_config(tmp_path, backend, mode, output_interval=common_time.NumTimeSteps(2))
-    server = ServerThread(io_intercomm)
+    server = start_server(io_intercomm)
     clients, infos = make_clients(config, compute_intercomms)
     assert all(client.io_rank == 0 for client in clients)
 
@@ -422,10 +463,12 @@ def test_io_rank_writes_the_shipped_captures_exactly(
             assert_dataset_is_exact(dataset, steps, global_index)
 
 
-def test_client_missing_field_closes_the_io_rank_and_raises(tmp_path: pathlib.Path) -> None:
+def test_client_missing_field_closes_the_io_rank_and_raises(
+    tmp_path: pathlib.Path, start_server: Callable[[_FakeIntercomm], ServerThread]
+) -> None:
     compute_intercomms, (io_intercomm,) = fake_intercomms(NUM_COMPUTE_RANKS, 1)
     config = io_config(tmp_path, common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED)
-    server = ServerThread(io_intercomm)
+    server = start_server(io_intercomm)
     clients, infos = make_clients(config, compute_intercomms)
     for client in clients[1:]:
         client.close()
@@ -437,10 +480,12 @@ def test_client_missing_field_closes_the_io_rank_and_raises(tmp_path: pathlib.Pa
         clients[0].store(synthetic_state(infos[0], 1), dt.datetime(2000, 1, 1, 1))
 
 
-def test_io_rank_rejects_compute_ranks_at_different_capture_steps(tmp_path: pathlib.Path) -> None:
+def test_io_rank_rejects_compute_ranks_at_different_capture_steps(
+    tmp_path: pathlib.Path, start_server: Callable[[_FakeIntercomm], ServerThread]
+) -> None:
     compute_intercomms, (io_intercomm,) = fake_intercomms(NUM_COMPUTE_RANKS, 1)
     config = io_config(tmp_path, common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED)
-    server = ServerThread(io_intercomm)
+    server = start_server(io_intercomm)
     clients, infos = make_clients(config, compute_intercomms)
     clients[0].close()  # closes while the others still ship a capture
     for client, info in zip(clients[1:], infos[1:], strict=True):
@@ -450,7 +495,9 @@ def test_io_rank_rejects_compute_ranks_at_different_capture_steps(tmp_path: path
 
 
 @pytest.mark.parametrize("differing", ["config", "grid_id", "horizontal_size"])
-def test_io_rank_rejects_differing_setups(differing: str, tmp_path: pathlib.Path) -> None:
+def test_io_rank_rejects_differing_setups(
+    differing: str, tmp_path: pathlib.Path, start_server: Callable[[_FakeIntercomm], ServerThread]
+) -> None:
     compute_intercomms, (io_intercomm,) = fake_intercomms(NUM_COMPUTE_RANKS, 1)
     config = io_config(tmp_path, common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED)
     setup = {"config": config, "grid_id": GRID_ID, "horizontal_size": horizontal_size()}
@@ -459,7 +506,7 @@ def test_io_rank_rejects_differing_setups(differing: str, tmp_path: pathlib.Path
         "grid_id": uuid.UUID("00000000-0000-0000-0000-00000000d1d1"),
         "horizontal_size": dataclasses.replace(horizontal_size(), num_cells=18),
     }
-    server = ServerThread(io_intercomm)
+    server = start_server(io_intercomm)
     for rank, intercomm in enumerate(compute_intercomms):
         io_servers.IOClient(
             **(setup if rank == 0 else setup | {differing: other[differing]}),
@@ -479,7 +526,9 @@ def test_io_server_requires_a_served_compute_rank() -> None:
         io_servers.IOServer(io_intercomm, served_ranks=())  # type: ignore[arg-type]  # in-process stand-in
 
 
-def test_io_rank_writes_field_groups_with_different_schedules(tmp_path: pathlib.Path) -> None:
+def test_io_rank_writes_field_groups_with_different_schedules(
+    tmp_path: pathlib.Path, start_server: Callable[[_FakeIntercomm], ServerThread]
+) -> None:
     """Two groups sharing a variable: one captures every step, the other every second.
 
     A capture step ships the union of the capturing groups' variables once, and the IO
@@ -506,7 +555,7 @@ def test_io_rank_writes_field_groups_with_different_schedules(tmp_path: pathlib.
         io_ranks=common_io.IORanksPerNode(count=1),
     )
     compute_intercomms, (io_intercomm,) = fake_intercomms(NUM_COMPUTE_RANKS, 1)
-    server = ServerThread(io_intercomm)
+    server = start_server(io_intercomm)
     clients, infos = make_clients(config, compute_intercomms)
 
     num_steps = 4

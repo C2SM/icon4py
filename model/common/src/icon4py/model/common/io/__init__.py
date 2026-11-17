@@ -191,10 +191,12 @@ to do when the rank fails). The launcher provides the tasks of both roles; the
   nodes that also hold compute ranks, a run turns exactly the surplus tasks into IO
   ranks and every node keeps its compute ranks (e.g. 18 tasks on four nodes with four
   GPUs each and two IO ranks in total: two nodes get a fifth task, which writes).
-  Surplus tasks on nodes of their own are not recognized: they compute, and the IO
-  ranks are taken from the other nodes. A compute rank still ships to an IO rank on
-  its own node if there is one; the compute ranks of the other nodes ship across
-  nodes, in contiguous blocks that level the number of compute ranks per IO rank.
+  Surplus tasks on nodes of their own are not recognized: the IO ranks are taken from
+  the fullest nodes, whatever their tasks were meant for (a single surplus task on a
+  node of its own computes, and the IO rank is taken from another node). A compute
+  rank still ships to an IO rank on its own node if there is one; the compute ranks
+  of the other nodes ship across nodes, in contiguous blocks that level the number of
+  compute ranks per IO rank.
 
 The IO ranks are taken from the tasks the launcher provides, whatever their number, so a
 launch that does not match the configuration still runs: one IO rank more than surplus
@@ -241,7 +243,7 @@ is not warned about: only the layout shows it.
 - Fields need a horizontal dimension (`cell`, `edge` or `vertex`); a vertical dimension (model or half levels) is optional, so a purely horizontal (surface) field is written as `(time, cell)`.
 - Horizontal coordinates the latitude and longitude in radians as provided by the ICON grid file.
 - Vertical coordinates are the model levels, there is no transformation to pressure levels.
-- Writing is synchronous: `store` returns once the data is written. With dedicated IO ranks the compute ranks' `store` returns once the transfer to the IO rank is posted (see "Dedicated IO ranks" above); the IO ranks then write synchronously.
+- Writing is synchronous: `store` returns once the data is written. With dedicated IO ranks the compute ranks' `store` returns once the transfer to the IO rank is posted, after waiting at the in-flight bound if the IO rank is behind (see "Dedicated IO ranks" above); the IO ranks then write synchronously.
 - Distributed (MPI) runs write either gathered on the root rank (any backend) or with every rank writing its own block of a shared store (zarr with any installation; netCDF with an MPI-parallel netCDF4 installation, see "Parallel netCDF" above).
 - Global attributes of the datafiles and field metadata is only scarcely available and needs to be augmented.
 

@@ -406,19 +406,39 @@ def test_no_io_ranks_let_a_failure_propagate_and_report_nothing(
     assert not caplog.records
 
 
-def test_abort_arms_an_alarm_that_outlives_a_blocked_abort() -> None:
-    """The alarm is pending while ``Abort`` runs and is cancelled if that returns."""
-    pending: list[int] = []
+@pytest.fixture
+def alarms(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """The seconds of every ``signal.alarm`` call of the test, recorded in place of armed.
+
+    An abort through a stand-in communicator returns, and its alarm would end pytest.
+    """
+    seconds: list[int] = []
+    monkeypatch.setattr(signal, "alarm", seconds.append)
+    return seconds
+
+
+@pytest.mark.parametrize("abort_raises", [False, True], ids=["abort-returns", "abort-raises"])
+def test_abort_arms_the_alarm_before_the_abort_and_never_cancels_it(
+    abort_raises: bool, alarms: list[int]
+) -> None:
+    """A rank whose ``Abort`` blocks, returns or raises is still ended by the alarm."""
+    alarms_at_abort: list[int] = []
+
+    def abort(errorcode: int) -> None:
+        alarms_at_abort.extend(alarms)
+        if abort_raises:
+            raise RuntimeError("the abort failed")
+
     comm = mock.MagicMock()
-    # signal.alarm(0) cancels the pending alarm and returns the seconds it had left
-    comm.Abort.side_effect = lambda _: pending.append(signal.alarm(0))
-    try:
+    comm.Abort.side_effect = abort
+    if abort_raises:
+        with pytest.raises(RuntimeError, match="the abort failed"):
+            io_ranks._abort(comm)
+    else:
         io_ranks._abort(comm)
-    finally:
-        signal.alarm(0)
     comm.Abort.assert_called_once_with(1)
-    assert 0 < pending[0] <= io_ranks._ABORT_GRACE_SECONDS
-    assert signal.alarm(0) == 0  # nothing left pending once the abort returned
+    assert alarms_at_abort == [io_ranks._ABORT_GRACE_SECONDS]
+    assert alarms == [io_ranks._ABORT_GRACE_SECONDS]
 
 
 def io_rank_split(
@@ -437,7 +457,7 @@ def io_rank_split(
 
 
 @pytest.mark.parametrize("is_io_rank", [False, True], ids=["compute-rank", "io-rank"])
-def test_io_rank_split_aborts_the_whole_run_on_failure(is_io_rank: bool) -> None:
+def test_io_rank_split_aborts_the_whole_run_on_failure(is_io_rank: bool, alarms: list[int]) -> None:
     run_props = mock.MagicMock()
     rank_roles = io_rank_split(is_io_rank=is_io_rank, role_rank=1, run_props=run_props)
     failure = RuntimeError("the rank failed")
@@ -447,10 +467,13 @@ def test_io_rank_split_aborts_the_whole_run_on_failure(is_io_rank: bool) -> None
     # neither role can observe the other's failure: all ranks of both roles go down
     run_props.comm.Abort.assert_called_once_with(1)
     rank_roles.process_props.comm.Abort.assert_not_called()
+    # an abort that blocks in an exit handler must not keep the rank alive (``_abort``)
+    assert alarms == [io_ranks._ABORT_GRACE_SECONDS]
 
     with rank_roles.abort_on_failure():
         pass
     run_props.comm.Abort.assert_called_once()
+    assert len(alarms) == 1
 
 
 @pytest.mark.parametrize(

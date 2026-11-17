@@ -82,7 +82,8 @@ DEFAULT_OUTPUT_PATH: Final[pathlib.Path] = pathlib.Path("./output")
 #: and "write" (file/store output). The compute ranks of a run with dedicated IO ranks
 #: (``io_servers.IOClient``) have "send" instead of "write" (posting the transfers to
 #: the IO rank), with "send_wait" as the part of it spent blocked on the in-flight
-#: bound -- the signal that the IO ranks do not keep up.
+#: bound -- the signal that the IO ranks do not keep up. The wait of ``close`` for
+#: the last captures is in neither.
 PHASE_DISTRIBUTE: Final[str] = "distribute"
 PHASE_WRITE: Final[str] = "write"
 PHASE_SEND: Final[str] = "send"
@@ -408,8 +409,9 @@ class IORanksInTotal:
     """
     A total number of dedicated IO ranks, for fewer IO ranks than nodes: the last
     ranks of the nodes holding the most ranks write, so with as many tasks more than
-    compute ranks the surplus tasks do. A compute rank ships to an IO rank on its own
-    node if there is one, otherwise to one on another node.
+    compute ranks, on nodes that also hold compute ranks, the surplus tasks do. A
+    compute rank ships to an IO rank on its own node if there is one, otherwise to
+    one on another node.
 
     Validated on construction.
     """

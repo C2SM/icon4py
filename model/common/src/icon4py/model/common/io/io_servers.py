@@ -62,9 +62,9 @@ therefore abort the run when any rank fails (``io_ranks.IORankSplit.abort_on_fai
 which the driver's ``main`` runs in), and nothing collective may stand between the
 failure and the abort: a failing IO rank does not close its files (``IOServer.serve``).
 A client closed cleanly, also on an error path, lets its IO rank finish: ``close``
-completes the transfers and sends the shutdown header. Every check that must fail on all IO ranks together (existing output files,
-mismatching store metadata) is collective on their communicator through the ordinary
-output stack.
+completes the transfers and sends the shutdown header. Every check that must fail on
+all IO ranks together (existing output files, mismatching store metadata) is
+collective on their communicator through the ordinary output stack.
 """
 
 from __future__ import annotations
@@ -312,9 +312,7 @@ class IOClient(monitor.Monitor):
         log.info(f"Shipping fields {names} at {model_time} to IO rank {self._io_rank}")
 
         # a free slot first: the copies below would otherwise come on top of the bound
-        start = timeit.default_timer()
-        self._wait_for_slot()
-        waited = timeit.default_timer() - start
+        waited = self._wait_for_slot()
 
         start = timeit.default_timer()
         buffers: list[np.ndarray] = []
@@ -347,12 +345,17 @@ class IOClient(monitor.Monitor):
         self._in_flight.append(_Transfer(requests, header_buffers + buffers))
         self._phase_seconds[io.PHASE_SEND].append(waited + timeit.default_timer() - start)
 
-    def _wait_for_slot(self) -> None:
-        """Wait until the IO rank received the oldest transfers: fewer than the bound stay in flight."""
+    def _wait_for_slot(self) -> float:
+        """Wait until fewer captures than the bound are in flight; the seconds waited.
+
+        The IO rank has then received the oldest ones.
+        """
         start = timeit.default_timer()
         while len(self._in_flight) >= MAX_IN_FLIGHT_CAPTURES:
             self._in_flight.popleft().wait()
-        self._phase_seconds[io.PHASE_SEND_WAIT].append(timeit.default_timer() - start)
+        waited = timeit.default_timer() - start
+        self._phase_seconds[io.PHASE_SEND_WAIT].append(waited)
+        return waited
 
     def variables_at_capture_time(self) -> set[str]:
         """The variables some field group captures at the current ``store`` call.
@@ -382,7 +385,8 @@ class IOClient(monitor.Monitor):
     def close(self) -> None:
         """Complete the in-flight transfers and end the IO rank's serve loop; idempotent.
 
-        Final: a subsequent capture step raises.
+        Waits until the IO rank has received the captures still in flight, which no
+        phase times. Final: a subsequent capture step raises.
         """
         if self._closed:
             return

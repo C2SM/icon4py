@@ -268,9 +268,9 @@ def run_io_server(
     the output (their ``IOClient`` ships the output configuration and the grid
     identity); this rank contributes only what the writers need locally: the vertical
     grid, built on host from the experiment configuration (an IO rank never touches a
-    device), and the grid file for the UGRID topology. Raises on any IO-side failure;
-    the caller must abort the run, since the compute ranks cannot observe the failure
-    (see ``io_servers``).
+    device), the model time step and the grid file for the UGRID topology. Raises on
+    any IO-side failure; the caller must abort the run, since the compute ranks cannot
+    observe the failure (see ``io_servers``).
 
     Raises:
         ValueError: if this rank is not a dedicated IO rank.

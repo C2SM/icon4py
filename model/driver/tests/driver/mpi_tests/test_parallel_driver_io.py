@@ -39,6 +39,7 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
     grid_utils,
+    parallel_helpers,
     test_utils,
 )
 from icon4py.model.testing.fixtures.datatest import (
@@ -273,7 +274,7 @@ def test_io_rank_output_matches_single_rank_reference(  # noqa: PLR0917 [too-man
     output_path: pathlib.Path | None = None
     # as in ``main``: a rank failing in its role aborts the run, since the ranks of the
     # other role would wait for it until the job's time limit
-    with rank_roles.abort_on_failure():
+    with parallel_helpers.abort_on_failure(rank_roles):
         if rank_roles.is_io_rank:
             driver_io.run_io_server(
                 config=config, grid_file_path=grid_file_path, rank_roles=rank_roles
