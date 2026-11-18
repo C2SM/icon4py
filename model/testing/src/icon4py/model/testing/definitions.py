@@ -110,7 +110,7 @@ class Grids:
     )
     MCH_OPR_R19B08_1GPU: Final = GridDescription(
         name="icon_grid_0001_R19B08_mch_1gpu",
-        description="Larger MCH R19B08 grid (icon-1 setup), suitable for running single GPU benchmarks",
+        description="Larger MCH R19B08 grid (1/8 of the icon-ch1 experiment), suitable for running single GPU benchmarks",
         params=icon_grid.GridParams(
             icon_grid.IcosahedronParams(
                 subdivision=icon_grid.GridSubdivision(root=19, level=8),
