@@ -113,11 +113,11 @@ def test_a_leaf_without_a_standard_name_is_not_offered() -> None:
         rho: field.Field[qty.RhoOnCellK]
         rho_ic: field.Field[qty.RhoOnCellKHalf]
 
-    state = fw.allocate(_State, simple.simple_grid(), None)
+    some_state = fw.allocate(_State, simple.simple_grid(), None)
 
     assert qty.RhoOnCellKHalf.standard_name is None
     assert driver_output_sources.standard_names(_State) == {"rho": "air_density"}
-    assert set(driver_output_sources.by_standard_name(state)) == {"air_density"}
+    assert set(driver_output_sources.by_standard_name(some_state)) == {"air_density"}
 
 
 def test_data_is_host_numpy(
