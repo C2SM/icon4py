@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import pathlib
+import signal
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -256,9 +257,13 @@ def _process_props_with_mock_comm() -> mock.MagicMock:
 
 @pytest.mark.parametrize("is_io_rank", [False, True], ids=["compute-rank", "io-rank"])
 def test_main_cli_failure_with_io_ranks_aborts_the_run(
-    backend_name: str, tmp_path: pathlib.Path, is_io_rank: bool
+    backend_name: str, tmp_path: pathlib.Path, is_io_rank: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Neither role can observe the other's failure: a failing rank aborts the whole run."""
+    # the abort arms an alarm that ends a rank whose abort blocks; the stand-in
+    # communicator's abort returns, and a real alarm would end pytest
+    alarms: list[int] = []
+    monkeypatch.setattr(signal, "alarm", alarms.append)
     process_props = _process_props_with_mock_comm()
     failure = RuntimeError("the rank failed")
     with (
@@ -272,6 +277,7 @@ def test_main_cli_failure_with_io_ranks_aborts_the_run(
             run_driver_error=None if is_io_rank else failure,
         )
     process_props.comm.Abort.assert_called_once_with(1)
+    assert len(alarms) == 1
     assert result.exception is failure
 
 
