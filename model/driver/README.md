@@ -131,6 +131,9 @@ io:
 srun --ntasks-per-node=5 --cpu-bind=sockets ./select_gpu.sh icon4py-driver ...
 ```
 
+`select_gpu.sh` is a three-line wrapper that gives every task a GPU; its contents are
+shown with the batch script below.
+
 **A total number of IO ranks** (`type: total`), for fewer IO ranks than nodes. The IO
 ranks are the last ranks of the nodes holding the most ranks, so launch as many tasks
 more than compute ranks. Slurm fills the nodes in order and puts the surplus tasks on
@@ -163,6 +166,15 @@ srun --ntasks-per-node=5 --cpu-bind=sockets ./select_gpu.sh icon4py-driver \
   --grid-file-path grid.nc --config-file-path config.yml --icon4py-backend gtfn_gpu
 ```
 
+and `select_gpu.sh`, an executable file next to it:
+
+```bash
+#!/bin/bash
+# task i of a node uses GPU i; the fifth task (the IO rank) shares GPU 0
+export CUDA_VISIBLE_DEVICES=$((SLURM_LOCALID % 4))
+exec "$@"
+```
+
 What the options are for:
 
 - `--cpu-bind=sockets` binds task `i` of a node to socket `i`, next to GPU `i`, and
@@ -173,18 +185,10 @@ What the options are for:
 
 - The GPUs are requested per node, since `--gpus-per-task=1` cannot place five tasks
   on four GPUs. Every task then sees all four GPUs, and `select_gpu.sh` gives every
-  compute rank its own:
-
-  ```bash
-  #!/bin/bash
-  export CUDA_VISIBLE_DEVICES=$((SLURM_LOCALID % 4))
-  exec "$@"
-  ```
-
-  The IO rank, a node's fifth task, shares GPU 0. It computes nothing there, but a
-  GPU-aware MPI library initializes on the GPU it sees (about 0.5 GB of device
-  memory); with Cray MPICH and `MPICH_GPU_SUPPORT_ENABLED=1`, a run whose IO rank
-  sees no GPU hangs at startup.
+  compute rank its own. The IO rank, a node's fifth task, shares GPU 0. It computes
+  nothing there, but a GPU-aware MPI library initializes on the GPU it sees (about
+  0.5 GB of device memory); with Cray MPICH and `MPICH_GPU_SUPPORT_ENABLED=1`, a run
+  whose IO rank sees no GPU hangs at startup.
 
 The IO ranks are taken from the tasks the launcher provides, whatever their number,
 so check the layout the driver logs at startup, the compute and IO ranks of every
