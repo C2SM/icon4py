@@ -12,7 +12,6 @@ import dataclasses
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -41,7 +40,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
-from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 """
@@ -113,25 +112,6 @@ class AdvectionConfig:
     horizontal_advection_limiter: HorizontalAdvectionLimiter
     vertical_advection_type: VerticalAdvectionType
     vertical_advection_limiter: VerticalAdvectionLimiter
-
-    @classmethod
-    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> AdvectionConfig:
-        transport_nml = atmo_dict["transport_nml"]
-        return cls(
-            horizontal_advection_type=HorizontalAdvectionType(
-                fortran_config.list_to_value(transport_nml["ihadv_tracer"])
-            ),
-            horizontal_advection_limiter=HorizontalAdvectionLimiter(
-                fortran_config.list_to_value(transport_nml["itype_hlimit"])
-            ),
-            vertical_advection_type=VerticalAdvectionType(
-                fortran_config.list_to_value(transport_nml["ivadv_tracer"])
-            ),
-            vertical_advection_limiter=VerticalAdvectionLimiter(
-                fortran_config.list_to_value(transport_nml["itype_vlimit"])
-            ),
-            **overrides,
-        )
 
 
 class Advection(ABC):

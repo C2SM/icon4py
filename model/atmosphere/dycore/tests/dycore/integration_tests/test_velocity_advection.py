@@ -10,27 +10,32 @@ import logging
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import typing as gtx_typing
 
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
+from icon4py.model.atmosphere.dycore import solve_nonhydro
 from icon4py.model.atmosphere.dycore.stencils import (
     velocity_advection_corrector,
     velocity_advection_predictor,
 )
 from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import VerticalCflConstants
-from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
-from icon4py.model.common.grid import (
-    horizontal as h_grid,
-    icon,
-    states as grid_states,
-    vertical as v_grid,
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    type_alias as ta,
+    utils as common_utils,
 )
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
+from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, serialbox, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
+
+
+MAX_CFL_RTOL = (
+    0.0 if test_utils.wp_is_dp else 20 * constants.VP_EPS
+)  # max vertical CFL not bit-identical in single
 
 
 log = logging.getLogger(__name__)
@@ -52,8 +57,12 @@ def _compare_cfl(
         == icon_result_cfl_clipping[horizontal_start:horizontal_end, vertical_start:vertical_end]
     ).all()
 
-    assert (
-        np.abs(vertical_cfl[horizontal_start:horizontal_end, :]).max() == icon_result_max_vcfl_dyn
+    test_utils.assert_dallclose(
+        np.abs(vertical_cfl[horizontal_start:horizontal_end, :]).max(),
+        icon_result_max_vcfl_dyn,
+        rtol=MAX_CFL_RTOL,
+        atol=0.0,
+        err_msg="max_cfl",
     )
 
 
@@ -76,13 +85,14 @@ def create_vertical_params(
 )
 def test_extra_diffusion_constants_match_icon(experiment, step_date_init, savepoint_velocity_init):
     # ICON serializes both constants per second, divided by dtime.
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_velocity_init.dtime()
     assert VerticalCflConstants.W_LIMIT / dtime == savepoint_velocity_init.cfl_w_limit()
     assert VerticalCflConstants.EXTRA_DIFFUSION_SCALING / dtime == pytest.approx(
         savepoint_velocity_init.scalfac_exdiff(), rel=1e-14
     )
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -117,7 +127,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = init_savepoint.dtime()
 
     diagnostic_state = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
@@ -252,66 +262,84 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c().asnumpy()
     icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
-    assert test_utils.dallclose(
-        diagnostic_state.tangential_wind.asnumpy(), icon_result_vt, atol=1.0e-14
+    test_utils.assert_dallclose(
+        diagnostic_state.tangential_wind.asnumpy(),
+        icon_result_vt,
+        atol=1.0e-14 if test_utils.wp_is_dp else 1.5e-5,
+        err_msg="vt",
     )
 
-    assert test_utils.dallclose(
-        diagnostic_state.vn_on_half_levels.asnumpy(), icon_result_vn_ie, atol=1.0e-14
+    test_utils.assert_dallclose(
+        diagnostic_state.vn_on_half_levels.asnumpy(),
+        icon_result_vn_ie,
+        atol=1.0e-14 if test_utils.wp_is_dp else 8e-6,
+        err_msg="vn_ie",
     )
 
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.contravariant_correction_at_cells_on_half_levels.asnumpy()[
             start_cell_nudging:, vertical_params.nflatlev + 1 : icon_grid.num_levels
         ],
         icon_result_w_concorr_c[
             start_cell_nudging:, vertical_params.nflatlev + 1 : icon_grid.num_levels
         ],
-        atol=1.0e-15,
+        atol=1.0e-15 if test_utils.wp_is_dp else 1e-6,
+        err_msg="w_concorr_c",
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.vertical_wind_advective_tendency.predictor.asnumpy()[
             start_cell_nudging:, :
         ],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
-        atol=5.0e-16,
-        rtol=1.0e-10,
+        atol=5.0e-16 if test_utils.wp_is_dp else 8e-7,
+        rtol=1.0e-10 if test_utils.wp_is_dp else test_utils.STD_RTOL,
+        err_msg="ddt_w_adv_pc predictor",
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),
         icon_result_ddt_vn_apc_pc,
-        atol=1.0e-15,
+        atol=1.0e-15 if test_utils.wp_is_dp else 5e-7,
+        err_msg="ddt_vn_apc_pc predictor",
     )
 
     # ICON sets z_vt_ie on the top half level unconditionally
     # (mo_velocity_advection.f90:300) whereas icon4py leaves the whole field untouched
     # when the predictor's vertical advection is skipped.
     first_comparable_half_level = 1 if vn_only else 0
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         tangential_wind_on_half_levels.asnumpy()[:, first_comparable_half_level:],
         savepoint_velocity_exit.z_vt_ie().asnumpy()[:, first_comparable_half_level:],
-        rtol=1.0e-14,
-        atol=1.0e-14,
+        rtol=1.0e-14 if test_utils.wp_is_dp else test_utils.STD_RTOL,
+        atol=1.0e-14 if test_utils.wp_is_dp else 1.5e-5,
+        err_msg="z_vt_ie",
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         horizontal_kinetic_energy_at_edges_on_model_levels.asnumpy(),
         savepoint_velocity_exit.z_kin_hor_e().asnumpy(),
-        rtol=1.0e-14,
+        rtol=1.0e-14 if test_utils.wp_is_dp else test_utils.STD_RTOL,
         atol=1.0e-14,
+        err_msg="z_kin_hor_e",
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         contravariant_correction_at_edges_on_model_levels.asnumpy(),
         savepoint_velocity_exit.z_w_concorr_me().asnumpy(),
-        rtol=1.0e-15,
-        atol=1.0e-15,
+        rtol=1.0e-15 if test_utils.wp_is_dp else test_utils.STD_RTOL,
+        atol=1.0e-15 if test_utils.wp_is_dp else 1e-6,
+        err_msg="z_w_concorr_me",
     )
 
-    assert diagnostic_state.max_vertical_cfl == icon_result_max_vcfl_dyn
+    test_utils.assert_dallclose(
+        float(diagnostic_state.max_vertical_cfl),
+        icon_result_max_vcfl_dyn,
+        rtol=MAX_CFL_RTOL,
+        atol=0.0,
+        err_msg="max_cfl",
+    )
 
     _compare_cfl(
         vertical_cfl=vertical_cfl.asnumpy(),
@@ -324,6 +352,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
@@ -359,7 +388,7 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
 ):
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = init_savepoint.dtime()
 
     assert not vn_only
 
@@ -476,20 +505,28 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
 
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.vertical_wind_advective_tendency.corrector.asnumpy()[
             start_cell_nudging:, :
         ],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
-        atol=5.0e-16,
+        atol=5.0e-16 if test_utils.wp_is_dp else 5e-7,
+        err_msg="ddt_w_adv_pc corrector",
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),
         icon_result_ddt_vn_apc_pc,
-        atol=5.0e-16,
+        atol=5.0e-16 if test_utils.wp_is_dp else 4e-7,
+        err_msg="ddt_vn_apc_pc corrector",
     )
 
-    assert diagnostic_state.max_vertical_cfl == icon_result_max_vcfl_dyn
+    test_utils.assert_dallclose(
+        float(diagnostic_state.max_vertical_cfl),
+        icon_result_max_vcfl_dyn,
+        rtol=MAX_CFL_RTOL,
+        atol=0.0,
+        err_msg="max_cfl",
+    )
 
     _compare_cfl(
         vertical_cfl=vertical_cfl.asnumpy(),

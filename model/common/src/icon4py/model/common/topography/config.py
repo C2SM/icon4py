@@ -9,8 +9,7 @@
 from __future__ import annotations
 
 import logging
-import pathlib
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from icon4py.model.common.config import config_io
 from icon4py.model.common.topography import from_file as from_file_topo
@@ -19,7 +18,7 @@ from icon4py.model.common.topography.analytical import (
     gaussian_hill as gausshill_topo,
     jablonowski_williamson as jw_topo,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
@@ -47,46 +46,6 @@ config_io.register_config_union(
         "from_file": from_file_topo.FromFileConfig,
     },
 )
-
-
-def from_fortran_dict(
-    *,
-    atm_dict: dict[str, Any],
-    input_dict: dict[str, Any],
-    data_path: pathlib.Path,
-) -> TOPO_CONFIG:
-    run_nml = atm_dict["run_nml"]
-    if not run_nml["ltestcase"]:
-        log.info("Reading topography from file")
-        return from_file_topo.FromFileConfig(
-            data_path=data_path / fortran_config.SER_DATA_SUBDIR,
-        )
-
-    testcase_nml = input_dict.get("nh_testcase_nml", {})
-    test_name = testcase_nml.get("nh_test_name")
-    config: (
-        flat_topo.FlatTopographyConfig
-        | jw_topo.JablonowskiWilliamsonConfig
-        | gausshill_topo.GaussianHillConfig
-    )  # mypy does not automatically catch type
-    match test_name:
-        case "APE_nwp" | "APE_aes" | "wk82":
-            log.info("Flat topography")
-            config = flat_topo.FlatTopographyConfig()
-        case "jabw" | "jabw_s":
-            log.info("Analytical topography for Jablonowski-Williamson test case")
-            config = fortran_config.config_dataclass_from_dict(
-                jw_topo.JablonowskiWilliamsonConfig, testcase_nml
-            )
-        case "gauss3D":
-            log.info("Analytical Gaussian hill topography")
-            config = fortran_config.config_dataclass_from_dict(
-                gausshill_topo.GaussianHillConfig, testcase_nml
-            )
-        case name:
-            raise ValueError(f"Unknown or missing test case name: {name!r}")
-
-    return config
 
 
 def create(

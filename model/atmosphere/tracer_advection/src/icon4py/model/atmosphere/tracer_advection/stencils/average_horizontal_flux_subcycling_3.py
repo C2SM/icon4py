@@ -9,6 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -17,7 +18,7 @@ def _average_horizontal_flux_subcycling_3(
     z_tracer_mflx_2_dsl: fa.EdgeKField[ta.wpfloat],
     z_tracer_mflx_3_dsl: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / 3.0
+    p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / wpfloat(3.0)
     return p_out_e
 
 

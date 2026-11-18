@@ -19,7 +19,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import icon as icon_grid
+    from icon4py.model.common.grid import base as base_grid
 
 
 @dataclasses.dataclass
@@ -45,7 +45,13 @@ class DiagnosticState:
 
     @property
     def surface_pressure(self) -> fa.CellField[ta.wpfloat]:
-        return gtx.as_field((dims.CellDim,), self.pressure_ifc.ndarray[:, -1])
+        """Air pressure [Pa] at the surface: the bottom half level of ``pressure_ifc``.
+
+        A view, not a copy: it shares memory with ``pressure_ifc`` and follows its updates,
+        so reading it allocates nothing.
+        """
+        bottom = self.pressure_ifc.domain[dims.KHalfDim].unit_range.stop - 1
+        return self.pressure_ifc[dims.KHalfDim(bottom)]
 
 
 @dataclasses.dataclass
@@ -58,8 +64,8 @@ class DiagnosticMetricState:
 
 
 def initialize_diagnostic_state(
-    grid: icon_grid.IconGrid,
-    allocator: gtx_typing.Allocator,
+    grid: base_grid.Grid,
+    allocator: gtx_typing.Allocator | None,
 ) -> DiagnosticState:
     """Initialize the diagnostic state with zero fields."""
     pressure = data_alloc.zero_field(

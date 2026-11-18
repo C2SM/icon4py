@@ -111,8 +111,10 @@ def test_distributed_metrics_attrs(  # noqa: PLR0917 [too-many-positional-argume
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
     if horizontal_range is not None:
         # We assume that the horizontal dimension exists and is the first one.
+        field_dims = attrs.attrs[attrs_name].dims
+        assert field_dims is not None
         slicer = _get_slice_tuple_from_horizontal_range(
-            factory.grid, attrs.attrs[attrs_name]["dims"][0], horizontal_range
+            factory.grid, field_dims[0], horizontal_range
         )
         field = field[slicer]
         field_ref = field_ref[slicer]
@@ -247,6 +249,6 @@ def test_distributed_metrics_nflat_gradp(  # noqa: PLR0917 [too-many-positional-
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
-    value = factory.get(attrs.NFLAT_GRADP)
+    value = factory.get_scalar(attrs.NFLAT_GRADP)
     value_ref = grid_savepoint.nflat_gradp()
     assert value == value_ref

@@ -21,20 +21,23 @@ import typing
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import diagnostics as diag_stencils
-from icon4py.model.common import constants, dimension as dims, model_backends
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import (
+    diagnostics_stencils as diag_stencils,
+)
+from icon4py.model.common import constants, dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
 from icon4py.model.common.interpolation.stencils.interpolate_cell_vector_to_edge_normal import (
     interpolate_cell_vector_to_edge_normal,
 )
 from icon4py.model.common.model_options import customize_backend, setup_program
+from icon4py.model.common.physics.thermodynamics import compute_energy
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if typing.TYPE_CHECKING:
     import icon4py.model.common.grid.states as grid_states
-    from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+    from icon4py.model.common import field_type_aliases as fa
 
 
 log = logging.getLogger(__name__)
@@ -74,18 +77,18 @@ class Diagnostics:
 
         assert self._cell_params.area is not None
 
-        self._smag_constant = smag_constant
-        self._max_turb_scale = max_turb_scale
-        self._km_min = km_min
-        self._km_const = km_const
+        self._smag_constant = ta.wpfloat(smag_constant)
+        self._max_turb_scale = ta.wpfloat(max_turb_scale)
+        self._km_min = ta.wpfloat(km_min)
+        self._km_const = ta.wpfloat(km_const)
         self._use_km_const = use_km_const
-        self._louis_constant_b = louis_constant_b
+        self._louis_constant_b = ta.wpfloat(louis_constant_b)
         self._use_louis = use_louis
         self._use_louis_land = use_louis_land
         self._use_louis_ice = use_louis_ice
         # reciprocal turbulent Prandtl number (``rturb_prandtl`` in
         # mo_turb_vdiff_config.f90)
-        self._rturb_prandtl = 1.0 / turb_prandtl
+        self._rturb_prandtl = ta.wpfloat(1.0 / turb_prandtl)
 
         if use_louis and not (use_louis_land and use_louis_ice):
             log.warning(
@@ -196,6 +199,19 @@ class Diagnostics:
     ) -> None:
         """Bind the diagnostics step programs (``Compute_diagnostics`` l. 343-482 in
         mo_vdf_atmo.f90)."""
+        self.compute_moist_air_isochoric_heat_capacity_per_area = setup_program(
+            backend=backend,
+            program=compute_energy.compute_moist_air_isochoric_heat_capacity_per_area,
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_nudging,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
         self.compute_thermodynamic_diagnostics = setup_program(
             backend=backend,
             program=diag_stencils.compute_thermodynamic_diagnostics,
@@ -339,6 +355,7 @@ class Diagnostics:
 
     def run(
         self,
+        *,
         input_state: tmx_states.TmxInputState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
     ) -> None:
@@ -353,6 +370,19 @@ class Diagnostics:
 
         log.debug("communication of input u, v (cells): start")
         u_v_exchange = self._exchange.start(dims.CellDim, input_state.u, input_state.v)
+
+        # ICON computes cvair in the driver (get_cvair, mo_aes_phy_diag.f90) on the prognostic
+        # cells and passes it to tmx; here it is the first diagnostic of tmx.
+        self.compute_moist_air_isochoric_heat_capacity_per_area(
+            qv=input_state.qv,
+            qc=input_state.qc,
+            qi=input_state.qi,
+            qr=input_state.qr,
+            qs=input_state.qs,
+            qg=input_state.qg,
+            air_mass_per_area=input_state.air_mass,
+            heat_capacity_per_area=diagnostic_state.cv_air,
+        )
 
         self.compute_thermodynamic_diagnostics(
             temperature=input_state.temperature,

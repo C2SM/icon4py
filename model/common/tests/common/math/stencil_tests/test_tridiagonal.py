@@ -25,9 +25,9 @@ from icon4py.model.testing import stencil_tests
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _solve_on_half_levels_mixed_precision(
-    a: fa.CellKHalfField[vpfloat],  # type: ignore[valid-type]
-    b: fa.CellKHalfField[vpfloat],  # type: ignore[valid-type]
-    c: fa.CellKHalfField[vpfloat],  # type: ignore[valid-type]
+    a: fa.CellKHalfField[vpfloat],
+    b: fa.CellKHalfField[vpfloat],
+    c: fa.CellKHalfField[vpfloat],
     d: fa.CellKHalfField[wpfloat],
 ) -> fa.CellKHalfField[wpfloat]:
     q, d_prime = _solve_tridiagonal_matrix_forward_sweep_on_half_levels_mixed_precision(a, b, c, d)

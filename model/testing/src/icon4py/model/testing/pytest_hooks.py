@@ -47,19 +47,20 @@ def pytest_configure(config):
         "markers",
         "level(name): marks test as unit, integration, or validation tests. Validation tests are excluded by default and must be explicitly requested with --level=validation",
     )
+    config.addinivalue_line(
+        "markers", "single_precision_ready: intended to run if single precision is selected"
+    )
 
-    # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
-    if config.getoption("--enable-mixed-precision"):
-        os.environ["FLOAT_PRECISION"] = "mixed"
-
-    # Handle datatest options: --datatest-only  and --datatest-skip
-    if m_option := config.getoption("-m", []):
-        m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
+    # add parenthesis around original k_option just in case
+    m_option = [f"({m_expr})"] if (m_expr := config.getoption("-m")) else []
     if config.getoption("--datatest-only"):
-        config.option.markexpr = " and ".join(["datatest", *m_option])
-
+        m_option.append("datatest")
     if config.getoption("--datatest-skip"):
-        config.option.markexpr = " and ".join(["not datatest", *m_option])
+        m_option.append("not datatest")
+    if os.environ.get("ICON4PY_FLOAT_PRECISION", "double").lower() == "single":
+        # if precision is set to single per env variable, only run tests marked as single_precision_ready
+        m_option.append("single_precision_ready")
+    config.option.markexpr = " and ".join(m_option[::-1])
 
     handle_mpi_options(config)
 
@@ -95,14 +96,6 @@ def pytest_addoption(parser: pytest.Parser):
             "--grid",
             action="store",
             help="Grid to use.",
-        )
-
-    with contextlib.suppress(ValueError):
-        parser.addoption(
-            "--enable-mixed-precision",
-            action="store_true",
-            help="Switch unit tests from double to mixed-precision",
-            default=False,
         )
 
     with contextlib.suppress(ValueError):
@@ -187,23 +180,40 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
             item_filter.action()
 
 
-_name_from_fullname_pattern = re.compile(
+# StencilTest fullnames (``<path>::<class_name>::test_stencil[<variant>]``) are
+# shortened to ``<class_name>[<variant>]``. Function-based benchmark fullnames
+# (``<path>::test_name[<params>]``) are shortened to ``<test_name>[<params>]``.
+_stenciltest_name_pattern = re.compile(
     r"""
-        ::(?P<class>[A-Za-z_]\w*)       # capture class name
-        (?::: [A-Za-z_]\w*              # skip method name
-        (?:\[(?P<params>.+)\])? )       # optional parameterization; allow '[' and ']' inside params
-        """,
+    ::(?P<class>[A-Za-z_]\w*)       # capture class name
+    (?::: [A-Za-z_]\w*              # skip method name
+    (?:\[(?P<params>.+)\])? )       # optional parameterization
+    """,
+    re.VERBOSE,
+)
+_function_name_pattern = re.compile(
+    r"""
+    ::(?P<func>[A-Za-z_]\w*)         # trailing function name
+    (?:\[(?P<params>.+)\])?          # optional parameterization
+    $
+    """,
     re.VERBOSE,
 )
 
 
 def _name_from_fullname(fullname: str) -> str:
-    match = _name_from_fullname_pattern.search(fullname)
-    if match is None:
-        return fullname  # assume already fixed
-    class_name = match.group("class")
-    params = match.group("params")
-    return f"{class_name}[{params}]" if params else class_name
+    """Shorten a pytest-benchmark fullname for bencher readability."""
+    match = _stenciltest_name_pattern.search(fullname)
+    if match is not None:
+        class_name = match.group("class")
+        params = match.group("params")
+        return f"{class_name}[{params}]" if params else class_name
+    match = _function_name_pattern.search(fullname)
+    if match is not None:
+        func = match.group("func")
+        params = match.group("params")
+        return f"{func}[{params}]" if params else func
+    return fullname
 
 
 # pytest benchmark hook, see:
@@ -213,8 +223,11 @@ def pytest_benchmark_update_json(output_json):
     Replace 'fullname' of pytest benchmarks with a shorter name for better readability in bencher.
 
     Note:
-    Currently works only for 'StencilTest's as they have the following fixed structure:
-      '<path>::<class_name>::test_stencil[<variant>]'.
+    Shortens two kinds of fullnames:
+      - StencilTest class-based benchmarks:
+        '<path>::<class_name>::test_stencil[<variant>]' -> '<class_name>[<variant>]'.
+      - Function-based benchmarks:
+        '<path>::<function_name>[<params>]' -> '<function_name>[<params>]'.
     """
 
     for bench in output_json["benchmarks"]:

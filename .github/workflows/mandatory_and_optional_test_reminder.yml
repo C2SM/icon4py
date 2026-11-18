@@ -29,6 +29,7 @@ jobs:
             * `BACKENDS`: backends
             * `GRIDS`: grids for stencil tests (`simple`, `icon_regional`, or `icon_global`)
             * `LEVELS`: testing level for non-stencil tests (`unit` or `integration`)
+            * `FLOAT_PRECISIONS`: `single` or `double`
 
             For each option, `all` can be used as a shorthand for all possible values of that variable, e.g. `LEVELS=all`.
 
@@ -47,5 +48,9 @@ jobs:
             To run benchmarks you can use:
 
             * `cscs-ci run benchmark-bencher`
+
+            **AI review**
+
+            An advisory AI review is posted automatically on non-draft PRs from authors with write access. Users with write access can request one on any PR by commenting `/review`, and can also use `/improve`, `/ask "<question>"` or `/describe`. See `docs/development/pr_agent.md`.
 
             For more detailed information please look at [CI in the EXCLAIM universe](https://github.com/C2SM/icon-exclaim/wiki).

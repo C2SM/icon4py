@@ -278,11 +278,11 @@ def test_distributed_interpolation_rbf_scales(  # noqa: PLR0917 [too-many-positi
     )
     expected = compute_rbf_scale(
         geometry_type=geometry_type.value,
-        mean_characteristic_length=geometry_from_savepoint.get(
+        mean_characteristic_length=geometry_from_savepoint.get_scalar(
             geometry_attributes.CHARACTERISTIC_LENGTH
         ),
-        mean_dual_edge_length=geometry_from_savepoint.get(
+        mean_dual_edge_length=geometry_from_savepoint.get_scalar(
             geometry_attributes.MEAN_DUAL_EDGE_LENGTH
         ),
     )
-    assert factory.get(attrs_name) == pytest.approx(expected)
+    assert factory.get_scalar(attrs_name) == pytest.approx(expected)

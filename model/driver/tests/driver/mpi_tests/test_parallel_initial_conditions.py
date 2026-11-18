@@ -12,8 +12,9 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import initial_condition, model_backends, model_options
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     nonhydro_states,
@@ -97,9 +98,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     grid_file_path = grid_utils._download_grid_file(experiment.description.grid)
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
-    single_rank_config = experiment.config.with_overrides(
-        driver={"output_path": tmp_path / f"ci_driver_output_serial_rank_{process_props.rank}"}
-    )
+    single_rank_config = experiment.config
     single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=single_rank_config.vertical_grid,
@@ -128,9 +127,8 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     single_rank_tracer_prep_adv_state = prep_adv_states.initialize_tracer_prep_adv_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
     )
-    initial_condition.create(
-        config=single_rank_icon4py_driver.config.initial_condition,
-        vertical_config=single_rank_icon4py_driver.config.vertical_grid,
+    ic_apply(
+        config=driver_utils.make_ic_config_ctx(single_rank_icon4py_driver.config),
         grid=single_rank_icon4py_driver.grid,
         static_fields=single_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=single_rank_prognostic,
@@ -158,9 +156,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         tracer_prep_adv_state=single_rank_tracer_prep_adv_state,
     )
 
-    multi_rank_config = experiment.config.with_overrides(
-        driver={"output_path": tmp_path / f"ci_driver_output_mpi_rank_{process_props.rank}"}
-    )
+    multi_rank_config = experiment.config
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=multi_rank_config.vertical_grid,
@@ -187,11 +183,10 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
     multi_rank_tracer_prep_adv_state = prep_adv_states.initialize_tracer_prep_adv_state(
-        grid=single_rank_icon4py_driver.grid, allocator=allocator
+        grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
-    initial_condition.create(
-        config=multi_rank_icon4py_driver.config.initial_condition,
-        vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
+    ic_apply(
+        config=driver_utils.make_ic_config_ctx(multi_rank_icon4py_driver.config),
         grid=multi_rank_icon4py_driver.grid,
         static_fields=multi_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=multi_rank_prognostic,

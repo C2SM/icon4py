@@ -50,14 +50,9 @@ gt4py_unmatched_ncalls_threshold = (
 # and 'compute_velocity_advection_in_corrector_step' each aggregate several openacc kernels,
 # which this one-icon4py-variant-per-fortran-kernel mapping cannot express.
 fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
-    "apply_diffusion_to_theta_and_exner": None,
-    "apply_diffusion_to_vn": None,
-    "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence": None,
     "apply_divergence_damping_and_update_vn": None,
     "boundary_halo_cleanup": None,
     "compute_dwdz_and_boundary_update_rho_theta_w": None,
-    "calculate_diagnostic_quantities_for_turbulence": None,
-    "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools": None,
     "calculate_nabla2_and_smag_coefficients_for_vn": None,
     "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection": (
         "compute_averaged_vn_and_fluxes",
@@ -194,10 +189,11 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
                 data[fortran_name] = metric_data
             else:
                 log.warning(f"Unmatched icon4py meas for {stencil}")
+                if len(metric_data) < gt4py_unmatched_ncalls_threshold:
+                    continue
                 if stencil in unmatched_data:
                     raise NotImplementedError("Cannot handle stencil variant in unmatched data.")
-                if len(metric_data) >= gt4py_unmatched_ncalls_threshold:
-                    unmatched_data[stencil] = metric_data
+                unmatched_data[stencil] = metric_data
 
     assert "update_mass_flux_weighted" in data
     update_mass_flux_weighted_original = data.pop("update_mass_flux_weighted")

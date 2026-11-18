@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import wpfloat
 
@@ -39,7 +39,7 @@ def compute_internal_energy_per_area(  # noqa: PLR0917 [too-many-positional-argu
         PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
         + PhysicsConstants.cvv * qv
         + PhysicsConstants.cpl * qliq
-        + PhysicsConstants.cpi * qice
+        + PhysicsConstants.ci_thermo * qice
     )
 
     return rho * dz * (cv * t - qliq * PhysicsConstants.lvc - qice * PhysicsConstants.lsc)
@@ -72,7 +72,7 @@ def compute_internal_energy_per_area_scalar(  # noqa: PLR0917 [too-many-position
         PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
         + PhysicsConstants.cvv * qv
         + PhysicsConstants.cpl * qliq
-        + PhysicsConstants.cpi * qice
+        + PhysicsConstants.ci_thermo * qice
     )
 
     return rho * dz * (cv * t - qliq * PhysicsConstants.lvc - qice * PhysicsConstants.lsc)
@@ -96,3 +96,61 @@ def _compute_dry_static_energy(
         static energy at full levels [J/kg]
     """
     return PhysicsConstants.cpd * temperature + grav * height_above_ground
+
+
+@gtx.field_operator
+def _compute_moist_air_isochoric_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
+    qv: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qi: fa.CellKField[ta.wpfloat],
+    qr: fa.CellKField[ta.wpfloat],
+    qs: fa.CellKField[ta.wpfloat],
+    qg: fa.CellKField[ta.wpfloat],
+    air_mass: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Heat capacity at constant volume of the moist air per unit area [J/K/m2].
+
+    get_cvair in mo_aes_phy_diag.f90, with the physical constant ci (2106), not the
+    thermodynamics' 2108.
+    """
+    qliq = qc + qr
+    qice = qi + qs + qg
+    cv = (
+        PhysicsConstants.cvd * (wpfloat(1.0) - (qv + qliq + qice))
+        + PhysicsConstants.cvv * qv
+        + PhysicsConstants.cpl * qliq
+        + PhysicsConstants.ci * qice
+    )
+    return cv * air_mass
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_moist_air_isochoric_heat_capacity_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
+    qv: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    qi: fa.CellKField[ta.wpfloat],
+    qr: fa.CellKField[ta.wpfloat],
+    qs: fa.CellKField[ta.wpfloat],
+    qg: fa.CellKField[ta.wpfloat],
+    air_mass_per_area: fa.CellKField[ta.wpfloat],
+    heat_capacity_per_area: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _compute_moist_air_isochoric_heat_capacity_per_area(
+        qv=qv,
+        qc=qc,
+        qi=qi,
+        qr=qr,
+        qs=qs,
+        qg=qg,
+        air_mass=air_mass_per_area,
+        out=heat_capacity_per_area,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )

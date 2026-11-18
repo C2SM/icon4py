@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import broadcast, maximum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO(nfarabullini, OngChia): this stencil has no test
@@ -29,7 +30,9 @@ def _apply_density_increment(
         p_mflx_contra_v(dims.KDim + 0.5) * deepatmo_divzl
         - p_mflx_contra_v(dims.KDim - 0.5) * deepatmo_divzu
     )
-    rhodz_out = where(even, rhodz_in + rhodz_incr, maximum(0.1 * rhodz_in, rhodz_in) - rhodz_incr)
+    rhodz_out = where(
+        even, rhodz_in + rhodz_incr, maximum(wpfloat(0.1) * rhodz_in, rhodz_in) - rhodz_incr
+    )
     return rhodz_out
 
 

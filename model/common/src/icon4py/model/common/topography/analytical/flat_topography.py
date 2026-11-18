@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import icon as icon_grid
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 class FlatTopographyConfig:
     # Empty config class, used as "tag type" for the match/case statement in
     # topography.config
-    fortran_name_map: ClassVar[dict[str, str]] = {}
+    ...
 
 
 def flat_topography(

@@ -58,15 +58,20 @@ def extract_horizontal_coordinates(
     )
 
 
-def dimension_mapping(dim: gtx.Dimension, is_on_half_levels: bool) -> str:
-    assert dim.kind in (
+def dimension_mapping(dimension: gtx.Dimension) -> str:
+    """The netCDF dimension name for a field dimension.
+
+    Half levels are read off the dimension itself: a field on interface levels
+    lives on ``KHalfDim``.
+    """
+    assert dimension.kind in (
         gtx.DimensionKind.HORIZONTAL,
         gtx.DimensionKind.VERTICAL,
     ), "only horizontal and vertical dimensions are supported."
-    if dim.kind == gtx.DimensionKind.VERTICAL:
-        return "half_level" if is_on_half_levels else "level"
+    if dimension.kind == gtx.DimensionKind.VERTICAL:
+        return "half_level" if dimension == dim.KHalfDim else "level"
     else:
-        return HORIZONTAL_DIMENSION_MAPPING[dim]
+        return HORIZONTAL_DIMENSION_MAPPING[dimension]
 
 
 def ugrid_attributes(dim: gtx.Dimension) -> dict:

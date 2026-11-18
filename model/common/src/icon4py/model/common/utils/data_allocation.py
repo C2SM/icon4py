@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, TypeVar
@@ -26,6 +27,8 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as grid_base
     from icon4py.model.common.states import utils as state_utils
 
+
+log = logging.getLogger(__name__)
 
 try:
     import cupy as xp  # type: ignore[import-not-found]
@@ -109,9 +112,17 @@ def scalar_like_array[ScalarT: gtx_typing.Scalar](
 def reallocate(
     field: gtx.Field,
     allocator: gtx_typing.Allocator | None = None,
+    dtype: npt.DTypeLike | None = None,
 ) -> gtx.Field:
     """Transfer an existing field to the device the allocator selects."""
-    return gtx.as_field(field.domain, data=field.ndarray, allocator=allocator)
+    return gtx.as_field(field.domain, data=field.ndarray, allocator=allocator, dtype=dtype)
+
+
+def astype_if_needed(field: gtx.Field, dtype: type) -> gtx.Field:
+    """Like `gtx.astype`, but return `field` itself instead of a copy if it already has `dtype`."""
+    if field.dtype.scalar_type == dtype:
+        return field
+    return gtx.astype(field, dtype)
 
 
 def random_field(
@@ -122,9 +133,10 @@ def random_field(
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
+    rng: np.random.Generator | None = None,
 ) -> gtx.Field:
-    """A field of values drawn uniformly from `[low, high)`."""
-    values = np.random.default_rng().uniform(
+    """A field of values drawn uniformly from `[low, high)` with `rng`, or from OS entropy if `None`."""
+    values = np.random.default_rng(rng).uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
     return gtx.as_field(dims, values, dtype=dtype, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
@@ -136,9 +148,10 @@ def random_sign(
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
+    rng: np.random.Generator | None = None,
 ) -> gtx.Field:
-    """A field of values drawn from `{-1, 1}`."""
-    values = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dims, extend=extend))
+    """A field of values drawn from `{-1, 1}` with `rng`, or from OS entropy if `None`."""
+    values = np.random.default_rng(rng).choice([-1, 1], size=_shape(grid, *dims, extend=extend))
     return gtx.as_field(dims, values, dtype=dtype, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
@@ -148,12 +161,13 @@ def random_mask(
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
+    rng: np.random.Generator | None = None,
 ) -> gtx.Field:
-    """A field with half of its entries set, in random positions."""
+    """A field with half of its entries set, in random positions. The shuffle is drawn with `rng`, or from OS entropy if `None`."""
     shape = _shape(grid, *dims, extend=extend)
     mask = np.zeros(math.prod(shape), dtype=bool)
     mask[: mask.size // 2] = True
-    np.random.default_rng().shuffle(mask)
+    np.random.default_rng(rng).shuffle(mask)
     return gtx.as_field(dims, mask.reshape(shape), dtype=dtype, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
@@ -244,7 +258,7 @@ def scattered_field(
     xp = array_namespace(values)
     arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
     arr[indices] = values
-    return gtx.as_field(domain, arr, allocator=allocator)
+    return gtx.as_field(domain, arr, allocator=allocator, dtype=type(default_value))
 
 
 def adjust_fortran_indices(inp: NDArray) -> NDArray:
