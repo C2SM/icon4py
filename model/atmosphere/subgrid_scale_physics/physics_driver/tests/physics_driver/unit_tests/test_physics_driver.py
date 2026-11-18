@@ -346,9 +346,9 @@ def test_diagnose_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Gr
     (some_state,) = recorder.states
     # no copies: the prognostics and tracers as given, the diagnostics in the driver's buffers
     for name in ("vn", "w", "exner", "theta_v", "rho", "air_mass", *states.TRACERS):
-        assert getattr(state, name) is getattr(driver_input, name), name
+        assert getattr(some_state, name) is getattr(driver_input, name), name
     for name, field_ in fw.fields(diagnostics).items():
-        assert getattr(state, name) is field_, name
+        assert getattr(some_state, name) is field_, name
     # without a surface process the fluxes are absent
     assert some_state.sensible_heat_flux is None
 
