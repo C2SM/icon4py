@@ -39,6 +39,13 @@ on:
         type: boolean
         default: false
 
+  ## TEMPORARY: plumbing test of this caller from its own PR; removed before
+  ## the PR is marked ready.
+  pull_request:
+    branches:
+      - main
+  ## END
+
 # Each called job widens what it needs, within the calling job's ceiling.
 permissions: {}
 
@@ -88,3 +95,24 @@ jobs:
     # cross organizations either), and never PR Agent's key.
     secrets:
       inference_api_key: ${{ secrets.AGENT_REVIEW_INFERENCE_API_KEY }}
+
+  ## TEMPORARY: the job for the 'pull_request' trigger above: the 'stub'
+  ## harness (no model, no key), always a dry run, in the called workflow's
+  ## keyless job (no environment). Removed before the PR is marked ready.
+  test:
+    if: github.event_name == 'pull_request'
+    uses: GridTools/ci-workflows/.github/workflows/agent-review.yml@fce720199ea669941f688b41dff6857e97faa401 # v0.1.0
+    permissions:
+      contents: read
+      pull-requests: write
+    with:
+      harness: stub
+      pr: ${{ github.event.pull_request.number }}
+      dry_run: true
+      project_name: ICON4Py
+      rule_files: |
+        .github/copilot-instructions.md
+        AGENTS.md
+        CODING_GUIDELINES.md
+      prompt_addendum: .github/agent-review/prompt-addendum.md
+  ## END
