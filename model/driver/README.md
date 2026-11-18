@@ -203,7 +203,10 @@ is short of the same number of tasks: `--ntasks-per-node=4` in the first example
 line shows it. IO rank 0 also logs the node it runs on and the compute ranks it
 serves, once the compute ranks have initialized.
 
-The IO rank needs few cores, on one socket. With output at every step (four compute
+The IO rank needs few cores, on one socket, and more than one only for zarr output
+in many chunks. The output code starts no threads, but the zarr library compresses
+and writes the chunks of a capture on a thread pool of its own; netCDF output is
+written by HDF5 on a single thread. With output at every step (four compute
 ranks shipping about 1 GB per capture to one IO rank, zarr with
 `horizontal_chunk_size: 16384`), a capture took the IO rank 2.4 s to write on one
 core, 1.0 s on four and 0.8 to 0.9 s on 8 to 72 cores of one socket, but 1.1 s on

@@ -225,7 +225,10 @@ is not warned about: only the layout shows it.
   in global order (a single IO rank serving a single compute rank holds the
   undecomposed grid and writes it as a serial run does, whatever the mode).
   Distributed netCDF still needs the parallel installation, on the IO ranks, once
-  there is more than one.
+  there is more than one. The output code starts no threads on an IO rank: one core
+  is all it uses, except that the zarr library compresses and writes the chunks of a
+  capture on a thread pool of its own, so zarr output in many chunks gains from a few
+  cores (measurements in the driver README).
 - The compute ranks define the output: their configuration is shipped to the IO ranks
   at setup, so the two sides cannot diverge. Of their own, the IO ranks need only the
   vertical grid, the model time step and the grid file (for the UGRID topology).
