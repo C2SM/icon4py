@@ -13,7 +13,7 @@ import functools
 import types
 import typing
 from collections.abc import Callable, Collection, Sequence
-from typing import Any, Protocol
+from typing import Any
 
 import gt4py.next as gtx
 
@@ -197,26 +197,6 @@ def copy[S1: state.State, S2: state.State](
 # ------------------------------------------------------------------------------
 # Component: Input, Output, run
 # ------------------------------------------------------------------------------
-
-
-class Component[I: state.State, O: state.State](Protocol):
-    """
-    `run(input, output) -> output`, the only method a component implements.
-
-    A component declares its two states, as class attributes (`class Input(fw.state.State)`) or as
-    instance attributes assigned at construction; a component that writes nothing declares
-    `Output = fw.Empty`. The protocol has no implementation: the constructor is each
-    component's own.
-
-    `component.run(input, output)` writes where the caller says, numpy `out=` style, and
-    returns `output`: the caller owns the buffers. Whether `output` may alias `input` is
-    the component's business; nothing checks it here.
-    """
-
-    Input: type[I]
-    Output: type[O]
-
-    def run(self, input: I, output: O) -> O: ...
 
 
 def copy_to_output(input: state.State, output: state.State) -> None:

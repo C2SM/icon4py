@@ -14,7 +14,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import surface, surface_states
-from icon4py.model.common import dimension as dims, field, framework as fw, state
+from icon4py.model.common import component, dimension as dims, field, state
 from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.states import surface_flux_state
 
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-class Surface(fw.Component["Surface.Input", "Surface.Output"]):
+class Surface(component.Component["Surface.Input", "Surface.Output"]):
     """
     The surface scheme: the surface fluxes and the surface temperature from the lowest level of
     the atmosphere. It produces no tendencies.

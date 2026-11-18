@@ -23,7 +23,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     process_time_control,
     static_fields,
 )
-from icon4py.model.common import dimension as dims, field, framework as fw, state
+from icon4py.model.common import component, dimension as dims, field, framework as fw, state
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.framework import quantities as qty, states
 from icon4py.model.common.grid import base as base_grid, simple
@@ -158,7 +158,7 @@ def zero_physics_state(
     return fw.allocate(physics_state.PhysicsState, grid, None, step_start=step_start)
 
 
-class Recorder(fw.Component[physics_state.PhysicsState, state.State]):
+class Recorder(component.Component[physics_state.PhysicsState, state.State]):
     """
     A component that writes fixed values into the leaves of its output and records the physics
     states it ran on, with a copy of the qv each one read.

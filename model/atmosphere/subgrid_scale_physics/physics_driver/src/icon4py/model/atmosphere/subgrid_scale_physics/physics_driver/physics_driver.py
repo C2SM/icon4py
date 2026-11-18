@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     static_fields,
 )
 from icon4py.model.common import (
+    component,
     dimension as dims,
     field,
     framework as fw,
@@ -47,7 +48,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"]):
+class PhysicsDriver(component.Component["PhysicsDriver.Input", "PhysicsDriver.Output"]):
     """
     Runs the physics processes under ICON AES's sequential coupling (aes_phy_main).
 

@@ -18,10 +18,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.run_full_muphy
     setup_muphys,
 )
 from icon4py.model.common import (
+    component,
     dimension as dims,
     field,
     field_type_aliases as fa,
-    framework as fw,
     model_backends,
     model_options,
     state,
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
-class Muphys(fw.Component["Muphys.Input", "Muphys.Output"]):
+class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
     """
     The Component interface to the muphys microphysics.
     """

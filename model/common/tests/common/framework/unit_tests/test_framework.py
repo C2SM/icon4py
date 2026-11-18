@@ -42,29 +42,6 @@ class Budget(state.State):
     salt: field.Field[Salt] | None = None
 
 
-class Halve(fw.Component["Halve.Input", "Halve.Output"]):
-    class Input(state.State):
-        pressure: field.Field[Pressure]
-
-    class Output(state.State):
-        pressure: field.Field[Pressure]
-
-    def run(self, input: Input, output: Output) -> Output:
-        np.asarray(output.pressure.ndarray)[...] = 0.5 * np.asarray(input.pressure.ndarray)
-        return output
-
-
-class Double:
-    """A component in structure only: it does not inherit from `fw.Component`."""
-
-    Input = Halve.Input
-    Output = Halve.Output
-
-    def run(self, input: Halve.Input, output: Halve.Output) -> Halve.Output:
-        np.asarray(output.pressure.ndarray)[...] = 2.0 * np.asarray(input.pressure.ndarray)
-        return output
-
-
 def test_zeros_resolves_the_precision_at_allocation(
     grid: base_grid.Grid, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -139,14 +116,3 @@ def test_allocate_follows_the_declared_dims(grid: base_grid.Grid) -> None:
     assert fields.salt_pc.predictor is not fields.salt_pc.corrector
     assert np.all(np.asarray(fields.salt_pc.corrector.ndarray) == 7.0)
     assert list(fw.fields(fields)) == ["pressure", "salt"]
-
-
-# What mypy checks: a quantity mismatch is a type error. Each ignore below is
-# required (an unused one is reported), so type-checking this module is the test.
-def static_checks(pressure: field.Field[Pressure], salt: field.Field[Salt]) -> None:
-    wrong: field.Field[Pressure] = salt  # type: ignore[assignment]
-    Halve.Input(pressure=salt)  # type: ignore[arg-type]
-    Halve.Input(pressure=pressure)
-    # a component that does not inherit from `fw.Component` satisfies the protocol
-    component: fw.Component[Halve.Input, Halve.Output] = Double()
-    del wrong, component
