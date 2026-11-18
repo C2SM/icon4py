@@ -1658,8 +1658,12 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-source = { git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5#a431f05c4cfd1030d449a812566e73193bd83ab1" }
-version = "1.2.5+unknown.version.details"
+sdist = { url = "https://test-files.pythonhosted.org/packages/9c/ff/1b177fe75ad920237f9fb86dcd799c5d6a9c61d0231656550835eea3a59d/gt4py-1.2.5.tar.gz", hash = "sha256:ac9248353a4818a691cc7c30eef4b9d1a9c6546f90dd6fff622d270a2a5ab2d9", size = 907587, upload-time = "2026-11-18T13:37:56.237Z" }
+source = { registry = "https://test.pypi.org/simple/" }
+version = "1.2.5"
+wheels = [
+  { url = "https://test-files.pythonhosted.org/packages/30/da/f2fd2938d9b245d3ac2dd17a455ccf6b0c55715ace654f86c255b8c9643e/gt4py-1.2.5-py3-none-any.whl", hash = "sha256:eb2af18d6f8f45571d468d62daa0fa5c1c1c8e4e111892affcecbc66af718ad6", size = 1131903, upload-time = "2026-11-18T13:37:54.529Z" }
+]
 
 [package.optional-dependencies]
 cuda12 = [
@@ -2062,7 +2066,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2079,7 +2083,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2096,7 +2100,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2113,7 +2117,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-common", extras = ["io"], editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2130,7 +2134,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2147,7 +2151,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2164,7 +2168,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2181,7 +2185,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2209,9 +2213,9 @@ requires-dist = [
   { name = "click", specifier = ">=8.0" },
   { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
   { name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0" },
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
-  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
-  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
+  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", index = "https://test.pypi.org/simple/" },
+  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
   { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
   { name = "icon4py-common", extras = ["distributed"], editable = "model/common" },
@@ -2261,10 +2265,10 @@ requires-dist = [
   { name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1" },
   { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
   { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0" },
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
-  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
-  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
-  { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
+  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", index = "https://test.pypi.org/simple/" },
+  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", index = "https://test.pypi.org/simple/" },
+  { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", index = "https://test.pypi.org/simple/" },
   { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
   { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
   { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -2352,7 +2356,7 @@ version = "0.5.0"
 [package.metadata]
 requires-dist = [
   { name = "devtools", specifier = ">=0.12" },
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
   { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
   { name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics" },
@@ -2386,7 +2390,7 @@ version = "0.5.0"
 [package.metadata]
 requires-dist = [
   { name = "filelock", specifier = ">=3.18.0,<3.20" },
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-common", extras = ["io"], editable = "model/common" },
   { name = "icon4py-driver", editable = "model/driver" },
   { name = "numpy", specifier = ">=1.23.3" },
@@ -2417,7 +2421,7 @@ requires-dist = [
   { name = "click", specifier = ">=8.1.7" },
   { name = "configargparse", specifier = ">=1.7.1" },
   { name = "fprettify", specifier = ">=0.3.7" },
-  { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=releasing_v1.2.5" },
+  { name = "gt4py", specifier = "==1.2.5", index = "https://test.pypi.org/simple/" },
   { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
   { name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common" },
   { name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common" },
