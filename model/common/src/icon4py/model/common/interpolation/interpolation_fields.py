@@ -1290,11 +1290,11 @@ def compute_lsq_coeffs(
 ) -> data_alloc.NDArray:
     if lsq_dim_unk != 2:
         raise NotImplementedError(
-            "Only linear least squares reconstruction (lsq_dim_unk = 2) is implemented, but got lsq_dim_unk = {lsq_dim_unk}."
+            f"Only linear least squares reconstruction (lsq_dim_unk = 2) is implemented, but got lsq_dim_unk = {lsq_dim_unk}."
         )
     if lsq_dim_c != 3:
         raise NotImplementedError(
-            "Only 3 neighboring cells (lsq_dim_c = 3) is implemented and tested, but got lsq_dim_c = {lsq_dim_c}."
+            f"Only 3 neighboring cells (lsq_dim_c = 3) is implemented and tested, but got lsq_dim_c = {lsq_dim_c}."
         )
 
     array_ns = data_alloc.array_namespace(cell_center_x)
