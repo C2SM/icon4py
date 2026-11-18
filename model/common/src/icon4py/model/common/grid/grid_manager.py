@@ -34,6 +34,13 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 _log = logging.getLogger(__name__)
 _single_node_decomposer = decomp.SingleNodeDecomposer()
+
+
+def _nan_to_zero(array: data_alloc.NDArray, array_ns) -> data_alloc.NDArray:
+    """Replace NaN values with zero, using the given array namespace (numpy or cupy)."""
+    return array_ns.where(array_ns.isnan(array), array_ns.zeros_like(array), array)
+
+
 _fortran_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
 _refinement_control_dims_to_names = {
     dims.CellDim: gridfile.GridRefinementName.CONTROL_CELLS,
@@ -258,20 +265,23 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
+        xp = data_alloc.import_array_ns(allocator)
         local_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         local_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         local_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
 
         vertex_to_edge = self._get_index_field(
-            gridfile.ConnectivityName.V2E, indices=local_vertex_indices
+            gridfile.ConnectivityName.V2E, indices=local_vertex_indices, array_ns=xp
         )
-        vertex_edge_orientation = np.where(
+        vertex_edge_orientation = xp.where(
             vertex_to_edge != gridfile.GridFile.INVALID_INDEX,
-            self._reader.int_variable(
-                gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
-                transpose=True,
-                apply_offset=False,
-                indices=local_vertex_indices,
+            xp.asarray(
+                self._reader.int_variable(
+                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
+                    transpose=True,
+                    apply_offset=False,
+                    indices=local_vertex_indices,
+                )
             ),
             0,
         )
@@ -307,13 +317,15 @@ class GridManager:
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
-                np.nan_to_num(
-                    self._reader.variable(
-                        gridfile.GeometryName.EDGE_CELL_DISTANCE,
-                        transpose=True,
-                        indices=local_edge_indices,
+                _nan_to_zero(
+                    xp.asarray(
+                        self._reader.variable(
+                            gridfile.GeometryName.EDGE_CELL_DISTANCE,
+                            transpose=True,
+                            indices=local_edge_indices,
+                        )
                     ),
-                    nan=0.0,
+                    xp,
                 ),
                 allocator=allocator,
             ),

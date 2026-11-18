@@ -101,20 +101,22 @@ def read_initial_condition_from_file(
     )
     savepoint = serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
 
-    cell_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.CellDim))
-    edge_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.EdgeDim))
+    cell_indices = decomposition_info.global_index(dims.CellDim)
+    edge_indices = decomposition_info.global_index(dims.EdgeDim)
 
-    def read_hdim_k(name: str, dim_indices) -> data_alloc.NDArray:
-        buffer = serializer.read(name, savepoint).astype(float).squeeze()
-        return array_ns.asarray(buffer[dim_indices, :])
+    def read_hdim_k(name: str, dim_indices: data_alloc.NDArray) -> data_alloc.NDArray:
+        buffer = array_ns.asarray(serializer.read(name, savepoint).astype(float).squeeze())
+        return buffer[dim_indices, :]
 
     _read_prognostic_state(prognostic_state_now, read_hdim_k, edge_indices, cell_indices)
 
     ntracer = config.ntracer
     if ntracer > 0:
-        tracers = serializer.read("tracers_now", savepoint).astype(float).squeeze()
+        tracers = array_ns.asarray(
+            serializer.read("tracers_now", savepoint).astype(float).squeeze()
+        )
         for i, tracer in enumerate(tracer_state_now.active_fields()):
-            tracer.field.ndarray[:, :] = array_ns.asarray(tracers[cell_indices, :, i])
+            tracer.field.ndarray[:, :] = tracers[cell_indices, :, i]
 
 
 def read_restart_from_file(
@@ -176,18 +178,18 @@ def read_restart_from_file(
             f"of this experiment covers: {_available_nonhydro_init_dates(serializer)}."
         ) from err
 
-    cell_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.CellDim))
-    edge_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.EdgeDim))
+    cell_indices = decomposition_info.global_index(dims.CellDim)
+    edge_indices = decomposition_info.global_index(dims.EdgeDim)
 
     def read_hdim_k(name: str, dim_indices: data_alloc.NDArray) -> data_alloc.NDArray:
-        buffer = serializer.read(name, nonhydro_savepoint).astype(float).squeeze()
-        return array_ns.asarray(buffer[dim_indices, :])
+        buffer = array_ns.asarray(serializer.read(name, nonhydro_savepoint).astype(float).squeeze())
+        return buffer[dim_indices, :]
 
     def read_predictor_corrector(
         name: str, indices: data_alloc.NDArray
     ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-        buffer = serializer.read(name, velocity_savepoint).astype(float).squeeze()
-        return array_ns.asarray(buffer[indices, :, 0]), array_ns.asarray(buffer[indices, :, 1])
+        buffer = array_ns.asarray(serializer.read(name, velocity_savepoint).astype(float).squeeze())
+        return buffer[indices, :, 0], buffer[indices, :, 1]
 
     _read_prognostic_state(prognostic_state_now, read_hdim_k, edge_indices, cell_indices)
 
