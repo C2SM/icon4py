@@ -42,6 +42,7 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
+    aes_bubble as aes_bubble_ic,
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
     weisman_klemp as wk_ic,
@@ -581,6 +582,32 @@ WK_INITIAL_CONDITION = ConfigMapping(
 )
 
 
+# Read from `aes_bubble_nml` of the experiment's input namelist, where the derived-type
+# members appear as `aes_bubble_config%<member>`.
+_aes_bubble_option = functools.partial(IconOption, required=False)
+AES_BUBBLE_INITIAL_CONDITION = ConfigMapping(
+    aes_bubble_ic.AesBubbleConfig,
+    [
+        _aes_bubble_option(field, ("aes_bubble_nml", "aes_bubble_config", member))
+        for field, member in (
+            ("surface_pressure", "psfc"),
+            ("minimum_temperature", "t_am"),
+            ("surface_temperature", "t0"),
+            ("boundary_layer_lapse_rate", "gamma0"),
+            ("boundary_layer_height", "z0"),
+            ("free_atmosphere_lapse_rate", "gamma1"),
+            ("bubble_temperature_amplitude", "t_perturb"),
+            ("background_relative_humidity", "relhum_bg"),
+            ("bubble_relative_humidity", "relhum_mx"),
+            ("bubble_horizontal_width", "hw_x"),
+            ("bubble_vertical_width", "hw_z"),
+            ("bubble_center_x", "x_center"),
+            ("gaussian_in_y", "lgaussxy"),
+        )
+    ],
+)
+
+
 def make_topography_config(
     *,
     atm_dict: dict[str, Any],
@@ -598,7 +625,7 @@ def make_topography_config(
     testcase_nml = input_dict.get("nh_testcase_nml", {})
     test_name = testcase_nml.get("nh_test_name")
     match test_name:
-        case "APE_nwp" | "APE_aes" | "wk82":
+        case "APE_nwp" | "APE_aes" | "wk82" | "aes_bubble" | "aes_bubble_land":
             log.info("Flat topography")
             return flat_topo.FlatTopographyConfig()
         case "jabw" | "jabw_s":
@@ -620,6 +647,7 @@ def make_initial_condition_config(
     | jw_ic.JablonowskiWilliamsonConfig
     | gauss_ic.Gauss3DConfig
     | wk_ic.WeismanKlempConfig
+    | aes_bubble_ic.AesBubbleConfig
 ):
     run_nml = atm_dict["run_nml"]
     if not run_nml["ltestcase"]:
@@ -642,6 +670,14 @@ def make_initial_condition_config(
         case "wk82":
             log.info("Analytical initial condition for Weisman-Klemp test case")
             return WK_INITIAL_CONDITION.build(testcase_nml)
+        case "aes_bubble":
+            log.info("Analytical initial condition for the AES bubble test case")
+            return AES_BUBBLE_INITIAL_CONDITION.build(input_dict)
+        case "aes_bubble_land":
+            # Same initial condition as 'aes_bubble', but over the JSBACH land surface.
+            raise NotImplementedError(
+                "Test case 'aes_bubble_land' needs the JSBACH land surface, which is not ported."
+            )
         case name:
             raise ValueError(f"Unknown or missing test case name: {name!r}")
 

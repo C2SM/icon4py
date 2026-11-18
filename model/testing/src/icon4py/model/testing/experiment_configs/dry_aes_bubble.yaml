@@ -1,0 +1,97 @@
+# Moist bubble on a torus, after ICON's run/examples/bubble.config (nh_test_name = 'aes_bubble')
+# with the vertical grid and damping of run/mkexp/types/torus.config.
+# Differences to ICON: the surface has fixed (zero) heat fluxes over the constant SST of
+# 30 degC instead of ICON's interactive surface, there is no radiation, and tracer
+# transport and physics use the icon4py settings of warm_bubble.yaml.
+geometry: {}
+metrics: {}
+interpolation: {}
+vertical_grid:
+  num_levels: 70
+  model_top_height: 30000.0
+  flat_height: 15000.0
+  top_height_limit_for_maximal_layer_thickness: 10000.0
+  maximal_layer_thickness: 400.0
+  lowest_layer_thickness: 20.0
+  stretch_factor: 0.7
+  rayleigh_damping_height: 22500.0
+topography:
+  type: flat
+initial_condition:
+  type: aes_bubble
+  surface_pressure: 101325.0
+  minimum_temperature: 180.0
+  surface_temperature: 303.15
+  boundary_layer_lapse_rate: 0.009
+  boundary_layer_height: 3000.0
+  free_atmosphere_lapse_rate: 1.0e-05
+  bubble_temperature_amplitude: 0.0
+  background_relative_humidity: 0.0
+  bubble_relative_humidity: 0.0
+  bubble_horizontal_width: 12500.0
+  bubble_vertical_width: 500.0
+  bubble_center_x: 0.0
+  gaussian_in_y: false
+nonhydrostatic:
+  fourth_order_divdamp_factor: 0.0
+  fourth_order_divdamp_factor2: 0.0
+  fourth_order_divdamp_factor3: 0.0
+  fourth_order_divdamp_factor4: 0.0
+diffusion:
+prescribed_tendencies:
+  data_path:
+driver:
+  experiment_name: dry_aes_bubble
+  profiling_options:
+  dtime: 30 seconds
+  enable_statistics_logging: True
+  start_of_simulation: 1970-01-01T00:00:00
+  start_of_timestepping: 1970-01-01T00:00:00
+  end_of_simulation:
+    type: numsteps
+    value: 24000
+tracer_config:
+  qv: true
+  qc: true
+  qr: true
+  qi: true
+  qs: true
+  qg: true
+tracer_advection:
+  horizontal_advection_type: second_order_linear_miura
+  horizontal_advection_limiter: positive_definite
+  vertical_advection_type: third_order_ppm
+  vertical_advection_limiter: semi_monotonic
+graupel:
+muphys:
+tmx:
+surface:
+io:
+  output_path: output_sample
+  field_groups:
+    - basename: winds
+      variables:
+        - eastward_wind
+        - northward_wind
+        - air_density
+        - exner_function
+        - virtual_potential_temperature
+        - upward_air_velocity
+        - qv
+        - qc
+        - qr
+        - qi
+        - qs
+        - qg
+      output_interval:
+        type: numsteps
+        value: 2
+      timesteps_per_file: 0
+      backend: netcdf
+      mode: gather
+      horizontal_chunk_size:
+      horizontal_shard_size:
+      nc_title: ICON4Py Simulation
+      nc_comment: ICON inspired code in Python and GT4Py
+  time_units: seconds since 1970-01-01 00:00:00
+  calendar: proleptic_gregorian

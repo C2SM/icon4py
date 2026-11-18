@@ -16,6 +16,7 @@ from icon4py.model.common.config import config_io
 from icon4py.model.common.grid import vertical
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
+    aes_bubble as aes_bubble_ic,
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
     linear_horizontal_tracer_advection as lin_hor_adv_ic,
@@ -34,6 +35,7 @@ type IC_CONFIG = (
     jw_ic.JablonowskiWilliamsonConfig
     | gauss_ic.Gauss3DConfig
     | wk_ic.WeismanKlempConfig
+    | aes_bubble_ic.AesBubbleConfig
     | lin_hor_adv_ic.LinearHorizontalAdvectionConfig
     | lin_ver_adv_ic.LinearVerticalAdvectionConfig
     | from_file_ic.FromFileConfig
@@ -46,6 +48,7 @@ config_io.register_config_union(
         "jablonowski_williamson": jw_ic.JablonowskiWilliamsonConfig,
         "gauss_3d": gauss_ic.Gauss3DConfig,
         "weisman_klemp": wk_ic.WeismanKlempConfig,
+        "aes_bubble": aes_bubble_ic.AesBubbleConfig,
         "linear_horizontal_adv": lin_hor_adv_ic.LinearHorizontalAdvectionConfig,
         "linear_vertical_adv": lin_ver_adv_ic.LinearVerticalAdvectionConfig,
         "from_file": from_file_ic.FromFileConfig,

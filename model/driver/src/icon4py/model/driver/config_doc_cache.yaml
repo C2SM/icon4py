@@ -816,6 +816,7 @@ children:
     type_name: icon4py.model.common.initial_condition.analytical.jablonowski_williamson.JablonowskiWilliamsonConfig
       | icon4py.model.common.initial_condition.analytical.gauss3d.Gauss3DConfig |
       icon4py.model.common.initial_condition.analytical.weisman_klemp.WeismanKlempConfig
+      | icon4py.model.common.initial_condition.analytical.aes_bubble.AesBubbleConfig
       | icon4py.model.common.initial_condition.analytical.linear_horizontal_tracer_advection.LinearHorizontalAdvectionConfig
       | icon4py.model.common.initial_condition.analytical.linear_vertical_tracer_advection.LinearVerticalAdvectionConfig
       | icon4py.model.common.initial_condition.from_file.FromFileConfig
@@ -838,6 +839,12 @@ children:
         \  qv_max: 0.014\n  bubble_center_x: 0.0\n  bubble_center_y: 0.0\n  bubble_center_z:\
         \ 1400.0\n  bubble_horizontal_width: 5000.0\n  bubble_vertical_width: 1400.0\n\
         \  bubble_amplitude: 2.0\n  bubble_radius: 1.0\n"
+      - "initial_condition:\n  type: aes_bubble\n  surface_pressure: 101325.0\n  minimum_temperature:\
+        \ 180.0\n  surface_temperature: 303.15\n  boundary_layer_lapse_rate: 0.009\n\
+        \  boundary_layer_height: 3000.0\n  free_atmosphere_lapse_rate: 1.0e-05\n\
+        \  bubble_temperature_amplitude: 3.0\n  background_relative_humidity: 0.7\n\
+        \  bubble_relative_humidity: 0.95\n  bubble_horizontal_width: 12500.0\n  bubble_vertical_width:\
+        \ 500.0\n  bubble_center_x: 0.0\n  gaussian_in_y: false\n"
       - "initial_condition:\n  type: linear_horizontal_adv\n  tracer_profile: gaussian_2d\n\
         \  velocity_field: uniform_xy\n  cfl_number: 0.8\n  initial_center:\n    -\
         \ 0.5\n    - 0.5\n  decay_radius: 0.25\n"
@@ -1498,6 +1505,240 @@ children:
           - initial_condition
           - 'type: WeismanKlempConfig'
         module_path: icon4py.model.common.initial_condition.analytical.weisman_klemp
+        is_union: false
+      - display_name: 'type: AesBubbleConfig'
+        type_name: <class 'icon4py.model.common.initial_condition.analytical.aes_bubble.AesBubbleConfig'>
+        description: ??
+        default: No default value.
+        optional: false
+        examples:
+          - "initial_condition:\n  surface_pressure: 101325.0\n  minimum_temperature:\
+            \ 180.0\n  surface_temperature: 303.15\n  boundary_layer_lapse_rate: 0.009\n\
+            \  boundary_layer_height: 3000.0\n  free_atmosphere_lapse_rate: 1.0e-05\n\
+            \  bubble_temperature_amplitude: 3.0\n  background_relative_humidity:\
+            \ 0.7\n  bubble_relative_humidity: 0.95\n  bubble_horizontal_width: 12500.0\n\
+            \  bubble_vertical_width: 500.0\n  bubble_center_x: 0.0\n  gaussian_in_y:\
+            \ false\n"
+        children:
+          - display_name: surface_pressure
+            type_name: <class 'float'>
+            description: Surface pressure [Pa] (psfc).
+            default: '101325.0'
+            optional: true
+            examples:
+              - 'surface_pressure: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - surface_pressure
+            module_path: builtins
+            is_union: false
+          - display_name: minimum_temperature
+            type_name: <class 'float'>
+            description: Lower bound of the background temperature profile [K] (t_am).
+            default: '180.0'
+            optional: true
+            examples:
+              - 'minimum_temperature: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - minimum_temperature
+            module_path: builtins
+            is_union: false
+          - display_name: surface_temperature
+            type_name: <class 'float'>
+            description: Background surface temperature [K] (t0).
+            default: '303.15'
+            optional: true
+            examples:
+              - 'surface_temperature: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - surface_temperature
+            module_path: builtins
+            is_union: false
+          - display_name: boundary_layer_lapse_rate
+            type_name: <class 'float'>
+            description: Temperature lapse rate below boundary_layer_height [K/m]
+              (gamma0).
+            default: '0.009'
+            optional: true
+            examples:
+              - 'boundary_layer_lapse_rate: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - boundary_layer_lapse_rate
+            module_path: builtins
+            is_union: false
+          - display_name: boundary_layer_height
+            type_name: <class 'float'>
+            description: Height at which the lapse rate changes [m] (z0).
+            default: '3000.0'
+            optional: true
+            examples:
+              - 'boundary_layer_height: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - boundary_layer_height
+            module_path: builtins
+            is_union: false
+          - display_name: free_atmosphere_lapse_rate
+            type_name: <class 'float'>
+            description: Temperature lapse rate above boundary_layer_height [K/m]
+              (gamma1).
+            default: 1e-05
+            optional: true
+            examples:
+              - 'free_atmosphere_lapse_rate: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - free_atmosphere_lapse_rate
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_temperature_amplitude
+            type_name: <class 'float'>
+            description: Temperature perturbation at the centre of the bubble [K]
+              (t_perturb).
+            default: '3.0'
+            optional: true
+            examples:
+              - 'bubble_temperature_amplitude: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - bubble_temperature_amplitude
+            module_path: builtins
+            is_union: false
+          - display_name: background_relative_humidity
+            type_name: <class 'float'>
+            description: Relative humidity outside of the bubble (relhum_bg).
+            default: '0.7'
+            optional: true
+            examples:
+              - 'background_relative_humidity: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - background_relative_humidity
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_relative_humidity
+            type_name: <class 'float'>
+            description: Relative humidity at the centre of the bubble (relhum_mx).
+            default: '0.95'
+            optional: true
+            examples:
+              - 'bubble_relative_humidity: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - bubble_relative_humidity
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_horizontal_width
+            type_name: <class 'float'>
+            description: Full width at half maximum of the horizontal Gaussian profile
+              [m] (hw_x).
+            default: '12500.0'
+            optional: true
+            examples:
+              - 'bubble_horizontal_width: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - bubble_horizontal_width
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_vertical_width
+            type_name: <class 'float'>
+            description: Full width at half maximum of the vertical Gaussian profile,
+              which is centred at the ground [m] (hw_z).
+            default: '500.0'
+            optional: true
+            examples:
+              - 'bubble_vertical_width: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - bubble_vertical_width
+            module_path: builtins
+            is_union: false
+          - display_name: bubble_center_x
+            type_name: <class 'float'>
+            description: X offset of the bubble centre from the domain centre [m]
+              (x_center).
+            default: '0.0'
+            optional: true
+            examples:
+              - 'bubble_center_x: 0.0
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - bubble_center_x
+            module_path: builtins
+            is_union: false
+          - display_name: gaussian_in_y
+            type_name: <class 'bool'>
+            description: Make the bubble Gaussian in y as well (a 3D bubble) instead
+              of a ridge that is uniform in y (lgaussxy).
+            default: 'False'
+            optional: true
+            examples:
+              - 'gaussian_in_y: false
+
+                '
+            children: []
+            config_name_path:
+              - initial_condition
+              - 'type: AesBubbleConfig'
+              - gaussian_in_y
+            module_path: builtins
+            is_union: false
+        config_name_path:
+          - initial_condition
+          - 'type: AesBubbleConfig'
+        module_path: icon4py.model.common.initial_condition.analytical.aes_bubble
         is_union: false
       - display_name: 'type: LinearHorizontalAdvectionConfig'
         type_name: <class 'icon4py.model.common.initial_condition.analytical.linear_horizontal_tracer_advection.LinearHorizontalAdvectionConfig'>

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
+    aes_bubble as aes_bubble_ic,
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
     linear_horizontal_tracer_advection as lin_hor_adv_ic,
@@ -37,7 +38,7 @@ if TYPE_CHECKING:
     )
 
 
-def apply(
+def apply(  # noqa: PLR0912 [too-many-branches] one branch per initial condition
     *,
     config: ConfigContext,
     grid: icon_grid.IconGrid,
@@ -87,6 +88,16 @@ def apply(
                 tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
+            )
+        case aes_bubble_ic.AesBubbleConfig():
+            # Computed column by column on all cells including the halos, which
+            # therefore need no exchange.
+            aes_bubble_ic.aes_bubble(
+                config=config,
+                grid=grid,
+                static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
             )
         case lin_hor_adv_ic.LinearHorizontalAdvectionConfig():
             if tracer_prep_adv_state is None:

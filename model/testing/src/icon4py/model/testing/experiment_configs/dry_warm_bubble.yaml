@@ -17,6 +17,7 @@ initial_condition:
   bubble_vertical_width: 1400.0
   bubble_amplitude: 6.0
   bubble_radius: 1.0
+  qv_max: 0.0
 nonhydrostatic:
   fourth_order_divdamp_factor: 0.004
   fourth_order_divdamp_factor2: 0.004

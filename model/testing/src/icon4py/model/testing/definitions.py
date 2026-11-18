@@ -135,6 +135,7 @@ class Grids:
             icon_grid.TorusParams(
                 domain_length=100000.0,
                 domain_height=100458.946838995,
+                domain_center=(50000.0, 50229.4734195),
             ),
         ),
     )
@@ -145,6 +146,7 @@ class Grids:
             icon_grid.TorusParams(
                 domain_length=100000.0,
                 domain_height=100025.934137103,
+                domain_center=(50000.0, 50012.96706855),
             ),
         ),
     )

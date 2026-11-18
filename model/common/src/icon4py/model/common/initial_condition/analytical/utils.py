@@ -18,7 +18,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.math.stencils import generic_math_operations_array_ns
-from icon4py.model.common.physics.thermodynamics import compute_moisture
+from icon4py.model.common.physics.thermodynamics import compute_moisture, compute_pressure
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -104,6 +104,92 @@ def hydrostatic_adjustment_constant_thetav_ndarray(
         )
 
     return rho, exner
+
+
+def hydrostatic_adjustment_iterative_ndarray(
+    *,
+    temperature: data_alloc.NDArray,
+    relative_humidity: data_alloc.NDArray,
+    wgtfac_c: data_alloc.NDArray,
+    ddqz_z_half: data_alloc.NDArray,
+    exner_ref_mc: data_alloc.NDArray,
+    d_exner_dz_ref_ic: data_alloc.NDArray,
+    theta_ref_mc: data_alloc.NDArray,
+    exner: data_alloc.NDArray,
+    theta_v: data_alloc.NDArray,
+    rho: data_alloc.NDArray,
+    qv: data_alloc.NDArray,
+    num_levels: int,
+    num_iterations: int = 25,
+) -> None:
+    """Hydrostatically balance a moist state for a prescribed temperature and humidity.
+
+    Port of ``hydro_adjust_iterative`` (mo_hydro_adjust.f90) for bottom-up integration
+    with the input ``exner`` as first guess (``luse_exner_fg=.TRUE.``) and its lowest
+    level as lower boundary condition (``opt_exner_lbc``). Starting from ``qv = 0``, each
+    iteration computes ``theta_v`` from ``temperature`` and the current ``qv`` and
+    ``exner``, solves the discretized vertical momentum equation (with ``dw/dt = 0``)
+    upward for ``exner``, then updates ``qv`` from ``relative_humidity`` and ``rho``
+    from the equation of state. ``exner``, ``theta_v``, ``rho`` and ``qv`` are
+    overwritten in place.
+
+    Args:
+        temperature: prescribed temperature [K], unchanged by the adjustment
+        relative_humidity: prescribed relative humidity over water [1]
+        wgtfac_c: weighting factor for interpolation from full to half levels
+        ddqz_z_half: vertical layer thickness on half levels [m]
+        exner_ref_mc: reference exner function on full levels
+        d_exner_dz_ref_ic: vertical gradient of the reference exner on half levels [1/m]
+        theta_ref_mc: reference potential temperature on full levels [K]
+        exner: first guess on input; its lowest level is kept as boundary condition
+        theta_v: virtual potential temperature [K], output
+        rho: air density [kg/m3], output
+        qv: specific humidity [kg/kg], output
+        num_levels: number of full levels
+        num_iterations: fixed number of iterations (25 in ICON)
+    """
+    array_ns = data_alloc.array_namespace(exner)
+    saturation_vapor_pressure = compute_pressure.sat_pres_water(temperature)
+
+    exner_new = array_ns.copy(exner)
+    qv_new = array_ns.zeros_like(exner)
+    for _ in range(num_iterations):
+        virtual_temperature = temperature * (1.0 + phy_const.RV_O_RD_MINUS_1 * qv_new)
+        theta_v_new = virtual_temperature / exner_new
+        theta_v_pr = theta_v_new - theta_ref_mc
+
+        # Linear interpolation to the half levels between two full levels; the
+        # half level k lies between the full levels k - 1 (above) and k (below).
+        wgt = wgtfac_c[:, 1:num_levels]
+        theta_v_ic = wgt * theta_v_new[:, 1:] + (1.0 - wgt) * theta_v_new[:, :-1]
+        theta_v_pr_ic = wgt * theta_v_pr[:, 1:] + (1.0 - wgt) * theta_v_pr[:, :-1]
+
+        # Upward integration of the discretized third equation of motion. Index
+        # k of theta_v_ic / theta_v_pr_ic corresponds to the half level k + 1.
+        for k in range(num_levels - 2, -1, -1):
+            exner_new[:, k] = (
+                exner_new[:, k + 1]
+                + (exner_ref_mc[:, k] - exner_ref_mc[:, k + 1])
+                - ddqz_z_half[:, k + 1]
+                / theta_v_ic[:, k]
+                * theta_v_pr_ic[:, k]
+                * d_exner_dz_ref_ic[:, k + 1]
+            )
+
+        pressure = phy_const.P0REF * array_ns.exp(phy_const.CPD_O_RD * array_ns.log(exner_new))
+        # specific humidity, in the operand order of the Fortran
+        qv_new = (
+            phy_const.RD_O_RV
+            * relative_humidity
+            * saturation_vapor_pressure
+            / (pressure - (1.0 - phy_const.RD_O_RV) * relative_humidity * saturation_vapor_pressure)
+        )
+        rho_new = exner_new**phy_const.CVD_O_RD * phy_const.P0REF / (phy_const.RD * theta_v_new)
+
+    exner[:, :] = exner_new
+    theta_v[:, :] = theta_v_new
+    rho[:, :] = rho_new
+    qv[:, :] = qv_new
 
 
 def zonalwind_2_normalwind_ndarray(

@@ -84,6 +84,10 @@ class IcosahedronParams:
 class TorusParams:
     domain_length: float
     domain_height: float
+    #: (x, y) of the domain centre in the cartesian cell coordinates of the grid file
+    #: ('domain_cartesian_center'); MPI-M torus grids are centred either on the origin
+    #: or on (domain_length / 2, domain_height / 2).
+    domain_center: tuple[float, float] = (0.0, 0.0)
 
     @property
     def geometry_type(self) -> GeometryType:
@@ -109,6 +113,10 @@ class GridParams:
     @property
     def domain_height(self) -> float | None:
         return self._params.domain_height if isinstance(self._params, TorusParams) else None
+
+    @property
+    def domain_center(self) -> tuple[float, float] | None:
+        return self._params.domain_center if isinstance(self._params, TorusParams) else None
 
     @property
     def subdivision(self) -> GridSubdivision | None:

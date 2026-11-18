@@ -12,7 +12,7 @@
 ###SBATCH --gpus-per-task=1
 ###SBATCH --gres-flags=allow-task-sharing
 #SBATCH --partition=normal
-#SBATCH --time=3:00:00
+#SBATCH --time=01:30:00
 
 # gpus-per-node=4 means 4 GPUs per node, and 1 task per node, so each task gets 4 GPUs.
 
@@ -42,7 +42,7 @@ export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000
 # export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res100m/torus_100000mx100000m_res100m.nc
 # export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res500m/torus_100000mx100000m_res500m.nc
 # export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res5000m/torus_100000mx100000m_res5000m.nc
-export CONFIG_FILE=/capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/dry_warm_bubble.yaml
+export CONFIG_FILE=/capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/dry_aes_bubble.yaml
 
 #  --print-distributed-debug-msg
 # cpu run

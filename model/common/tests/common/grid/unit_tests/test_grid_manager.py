@@ -392,6 +392,18 @@ def test_grid_manager_grid_level_and_root(
     assert expected_subdivision == grid.grid_params.subdivision
 
 
+@pytest.mark.parametrize(
+    "grid_description",
+    [test_defs.Grids.TORUS_100X116_1000M, test_defs.Grids.TORUS_200X232_500M],
+)
+def test_grid_manager_torus_domain_center(
+    grid_description: test_defs.GridDescription,
+    backend: gtx_typing.Backend,
+) -> None:
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
+    assert grid.grid_params.domain_center == pytest.approx(grid_description.params.domain_center)
+
+
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(

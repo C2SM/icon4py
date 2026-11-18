@@ -25,9 +25,15 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_con
 from icon4py.model.common import constants, prescribed_tendencies
 from icon4py.model.common.config import config_io
 from icon4py.model.common.initial_condition import from_file as from_file_ic
-from icon4py.model.common.initial_condition.analytical import gauss3d as gauss_ic
+from icon4py.model.common.initial_condition.analytical import (
+    aes_bubble as aes_bubble_ic,
+    gauss3d as gauss_ic,
+)
 from icon4py.model.common.topography import from_file as from_file_topo
-from icon4py.model.common.topography.analytical import gaussian_hill as gausshill_topo
+from icon4py.model.common.topography.analytical import (
+    flat_topography as flat_topo,
+    gaussian_hill as gausshill_topo,
+)
 from icon4py.model.driver import config as driver_config
 
 
@@ -463,3 +469,41 @@ def test_surface_config_rejects_other_sst_cases() -> None:
         fcc.make_surface_config(
             atm_dict=atm_dict, input_dict={"nh_testcase_nml": {"isrfc_type": 1}}
         )
+
+
+def test_aes_bubble_config() -> None:
+    atm_dict = {"run_nml": {"ltestcase": True}}
+    input_dict = {
+        "nh_testcase_nml": {"nh_test_name": "aes_bubble"},
+        "aes_bubble_nml": {
+            "aes_bubble_config": {"psfc": 100000.0, "hw_x": 5000.0, "lgaussxy": True}
+        },
+    }
+    assert fcc.make_initial_condition_config(
+        atm_dict=atm_dict, input_dict=input_dict
+    ) == aes_bubble_ic.AesBubbleConfig(
+        surface_pressure=100000.0, bubble_horizontal_width=5000.0, gaussian_in_y=True
+    )
+    assert (
+        fcc.make_topography_config(atm_dict=atm_dict, input_dict=input_dict)
+        == flat_topo.FlatTopographyConfig()
+    )
+
+
+def test_aes_bubble_config_without_namelist_keeps_the_icon_defaults() -> None:
+    config = fcc.make_initial_condition_config(
+        atm_dict={"run_nml": {"ltestcase": True}},
+        input_dict={"nh_testcase_nml": {"nh_test_name": "aes_bubble"}},
+    )
+    assert config == aes_bubble_ic.AesBubbleConfig()
+
+
+def test_aes_bubble_land_is_not_supported() -> None:
+    atm_dict = {"run_nml": {"ltestcase": True}}
+    input_dict = {"nh_testcase_nml": {"nh_test_name": "aes_bubble_land"}}
+    assert (
+        fcc.make_topography_config(atm_dict=atm_dict, input_dict=input_dict)
+        == flat_topo.FlatTopographyConfig()
+    )
+    with pytest.raises(NotImplementedError, match="JSBACH"):
+        fcc.make_initial_condition_config(atm_dict=atm_dict, input_dict=input_dict)

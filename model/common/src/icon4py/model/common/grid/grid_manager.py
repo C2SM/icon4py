@@ -496,10 +496,18 @@ class GridManager:
                     ),
                 )
             case icon.GeometryType.TORUS:
+                cartesian_center = self._reader.try_attribute(
+                    gridfile.MPIMPropertyName.CARTESIAN_CENTER
+                )
+                domain_center = (0.0, 0.0)
+                if cartesian_center is not None:
+                    center = np.asarray(cartesian_center, dtype=float)
+                    domain_center = (float(center[0]), float(center[1]))
                 return icon.GridParams(
                     icon.TorusParams(
                         domain_length=domain_length,
                         domain_height=domain_height,
+                        domain_center=domain_center,
                     ),
                 )
 
