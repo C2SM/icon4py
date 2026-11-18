@@ -38,3 +38,5 @@ DALLCLOSE_PRINT_INSTEAD_OF_FAIL: bool = env.flag_to_bool(
 )
 DOWNLOAD_CACHE_PATH: pathlib.Path = env.path("ICON4PY_DOWNLOAD_CACHE", _default_download_cache())
 DRIVER_LOGGING_LEVEL: str = os.environ.get("ICON4PY_DRIVER_LOGGING_LEVEL", "debug")
+
+TEST_SEED: int | None = env.non_negative_int("ICON4PY_TEST_SEED")
