@@ -14,6 +14,14 @@ overlaid. Temperature is diagnosed like icon4py's
 compute_virtual_temperature_and_temperature: T = theta_v * exner / (1 + (Rv/Rd - 1) qv - q_cond).
 Use --no-thermo to skip it.
 
+A third figure per output time (moisture_sections_NNNN.png) shows, on the same two
+sections, the water vapour qv as an anomaly from the horizontal-mean profile of the first
+output time (grey lines: full qv) and the relative humidity (black line: saturation,
+100 %). The relative humidity is the ratio of the vapour partial pressure to the
+saturation vapour pressure, RH = rho qv Rv T / e_sat(T), with icon4py's Tetens formula
+over liquid water; --rh-ice uses ice below the melting point instead, as in the
+relative-humidity profile of the warm bubble initial condition. Use --no-moist to skip it.
+
 The ICON torus grid is triangular and doubly periodic: cell-centre values are linearly
 interpolated onto the section lines (Delaunay triangulation of the periodically tiled
 cell centres; the interpolation weights are computed once and reused for every field
@@ -42,11 +50,16 @@ import xarray as xr  # noqa: E402
 from scipy.spatial import Delaunay  # noqa: E402
 
 from icon4py.model.common import constants
+from icon4py.model.common.physics.thermodynamics import compute_pressure
 
 
 CLOUD_VARS = ("qc", "qi")
 PRECIP_VARS = ("qr", "qs", "qg")
 ISOTHERM_SPACING = 10.0  # K
+# %, bins centred on multiples of 5 % so a uniform RH (e.g. the initial 70 %) does not
+# flicker between two colours; supersaturation (> 102.5 %) is shown as 'max'
+RH_LEVELS = np.arange(2.5, 105.0, 5.0)
+RH_TICKS = np.arange(10.0, 101.0, 10.0)
 
 
 # --------------------------------------------------------------------------------------
@@ -150,6 +163,32 @@ def temperature(data: xr.Dataset, it: int) -> np.ndarray:
     return t_v / (1.0 + constants.RV_O_RD_MINUS_1 * qv - q_cond)
 
 
+def relative_humidity(data: xr.Dataset, it: int, over_ice: bool = False) -> np.ndarray:
+    """Relative humidity (%) as vapour partial pressure over saturation vapour pressure.
+
+    e = rho_v Rv T with rho_v = rho qv, i.e. the inverse of qv_from_relative_humidity used
+    by the warm bubble initial condition. With over_ice, the saturation vapour pressure is
+    taken over ice below the melting point (with the same temperature clamp as there).
+    """
+    temp = temperature(data, it)
+    vapour_pressure = (
+        data["air_density"].isel(time=it).values
+        * sum_vars(data, ("qv",), it)
+        * constants.RV
+        * temp
+    )
+    saturation_pressure = compute_pressure.sat_pres_water(temp)
+    if over_ice:
+        saturation_pressure = np.where(
+            temp <= constants.MELTING_TEMPERATURE,
+            compute_pressure.sat_pres_ice(
+                np.maximum(temp, constants.MINIMUM_TEMPERATURE_ICE_SATURATION)
+            ),
+            saturation_pressure,
+        )
+    return 100.0 * vapour_pressure / saturation_pressure
+
+
 def horizontal_mean(field_lev_cell: np.ndarray, area_weights: np.ndarray) -> np.ndarray:
     """Cell-area weighted horizontal mean profile of a (level, cell) field."""
     return field_lev_cell @ area_weights
@@ -195,13 +234,18 @@ def draw_panel(ax, s, z_km, cloud, precip, uh, w, cloud_levels, precip_levels, q
     return cf, q
 
 
-def draw_anomaly_panel(ax, s, z_km, anomaly, *, levels, cmap, uh, w, quiv, args, full=None, full_levels=None):
-    """One vertical section: shading = anomaly, grey lines = full field, arrows = (uh, w)."""
+def draw_anomaly_panel(
+    ax, s, z_km, anomaly, *, levels, cmap, uh, w, quiv, args, full=None, full_levels=None,
+    full_fmt="%.0f K", full_color="0.35", full_width=0.5, extend="both",
+):
+    """One vertical section: shading = anomaly, lines = full field, arrows = (uh, w)."""
     s_km = s * 1e-3
-    cf = ax.contourf(s_km, z_km, anomaly, levels=levels, cmap=cmap, extend="both")
-    if full is not None:
-        cs = ax.contour(s_km, z_km, full, levels=full_levels, colors="0.35", linewidths=0.5)
-        ax.clabel(cs, fontsize=6, fmt="%.0f K", inline_spacing=2)
+    cf = ax.contourf(s_km, z_km, anomaly, levels=levels, cmap=cmap, extend=extend)
+    if full is not None and full_levels is not None and len(full_levels) > 0:
+        cs = ax.contour(
+            s_km, z_km, full, levels=full_levels, colors=full_color, linewidths=full_width
+        )
+        ax.clabel(cs, fontsize=6, fmt=full_fmt, inline_spacing=2)
     ks = slice(None, None, args.zskip)
     ss = slice(None, None, max(1, s.size // args.narrows))
     q = ax.quiver(
@@ -210,6 +254,58 @@ def draw_anomaly_panel(ax, s, z_km, anomaly, *, levels, cmap, uh, w, quiv, args,
     )
     ax.set_ylim(0.0, args.zmax)
     return cf, q
+
+
+def plot_moisture(
+    data, it, *, plot_dir, wxz, wyz, sx, sy, x0, y0, z_km, u, v, w,
+    qv_ref, qv_levels, qv_lines, quiv, ref, t_min, args,
+) -> pathlib.Path:
+    """Figure with the qv anomaly (top) and the relative humidity (bottom) on both sections."""
+    qv = data["qv"].isel(time=it).values
+    qv_anom = (qv - qv_ref) * 1e3  # g/kg
+    rh = relative_humidity(data, it, over_ice=args.rh_ice)
+    rh_label = "ice below 0 °C" if args.rh_ice else "liquid water"
+
+    fig, axs = plt.subplots(2, 2, figsize=(14, 9), sharey=True, constrained_layout=True)
+    rows = (
+        dict(field=qv_anom, levels=qv_levels, ticks=qv_levels[::2], cmap="BrBG",
+             extend="both", full=qv * 1e3, full_levels=qv_lines, full_fmt="%g",
+             full_color="0.35", full_width=0.5),
+        dict(field=rh, levels=RH_LEVELS, ticks=RH_TICKS, cmap="YlGnBu", extend="both",
+             full=rh, full_levels=[100.0], full_fmt="%.0f %%", full_color="k",
+             full_width=1.2),
+    )
+    for row, r in enumerate(rows):
+        for col, (wsec, s, uh) in enumerate(((wxz, sx + x0, u), (wyz, sy + y0, v))):
+            cf, q = draw_anomaly_panel(
+                axs[row, col], s, z_km, on_section(wsec, r["field"]), levels=r["levels"],
+                cmap=r["cmap"], uh=on_section(wsec, uh), w=on_section(wsec, w), quiv=quiv,
+                args=args, full=on_section(wsec, r["full"]), full_levels=r["full_levels"],
+                full_fmt=r["full_fmt"], full_color=r["full_color"], full_width=r["full_width"],
+                extend=r["extend"],
+            )
+        cb = fig.colorbar(cf, ax=axs[row, :], pad=0.01, shrink=0.9, ticks=r["ticks"])
+        cb.set_label(
+            "water vapour anomaly  qv - <qv>(t$_0$)  (g/kg)"
+            if row == 0
+            else f"relative humidity over {rh_label}  (%)"
+        )
+    for ax in axs[:, 0]:
+        ax.set_ylabel("height (km)")
+    axs[1, 0].set_xlabel("x (km)")
+    axs[1, 1].set_xlabel("y (km)")
+    axs[0, 0].set_title(f"x-z section at y = {y0 * 1e-3:.1f} km   (arrows: u, w)")
+    axs[0, 1].set_title(f"y-z section at x = {x0 * 1e-3:.1f} km   (arrows: v, w)")
+    axs[0, 0].quiverkey(q, 0.05, 0.975, ref, f"{ref:.0f} m/s", labelpos="E", coordinates="figure")
+    fig.suptitle(
+        f"warm bubble   t = {t_min[it]:.0f} min    (qv anomaly from the horizontal mean at "
+        f"t = {t_min[0]:.0f} min, grey lines: qv in g/kg; black line: RH = 100 %)",
+        fontsize=11,
+    )
+    out = plot_dir / f"moisture_sections_{it:04d}.png"
+    fig.savefig(out, dpi=120)
+    plt.close(fig)
+    return out
 
 
 def write_gif(frames: list[pathlib.Path], gif: pathlib.Path, fps: int) -> None:
@@ -244,6 +340,11 @@ def main() -> None:  # noqa: PLR0912, PLR0915 [too-many-branches/statements] lin
     p.add_argument("--gif", action="store_true", help="also write an animated GIF of all frames")
     p.add_argument("--fps", type=int, default=4)
     p.add_argument("--no-thermo", action="store_true", help="skip the temperature/density figures")
+    p.add_argument("--no-moist", action="store_true", help="skip the qv/relative humidity figures")
+    p.add_argument(
+        "--rh-ice", action="store_true",
+        help="relative humidity over ice below the melting point (default: over liquid water)",
+    )
     args = p.parse_args()
 
     data, grid = open_output(args.output_dir, args.group)
@@ -291,14 +392,31 @@ def main() -> None:  # noqa: PLR0912, PLR0915 [too-many-branches/statements] lin
     else:
         quiv = args.vector_scale
 
+    area = grid["cell_area"].values
+    area_weights = area / area.sum()
+    below_top = z_km <= args.zmax
+
+    if not args.no_moist and "qv" not in data:
+        print(f"note: no 'qv' in the '{args.group}' group, skipping the moisture figures")
+        args.no_moist = True
+    if not args.no_moist:
+        # qv anomaly from the horizontal-mean profile at the first output time, colour scale
+        # fixed over all selected frames
+        qv_ref = horizontal_mean(data["qv"].isel(time=0).values, area_weights)[:, None]
+        qv_anom_max = qv_max_all = 0.0
+        for it in its:
+            qv = data["qv"].isel(time=it).values[below_top]
+            qv_anom_max = max(qv_anom_max, float(np.abs(qv - qv_ref[below_top]).max()))
+            qv_max_all = max(qv_max_all, float(qv.max()))
+        qv_levels = symmetric_levels(qv_anom_max * 1e3)
+        qv_lines = matplotlib.ticker.MaxNLocator(nbins=8).tick_values(0.0, qv_max_all * 1e3)
+        qv_lines = qv_lines[(qv_lines > 0.0) & (qv_lines < qv_max_all * 1e3)]
+
     if not args.no_thermo:
         # anomalies from the horizontal-mean profile at the first output time, with colour
         # scales fixed over all selected frames
-        area = grid["cell_area"].values
-        area_weights = area / area.sum()
         t_ref = horizontal_mean(temperature(data, 0), area_weights)[:, None]
         rho_ref = horizontal_mean(data["air_density"].isel(time=0).values, area_weights)[:, None]
-        below_top = z_km <= args.zmax
         t_anom_max = rho_anom_max = 0.0
         t_min_all, t_max_all = np.inf, -np.inf
         for it in its:
@@ -313,7 +431,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915 [too-many-branches/statements] lin
             np.floor(t_min_all / ISOTHERM_SPACING) * ISOTHERM_SPACING, t_max_all, ISOTHERM_SPACING
         )
 
-    frames, thermo_frames = [], []
+    frames, thermo_frames, moist_frames = [], [], []
     for n, it in enumerate(its):
         if args.follow and n > 0:
             x0, y0 = locate_cloud_centre(data, x, y, [it])
@@ -353,6 +471,16 @@ def main() -> None:  # noqa: PLR0912, PLR0915 [too-many-branches/statements] lin
         plt.close(fig)
         frames.append(out)
         print(f"[{n + 1}/{len(its)}] {out}")
+
+        if not args.no_moist:
+            moist_frames.append(
+                plot_moisture(
+                    data, it, plot_dir=plot_dir, wxz=wxz, wyz=wyz, sx=sx, sy=sy, x0=x0, y0=y0,
+                    z_km=z_km, u=u, v=v, w=w, qv_ref=qv_ref, qv_levels=qv_levels,
+                    qv_lines=qv_lines, quiv=quiv, ref=ref, t_min=t_min, args=args,
+                )
+            )
+            print(f"[{n + 1}/{len(its)}] {moist_frames[-1]}")
 
         if args.no_thermo:
             continue
@@ -398,6 +526,8 @@ def main() -> None:  # noqa: PLR0912, PLR0915 [too-many-branches/statements] lin
         write_gif(frames, plot_dir / "cross_sections.gif", args.fps)
     if args.gif and thermo_frames:
         write_gif(thermo_frames, plot_dir / "thermo_sections.gif", args.fps)
+    if args.gif and moist_frames:
+        write_gif(moist_frames, plot_dir / "moisture_sections.gif", args.fps)
 
 
 if __name__ == "__main__":
