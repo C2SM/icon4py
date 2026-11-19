@@ -553,9 +553,22 @@ class GlobalReductions(Reductions):
         to the single-rank sum of the same values, whatever the decomposition.
         """
         buffer = self._prepare_buffer(buffer)
-        array_ns = data_alloc.array_namespace(buffer)
         if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
+        return self._sum_of_owned(buffer)
+
+    def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        buffer = self._prepare_buffer(buffer)
+        # one size reduction serves both the check and the division: every reduction is a
+        # collective, so `mean` must not go through `sum`, which would compute the size again
+        global_buffer_size = self._calc_buffer_size(buffer)
+        if global_buffer_size == 0:
+            raise ValueError("global_mean requires a non-empty buffer")
+        return self._sum_of_owned(buffer) / global_buffer_size
+
+    def _sum_of_owned(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        """Sum of an owned-entries buffer that is known to be non-empty over all ranks."""
+        array_ns = data_alloc.array_namespace(buffer)
         if not np.issubdtype(buffer.dtype, np.floating):
             return self._reduce(
                 buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
@@ -570,12 +583,6 @@ class GlobalReductions(Reductions):
             mpi4py.MPI.MAX,
         )
         return decomp_defs.order_insensitive_sum(buffer, abs_max, allreduce=self._allreduce_exact)
-
-    def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        global_buffer_size = self._calc_buffer_size(self._prepare_buffer(buffer))
-        if global_buffer_size == 0:
-            raise ValueError("global_mean requires a non-empty buffer")
-        return self.sum(buffer) / global_buffer_size
 
     def _allreduce_exact(self, value: int | float) -> int | float:
         # the pickling ``allreduce`` adds Python numbers: exact for the integer total of the
