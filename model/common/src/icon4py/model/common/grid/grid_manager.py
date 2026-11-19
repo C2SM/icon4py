@@ -36,9 +36,6 @@ _log = logging.getLogger(__name__)
 _single_node_decomposer = decomp.SingleNodeDecomposer()
 
 
-def _nan_to_zero(array: data_alloc.NDArray, array_ns) -> data_alloc.NDArray:
-    """Replace NaN values with zero, using the given array namespace (numpy or cupy)."""
-    return array_ns.where(array_ns.isnan(array), array_ns.zeros_like(array), array)
 
 
 _fortran_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
@@ -501,6 +498,8 @@ class GridManager:
         # cell instead of INVALID_INDEX, so stencils reading E2C never go out of bounds.
         # This must happen after E2C2E is derived, because the RBF stencil needs the
         # original INVALID_INDEX to avoid a singular matrix.
+        # This should only affect limited area grids, and bring no changes to
+        # global and torus grid.
         if self._decomposition_info.is_distributed():
             edges = self._decomposition_info.global_index(dims.EdgeDim)
             e2c = neighbor_tables[dims.E2C]

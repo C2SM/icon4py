@@ -67,8 +67,8 @@ class PrescribedTendencies:
         assert config.data_path is not None
         self._grid = grid
         self._array_ns = data_alloc.import_array_ns(model_backends.get_allocator(backend))
-        self._cell_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.CellDim))
-        self._edge_indices = data_alloc.as_numpy(decomposition_info.global_index(dims.EdgeDim))
+        self._cell_indices = decomposition_info.global_index(dims.CellDim)
+        self._edge_indices = decomposition_info.global_index(dims.EdgeDim)
         self._serializer = serialbox.Serializer(
             serialbox.OpenModeKind.Read, str(config.data_path), "icon_pydycore_rank0"
         )

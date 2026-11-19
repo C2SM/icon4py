@@ -158,13 +158,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         tracer_prep_adv_state=single_rank_tracer_prep_adv_state,
     )
 
-    # Topography/prescribed tendencies are read from the global (single-rank) data.
-    data_overrides = {
-        section: {"data_path": getattr(single_rank_config, section).data_path}
-        for section in ("initial_condition", "topography", "prescribed_tendencies")
-        if hasattr(getattr(single_rank_config, section), "data_path")
-    }
-    multi_rank_config = experiment.config.with_overrides(**data_overrides)
+    multi_rank_config = single_rank_config
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=multi_rank_config.vertical_grid,
