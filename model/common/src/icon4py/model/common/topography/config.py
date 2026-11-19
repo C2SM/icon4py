@@ -22,8 +22,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
+    from icon4py.model.common import model_backends
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import grid_manager as gm
 
@@ -52,7 +51,7 @@ def create(
     *,
     config: TOPO_CONFIG,
     grid_manager: gm.GridManager,
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """Create topography array by dispatching on the type of ``config.config``."""

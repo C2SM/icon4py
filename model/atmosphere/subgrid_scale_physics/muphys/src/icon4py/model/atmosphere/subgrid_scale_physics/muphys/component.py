@@ -32,8 +32,6 @@ from icon4py.model.common.physics.thermodynamics import compute_tendencies
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.common.grid import icon as icon_grid
     from icon4py.model.common.states import model
 
@@ -66,7 +64,7 @@ class MuphysComponent:
         grid: icon_grid.IconGrid,
         dtime: time.RelativeTime,
         qnc: float,
-        backend: gtx_typing.Backend | None = None,
+        backend: model_backends.BackendLike = None,
         *,
         step: Callable[..., Any] | None = None,
     ) -> None:

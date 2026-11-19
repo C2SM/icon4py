@@ -47,8 +47,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.common.states import (
         diagnostic_state,
@@ -104,7 +102,7 @@ class PhysicsState:
         metrics: factory.FieldSource,
         process_props: decomposition.ProcessProperties,
         decomposition_info: decomposition.DecompositionInfo,
-        backend: gtx_typing.Backend | None = None,
+        backend: model_backends.BackendLike = None,
     ) -> None:
         self._grid = grid
         self._allocator = model_backends.get_allocator(backend)
@@ -562,7 +560,7 @@ class Tendencies:
     the components directly into the buffers the ``PhysicsState`` allocates for them.
     """
 
-    def __init__(self, *, backend: gtx_typing.Backend | None = None) -> None:
+    def __init__(self, *, backend: model_backends.BackendLike = None) -> None:
         self._allocator = model_backends.get_allocator(backend)
         self._sums: dict[str, gtx.Field] = {}
 

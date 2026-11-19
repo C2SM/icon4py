@@ -22,8 +22,6 @@ from icon4py.model.common.states import surface_flux_state
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.atmosphere.subgrid_scale_physics.surface import config as surface_config
     from icon4py.model.common import field_type_aliases as fa, time, type_alias as ta
     from icon4py.model.common.grid import base as base_grid
@@ -47,7 +45,7 @@ class SurfaceComponent:
         *,
         grid: base_grid.Grid,
         config: surface_config.SurfaceConfig,
-        backend: gtx_typing.Backend | None = None,
+        backend: model_backends.BackendLike = None,
     ) -> None:
         self._surface = surface.Surface(grid=grid, config=config, backend=backend)
         # the outputs: replaced by the caller's buffers in `bind_output_buffers`

@@ -151,7 +151,7 @@ def data_provider(
     download_ser_data: None,  # downloads data as side-effect
     experiment: test_defs.Experiment,
     process_props: decomposition.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
 ) -> serialbox.IconSerialDataProvider:
     data_path = dt_utils.get_datapath_for_experiment(experiment.description, process_props)
     return dt_utils.create_icon_serial_data_provider(data_path, process_props.rank, backend)
@@ -166,7 +166,7 @@ def grid_savepoint(
 
 @pytest.fixture
 def icon_grid(
-    grid_savepoint: serialbox.IconGridSavepoint, backend: gtx_typing.Backend
+    grid_savepoint: serialbox.IconGridSavepoint, backend: gtx_typing.Backend | None
 ) -> base_grid.Grid:
     """
     Load the icon grid from an ICON savepoint.
