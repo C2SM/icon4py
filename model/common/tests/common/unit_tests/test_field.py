@@ -43,7 +43,7 @@ def test_fields_derived_from_a_field_are_untagged(grid: base_grid.Grid) -> None:
 
 @gtx.field_operator
 def _double(field: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
-    return 2.0 * field
+    return field + field
 
 
 def test_a_program_takes_a_field_as_is(grid: base_grid.Grid) -> None:
