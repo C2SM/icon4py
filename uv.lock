@@ -1180,9 +1180,9 @@ dependencies = [
   { name = "typing-extensions" }
 ]
 name = "dace"
-sdist = { url = "https://files.pythonhosted.org/packages/07/08/e02a771ee94c47f5bede9d70f8299f29a2bd088b0f54a9a22b81f3923b82/dace-2.0.0b1.tar.gz", hash = "sha256:a645f17cf6155a8cf13543df2daf2823f7d1cc88984276e73206a652fe305698", size = 7104619, upload-time = "2026-10-26T08:06:49.246Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/39/c0f134464d714b06dedcbbc8d17e509f249a4a2626a8aa68af01abdc92f0/dace-2.0.0b2.tar.gz", hash = "sha256:831fd753e55e94e1ce20cb3246a4724a9832da47af31e6a3ae8c9d08692c4714", size = 7210560, upload-time = "2026-11-16T15:21:32.771Z" }
 source = { registry = "https://pypi.org/simple" }
-version = "2.0.0b1"
+version = "2.0.0b2"
 
 [[package]]
 dependencies = [
@@ -1658,11 +1658,11 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-sdist = { url = "https://files.pythonhosted.org/packages/1a/9e/eb1f3e1ed6cc98236d6abb36be4558aca99e25c2870bc0ea7d5f033c1768/gt4py-1.2.4.tar.gz", hash = "sha256:5089e7bf9f0e59ea855617867995ef1981d467b31b30aa052e7f56276f047b58", size = 892136, upload-time = "2026-11-04T16:40:28.842Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/45/2ac1807165efde53a794be36983a13b3aee840d52c9041b90aac3560e617/gt4py-1.2.5.tar.gz", hash = "sha256:25484f9b32e1ff8503b05ac96eea46c62b56df3111d407385803c077577be828", size = 907553, upload-time = "2026-11-18T13:59:34.81Z" }
 source = { registry = "https://pypi.org/simple" }
-version = "1.2.4"
+version = "1.2.5"
 wheels = [
-  { url = "https://files.pythonhosted.org/packages/cb/0c/209904ee0777413d18fd9bd4d376e839cdb7c45b657926a283f3516f41b6/gt4py-1.2.4-py3-none-any.whl", hash = "sha256:e37b6e7090fc316b9881c851e22e8d57208dd2433caef3485866cb3f4662c358", size = 1112066, upload-time = "2026-11-04T16:40:26.96Z" }
+  { url = "https://files.pythonhosted.org/packages/db/97/947b406a50b5859dc65f7834baab2f2f73a9efc0b4b803d13932da1b3213/gt4py-1.2.5-py3-none-any.whl", hash = "sha256:1f243030fa8c42884df5ac2f1bba7b9885410708859245f8801ac1b3e3b96b83", size = 1131903, upload-time = "2026-11-18T13:59:32.703Z" }
 ]
 
 [package.optional-dependencies]
@@ -2066,7 +2066,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2083,7 +2083,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2100,7 +2100,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2117,7 +2117,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-common", extras = ["io"], editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2134,7 +2134,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2151,7 +2151,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2168,7 +2168,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2185,7 +2185,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2213,7 +2213,7 @@ requires-dist = [
   { name = "click", specifier = ">=8.0" },
   { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
   { name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0" },
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
   { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'" },
   { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
@@ -2265,7 +2265,7 @@ requires-dist = [
   { name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1" },
   { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
   { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0" },
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
   { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'" },
   { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'" },
@@ -2356,7 +2356,7 @@ version = "0.5.0"
 [package.metadata]
 requires-dist = [
   { name = "devtools", specifier = ">=0.12" },
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
   { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
   { name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics" },
@@ -2390,7 +2390,7 @@ version = "0.5.0"
 [package.metadata]
 requires-dist = [
   { name = "filelock", specifier = ">=3.18.0,<3.20" },
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-common", extras = ["io"], editable = "model/common" },
   { name = "icon4py-driver", editable = "model/driver" },
   { name = "numpy", specifier = ">=1.23.3" },
@@ -2421,7 +2421,7 @@ requires-dist = [
   { name = "click", specifier = ">=8.1.7" },
   { name = "configargparse", specifier = ">=1.7.1" },
   { name = "fprettify", specifier = ">=0.3.7" },
-  { name = "gt4py", specifier = "==1.2.4" },
+  { name = "gt4py", specifier = "==1.2.5" },
   { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
   { name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common" },
   { name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common" },
