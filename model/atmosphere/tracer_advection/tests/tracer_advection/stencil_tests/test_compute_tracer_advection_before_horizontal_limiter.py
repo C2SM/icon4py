@@ -25,6 +25,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_adv
     compute_tracer_advection_before_horizontal_limiter,
 )
 from icon4py.model.atmosphere.tracer_advection.tracer_advection import HorizontalAdvectionType
+from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import (
+    HorizontalAdvectionLimiter,
+)
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
@@ -186,7 +189,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
                 p_tracer_after_vertical, p_mass_flx_e, p_vn, connectivities
             )
 
-        if itype_hlimit == 4:
+        if itype_hlimit == HorizontalAdvectionLimiter.POSITIVE_DEFINITE.value:
             r_m = compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(
                 connectivities,
                 geofac_div,
@@ -208,8 +211,8 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         params=[
             (gtx.int32(HorizontalAdvectionType.FIRST_ORDER_UPWIND.value), gtx.int32(0)),
             (gtx.int32(HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value), gtx.int32(0)),
-            (gtx.int32(HorizontalAdvectionType.FIRST_ORDER_UPWIND.value), gtx.int32(2)),
-            (gtx.int32(HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value), gtx.int32(2)),
+            (gtx.int32(HorizontalAdvectionType.FIRST_ORDER_UPWIND.value), gtx.int32(3)),
+            (gtx.int32(HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value), gtx.int32(3)),
         ]
     )
     def input_data(
@@ -369,7 +372,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
                 p_tracer_now, p_mass_flx_e, p_vn, connectivities
             )
 
-        if itype_hlimit == 4:
+        if itype_hlimit == HorizontalAdvectionLimiter.POSITIVE_DEFINITE.value:
             r_m = compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(
                 connectivities,
                 geofac_div,

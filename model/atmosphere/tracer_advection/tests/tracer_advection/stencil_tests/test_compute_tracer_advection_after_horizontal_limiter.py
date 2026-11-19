@@ -17,6 +17,12 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_advection import (
     compute_tracer_advection_after_horizontal_limiter,
 )
+from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import (
+    HorizontalAdvectionLimiter,
+    HorizontalAdvectionType,
+    VerticalAdvectionLimiter,
+    VerticalAdvectionType,
+)
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
@@ -138,7 +144,7 @@ def _ppm_courant_number_numpy(
         cellmass = {}
         gt = {}
         z_m = z_mass.copy()
-        for j, guard in enumerate([nlev - 1, nlev - 2, nlev - 3, nlev - 4]):
+        for j, guard in enumerate([nlev - 1, nlev - 1, nlev - 2, nlev - 3]):
             cellmass[j] = np.where(
                 kh <= guard, _gather_at_khalf(p_cellmass_now, j + 0.5, num_levels), 0.0
             )
@@ -166,7 +172,7 @@ def _ppm_courant_number_numpy(
         cellmass = {}
         gt = {}
         z_m = z_mass.copy()
-        for j, guard in enumerate([slevp1_ti + 1, slevp1_ti + 2, slevp1_ti + 3, slevp1_ti + 4]):
+        for j, guard in enumerate([slevp1_ti + 1, slevp1_ti + 1, slevp1_ti + 2, slevp1_ti + 3]):
             cellmass[j] = np.where(
                 kh >= guard, _gather_at_khalf(p_cellmass_now, -(j + 0.5), num_levels), 0.0
             )
@@ -230,7 +236,7 @@ def _ppm4gpu_flux_numpy(
     z_slope[:, 1 : num_levels - 1] = limit_vertical_slope_semi_monotonically_numpy(
         p_cc, z_slope_raw, elev, num_levels
     )
-    if itype_vlimit != 1:  # == VerticalAdvectionType.FIRST_ORDER_UPWIND in the stencil
+    if itype_vlimit != VerticalAdvectionLimiter.SEMI_MONOTONIC.value:
         z_slope = z_slope_raw
 
     # faces: kh=0 -> p_cc[0]; 1 <= kh <= elev -> quadratic/quartic; kh >= elev+1 -> p_cc[kh-1]
@@ -251,7 +257,11 @@ def _ppm4gpu_flux_numpy(
         (face_kh > 1) & (face_kh < elev), quartic[:, 1 : elev + 1], quadratic[:, 1 : elev + 1]
     )
 
-    l_limit = compute_vertical_parabola_limiter_condition_numpy(p_face, p_cc)
+    l_limit = (
+        compute_vertical_parabola_limiter_condition_numpy(p_face, p_cc)
+        if itype_vlimit == VerticalAdvectionLimiter.SEMI_MONOTONIC.value
+        else np.zeros_like(p_cc, dtype=np.int32)
+    )
     z_face_up, z_face_low = limit_vertical_parabola_semi_monotonically_numpy(l_limit, p_face, p_cc)
     z_delta_q = 0.5 * (z_face_up - z_face_low)
     z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)
@@ -400,12 +410,12 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             rhodz_for_h_now = rhodz_ast2
             rhodz_for_h_new = rhodz_new
 
-        if itype_hlimit == 4:
+        if itype_hlimit == HorizontalAdvectionLimiter.POSITIVE_DEFINITE.value:
             p_mflx_tracer_h = apply_positive_definite_horizontal_multiplicative_flux_factor_numpy(
                 r_m, p_mflx_tracer_h_unlimited, connectivities
             )
 
-        if ihadv_tracer != 0:
+        if ihadv_tracer != HorizontalAdvectionType.NO_ADVECTION.value:
             p_tracer_new = integrate_tracer_horizontally_numpy(
                 connectivities,
                 p_mflx_tracer_h,
@@ -418,7 +428,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             )
 
         p_mflx_tracer_v_computed = np.zeros_like(p_mflx_tracer_v)
-        if ivadv_tracer == 1:
+        if ivadv_tracer == VerticalAdvectionType.FIRST_ORDER_UPWIND.value:
             p_mflx_tracer_v_computed[:, 1:-1] = (
                 np.where(
                     p_mflx_contra_v[:, 1:-1] >= 0.0,
@@ -427,7 +437,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
                 )
                 * p_mflx_contra_v[:, 1:-1]
             )
-        elif ivadv_tracer == 3:
+        elif ivadv_tracer == VerticalAdvectionType.THIRD_ORDER_PPM.value:
             p_mflx_tracer_v_computed = _ppm4gpu_flux_numpy(
                 p_cc=p_tracer_new,
                 p_cellmass_now=rhodz_ast2,
@@ -465,7 +475,9 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             p_tracer_new=p_tracer_new,
         )
 
-    @stencil_tests.input_data_fixture(params=[(True, 0), (False, 1), (True, 3), (False, 3)])
+    @stencil_tests.input_data_fixture(
+        params=[(True, 0, 1), (False, 1, 1), (True, 3, 1), (False, 3, 1), (False, 3, 0)]
+    )
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper,
         grid: base.Grid,
@@ -491,7 +503,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         p_mflx_tracer_h = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         p_tracer_new = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
-        do_vertical_first, ivadv_tracer = request.param
+        do_vertical_first, ivadv_tracer, itype_vlimit = request.param
 
         return dict(
             p_mflx_tracer_h=p_mflx_tracer_h,
@@ -518,7 +530,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             ivadv_tracer=gtx.int32(ivadv_tracer),
             ihadv_tracer=gtx.int32(2),
             itype_hlimit=gtx.int32(4),
-            itype_vlimit=gtx.int32(1),
+            itype_vlimit=gtx.int32(itype_vlimit),
             iadv_slev_jt=gtx.int32(0),
             geofac_div=geofac_div,
             wp_eps=ta.wpfloat(1e-9),

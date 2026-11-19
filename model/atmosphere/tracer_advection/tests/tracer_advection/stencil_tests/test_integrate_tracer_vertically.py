@@ -14,6 +14,7 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_vertically import (
     integrate_tracer_vertically,
 )
+from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import VerticalAdvectionType
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
@@ -31,7 +32,7 @@ def integrate_tracer_vertically_numpy(  # noqa: PLR0917
     ivadv_tracer: int,
     iadv_slev_jt: int,
 ) -> np.ndarray:
-    if ivadv_tracer != 0:
+    if ivadv_tracer != VerticalAdvectionType.NO_ADVECTION.value:
         tracer_new = np.where(
             (iadv_slev_jt <= k),
             (

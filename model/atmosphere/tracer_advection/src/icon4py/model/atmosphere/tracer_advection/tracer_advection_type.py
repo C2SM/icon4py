@@ -6,13 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from enum import Enum
+import enum
 
 from icon4py.model.common.config import config_io
 
 
 @config_io.register_enum
-class HorizontalAdvectionType(Enum):
+class HorizontalAdvectionType(enum.IntEnum):
     """
     Horizontal operator scheme for tracer advection (originally ihadv_tracer).
     """
@@ -26,7 +26,7 @@ class HorizontalAdvectionType(Enum):
 
 
 @config_io.register_enum
-class HorizontalAdvectionLimiter(Enum):
+class HorizontalAdvectionLimiter(enum.IntEnum):
     """
     Limiter for horizontal tracer advection operator (originally itype_hlimit).
     """
@@ -38,7 +38,7 @@ class HorizontalAdvectionLimiter(Enum):
 
 
 @config_io.register_enum
-class VerticalAdvectionType(Enum):
+class VerticalAdvectionType(enum.IntEnum):
     """
     Vertical operator scheme for tracer advection (originally ivadv_tracer).
     """
@@ -52,7 +52,7 @@ class VerticalAdvectionType(Enum):
 
 
 @config_io.register_enum
-class VerticalAdvectionLimiter(Enum):
+class VerticalAdvectionLimiter(enum.IntEnum):
     """
     Limiter for vertical tracer advection operator (originally itype_vlimit).
     """

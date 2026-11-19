@@ -9,6 +9,7 @@
 import gt4py.next as gtx
 from gt4py.next import where
 
+from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import VerticalAdvectionType
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
@@ -64,7 +65,7 @@ def _integrate_tracer_vertically(
             ),
             tracer_now,
         )
-        if (ivadv_tracer != 0)
+        if (ivadv_tracer != VerticalAdvectionType.NO_ADVECTION)
         else tracer_now
     )
 

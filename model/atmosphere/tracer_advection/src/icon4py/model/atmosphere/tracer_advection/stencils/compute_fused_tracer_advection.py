@@ -75,7 +75,12 @@ from icon4py.model.atmosphere.tracer_advection.stencils.limit_vertical_slope_sem
 from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coefficients_svd import (
     _reconstruct_linear_coefficients_svd,
 )
-from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import VerticalAdvectionType
+from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import (
+    HorizontalAdvectionLimiter,
+    HorizontalAdvectionType,
+    VerticalAdvectionLimiter,
+    VerticalAdvectionType,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
     _compute_tangential_wind,
@@ -119,7 +124,7 @@ def _compute_ppm4gpu_flux(
     )
     z_slope = (
         _limit_vertical_slope_semi_monotonically(p_cc=p_cc, z_slope=z_slope_raw, elev=elev)
-        if (itype_vlimit == VerticalAdvectionType.FIRST_ORDER_UPWIND)
+        if (itype_vlimit == VerticalAdvectionLimiter.SEMI_MONOTONIC)
         else z_slope_raw
     )
     p_face = concat_where(
@@ -139,7 +144,7 @@ def _compute_ppm4gpu_flux(
     )
     l_limit = (
         _compute_vertical_parabola_limiter_condition(p_face=p_face, p_cc=p_cc)
-        if itype_vlimit == 1
+        if itype_vlimit == VerticalAdvectionLimiter.SEMI_MONOTONIC
         else broadcast(0, (dims.CellDim, dims.KDim))
     )
     z_face_up, z_face_low = _limit_vertical_parabola_semi_monotonically(
@@ -379,7 +384,7 @@ def _compute_tracer_advection_before_horizontal_limiter(
             p_mass_flx_e=p_mass_flx_e,
             p_vn=p_vn,
         )
-        if (ihadv_tracer == 1)
+        if (ihadv_tracer == HorizontalAdvectionType.FIRST_ORDER_UPWIND)
         else (
             _compute_2nd_order_miura_horizontal_flux(
                 p_cc=tracer_for_h,
@@ -396,7 +401,7 @@ def _compute_tracer_advection_before_horizontal_limiter(
                 lsq_pseudoinv_2=lsq_pseudoinv_2,
                 p_dtime=p_dtime,
             )
-            if (ihadv_tracer == 2)
+            if (ihadv_tracer == HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA)
             else broadcast(wpfloat(0.0), (dims.EdgeDim, dims.KDim))
         )
     )
@@ -410,7 +415,7 @@ def _compute_tracer_advection_before_horizontal_limiter(
             p_dtime=p_dtime,
             wp_eps=wp_eps,
         )
-        if (itype_hlimit == 4)
+        if (itype_hlimit == HorizontalAdvectionLimiter.POSITIVE_DEFINITE)
         else broadcast(wpfloat(1.0), (dims.CellDim, dims.KDim))
     )
 
@@ -557,7 +562,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
             _apply_positive_definite_horizontal_multiplicative_flux_factor(
                 r_m=r_m, p_mflx_tracer_h=p_mflx_tracer_h_unlimited
             )
-            if (itype_hlimit == 4)
+            if (itype_hlimit == HorizontalAdvectionLimiter.POSITIVE_DEFINITE)
             else p_mflx_tracer_h_unlimited
         ),
         broadcast(wpfloat(0.0), (dims.EdgeDim, dims.KDim)),
@@ -574,7 +579,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
                 geofac_div=geofac_div,
                 p_dtime=p_dtime,
             )
-            if (ihadv_tracer != 0)
+            if (ihadv_tracer != HorizontalAdvectionType.NO_ADVECTION)
             else tracer_now_for_h
         ),
         broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim)),
@@ -588,7 +593,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
             ),
             broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim)),
         )
-        if (ivadv_tracer == 1)
+        if (ivadv_tracer == VerticalAdvectionType.FIRST_ORDER_UPWIND)
         else (
             _compute_ppm4gpu_flux(
                 p_cc=p_tracer_after_horizontal,
@@ -603,7 +608,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
                 p_dtime=p_dtime,
                 itype_vlimit=itype_vlimit,
             )
-            if (ivadv_tracer == 3)
+            if (ivadv_tracer == VerticalAdvectionType.THIRD_ORDER_PPM)
             else broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim))
         )
     )
