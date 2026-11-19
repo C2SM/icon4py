@@ -15,7 +15,14 @@ import pytest
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common import constants, framework as fw, model_backends, model_options, states
+from icon4py.model.common import (
+    constants,
+    framework as fw,
+    model_backends,
+    model_options,
+    state,
+    states,
+)
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -155,8 +162,8 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
         low = 0.0 if name == "w" else -1.0
         return data_alloc.random_field(mesh, *field_dims, low=low, allocator=allocator).ndarray
 
-    diagnostic_state = fw.allocate(states.DiffusionDiagnostics, mesh, allocator, fill=random)
-    prognostic_state = fw.allocate(states.PrognosticState, mesh, allocator, fill=random)
+    diagnostic_state = state.allocate(states.DiffusionDiagnostics, mesh, allocator, fill=random)
+    prognostic_state = state.allocate(states.PrognosticState, mesh, allocator, fill=random)
 
     diffusion_granule = diffusion.Diffusion(
         grid=mesh,

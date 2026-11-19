@@ -17,7 +17,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as muphys_component
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, framework as fw
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, framework as fw, state
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import component_tests
@@ -61,8 +61,8 @@ class TestMuphys(component_tests.ComponentTest, component_tests.CollectInputTest
         )
 
     @pytest.fixture
-    def state(self, grid: base_grid.Grid) -> physics_state.PhysicsState:
-        return fw.allocate(
+    def pstate(self, grid: base_grid.Grid) -> physics_state.PhysicsState:
+        return state.allocate(
             physics_state.PhysicsState, grid, None, step_start=datetime.datetime(2024, 1, 1)
         )
 

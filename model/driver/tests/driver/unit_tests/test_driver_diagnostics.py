@@ -21,6 +21,7 @@ from icon4py.model.common import (
     field,
     framework as fw,
     quantities as qty,
+    state,
     states,
 )
 from icon4py.model.common.grid import base, simple
@@ -98,13 +99,13 @@ def _diagnostics_computer(
 
 def make_diagnostic_state(grid: base.Grid) -> states.Diagnostics:
     """The driver's diagnostic state the output diagnostics are computed into."""
-    return fw.allocate(states.Diagnostics, grid, None)
+    return state.allocate(states.Diagnostics, grid, None)
 
 
 def uniform_prognostic_state(grid: base.Grid) -> states.PrognosticState:
     """A thermodynamically plausible uniform state (the zero state gives no pressure)."""
     values = {"rho": 1.2, "w": 0.5, "vn": VN, "exner": 0.95, "theta_v": 300.0}
-    return fw.allocate(states.PrognosticState, grid, None, fill=lambda name, _: values[name])
+    return state.allocate(states.PrognosticState, grid, None, fill=lambda name, _: values[name])
 
 
 def test_diagnostic_data_is_host_numpy(
@@ -115,10 +116,10 @@ def test_diagnostic_data_is_host_numpy(
     The diagnostic fields come from the (device-resident, on GPU backends) buffers of the
     driver's diagnostics; assembling them must land host numpy arrays.
     """
-    diagnostic_state = fw.allocate(states.Diagnostics, grid, backend)
-    state = _dataarrays(output_sources.by_standard_name(diagnostic_state))
-    assert state
-    for da in state.values():
+    diagnostic_state = state.allocate(states.Diagnostics, grid, backend)
+    some_state = _dataarrays(output_sources.by_standard_name(diagnostic_state))
+    assert some_state
+    for da in some_state.values():
         assert isinstance(da.data, np.ndarray)
 
 

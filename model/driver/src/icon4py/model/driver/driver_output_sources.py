@@ -21,7 +21,7 @@ a field whose quantity has no standard name is not offered.
 
 from typing import Final
 
-from icon4py.model.common import field, framework as fw, quantity, state, states
+from icon4py.model.common import field, quantity, state, states
 
 
 # NOTE: temporary, replaced in parts 04 (recipes) and 05 (derived inputs): goes with
@@ -40,16 +40,16 @@ def standard_names(cls: type[state.State]) -> dict[str, str]:
     """The standard name of each leaf of a `State` class that has one, by leaf name."""
     return {
         name: standard_name_
-        for name, quantity_ in fw.leaf_quantities(cls).items()
+        for name, quantity_ in state.leaf_quantities(cls).items()
         if (standard_name_ := quantity_.standard_name) is not None
     }
 
 
-def by_standard_name(state: state.State) -> dict[str, field.Field]:
+def by_standard_name(some_state: state.State) -> dict[str, field.Field]:
     """The present leaves of a state that have a standard name, by that name."""
     return {
         name: field_
-        for field_ in fw.fields(state).values()
+        for field_ in state.fields(some_state).values()
         if (name := field_.quantity.standard_name) is not None
     }
 

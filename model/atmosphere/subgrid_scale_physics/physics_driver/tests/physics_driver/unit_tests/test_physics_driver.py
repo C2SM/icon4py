@@ -304,7 +304,7 @@ def test_out_need_not_alias_the_inputs(grid: base_grid.Grid) -> None:
     np.testing.assert_array_equal(_qv(tracer_state), 1e-3)
     np.testing.assert_array_equal(prognostic.theta_v.asnumpy(), 300.0)
     np.testing.assert_allclose(_qv(new_tracers), 1e-3 + DT.total_seconds() * 1e-7, rtol=1e-12)
-    for name, field_ in fw.fields(new_prognostic).items():
+    for name, field_ in state.fields(new_prognostic).items():
         np.testing.assert_array_equal(
             field_.asnumpy(), getattr(in_place_prognostic, name).asnumpy(), err_msg=name
         )
@@ -352,7 +352,7 @@ def test_diagnose_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Gr
     process, recorder = recording(state.Empty, {}, time_control(), grid)
     physics = driver(grid, [process])
     prognostic, tracer_state = prognostics(grid), tracers(grid)
-    air_mass = fw.zeros(qty.AirMassOnCellK, grid, None)
+    air_mass = field.zeros(qty.AirMassOnCellK, grid, None)
     driver_input = make_input(prognostic, tracer_state, air_mass=air_mass)
     diagnostics = fw.allocate(states.Diagnostics, grid, None)
 
@@ -362,7 +362,7 @@ def test_diagnose_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Gr
     # no copies: the prognostics and tracers as given, the diagnostics in the driver's buffers
     for name in ("vn", "w", "exner", "theta_v", "rho", "air_mass", *states.TRACERS):
         assert getattr(some_state, name) is getattr(driver_input, name), name
-    for name, field_ in fw.fields(diagnostics).items():
+    for name, field_ in state.fields(diagnostics).items():
         assert getattr(some_state, name) is field_, name
     # without a surface process the fluxes are absent
     assert some_state.sensible_heat_flux is None
@@ -389,7 +389,7 @@ def test_run_syncs_the_halos_at_entry_the_wind_sums_and_what_it_wrote(
     wind, _ = recording(WindOutput, {"tend_u": 1e-4}, time_control(), grid)
     physics = driver(grid, [thermo, wind], exchange=exchange)
     prognostic, tracer_state = prognostics(grid), tracers(grid)
-    perturbed_exner = fw.zeros(qty.PerturbedExnerOnCellK, grid, None)
+    perturbed_exner = field.zeros(qty.PerturbedExnerOnCellK, grid, None)
 
     physics.run(
         make_input(prognostic, tracer_state, perturbed_exner=perturbed_exner),

@@ -12,7 +12,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import framework as fw, model_backends, model_options, states
+from icon4py.model.common import framework as fw, model_backends, model_options, state, states
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.driver import config as driver_config, driver, driver_states, driver_utils
@@ -105,11 +105,11 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=backend,
     )
 
-    single_rank_prognostic = fw.allocate(
+    single_rank_prognostic = state.allocate(
         states.PrognosticState, single_rank_icon4py_driver.grid, allocator
     )
     single_rank_tracer_config = single_rank_icon4py_driver.config.tracer_config
-    single_rank_tracer = fw.allocate(
+    single_rank_tracer = state.allocate(
         states.TracerState,
         single_rank_icon4py_driver.grid,
         allocator,
@@ -117,13 +117,13 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         if single_rank_tracer_config is not None
         else (),
     )
-    single_rank_dycore_forcing = fw.allocate(
+    single_rank_dycore_forcing = state.allocate(
         states.DycoreForcing, single_rank_icon4py_driver.grid, allocator
     )
-    single_rank_dycore_diagnostics = fw.allocate(
+    single_rank_dycore_diagnostics = state.allocate(
         states.DycoreDiagnostics, single_rank_icon4py_driver.grid, allocator
     )
-    single_rank_prep_adv = fw.allocate(
+    single_rank_prep_adv = state.allocate(
         states.PrepAdvection, single_rank_icon4py_driver.grid, allocator
     )
     ic_apply(
@@ -138,7 +138,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         dycore_diagnostics=single_rank_dycore_diagnostics,
         tracer_prep_adv_state=single_rank_prep_adv,
     )
-    single_rank_diagnostic = fw.allocate(
+    single_rank_diagnostic = state.allocate(
         states.Diagnostics, single_rank_icon4py_driver.grid, allocator
     )
     single_rank_ds: driver_states.DriverStates = driver_states.assemble_driver_states(
@@ -170,23 +170,23 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=backend,
     )
 
-    multi_rank_prognostic = fw.allocate(
+    multi_rank_prognostic = state.allocate(
         states.PrognosticState, multi_rank_icon4py_driver.grid, allocator
     )
     multi_rank_tracer_config = multi_rank_icon4py_driver.config.tracer_config
-    multi_rank_tracer = fw.allocate(
+    multi_rank_tracer = state.allocate(
         states.TracerState,
         multi_rank_icon4py_driver.grid,
         allocator,
         only=multi_rank_tracer_config.active_names if multi_rank_tracer_config is not None else (),
     )
-    multi_rank_dycore_forcing = fw.allocate(
+    multi_rank_dycore_forcing = state.allocate(
         states.DycoreForcing, multi_rank_icon4py_driver.grid, allocator
     )
-    multi_rank_dycore_diagnostics = fw.allocate(
+    multi_rank_dycore_diagnostics = state.allocate(
         states.DycoreDiagnostics, multi_rank_icon4py_driver.grid, allocator
     )
-    multi_rank_prep_adv = fw.allocate(
+    multi_rank_prep_adv = state.allocate(
         states.PrepAdvection, multi_rank_icon4py_driver.grid, allocator
     )
     ic_apply(
@@ -201,7 +201,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         dycore_diagnostics=multi_rank_dycore_diagnostics,
         tracer_prep_adv_state=multi_rank_prep_adv,
     )
-    multi_rank_diagnostic = fw.allocate(
+    multi_rank_diagnostic = state.allocate(
         states.Diagnostics, multi_rank_icon4py_driver.grid, allocator
     )
     multi_rank_ds: driver_states.DriverStates = driver_states.assemble_driver_states(

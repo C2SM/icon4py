@@ -16,7 +16,6 @@ import gt4py.next.typing as gtx_typing
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import (
     field,
-    framework as fw,
     quantities as qty,
     states,
     type_alias as ta,
@@ -114,9 +113,9 @@ def construct_forcing_state_from_savepoint(
         grf_tend_thv=init_savepoint.grf_tend_thv(),
         grf_tend_w=init_savepoint.grf_tend_w(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
-        rho_iau_increment=fw.zeros(qty.RhoIauIncrementOnCellK, grid, backend),
-        normal_wind_iau_increment=fw.zeros(qty.NormalWindIauIncrementOnEdgeK, grid, backend),
-        exner_iau_increment=fw.zeros(qty.ExnerIauIncrementOnCellK, grid, backend),
+        rho_iau_increment=field.zeros(qty.RhoIauIncrementOnCellK, grid, backend),
+        normal_wind_iau_increment=field.zeros(qty.NormalWindIauIncrementOnEdgeK, grid, backend),
+        exner_iau_increment=field.zeros(qty.ExnerIauIncrementOnCellK, grid, backend),
     )
 
 
@@ -159,7 +158,7 @@ def construct_prep_advection_state_from_savepoint(
         vn_traj=init_savepoint.vn_traj(),
         mass_flx_me=init_savepoint.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=init_savepoint.mass_flx_ic(),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.zeros(
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=field.zeros(
             qty.VerticalVolumetricFluxOnCellKHalf, grid, backend
         ),
     )

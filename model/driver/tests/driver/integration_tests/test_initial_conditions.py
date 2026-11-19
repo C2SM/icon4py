@@ -11,7 +11,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import framework as fw, model_backends, states
+from icon4py.model.common import framework as fw, model_backends, state, states
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.old_states import data
@@ -112,9 +112,9 @@ def test_initial_conditions(
         backend=backend,
     )
 
-    prognostic_state_now = fw.allocate(states.PrognosticState, icon4py_driver.grid, allocator)
+    prognostic_state_now = state.allocate(states.PrognosticState, icon4py_driver.grid, allocator)
     tracer_config = icon4py_driver.config.tracer_config
-    tracer_state_now = fw.allocate(
+    tracer_state_now = state.allocate(
         states.TracerState,
         icon4py_driver.grid,
         allocator,

@@ -207,8 +207,8 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         virtual_temperature=satad_init.virtual_temperature(),
         pressure=satad_init.pressure(),
         pressure_ifc=satad_init.pressure_ifc(),
-        u=fw.zeros(qty.UOnCellK, icon_grid, backend),
-        v=fw.zeros(qty.VOnCellK, icon_grid, backend),
+        u=field.zeros(qty.UOnCellK, icon_grid, backend),
+        v=field.zeros(qty.VOnCellK, icon_grid, backend),
     )
 
     cell_domain = h_grid.domain(dims.CellDim)

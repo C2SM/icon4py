@@ -10,6 +10,7 @@ import copy
 import pickle
 
 import numpy as np
+import pytest
 from gt4py import next as gtx
 
 from icon4py.model.common import (
@@ -22,7 +23,7 @@ from icon4py.model.common import (
 from icon4py.model.common.grid import base as base_grid
 
 from tests.common.fixtures import grid
-from tests.common.unit_tests.utils import CELL_K, Pressure
+from tests.common.unit_tests.utils import CELL_K, Pressure, Vt
 
 
 def test_field_is_the_gt4py_field_it_tags(grid: base_grid.Grid) -> None:
@@ -36,7 +37,7 @@ def test_field_is_the_gt4py_field_it_tags(grid: base_grid.Grid) -> None:
 
 
 def test_fields_derived_from_a_field_are_untagged(grid: base_grid.Grid) -> None:
-    pressure = fw.zeros(Pressure, grid, allocator=None)
+    pressure = field.zeros(Pressure, grid, allocator=None)
     assert not isinstance(pressure + 1.0, field.Field)
     assert not isinstance(pressure[dims.CellDim(0) : dims.CellDim(2)], field.Field)
 
@@ -47,18 +48,26 @@ def _double(field: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
 
 
 def test_a_program_takes_a_field_as_is(grid: base_grid.Grid) -> None:
-    pressure = fw.zeros(Pressure, grid, allocator=None)
-    doubled = fw.zeros(Pressure, grid, allocator=None)
+    pressure = field.zeros(Pressure, grid, allocator=None)
+    doubled = field.zeros(Pressure, grid, allocator=None)
     np.asarray(pressure.ndarray)[...] = 3.0
     _double(pressure, out=doubled, offset_provider={})
     assert np.all(np.asarray(doubled.ndarray) == 6.0)
 
 
 def test_field_copies_keep_the_quantity(grid: base_grid.Grid) -> None:
-    pressure = fw.zeros(Pressure, grid, allocator=None)
+    pressure = field.zeros(Pressure, grid, allocator=None)
     for copied in (
         copy.copy(pressure),
         copy.deepcopy(pressure),
         pickle.loads(pickle.dumps(pressure)),
     ):
         assert isinstance(copied, field.Field) and copied.quantity is Pressure
+
+
+def test_zeros_resolves_the_precision_at_allocation(
+    grid: base_grid.Grid, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ta, "vpfloat", gtx.float32)
+    assert field.zeros(Vt, grid, allocator=None).ndarray.dtype == np.float32
+    assert field.zeros(Pressure, grid, allocator=None).ndarray.dtype == np.float64

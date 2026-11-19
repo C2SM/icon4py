@@ -56,7 +56,6 @@ from icon4py.model.common import (
     dimension as dims,
     field,
     field_type_aliases as fa,
-    framework as fw,
     model_backends,
     quantities as qty,
     state,
@@ -1058,7 +1057,7 @@ class SolveNonhydro(component.Component):
         """
         Declared as enh_divdamp_fac in ICON.
         """
-        self.intermediate_fields = fw.allocate(IntermediateFields, self._grid, allocator)
+        self.intermediate_fields = state.allocate(IntermediateFields, self._grid, allocator)
         self._vertical_cfl = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.vpfloat
         )

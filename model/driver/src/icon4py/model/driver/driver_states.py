@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import devtools
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.common import dimension as dims, framework as fw, states, time, type_alias as ta
+from icon4py.model.common import dimension as dims, state, states, time, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_attributes
@@ -262,13 +262,13 @@ def assemble_driver_states(
     dycore_diagnostics: states.DycoreDiagnostics | None,
     prep_adv: states.PrepAdvection | None,
 ) -> DriverStates:
-    prognostic_state_next = fw.allocate(states.PrognosticState, grid, allocator)
-    fw.copy(prognostic_state_now, prognostic_state_next)
+    prognostic_state_next = state.allocate(states.PrognosticState, grid, allocator)
+    state.copy(prognostic_state_now, prognostic_state_next)
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
-    tracer_state_next = fw.allocate(
-        states.TracerState, grid, allocator, only=tuple(fw.fields(tracer_state_now))
+    tracer_state_next = state.allocate(
+        states.TracerState, grid, allocator, only=tuple(state.fields(tracer_state_now))
     )
-    fw.copy(tracer_state_now, tracer_state_next)
+    state.copy(tracer_state_now, tracer_state_next)
     tracer_states = common_utils.TimeStepPair(tracer_state_now, tracer_state_next)
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -298,10 +298,10 @@ def assemble_driver_states(
     tracer_advection_enabled = experiment_config.tracer_advection is not None
 
     diffusion_diagnostic_state = (
-        fw.allocate(states.DiffusionDiagnostics, grid, allocator) if diffusion_enabled else None
+        state.allocate(states.DiffusionDiagnostics, grid, allocator) if diffusion_enabled else None
     )
     tracer_advection_diagnostic_state = (
-        fw.allocate(states.AdvectionDiagnostics, grid, allocator)
+        state.allocate(states.AdvectionDiagnostics, grid, allocator)
         if tracer_advection_enabled
         else None
     )

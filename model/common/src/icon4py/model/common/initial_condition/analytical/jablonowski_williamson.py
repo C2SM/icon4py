@@ -19,8 +19,8 @@ import gt4py.next as gtx
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
-    framework as fw,
     model_backends,
+    state,
     states,
     type_alias as ta,
 )
@@ -337,7 +337,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     # Moist initialization only runs when transport is active. The only tracer we
     # need to set is qv; the hydrometeors (qc, qi, ...) keep their zero-initialized
     # value, so we don't touch them.
-    active_tracers = set(fw.fields(tracer_state_now))
+    active_tracers = set(state.fields(tracer_state_now))
     if active_tracers:
         if tracer_state_now.qv is None:
             raise ValueError(

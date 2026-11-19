@@ -17,7 +17,6 @@ from icon4py.model.common import (
     dimension as dims,
     field,
     field_type_aliases as fa,
-    framework as fw,
     quantities as qty,
     states,
     type_alias as ta,
@@ -81,8 +80,8 @@ def construct_diagnostic_init_state_from_savepoint(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
-        hfl_tracer=fw.zeros(qty.HorizontalTracerFluxOnEdgeK, icon_grid, backend),
-        vfl_tracer=fw.zeros(qty.VerticalTracerFluxOnCellKHalf, icon_grid, backend),
+        hfl_tracer=field.zeros(qty.HorizontalTracerFluxOnEdgeK, icon_grid, backend),
+        vfl_tracer=field.zeros(qty.VerticalTracerFluxOnCellKHalf, icon_grid, backend),
     )
 
 
@@ -93,9 +92,9 @@ def construct_diagnostic_exit_state_from_savepoint(
     backend: gtx_typing.Backend | None,
 ) -> states.AdvectionDiagnostics:
     return states.AdvectionDiagnostics(
-        airmass_now=fw.zeros(qty.AirMassOnCellK, icon_grid, backend),
-        airmass_new=fw.zeros(qty.AirMassOnCellK, icon_grid, backend),
-        grf_tend_tracer=fw.zeros(qty.GrfTendencyOfTracerOnCellK, icon_grid, backend),
+        airmass_now=field.zeros(qty.AirMassOnCellK, icon_grid, backend),
+        airmass_new=field.zeros(qty.AirMassOnCellK, icon_grid, backend),
+        grf_tend_tracer=field.zeros(qty.GrfTendencyOfTracerOnCellK, icon_grid, backend),
         hfl_tracer=savepoint.hfl_tracer(ntracer),
         vfl_tracer=savepoint.vfl_tracer(ntracer),
     )
@@ -110,7 +109,7 @@ def construct_prep_adv_state_from_savepoint(
         vn_traj=savepoint.vn_traj(),
         mass_flx_me=savepoint.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=savepoint.mass_flx_ic(),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=fw.zeros(
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=field.zeros(
             qty.VerticalVolumetricFluxOnCellKHalf, icon_grid, backend
         ),
     )

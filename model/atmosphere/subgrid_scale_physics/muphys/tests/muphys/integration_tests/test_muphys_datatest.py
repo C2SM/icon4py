@@ -26,6 +26,7 @@ from icon4py.model.common import (
     framework as fw,
     model_backends,
     quantities as qty,
+    state,
     type_alias as ta,
 )
 from icon4py.model.common.grid import horizontal as h_grid
@@ -145,7 +146,7 @@ def test_muphys_granule(
     )
     output = component.run(input, fw.allocate(muphys_component.Muphys.Output, icon_grid, allocator))
     # run reads its input only
-    for name, field in fw.fields(input).items():
+    for name, field in state.fields(input).items():
         np.testing.assert_array_equal(
             field.asnumpy(), getattr(input_before, name).asnumpy(), err_msg=name
         )

@@ -26,7 +26,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import component, framework as fw, state
+from icon4py.model.common import component, state
 from icon4py.model.common.grid import base as base_grid, simple
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -76,7 +76,7 @@ class ComponentTest:
     @pytest.fixture
     def input(self, component: component.Component, grid: base_grid.Grid) -> state.State:
         # random, so that a misplaced read shows; positive, so that a scheme dividing by them stays finite
-        return fw.allocate(
+        return state.allocate(
             component.Input,
             grid,
             None,
@@ -85,7 +85,7 @@ class ComponentTest:
 
     @pytest.fixture
     def output(self, component: component.Component, grid: base_grid.Grid) -> state.State:
-        return fw.allocate(component.Output, grid, None)
+        return state.allocate(component.Output, grid, None)
 
     def test_run_returns_the_output_it_is_given(
         self, component: component.Component, input: state.State, output: state.State
@@ -99,11 +99,11 @@ class ComponentTest:
         input: state.State,
         output: state.State,
     ) -> None:
-        before = fw.copy(input, fw.allocate(type(input), grid, None))
+        before = state.copy(input, state.allocate(type(input), grid, None))
 
         component.run(input, output)
 
-        for name, field in fw.fields(input).items():
+        for name, field in state.fields(input).items():
             np.testing.assert_array_equal(
                 field.asnumpy(), getattr(before, name).asnumpy(), err_msg=name
             )
@@ -122,9 +122,9 @@ class CollectInputTest:
     def collect_input(state: Any) -> state.State:
         raise NotImplementedError
 
-    def test_collect_input_views_the_state(self, state: state.State) -> None:
-        input = self.collect_input(state)
+    def test_collect_input_views_the_state(self, some_state: state.State) -> None:
+        input = self.collect_input(some_state)
 
-        leaves = fw.fields(state).values()
-        for name, field in fw.fields(input).items():
+        leaves = state.fields(some_state).values()
+        for name, field in state.fields(input).items():
             assert any(field is leaf for leaf in leaves), name

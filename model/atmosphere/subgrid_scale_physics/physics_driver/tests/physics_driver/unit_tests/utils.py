@@ -27,7 +27,6 @@ from icon4py.model.common import (
     component,
     dimension as dims,
     field,
-    framework as fw,
     quantities as qty,
     state,
     states,
@@ -86,14 +85,14 @@ def prognostics(
 ) -> states.PrognosticState:
     """Uniform prognostics, zero winds."""
     values = {"rho": rho, "exner": exner, "theta_v": theta_v}
-    return fw.allocate(
+    return state.allocate(
         states.PrognosticState, grid, None, fill=lambda name, _: values.get(name, 0.0)
     )
 
 
 def tracers(grid: base_grid.Grid, *, qv: float = 1e-3) -> states.TracerState:
     """All six tracers, qv uniform, the others zero."""
-    return fw.allocate(
+    return state.allocate(
         states.TracerState, grid, None, fill=lambda name, _: qv if name == "qv" else 0.0
     )
 
@@ -133,7 +132,7 @@ def make_output(
 ) -> physics_driver.PhysicsDriver.Output:
     """The output continuing the given old_states, with new diagnostics on the simple grid if none."""
     if diagnostics is None:
-        diagnostics = fw.allocate(states.Diagnostics, simple.simple_grid(), None)
+        diagnostics = state.allocate(states.Diagnostics, simple.simple_grid(), None)
     return physics_driver.PhysicsDriver.Output(
         vn=prognostic.vn,
         w=prognostic.w,
@@ -157,14 +156,14 @@ def make_output(
 
 def filled[S: state.State](cls: type[S], grid: base_grid.Grid, **values: float) -> S:
     """A state of `cls` with the given uniform leaves, zero elsewhere."""
-    return fw.allocate(cls, grid, None, fill=lambda name, _: values.get(name, 0.0))
+    return state.allocate(cls, grid, None, fill=lambda name, _: values.get(name, 0.0))
 
 
 def zero_physics_state(
     grid: base_grid.Grid, *, step_start: datetime.datetime
 ) -> physics_state.PhysicsState:
     """A physics state of zero fields with the given step start."""
-    return fw.allocate(physics_state.PhysicsState, grid, None, step_start=step_start)
+    return state.allocate(physics_state.PhysicsState, grid, None, step_start=step_start)
 
 
 class Recorder(component.Component[physics_state.PhysicsState, state.State]):

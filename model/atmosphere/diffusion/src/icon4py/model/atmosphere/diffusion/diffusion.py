@@ -36,7 +36,6 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field,
-    framework as fw,
     model_backends,
     quantities as qty,
     state,
@@ -813,7 +812,7 @@ class Diffusion(component.Component):
 
         The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
         """
-        fw.copy_to_output(input, output)
+        component.copy_to_output(input, output)
         dtime = wpfloat(input.dtime)
         diff_multfac_vn, smag_limit, smag_offset = self._smag_values_for_run(input.initial_run)
 

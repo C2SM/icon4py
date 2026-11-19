@@ -14,7 +14,7 @@ import pytest
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import framework as fw, model_backends, states
+from icon4py.model.common import framework as fw, model_backends, state, states
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -239,11 +239,11 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     def random(name: str, field_dims: tuple[Any, ...]) -> Any:
         return data_alloc.random_field(mesh, *field_dims, allocator=allocator).ndarray
 
-    current = fw.allocate(states.PrognosticState, mesh, allocator, fill=random)
-    next_ = fw.allocate(states.PrognosticState, mesh, allocator, fill=random)
-    forcing = fw.allocate(states.DycoreForcing, mesh, allocator)
-    prep_adv = fw.allocate(states.PrepAdvection, mesh, allocator)
-    dycore_diagnostics = fw.allocate(states.DycoreDiagnostics, mesh, allocator)
+    current = state.allocate(states.PrognosticState, mesh, allocator, fill=random)
+    next_ = state.allocate(states.PrognosticState, mesh, allocator, fill=random)
+    forcing = state.allocate(states.DycoreForcing, mesh, allocator)
+    prep_adv = state.allocate(states.PrepAdvection, mesh, allocator)
+    dycore_diagnostics = state.allocate(states.DycoreDiagnostics, mesh, allocator)
     input = solve_nh.SolveNonhydro.Input(
         rho=current.rho,
         w=current.w,

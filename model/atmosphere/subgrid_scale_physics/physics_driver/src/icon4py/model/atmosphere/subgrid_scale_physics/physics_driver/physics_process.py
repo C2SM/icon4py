@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_state,
     process_time_control,
 )
-from icon4py.model.common import component, framework as fw, quantity, state
+from icon4py.model.common import component, quantity, state
 from icon4py.model.common.grid import base as base_grid
 
 
@@ -67,7 +67,7 @@ class PhysicsProcess[I: state.State, O: state.State](
         # NOTE: temporary, replaced in parts 07 (tendencies) and 08 (updates): the tendencies are
         # the process's `Update` state instead of the `Tendency` leaves of its `Output`.
         if not self.time_control.is_in_window(input.step_start):
-            for field in fw.fields(output, kind=quantity.Tendency).values():
+            for field in state.fields(output, kind=quantity.Tendency).values():
                 field.ndarray[...] = 0.0  # type: ignore[index]
             return output
 
@@ -82,8 +82,8 @@ class PhysicsProcess[I: state.State, O: state.State](
                 # The cache is needed iff the process does not compute at
                 # every step of the driver
                 if self._cache is None:
-                    self._cache = fw.allocate(self.component.Output, self.grid, self.allocator)
-                fw.copy(output, self._cache, kind=quantity.Tendency)
+                    self._cache = state.allocate(self.component.Output, self.grid, self.allocator)
+                state.copy(output, self._cache, kind=quantity.Tendency)
         else:
-            fw.copy(self._cache, output, kind=quantity.Tendency)
+            state.copy(self._cache, output, kind=quantity.Tendency)
         return output

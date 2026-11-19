@@ -22,7 +22,6 @@ from icon4py.model.common import (
     component,
     dimension as dims,
     field,
-    framework as fw,
     model_backends,
     model_options,
     quantities as qty,
@@ -119,7 +118,7 @@ class PhysicsDriver(component.Component["PhysicsDriver.Input", "PhysicsDriver.Ou
         self._exchange = exchange
         self._allocator = model_backends.get_allocator(backend)
         self._process_outputs: dict[physics_process.PhysicsProcess, state.State] = {
-            process: fw.allocate(process.Output, self._grid, self._allocator)
+            process: state.allocate(process.Output, self._grid, self._allocator)
             for process in processes
         }
         # NOTE: temporary, replaced in part 02 (collect): goes with the physics state.
@@ -127,7 +126,7 @@ class PhysicsDriver(component.Component["PhysicsDriver.Input", "PhysicsDriver.Ou
         # physics state, e.g. surface outputs read by tmx
         self._computed_by_processes: dict[type[quantity.Quantity], field.Field] = {}
         for process_output in self._process_outputs.values():
-            for name, field_ in fw.fields(process_output).items():
+            for name, field_ in state.fields(process_output).items():
                 if field_.quantity in physics_state.COMPUTED_BY_PROCESSES:
                     if field_.quantity in self._computed_by_processes:
                         raise ValueError(
@@ -137,7 +136,7 @@ class PhysicsDriver(component.Component["PhysicsDriver.Input", "PhysicsDriver.Ou
                     self._computed_by_processes[field_.quantity] = field_
         self._state_leaves = {
             quantity: name
-            for name, quantity in fw.leaf_quantities(physics_state.PhysicsState).items()
+            for name, quantity in state.leaf_quantities(physics_state.PhysicsState).items()
         }
         # NOTE: temporary, replaced in parts 07 (tendencies) and 08 (updates), see
         # `_zero_accumulators`.
@@ -253,7 +252,7 @@ class PhysicsDriver(component.Component["PhysicsDriver.Input", "PhysicsDriver.Ou
 
     def run(self, input: Input, output: Output) -> Output:
         dt_seconds = self.dtime.total_seconds()
-        fw.copy_to_output(input, output)
+        component.copy_to_output(input, output)
         # NOTE: temporary, replaced in parts 04 (recipes) and 05 (derived inputs), see `_diagnose`.
         state = self._diagnose(input, output)
         # NOTE: temporary, replaced in parts 07 (tendencies) and 08 (updates)
@@ -274,7 +273,7 @@ class PhysicsDriver(component.Component["PhysicsDriver.Input", "PhysicsDriver.Ou
         for process_output in self._process_outputs.values():
             # NOTE: temporary, replaced in part 07 (tendencies): a tendency is a `TendencyOf`
             # instead of a subclass of the marker base.
-            for field_ in fw.fields(process_output, exclude=quantity.Tendency).values():
+            for field_ in state.fields(process_output, exclude=quantity.Tendency).values():
                 name = field_.quantity.standard_name
                 if name is None:
                     continue
@@ -304,12 +303,12 @@ class PhysicsDriver(component.Component["PhysicsDriver.Input", "PhysicsDriver.Ou
             exner=input.exner,
             theta_v=input.theta_v,
             rho=input.rho,
-            qv=fw.require(output.qv, "qv"),
-            qc=fw.require(output.qc, "qc"),
-            qi=fw.require(output.qi, "qi"),
-            qr=fw.require(output.qr, "qr"),
-            qs=fw.require(output.qs, "qs"),
-            qg=fw.require(output.qg, "qg"),
+            qv=field.require(output.qv, "qv"),
+            qc=field.require(output.qc, "qc"),
+            qi=field.require(output.qi, "qi"),
+            qr=field.require(output.qr, "qr"),
+            qs=field.require(output.qs, "qs"),
+            qg=field.require(output.qg, "qg"),
             temperature=output.temperature,
             virtual_temperature=output.virtual_temperature,
             pressure=output.pressure,
@@ -367,15 +366,15 @@ class PhysicsDriver(component.Component["PhysicsDriver.Input", "PhysicsDriver.Ou
 
         Element-wise with no neighbour access, so a plain array operation rather than a stencil.
         """
-        for field_ in fw.fields(output, kind=quantity.Tendency).values():
+        for field_ in state.fields(output, kind=quantity.Tendency).values():
             if (accumulator := self.accumulators.get(field_.quantity)) is None:
-                accumulator = self.accumulators[field_.quantity] = fw.zeros(
+                accumulator = self.accumulators[field_.quantity] = field.zeros(
                     field_.quantity, self._grid, self._allocator
                 )
             accumulator.ndarray[...] += field_.ndarray  # type: ignore[index]
 
     def _update_state(
-        self, state: physics_state.PhysicsState, output: state.State, dt_seconds: float
+        self, pstate: physics_state.PhysicsState, output: state.State, dt_seconds: float
     ) -> None:
         """
         Add a process's tendencies to the physics state in place: field += dt * tendency.
@@ -385,18 +384,18 @@ class PhysicsDriver(component.Component["PhysicsDriver.Input", "PhysicsDriver.Ou
         tendency must be the tendency of one of these fields.
         """
         targets: dict[type[quantity.Quantity], field.Field] = {
-            qty.TendencyOfTemperatureOnCellK: state.temperature,
-            qty.TendencyOfUOnCellK: state.u,
-            qty.TendencyOfVOnCellK: state.v,
-            qty.TendencyOfWOnCellKHalf: state.w,
-            qty.TendencyOfQvOnCellK: state.qv,
-            qty.TendencyOfQcOnCellK: state.qc,
-            qty.TendencyOfQiOnCellK: state.qi,
-            qty.TendencyOfQrOnCellK: state.qr,
-            qty.TendencyOfQsOnCellK: state.qs,
-            qty.TendencyOfQgOnCellK: state.qg,
+            qty.TendencyOfTemperatureOnCellK: pstate.temperature,
+            qty.TendencyOfUOnCellK: pstate.u,
+            qty.TendencyOfVOnCellK: pstate.v,
+            qty.TendencyOfWOnCellKHalf: pstate.w,
+            qty.TendencyOfQvOnCellK: pstate.qv,
+            qty.TendencyOfQcOnCellK: pstate.qc,
+            qty.TendencyOfQiOnCellK: pstate.qi,
+            qty.TendencyOfQrOnCellK: pstate.qr,
+            qty.TendencyOfQsOnCellK: pstate.qs,
+            qty.TendencyOfQgOnCellK: pstate.qg,
         }
-        for name, tendency in fw.fields(output, kind=quantity.Tendency).items():
+        for name, tendency in state.fields(output, kind=quantity.Tendency).items():
             if (target := targets.get(tendency.quantity)) is None:
                 raise ValueError(
                     f"Tendency output '{name}' is not the tendency of an advanced field, "

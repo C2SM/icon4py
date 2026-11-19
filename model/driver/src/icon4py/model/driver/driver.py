@@ -28,11 +28,11 @@ from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
     dimension as dims,
     field,
-    framework as fw,
     model_backends,
     model_options,
     prescribed_tendencies,
     quantities as qty,
+    state,
     states,
     time,
     topography,
@@ -1024,9 +1024,9 @@ def initialize_driver_states(
     application of the initial condition, the assembly of ``DriverStates``, and the
     consistency check that precedes the time loop.
     """
-    prognostic_state_now = fw.allocate(states.PrognosticState, icon4py_driver.grid, allocator)
+    prognostic_state_now = state.allocate(states.PrognosticState, icon4py_driver.grid, allocator)
     tracer_config = icon4py_driver.config.tracer_config
-    tracer_state_now = fw.allocate(
+    tracer_state_now = state.allocate(
         states.TracerState,
         icon4py_driver.grid,
         allocator,
@@ -1034,17 +1034,17 @@ def initialize_driver_states(
     )
     dycore_enabled = icon4py_driver.config.nonhydrostatic is not None
     dycore_forcing = (
-        fw.allocate(states.DycoreForcing, icon4py_driver.grid, allocator)
+        state.allocate(states.DycoreForcing, icon4py_driver.grid, allocator)
         if dycore_enabled
         else None
     )
     dycore_diagnostics = (
-        fw.allocate(states.DycoreDiagnostics, icon4py_driver.grid, allocator)
+        state.allocate(states.DycoreDiagnostics, icon4py_driver.grid, allocator)
         if dycore_enabled
         else None
     )
     prep_adv = (
-        fw.allocate(states.PrepAdvection, icon4py_driver.grid, allocator)
+        state.allocate(states.PrepAdvection, icon4py_driver.grid, allocator)
         if dycore_enabled or icon4py_driver.config.tracer_advection is not None
         else None
     )
@@ -1060,7 +1060,7 @@ def initialize_driver_states(
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
     )
-    diagnostic_state = fw.allocate(states.Diagnostics, icon4py_driver.grid, allocator)
+    diagnostic_state = state.allocate(states.Diagnostics, icon4py_driver.grid, allocator)
     ds = driver_states.assemble_driver_states(
         grid=icon4py_driver.grid,
         allocator=allocator,

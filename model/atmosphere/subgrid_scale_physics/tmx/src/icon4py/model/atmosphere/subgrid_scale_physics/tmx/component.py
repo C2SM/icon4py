@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
 from icon4py.model.common import (
     component,
     field,
-    framework as fw,
     model_backends,
     quantities as qty,
     state,
@@ -110,8 +109,8 @@ class Tmx(component.Component["Tmx.Input", "Tmx.Output"]):
             exchange=exchange,
         )
         allocator = model_backends.get_allocator(backend)
-        self._diagnostic_state = fw.allocate(tmx_states.TmxDiagnosticState, grid, allocator)
-        self._new_state = fw.allocate(tmx_states.TmxNewState, grid, allocator)
+        self._diagnostic_state = state.allocate(tmx_states.TmxDiagnosticState, grid, allocator)
+        self._new_state = state.allocate(tmx_states.TmxNewState, grid, allocator)
 
     def run(self, input: Input, output: Output) -> Output:
 
@@ -158,7 +157,7 @@ class Tmx(component.Component["Tmx.Input", "Tmx.Output"]):
         return output
 
 
-# NOTE: temporary, replaced in part 02 (collect): `fw.collect(Tmx.Input, ...)`,
+# NOTE: temporary, replaced in part 02 (collect): `collect(Tmx.Input, ...)`,
 # which picks the leaves by quantity.
 def collect_input(state: physics_state.PhysicsState) -> Tmx.Input:
     """
@@ -181,11 +180,11 @@ def collect_input(state: physics_state.PhysicsState) -> Tmx.Input:
         qs=state.qs,
         qg=state.qg,
         rho=state.rho,
-        air_mass=fw.require(state.air_mass, "air_mass"),
-        evapotranspiration=fw.require(state.evapotranspiration, "evapotranspiration"),
-        u_stress=fw.require(state.u_stress, "u_stress"),
-        v_stress=fw.require(state.v_stress, "v_stress"),
-        q_snocpymlt=fw.require(state.q_snocpymlt, "q_snocpymlt"),
-        thermal_energy_flux=fw.require(state.thermal_energy_flux, "thermal_energy_flux"),
-        vapor_energy_flux=fw.require(state.vapor_energy_flux, "vapor_energy_flux"),
+        air_mass=field.require(state.air_mass, "air_mass"),
+        evapotranspiration=field.require(state.evapotranspiration, "evapotranspiration"),
+        u_stress=field.require(state.u_stress, "u_stress"),
+        v_stress=field.require(state.v_stress, "v_stress"),
+        q_snocpymlt=field.require(state.q_snocpymlt, "q_snocpymlt"),
+        thermal_energy_flux=field.require(state.thermal_energy_flux, "thermal_energy_flux"),
+        vapor_energy_flux=field.require(state.vapor_energy_flux, "vapor_energy_flux"),
     )

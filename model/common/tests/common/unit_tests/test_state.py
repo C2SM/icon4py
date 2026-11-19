@@ -10,14 +10,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import (
-    field,
-    framework as fw,
-    quantity,
-    state,
-    type_alias as ta,
-    utils as common_utils,
-)
+from icon4py.model.common import field, quantity, state, type_alias as ta, utils as common_utils
 from icon4py.model.common.grid import base as base_grid
 
 from tests.common.fixtures import grid
@@ -42,60 +35,52 @@ class Budget(state.State):
     salt: field.Field[Salt] | None = None
 
 
-def test_zeros_resolves_the_precision_at_allocation(
-    grid: base_grid.Grid, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(ta, "vpfloat", gtx.float32)
-    assert fw.zeros(Vt, grid, allocator=None).ndarray.dtype == np.float32
-    assert fw.zeros(Pressure, grid, allocator=None).ndarray.dtype == np.float64
-
-
 def test_allocate_takes_the_plain_leaves_by_keyword(grid: base_grid.Grid) -> None:
-    column = fw.allocate(Column, grid, None, dtime=60.0)
+    column = state.allocate(Column, grid, None, dtime=60.0)
     assert column.dtime == 60.0
-    assert list(fw.fields(column)) == ["pressure", "salt"]
+    assert list(state.fields(column)) == ["pressure", "salt"]
     # a plain leaf without a default must be given
     with pytest.raises(TypeError, match="dtime"):
-        fw.allocate(Column, grid, None)
+        state.allocate(Column, grid, None)
 
 
 def test_fields_of_a_kind_and_without_one(grid: base_grid.Grid) -> None:
-    budget = fw.allocate(Budget, grid, None)
-    assert list(fw.fields(budget, kind=quantity.Tendency)) == ["tend_pressure"]
-    assert list(fw.fields(budget, kind=Pressure)) == ["pressure"]
-    assert list(fw.fields(budget, exclude=quantity.Tendency)) == ["pressure", "salt"]
+    budget = state.allocate(Budget, grid, None)
+    assert list(state.fields(budget, kind=quantity.Tendency)) == ["tend_pressure"]
+    assert list(state.fields(budget, kind=Pressure)) == ["pressure"]
+    assert list(state.fields(budget, exclude=quantity.Tendency)) == ["pressure", "salt"]
 
 
 def test_copy_writes_the_destination_in_place(grid: base_grid.Grid) -> None:
-    src = fw.allocate(Tracers, grid, None, only=("vt",), fill=lambda name, _: 2.0)
-    dst = fw.allocate(Tracers, grid, None, only=("vt",))
+    src = state.allocate(Tracers, grid, None, only=("vt",), fill=lambda name, _: 2.0)
+    dst = state.allocate(Tracers, grid, None, only=("vt",))
 
-    assert fw.copy(src, dst) is dst
+    assert state.copy(src, dst) is dst
 
     assert dst.salt is None and dst.vt is not src.vt
     np.testing.assert_array_equal(dst.vt.asnumpy(), 2.0)  # type: ignore[union-attr]
     # a leaf present on one side only is a mismatch
     with pytest.raises(ValueError, match="present leaves must match"):
-        fw.copy(src, fw.allocate(Tracers, grid, None))
+        state.copy(src, state.allocate(Tracers, grid, None))
 
 
 def test_copy_of_a_kind_writes_and_compares_only_those_leaves(grid: base_grid.Grid) -> None:
-    src = fw.allocate(Budget, grid, None, fill=lambda name, _: 1.0)
+    src = state.allocate(Budget, grid, None, fill=lambda name, _: 1.0)
     # `salt` is present on one side only, and not a tendency: it is not compared
-    dst = fw.allocate(Budget, grid, None, only=("pressure", "tend_pressure"))
+    dst = state.allocate(Budget, grid, None, only=("pressure", "tend_pressure"))
 
-    fw.copy(src, dst, kind=quantity.Tendency)
+    state.copy(src, dst, kind=quantity.Tendency)
 
     np.testing.assert_array_equal(dst.tend_pressure.asnumpy(), 1.0)
     np.testing.assert_array_equal(dst.pressure.asnumpy(), 0.0)
 
 
 def test_optional_leaves_left_none_are_not_fields(grid: base_grid.Grid) -> None:
-    tracers = fw.allocate(Tracers, grid, allocator=None, only=("vt",))
+    tracers = state.allocate(Tracers, grid, allocator=None, only=("vt",))
     assert tracers.salt is None
-    assert list(fw.fields(tracers)) == ["pressure", "vt"]
-    assert fw.fields(tracers)["vt"] is tracers.vt
-    assert list(fw.fields(fw.allocate(Tracers, grid, allocator=None))) == [
+    assert list(state.fields(tracers)) == ["pressure", "vt"]
+    assert state.fields(tracers)["vt"] is tracers.vt
+    assert list(state.fields(state.allocate(Tracers, grid, allocator=None))) == [
         "pressure",
         "salt",
         "vt",
@@ -108,11 +93,11 @@ def test_allocate_follows_the_declared_dims(grid: base_grid.Grid) -> None:
         salt: field.Field[Salt]
         salt_pc: common_utils.PredictorCorrectorPair[field.Field[Salt]]
 
-    fields = fw.allocate(Fields, grid, allocator=None, fill=lambda name, shape: float(len(name)))
+    fields = state.allocate(Fields, grid, allocator=None, fill=lambda name, shape: float(len(name)))
     assert fields.pressure.ndarray.shape == (grid.num_cells, grid.num_levels)
     assert fields.salt.ndarray.shape == (grid.num_cells,)
     assert np.all(np.asarray(fields.salt.ndarray) == 4.0)
     # a pair gets one field per member, which `fields` skips
     assert fields.salt_pc.predictor is not fields.salt_pc.corrector
     assert np.all(np.asarray(fields.salt_pc.corrector.ndarray) == 7.0)
-    assert list(fw.fields(fields)) == ["pressure", "salt"]
+    assert list(state.fields(fields)) == ["pressure", "salt"]

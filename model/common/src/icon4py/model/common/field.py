@@ -15,7 +15,14 @@ from typing import Any, ClassVar, Self
 from gt4py import next as gtx
 from gt4py.next.embedded import nd_array_field
 
-from icon4py.model.common import quantity
+from icon4py.model.common import quantity, type_alias as ta
+from icon4py.model.common.utils import data_allocation
+
+
+if typing.TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
 
 
 @dataclasses.dataclass(frozen=True, eq=False, init=False, repr=False)
@@ -71,3 +78,29 @@ if hasattr(nd_array_field, "CuPyArrayField"):
 
     class _CuPyField[Q: quantity.Quantity](Field[Q], nd_array_field.CuPyArrayField):  # type: ignore[name-defined]
         _plain = nd_array_field.CuPyArrayField  # type: ignore[attr-defined]
+
+
+# NOTE: temporary, replaced in part 03 (dims): the dims and the dtype come from the field type
+# instead of the quantity.
+def _dtype(quantity_: type[quantity.Quantity]) -> Any:
+    return ta.vpfloat if quantity_.precision == "vp" else ta.wpfloat
+
+
+def zeros[Q: quantity.Quantity](
+    quantity_: type[Q], grid: base_grid.Grid, allocator: gtx_typing.Allocator | None
+) -> Field[Q]:
+    """A zero field of the quantity's dimensions and precision."""
+    return Field(
+        quantity_,
+        data_allocation.zero_field(
+            grid, *quantity_.dims, dtype=_dtype(quantity_), allocator=allocator
+        ),
+    )
+
+
+# NOTE: temporary, replaced in part 06 (io-config): goes with the optional leaves.
+def require[Q: quantity.Quantity](field_: Field[Q] | None, name: str) -> Field[Q]:
+    """The optional leaf `name`, which the caller needs present."""
+    if field_ is None:
+        raise ValueError(f"Missing field: '{name}' is required, but the state lacks it.")
+    return field_

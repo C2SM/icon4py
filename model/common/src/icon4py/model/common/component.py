@@ -31,3 +31,17 @@ class Component[I: state.State, O: state.State](Protocol):
     Output: type[O]
 
     def run(self, input: I, output: O) -> O: ...
+
+
+def copy_to_output(input: state.State, output: state.State) -> None:
+    """
+    Copy the leaves `input` and `output` share into `output`, unless they share a buffer.
+
+    For components that update in place: when the caller passes distinct buffers, `run`
+    starts from a copy of `input`.
+    """
+    sources = state.fields(input)
+    for name, target in state.fields(output).items():
+        source = sources.get(name)
+        if source is not None and target.ndarray is not source.ndarray:
+            target.ndarray[...] = source.ndarray  # type: ignore[index]  # NDArrayObject declares no __setitem__
