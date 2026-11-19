@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states, wind_diffusion
-from icon4py.model.common import model_backends
+from icon4py.model.common import framework as fw, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
 
@@ -78,7 +78,7 @@ def test_tmx_run_wind_diffusion_single_step(
         exchange=decomposition.SingleNodeExchange(),
     )
     diagnostic_state = dataclasses.replace(
-        tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),
+        fw.allocate(tmx_states.TmxDiagnosticState, icon_grid, allocator),
         **{
             name: getattr(diagnostics_savepoint, name)()
             for name in (
@@ -96,8 +96,8 @@ def test_tmx_run_wind_diffusion_single_step(
             )
         },
     )
-    tendency_state = tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator)
-    new_state = tmx_states.TmxNewState.allocate(icon_grid, allocator=allocator)
+    tendency_state = fw.allocate(tmx_states.TmxTendencyState, icon_grid, allocator)
+    new_state = fw.allocate(tmx_states.TmxNewState, icon_grid, allocator)
     tmx_entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
 
     component.run(

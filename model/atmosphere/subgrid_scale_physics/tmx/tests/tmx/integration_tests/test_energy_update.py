@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import energy_update, tmx_states
-from icon4py.model.common import model_backends
+from icon4py.model.common import framework as fw, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
 
@@ -80,14 +80,14 @@ def test_tmx_run_energy_update_single_step(
         km_const=tmx_config.km_const,
     )
     diagnostic_state = dataclasses.replace(
-        tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),
+        fw.allocate(tmx_states.TmxDiagnosticState, icon_grid, allocator),
         cv_air=tmx_entry_savepoint.cvair(),
         km_ic=diagnostics_savepoint.km_ic(),
         kh_ic=diagnostics_savepoint.kh_ic(),
     )
-    tendency_state = tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator)
+    tendency_state = fw.allocate(tmx_states.TmxTendencyState, icon_grid, allocator)
     new_state = dataclasses.replace(
-        tmx_states.TmxNewState.allocate(icon_grid, allocator=allocator),
+        fw.allocate(tmx_states.TmxNewState, icon_grid, allocator),
         qv=hydro_savepoint.qv_new(),
         qc=hydro_savepoint.qc_new(),
         qi=hydro_savepoint.qi_new(),

@@ -110,8 +110,8 @@ class Tmx(component.Component["Tmx.Input", "Tmx.Output"]):
             exchange=exchange,
         )
         allocator = model_backends.get_allocator(backend)
-        self._diagnostic_state = tmx_states.TmxDiagnosticState.allocate(grid, allocator=allocator)
-        self._new_state = tmx_states.TmxNewState.allocate(grid, allocator=allocator)
+        self._diagnostic_state = fw.allocate(tmx_states.TmxDiagnosticState, grid, allocator)
+        self._new_state = fw.allocate(tmx_states.TmxNewState, grid, allocator)
 
     def run(self, input: Input, output: Output) -> Output:
 
