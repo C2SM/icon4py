@@ -20,6 +20,8 @@ PLACES = {
     "OnCellKHalf": (dims.CellDim, dims.KHalfDim),
     "OnEdgeK": (dims.EdgeDim, dims.KDim),
     "OnEdgeKHalf": (dims.EdgeDim, dims.KHalfDim),
+    "OnVertexK": (dims.VertexDim, dims.KDim),
+    "OnVertexKHalf": (dims.VertexDim, dims.KHalfDim),
 }
 
 
