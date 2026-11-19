@@ -26,7 +26,7 @@ class Halve(component.Component["Halve.Input", "Halve.Output"]):
 
 
 class Double:
-    """A component in structure only: it does not inherit from `fw.Component`."""
+    """A component in structure only: it does not inherit from `component.Component`."""
 
     Input = Halve.Input
     Output = Halve.Output
@@ -42,6 +42,6 @@ def static_checks(pressure: field.Field[Pressure], salt: field.Field[Salt]) -> N
     wrong: field.Field[Pressure] = salt  # type: ignore[assignment]
     Halve.Input(pressure=salt)  # type: ignore[arg-type]
     Halve.Input(pressure=pressure)
-    # a component that does not inherit from `fw.Component` satisfies the protocol
+    # a component that does not inherit from `component.Component` satisfies the protocol
     some_component: component.Component[Halve.Input, Halve.Output] = Double()
     del wrong, some_component

@@ -17,9 +17,9 @@ class Component[I: state.State, O: state.State](Protocol):
     """
     `run(input, output) -> output`, the only method a component implements.
 
-    A component declares its two states, as class attributes (`class Input(fw.state.State)`) or as
+    A component declares its two states, as class attributes (`class Input(state.State)`) or as
     instance attributes assigned at construction; a component that writes nothing declares
-    `Output = fw.Empty`. The protocol has no implementation: the constructor is each
+    `Output = state.Empty`. The protocol has no implementation: the constructor is each
     component's own.
 
     `component.run(input, output)` writes where the caller says, numpy `out=` style, and

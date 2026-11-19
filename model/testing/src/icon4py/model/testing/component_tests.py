@@ -11,7 +11,7 @@ Base classes for the contract tests of typed components: the states they take an
 not their numerics.
 
 A suite subclasses `ComponentTest` and provides a `component` fixture. It inherits the
-tests every `fw.Component` must pass, and adds its own as ordinary methods. A suite of a
+tests every `component.Component` must pass, and adds its own as ordinary methods. A suite of a
 component that has a `collect_input` also subclasses `CollectInputTest`.
 """
 
@@ -62,7 +62,7 @@ def random_dataclass[T](cls: type[T], grid: base_grid.Grid) -> T:
 
 class ComponentTest:
     """
-    The `run(input, output) -> output` contract of `fw.Component`.
+    The `run(input, output) -> output` contract of `component.Component`.
 
     `component` is the subclass's fixture, and it can build the states needed
     by its constructor with `random_dataclass` defined above. `grid`, `input`
