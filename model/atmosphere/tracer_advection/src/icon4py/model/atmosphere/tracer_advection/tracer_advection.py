@@ -294,6 +294,7 @@ class GodunovSplittingAdvection(Advection):
             },
             vertical_sizes=vertical_domains,
             offset_provider=self._grid.connectivities,
+            variants={"do_vertical_first": [False, True]},
         )
         _before_limiter_vertical_args = {
             key: val
