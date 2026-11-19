@@ -501,6 +501,8 @@ class GridManager:
         # cell instead of INVALID_INDEX, so stencils reading E2C never go out of bounds.
         # This must happen after E2C2E is derived, because the RBF stencil needs the
         # original INVALID_INDEX to avoid a singular matrix.
+        # This should only affect limited area grids, and bring no changes to
+        # global and torus grid.
         if self._decomposition_info.is_distributed():
             edges = self._decomposition_info.global_index(dims.EdgeDim)
             e2c = neighbor_tables[dims.E2C]
