@@ -196,6 +196,10 @@ def _compute_vertical_tracer_flux(
     itype_vlimit: gtx.int32,
     ivadv_tracer: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
+    # Always zero (k >= 0). The dead `p_cc(KHalfDim + 0.5)` read is intentional: when
+    # `ivadv_tracer` is baked in as NO_ADVECTION, it keeps the full-level K dimension
+    # referenced in the program body; without it gtfn fails to compile the bindings
+    # ("'K_t' is not a member of 'generated'"). Do not simplify to a plain broadcast.
     zero_flux = where(
         k < 0,
         p_cc(dims.KHalfDim + 0.5),
