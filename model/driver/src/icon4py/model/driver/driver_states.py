@@ -78,6 +78,8 @@ class ModelTimeVariables:
 
     simulation_current_datetime: time.AbsoluteTime
     simulation_start_datetime: time.AbsoluteTime
+    start_of_timestepping: time.AbsoluteTime
+    time_steps_before_start_of_timestepping: int
     simulation_end_datetime: time.AbsoluteTime
     n_time_steps: time.NumTimeSteps
     dtime: time.RelativeTime
@@ -94,6 +96,10 @@ class ModelTimeVariables:
         self.simulation_start_datetime = config.start_of_simulation
         # The time loop starts at the beginning of the simulation, unless restarting.
         self.simulation_current_datetime = config.start_of_timestepping
+        self.start_of_timestepping = config.start_of_timestepping
+        self.time_steps_before_start_of_timestepping = (
+            config.time_steps_before_start_of_timestepping
+        )
         match config.end_of_simulation:
             case time.NumTimeSteps() as n:
                 self.n_time_steps = n
@@ -147,6 +153,22 @@ class ModelTimeVariables:
         integrated, so 'elapsed_time_in_seconds' is already at the end of it.
         """
         return ta.wpfloat(self.elapsed_time_in_seconds - 0.5 * self.dtime_in_seconds)
+
+    @property
+    def current_time_step(self) -> int:
+        """
+        Counter of the total time steps, counted from the beginning of the
+        simulation, also when restarting.
+
+        """
+        time_steps_in_this_run, remainder = divmod(
+            self.simulation_current_datetime - self.start_of_timestepping, self.dtime
+        )
+        assert not remainder, (
+            f"{self.simulation_current_datetime} is not a whole number of time steps of "
+            f"{self.dtime} after {self.start_of_timestepping}"
+        )
+        return self.time_steps_before_start_of_timestepping + time_steps_in_this_run
 
     def advance_simulation_datetime(self) -> None:
         self.simulation_current_datetime += self.dtime

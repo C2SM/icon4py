@@ -72,6 +72,7 @@ driver:
   dtime: 10 seconds
   start_of_simulation: '2020-01-01T00:00:00'
   start_of_timestepping: '2020-01-01T00:00:00'
+  time_steps_before_start_of_timestepping: 0
   end_of_simulation:
     type: numsteps
     value: 5

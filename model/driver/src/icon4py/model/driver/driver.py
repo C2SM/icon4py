@@ -365,6 +365,7 @@ class Icon4pyDriver:
                     p_tracer_now=tracer_current.field,
                     p_tracer_new=tracer_next_field,
                     dtime=self.model_time_variables.dtime_in_seconds,
+                    even_timestep=self.model_time_variables.current_time_step % 2 == 0,
                 )
 
         if self.granules.physics is not None:

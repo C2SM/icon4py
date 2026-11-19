@@ -102,6 +102,16 @@ class DriverConfig:
             description="Time from when to start or restart (initial run: equivalent to 'start_of_simulation')",
         ),
     ]
+    time_steps_before_start_of_timestepping: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Number of time steps completed between 'start_of_simulation' and "
+                "'start_of_timestepping'. Zero for an initial run; required on a restart, "
+                "since it cannot be inferred from the dates when 'dtime' was changed at a restart."
+            ),
+        ),
+    ] = 0
     end_of_simulation: typing.Annotated[
         time.EndOfSimulation,
         common_conf_opt.ConfigOption(
@@ -161,6 +171,24 @@ class DriverConfig:
             raise ValueError(
                 f"the time loop cannot start at {self.start_of_timestepping}, before the "
                 f"beginning of the simulation ({self.start_of_simulation})."
+            )
+        if self.time_steps_before_start_of_timestepping < 0:
+            raise ValueError(
+                f"'time_steps_before_start_of_timestepping' must not be negative, got "
+                f"{self.time_steps_before_start_of_timestepping}."
+            )
+        if not self.is_restart and self.time_steps_before_start_of_timestepping != 0:
+            raise ValueError(
+                f"'time_steps_before_start_of_timestepping' must be 0 when the time loop "
+                f"starts at the beginning of the simulation ({self.start_of_simulation}), got "
+                f"{self.time_steps_before_start_of_timestepping}."
+            )
+        if self.is_restart and self.time_steps_before_start_of_timestepping == 0:
+            raise ValueError(
+                f"the time loop restarts at {self.start_of_timestepping}, after the beginning "
+                f"of the simulation ({self.start_of_simulation}): set "
+                f"'time_steps_before_start_of_timestepping' to the number of time steps "
+                f"completed until then."
             )
         ta.dataclass_float_to_wp(self)
 

@@ -176,13 +176,19 @@ def test_driver(
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
+    start_of_timestepping = datetime.datetime.fromisoformat(timeloop_date_init).replace(
+        tzinfo=datetime.UTC
+    )
+    time_steps_before_start_of_timestepping, remainder = divmod(
+        start_of_timestepping - config.driver.start_of_simulation, config.driver.dtime
+    )
+    assert not remainder
     config = config.with_overrides(
         driver={
             # 'start_of_simulation' stays at the beginning of the experiment: the second
             # MCH_CH_R04B09 case starts the time loop later, i.e. it restarts.
-            "start_of_timestepping": datetime.datetime.fromisoformat(timeloop_date_init).replace(
-                tzinfo=datetime.UTC
-            ),
+            "start_of_timestepping": start_of_timestepping,
+            "time_steps_before_start_of_timestepping": time_steps_before_start_of_timestepping,
             "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
                 tzinfo=datetime.UTC
             ),
