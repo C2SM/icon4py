@@ -253,19 +253,14 @@ class GodunovSplittingAdvection(Advection):
             "ihadv_tracer": gtx.int32(horizontal_advection_type.value),
             "itype_hlimit": gtx.int32(horizontal_advection_limiter.value),
         }
+        # vertical integration arguments, used by both the before- and after-limiter programs
         shared_vertical_args: dict[str, gtx.Field | gtx_typing.Scalar] = {
-            "p_cellhgt_mc_now": metric_state.ddqz_z_full,
             "deepatmo_divzl": metric_state.deepatmo_divzl,
             "deepatmo_divzu": metric_state.deepatmo_divzu,
             "k": self._k,
-            "k_half": self._k_half,
-            "slev": gtx.int32(0),
-            "slevp1_ti": gtx.int32(1),
-            "elev": gtx.int32(self._grid.num_levels - 1),
             "ivadv_tracer": gtx.int32(vertical_advection_type.value),
             "iadv_slev_jt": gtx.int32(0),
             "wp_eps": constants.WP_EPS,
-            "itype_vlimit": gtx.int32(vertical_advection_limiter.value),
         }
         horizontal_domains: dict[str, gtx.int32] = {
             "start_cell_lateral_boundary_level_2": self._start_cell_lateral_boundary_level_2,
@@ -281,10 +276,16 @@ class GodunovSplittingAdvection(Advection):
             program=compute_tracer_advection_after_horizontal_limiter,
             constant_args={
                 **shared_vertical_args,
+                "k_half": self._k_half,
+                "slev": gtx.int32(0),
+                "slevp1_ti": gtx.int32(1),
+                "elev": gtx.int32(self._grid.num_levels - 1),
                 "deepatmo_divh": metric_state.deepatmo_divh,
+                "p_cellhgt_mc_now": metric_state.ddqz_z_full,
                 "geofac_div": interpolation_state.geofac_div,
                 "ihadv_tracer": gtx.int32(horizontal_advection_type.value),
                 "itype_hlimit": gtx.int32(horizontal_advection_limiter.value),
+                "itype_vlimit": gtx.int32(vertical_advection_limiter.value),
             },
             horizontal_sizes={
                 "start_cell_nudging": self._start_cell_nudging,
@@ -296,16 +297,10 @@ class GodunovSplittingAdvection(Advection):
             offset_provider=self._grid.connectivities,
             variants={"do_vertical_first": [False, True]},
         )
-        _before_limiter_vertical_args = {
-            key: val
-            for key, val in shared_vertical_args.items()
-            if key
-            not in ("p_cellhgt_mc_now", "k_half", "slev", "slevp1_ti", "elev", "itype_vlimit")
-        }
         self._compute_before_horizontal_limiter = setup_program(
             backend=self._backend,
             program=compute_tracer_advection_before_horizontal_limiter,
-            constant_args={**_before_limiter_vertical_args, **shared_horizontal_args},
+            constant_args={**shared_vertical_args, **shared_horizontal_args},
             horizontal_sizes=horizontal_domains,
             vertical_sizes=vertical_domains,
             offset_provider=self._grid.connectivities,
