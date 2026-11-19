@@ -1154,11 +1154,13 @@ class IconDiffusionExitSavepoint(IconSavepoint):
 
 
 class IconNonHydroInitSavepoint(IconSavepoint):
-    def z_vt_ie(self):
-        return self._get_field("z_vt_ie", dims.EdgeDim, dims.KHalfDim)
+    def z_vt_ie(self) -> field.Field[qty.TangentialWindOnEdgeKHalf]:
+        return self._get_typed_field("z_vt_ie", qty.TangentialWindOnEdgeKHalf, dtype=vpfloat)
 
-    def z_kin_hor_e(self):
-        return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
+    def z_kin_hor_e(self) -> field.Field[qty.HorizontalKineticEnergyOnEdgeK]:
+        return self._get_typed_field(
+            "z_kin_hor_e", qty.HorizontalKineticEnergyOnEdgeK, dtype=vpfloat
+        )
 
     def vn_ie(self) -> field.Field[qty.VnOnEdgeKHalf]:
         return self._get_typed_field("vn_ie", qty.VnOnEdgeKHalf, dtype=vpfloat)
@@ -1272,20 +1274,24 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def vn_traj(self) -> field.Field[qty.VnOnEdgeK]:
         return self._get_typed_field("vn_traj", qty.VnOnEdgeK)
 
-    def z_dwdz_dd(self):
-        return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
+    def z_dwdz_dd(self) -> field.Field[qty.VerticalGradientOfWOnCellK]:
+        return self._get_typed_field("z_dwdz_dd", qty.VerticalGradientOfWOnCellK, dtype=vpfloat)
 
-    def z_graddiv_vn(self):
-        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
+    def z_graddiv_vn(self) -> field.Field[qty.HorizontalGradientOfDivergenceOnEdgeK]:
+        return self._get_typed_field(
+            "z_graddiv_vn", qty.HorizontalGradientOfDivergenceOnEdgeK, dtype=vpfloat
+        )
 
-    def z_theta_v_e(self):
-        return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
+    def z_theta_v_e(self) -> field.Field[qty.ThetaVOnEdgeK]:
+        return self._get_typed_field("z_theta_v_e", qty.ThetaVOnEdgeK)
 
-    def z_rho_e(self):
-        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
+    def z_rho_e(self) -> field.Field[qty.RhoOnEdgeK]:
+        return self._get_typed_field("z_rho_e", qty.RhoOnEdgeK)
 
-    def z_gradh_exner(self):
-        return self._get_field("z_gradh_exner", dims.EdgeDim, dims.KDim)
+    def z_gradh_exner(self) -> field.Field[qty.HorizontalGradientOfExnerOnEdgeK]:
+        return self._get_typed_field(
+            "z_gradh_exner", qty.HorizontalGradientOfExnerOnEdgeK, dtype=vpfloat
+        )
 
     def z_w_expl(self):
         return self._get_field("z_w_expl", dims.CellDim, dims.KHalfDim)

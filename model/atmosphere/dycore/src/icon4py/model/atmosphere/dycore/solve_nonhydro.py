@@ -56,6 +56,7 @@ from icon4py.model.common import (
     dimension as dims,
     field,
     field_type_aliases as fa,
+    framework as fw,
     model_backends,
     state,
     type_alias as ta,
@@ -63,12 +64,7 @@ from icon4py.model.common import (
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.framework import quantities as qty
-from icon4py.model.common.grid import (
-    base as grid_def,
-    horizontal as h_grid,
-    icon as icon_grid,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky, vertical_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import utils as state_utils
@@ -78,8 +74,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 log = logging.getLogger(__name__)
 
 
-@dataclasses.dataclass
-class IntermediateFields:
+class IntermediateFields(state.State):
     """
     Encapsulate internal fields of SolveNonHydro that contain shared state over predictor and corrector step.
 
@@ -89,62 +84,38 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat]
+    horizontal_pressure_gradient: field.Field[qty.HorizontalGradientOfExnerOnEdgeK]
     """
     Declared as z_gradh_exner in ICON.
     """
-    rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat]
+    rho_at_edges_on_model_levels: field.Field[qty.RhoOnEdgeK]
     """
     Declared as z_rho_e in ICON.
     """
-    theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat]
+    theta_v_at_edges_on_model_levels: field.Field[qty.ThetaVOnEdgeK]
     """
     Declared as z_theta_v_e in ICON.
     """
-    horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat]
+    horizontal_kinetic_energy_at_edges_on_model_levels: field.Field[
+        qty.HorizontalKineticEnergyOnEdgeK
+    ]
     """
     Declared as z_kin_hor_e in ICON.
     """
-    tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.vpfloat]
+    tangential_wind_on_half_levels: field.Field[qty.TangentialWindOnEdgeKHalf]
     """
     Declared as z_vt_ie in ICON. Tangential wind at edge on k-half levels. The bottom half level is never computed: it is only used for the horizontal advection of w, and w[nlevp1-1] is diagnostic.
     """
-    horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.vpfloat]
+    horizontal_gradient_of_normal_wind_divergence: field.Field[
+        qty.HorizontalGradientOfDivergenceOnEdgeK
+    ]
     """
     Declared as z_graddiv_vn in ICON.
     """
-    dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat]
+    dwdz_at_cells_on_model_levels: field.Field[qty.VerticalGradientOfWOnCellK]
     """
     Declared as z_dwdz_dd in ICON.
     """
-
-    @classmethod
-    def allocate(
-        cls, grid: grid_def.Grid, allocator: gtx_typing.Allocator | None
-    ) -> IntermediateFields:
-        return IntermediateFields(
-            horizontal_pressure_gradient=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, allocator=allocator
-            ),
-            rho_at_edges_on_model_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, allocator=allocator
-            ),
-            theta_v_at_edges_on_model_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, allocator=allocator
-            ),
-            horizontal_gradient_of_normal_wind_divergence=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, allocator=allocator
-            ),
-            dwdz_at_cells_on_model_levels=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, allocator=allocator
-            ),
-            horizontal_kinetic_energy_at_edges_on_model_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, allocator=allocator
-            ),
-            tangential_wind_on_half_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KHalfDim, allocator=allocator
-            ),
-        )
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -1087,7 +1058,7 @@ class SolveNonhydro(component.Component):
         """
         Declared as enh_divdamp_fac in ICON.
         """
-        self.intermediate_fields = IntermediateFields.allocate(grid=self._grid, allocator=allocator)
+        self.intermediate_fields = fw.allocate(IntermediateFields, self._grid, allocator)
         self._vertical_cfl = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.vpfloat
         )
