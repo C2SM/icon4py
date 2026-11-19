@@ -12,6 +12,7 @@ import dataclasses
 import logging
 import pathlib
 import typing
+from types import ModuleType
 from typing import TYPE_CHECKING
 
 import serialbox  # type: ignore[import-untyped]
@@ -65,17 +66,60 @@ def _available_nonhydro_init_dates(serializer: serialbox.Serializer) -> str:
     return ", ".join(dates) if dates else "none"
 
 
+def _read_buffer(
+    serializer: serialbox.Serializer,
+    savepoint: serialbox.Savepoint,
+    name: str,
+    array_ns: ModuleType,
+) -> data_alloc.NDArray:
+    """Read a field of the global (single-rank) archive and move it to the device.
+
+    ``serializer.read`` always returns a numpy array; moving it to the device
+    first lets the rank-local selection happen on the device on GPU backends.
+    """
+    return array_ns.asarray(serializer.read(name, savepoint).astype(float).squeeze())
+
+
+def _read_hdim_k(
+    serializer: serialbox.Serializer,
+    savepoint: serialbox.Savepoint,
+    name: str,
+    indices: data_alloc.NDArray,
+    array_ns: ModuleType,
+) -> data_alloc.NDArray:
+    """Read a (horizontal, K) field and select the rows of this rank."""
+    return _read_buffer(serializer, savepoint, name, array_ns)[indices, :]
+
+
+def _read_predictor_corrector(
+    serializer: serialbox.Serializer,
+    savepoint: serialbox.Savepoint,
+    name: str,
+    indices: data_alloc.NDArray,
+    array_ns: ModuleType,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """Read a (horizontal, K, 2) tendency and return its two time levels for this rank."""
+    buffer = _read_buffer(serializer, savepoint, name, array_ns)
+    return buffer[indices, :, 0], buffer[indices, :, 1]
+
+
 def _read_prognostic_state(
     prognostic_state: prognostics.PrognosticState,
-    read_hdim_k: typing.Callable[[str], data_alloc.NDArray],
-    edge_indices: data_alloc.NDArray,
+    *,
+    serializer: serialbox.Serializer,
+    savepoint: serialbox.Savepoint,
     cell_indices: data_alloc.NDArray,
-):
-    prognostic_state.rho.ndarray[:, :] = read_hdim_k("rho_now", cell_indices)
-    prognostic_state.exner.ndarray[:, :] = read_hdim_k("exner_now", cell_indices)
-    prognostic_state.theta_v.ndarray[:, :] = read_hdim_k("theta_v_now", cell_indices)
-    prognostic_state.vn.ndarray[:, :] = read_hdim_k("vn_now", edge_indices)
-    prognostic_state.w.ndarray[:, :] = read_hdim_k("w_now", cell_indices)
+    edge_indices: data_alloc.NDArray,
+    array_ns: ModuleType,
+) -> None:
+    def read(name: str, indices: data_alloc.NDArray) -> data_alloc.NDArray:
+        return _read_hdim_k(serializer, savepoint, name, indices, array_ns)
+
+    prognostic_state.rho.ndarray[:, :] = read("rho_now", cell_indices)
+    prognostic_state.exner.ndarray[:, :] = read("exner_now", cell_indices)
+    prognostic_state.theta_v.ndarray[:, :] = read("theta_v_now", cell_indices)
+    prognostic_state.vn.ndarray[:, :] = read("vn_now", edge_indices)
+    prognostic_state.w.ndarray[:, :] = read("w_now", cell_indices)
 
 
 def read_initial_condition_from_file(
@@ -94,6 +138,7 @@ def read_initial_condition_from_file(
     array_ns = data_alloc.import_array_ns(model_backends.get_allocator(backend))
 
     log.info("Reading the initial condition from %s", ic_config.data_path)
+    # TODO(icon4pyTeam): the archive name is hardcoded to the single-rank (global)
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
         str(ic_config.data_path),
@@ -104,17 +149,17 @@ def read_initial_condition_from_file(
     cell_indices = decomposition_info.global_index(dims.CellDim)
     edge_indices = decomposition_info.global_index(dims.EdgeDim)
 
-    def read_hdim_k(name: str, dim_indices: data_alloc.NDArray) -> data_alloc.NDArray:
-        buffer = array_ns.asarray(serializer.read(name, savepoint).astype(float).squeeze())
-        return buffer[dim_indices, :]
+    _read_prognostic_state(
+        prognostic_state_now,
+        serializer=serializer,
+        savepoint=savepoint,
+        cell_indices=cell_indices,
+        edge_indices=edge_indices,
+        array_ns=array_ns,
+    )
 
-    _read_prognostic_state(prognostic_state_now, read_hdim_k, edge_indices, cell_indices)
-
-    ntracer = config.ntracer
-    if ntracer > 0:
-        tracers = array_ns.asarray(
-            serializer.read("tracers_now", savepoint).astype(float).squeeze()
-        )
+    if config.ntracer > 0:
+        tracers = _read_buffer(serializer, savepoint, "tracers_now", array_ns)
         for i, tracer in enumerate(tracer_state_now.active_fields()):
             tracer.field.ndarray[:, :] = tracers[cell_indices, :, i]
 
@@ -141,8 +186,7 @@ def read_restart_from_file(
     """
     ic_config = config.initial_condition
     assert isinstance(ic_config, FromFileConfig)
-    ntracer = config.ntracer
-    if ntracer > 0:
+    if config.ntracer > 0:
         raise NotImplementedError(
             "restarting with tracers is not supported: the solve-nonhydro savepoints do not "
             "carry them, they are in the advection-init savepoint of the same date."
@@ -152,6 +196,7 @@ def read_restart_from_file(
     date = _savepoint_formatted_date(config.start_of_timestepping + config.dtime)
 
     log.info("Restarting from the serialized state of the time step ending at %s", date)
+    # TODO(icon4pyTeam): the archive name is hardcoded to the single-rank (global)
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
         str(ic_config.data_path),
@@ -181,24 +226,25 @@ def read_restart_from_file(
     cell_indices = decomposition_info.global_index(dims.CellDim)
     edge_indices = decomposition_info.global_index(dims.EdgeDim)
 
-    def read_hdim_k(name: str, dim_indices: data_alloc.NDArray) -> data_alloc.NDArray:
-        buffer = array_ns.asarray(serializer.read(name, nonhydro_savepoint).astype(float).squeeze())
-        return buffer[dim_indices, :]
-
-    def read_predictor_corrector(
-        name: str, indices: data_alloc.NDArray
-    ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-        buffer = array_ns.asarray(serializer.read(name, velocity_savepoint).astype(float).squeeze())
-        return buffer[indices, :, 0], buffer[indices, :, 1]
-
-    _read_prognostic_state(prognostic_state_now, read_hdim_k, edge_indices, cell_indices)
-
-    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = (
-        read_hdim_k("exner_pr", cell_indices)
+    _read_prognostic_state(
+        prognostic_state_now,
+        serializer=serializer,
+        savepoint=nonhydro_savepoint,
+        cell_indices=cell_indices,
+        edge_indices=edge_indices,
+        array_ns=array_ns,
     )
 
-    normal_wind_tendency = read_predictor_corrector("ddt_vn_apc_pc", edge_indices)
-    vertical_wind_tendency = read_predictor_corrector("ddt_w_adv_pc", cell_indices)
+    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = (
+        _read_hdim_k(serializer, nonhydro_savepoint, "exner_pr", cell_indices, array_ns)
+    )
+
+    normal_wind_tendency = _read_predictor_corrector(
+        serializer, velocity_savepoint, "ddt_vn_apc_pc", edge_indices, array_ns
+    )
+    vertical_wind_tendency = _read_predictor_corrector(
+        serializer, velocity_savepoint, "ddt_w_adv_pc", cell_indices, array_ns
+    )
 
     solve_nonhydro_diagnostic_state.normal_wind_advective_tendency.predictor.ndarray[:, :] = (
         normal_wind_tendency[0]

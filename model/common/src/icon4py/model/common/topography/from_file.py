@@ -62,9 +62,10 @@ def read_from_file(
 
     data_path = config.data_path
 
+    # TODO(icon4pyTeam): the archive name is hardcoded to the single-rank (global)
     ser = serialbox.Serializer(serialbox.OpenModeKind.Read, str(data_path), "icon_pydycore_rank0")
     sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()
-    log.debug(f"Reading topography from {data_path} / icon_pydycore_rank0")
+    log.debug("Reading topography from %s / icon_pydycore_rank0", data_path)
 
     local_indices = grid_manager.decomposition_info.global_index(
         dims.CellDim, decomposition_defs.DecompositionInfo.EntryType.ALL

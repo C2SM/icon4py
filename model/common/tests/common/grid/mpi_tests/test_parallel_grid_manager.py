@@ -196,7 +196,6 @@ def _compare_geometry_fields_single_multi_rank(
         check_halos=True,
         atol=atol,
         rtol=rtol,
-        equal_nan=True,
     )
 
     _log.info(f"rank = {process_props.rank} - DONE")
