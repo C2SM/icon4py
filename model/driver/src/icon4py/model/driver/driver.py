@@ -33,11 +33,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import (
-    geometry_attributes as geom_attr,
-    grid_manager as gm,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.io import io as common_io
@@ -473,7 +469,6 @@ class Icon4pyDriver:
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
-        self._compute_total_mass_and_energy(prognostic_states.next)
 
     # watch_mode is true if step is <= 1 or cfl already near or exceeding threshold.
     # omit spinup feature and the option that if the model starts from IFS or COSMO data
@@ -676,24 +671,6 @@ class Icon4pyDriver:
             log.info(
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self.model_time_variables.ndyn_substeps_var:3d}"
             )
-
-    def _compute_total_mass_and_energy(
-        self, prognostic_states: prognostics.PrognosticState
-    ) -> None:
-        if self.config.driver.enable_statistics_logging:
-            rho_ndarray = prognostic_states.rho.ndarray
-            cell_area_ndarray = self.static_field_factories.geometry.get(
-                geom_attr.CELL_AREA
-            ).ndarray
-            cell_thickness_ndarray = self.static_field_factories.metrics.get(
-                metrics_attr.DDQZ_Z_FULL
-            ).ndarray
-            local_mass = (
-                rho_ndarray * cell_area_ndarray[:, self._xp.newaxis] * cell_thickness_ndarray
-            )
-            global_total_mass = self.global_reductions.sum(local_mass)
-            # TODO (Chia Rui): compute total energy
-            log.info(f"GLOBAL TOTAL MASS: {global_total_mass:.15e} kg")
 
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
