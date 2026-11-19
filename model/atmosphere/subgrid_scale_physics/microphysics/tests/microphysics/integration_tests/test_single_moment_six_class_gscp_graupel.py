@@ -20,10 +20,10 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
-    tracer_state as tracers,
+    tracer_states as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -37,33 +37,25 @@ if TYPE_CHECKING:
 
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
-    "experiment, model_top_height",
-    [
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0),
-    ],
+    "experiment_description",
+    [test_defs.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 def test_graupel(
-    experiment: definitions.Experiment,
-    model_top_height: ta.wpfloat,
+    experiment: test_defs.Experiment,
     date: str,
     *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     icon_grid: icon_grid.IconGrid,
-    lowest_layer_thickness: ta.wpfloat,
     backend: gtx_typing.Backend,
 ):
-    pytest.xfail("Tolerances have increased with new ser_data, need to check with @ongchia")
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
@@ -99,16 +91,8 @@ def test_graupel(
         v=None,
     )
 
-    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
-        liquid_autoconversion_option=mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG,
-        ice_stickeff_min=0.01,
-        power_law_coeff_for_ice_mean_fall_speed=1.25,
-        exponent_for_density_factor_in_ice_sedimentation=0.3,
-        power_law_coeff_for_snow_fall_speed=20.0,
-        rain_mu=0.0,
-        rain_n0=1.0,
-        snow2graupel_riming_coeff=0.5,
-    )
+    graupel_config = experiment.config.graupel
+    assert graupel_config is not None, "expected microphysics configuration for this experiment"
 
     graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(
         graupel_config=graupel_config,
@@ -143,24 +127,24 @@ def test_graupel(
     )
 
     graupel_microphysics.run(
-        dtime,
-        prognostic_state.rho,
-        diagnostic_state.temperature,
-        diagnostic_state.pressure,
-        tracer_state.qv,
-        tracer_state.qc,
-        tracer_state.qr,
-        tracer_state.qi,
-        tracer_state.qs,
-        tracer_state.qg,
-        qnc,
-        temperature_tendency,
-        qv_tendency,
-        qc_tendency,
-        qr_tendency,
-        qi_tendency,
-        qs_tendency,
-        qg_tendency,
+        dtime=dtime,
+        rho=prognostic_state.rho,
+        temperature=diagnostic_state.temperature,
+        pressure=diagnostic_state.pressure,
+        qv=tracer_state.qv,
+        qc=tracer_state.qc,
+        qr=tracer_state.qr,
+        qi=tracer_state.qi,
+        qs=tracer_state.qs,
+        qg=tracer_state.qg,
+        qnc=qnc,
+        temperature_tendency=temperature_tendency,
+        qv_tendency=qv_tendency,
+        qc_tendency=qc_tendency,
+        qr_tendency=qr_tendency,
+        qi_tendency=qi_tendency,
+        qs_tendency=qs_tendency,
+        qg_tendency=qg_tendency,
     )
 
     new_temperature = (
@@ -173,57 +157,57 @@ def test_graupel(
     new_qs = entry_savepoint.qs().asnumpy() + qs_tendency.asnumpy() * dtime
     new_qg = entry_savepoint.qg().asnumpy() + qg_tendency.asnumpy() * dtime
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_temperature,
         exit_savepoint.temperature().asnumpy(),
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qv,
         exit_savepoint.qv().asnumpy(),
         atol=1.0e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qc,
         exit_savepoint.qc().asnumpy(),
         atol=1.0e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qr,
         exit_savepoint.qr().asnumpy(),
-        atol=1.0e-12,
+        atol=1.0e-12 if test_utils.wp_is_dp else 3e-10,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qi,
         exit_savepoint.qi().asnumpy(),
         atol=1.0e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qs,
         exit_savepoint.qs().asnumpy(),
         atol=1.0e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qg,
         exit_savepoint.qg().asnumpy(),
-        atol=1.0e-12,
+        atol=1.0e-12 if test_utils.wp_is_dp else 4e-11,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         graupel_microphysics.rain_precipitation_flux.asnumpy()[:, -1],
         exit_savepoint.rain_flux().asnumpy()[:],
         atol=9.0e-11,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         graupel_microphysics.snow_precipitation_flux.asnumpy()[:, -1],
         exit_savepoint.snow_flux().asnumpy()[:],
         atol=9.0e-11,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         graupel_microphysics.graupel_precipitation_flux.asnumpy()[:, -1],
         exit_savepoint.graupel_flux().asnumpy()[:],
         atol=9.0e-11,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         graupel_microphysics.ice_precipitation_flux.asnumpy()[:, -1],
         exit_savepoint.ice_flux().asnumpy()[:],
         atol=9.0e-11,

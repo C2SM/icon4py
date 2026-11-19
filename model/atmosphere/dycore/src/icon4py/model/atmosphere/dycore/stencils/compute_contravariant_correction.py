@@ -39,10 +39,10 @@ def compute_contravariant_correction(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_contravariant_correction(
-        vn,
-        ddxn_z_full,
-        ddxt_z_full,
-        vt,
+        vn=vn,
+        ddxn_z_full=ddxn_z_full,
+        ddxt_z_full=ddxt_z_full,
+        vt=vt,
         out=z_w_concorr_me,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

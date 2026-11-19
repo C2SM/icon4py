@@ -1,4 +1,4 @@
-#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts
+#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --only-group scripts
 #
 # ICON4Py - ICON inspired code in Python and GT4Py
 #

@@ -6,27 +6,17 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.eve import utils as eve_utils
 from gt4py.next import abs, maximum, where  # noqa: A004
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import microphysics_constants
-from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microphyiscal_processes import (
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microphysical_processes import (
     dqsatdT_rho,
     latent_heat_vaporization,
     qsat_rho,
 )
-from icon4py.model.common import (
-    constants as physics_constants,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
-
-
-_phy_const: eve_utils.FrozenNamespace[ta.wpfloat] = physics_constants.PhysicsConstants()
-_microphy_const: eve_utils.FrozenNamespace[ta.wpfloat] = (
-    microphysics_constants.MicrophysicsConstants()
-)
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -56,7 +46,7 @@ def _new_temperature_in_newton_iteration(
         updated temperature [K]
     """
     ft = next_temperature - temperature + lwdocvd * (qsat_rho(next_temperature, rho) - qv)
-    dft = 1.0 + lwdocvd * dqsatdT_rho(next_temperature, qsat_rho(next_temperature, rho))
+    dft = wpfloat(1.0) + lwdocvd * dqsatdT_rho(next_temperature, qsat_rho(next_temperature, rho))
 
     return next_temperature - ft / dft
 
@@ -72,7 +62,13 @@ def _update_temperature_by_newton_iteration(
 ) -> fa.CellKField[ta.wpfloat]:
     current_temperature = where(
         newton_iteration_mask,
-        _new_temperature_in_newton_iteration(temperature, qv, rho, lwdocvd, next_temperature),
+        _new_temperature_in_newton_iteration(
+            temperature=temperature,
+            qv=qv,
+            rho=rho,
+            lwdocvd=lwdocvd,
+            next_temperature=next_temperature,
+        ),
         next_temperature,
     )
     return current_temperature
@@ -93,12 +89,12 @@ def update_temperature_by_newton_iteration(
     vertical_end: gtx.int32,
 ):
     _update_temperature_by_newton_iteration(
-        temperature,
-        qv,
-        rho,
-        newton_iteration_mask,
-        lwdocvd,
-        next_temperature,
+        temperature=temperature,
+        qv=qv,
+        rho=rho,
+        newton_iteration_mask=newton_iteration_mask,
+        lwdocvd=lwdocvd,
+        next_temperature=next_temperature,
         out=current_temperature,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -137,7 +133,7 @@ def _update_temperature_qv_qc_tendencies(
         (saturated specific humidity - initial specific humidity) / dtime [s-1],
         (total specific mixing ratio - saturated specific humidity - initial cloud specific mixing ratio) / dtime [s-1],
     """
-    zqwmin = 1e-20
+    zqwmin = wpfloat(1e-20)
     qv_tendency, qc_tendency = where(
         subsaturated_mask,
         (qc / dtime, -qc / dtime),
@@ -167,13 +163,13 @@ def update_temperature_qv_qc_tendencies(
     vertical_end: gtx.int32,
 ):
     _update_temperature_qv_qc_tendencies(
-        dtime,
-        temperature,
-        current_temperature,
-        qv,
-        qc,
-        rho,
-        subsaturated_mask,
+        dtime=dtime,
+        temperature=temperature,
+        current_temperature=current_temperature,
+        qv=qv,
+        qc=qc,
+        rho=rho,
+        subsaturated_mask=subsaturated_mask,
         out=(temperature_tendency, qv_tendency, qc_tendency),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -219,19 +215,19 @@ def _compute_subsaturated_case_and_initialize_newton_iterations(
         mask for Newton iteration case
     """
     temperature_after_all_qc_evaporated = (
-        temperature - latent_heat_vaporization(temperature) / _phy_const.cvd * qc
+        temperature - latent_heat_vaporization(temperature) / PhysicsConstants.cvd * qc
     )
 
     # Check, which points will still be subsaturated even after evaporating all cloud water.
     subsaturated_mask = qv + qc <= qsat_rho(temperature_after_all_qc_evaporated, rho)
 
     # Remains const. during iteration
-    lwdocvd = latent_heat_vaporization(temperature) / _phy_const.cvd
+    lwdocvd = latent_heat_vaporization(temperature) / PhysicsConstants.cvd
 
     current_temperature = where(
         subsaturated_mask,
         temperature_after_all_qc_evaporated,
-        temperature - 2.0 * tolerance,
+        temperature - wpfloat(2.0) * tolerance,
     )
     next_temperature = where(subsaturated_mask, temperature_after_all_qc_evaporated, temperature)
     newton_iteration_mask = where(subsaturated_mask, False, True)
@@ -257,11 +253,11 @@ def compute_subsaturated_case_and_initialize_newton_iterations(
     vertical_end: gtx.int32,
 ):
     _compute_subsaturated_case_and_initialize_newton_iterations(
-        tolerance,
-        temperature,
-        qv,
-        qc,
-        rho,
+        tolerance=tolerance,
+        temperature=temperature,
+        qv=qv,
+        qc=qc,
+        rho=rho,
         out=(
             subsaturated_mask,
             lwdocvd,
@@ -298,7 +294,7 @@ def _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
     newton_iteration_mask = where(
         abs(current_temperature - next_temperature) > tolerance, True, False
     )
-    new_temperature = where(newton_iteration_mask, 0.0, current_temperature)
+    new_temperature = where(newton_iteration_mask, wpfloat(0.0), current_temperature)
     return newton_iteration_mask, new_temperature
 
 
@@ -314,9 +310,9 @@ def compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
-        tolerance,
-        current_temperature,
-        next_temperature,
+        tolerance=tolerance,
+        current_temperature=current_temperature,
+        next_temperature=next_temperature,
         out=(newton_iteration_mask, next_temperature),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

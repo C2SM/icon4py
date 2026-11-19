@@ -40,11 +40,11 @@ def update_dynamical_exner_time_increment(
     vertical_end: gtx.int32,
 ) -> None:
     _update_dynamical_exner_time_increment(
-        exner,
-        ddt_exner_phy,
-        exner_dyn_incr,
-        ndyn_substeps_var,
-        dtime,
+        exner=exner,
+        ddt_exner_phy=ddt_exner_phy,
+        exner_dyn_incr=exner_dyn_incr,
+        ndyn_substeps_var=ndyn_substeps_var,
+        dtime=dtime,
         out=exner_dyn_incr,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -8,18 +8,25 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.grid import geometry, geometry_attributes, horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
+    rbf_interpolation as rbf,
 )
-from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
+from icon4py.model.testing import (
+    definitions as test_defs,
+    grid_utils as gridtest_utils,
+    parallel_helpers,
+    test_utils,
+)
 
 from ...fixtures import (
     backend,
@@ -27,11 +34,12 @@ from ...fixtures import (
     decomposition_info,
     download_ser_data,
     experiment,
+    experiment_description,
     geometry_from_savepoint,
     grid_savepoint,
     interpolation_factory_from_savepoint,
     interpolation_savepoint,
-    processor_props,
+    process_props,
 )
 from ..unit_tests.test_rbf_interpolation import RBF_TOLERANCES
 
@@ -41,14 +49,11 @@ if TYPE_CHECKING:
 
     from icon4py.model.testing import serialbox as sb
 
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
-
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, intrp_name, rtol, atol",
     [
@@ -64,34 +69,34 @@ if mpi_decomposition.mpi4py is None:
         (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-9, 1e-8),
     ],
 )
-def test_distributed_interpolation_with_custom_tolerance(
+def test_distributed_interpolation_with_custom_tolerance(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    processor_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
     rtol: float,
     atol: float,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.check_comm_size(process_props)
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field_ref = field_ref.asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
-    assert test_utils.dallclose(
-        field, field_ref, atol=atol, rtol=rtol
-    ), f"comparison of {attrs_name} failed"
+    assert test_utils.dallclose(field, field_ref, atol=atol, rtol=rtol), (
+        f"comparison of {attrs_name} failed"
+    )
 
 
 # attrs.E_FLX_AVG should work here
 @pytest.mark.level("integration")
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, intrp_name",
     [
@@ -103,18 +108,18 @@ def test_distributed_interpolation_with_custom_tolerance(
         (attrs.CELL_AW_VERTS, "c_intp"),
     ],
 )
-def test_distributed_interpolation_fields(
+def test_distributed_interpolation_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    processor_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.check_comm_size(process_props)
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field_ref = field_ref.asnumpy()
@@ -125,17 +130,17 @@ def test_distributed_interpolation_fields(
 @pytest.mark.level("integration")
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_distributed_interpolation_grg(
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_distributed_interpolation_grg(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    processor_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.check_comm_size(process_props)
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.geofac_grg()
     ref_x = field_ref[0].asnumpy()
@@ -159,18 +164,18 @@ def test_distributed_interpolation_grg(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_distributed_interpolation_geofac_rot(
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_distributed_interpolation_geofac_rot(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    processor_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = interpolation_factory_from_savepoint
     horizontal_start = factory.grid.start_index(
@@ -178,14 +183,14 @@ def test_distributed_interpolation_geofac_rot(
     )
     field_ref = interpolation_savepoint.geofac_rot().asnumpy()
     field = factory.get(attrs.GEOFAC_ROT).asnumpy()
-    assert test_utils.dallclose(
-        field[horizontal_start:, :], field_ref[horizontal_start:, :]
-    ), f"comparison of {attrs.GEOFAC_ROT} failed"
+    assert test_utils.dallclose(field[horizontal_start:, :], field_ref[horizontal_start:, :]), (
+        f"comparison of {attrs.GEOFAC_ROT} failed"
+    )
 
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, intrp_name",
     [
@@ -196,43 +201,43 @@ def test_distributed_interpolation_geofac_rot(
         (attrs.RBF_VEC_COEFF_V2, "rbf_vec_coeff_v2"),
     ],
 )
-def test_distributed_interpolation_rbf(
+def test_distributed_interpolation_rbf(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    processor_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field = factory.get(attrs_name)
     dim = field.domain.dims[0]
     assert test_utils.dallclose(
-        field.asnumpy(), field_ref.asnumpy(), atol=RBF_TOLERANCES[dim][experiment.name]
+        field.asnumpy(), field_ref.asnumpy(), atol=RBF_TOLERANCES[dim][experiment.description]
     )
 
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_distributed_interpolation_lsq_pseudoinv(
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_distributed_interpolation_lsq_pseudoinv(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    processor_props: decomposition.ProcessProperties,
-    decomposition_info: decomposition.DecompositionInfo,
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
-    parallel_helpers.check_comm_size(processor_props)
-    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.check_comm_size(process_props)
+    parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = interpolation_factory_from_savepoint
     field_ref_1 = interpolation_savepoint.lsq_pseudoinv_1().asnumpy()
@@ -240,3 +245,44 @@ def test_distributed_interpolation_lsq_pseudoinv(
     field = factory.get(attrs.LSQ_PSEUDOINV).asnumpy()
     assert test_utils.dallclose(field[:, 0, :], field_ref_1, atol=1e-15)
     assert test_utils.dallclose(field[:, 1, :], field_ref_2, atol=1e-15)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "attrs_name, compute_rbf_scale",
+    [
+        (attrs.RBF_SCALE_CELL, rbf.compute_default_rbf_scale_cell),
+        (attrs.RBF_SCALE_EDGE, rbf.compute_default_rbf_scale_edge),
+        (attrs.RBF_SCALE_VERTEX, rbf.compute_default_rbf_scale_vertex),
+    ],
+)
+def test_distributed_interpolation_rbf_scales(  # noqa: PLR0917 [too-many-positional-arguments]
+    process_props: decomp_defs.ProcessProperties,
+    geometry_from_savepoint: geometry.GridGeometry,
+    interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
+    attrs_name: str,
+    compute_rbf_scale: Callable,
+    backend: gtx_typing.Backend | None,
+    experiment: test_defs.Experiment,
+) -> None:
+    parallel_helpers.check_comm_size(process_props)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
+    grid = geometry.grid
+    factory = interpolation_factory_from_savepoint
+    geometry_type = (
+        grid.grid_params.geometry_type
+        if grid.grid_params.geometry_type
+        else pytest.fail("geometry_type cannot be None")
+    )
+    expected = compute_rbf_scale(
+        geometry_type=geometry_type.value,
+        mean_characteristic_length=geometry_from_savepoint.get_scalar(
+            geometry_attributes.CHARACTERISTIC_LENGTH
+        ),
+        mean_dual_edge_length=geometry_from_savepoint.get_scalar(
+            geometry_attributes.MEAN_DUAL_EDGE_LENGTH
+        ),
+    )
+    assert factory.get_scalar(attrs_name) == pytest.approx(expected)

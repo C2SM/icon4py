@@ -25,19 +25,18 @@ if TYPE_CHECKING:
 class PrognosticState:
     """Class that contains the prognostic state.
 
-    Corresponds to ICON t_nh_prog
+    Corresponds to ICON t_nh_prog, minus the tracers: those live in a separate
+    `~icon4py.model.common.states.tracer_states.TracerState` because they are advanced
+    once per model time step while these fields are advanced once per dynamics substep.
     """
 
     rho: fa.CellKField[ta.wpfloat]  # density, rho(nproma, nlev, nblks_c) [kg/m^3]
-    w: fa.CellKField[ta.wpfloat]  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
+    w: fa.CellKHalfField[ta.wpfloat]  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
     vn: fa.EdgeKField[
         ta.wpfloat
     ]  # horizontal wind normal to edges, vn(nproma, nlev, nblks_e)  [m/s]
     exner: fa.CellKField[ta.wpfloat]  # exner function, exner(nrpoma, nlev, nblks_c)
     theta_v: fa.CellKField[ta.wpfloat]  # virtual temperature, (nproma, nlev, nlbks_c) [K]
-    tracer: list[fa.CellKField[ta.wpfloat]] = dataclasses.field(
-        default_factory=list
-    )  # tracer concentration (nproma,nlev,nblks_c,ntracer) [kg/kg]
 
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:
@@ -47,7 +46,6 @@ class PrognosticState:
 def initialize_prognostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
-    ntracer: int = 0,
 ) -> PrognosticState:
     """Initialize the prognostic state with zero fields."""
     rho = data_alloc.zero_field(
@@ -60,8 +58,7 @@ def initialize_prognostic_state(
     w = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
@@ -86,14 +83,4 @@ def initialize_prognostic_state(
         allocator=allocator,
         dtype=ta.wpfloat,
     )
-    tracer = [
-        data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            allocator=allocator,
-            dtype=ta.wpfloat,
-        )
-        for _ in range(ntracer)
-    ]
-    return PrognosticState(rho=rho, w=w, vn=vn, exner=exner, theta_v=theta_v, tracer=tracer)
+    return PrognosticState(rho=rho, w=w, vn=vn, exner=exner, theta_v=theta_v)

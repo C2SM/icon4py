@@ -17,8 +17,44 @@ INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "model_interface_height"
 
 INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
 
+#: from the standard name table https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
+LEVEL_STANDARD_NAME: Final[str] = "model_level_number"
+
+#: COARDS axis labels: CF conventions encourage the COARDS order of the dimensions --
+#: ``T`` (time), ``Z`` (height or depth), ``Y`` (latitude), ``X`` (longitude); in the
+#: unstructured case ``Y`` and ``X`` combine to the horizontal dimension (see
+#: ``common.io.cf_utils`` for the dimension positions).
+COARDS_TIME_COORDINATE_NAME: Final[str] = "T"
+COARDS_VERTICAL_COORDINATE_NAME: Final[str] = "Z"
+COARDS_LONGITUDE_COORDINATE_NAME: Final[str] = "X"
+COARDS_LATITUDE_COORDINATE_NAME: Final[str] = "Y"
+
+#: CF attributes of the vertical coordinate variables of output files (the horizontal
+#: coordinates live in the UGRID topology file, see ``common.io``).
+LEVEL_ATTRIBUTES: Final[dict[str, str]] = {
+    "units": "1",
+    "positive": "down",
+    "long_name": "model full level index",
+    "standard_name": LEVEL_STANDARD_NAME,
+}
+
+HALF_LEVEL_ATTRIBUTES: Final[dict[str, str]] = {
+    "units": "1",
+    "positive": "down",
+    "long_name": "model half level index",
+    "standard_name": INTERFACE_LEVEL_STANDARD_NAME,
+}
+
+HEIGHT_ATTRIBUTES: Final[dict[str, str]] = {
+    "units": "m",
+    "positive": "up",
+    "axis": COARDS_VERTICAL_COORDINATE_NAME,
+    "long_name": "height value of half levels without topography",
+    "standard_name": INTERFACE_LEVEL_HEIGHT_STANDARD_NAME,
+}
+
 attrs: Final[dict[str, model.FieldMetaData]] = {
-    "z_ifv": dict(
+    "z_ifv": model.FieldMetaData(
         standard_name="z_ifv",
         long_name="z_ifv",
         units="",
@@ -26,7 +62,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="z_ifv",
         dtype=ta.wpfloat,
     ),
-    "height_on_interface_levels": dict(
+    "height_on_interface_levels": model.FieldMetaData(
         standard_name="height_on_interface_levels",
         long_name="height_on_interface_levels",
         units="m",
@@ -34,7 +70,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="z_ifc",
         dtype=ta.wpfloat,
     ),
-    "z_ifc_sliced": dict(
+    "z_ifc_sliced": model.FieldMetaData(
         standard_name="z_ifc_sliced",
         long_name="z_ifc_sliced",
         units="m",
@@ -42,7 +78,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="z_ifc_sliced",
         dtype=ta.wpfloat,
     ),
-    "model_level_number": dict(
+    "model_level_number": model.FieldMetaData(
         standard_name="model_level_number",
         long_name="model level number",
         units="",
@@ -50,7 +86,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="k_index",
         dtype=gtx.int32,
     ),
-    INTERFACE_LEVEL_STANDARD_NAME: dict(
+    INTERFACE_LEVEL_STANDARD_NAME: model.FieldMetaData(
         standard_name=INTERFACE_LEVEL_STANDARD_NAME,
         long_name="model interface level number",
         units="",
@@ -58,7 +94,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="k_index",
         dtype=gtx.int32,
     ),
-    "weighting_factor_for_quadratic_interpolation_to_cell_surface": dict(
+    "weighting_factor_for_quadratic_interpolation_to_cell_surface": model.FieldMetaData(
         standard_name="weighting_factor_for_quadratic_interpolation_to_cell_surface",
         units="",
         dims=(dims.CellDim, dims.KDim),
@@ -66,7 +102,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="wgtfacq_c_dsl",
         long_name="weighting factor for quadratic interpolation to cell surface",
     ),
-    "weighting_factor_for_quadratic_interpolation_to_edge_center": dict(
+    "weighting_factor_for_quadratic_interpolation_to_edge_center": model.FieldMetaData(
         standard_name="weighting_factor_for_quadratic_interpolation_to_edge_center",
         units="",
         dims=(dims.EdgeDim, dims.KDim),
@@ -74,7 +110,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="wgtfacq_e_dsl",
         long_name="weighting factor for quadratic interpolation to edge centers",
     ),
-    "cell_to_edge_interpolation_coefficient": dict(
+    "cell_to_edge_interpolation_coefficient": model.FieldMetaData(
         standard_name="cell_to_edge_interpolation_coefficient",
         units="",
         dims=(dims.EdgeDim, dims.E2CDim),
@@ -82,7 +118,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="c_lin_e",
         long_name="coefficients for cell to edge interpolation",
     ),
-    "model_interface_height": dict(
+    "model_interface_height": model.FieldMetaData(
         standard_name="model_interface_height",
         long_name="height value of half levels without topography",
         units="m",
@@ -91,7 +127,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         positive="up",
         icon_var_name="vct_a",
     ),
-    "nudging_coefficient_on_edges": dict(
+    "nudging_coefficient_on_edges": model.FieldMetaData(
         standard_name="nudging_coefficient_on_edges",
         long_name="nudging coefficients on edges",
         units="",
@@ -99,7 +135,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         dims=(dims.EdgeDim,),
         icon_var_name="nudgecoeff_e",
     ),
-    "refin_e_ctrl": dict(
+    "refin_e_ctrl": model.FieldMetaData(
         standard_name="refin_e_ctrl",
         long_name="grid refinement control on edgeds",
         units="",
@@ -107,7 +143,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         dims=(dims.EdgeDim,),
         icon_var_name="refin_e_ctrl",
     ),
-    "c_refin_ctrl": dict(
+    "c_refin_ctrl": model.FieldMetaData(
         standard_name="c_refin_ctrl",
         units="",
         dims=(dims.CellDim,),
@@ -115,7 +151,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="c_refin_ctrl",
         long_name="refinement control field on cells",
     ),
-    "e_refin_ctrl": dict(
+    "e_refin_ctrl": model.FieldMetaData(
         standard_name="e_refin_ctrl",
         units="",
         dims=(dims.EdgeDim,),
@@ -123,7 +159,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="e_refin_ctrl",
         long_name="refinement contorl fields on edges",
     ),
-    "cells_aw_verts_field": dict(
+    "cells_aw_verts_field": model.FieldMetaData(
         standard_name="cells_aw_verts_field",
         units="",
         dims=(dims.VertexDim, dims.V2CDim),
@@ -131,7 +167,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="cells_aw_verts_field",
         long_name="grid savepoint field",
     ),
-    "e_lev": dict(
+    "e_lev": model.FieldMetaData(
         standard_name="e_lev",
         long_name="e_lev",
         units="",
@@ -139,18 +175,18 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="e_lev",
         dtype=gtx.int32,
     ),
-    "e_owner_mask": dict(
+    "e_owner_mask": model.FieldMetaData(
         standard_name="e_owner_mask",
         units="",
-        dims=(dims.EdgeDim),
+        dims=(dims.EdgeDim,),
         dtype=bool,
         icon_var_name="e_owner_mask",
         long_name="grid savepoint field",
     ),
-    "c_owner_mask": dict(
+    "c_owner_mask": model.FieldMetaData(
         standard_name="c_owner_mask",
         units="",
-        dims=(dims.CellDim),
+        dims=(dims.CellDim,),
         dtype=bool,
         icon_var_name="c_owner_mask",
         long_name="grid savepoint field",

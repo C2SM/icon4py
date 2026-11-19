@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import astype, broadcast
@@ -36,9 +35,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_
 from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_variables import (
     _compute_results_for_thermodynamic_variables,
 )
-from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_back_substitution import (
-    _solve_tridiagonal_matrix_for_w_back_substitution_scan,
-)
 from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     _solve_tridiagonal_matrix_for_w_forward_sweep,
 )
@@ -48,29 +44,24 @@ from icon4py.model.atmosphere.dycore.stencils.update_dynamical_exner_time_increm
 from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
     _update_mass_volume_flux,
 )
-from icon4py.model.common import (
-    constants,
-    dimension as dims,
-    field_type_aliases as fa,
-    type_alias as ta,
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants, RayleighType
+from icon4py.model.common.math.tridiagonal import (
+    _solve_tridiagonal_matrix_back_substitution_on_half_levels_mixed_precision,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-dycore_consts: Final = constants.PhysicsConstants()
-rayleigh_damping_options: Final = constants.RayleighType()
 
 
 @gtx.field_operator
 def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    wgtfac_c: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKHalfField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
     nlev: gtx.int32,
-) -> fa.CellKField[vpfloat]:
+) -> fa.CellKHalfField[vpfloat]:
     contravariant_correction_at_cells_on_half_levels = concat_where(
-        dims.KDim < nlev,
+        dims.KHalfDim < nlev,
         _compute_contravariant_correction_of_w(
             e_bln_c_s, contravariant_correction_at_edges_on_model_levels, wgtfac_c
         ),
@@ -83,18 +74,18 @@ def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on
 
 @gtx.field_operator
 def _set_surface_boundary_condition_for_computation_of_w(
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-) -> fa.CellKField[ta.wpfloat]:
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+) -> fa.CellKHalfField[ta.wpfloat]:
     return astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
 
 
 @gtx.field_operator
 def _compute_w_explicit_term_with_predictor_advective_tendency(
-    current_w: fa.CellKField[wpfloat],
-    predictor_vertical_wind_advective_tendency: fa.CellKField[vpfloat],
-    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    current_w: fa.CellKHalfField[wpfloat],
+    predictor_vertical_wind_advective_tendency: fa.CellKHalfField[vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKHalfField[vpfloat],
     dtime: wpfloat,
-) -> fa.CellKField[wpfloat]:
+) -> fa.CellKHalfField[wpfloat]:
     (
         predictor_vertical_wind_advective_tendency_wp,
         nonhydro_buoy_at_cells_on_half_levels_wp,
@@ -108,21 +99,21 @@ def _compute_w_explicit_term_with_predictor_advective_tendency(
 
     w_explicit_term_wp = current_w + dtime * (
         predictor_vertical_wind_advective_tendency_wp
-        - dycore_consts.cpd * nonhydro_buoy_at_cells_on_half_levels_wp
+        - PhysicsConstants.cpd * nonhydro_buoy_at_cells_on_half_levels_wp
     )
     return w_explicit_term_wp
 
 
 @gtx.field_operator
 def _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_tendency(
-    current_w: fa.CellKField[wpfloat],
-    predictor_vertical_wind_advective_tendency: fa.CellKField[vpfloat],
-    corrector_vertical_wind_advective_tendency: fa.CellKField[vpfloat],
-    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    current_w: fa.CellKHalfField[wpfloat],
+    predictor_vertical_wind_advective_tendency: fa.CellKHalfField[vpfloat],
+    corrector_vertical_wind_advective_tendency: fa.CellKHalfField[vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKHalfField[vpfloat],
     dtime: wpfloat,
     advection_explicit_weight_parameter: wpfloat,
     advection_implicit_weight_parameter: wpfloat,
-) -> fa.CellKField[wpfloat]:
+) -> fa.CellKHalfField[wpfloat]:
     (
         predictor_vertical_wind_advective_tendency_wp,
         corrector_vertical_wind_advective_tendency_wp,
@@ -139,7 +130,7 @@ def _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_ten
     w_explicit_term_wp = current_w + dtime * (
         advection_explicit_weight_parameter * predictor_vertical_wind_advective_tendency_wp
         + advection_implicit_weight_parameter * corrector_vertical_wind_advective_tendency_wp
-        - dycore_consts.cpd * nonhydro_buoy_at_cells_on_half_levels_wp
+        - PhysicsConstants.cpd * nonhydro_buoy_at_cells_on_half_levels_wp
     )
     return w_explicit_term_wp
 
@@ -151,17 +142,17 @@ def _compute_solver_coefficients_matrix(
     current_theta_v: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
-    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKHalfField[wpfloat],
+    rho_at_cells_on_half_levels: fa.CellKHalfField[wpfloat],
     dtime: wpfloat,
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKHalfField[vpfloat]]:
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
     z_beta_wp = (
         dtime
-        * dycore_consts.rd
+        * PhysicsConstants.rd
         * current_exner
-        / (dycore_consts.cvd * current_rho * current_theta_v)
+        / (PhysicsConstants.cvd * current_rho * current_theta_v)
         * inv_ddqz_z_full_wp
     )
     z_alpha_wp = (
@@ -175,22 +166,22 @@ def _compute_solver_coefficients_matrix(
 @gtx.field_operator
 def solve_w(
     last_inner_level: gtx.int32,
-    next_w: fa.CellKField[wpfloat],
+    next_w: fa.CellKHalfField[wpfloat],
     vwind_impl_wgt: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
-    ddqz_z_half: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
+    ddqz_z_half: fa.CellKHalfField[vpfloat],
+    z_alpha: fa.CellKHalfField[vpfloat],
     z_beta: fa.CellKField[vpfloat],
-    z_w_expl: fa.CellKField[wpfloat],
+    z_w_expl: fa.CellKHalfField[wpfloat],
     z_exner_expl: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
-) -> fa.CellKField[wpfloat]:
+) -> fa.CellKHalfField[wpfloat]:
     (
         tridiagonal_intermediate_result,
         next_w_intermediate_result,
     ) = concat_where(
-        dims.KDim > 0,
+        dims.KHalfDim > 0,
         _solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=vwind_impl_wgt,
             theta_v_ic=theta_v_ic,
@@ -205,10 +196,10 @@ def solve_w(
         (broadcast(vpfloat("0.0"), (dims.CellDim,)), broadcast(wpfloat("0.0"), (dims.CellDim,))),
     )
     next_w = concat_where(
-        dims.KDim < last_inner_level,
-        _solve_tridiagonal_matrix_for_w_back_substitution_scan(
-            z_q=tridiagonal_intermediate_result,
-            w=next_w_intermediate_result,
+        dims.KHalfDim < last_inner_level,
+        _solve_tridiagonal_matrix_back_substitution_on_half_levels_mixed_precision(
+            q=tridiagonal_intermediate_result,
+            d_prime=next_w_intermediate_result,
         ),
         next_w,
     )
@@ -217,32 +208,32 @@ def solve_w(
 
 @gtx.field_operator
 def _vertically_implicit_solver_at_predictor_step(
-    next_w: fa.CellKField[
+    next_w: fa.CellKHalfField[
         ta.wpfloat
     ],  # necessary input because the last vertical level is set outside this field operator
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    predictor_vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
     current_theta_v: fa.CellKField[ta.wpfloat],
-    current_w: fa.CellKField[ta.wpfloat],
+    current_w: fa.CellKHalfField[ta.wpfloat],
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[ta.wpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
     rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
-    exner_dynamical_increment: fa.CellKField[ta.wpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
+    exner_dynamical_increment: fa.CellKField[vpfloat],
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    rayleigh_damping_factor: fa.KField[ta.wpfloat],
+    rayleigh_damping_factor: fa.KHalfField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
@@ -254,7 +245,7 @@ def _vertically_implicit_solver_at_predictor_step(
     kstart_moist: gtx.int32,
     n_lev: gtx.int32,
 ) -> tuple[
-    fa.CellKField[ta.wpfloat],
+    fa.CellKHalfField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
@@ -268,18 +259,18 @@ def _vertically_implicit_solver_at_predictor_step(
     )
 
     w_explicit_term = concat_where(
-        1 <= dims.KDim,
+        1 <= dims.KHalfDim,
         _compute_w_explicit_term_with_predictor_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
             nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             dtime=dtime,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
-        (1 <= dims.KDim) & (dims.KDim < n_lev),
+        (1 <= dims.KHalfDim) & (dims.KHalfDim < n_lev),
         rho_at_cells_on_half_levels
         * (
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
@@ -302,7 +293,7 @@ def _vertically_implicit_solver_at_predictor_step(
         dtime=dtime,
     )
     tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
-        dims.KDim < n_lev,
+        dims.KHalfDim < n_lev,
         tridiagonal_alpha_coeff_at_cells_on_half_levels,
         broadcast(vpfloat("0.0"), (dims.CellDim,)),
     )
@@ -340,12 +331,12 @@ def _vertically_implicit_solver_at_predictor_step(
         z_w_expl=w_explicit_term,
         z_exner_expl=exner_explicit_term,
         dtime=dtime,
-        cpd=dycore_consts.cpd,
+        cpd=PhysicsConstants.cpd,
     )
 
-    if rayleigh_type == rayleigh_damping_options.KLEMP:
+    if rayleigh_type == RayleighType.KLEMP:
         next_w = concat_where(
-            (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
+            (dims.KHalfDim > 0) & (dims.KHalfDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w=next_w,
@@ -401,8 +392,8 @@ def _vertically_implicit_solver_at_predictor_step(
 
 @gtx.program
 def vertically_implicit_solver_at_predictor_step(
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    next_w: fa.CellKField[ta.wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+    next_w: fa.CellKHalfField[ta.wpfloat],
     next_rho: fa.CellKField[ta.wpfloat],
     next_exner: fa.CellKField[ta.wpfloat],
     next_theta_v: fa.CellKField[ta.wpfloat],
@@ -411,27 +402,27 @@ def vertically_implicit_solver_at_predictor_step(
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    predictor_vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
     current_theta_v: fa.CellKField[ta.wpfloat],
-    current_w: fa.CellKField[ta.wpfloat],
+    current_w: fa.CellKHalfField[ta.wpfloat],
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[ta.wpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
     rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
-    rayleigh_damping_factor: fa.KField[ta.wpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
+    rayleigh_damping_factor: fa.KHalfField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    wgtfac_c: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKHalfField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
@@ -448,7 +439,7 @@ def vertically_implicit_solver_at_predictor_step(
     end_cell_index_halo_lvl1: gtx.int32,
     vertical_start_index_model_top: gtx.int32,
     vertical_end_index_model_surface: gtx.int32,
-):
+) -> None:
     _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
         contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         e_bln_c_s=e_bln_c_s,
@@ -461,7 +452,7 @@ def vertically_implicit_solver_at_predictor_step(
                 start_cell_index_lateral_lvl3,
                 end_cell_index_halo_lvl1,
             ),
-            dims.KDim: (flat_level_index_plus1, vertical_end_index_model_surface),
+            dims.KHalfDim: (flat_level_index_plus1, vertical_end_index_model_surface),
         },
     )
     _set_surface_boundary_condition_for_computation_of_w(
@@ -469,7 +460,10 @@ def vertically_implicit_solver_at_predictor_step(
         out=next_w,
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            dims.KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
+            dims.KHalfDim: (
+                vertical_end_index_model_surface - 1,
+                vertical_end_index_model_surface,
+            ),
         },
     )
     _vertically_implicit_solver_at_predictor_step(
@@ -515,47 +509,72 @@ def vertically_implicit_solver_at_predictor_step(
             dwdz_at_cells_on_model_levels,
             exner_dynamical_increment,
         ),
-        domain={
-            dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
-        },
+        domain=(
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KHalfDim: (
+                    vertical_start_index_model_top,
+                    vertical_end_index_model_surface - 1,
+                ),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            },
+        ),
     )
 
 
 @gtx.field_operator
 def _vertically_implicit_solver_at_corrector_step(
-    next_w: fa.CellKField[
+    next_w: fa.CellKHalfField[
         ta.wpfloat
     ],  # necessary input because the last vertical level is set outside this field operator
-    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    exner_dynamical_increment: fa.CellKField[ta.wpfloat],
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
+    exner_dynamical_increment: fa.CellKField[vpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    corrector_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    predictor_vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
+    corrector_vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
     current_theta_v: fa.CellKField[ta.wpfloat],
-    current_w: fa.CellKField[ta.wpfloat],
+    current_w: fa.CellKHalfField[ta.wpfloat],
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[ta.wpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
     rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
-    rayleigh_damping_factor: fa.KField[ta.wpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
+    rayleigh_damping_factor: fa.KHalfField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
-    lprep_adv: bool,
+    prepare_fluxes_for_advection: bool,
     r_nsubsteps: ta.wpfloat,
     ndyn_substeps_var: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
@@ -568,12 +587,12 @@ def _vertically_implicit_solver_at_corrector_step(
     kstart_moist: gtx.int32,
     n_lev: gtx.int32,
 ) -> tuple[
-    fa.CellKField[ta.wpfloat],
+    fa.CellKHalfField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    fa.CellKHalfField[ta.wpfloat],
+    fa.CellKHalfField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
     divergence_of_mass, divergence_of_theta_v = _compute_divergence_of_fluxes_of_rho_and_theta(
@@ -582,7 +601,7 @@ def _vertically_implicit_solver_at_corrector_step(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
     w_explicit_term = concat_where(
-        1 <= dims.KDim,
+        1 <= dims.KHalfDim,
         _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
@@ -592,10 +611,10 @@ def _vertically_implicit_solver_at_corrector_step(
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
-        (1 <= dims.KDim) & (dims.KDim < n_lev),
+        (1 <= dims.KHalfDim) & (dims.KHalfDim < n_lev),
         rho_at_cells_on_half_levels
         * (
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
@@ -617,7 +636,7 @@ def _vertically_implicit_solver_at_corrector_step(
         dtime=dtime,
     )
     tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
-        dims.KDim < n_lev,
+        dims.KHalfDim < n_lev,
         tridiagonal_alpha_coeff_at_cells_on_half_levels,
         broadcast(vpfloat("0.0"), (dims.CellDim,)),
     )
@@ -653,12 +672,12 @@ def _vertically_implicit_solver_at_corrector_step(
         z_w_expl=w_explicit_term,
         z_exner_expl=exner_explicit_term,
         dtime=dtime,
-        cpd=dycore_consts.cpd,
+        cpd=PhysicsConstants.cpd,
     )
 
-    if rayleigh_type == rayleigh_damping_options.KLEMP:
+    if rayleigh_type == RayleighType.KLEMP:
         next_w = concat_where(
-            (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
+            (dims.KHalfDim > 0) & (dims.KHalfDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w=next_w,
@@ -682,21 +701,21 @@ def _vertically_implicit_solver_at_corrector_step(
         dtime=dtime,
     )
 
-    if lprep_adv:
+    if prepare_fluxes_for_advection:
         if at_first_substep:
             (
                 dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             ) = (
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
+                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
             )
 
         (
             dynamical_vertical_mass_flux_at_cells_on_half_levels,
             dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
         ) = concat_where(
-            1 <= dims.KDim,
+            1 <= dims.KHalfDim,
             _update_mass_volume_flux(
                 z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels,
@@ -738,39 +757,39 @@ def _vertically_implicit_solver_at_corrector_step(
 
 @gtx.program
 def vertically_implicit_solver_at_corrector_step(
-    next_w: fa.CellKField[ta.wpfloat],
+    next_w: fa.CellKHalfField[ta.wpfloat],
     next_rho: fa.CellKField[ta.wpfloat],
     next_exner: fa.CellKField[ta.wpfloat],
     next_theta_v: fa.CellKField[ta.wpfloat],
-    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    exner_dynamical_increment: fa.CellKField[ta.wpfloat],
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
+    exner_dynamical_increment: fa.CellKField[vpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    predictor_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    corrector_vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    predictor_vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
+    corrector_vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
+    nonhydro_buoy_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
     current_exner: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
     current_theta_v: fa.CellKField[ta.wpfloat],
-    current_w: fa.CellKField[ta.wpfloat],
+    current_w: fa.CellKHalfField[ta.wpfloat],
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
     exner_w_implicit_weight_parameter: fa.CellField[ta.wpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
     rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
-    rayleigh_damping_factor: fa.KField[ta.wpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
+    rayleigh_damping_factor: fa.KHalfField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
-    lprep_adv: bool,
+    prepare_fluxes_for_advection: bool,
     r_nsubsteps: ta.wpfloat,
     ndyn_substeps_var: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
@@ -791,7 +810,10 @@ def vertically_implicit_solver_at_corrector_step(
         out=next_w,
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            dims.KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
+            dims.KHalfDim: (
+                vertical_end_index_model_surface - 1,
+                vertical_end_index_model_surface,
+            ),
         },
     )
     _vertically_implicit_solver_at_corrector_step(
@@ -824,7 +846,7 @@ def vertically_implicit_solver_at_corrector_step(
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=ndyn_substeps_var,
         iau_wgt_dyn=iau_wgt_dyn,
@@ -845,8 +867,43 @@ def vertically_implicit_solver_at_corrector_step(
             dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             exner_dynamical_increment,
         ),
-        domain={
-            dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
-        },
+        domain=(
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KHalfDim: (
+                    vertical_start_index_model_top,
+                    vertical_end_index_model_surface - 1,
+                ),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KHalfDim: (
+                    vertical_start_index_model_top,
+                    vertical_end_index_model_surface - 1,
+                ),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KHalfDim: (
+                    vertical_start_index_model_top,
+                    vertical_end_index_model_surface - 1,
+                ),
+            },
+            {
+                dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+                dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            },
+        ),
     )

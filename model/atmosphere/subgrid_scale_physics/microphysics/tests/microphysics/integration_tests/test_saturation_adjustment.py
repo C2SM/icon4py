@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -25,16 +25,16 @@ from ..fixtures import *  # noqa: F403
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common import type_alias as ta
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 
 
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
-    "experiment, model_top_height",
-    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0)],
+    "experiment_description",
+    [test_defs.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
@@ -42,28 +42,23 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("location", ["nwp-gscp-interface", "interface-nwp"])
 def test_saturation_adjustement(
     location: str,
-    model_top_height: ta.wpfloat,
     date: str,
     *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     icon_grid: base_grid.Grid,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     satad_init = data_provider.from_savepoint_satad_init(location=location, date=date)
     satad_exit = data_provider.from_savepoint_satad_exit(location=location, date=date)
+    entry_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(date=date)
 
-    config = satad.SaturationAdjustmentConfig(
-        tolerance=1e-3,
-        max_iter=10,
-    )
-    dtime = 2.0
+    config = satad.SaturationAdjustmentConfig()
+    dtime = entry_savepoint.dtime()
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        model_top_height=model_top_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
@@ -108,18 +103,18 @@ def test_saturation_adjustement(
     updated_qc = qc.asnumpy() + qc_tendency.asnumpy() * dtime
     updated_temperature = temperature.asnumpy() + temperature_tendency.asnumpy() * dtime
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         updated_qv,
         satad_exit.qv().asnumpy(),
-        atol=1.0e-13,
+        atol=test_utils.scale_tol(1.0e-13),
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         updated_qc,
         satad_exit.qc().asnumpy(),
-        atol=1.0e-13,
+        atol=test_utils.scale_tol(1.0e-13),
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         updated_temperature,
         satad_exit.temperature().asnumpy(),
-        atol=1.0e-13,
+        atol=test_utils.scale_tol(1.0e-13),
     )

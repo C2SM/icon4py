@@ -18,23 +18,20 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-dycore_consts: Final = constants.PhysicsConstants()
-
-
-class TestUpdateThetaV(StencilTest):
+class TestUpdateThetaV(stencil_tests.StencilTest):
     PROGRAM = update_theta_and_exner_in_halo
     OUTPUTS = (
         "theta_v_new",
         "exner_new",
     )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
+        *,
         mask_prog_halo_c: np.ndarray,
         rho_now: np.ndarray,
         rho_new: np.ndarray,
@@ -49,7 +46,7 @@ class TestUpdateThetaV(StencilTest):
         theta_v_new = np.where(mask_prog_halo_c != 1, exner_new, theta_v_new)
         exner_new = np.where(
             mask_prog_halo_c != 1,
-            np.exp(dycore_consts.rd_o_cvd * np.log(dycore_consts.rd_o_p0ref * rho_new * exner_new)),
+            np.exp(constants.RD_O_CVD * np.log(constants.RD_O_P0REF * rho_new * exner_new)),
             exner_new,
         )
 
@@ -57,21 +54,23 @@ class TestUpdateThetaV(StencilTest):
             mask_prog_halo_c,
             rho_now
             * theta_v_now
-            * ((exner_new / exner_now - 1) * dycore_consts.cvd_o_rd + 1.0)
+            * ((exner_new / exner_now - 1) * constants.CVD_O_RD + 1.0)
             / rho_new,
             theta_v_new,
         )
         return dict(theta_v_new=theta_v_new, exner_new=exner_new)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        mask_prog_halo_c = data_alloc.random_mask(grid, dims.CellDim)
-        rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_v_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_v_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        mask_prog_halo_c = data_alloc.random_mask(dims.CellDim)
+        rho_now = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_new = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_v_now = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_v_new = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner_now = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner_new = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             mask_prog_halo_c=mask_prog_halo_c,

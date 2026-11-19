@@ -55,7 +55,7 @@ program call_square_wrapper_cffi_plugin
 #else
    call square(input, result, rc)
 #endif
-   if (rc /= 0) then
+   if (rc /= 1) then
        print *, "Python failed with exit code = ", rc
        call exit(1)
    end if

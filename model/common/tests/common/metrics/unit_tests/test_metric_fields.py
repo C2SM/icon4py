@@ -13,25 +13,24 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils as testing_helpers
-from icon4py.model.testing.definitions import construct_metrics_config
+from icon4py.model.testing import definitions as test_defs, test_utils as testing_helpers
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
-    processor_props,
+    process_props,
 )
-
-from ... import utils
 
 
 if TYPE_CHECKING:
@@ -58,9 +57,7 @@ def test_compute_ddq_z_half(
 
     nlevp1 = icon_grid.num_levels + 1
     z_mc = metrics_savepoint.z_mc()
-    ddqz_z_half = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
+    ddqz_z_half = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend)
 
     mf.compute_ddqz_z_half.with_backend(backend=backend)(
         z_ifc=z_ifc,
@@ -71,7 +68,7 @@ def test_compute_ddq_z_half(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlevp1,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
@@ -97,7 +94,7 @@ def test_compute_ddqz_z_full_and_inverse(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
@@ -125,7 +122,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
         divdamp_type=divdamp_type,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(
@@ -137,38 +134,25 @@ def test_compute_scaling_factor_for_3d_divdamp(
 @pytest.mark.datatest
 def test_compute_rayleigh_w(
     icon_grid: base_grid.Grid,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
-    rayleigh_w_full = data_alloc.zero_field(
-        icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
-    (
-        _,
-        _,
-        _,
-        damping_height,
-        rayleigh_coeff,
-        _,
-        _,
-        rayleigh_type,
-        _,
-        _,
-    ) = construct_metrics_config(experiment)
+    rayleigh_w_full = data_alloc.random_field(icon_grid, dims.KHalfDim, allocator=backend)
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
-        damping_height=damping_height,
-        rayleigh_type=rayleigh_type,
-        rayleigh_coeff=rayleigh_coeff,
+        damping_height=experiment.config.vertical_grid.rayleigh_damping_height,
+        rayleigh_type=experiment.config.metrics.rayleigh_type,
+        rayleigh_coeff=experiment.config.metrics.rayleigh_coeff,
         vct_a_1=vct_a_1,
         pi_const=math.pi,
+        end_index_of_damping_layer=grid_savepoint.nrdmax(),
         vertical_start=0,
-        vertical_end=gtx.int32(grid_savepoint.nrdmax() + 1),
+        vertical_end=gtx.int32(icon_grid.num_levels + 1),
         offset_provider={},
     )
 
@@ -183,8 +167,12 @@ def test_compute_coeff_dwdz(
     coeff1_dwdz_ref = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz_ref = metrics_savepoint.coeff2_dwdz()
 
-    coeff1_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
-    coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    coeff1_dwdz_full = data_alloc.random_field(
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+    )
+    coeff2_dwdz_full = data_alloc.random_field(
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+    )
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),
         1 / metrics_savepoint.inv_ddqz_z_full().ndarray,
@@ -198,9 +186,9 @@ def test_compute_coeff_dwdz(
         coeff2_dwdz=coeff2_dwdz_full,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=1,
+        vertical_start=0,
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_ref.asnumpy())
@@ -238,17 +226,10 @@ def test_compute_exner_exfac(
     grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    match experiment:
-        case definitions.Experiments.MCH_CH_R04B09:
-            exner_expol = 0.333
-        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
-            exner_expol = 0.333
-        case _:
-            exner_expol = 1.0 / 3.0
 
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     max_slp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
@@ -269,7 +250,7 @@ def test_compute_exner_exfac(
         maxslp=max_slp,
         maxhgtd=max_hgtd,
         exner_exfac=exner_exfac,
-        exner_expol=exner_expol,
+        exner_expol=experiment.config.metrics.exner_expol,
         lateral_boundary_level_2=horizontal_start,
         horizontal_start=gtx.int32(0),
         horizontal_end=gtx.int32(icon_grid.num_cells),
@@ -283,12 +264,12 @@ def test_compute_exner_exfac(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_exner_w_implicit_weight_parameter(
+def test_compute_exner_w_implicit_weight_parameter(  # noqa: PLR0917 [too-many-positional-arguments]
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()
@@ -296,10 +277,10 @@ def test_compute_exner_w_implicit_weight_parameter(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     z_ddxn_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.EdgeDim, dims.KHalfDim, allocator=backend
     )
     z_ddxt_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.EdgeDim, dims.KHalfDim, allocator=backend
     )
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
@@ -345,15 +326,7 @@ def test_compute_exner_w_implicit_weight_parameter(
     )
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
-    match experiment:
-        case definitions.Experiments.MCH_CH_R04B09:
-            vwind_offctr = 0.2
-        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
-            vwind_offctr = 0.2
-        case _:
-            vwind_offctr = 0.15
 
-    xp = data_alloc.import_array_ns(backend)
     exner_w_implicit_weight_parameter = mf.compute_exner_w_implicit_weight_parameter(
         c2e=icon_grid.get_connectivity(dims.C2E).ndarray,
         vct_a=grid_savepoint.vct_a().ndarray,
@@ -361,10 +334,9 @@ def test_compute_exner_w_implicit_weight_parameter(
         z_ddxn_z_half_e=z_ddxn_z_half_e.ndarray,
         z_ddxt_z_half_e=z_ddxt_z_half_e.ndarray,
         dual_edge_length=dual_edge_length.ndarray,
-        vwind_offctr=vwind_offctr,
+        vwind_offctr=experiment.config.metrics.vwind_offctr,
         nlev=icon_grid.num_levels,
         horizontal_start_cell=horizontal_start_cell,
-        array_ns=xp,
     )
     assert testing_helpers.dallclose(
         vwind_impl_wgt_ref.asnumpy(), data_alloc.as_numpy(exner_w_implicit_weight_parameter)
@@ -379,9 +351,7 @@ def test_compute_wgtfac_e(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    wgtfac_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
+    wgtfac_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KHalfDim, allocator=backend)
     wgtfac_e_ref = metrics_savepoint.wgtfac_e()
     mf.compute_wgtfac_e.with_backend(backend)(
         wgtfac_c=metrics_savepoint.wgtfac_c(),
@@ -422,15 +392,13 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
 
-    xp = data_alloc.import_array_ns(backend)
     flat_idx_max = mf.compute_flat_max_idx(
         e2c=icon_grid.get_connectivity("E2C").ndarray,
         z_mc=z_mc.ndarray,
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        exchange=utils.dummy_exchange,
-        array_ns=xp,
+        exchange=decomposition.SingleNodeExchange(),
     )
     # TODO (nfarabullini): fix type ignore
     flat_idx = gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend)  # type: ignore [arg-type]
@@ -451,7 +419,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C": icon_grid.get_connectivity("E2C"),
-            "Koff": dims.KDim,
         },
     )
 

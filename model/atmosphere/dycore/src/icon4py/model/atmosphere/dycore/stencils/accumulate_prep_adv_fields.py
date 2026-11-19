@@ -38,11 +38,11 @@ def accumulate_prep_adv_fields(
     vertical_end: gtx.int32,
 ) -> None:
     _accumulate_prep_adv_fields(
-        z_vn_avg,
-        mass_fl_e,
-        vn_traj,
-        mass_flx_me,
-        r_nsubsteps,
+        z_vn_avg=z_vn_avg,
+        mass_fl_e=mass_fl_e,
+        vn_traj=vn_traj,
+        mass_flx_me=mass_flx_me,
+        r_nsubsteps=r_nsubsteps,
         out=(vn_traj, mass_flx_me),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

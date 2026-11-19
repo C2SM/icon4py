@@ -11,8 +11,7 @@ from gt4py.next import astype
 from icon4py.model.atmosphere.dycore.dycore_utils import (
     _calculate_fourth_order_divdamp_scaling_coeff,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -22,8 +21,8 @@ def _apply_4th_order_divergence_damping(
     z_graddiv2_vn: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
-    mean_cell_area: float,
-    second_order_divdamp_factor: float,
+    mean_cell_area: wpfloat,
+    second_order_divdamp_factor: wpfloat,
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_4th_order_divdamp."""
     scal_divdamp = _calculate_fourth_order_divdamp_scaling_coeff(
@@ -43,23 +42,23 @@ def apply_4th_order_divergence_damping(
     z_graddiv2_vn: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
-    mean_cell_area: float,
-    second_order_divdamp_factor: float,
+    mean_cell_area: wpfloat,
+    second_order_divdamp_factor: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
     _apply_4th_order_divergence_damping(
-        interpolated_fourth_order_divdamp_factor,
-        z_graddiv2_vn,
-        vn,
-        divdamp_order,
-        mean_cell_area,
-        second_order_divdamp_factor,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        z_graddiv2_vn=z_graddiv2_vn,
+        vn=vn,
+        divdamp_order=divdamp_order,
+        mean_cell_area=mean_cell_area,
+        second_order_divdamp_factor=second_order_divdamp_factor,
         out=vn,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

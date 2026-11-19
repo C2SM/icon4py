@@ -23,8 +23,6 @@ __all__ = [
     "Pair",
     "PredictorCorrectorPair",
     "TimeStepPair",
-    # Functions
     "chainable",
-    # Classes
     "named_property",
 ]

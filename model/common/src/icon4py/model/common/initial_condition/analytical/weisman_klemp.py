@@ -1,0 +1,373 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
+import dataclasses
+import logging
+import typing
+from typing import TYPE_CHECKING
+
+from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
+from icon4py.model.common.config import options as common_conf_opt
+from icon4py.model.common.grid import (
+    geometry_attributes as geometry_meta,
+    icon as icon_grid,
+    vertical as v_grid,
+)
+from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
+from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.physics.thermodynamics import compute_moisture, compute_pressure
+from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
+from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.decomposition import definitions as decomposition_defs
+    from icon4py.model.common.initial_condition.config import ConfigContext
+    from icon4py.model.common.states import static_fields
+
+log = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class WeismanKlempConfig:
+    # The default values are from mo_nh_wk_exp.f90 and mo_nh_testcases_nml.f90.
+    h_min: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="Base height of the profile [m].")
+    ] = 0.0
+    h_tropopause: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="Height of the tropopause [m].")
+    ] = 12000.0
+    theta_surface: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="Potential temperature at the surface [K].")
+    ] = 300.0
+    theta_tropopause: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(description="Potential temperature at the tropopause [K]."),
+    ] = 343.0
+    exponent_theta: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Exponent of the potential-temperature profile below the tropopause."
+        ),
+    ] = 1.25
+    exponent_relative_humidity: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Exponent of the relative-humidity profile below the tropopause."
+        ),
+    ] = 1.25
+    t_tropopause: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="Temperature of the tropopause [K].")
+    ] = 213.0
+    rh_min: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="Relative humidity above the tropopause.")
+    ] = 0.10
+    rh_max: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(description="Maximum relative humidity below the tropopause."),
+    ] = 0.95
+    wind_scale_height: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Scaling height of the wind profile (height of 70 % wind speed) [m]."
+        ),
+    ] = 3000.0
+    max_wind_speed: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Maximum horizontal wind speed [m/s].",
+        ),
+    ] = 15.0
+    qv_max: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Maximum moisture content below the tropopause [kg/kg].",
+        ),
+    ] = 0.014
+    bubble_center_x: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="X coordinate (torus) or longitude in degrees (sphere) of the bubble centre.",
+        ),
+    ] = 0.0
+    bubble_center_y: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Y coordinate (torus) or latitude in degrees (sphere) of the bubble centre.",
+        ),
+    ] = 0.0
+    bubble_center_z: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Altitude of the bubble centre [m].",
+        ),
+    ] = 1400.0
+    bubble_horizontal_width: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Horizontal size of the warm bubble [m].",
+        ),
+    ] = 5000.0
+    bubble_vertical_width: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Vertical size of the warm bubble [m].",
+        ),
+    ] = 1400.0
+    bubble_amplitude: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Temperature amplitude of the warm bubble [K].",
+        ),
+    ] = 2.0
+    bubble_radius: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Normalized radius below which the bubble perturbation is applied."
+        ),
+    ] = 1.0
+
+
+def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
+    *,
+    config: ConfigContext,
+    grid: icon_grid.IconGrid,
+    static_fields: static_fields.StaticFieldFactories,
+    prognostic_state_now: prognostics.PrognosticState,
+    tracer_state_now: tracer_states.TracerState,
+    backend: gtx_typing.Backend | None,
+    exchange: decomposition_defs.ExchangeRuntime,
+) -> None:
+    """
+    Initial condition for the Weisman-Klemp (WK82) idealized convection test case.
+
+    A horizontally homogeneous, hydrostatically balanced moist base state is built by
+    integrating downward from the tropopause, a sheared horizontal wind is prescribed,
+    and a warm bubble is added to trigger convection. The moist base state requires the
+    water-vapour tracer ``qv`` to be active.
+
+    The reference experiment config for this is exp.exclaim_nh_weisman_klemp_sb.
+    """
+    ic_config = config.initial_condition
+    assert isinstance(ic_config, WeismanKlempConfig)
+    if tracer_state_now.qv is None:
+        raise ValueError(
+            "The Weisman-Klemp initial condition requires the 'qv' tracer to be active."
+        )
+
+    allocator = model_backends.get_allocator(backend)
+    array_ns = data_alloc.import_array_ns(allocator)
+
+    geometry = static_fields.geometry
+    metrics = static_fields.metrics
+    primal_normal_x = geometry.get_full_precision(geometry_meta.EDGE_NORMAL_U).ndarray
+    inv_dual_edge_length = geometry.get_full_precision(
+        f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+    ).ndarray
+    edge_cell_distance = geometry.get_full_precision(geometry_meta.EDGE_CELL_DISTANCE).ndarray
+    primal_edge_length = geometry.get_full_precision(geometry_meta.EDGE_LENGTH).ndarray
+    cell_area = geometry.get_full_precision(geometry_meta.CELL_AREA).ndarray
+    z_mc = metrics.get_full_precision(metrics_attributes.Z_MC).ndarray
+    z_ifc = metrics.get_full_precision(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
+    exner_ref_mc = metrics.get_full_precision(metrics_attributes.EXNER_REF_MC).ndarray
+    d_exner_dz_ref_ic = metrics.get_full_precision(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
+    theta_ref_mc = metrics.get_full_precision(metrics_attributes.THETA_REF_MC).ndarray
+    theta_ref_ic = metrics.get_full_precision(metrics_attributes.THETA_REF_IC).ndarray
+    wgtfac_c = metrics.get_full_precision(metrics_attributes.WGTFAC_C).ndarray
+    ddqz_z_half = metrics.get_full_precision(metrics_attributes.DDQZ_Z_HALF).ndarray
+    zone_idx = testcases_utils.zone_indices(grid)
+
+    num_levels = grid.num_levels
+
+    grav_o_cpd = phy_const.GRAV_O_CPD
+    vtmpc1 = phy_const.RV_O_RD_MINUS_1
+    h_tropopause = ic_config.h_tropopause
+    t_tropopause = ic_config.t_tropopause
+    theta_tropopause = ic_config.theta_tropopause
+    qv_max = ic_config.qv_max
+
+    exner_ndarray = prognostic_state_now.exner.ndarray
+    rho_ndarray = prognostic_state_now.rho.ndarray
+    theta_v_ndarray = prognostic_state_now.theta_v.ndarray
+
+    # With flat topography (wk82) the height of the model levels is horizontally
+    # homogeneous, so the base-state profiles depend on the vertical level only.
+    height = z_mc[0, :]
+
+    # Level index right above the tropopause (levels are ordered top to bottom, so the
+    # height decreases with the level index).
+    k_tropopause = int(array_ns.sum(height >= h_tropopause)) - 1
+    if not 0 <= k_tropopause < num_levels - 1:
+        raise ValueError(f"The model top must be higher than the tropopause at {h_tropopause} m.")
+
+    theta = array_ns.zeros((num_levels,))
+    exner = array_ns.zeros((num_levels,))
+    qv = array_ns.zeros((num_levels,))
+    theta_v = array_ns.zeros((num_levels,))
+    relative_humidity = array_ns.zeros((num_levels,))
+    temperature = array_ns.zeros((num_levels,))
+
+    # Tropopause reference values.
+    exner_tropopause = t_tropopause / theta_tropopause
+    vapor_pressure_tropopause = ic_config.rh_min * compute_pressure.sat_pres_water(
+        array_ns.asarray(t_tropopause)
+    )
+    pressure_tropopause = phy_const.P0REF * exner_tropopause**phy_const.CPD_O_RD
+    qv_tropopause = compute_moisture.specific_humidity(
+        vapor_pressure_tropopause, pressure_tropopause
+    )
+    theta_v_tropopause = theta_tropopause * (1.0 + vtmpc1 * qv_tropopause)
+
+    # Above the tropopause the layer is isothermal (T = t_tropopause).
+    above = slice(0, k_tropopause + 1)
+    height_above = height[above]
+    theta[above] = theta_tropopause * array_ns.exp(
+        grav_o_cpd / t_tropopause * (height_above - h_tropopause)
+    )
+    exner[above] = exner_tropopause * array_ns.exp(
+        -grav_o_cpd / t_tropopause * (height_above - h_tropopause)
+    )
+    pressure_above = phy_const.P0REF * exner[above] ** phy_const.CPD_O_RD
+    qv[above] = compute_moisture.specific_humidity(vapor_pressure_tropopause, pressure_above)
+    theta_v[above] = theta[above] * (1.0 + vtmpc1 * qv[above])
+    relative_humidity[above] = ic_config.rh_min
+    temperature[above] = t_tropopause
+
+    # Below the tropopause the potential temperature and relative humidity profiles are
+    # prescribed; exner, qv and theta_v then follow from a downward hydrostatic integration.
+    below = slice(k_tropopause + 1, num_levels)
+    height_below = height[below]
+    theta[below] = (
+        ic_config.theta_surface
+        + (theta_tropopause - ic_config.theta_surface)
+        * (height_below / h_tropopause) ** ic_config.exponent_theta
+    )
+    relative_humidity[below] = array_ns.minimum(
+        1.0 - 0.75 * (height_below / h_tropopause) ** ic_config.exponent_relative_humidity,
+        ic_config.rh_max,
+    )
+
+    def _integrate_layer(
+        k: int,
+        exner_above: data_alloc.NDArray,
+        theta_v_above: data_alloc.NDArray,
+        qv_estimate: data_alloc.NDArray,
+    ) -> None:
+        # Two-pass piecewise hydrostatic integration of one layer (see mo_nh_wk_exp.f90):
+        # a preliminary qv estimate gives theta_v, which sets exner, from which qv and
+        # theta_v are finally recomputed.
+        delta_height = (
+            height[k] - height[k - 1] if k > k_tropopause + 1 else (height[k] - h_tropopause)
+        )
+
+        theta_v_aux = theta[k] * (1.0 + vtmpc1 * qv_estimate)
+        exner_aux = exner_above - grav_o_cpd * delta_height / (
+            theta_v_aux - theta_v_above
+        ) * array_ns.log(theta_v_aux / theta_v_above)
+        vapor_pressure_aux = relative_humidity[k] * compute_pressure.sat_pres_water(
+            theta[k] * exner_aux
+        )
+        pressure_aux = phy_const.P0REF * exner_aux**phy_const.CPD_O_RD
+        qv_aux = compute_moisture.specific_humidity(vapor_pressure_aux, pressure_aux)
+        if k > k_tropopause + 1:
+            qv_aux = array_ns.minimum(qv_max, qv_aux)
+        theta_v_aux = theta[k] * (1.0 + vtmpc1 * qv_aux)
+
+        exner[k] = exner_above - grav_o_cpd * delta_height / (
+            theta_v_aux - theta_v_above
+        ) * array_ns.log(theta_v_aux / theta_v_above)
+        temperature[k] = theta[k] * exner[k]
+        vapor_pressure = relative_humidity[k] * compute_pressure.sat_pres_water(temperature[k])
+        pressure = phy_const.P0REF * exner[k] ** phy_const.CPD_O_RD
+        qv[k] = compute_moisture.specific_humidity(vapor_pressure, pressure)
+        if k > k_tropopause + 1:
+            qv[k] = array_ns.minimum(qv_max, qv[k])
+        theta_v[k] = theta[k] * (1.0 + vtmpc1 * qv[k])
+
+    # First layer below the tropopause uses the tropopause reference values.
+    _integrate_layer(k_tropopause + 1, exner_tropopause, theta_v_tropopause, qv_tropopause)
+    # Remaining layers extrapolate qv from the two levels above as a first guess.
+    for k in range(k_tropopause + 2, num_levels):
+        qv_extrapolated = array_ns.minimum(
+            qv_max,
+            qv[k - 1]
+            + (qv[k - 2] - qv[k - 1])
+            / (height[k - 2] - height[k - 1])
+            * (height[k] - height[k - 1]),
+        )
+        _integrate_layer(k, exner[k - 1], theta_v[k - 1], qv_extrapolated)
+
+    # Broadcast the column profiles onto all cells.
+    exner_ndarray[:, :] = exner[array_ns.newaxis, :]
+    theta_v_ndarray[:, :] = theta_v[array_ns.newaxis, :]
+    rho_ndarray[:, :] = (
+        exner_ndarray**phy_const.CVD_O_RD * phy_const.P0REF / phy_const.RD / theta_v_ndarray
+    )
+    tracer_state_now.qv.ndarray[:, :] = qv[array_ns.newaxis, :]
+    log.info("Weisman-Klemp base-state profile completed.")
+
+    # Sheared horizontal wind, projected onto the edge-normal direction.
+    wind_speed = ic_config.max_wind_speed * (
+        array_ns.tanh((height - ic_config.h_min) / (ic_config.wind_scale_height - ic_config.h_min))
+        - 0.45
+    )
+    boundary_lvl2 = zone_idx["end_edge_lateral_boundary_level_2"]
+    prognostic_state_now.vn.ndarray[:boundary_lvl2, :] = 0.0
+    prognostic_state_now.vn.ndarray[boundary_lvl2:, :] = (
+        wind_speed[array_ns.newaxis, :] * primal_normal_x[boundary_lvl2:, array_ns.newaxis]
+    )
+
+    _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+        grid=grid,
+        z_ifc=z_ifc,
+        inv_dual_edge_length=inv_dual_edge_length,
+        edge_cell_distance=edge_cell_distance,
+        primal_edge_length=primal_edge_length,
+        cell_area=cell_area,
+        vn=prognostic_state_now.vn.ndarray,
+        vct_b=vct_b.ndarray,
+        nlev=num_levels,
+    )
+    exchange.exchange(dims.CellDim, prognostic_state_now.w)
+
+    testcases_utils.apply_hydrostatic_adjustment_ndarray(
+        rho=rho_ndarray,
+        exner=exner_ndarray,
+        theta_v=theta_v_ndarray,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        num_levels=num_levels,
+    )
+    log.info("Hydrostatic adjustment computation completed.")
+
+    testcases_utils.init_bubble(
+        grid=grid,
+        geometry=geometry,
+        z_mc=z_mc,
+        theta_v=theta_v_ndarray,
+        rho=rho_ndarray,
+        qv=tracer_state_now.qv.ndarray,
+        exner=exner_ndarray,
+        center_x=ic_config.bubble_center_x,
+        center_y=ic_config.bubble_center_y,
+        center_z=ic_config.bubble_center_z,
+        horizontal_width=ic_config.bubble_horizontal_width,
+        vertical_width=ic_config.bubble_vertical_width,
+        amplitude=ic_config.bubble_amplitude,
+        radius=ic_config.bubble_radius,
+    )
+    log.info("Warm-bubble perturbation completed.")

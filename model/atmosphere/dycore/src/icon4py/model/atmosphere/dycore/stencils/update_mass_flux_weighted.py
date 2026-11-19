@@ -14,15 +14,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _update_mass_flux_weighted(
-    rho_ic: fa.CellKField[wpfloat],
+    rho_ic: fa.CellKHalfField[wpfloat],
     vwind_expl_wgt: fa.CellField[wpfloat],
     vwind_impl_wgt: fa.CellField[wpfloat],
-    w_now: fa.CellKField[wpfloat],
-    w_new: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
-    mass_flx_ic: fa.CellKField[wpfloat],
+    w_now: fa.CellKHalfField[wpfloat],
+    w_new: fa.CellKHalfField[wpfloat],
+    w_concorr_c: fa.CellKHalfField[vpfloat],
+    mass_flx_ic: fa.CellKHalfField[wpfloat],
     r_nsubsteps: wpfloat,
-) -> fa.CellKField[wpfloat]:
+) -> fa.CellKHalfField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_65."""
     w_concorr_c_wp = astype(w_concorr_c, wpfloat)
 
@@ -34,13 +34,13 @@ def _update_mass_flux_weighted(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_mass_flux_weighted(
-    rho_ic: fa.CellKField[wpfloat],
+    rho_ic: fa.CellKHalfField[wpfloat],
     vwind_expl_wgt: fa.CellField[wpfloat],
     vwind_impl_wgt: fa.CellField[wpfloat],
-    w_now: fa.CellKField[wpfloat],
-    w_new: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
-    mass_flx_ic: fa.CellKField[wpfloat],
+    w_now: fa.CellKHalfField[wpfloat],
+    w_new: fa.CellKHalfField[wpfloat],
+    w_concorr_c: fa.CellKHalfField[vpfloat],
+    mass_flx_ic: fa.CellKHalfField[wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -48,17 +48,17 @@ def update_mass_flux_weighted(
     vertical_end: gtx.int32,
 ) -> None:
     _update_mass_flux_weighted(
-        rho_ic,
-        vwind_expl_wgt,
-        vwind_impl_wgt,
-        w_now,
-        w_new,
-        w_concorr_c,
-        mass_flx_ic,
-        r_nsubsteps,
+        rho_ic=rho_ic,
+        vwind_expl_wgt=vwind_expl_wgt,
+        vwind_impl_wgt=vwind_impl_wgt,
+        w_now=w_now,
+        w_new=w_new,
+        w_concorr_c=w_concorr_c,
+        mass_flx_ic=mass_flx_ic,
+        r_nsubsteps=r_nsubsteps,
         out=mass_flx_ic,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

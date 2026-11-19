@@ -36,8 +36,8 @@ def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
-        inv_dual_edge_length,
-        z_exner_ex_pr,
+        inv_dual_edge_length=inv_dual_edge_length,
+        z_exner_ex_pr=z_exner_ex_pr,
         out=z_gradh_exner,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

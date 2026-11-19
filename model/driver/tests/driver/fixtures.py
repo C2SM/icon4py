@@ -5,131 +5,165 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
-from datetime import datetime, timedelta
+import pathlib
+from typing import Final
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.driver import icon4py_configuration as driver_config
+from icon4py.model.common import model_backends, time
+from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.grid import grid_manager as gm
+from icon4py.model.common.io import io as common_io
+from icon4py.model.driver import (
+    config as driver_config,
+    driver_diagnostics,
+    driver_output_sources,
+    driver_utils,
+)
+from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures import (
-    damping_height,
+    backend,
+    backend_like,
     data_provider,
     download_ser_data,
     experiment,
-    flat_height,
+    experiment_description,
     grid_savepoint,
-    htop_moist_proc,
-    icon_grid,
     interpolation_savepoint,
     istep_exit,
     istep_init,
-    lowest_layer_thickness,
-    maximal_layer_thickness,
     metrics_savepoint,
-    model_top_height,
-    ndyn_substeps,
-    processor_props,
+    process_props,
+    savepoint_diffusion_exit,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_final,
+    savepoint_time_step_exit,
     savepoint_velocity_init,
     step_date_exit,
     step_date_init,
-    stretch_factor,
-    top_height_limit_for_maximal_layer_thickness,
+    topography_savepoint,
 )
 
 
-# TODO(OngChia): Reuse those pytest fixtures for diffusion test instead of creating here
 @pytest.fixture
-def r04b09_diffusion_config(ndyn_substeps) -> diffusion.DiffusionConfig:
-    """
-    Create DiffusionConfig matching MCH_CH_r04b09_dsl.
+def linit(timeloop_diffusion_linit_exit: bool) -> bool:
+    return timeloop_diffusion_linit_exit
 
-    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
-    from the default.
-    """
-    return diffusion.DiffusionConfig(
-        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
-        type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
-        hdiff_efdt_ratio=24.0,
-        hdiff_w_efdt_ratio=15.0,
-        smagorinski_scaling_factor=0.025,
-        zdiffu_t=True,
-        velocity_boundary_diffusion_denom=150.0,
-        _nudge_max_coeff=0.075,
-        n_substeps=ndyn_substeps,
+
+BENCHMARK_EXPERIMENTS: list[test_defs.ExperimentDescription] = [test_defs.Experiments.JW]
+BENCHMARK_STEPS: int = 5
+BENCHMARK_ROUNDS: int = 2
+BENCHMARK_WARMUP_ROUNDS: int = 1
+
+#: Basename of the file series the output tests write (a counter and the backend's suffix
+#: are appended).
+OUTPUT_BASENAME: Final[str] = "icon4py_output"
+#: Every variable a run without tracers and physics can write.
+ALL_OUTPUT_VARIABLES: Final[list[str]] = [
+    *driver_output_sources.PROGNOSTIC_VARIABLES,
+    *driver_diagnostics.DIAGNOSTIC_VARIABLES,
+]
+
+
+def io_config_with_all_variables(
+    output_path: pathlib.Path,
+    *,
+    backend: common_io.OutputBackend = common_io.OutputBackend.ZARR,
+    mode: common_io.OutputMode = common_io.OutputMode.DISTRIBUTED,
+) -> common_io.IOConfig:
+    """One field group with every prognostic and diagnostic variable, captured every step."""
+    return common_io.IOConfig(
+        output_path=output_path,
+        field_groups=[
+            common_io.FieldGroupIOConfig(
+                basename=OUTPUT_BASENAME,
+                variables=list(ALL_OUTPUT_VARIABLES),
+                backend=backend,
+                mode=mode,
+                nc_title="ICON4Py output",
+                nc_comment="Fields computed by ICON4Py.",
+            )
+        ],
     )
 
 
-@pytest.fixture
-def r04b09_iconrun_config(
-    ndyn_substeps,
-    timeloop_date_init,
-    timeloop_date_exit,
-    timeloop_diffusion_linit_init,
-) -> driver_config.Icon4pyRunConfig:
-    """
-    Create Icon4pyRunConfig matching MCH_CH_r04b09_dsl.
+def _resolve_grid(grid_option: str) -> test_defs.GridDescription:
+    name = grid_option.split(":", maxsplit=1)[0].strip()
+    try:
+        return getattr(test_defs.Grids, name)
+    except AttributeError:
+        raise pytest.UsageError(f"Unknown grid '{name}' in '--grid' option") from None
 
-    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
-    from the default.
-    """
-    return driver_config.Icon4pyRunConfig(
-        dtime=timedelta(seconds=10.0),
-        start_date=datetime.fromisoformat(timeloop_date_init),
-        end_date=datetime.fromisoformat(timeloop_date_exit),
-        n_substeps=ndyn_substeps,
-        apply_initial_stabilization=timeloop_diffusion_linit_init,
+
+def _make_config(
+    experiment: test_defs.ExperimentDescription,
+    grid: test_defs.GridDescription,
+    process_props: decomp_defs.ProcessProperties,
+) -> driver_config.ExperimentConfig:
+    dt_utils.download_experiment(experiment, process_props)
+    experiment_path = dt_utils.get_path_for_experiment(experiment, process_props)
+    config = driver_config.read_experiment_config_from_yaml(experiment_path / "config.yml")
+    return config.with_overrides(
+        driver={
+            "dtime": time.RelativeTime(seconds=50),
+            "end_of_simulation": time.NumTimeSteps(BENCHMARK_STEPS),
+        }
     )
 
 
-@pytest.fixture
-def timeloop_diffusion_savepoint_init(
-    data_provider,  # imported fixtures data_provider
-    step_date_init,  # imported fixtures data_provider
-    timeloop_diffusion_linit_init,
-):
-    """
-    Load data from ICON savepoint at start of diffusion module.
-
-    date of the timestamp to be selected can be set seperately by overriding the 'timeloop_date_'
-    fixture, passing 'step_date_init=<iso_string>'
-
-    linit flag is set to true
-    """
-    return data_provider.from_savepoint_diffusion_init(
-        linit=timeloop_diffusion_linit_init, date=step_date_init
+def _make_grid_manager(
+    config: driver_config.ExperimentConfig,
+    grid: test_defs.GridDescription,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
+) -> gm.GridManager:
+    allocator = model_backends.get_allocator(backend)
+    grid_file_path = grid_utils._download_grid_file(grid)
+    return driver_utils.create_grid_manager(
+        grid_file_path=grid_file_path,
+        vertical_grid_config=config.vertical_grid,
+        allocator=allocator,
+        process_props=process_props,
     )
 
 
-@pytest.fixture
-def timeloop_diffusion_savepoint_exit(
-    data_provider,  # imported fixtures data_provider`
-    step_date_exit,  # imported fixtures step_date_exit`
-    timeloop_diffusion_linit_exit,
-):
-    """
-    Load data from ICON savepoint at exist of diffusion module.
+@pytest.fixture(params=BENCHMARK_EXPERIMENTS, ids=lambda experiment: experiment.name)
+def driver_benchmark_experiment(request: pytest.FixtureRequest) -> test_defs.ExperimentDescription:
+    return request.param
 
-    date of the timestamp to be selected can be set seperately by overriding the 'timeloop_date'
-    fixture, passing 'step_data=<iso_string>'
-    """
-    sp = data_provider.from_savepoint_diffusion_exit(
-        linit=timeloop_diffusion_linit_exit, date=step_date_exit
+
+@pytest.fixture
+def driver_benchmark_grid(
+    request: pytest.FixtureRequest,
+    driver_benchmark_experiment: test_defs.ExperimentDescription,
+) -> test_defs.GridDescription:
+    grid_option = request.config.getoption("--grid")
+    return driver_benchmark_experiment.grid if grid_option is None else _resolve_grid(grid_option)
+
+
+@pytest.fixture
+def driver_benchmark_config(
+    driver_benchmark_experiment: test_defs.ExperimentDescription,
+    driver_benchmark_grid: test_defs.GridDescription,
+    process_props: decomp_defs.ProcessProperties,
+) -> driver_config.ExperimentConfig:
+    return _make_config(driver_benchmark_experiment, driver_benchmark_grid, process_props)
+
+
+@pytest.fixture
+def driver_benchmark_grid_manager(
+    driver_benchmark_config: driver_config.ExperimentConfig,
+    driver_benchmark_grid: test_defs.GridDescription,
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
+) -> gm.GridManager:
+    return _make_grid_manager(
+        config=driver_benchmark_config,
+        grid=driver_benchmark_grid,
+        process_props=process_props,
+        backend=backend,
     )
-    return sp
-
-
-@pytest.fixture
-def timeloop_date_init():
-    return "2021-06-20T12:00:00.000"
-
-
-@pytest.fixture
-def timeloop_date_exit():
-    return "2021-06-20T12:00:10.000"

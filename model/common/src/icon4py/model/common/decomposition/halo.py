@@ -49,9 +49,9 @@ class NoHalos(HaloConstructor):
     def _create_dummy_decomposition_arrays(
         size: int, array_ns: ModuleType = np
     ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
-        indices = array_ns.arange(size, dtype=gtx.int32)  # type: ignore  [attr-defined]
+        indices = array_ns.arange(size, dtype=gtx.int32)
         owner_mask = array_ns.full((size,), True, dtype=bool)
-        halo_levels = array_ns.full((size,), defs.DecompositionFlag.OWNED.value, dtype=gtx.int32)  # type: ignore  [attr-defined]
+        halo_levels = array_ns.full((size,), defs.DecompositionFlag.OWNED.value, dtype=gtx.int32)
         return indices, owner_mask, halo_levels
 
 
@@ -60,19 +60,19 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def __init__(
         self,
-        run_properties: defs.ProcessProperties,
+        process_props: defs.ProcessProperties,
         connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
         allocator: gtx_typing.Allocator | None = None,
     ):
         """
 
         Args:
-            run_properties: contains information on the communicator and local compute node.
+            process_props: contains information on the communicator and local compute node.
             connectivities: connectivity arrays needed to construct the halos
             allocator: GT4Py buffer allocator
         """
         self._xp = data_alloc.import_array_ns(allocator)
-        self._props = run_properties
+        self._process_props = process_props
         self._connectivities = {self._value(k): v for k, v in connectivities.items()}
         self._assert_all_neighbor_tables()
 
@@ -91,10 +91,10 @@ class IconLikeHaloConstructor(HaloConstructor):
             )
 
         # the decomposition should match the communicator size
-        if self._xp.max(cell_to_rank_mapping) > self._props.comm_size - 1:
+        if self._xp.max(cell_to_rank_mapping) > self._process_props.comm_size - 1:
             raise exceptions.ValidationError(
                 "rank_mapping",
-                f"The distribution assumes more nodes than the current run is scheduled on  {self._props} ",
+                f"The distribution assumes more nodes than the current run is scheduled on  {self._process_props} ",
             )
 
     def _assert_all_neighbor_tables(self) -> None:
@@ -108,9 +108,9 @@ class IconLikeHaloConstructor(HaloConstructor):
             dims.V2E,
         ]
         for d in relevant_dimension:
-            assert (
-                d.value in self._connectivities
-            ), f"Table for {d} is missing from the neighbor table array."
+            assert d.value in self._connectivities, (
+                f"Table for {d} is missing from the neighbor table array."
+            )
 
     def _connectivity(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:
         try:
@@ -165,10 +165,11 @@ class IconLikeHaloConstructor(HaloConstructor):
     def owned_cells(self, cell_to_rank: data_alloc.NDArray) -> data_alloc.NDArray:
         """Returns the full-grid indices of the cells owned by this rank"""
         assert cell_to_rank.ndim == 1
-        return self._xp.where(cell_to_rank == self._props.rank)[0]
+        return self._xp.where(cell_to_rank == self._process_props.rank)[0]
 
     def _update_owner_mask_by_max_rank_convention(
         self,
+        *,
         cell_to_rank: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
         all_indices: data_alloc.NDArray,
@@ -190,25 +191,41 @@ class IconLikeHaloConstructor(HaloConstructor):
             updated owner mask
         """
         updated_owner_mask = owner_mask.copy()
-        for index in indices_on_cutting_line:
-            local_index = self._xp.nonzero(all_indices == index)[0][0]
-            neighbors = target_connectivity[index]
-            # Connectivities may have invalid neighbors, filter them out to
-            # avoid including cells that may not be neighbors.
-            neighbors = neighbors[neighbors >= 0]
-            owning_ranks = cell_to_rank[neighbors]
-            assert (
-                self._xp.unique(owning_ranks).size > 1
-            ), f"rank {self._props.rank}: all neighboring cells {target_connectivity[index]} of index {index} are owned by the same rank {owning_ranks}"
-            assert (
-                self._props.rank in owning_ranks
-            ), f"rank {self._props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
-            # assign the index to the rank with the higher rank
-            updated_owner_mask[local_index] = max(owning_ranks) <= self._props.rank
+        if indices_on_cutting_line.size == 0:
+            return updated_owner_mask
+        # Vectorized over all elements on the cutting line, to avoid a host
+        # synchronization per element.
+        sorter = self._xp.argsort(all_indices)
+        local_indices = sorter[
+            self._xp.searchsorted(all_indices, indices_on_cutting_line, sorter=sorter)
+        ]
+        assert (all_indices[local_indices] == indices_on_cutting_line).all(), (
+            f"rank {self._process_props.rank}: not all indices on the cutting line are in the local indices"
+        )
+        neighbors = target_connectivity[indices_on_cutting_line]
+        # Connectivities may have invalid neighbors, mask them out to
+        # avoid including cells that may not be neighbors.
+        valid_neighbors = neighbors >= 0
+        owning_ranks = self._xp.where(valid_neighbors, cell_to_rank[neighbors], -1)
+        max_owning_rank = owning_ranks.max(axis=1)
+        assert (
+            max_owning_rank
+            > self._xp.where(valid_neighbors, owning_ranks, self._process_props.comm_size).min(
+                axis=1
+            )
+        ).all(), (
+            f"rank {self._process_props.rank}: some elements on the cutting line have all neighboring cells owned by the same rank"
+        )
+        assert (owning_ranks == self._process_props.rank).any(axis=1).all(), (
+            f"rank {self._process_props.rank}: some elements on the cutting line have no neighboring cell owned by me"
+        )
+        # assign the index to the rank with the higher rank
+        updated_owner_mask[local_indices] = max_owning_rank <= self._process_props.rank
         return updated_owner_mask
 
     def _set_decomposition_info_dimension(
         self,
+        *,
         decomp_info: defs.DecompositionInfo,
         dim: gtx.Dimension,
         all_indices: data_alloc.NDArray,
@@ -220,7 +237,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         halo_levels = self._xp.full(
             all_indices.size,
             defs.DecompositionFlag.UNDEFINED.value,
-            dtype=gtx.int32,  # type: ignore  [attr-defined]
+            dtype=gtx.int32,
         )
 
         halo_levels[owner_mask] = defs.DecompositionFlag.OWNED
@@ -360,7 +377,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         all_cells = self._xp.hstack((owned_cells, first_halo_cells, second_halo_cells))
 
         self._set_decomposition_info_dimension(
-            decomp_info,
+            decomp_info=decomp_info,
             dim=dims.CellDim,
             all_indices=all_cells,
             owner_mask=self._xp.isin(all_cells, owned_cells),
@@ -374,11 +391,11 @@ class IconLikeHaloConstructor(HaloConstructor):
         all_vertices = self._xp.hstack((vertex_on_owned_cells, vertex_second_halo))
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
         vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
-            cell_to_rank,
-            vertex_owner_mask,
-            all_vertices,
-            vertex_on_cutting_line,
-            self._connectivity(dims.V2C),
+            cell_to_rank=cell_to_rank,
+            owner_mask=vertex_owner_mask,
+            all_indices=all_vertices,
+            indices_on_cutting_line=vertex_on_cutting_line,
+            target_connectivity=self._connectivity(dims.V2C),
         )
 
         # Once mask has been updated, some owned cells may now belong to the
@@ -396,10 +413,10 @@ class IconLikeHaloConstructor(HaloConstructor):
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_owner_list)
 
         self._set_decomposition_info_dimension(
-            decomp_info,
-            dims.VertexDim,
-            all_vertices,
-            vertex_owner_mask,
+            decomp_info=decomp_info,
+            dim=dims.VertexDim,
+            all_indices=all_vertices,
+            owner_mask=vertex_owner_mask,
             first_halo_level_mask=(
                 self._xp.logical_not(vertex_owner_mask)
                 & self._xp.isin(all_vertices, vertex_on_cutting_line)
@@ -426,11 +443,11 @@ class IconLikeHaloConstructor(HaloConstructor):
         all_edges = self._xp.hstack((edge_on_owned_cells, edge_second_level, edge_third_level))
         edge_owner_mask = self._xp.isin(all_edges, edge_on_owned_cells)
         edge_owner_mask = self._update_owner_mask_by_max_rank_convention(
-            cell_to_rank,
-            edge_owner_mask,
-            all_edges,
-            edge_on_cutting_line,
-            self._connectivity(dims.E2C),
+            cell_to_rank=cell_to_rank,
+            owner_mask=edge_owner_mask,
+            all_indices=all_edges,
+            indices_on_cutting_line=edge_on_cutting_line,
+            target_connectivity=self._connectivity(dims.E2C),
         )
 
         # Once mask has been updated, some owned cells may now belong to the
@@ -449,7 +466,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         edge_owner_mask = self._xp.isin(all_edges, edge_owner_list)
 
         self._set_decomposition_info_dimension(
-            decomp_info,
+            decomp_info=decomp_info,
             dim=dims.EdgeDim,
             all_indices=all_edges,
             owner_mask=edge_owner_mask,
@@ -465,7 +482,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
 
 def get_halo_constructor(
-    run_properties: defs.ProcessProperties,
+    process_props: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
     connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
     allocator: gtx_typing.Allocator | None,
@@ -477,22 +494,22 @@ def get_halo_constructor(
     If in the future we want to experiment with different halo types we should add an extra selection
     parameter
     Args:
-        processor_props:
+        process_props:
         full_grid_size
         allocator:
         connectivities:
 
-    Returns: a HaloConstructor suitable for the run_properties
+    Returns: a HaloConstructor suitable for the process_props
 
     """
-    if run_properties.is_single_rank():
+    if process_props.is_single_rank():
         return NoHalos(
             horizontal_size=full_grid_size,
             allocator=allocator,
         )
 
     return IconLikeHaloConstructor(
-        run_properties=run_properties,
+        process_props=process_props,
         connectivities=connectivities,
         allocator=allocator,
     )
@@ -501,7 +518,6 @@ def get_halo_constructor(
 def global_to_local(
     global_indices: data_alloc.NDArray,
     indices_to_translate: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """Translate an array of global indices into rank-local ones.
 
@@ -510,6 +526,7 @@ def global_to_local(
         indices_to_translate: the array to map to local indices
 
     """
+    array_ns = data_alloc.array_namespace(global_indices)
     sorter = array_ns.argsort(global_indices)
 
     mask = array_ns.isin(indices_to_translate, global_indices)

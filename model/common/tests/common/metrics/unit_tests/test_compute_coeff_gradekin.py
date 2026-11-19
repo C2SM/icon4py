@@ -20,13 +20,12 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
-    processor_props,
+    process_props,
 )
-
-from ... import utils
 
 
 if TYPE_CHECKING:
@@ -52,6 +51,5 @@ def test_compute_coeff_gradekin(
         edge_cell_length,
         inv_dual_edge_length,
         horizontal_start,
-        exchange=utils.dummy_exchange,
     )
     assert test_utils.dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full)

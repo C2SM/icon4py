@@ -41,10 +41,10 @@ def compute_perturbation_of_rho_and_theta(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_perturbation_of_rho_and_theta(
-        rho,
-        rho_ref_mc,
-        theta_v,
-        theta_ref_mc,
+        rho=rho,
+        rho_ref_mc=rho_ref_mc,
+        theta_v=theta_v,
+        theta_ref_mc=theta_ref_mc,
         out=(z_rth_pr_1, z_rth_pr_2),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

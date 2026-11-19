@@ -38,10 +38,10 @@ def compute_exner_from_rhotheta(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_exner_from_rhotheta(
-        rho,
-        exner,
-        rd_o_cvd,
-        rd_o_p0ref,
+        rho=rho,
+        exner=exner,
+        rd_o_cvd=rd_o_cvd,
+        rd_o_p0ref=rd_o_p0ref,
         out=(theta_v, exner),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

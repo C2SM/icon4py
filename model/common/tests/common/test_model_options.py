@@ -9,11 +9,19 @@ import functools
 import typing
 
 import gt4py.next as gtx
-import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import field_type_aliases as fa, model_backends
+from icon4py.model.common import (
+    backend_configuration as backend_cfg,
+    field_type_aliases as fa,
+    model_backends,
+)
 from icon4py.model.common.model_options import customize_backend, setup_program
+
+
+@pytest.fixture(autouse=True)
+def clear_backend_workspace_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ICON4PY_BACKEND_WORKSPACE_SIZE", raising=False)
 
 
 @gtx.field_operator  # type: ignore[call-overload]
@@ -57,6 +65,17 @@ def test_custom_backend_device() -> None:
     assert repr(default_backend) == repr(backend)
 
 
+def test_custom_backend_with_external_workspace_config_and_no_explicit_device() -> None:
+    backend = customize_backend(
+        None,
+        {"backend_factory": model_backends.make_custom_dace_backend, "device": None},
+        backend_config=backend_cfg.BackendConfig(workspace_size=4096),
+    )
+    assert backend is not None
+    assert hasattr(backend, "external_workspace")
+    assert backend.external_workspace[gtx.DeviceType.CPU].size == 4096
+
+
 @pytest.mark.parametrize(
     "backend",
     [
@@ -85,7 +104,7 @@ def test_setup_program_defaults(
 
 
 @pytest.mark.parametrize(
-    "backend_params, expected_backend",
+    "backend_params, canonical_backend_params",
     [
         (model_backends.BACKENDS["embedded"], model_backends.BACKENDS["embedded"]),
         (
@@ -93,23 +112,35 @@ def test_setup_program_defaults(
                 "backend_factory": model_backends.make_custom_dace_backend,
                 "device": model_backends.GPU,
             },
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.GPU,
+            },
         ),
         (
             {"backend_factory": model_backends.make_custom_dace_backend},
-            model_backends.make_custom_dace_backend(device=model_backends.CPU),
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.CPU,
+            },
         ),
         (
             {"device": model_backends.GPU},
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.GPU,
+            },
         ),
     ],
 )
 def test_setup_program_specify_inputs(
     backend_params: model_backends.BackendLike,
-    expected_backend: gtx_typing.Backend | None,
+    canonical_backend_params: model_backends.BackendDescriptor | None,
 ) -> None:
     testee = setup_program(backend=backend_params, program=program_return_field)
+    # Built through `customize_backend` so that the expected backend carries the same
+    # device-specific default options (e.g. GPU block sizes) as the one under test.
+    expected_backend = customize_backend(None, canonical_backend_params)
     if expected_backend is None:
         expected_program = functools.partial(
             program_return_field.with_backend(expected_backend), offset_provider={}

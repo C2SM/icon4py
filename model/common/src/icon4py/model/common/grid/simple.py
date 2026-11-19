@@ -35,15 +35,15 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.vertical import VerticalGridConfig
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 DEFAULT_NUM_LEVELS: Final = 10
 
 
 class SimpleGridData:
-    def __init__(self, on_gpu: bool = False):
-        self.xp = data_alloc.array_ns(on_gpu)
+    def __init__(self, allocator: gtx_typing.Allocator | None = None):
+        self.xp = data_alloc.import_array_ns(allocator)
 
     @functools.cached_property
     def c2v_table(self):
@@ -388,24 +388,24 @@ class SimpleGridData:
     def c2e2c2e2c_table(self):
         return self.xp.asarray(
             [
-                [15, 4, 3, 12, 14, 1, 7, 6, 2],  # 1c
-                [16, 5, 4, 12, 13, 2, 8, 7, 0],
-                [17, 3, 5, 13, 14, 0, 6, 8, 1],
-                [0, 6, 2, 17, 5, 9, 10, 15, 4],
-                [1, 7, 0, 15, 3, 16, 5, 10, 11],  # 5c
-                [2, 8, 1, 4, 16, 17, 3, 9, 11],
-                [3, 10, 9, 2, 0, 7, 13, 8, 12],
-                [4, 11, 10, 0, 1, 8, 14, 6, 13],
-                [5, 9, 11, 1, 2, 3, 12, 7, 14],
-                [6, 12, 8, 5, 11, 3, 10, 16, 15],  # 10c
-                [7, 13, 6, 3, 9, 4, 11, 16, 17],
-                [8, 14, 7, 4, 10, 5, 9, 15, 17],
-                [9, 16, 15, 8, 6, 1, 13, 0, 14],
-                [10, 17, 16, 6, 7, 2, 14, 1, 12],
-                [11, 15, 17, 7, 8, 2, 13, 0, 12],  # 15c
-                [12, 0, 14, 11, 17, 9, 16, 3, 4],
-                [13, 1, 12, 9, 15, 10, 17, 4, 5],
-                [14, 2, 13, 10, 16, 5, 3, 11, 15],
+                [15, 12, 14, 4, 1, 7, 3, 6, 2],  # 1c
+                [16, 13, 12, 5, 2, 8, 4, 7, 0],
+                [17, 14, 13, 3, 0, 6, 5, 8, 1],
+                [0, 15, 4, 6, 10, 9, 2, 17, 5],
+                [1, 16, 5, 7, 11, 10, 0, 15, 3],  # 5c
+                [2, 17, 3, 8, 9, 11, 1, 16, 4],
+                [3, 0, 2, 10, 7, 13, 9, 12, 8],
+                [4, 1, 0, 11, 8, 14, 10, 13, 6],
+                [5, 2, 1, 9, 6, 12, 11, 14, 7],
+                [6, 3, 10, 12, 16, 15, 8, 5, 11],  # 10c
+                [7, 4, 11, 13, 17, 16, 6, 3, 9],
+                [8, 5, 9, 14, 15, 17, 7, 4, 10],
+                [9, 6, 8, 16, 13, 1, 15, 0, 14],
+                [10, 7, 6, 17, 14, 2, 16, 1, 12],
+                [11, 8, 7, 15, 12, 0, 17, 2, 13],  # 15c
+                [12, 9, 16, 0, 4, 3, 14, 11, 17],
+                [13, 10, 17, 1, 5, 4, 12, 9, 15],
+                [14, 11, 15, 2, 3, 5, 13, 10, 16],
             ],
             dtype=gtx.int32,
         )
@@ -443,8 +443,7 @@ def simple_grid(
         limited_area=False,
     )
 
-    on_gpu = False if allocator is None else device_utils.is_cupy_device(allocator)
-    simple_grid_data = SimpleGridData(on_gpu=on_gpu)
+    simple_grid_data = SimpleGridData(allocator=allocator)
 
     neighbor_tables = {
         dims.C2V: simple_grid_data.c2v_table,
@@ -470,10 +469,11 @@ def simple_grid(
     }
 
     return base.Grid(
-        id="simple_grid",
+        # A real grid's id is the file's uuidOfHGrid; use a fixed synthetic UUID here so the
+        # synthetic grid behaves like one (e.g. the IO layer can parse it with uuid.UUID).
+        id="12345678-1234-5678-1234-567812345678",
         config=config,
         connectivities=connectivities,
-        geometry_type=base.GeometryType.TORUS,
         start_index=simple_start_index,
         end_index=simple_end_index,
     )

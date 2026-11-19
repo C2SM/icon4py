@@ -10,7 +10,6 @@ import collections
 import contextlib
 import os
 from types import TracebackType
-from typing import TypeVar
 
 from gt4py import eve
 
@@ -29,14 +28,12 @@ def _env_flag_to_bool(name: str, default: bool) -> bool:
             return True
         case _:
             raise ValueError(
-                "Invalid GT4Py environment flag value: use '0 | false | off' or '1 | true | on'."
+                f"Invalid value {flag_value!r} for environment variable {name!r}: "
+                "use '0 | false | off' or '1 | true | on'."
             )
 
 
-_T = TypeVar("_T", bound=eve.StrEnum)
-
-
-def _env_to_strenum(name: str, enum_type: type[_T], default: _T) -> _T:
+def _env_to_strenum[T: eve.StrEnum](name: str, enum_type: type[T], default: T) -> T:
     """Read an enum value from an environment variable (with checking)."""
     value = os.environ.get(name, default).upper()
     if value not in enum_type.__members__:
@@ -59,7 +56,7 @@ class Py2fgenLogLevels(eve.StrEnum):
     CRITICAL = "CRITICAL"
 
 
-LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", Py2fgenLogLevels, Py2fgenLogLevels.INFO)
+LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", Py2fgenLogLevels, Py2fgenLogLevels.WARNING)
 """Set the log level for the PY2FGEN generated bindings."""
 
 
@@ -96,6 +93,6 @@ class _NoopContextManager(contextlib.AbstractContextManager):
 
 
 HOOK_BINDINGS_FUNCTION: dict[str, contextlib.AbstractContextManager] = collections.defaultdict(
-    lambda: _NoopContextManager()
+    _NoopContextManager
 )
 """Hook to register a ContextManager per function that wraps the function. The default is a no-op."""

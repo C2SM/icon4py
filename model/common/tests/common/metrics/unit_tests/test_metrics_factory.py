@@ -13,28 +13,30 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 import pytest
+from numpy import testing as np_testing
 
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    definitions,
+    definitions as test_defs,
     grid_utils as gridtest_utils,
     serialbox,
     test_utils as test_helpers,
 )
-from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
-    processor_props,
+    process_props,
     topography_savepoint,
 )
 
@@ -44,10 +46,10 @@ metrics_factories: dict[str, metrics_factory.MetricsFieldsFactory] = {}
 
 def _get_metrics_factory(
     backend: gtx_typing.Backend | None,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+    process_props: decomposition.ProcessProperties,
 ) -> metrics_factory.MetricsFieldsFactory:
     registry_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = metrics_factories.get(registry_name)
@@ -55,27 +57,9 @@ def _get_metrics_factory(
     topography = topography_savepoint.topo_c()
 
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment)
-        (
-            lowest_layer_thickness,
-            model_top_height,
-            stretch_factor,
-            damping_height,
-            rayleigh_coeff,
-            exner_expol,
-            vwind_offctr,
-            rayleigh_type,
-            thslp_zdiffu,
-            thhgtd_zdiffu,
-        ) = construct_metrics_config(experiment)
+        geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
 
-        vertical_config = v_grid.VerticalGridConfig(
-            geometry.grid.num_levels,
-            lowest_layer_thickness=lowest_layer_thickness,
-            model_top_height=model_top_height,
-            stretch_factor=stretch_factor,
-            rayleigh_damping_height=damping_height,
-        )
+        vertical_config = experiment.config.vertical_grid
         vertical_grid = v_grid.VerticalGrid(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
         )
@@ -84,8 +68,9 @@ def _get_metrics_factory(
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
             backend=backend,
+            config=experiment.config.interpolation,
             metadata=interpolation_attributes.attrs,
-            exchange=exchange,
+            process_props=process_props,
         )
         factory = metrics_factory.MetricsFieldsFactory(
             grid=geometry.grid,
@@ -94,15 +79,10 @@ def _get_metrics_factory(
             geometry_source=geometry,
             topography=topography,
             interpolation_source=interpolation_field_source,
+            config=experiment.config.metrics,
             backend=backend,
             metadata=attrs.attrs,
-            rayleigh_type=rayleigh_type,
-            rayleigh_coeff=rayleigh_coeff,
-            exner_expol=exner_expol,
-            vwind_offctr=vwind_offctr,
-            thslp_zdiffu=thslp_zdiffu,
-            thhgtd_zdiffu=thhgtd_zdiffu,
-            exchange=exchange,
+            process_props=process_props,
         )
         metrics_factories[registry_name] = factory
     return factory
@@ -113,7 +93,7 @@ def _get_metrics_factory(
 def test_factory_nflat_gradp(
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     value_ref = grid_savepoint.nflat_gradp()
@@ -122,8 +102,9 @@ def test_factory_nflat_gradp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
-    value = factory.get(attrs.NFLAT_GRADP)
+    value = factory.get_scalar(attrs.NFLAT_GRADP)
     assert value_ref == value
 
 
@@ -133,7 +114,7 @@ def test_factory_z_mc(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.z_mc()
@@ -142,6 +123,7 @@ def test_factory_z_mc(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.Z_MC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-10)
@@ -153,7 +135,7 @@ def test_factory_ddqz_z_and_inverse(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     inverse_field_ref = metrics_savepoint.inv_ddqz_z_full()
@@ -163,6 +145,7 @@ def test_factory_ddqz_z_and_inverse(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     inverse_field = factory.get(attrs.INV_DDQZ_Z_FULL)
     field = factory.get(attrs.DDQZ_Z_FULL)
@@ -175,7 +158,7 @@ def test_factory_ddqz_full_e(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
@@ -184,6 +167,7 @@ def test_factory_ddqz_full_e(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.DDQZ_Z_FULL_E)
     assert test_helpers.dallclose(field_ref, field.asnumpy(), rtol=1e-8)
@@ -196,7 +180,7 @@ def test_factory_ddqz_z_half(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.ddqz_z_half()
@@ -205,6 +189,7 @@ def test_factory_ddqz_z_half(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.DDQZ_Z_HALF)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
@@ -216,7 +201,7 @@ def test_factory_scaling_factor_for_3d_divdamp(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.scalfac_dd3d()
@@ -225,6 +210,7 @@ def test_factory_scaling_factor_for_3d_divdamp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.SCALING_FACTOR_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -236,7 +222,7 @@ def test_factory_rayleigh_w(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.rayleigh_w()
@@ -245,6 +231,7 @@ def test_factory_rayleigh_w(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.RAYLEIGH_W)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -256,7 +243,7 @@ def test_factory_coeffs_dwdz(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_1 = metrics_savepoint.coeff1_dwdz()
@@ -266,6 +253,7 @@ def test_factory_coeffs_dwdz(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.COEFF1_DWDZ)
     field_2 = factory.get(attrs.COEFF2_DWDZ)
@@ -279,7 +267,7 @@ def test_factory_ref_mc(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_1 = metrics_savepoint.theta_ref_mc()
@@ -289,6 +277,7 @@ def test_factory_ref_mc(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.THETA_REF_MC)
     field_2 = factory.get(attrs.EXNER_REF_MC)
@@ -302,7 +291,7 @@ def test_factory_d2dexdz2_facs_mc(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_1 = metrics_savepoint.d2dexdz2_fac1_mc()
@@ -312,6 +301,7 @@ def test_factory_d2dexdz2_facs_mc(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.D2DEXDZ2_FAC1_MC)
     field_2 = factory.get(attrs.D2DEXDZ2_FAC2_MC)
@@ -324,7 +314,7 @@ def test_factory_ddxn_z_full(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.ddxn_z_full()
@@ -333,6 +323,7 @@ def test_factory_ddxn_z_full(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.DDXN_Z_FULL)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1e-8)
@@ -344,7 +335,7 @@ def test_factory_ddxt_z_full(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.ddxt_z_full().asnumpy()
@@ -353,6 +344,7 @@ def test_factory_ddxt_z_full(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.DDXT_Z_FULL)
     # TODO(halungge): these are the np.allclose default values: single precision
@@ -365,7 +357,7 @@ def test_factory_exner_w_implicit_weight_parameter(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.vwind_impl_wgt()
@@ -374,6 +366,7 @@ def test_factory_exner_w_implicit_weight_parameter(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
@@ -385,7 +378,7 @@ def test_factory_exner_w_explicit_weight_parameter(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.vwind_expl_wgt()
@@ -394,6 +387,7 @@ def test_factory_exner_w_explicit_weight_parameter(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
@@ -406,7 +400,7 @@ def test_factory_exner_exfac(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.exner_exfac()
@@ -415,6 +409,7 @@ def test_factory_exner_exfac(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.EXNER_EXFAC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1e-8)
@@ -427,7 +422,7 @@ def test_factory_pressure_gradient_fields(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_1_ref = metrics_savepoint.pg_exdist_dsl()
@@ -436,6 +431,7 @@ def test_factory_pressure_gradient_fields(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.PG_EXDIST_DSL)
     assert test_helpers.dallclose(field_1_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
@@ -446,7 +442,7 @@ def test_factory_mask_prog_halo_c(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.mask_prog_halo_c()
@@ -455,6 +451,7 @@ def test_factory_mask_prog_halo_c(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.MASK_PROG_HALO_C)
     assert (field_ref.asnumpy() == field.asnumpy()).all()
@@ -466,7 +463,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.hmask_dd3d()
@@ -475,6 +472,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -488,7 +486,7 @@ def test_factory_zdiff_gradp(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
@@ -498,14 +496,25 @@ def test_factory_zdiff_gradp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.ZDIFF_GRADP)
     field_2 = factory.get(attrs.VERTOFFSET_GRADP)
-    assert test_helpers.dallclose(
-        zdiff_gradp_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-10, rtol=1e-9
+
+    # on the Fortran side, the vertidx_gradp is not initialized below start_lat_level2
+    start_lat_level2 = factory._grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    assert test_helpers.dallclose(
-        vertoffset_gradp_ref.asnumpy(), field_2.asnumpy(), atol=1.0e-10, rtol=1e-9
+    test_helpers.assert_dallclose(
+        zdiff_gradp_ref.asnumpy()[start_lat_level2:, :, :],
+        field_1.asnumpy()[start_lat_level2:, :, :],
+        atol=1.0e-10,
+        rtol=1e-9,
+    )
+
+    np_testing.assert_array_equal(
+        vertoffset_gradp_ref.asnumpy()[start_lat_level2:, :, :],
+        field_2.asnumpy()[start_lat_level2:, :, :],
     )
 
 
@@ -515,7 +524,7 @@ def test_factory_coeff_gradekin(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.coeff_gradekin()
@@ -524,9 +533,31 @@ def test_factory_coeff_gradekin(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.COEFF_GRADEKIN)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+def test_factory_wgtfacq_c(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field = factory.get(attrs.WGTFACQ_C)
+    field_ref = metrics_savepoint.wgtfacq_c()
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
 @pytest.mark.level("integration")
@@ -535,7 +566,7 @@ def test_factory_wgtfacq_e(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     factory = _get_metrics_factory(
@@ -543,9 +574,10 @@ def test_factory_wgtfacq_e(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.WGTFACQ_E)
-    field_ref = metrics_savepoint.wgtfacq_e_dsl()
+    field_ref = metrics_savepoint.wgtfacq_e()
     # TODO: upgrade the dallclose such that it verifies the domain ranges.
     # This field is defined on k (nlev-3, nlev) an converting to numpy
     # doesn't know if it's there or (whatever-3, whatever)
@@ -558,7 +590,7 @@ def test_vertical_coordinates_on_half_levels(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     factory = _get_metrics_factory(
@@ -566,6 +598,7 @@ def test_vertical_coordinates_on_half_levels(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.CELL_HEIGHT_ON_HALF_LEVEL)
     field_ref = metrics_savepoint.z_ifc()
@@ -579,7 +612,7 @@ def test_compute_wgtfac_c(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     factory = _get_metrics_factory(
@@ -587,6 +620,7 @@ def test_compute_wgtfac_c(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.WGTFAC_C)
     field_ref = metrics_savepoint.wgtfac_c()
@@ -600,7 +634,7 @@ def test_factory_compute_diffusion_mask_and_coef(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = metrics_savepoint.zd_diffcoef()
@@ -609,6 +643,7 @@ def test_factory_compute_diffusion_mask_and_coef(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field = factory.get(attrs.ZD_DIFFCOEF)
 
@@ -622,7 +657,7 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_1 = metrics_savepoint.zd_intcoef()
@@ -632,8 +667,158 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
     )
     field_1 = factory.get(attrs.ZD_INTCOEF)
     field_2 = factory.get(attrs.ZD_VERTOFFSET)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
+
+
+# The AES physics archive is the only one whose 'tmx-init' savepoint (written by
+# 'mo_vdf_atmo.f90') carries reference values for the fields below.
+_aes_physics_experiment = pytest.mark.parametrize(
+    "experiment_description", [test_defs.Experiments.EXCLAIM_APE_AES]
+)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@pytest.mark.uses_concat_where
+@_aes_physics_experiment
+def test_factory_inv_ddqz_z_half(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    field_ref = data_provider.from_savepoint_tmx_init().inv_ddqz_z_half()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field = factory.get(attrs.INV_DDQZ_Z_HALF)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@_aes_physics_experiment
+def test_factory_inv_ddqz_z_full_e(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    field_ref = data_provider.from_savepoint_tmx_init().inv_ddqz_z_full_e()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field = factory.get(attrs.INV_DDQZ_Z_FULL_E)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=5.0e-18)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@pytest.mark.uses_concat_where
+@_aes_physics_experiment
+def test_factory_inv_ddqz_z_half_e_and_v(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    init_savepoint = data_provider.from_savepoint_tmx_init()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field_e = factory.get(attrs.INV_DDQZ_Z_HALF_E)
+    field_v = factory.get(attrs.INV_DDQZ_Z_HALF_V)
+    assert test_helpers.dallclose(init_savepoint.inv_ddqz_z_half_e().asnumpy(), field_e.asnumpy())
+    assert test_helpers.dallclose(init_savepoint.inv_ddqz_z_half_v().asnumpy(), field_v.asnumpy())
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@_aes_physics_experiment
+def test_factory_wgtfacq1_c_and_e(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    init_savepoint = data_provider.from_savepoint_tmx_init()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field_c = factory.get(attrs.WGTFACQ1_C)
+    field_e = factory.get(attrs.WGTFACQ1_E)
+    assert test_helpers.dallclose(init_savepoint.wgtfacq1_c().asnumpy(), field_c.asnumpy())
+    assert test_helpers.dallclose(
+        init_savepoint.wgtfacq1_e().asnumpy(), field_e.asnumpy(), atol=4.0e-16
+    )
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@_aes_physics_experiment
+def test_factory_geopot_agl_ifc(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    field_ref = data_provider.from_savepoint_tmx_init().geopot_agl_ifc()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field = factory.get(attrs.GEOPOT_AGL_IFC)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=5.0e-11)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+@_aes_physics_experiment
+def test_factory_height_above_ground(
+    data_provider: serialbox.IconSerialDataProvider,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    geopot_agl_ifc = data_provider.from_savepoint_tmx_init().geopot_agl_ifc().asnumpy()
+    # ICON's full levels are the midpoints of its half levels (mo_vertical_grid.f90)
+    field_ref = 0.5 * (geopot_agl_ifc[:, :-1] + geopot_agl_ifc[:, 1:]) / constants.GRAV
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        process_props=decomposition.SingleNodeProcessProperties(),
+    )
+    field = factory.get(attrs.HEIGHT_ABOVE_GROUND)
+    assert test_helpers.dallclose(field_ref, field.asnumpy())

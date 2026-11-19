@@ -1,0 +1,47 @@
+name: Weekly Slack Activity Summary
+
+on:
+  schedule:
+    # Every Monday at 07:00 Europe/Zurich
+    - cron: "0 7 * * 1"
+      timezone: "Europe/Zurich"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  weekly-summary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          activate-environment: true
+
+      - name: Install opencode
+        run: npm install -g opencode-ai @ai-sdk/openai-compatible
+
+      - name: Generate OpenCode config
+        env:
+          OPENCODE_MODEL_ID: moonshotai/Kimi-K2.7-Code
+          CSCS_INFERENCE_BASE_URL: https://api.inference.cscs.ch/v1
+        run: |
+          ./scripts/run generate-weekly-summary-opencode-config \
+            --output-path /tmp/weekly-slack-summary-opencode-config.json \
+            --base-url "$CSCS_INFERENCE_BASE_URL" \
+            --model-id "$OPENCODE_MODEL_ID"
+
+      - name: Generate weekly summary
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          OPENCODE_CONFIG: /tmp/weekly-slack-summary-opencode-config.json
+          CSCS_INFERENCE_API_KEY: ${{ secrets.CSCS_INFERENCE_API_KEY }}
+        run: |
+          ./scripts/run weekly-slack-summary generate

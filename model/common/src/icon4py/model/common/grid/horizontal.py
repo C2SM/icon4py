@@ -99,12 +99,12 @@ The values here are translations of these indices taking into account that all a
 
 def _icon_domain_index(value_dict: dict, dim: gtx.Dimension, offset: int = 0) -> int:
     index = value_dict[dim] + offset
-    assert (
-        index <= _ICON_CONSTANTS_BOUNDS[dim][1]
-    ), f"Index {index} out of bounds for {dim}:  {_ICON_CONSTANTS_BOUNDS[dim]}"
-    assert (
-        index >= _ICON_CONSTANTS_BOUNDS[dim][0]
-    ), f"Index {index} out of bounds for {dim}: {_ICON_CONSTANTS_BOUNDS[dim]}"
+    assert index <= _ICON_CONSTANTS_BOUNDS[dim][1], (
+        f"Index {index} out of bounds for {dim}:  {_ICON_CONSTANTS_BOUNDS[dim]}"
+    )
+    assert index >= _ICON_CONSTANTS_BOUNDS[dim][0], (
+        f"Index {index} out of bounds for {dim}: {_ICON_CONSTANTS_BOUNDS[dim]}"
+    )
     return index
 
 
@@ -166,7 +166,7 @@ class Zone(enum.Enum):
     |:---------------------------------------|:-------|:---------------------------|
     | `min_rledge` (-13)                     |   0    | `END`                      |
     | (-12)                                  |   1    |                            |
-    | (-11)                                  |   2    |                            |
+    | `min_rledge_int-3` (-11)               |   2    | `HALO_LEVEL_3`             |
     | `min_rledge_int-2` (-10)               |   3    | `HALO_LEVEL_2`             |
     | `min_rledge_int-1` (-9)                |   4    | `HALO`                     |
     | `min_rledge_int`   (-8)                |   5    | `LOCAL`                    |
@@ -208,6 +208,9 @@ class Zone(enum.Enum):
 
     #: 2nd halo line
     HALO_LEVEL_2 = ("halo_level", 2)
+
+    #: 3rd halo line (``min_rledge_int-3``); only exists for edges
+    HALO_LEVEL_3 = ("halo_level", 3)
 
     #: all entries owned on the local grid, that is all entries excluding halo lines
     LOCAL = ("local", 0)
@@ -260,7 +263,7 @@ class Zone(enum.Enum):
         return (self.name, self.level) == (other.name, other.level)
 
     def is_halo(self) -> bool:
-        return self in (Zone.HALO, Zone.HALO_LEVEL_2)
+        return self in (Zone.HALO, Zone.HALO_LEVEL_2, Zone.HALO_LEVEL_3)
 
     def is_lateral_boundary(self) -> bool:
         return self in (
@@ -307,6 +310,7 @@ _ZONE_TO_INDEX_MAPPING = {
     Zone.INTERIOR: lambda dim: _icon_domain_index(_ICON_INTERIOR, dim),
     Zone.HALO: lambda dim: _icon_domain_index(_ICON_HALO, dim),
     Zone.HALO_LEVEL_2: lambda dim: _icon_domain_index(_ICON_HALO, dim, -1),
+    Zone.HALO_LEVEL_3: lambda dim: _icon_domain_index(_ICON_HALO, dim, -2),
     Zone.LOCAL: lambda dim: _icon_domain_index(ICON_LOCAL, dim),
     Zone.LATERAL_BOUNDARY: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim),
     Zone.LATERAL_BOUNDARY_LEVEL_2: lambda dim: _icon_domain_index(_ICON_LATERAL_BOUNDARY, dim, 1),
@@ -347,9 +351,9 @@ class Domain:
         return f"Domain (dim = {self.dim}: zone = {self.zone} /ICON index[ {_map_zone_to_icon_array_index(self.dim, self.zone)} ])"
 
     def __post_init__(self) -> None:
-        assert _validate(
-            self.dim, self.zone
-        ), f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {_get_zones_for_dim(self.dim)}"
+        assert _validate(self.dim, self.zone), (
+            f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {_get_zones_for_dim(self.dim)}"
+        )
 
     @functools.cached_property
     def is_local(self) -> bool:
@@ -399,7 +403,7 @@ def _get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
             return EDGE_ZONES
         case _:
             raise ValueError(
-                f"Dimension should be one of {(dims.MAIN_HORIZONTAL_DIMENSIONS.values())} but was {dim}"
+                f"Dimension should be one of {list(dims.horizontal_dims())} but was {dim}"
             )
 
 

@@ -14,7 +14,11 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, grid_manager as gm, simple as simple_grid
-from icon4py.model.testing import definitions, grid_utils
+from icon4py.model.testing import (
+    definitions as test_defs,
+    grid_utils,
+    stencil_tests as _stencil_tests,
+)
 
 
 BENCHMARK_DEFAULT_LEVELS: Final[int] = 80
@@ -28,6 +32,7 @@ VALID_GRID_PRESETS: tuple[str, ...] = (
     "icon_regional",
     "icon_global",
     "icon_benchmark_regional",
+    "icon_benchmark_regional_large",
     "icon_benchmark_global",
 )
 
@@ -41,28 +46,35 @@ def _get_grid_manager_from_preset(
     match grid_preset:
         case "icon_regional":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.MCH_CH_R04B09_DSL,
+                test_defs.Grids.MCH_CH_R04B09_DSL,
                 num_levels=num_levels,
                 keep_skip_values=False,
                 allocator=allocator,
             )
         case "icon_global":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.R02B04_GLOBAL,
+                test_defs.Grids.R02B04_GLOBAL,
                 num_levels=num_levels,
                 keep_skip_values=False,
                 allocator=allocator,
             )
         case "icon_benchmark_regional":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
+                test_defs.Grids.MCH_OPR_R19B08_DOMAIN01,
+                num_levels=BENCHMARK_DEFAULT_LEVELS,
+                keep_skip_values=False,
+                allocator=allocator,
+            )
+        case "icon_benchmark_regional_large":
+            return grid_utils.get_grid_manager_from_identifier(
+                test_defs.Grids.MCH_OPR_R19B08_1GPU,
                 num_levels=BENCHMARK_DEFAULT_LEVELS,
                 keep_skip_values=False,
                 allocator=allocator,
             )
         case "icon_benchmark_global":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.R02B06_GLOBAL,
+                test_defs.Grids.R02B06_GLOBAL,
                 num_levels=BENCHMARK_DEFAULT_LEVELS,
                 keep_skip_values=False,
                 allocator=allocator,
@@ -132,3 +144,17 @@ def grid(
         )
     else:
         return grid_manager.grid
+
+
+@pytest.fixture(scope="class")
+def data_alloc(
+    grid: base_grid.Grid,
+    backend_like: model_backends.BackendLike,
+    request: pytest.FixtureRequest,
+) -> _stencil_tests.DataAllocationWrapper:
+    """Field constructors with the grid, the selected backend's allocator, and the suite's generator bound."""
+    return _stencil_tests.DataAllocationWrapper(
+        grid=grid,
+        allocator=model_backends.get_allocator(backend_like),
+        seed_sequence=_stencil_tests._suite_seed_sequence(request),
+    )

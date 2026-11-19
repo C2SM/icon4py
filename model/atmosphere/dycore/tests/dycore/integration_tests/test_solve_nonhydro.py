@@ -22,11 +22,14 @@ from icon4py.model.atmosphere.dycore.stencils import (
     compute_hydrostatic_correction_term,
     vertically_implicit_dycore_solver,
 )
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, type_alias as ta
+from icon4py.model.common.constants import WP_EPS
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -40,7 +43,8 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.single_precision_ready
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 def test_validate_divdamp_fields_against_savepoint_values(
     grid_savepoint: sb.IconGridSavepoint,
     savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
@@ -48,7 +52,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     backend: gtx_typing.Backend,
 ) -> None:
     config = solve_nh.NonHydrostaticConfig()
-    second_order_divdamp_factor = 0.032
+    second_order_divdamp_factor = wpfloat(0.032)
     mean_cell_area = grid_savepoint.mean_cell_area()
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
         icon_grid,
@@ -65,8 +69,12 @@ def test_validate_divdamp_fields_against_savepoint_values(
         dims.KDim,
         allocator=backend,
     )
+
+    vct_a_castif = data_alloc.astype_if_needed(grid_savepoint.vct_a(), wpfloat)
+    assert vct_a_castif.dtype.scalar_type is wpfloat
+
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
-        grid_savepoint.vct_a(),
+        vct_a_castif,
         config.fourth_order_divdamp_factor,
         config.fourth_order_divdamp_factor2,
         config.fourth_order_divdamp_factor3,
@@ -76,7 +84,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         config.fourth_order_divdamp_z3,
         config.fourth_order_divdamp_z4,
         interpolated_fourth_order_divdamp_factor,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
     dycore_utils._calculate_fourth_order_divdamp_scaling_coeff.with_backend(backend)(
         interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
@@ -90,24 +98,25 @@ def test_validate_divdamp_fields_against_savepoint_values(
         backend
     )(
         fourth_order_divdamp_scaling_coeff,
-        config.max_nudging_coefficient,
-        constants.DBL_EPS,
+        constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * wpfloat(0.02),
+        constants.WP_EPS,
         out=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
         offset_provider={},
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         fourth_order_divdamp_scaling_coeff.asnumpy(),
         savepoint_nonhydro_init.scal_divdamp().asnumpy(),
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         reduced_fourth_order_divdamp_coeff_at_nest_boundary.asnumpy(),
         savepoint_nonhydro_init.bdy_divdamp().asnumpy(),
     )
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.single_precision_ready
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, step_date_init, substep_init, at_initial_timestep",
     [
@@ -139,58 +148,48 @@ def test_time_step_flags(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("at_initial_timestep", [True])
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_nonhydro_predictor_step(
-    istep_init,
-    istep_exit,
+def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
     substep_init,
     step_date_init,
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     experiment,
-    ndyn_substeps,
     at_initial_timestep,
     caplog,
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = sp.get_metadata("dtime").get("dtime")
+    dtime = sp.dtime()
 
     diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
 
@@ -210,9 +209,10 @@ def test_nonhydro_predictor_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
-    nlev = icon_grid.num_levels
     at_first_substep = substep_init == 1
 
     prognostic_states = utils.create_prognostic_states(sp)
@@ -229,12 +229,14 @@ def test_nonhydro_predictor_step(
         dtime=dtime,
         at_initial_timestep=at_initial_timestep,
         at_first_substep=at_first_substep,
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    cell_start_lateral_boundary_level_2 = icon_grid.start_index(
+    cell_start_lateral_boundary_level_3 = icon_grid.start_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
 
@@ -248,103 +250,89 @@ def test_nonhydro_predictor_step(
     edge_start_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
 
     # stencils 2, 3
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.perturbed_exner_at_cells_on_model_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.exner_pr().asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.exner_pr().asnumpy()[cell_start_lateral_boundary_level_3:, :],
+        atol=0 if test_utils.wp_is_dp else 2e-7,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.temporal_extrapolation_of_perturbed_exner.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.z_exner_ex_pr().asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_exner_ex_pr().asnumpy()[cell_start_lateral_boundary_level_3:, :],
+        atol=0 if test_utils.wp_is_dp else 3e-7,
     )
 
-    # stencils 4,5
-    assert test_utils.dallclose(
-        solve_nonhydro.exner_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, nlev - 1
-        ],
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lateral_boundary_level_2:, nlev - 1],
-    )
     nflatlev = vertical_params.nflatlev
-    assert test_utils.dallclose(
-        solve_nonhydro.exner_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, nflatlev : nlev - 1
-        ],
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev : nlev - 1],
-        rtol=1.0e-9,
-    )
     # stencil 6
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, nflatlev:
+            cell_start_lateral_boundary_level_3:, nflatlev:
         ],
-        sp_exit.z_dexner_dz_c(0).asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev:],
-        atol=5e-18,
+        sp_exit.z_dexner_dz_c(0).asnumpy()[cell_start_lateral_boundary_level_3:, nflatlev:],
+        atol=5e-18 if test_utils.wp_is_dp else 2e-8,
     )
 
     # stencils 7,8,9
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
-    assert test_utils.dallclose(
+    # ICON's z_th_ddz_exner_c stores only nlev levels, so the bottom half level has no reference
+    test_utils.assert_dallclose(
         solve_nonhydro.nonhydro_buoy_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, 1:
+            cell_start_lateral_boundary_level_3:, 1:-1
         ],
-        sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
+        sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_3:, 1:],
+        atol=0 if test_utils.wp_is_dp else 1e-6,
         rtol=2.0e-12,
     )
 
     # stencils 7,8,9, 11
-    assert test_utils.dallclose(
-        solve_nonhydro.perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
-        ],
-        sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
-    )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.theta_v_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.theta_v_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
     # stencils 7,8,9, 13
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.perturbed_rho_at_cells_on_model_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.z_rth_pr(0).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_rth_pr(0).asnumpy()[cell_start_lateral_boundary_level_3:, :],
+        atol=0 if test_utils.wp_is_dp else 2e-7,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.perturbed_theta_v_at_cells_on_model_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, :
+            cell_start_lateral_boundary_level_3:, :
         ],
-        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_3:, :],
+        atol=0 if test_utils.wp_is_dp else 1e-4,
     )
 
     # stencils 12
     nflat_gradp = grid_savepoint.nflat_gradp()
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
-            cell_start_lateral_boundary_level_2:, nflat_gradp:
+            cell_start_lateral_boundary_level_3:, nflat_gradp:
         ],
-        sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lateral_boundary_level_2:, nflat_gradp:],
-        atol=1e-22,
+        sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lateral_boundary_level_3:, nflat_gradp:],
+        atol=1e-22 if test_utils.wp_is_dp else 5e-13,
     )
 
     # compute_horizontal_advection_of_rho_and_theta
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.intermediate_fields.rho_at_edges_on_model_levels.asnumpy()[
             edge_start_lateral_boundary_level_7:, :
         ],
         sp_exit.z_rho_e().asnumpy()[edge_start_lateral_boundary_level_7:, :],
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.intermediate_fields.theta_v_at_edges_on_model_levels.asnumpy()[
             edge_start_lateral_boundary_level_7:, :
         ],
@@ -352,181 +340,178 @@ def test_nonhydro_predictor_step(
     )
 
     # stencils 18,19, 20, 22
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.intermediate_fields.horizontal_pressure_gradient.asnumpy()[
             edge_start_nudging_level_2:, :
         ],
         sp_exit.z_gradh_exner().asnumpy()[edge_start_nudging_level_2:, :],
-        atol=1e-20,
+        atol=1e-20 if test_utils.wp_is_dp else 2e-10,
     )
     prognostic_state_nnew = prognostic_states.next
     vn_new_reference = sp_exit.vn_new().asnumpy()
 
     # stencils 24
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_state_nnew.vn.asnumpy()[edge_start_nudging_level_2:, :],
         vn_new_reference[edge_start_nudging_level_2:, :],
-        atol=6e-15,
+        atol=6e-15 if test_utils.wp_is_dp else 4e-4,
     )
     # stencil 29
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_state_nnew.vn.asnumpy()[:edge_start_nudging_level_2, :],
         vn_new_reference[:edge_start_nudging_level_2, :],
     )
 
     # stencil 30
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.z_vn_avg.asnumpy()[edge_start_lateral_boundary_level_5:, :],
         sp_exit.z_vn_avg().asnumpy()[edge_start_lateral_boundary_level_5:, :],
-        atol=5e-14,
+        atol=5e-14 if test_utils.wp_is_dp else 3e-4,
     )
     # stencil 30
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.intermediate_fields.horizontal_gradient_of_normal_wind_divergence.asnumpy()[
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_graddiv_vn().asnumpy()[edge_start_lateral_boundary_level_5:, :],
-        atol=5e-20,
+        # practically zero in APE (max abs value 3.9e-12)
+        atol=5e-20 if test_utils.wp_is_dp else 5e-10,
     )
     # stencil 30
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.tangential_wind.asnumpy(),
         sp_exit.vt().asnumpy(),
-        atol=5e-14,
+        atol=5e-14 if test_utils.wp_is_dp else 3e-4,
     )
 
     # stencil 32
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         sp_exit.mass_fl_e().asnumpy(),
-        atol=4e-12,
+        atol=4e-12 if test_utils.wp_is_dp else 0.03,
     )
     # stencil 32
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.theta_v_flux_at_edges_on_model_levels.asnumpy()[
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_theta_v_fl_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
-        atol=1e-9,
+        atol=1e-9 if test_utils.wp_is_dp else 10,
     )
 
     # stencil 35,36, 37,38
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.vn_on_half_levels.asnumpy()[edge_start_lateral_boundary_level_5:, :],
         sp_exit.vn_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
-        atol=2e-14,
+        atol=2e-14 if test_utils.wp_is_dp else 6e-4,
     )
 
     # stencil 35,36, 37,38
-    assert test_utils.dallclose(
+    # ICON's z_vt_ie stores only nlev levels, so the bottom half level has no reference
+    test_utils.assert_dallclose(
         solve_nonhydro.intermediate_fields.tangential_wind_on_half_levels.asnumpy()[
-            edge_start_lateral_boundary_level_5:, :
+            edge_start_lateral_boundary_level_5:, :-1
         ],
         sp_exit.z_vt_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
-        atol=2e-14,
+        atol=2e-14 if test_utils.wp_is_dp else 2e-4,
     )
     # stencil 35,36
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.intermediate_fields.horizontal_kinetic_energy_at_edges_on_model_levels.asnumpy()[
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_kin_hor_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
-        atol=1e-20,
+        atol=1e-20 if test_utils.wp_is_dp else 0.01,
     )
     # stencil 35
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro._contravariant_correction_at_edges_on_model_levels.asnumpy()[
             edge_start_lateral_boundary_level_5:, nflatlev:
         ],
         sp_exit.z_w_concorr_me().asnumpy()[edge_start_lateral_boundary_level_5:, nflatlev:],
-        atol=1e-15,
+        # practically zero in APE (max abs value 3.8e-12)
+        atol=1e-15 if test_utils.wp_is_dp else 0.0002,
     )
 
     # stencils 39,40
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels.asnumpy(),
         sp_exit.w_concorr_c().asnumpy(),
-        atol=1e-15,
+        # practically zero in APE (max abs value 1.9e-12)
+        atol=1e-15 if test_utils.wp_is_dp else 8e-5,
     )
 
     # end
-    assert test_utils.dallclose(prognostic_state_nnew.rho.asnumpy(), sp_exit.rho_new().asnumpy())
-    assert test_utils.dallclose(
-        prognostic_state_nnew.w.asnumpy(), sp_exit.w_new().asnumpy(), atol=7e-14
+    test_utils.assert_dallclose(prognostic_state_nnew.rho.asnumpy(), sp_exit.rho_new().asnumpy())
+    test_utils.assert_dallclose(
+        prognostic_state_nnew.w.asnumpy(),
+        sp_exit.w_new().asnumpy(),
+        atol=7e-14 if test_utils.wp_is_dp else 1e-4,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_state_nnew.exner.asnumpy(), sp_exit.exner_new().asnumpy()
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_state_nnew.theta_v.asnumpy(), sp_exit.theta_v_new().asnumpy()
     )
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(2, 1, 2, 1, True)]
 )
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_nonhydro_corrector_step(
+def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
     istep_exit,
     substep_exit,
     at_initial_timestep,
-    *,
     step_date_init,
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     experiment,
-    ndyn_substeps,
     caplog,
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
     init_savepoint = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
-    lprep_adv = init_savepoint.get_metadata("prep_adv").get("prep_adv")
+    dtime = init_savepoint.dtime()
+    prepare_fluxes_for_advection = init_savepoint.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=init_savepoint.vn_traj(),
         mass_flx_me=init_savepoint.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=init_savepoint.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
         ),
     )
 
@@ -560,10 +545,12 @@ def test_nonhydro_corrector_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
     at_first_substep = substep_init == 1
-    at_last_substep = substep_init == ndyn_substeps
+    at_last_substep = substep_init == experiment.config.driver.ndyn_substeps
 
     prognostic_states = utils.create_prognostic_states(init_savepoint)
 
@@ -579,81 +566,88 @@ def test_nonhydro_corrector_step(
         prep_adv=prep_adv,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
-        ndyn_substeps_var=ndyn_substeps,
-        lprep_adv=lprep_adv,
+        ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
     )
 
     # stencil 10
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
     )
     # stencil 10
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         atol=1.0e-12,
     )
 
     # stencil 23,26, 27, 4th_order_divdamp
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_states.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-9,  # TODO(halungge): was 1e-10 for local experiment only
+        atol=0 if test_utils.wp_is_dp else 3e-7,
+        rtol=test_utils.scale_tol(1e-9),  # TODO(halungge): was 1e-10 for local experiment only
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_states.next.exner.asnumpy(),
         savepoint_nonhydro_exit.exner_new().asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_states.next.rho.asnumpy(),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_states.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        atol=8e-14,
+        atol=8e-14 if test_utils.wp_is_dp else 2e-5,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_states.next.theta_v.asnumpy(),
         savepoint_nonhydro_exit.theta_v_new().asnumpy(),
     )
     # stencil 31
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         solve_nonhydro.z_vn_avg.asnumpy()[solve_nonhydro._start_edge_lateral_boundary_level_5 :, :],
         savepoint_nonhydro_exit.z_vn_avg().asnumpy()[
             solve_nonhydro._start_edge_lateral_boundary_level_5 :, :
         ],
-        rtol=5e-7,
+        atol=0 if test_utils.wp_is_dp else 2e-6,
+        rtol=test_utils.scale_tol(5e-7),
     )
 
     # stencil 32
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        rtol=5e-7,  # TODO(halungge): was rtol=1e-10 for local experiment only
+        atol=0 if test_utils.wp_is_dp else 1e-3,
+        rtol=test_utils.scale_tol(5e-7),  # TODO(halungge): was rtol=1e-10 for local experiment only
     )
 
     # stencil 33, 34
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prep_adv.mass_flx_me.asnumpy(),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        rtol=5e-7,  # TODO(halungge): was rtol=1e-10 for local experiment only
+        atol=0 if test_utils.wp_is_dp else 3e-4,
+        rtol=test_utils.scale_tol(5e-7),  # TODO(halungge): was rtol=1e-10 for local experiment only
     )
     # stencil 33, 34
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prep_adv.vn_traj.asnumpy(),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        rtol=5e-7,  # TODO(halungge): was rtol=1e-10 for local experiment only
+        atol=0 if test_utils.wp_is_dp else 1e-6,
+        rtol=test_utils.scale_tol(5e-7),  # TODO(halungge): was rtol=1e-10 for local experiment only
     )
     # stencil 60 only relevant for last substep
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
@@ -662,41 +656,38 @@ def test_nonhydro_corrector_step(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
 )
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_run_solve_nonhydro_single_step(
+def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
     istep_exit,
     substep_exit,
     at_initial_timestep,
-    *,
     step_date_init,
     step_date_exit,
     experiment,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -706,27 +697,21 @@ def test_run_solve_nonhydro_single_step(
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    dtime = sp.dtime()
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
         ),
     )
 
@@ -748,7 +733,9 @@ def test_run_solve_nonhydro_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
     prognostic_states = utils.create_prognostic_states(sp)
@@ -760,50 +747,52 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
-        ndyn_substeps_var=ndyn_substeps,
+        ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         at_first_substep=substep_init == 1,
-        at_last_substep=substep_init == ndyn_substeps,
+        at_last_substep=substep_init == experiment.config.driver.ndyn_substeps,
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
     )
     prognostic_state_nnew = prognostic_states.next
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_state_nnew.theta_v.asnumpy(),
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_state_nnew.exner.asnumpy(), sp_step_exit.exner_new().asnumpy()
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_state_nnew.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
+        atol=1e-13 if test_utils.wp_is_dp else 6e-3,
         rtol=1e-12,
-        atol=1e-13,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_state_nnew.rho.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy()
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_state_nnew.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        atol=8e-14,
+        atol=8e-14 if test_utils.wp_is_dp else 1e-4,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
 
 
-# why is this not run for APE?
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.single_precision_ready
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, at_initial_timestep",
     [
@@ -811,7 +800,7 @@ def test_run_solve_nonhydro_single_step(
         (1, 1, "2021-06-20T12:00:20.000", 2, 2, "2021-06-20T12:00:20.000", False),
     ],
 )
-def test_run_solve_nonhydro_multi_step(
+def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     istep_init,
     substep_init,
@@ -820,41 +809,31 @@ def test_run_solve_nonhydro_multi_step(
     substep_exit,
     step_date_exit,
     at_initial_timestep,
-    *,
     icon_grid,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_final,
-    ndyn_substeps,
     backend,
 ):
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    dtime = sp.dtime()
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
         ),
     )
 
@@ -881,12 +860,14 @@ def test_run_solve_nonhydro_multi_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
-    for i_substep in range(ndyn_substeps):
+    for i_substep in range(experiment.config.driver.ndyn_substeps):
         at_first_substep = i_substep == 0
-        at_last_substep = i_substep == (ndyn_substeps - 1)
+        at_last_substep = i_substep == (experiment.config.driver.ndyn_substeps - 1)
 
         if not (at_initial_timestep and at_first_substep):
             diagnostic_state_nh.vertical_wind_advective_tendency.swap()
@@ -899,11 +880,13 @@ def test_run_solve_nonhydro_multi_step(
             prep_adv=prep_adv,
             second_order_divdamp_factor=sp.divdamp_fac_o2(),
             dtime=dtime,
-            ndyn_substeps_var=ndyn_substeps,
+            ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
             at_initial_timestep=at_initial_timestep,
-            lprep_adv=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
         )
 
         if not at_last_substep:
@@ -916,69 +899,70 @@ def test_run_solve_nonhydro_multi_step(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy()[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
-        atol=5e-7,
+        atol=5e-7 if test_utils.wp_is_dp else 0.2,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prep_adv.mass_flx_me.asnumpy(),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        atol=5e-7,
+        atol=5e-7 if test_utils.wp_is_dp else 0.08,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prep_adv.vn_traj.asnumpy(),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        atol=1e-12,
+        atol=1e-12 if test_utils.wp_is_dp else 2e-4,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_states.next.theta_v.asnumpy(),
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_states.next.rho.asnumpy(),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_states.next.exner.asnumpy(),
         sp_step_exit.exner_new().asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_states.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        atol=1e-13,
+        atol=1e-13 if test_utils.wp_is_dp else 1e-4,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         prognostic_states.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        atol=5e-13,
+        atol=5e-13 if test_utils.wp_is_dp else 5e-4,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
-        atol=1e-14,
+        atol=1e-14 if test_utils.wp_is_dp else 4e-7,
     )
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.single_precision_ready
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
     config = solve_nh.NonHydrostaticConfig()
     params = solve_nh.NonHydrostaticParams(config)
@@ -991,39 +975,31 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("at_initial_timestep", [(True)])
+@pytest.mark.single_precision_ready
+@pytest.mark.parametrize("at_initial_timestep", [True])
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_compute_perturbed_quantities_and_interpolation(
+def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-many-positional-arguments]
     at_initial_timestep,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
-    ndyn_substeps,
     icon_grid,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     grid_savepoint,
     metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
     savepoint_nonhydro_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_nonhydro_exit,
@@ -1032,13 +1008,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     sp_init = savepoint_nonhydro_init
     sp_ref = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
     sp_exit = savepoint_nonhydro_exit
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
 
     current_rho = sp_init.rho_now()
@@ -1055,14 +1025,8 @@ def test_compute_perturbed_quantities_and_interpolation(
     perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
-    perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
-    )
-    exner_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
     )
     temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
@@ -1074,18 +1038,17 @@ def test_compute_perturbed_quantities_and_interpolation(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
 
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
     igradp_method = config.igradp_method
 
     nflatlev = vertical_params.nflatlev
     nflat_gradp = grid_savepoint.nflat_gradp()
 
     cell_domain = h_grid.domain(dims.CellDim)
-    start_cell_lateral_boundary = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
     start_cell_lateral_boundary_level_3 = icon_grid.start_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    start_cell_halo_level_2 = icon_grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
+    end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     end_cell_halo_level_2 = icon_grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
@@ -1094,7 +1057,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     reference_theta_at_cells_on_half_levels = metrics_savepoint.theta_ref_ic()
     d2dexdz2_fac1_mc = metrics_savepoint.d2dexdz2_fac1_mc()
     d2dexdz2_fac2_mc = metrics_savepoint.d2dexdz2_fac2_mc()
-    wgtfacq_c = metrics_savepoint.wgtfacq_c_dsl()
+    wgtfacq_c = metrics_savepoint.wgtfacq_c()
     wgtfac_c = metrics_savepoint.wgtfac_c()
     exner_w_explicit_weight_parameter = metrics_savepoint.vwind_expl_wgt()
     ddz_of_reference_exner_at_cells_on_half_levels = metrics_savepoint.d_exner_dz_ref_ic()
@@ -1108,8 +1071,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     z_exner_ex_pr_ref = sp_ref.z_exner_ex_pr()
     exner_pr_ref = sp_exit.exner_pr()
     rho_ic_ref = sp_exit.rho_ic()
-    z_exner_ic_ref = sp_exit.z_exner_ic()
-    z_theta_v_pr_ic_ref = sp_exit.z_theta_v_pr_ic()
     theta_v_ic_ref = sp_ref.theta_v_ic()
     z_dexner_dz_c_1_ref = sp_ref.z_dexner_dz_c(0)
     z_dexner_dz_c_2_ref = sp_ref.z_dexner_dz_c(1)
@@ -1121,11 +1082,9 @@ def test_compute_perturbed_quantities_and_interpolation(
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
-        exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
-        perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         current_rho=current_rho,
         reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
@@ -1147,98 +1106,93 @@ def test_compute_perturbed_quantities_and_interpolation(
         igradp_method=igradp_method,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
-        start_cell_lateral_boundary=start_cell_lateral_boundary,
         start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
-        start_cell_halo_level_2=start_cell_halo_level_2,
+        end_cell_local=end_cell_local,
         end_cell_halo=end_cell_halo,
         end_cell_halo_level_2=end_cell_halo_level_2,
         model_top=0,
         surface_level=icon_grid.num_levels + 1,
-        offset_provider={
-            "Koff": dims.KDim,
-        },
+        offset_provider={},
     )
     lb = start_cell_lateral_boundary_level_3
 
-    assert test_utils.dallclose(
-        perturbed_rho_at_cells_on_model_levels.asnumpy(), z_rth_pr_1_ref.asnumpy()
+    test_utils.assert_dallclose(
+        perturbed_rho_at_cells_on_model_levels.asnumpy(),
+        z_rth_pr_1_ref.asnumpy(),
+        atol=0 if test_utils.wp_is_dp else 2e-7,
     )
-    assert test_utils.dallclose(
-        perturbed_theta_v_at_cells_on_model_levels.asnumpy(), z_rth_pr_2_ref.asnumpy()
+    test_utils.assert_dallclose(
+        perturbed_theta_v_at_cells_on_model_levels.asnumpy(),
+        z_rth_pr_2_ref.asnumpy(),
+        atol=0 if test_utils.wp_is_dp else 1e-4,
     )
-    assert test_utils.dallclose(
-        temporal_extrapolation_of_perturbed_exner.asnumpy(), z_exner_ex_pr_ref.asnumpy()
+    # `z_exner_ex_pr` is only computed in a subset of the whole domain, reference may contain garbage outside this range
+    test_utils.assert_dallclose(
+        temporal_extrapolation_of_perturbed_exner.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_halo, :
+        ],
+        z_exner_ex_pr_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_halo, :],
+        atol=0 if test_utils.wp_is_dp else 3e-7,
     )
-    assert test_utils.dallclose(
-        perturbed_exner_at_cells_on_model_levels.asnumpy(), exner_pr_ref.asnumpy()
+    test_utils.assert_dallclose(
+        perturbed_exner_at_cells_on_model_levels.asnumpy(),
+        exner_pr_ref.asnumpy(),
+        atol=0 if test_utils.wp_is_dp else 2e-7,
     )
-    assert test_utils.dallclose(rho_at_cells_on_half_levels.asnumpy(), rho_ic_ref.asnumpy())
+    # `rho_ic` is only computed on locally owned cells, the reference contains ICON's halo values.
+    test_utils.assert_dallclose(
+        rho_at_cells_on_half_levels.asnumpy()[lb:end_cell_local, :],
+        rho_ic_ref.asnumpy()[lb:end_cell_local, :],
+    )
 
-    assert test_utils.dallclose(
-        exner_at_cells_on_half_levels.asnumpy()[:, nflatlev:],
-        z_exner_ic_ref.asnumpy()[:, nflatlev:],
-        rtol=1e-11,
-    )
-
-    assert test_utils.dallclose(
-        perturbed_theta_v_at_cells_on_half_levels.asnumpy()[lb:, :],
-        z_theta_v_pr_ic_ref.asnumpy()[lb:, :],
-    )
     assert test_utils.dallclose(
         theta_v_at_cells_on_half_levels.asnumpy()[lb:, :], theta_v_ic_ref.asnumpy()[lb:, :]
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[lb:, nflatlev:],
         z_dexner_dz_c_1_ref.asnumpy()[lb:, nflatlev:],
+        atol=0 if test_utils.wp_is_dp else 2e-8,
         rtol=5e-9,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
             lb:, nflat_gradp:
         ],
         z_dexner_dz_c_2_ref.asnumpy()[lb:, nflat_gradp:],
+        atol=0 if test_utils.wp_is_dp else 1e-11,
         rtol=5e-9,
     )
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("at_initial_timestep, istep_init, istep_exit", [(True, 2, 2)])
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_compute_interpolation_and_nonhydro_buoy(
+def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-positional-arguments]
     at_initial_timestep,
     istep_init,
     istep_exit,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
-    ndyn_substeps,
     icon_grid,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    grid_savepoint,
     metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
     savepoint_nonhydro_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_nonhydro_exit,
@@ -1248,7 +1202,7 @@ def test_compute_interpolation_and_nonhydro_buoy(
     sp_ref = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
     sp_exit = savepoint_nonhydro_exit
 
-    dtime = sp_init.get_metadata("dtime").get("dtime")
+    dtime = sp_init.dtime()
     current_rho = sp_init.rho_now()
     next_rho = sp_init.rho_new()
 
@@ -1262,11 +1216,8 @@ def test_compute_interpolation_and_nonhydro_buoy(
     rhotheta_explicit_weight_parameter = sp_init.wgt_nnow_rth()
     rhotheta_implicit_weight_parameter = sp_init.wgt_nnew_rth()
 
-    perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -1283,7 +1234,6 @@ def test_compute_interpolation_and_nonhydro_buoy(
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
 
     rho_ic_ref = sp_ref.rho_ic()
-    z_theta_v_pr_ic_ref = sp_exit.z_theta_v_pr_ic()
     theta_v_ic_ref = sp_ref.theta_v_ic()
     z_th_ddz_exner_c_ref = sp_exit.z_th_ddz_exner_c()
 
@@ -1291,7 +1241,6 @@ def test_compute_interpolation_and_nonhydro_buoy(
         backend
     )(
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
-        perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         w=w,
@@ -1313,77 +1262,59 @@ def test_compute_interpolation_and_nonhydro_buoy(
         horizontal_end=end_cell_local,
         vertical_start=1,
         vertical_end=icon_grid.num_levels,
-        offset_provider={
-            "Koff": dims.KDim,
-        },
+        offset_provider={},
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         rho_at_cells_on_half_levels.asnumpy()[:, :], rho_ic_ref.asnumpy()[:, :]
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         theta_v_at_cells_on_half_levels.asnumpy()[:, :], theta_v_ic_ref.asnumpy()[:, :]
     )
 
-    assert test_utils.dallclose(
-        perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
-            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
-        ],
-        z_theta_v_pr_ic_ref.asnumpy()[
-            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
-        ],
-        rtol=4e-9,
-    )
-
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         nonhydro_buoy_at_cells_on_half_levels.asnumpy()[
             start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
         ],
         z_th_ddz_exner_c_ref.asnumpy()[
             start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
         ],
+        atol=0 if test_utils.wp_is_dp else 5e-9,
         rtol=5e-10,
     )
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.uses_as_offset
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_compute_rho_theta_pgrad_and_update_vn(
+def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     step_date_init,
     step_date_exit,
-    *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    substep_init,
-    substep_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
@@ -1405,13 +1336,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     end_edge_halo_level_2 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
 
     current_vn = sp_stencil_init.vn()
@@ -1438,14 +1363,12 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     grf_tend_vn = sp_nh_init.grf_tend_vn()
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
     primal_normal_cell_1 = grid_savepoint.primal_normal_cell_x()
     primal_normal_cell_2 = grid_savepoint.primal_normal_cell_y()
     dual_normal_cell_1 = grid_savepoint.dual_normal_cell_x()
     dual_normal_cell_2 = grid_savepoint.dual_normal_cell_y()
 
-    iau_wgt_dyn = config.iau_wgt_dyn
-    is_iau_active = config.is_iau_active
     igradp_method = config.igradp_method
 
     z_rho_e_ref = sp_stencil_exit.z_rho_e()
@@ -1471,7 +1394,6 @@ def test_compute_rho_theta_pgrad_and_update_vn(
             vertical_end=icon_grid.num_levels,
             offset_provider={
                 "E2C": icon_grid.get_connectivity("E2C"),
-                "Koff": dims.KDim,
             },
         )
         lowest_level = icon_grid.num_levels - 1
@@ -1515,7 +1437,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         pg_exdist=metrics_savepoint.pg_exdist_dsl(),
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
@@ -1525,6 +1447,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
         end_edge_nudging=end_edge_nudging,
+        end_edge_local=end_edge_local,
         end_edge_halo=end_edge_halo,
         horizontal_start=gtx.int32(0),
         horizontal_end=gtx.int32(end_edge_halo_level_2),
@@ -1534,49 +1457,49 @@ def test_compute_rho_theta_pgrad_and_update_vn(
             "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
-            "Koff": dims.KDim,
         },
     )
 
-    assert test_utils.dallclose(rho_at_edges_on_model_levels.asnumpy(), z_rho_e_ref.asnumpy())
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(rho_at_edges_on_model_levels.asnumpy(), z_rho_e_ref.asnumpy())
+    test_utils.assert_dallclose(
         theta_v_at_edges_on_model_levels.asnumpy(), z_theta_v_e_ref.asnumpy()
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         horizontal_pressure_gradient.asnumpy()[start_edge_nudging_level_2:end_edge_local, :],
         z_gradh_exner_ref.asnumpy()[start_edge_nudging_level_2:end_edge_local, :],
-        atol=1e-20,
+        atol=1e-20 if test_utils.wp_is_dp else 3e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         next_vn.asnumpy()[start_edge_nudging_level_2:, :],
         vn_ref.asnumpy()[start_edge_nudging_level_2:, :],
-        atol=6e-15,
+        atol=6e-15 if test_utils.wp_is_dp else 2e-6,
     )
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit",
     [(2, 1, 2, 1)],
 )
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_apply_divergence_damping_and_update_vn(
+def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
     istep_exit,
@@ -1584,20 +1507,15 @@ def test_apply_divergence_damping_and_update_vn(
     experiment,
     step_date_init,
     step_date_exit,
-    *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
 ):
     sp_nh_init = savepoint_nonhydro_init
@@ -1619,7 +1537,7 @@ def test_apply_divergence_damping_and_update_vn(
     current_vn = sp_stencil_init.vn()
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
     mean_cell_area = grid_savepoint.mean_cell_area()
 
     # TODO: Use serialized data ('enh_divdamp_fac' in icon) instead of computing 'interpolated_fourth_order_divdamp_factor'
@@ -1629,7 +1547,6 @@ def test_apply_divergence_damping_and_update_vn(
         allocator=backend,
     )
 
-    iau_wgt_dyn = config.iau_wgt_dyn
     divdamp_order = config.divdamp_order
     second_order_divdamp_scaling_coeff = sp_nh_init.divdamp_fac_o2() * mean_cell_area
     second_order_divdamp_factor = savepoint_nonhydro_init.divdamp_fac_o2()
@@ -1644,12 +1561,11 @@ def test_apply_divergence_damping_and_update_vn(
             and second_order_divdamp_factor <= (4.0 * config.fourth_order_divdamp_factor)
         )
     )
-    is_iau_active = config.is_iau_active
 
     vn_ref = sp_nh_exit.vn_new()
 
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
-        grid_savepoint.vct_a(),
+        data_alloc.astype_if_needed(grid_savepoint.vct_a(), wpfloat),
         config.fourth_order_divdamp_factor,
         config.fourth_order_divdamp_factor2,
         config.fourth_order_divdamp_factor3,
@@ -1659,7 +1575,7 @@ def test_apply_divergence_damping_and_update_vn(
         config.fourth_order_divdamp_z3,
         config.fourth_order_divdamp_z4,
         interpolated_fourth_order_divdamp_factor,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn.with_backend(
@@ -1683,9 +1599,9 @@ def test_apply_divergence_damping_and_update_vn(
         geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
         advection_explicit_weight_parameter=savepoint_nonhydro_init.wgt_nnow_vel(),
         advection_implicit_weight_parameter=savepoint_nonhydro_init.wgt_nnew_vel(),
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
-        iau_wgt_dyn=iau_wgt_dyn,
+        dtime=savepoint_nonhydro_init.dtime(),
         is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
         apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
@@ -1693,8 +1609,8 @@ def test_apply_divergence_damping_and_update_vn(
         divdamp_order=divdamp_order,
         mean_cell_area=mean_cell_area,
         second_order_divdamp_factor=second_order_divdamp_factor,
-        max_nudging_coefficient=config.max_nudging_coefficient,
-        dbl_eps=constants.DBL_EPS,
+        max_nudging_coefficient=wpfloat(experiment.config.interpolation.max_nudging_coefficient),
+        wp_eps=constants.WP_EPS,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,
         vertical_start=gtx.int32(0),
@@ -1703,72 +1619,55 @@ def test_apply_divergence_damping_and_update_vn(
             "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
             "E2C": icon_grid.get_connectivity("E2C"),
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
-            "Koff": dims.KDim,
         },
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         next_vn.asnumpy(),
         vn_ref.asnumpy(),
-        atol=4.0e-15,
+        atol=4.0e-15 if test_utils.wp_is_dp else 1e-6,
     )
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_compute_horizontal_velocity_quantities_and_fluxes(
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
+def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [too-many-positional-arguments]
     step_date_init,
     step_date_exit,
     experiment,
     icon_grid,
-    ndyn_substeps,
     grid_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     savepoint_dycore_30_to_38_init,
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
 
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
     wgtfac_e = metrics_savepoint.wgtfac_e()
-    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl()
+    wgtfacq_e = metrics_savepoint.wgtfacq_e()
     rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
     nflatlev = vertical_params.nflatlev
@@ -1832,103 +1731,105 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         offset_provider={
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
             "E2C2E": icon_grid.get_connectivity("E2C2E"),
-            "Koff": dims.KDim,
         },
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         z_vn_avg_ref.asnumpy(),
         z_vn_avg.asnumpy(),
+        atol=0 if test_utils.wp_is_dp else 2e-6,
         rtol=1.0e-6,
     )
 
     # same tolerances as in Liskov
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         z_graddiv_vn_ref.asnumpy(),
         z_graddiv_vn.asnumpy(),
+        # practically zero in APE (max abs value 3.9e-12)
+        atol=1.0e-20 if test_utils.wp_is_dp else 3.0e-12,
         rtol=1.0e-2,
-        atol=1.0e-20,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         vt_ref.asnumpy(),
         vt.asnumpy(),
-        rtol=1.0e-6,
+        atol=0 if test_utils.wp_is_dp else 1e-6,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         mass_fl_e_ref.asnumpy(),
         mass_fl_e.asnumpy(),
-        rtol=1.0e-6,
+        atol=0 if test_utils.wp_is_dp else 4e-4,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         z_theta_v_fl_e_ref.asnumpy(),
         z_theta_v_fl_e.asnumpy(),
-        rtol=1.0e-6,
+        atol=0 if test_utils.wp_is_dp else 1e-1,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         vn_ie_ref.asnumpy(),
         vn_ie.asnumpy(),
-        rtol=1.0e-5,
+        rtol=test_utils.scale_tol(1.0e-5),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         z_vt_ie_ref.asnumpy(),
         z_vt_ie.asnumpy(),
-        rtol=1.0e-6,
+        atol=0 if test_utils.wp_is_dp else 1e-6,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         z_kin_hor_e_ref.asnumpy(),
         z_kin_hor_e.asnumpy(),
-        rtol=1.0e-6,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         z_w_concorr_me_ref.asnumpy(),
         z_w_concorr_me.asnumpy(),
-        rtol=1.0e-7,
+        atol=0 if test_utils.wp_is_dp else 1e-7,
+        rtol=test_utils.scale_tol(1.0e-7),
     )
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("at_first_substep, istep_init, istep_exit", [(True, 2, 2)])
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_compute_averaged_vn_and_fluxes(
+def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     istep_exit,
-    substep_init,
-    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
     icon_grid,
-    ndyn_substeps,
     at_first_substep,
-    grid_savepoint,
     savepoint_dycore_30_to_38_init,
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -1944,7 +1845,7 @@ def test_compute_averaged_vn_and_fluxes(
     vn = savepoint_dycore_30_to_38_init.vn()
     z_rho_e = savepoint_dycore_30_to_38_init.z_rho_e()
     z_theta_v_e = savepoint_dycore_30_to_38_init.z_theta_v_e()
-    r_nsubsteps = 1.0 / ndyn_substeps
+    r_nsubsteps = wpfloat(1.0 / experiment.config.driver.ndyn_substeps)
 
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
     horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
@@ -1966,7 +1867,7 @@ def test_compute_averaged_vn_and_fluxes(
         rho_at_edges_on_model_levels=z_rho_e,
         ddqz_z_full_e=ddqz_z_full_e,
         theta_v_at_edges_on_model_levels=z_theta_v_e,
-        prepare_advection=True,
+        prepare_fluxes_for_advection=True,
         at_first_substep=at_first_substep,
         r_nsubsteps=r_nsubsteps,
         horizontal_start=horizontal_start,
@@ -1975,95 +1876,87 @@ def test_compute_averaged_vn_and_fluxes(
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
-            "Koff": dims.KDim,
         },
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         z_vn_avg_ref.asnumpy(),
         z_vn_avg.asnumpy(),
-        rtol=1.0e-6,
+        atol=0 if test_utils.wp_is_dp else 2e-4,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         mass_fl_e_ref.asnumpy(),
         mass_fl_e.asnumpy(),
-        rtol=1.0e-6,
+        atol=0 if test_utils.wp_is_dp else 1e-3,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         z_theta_v_fl_e_ref.asnumpy(),
         z_theta_v_fl_e.asnumpy(),
-        rtol=1.0e-6,
+        atol=0 if test_utils.wp_is_dp else 0.12,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         vn_traj_ref.asnumpy(),
         vn_traj.asnumpy(),
-        rtol=1.0e-6,
+        atol=0 if test_utils.wp_is_dp else 1e-6,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         mass_flx_me_ref.asnumpy(),
         mass_flx_me.asnumpy(),
-        rtol=1.0e-6,
+        atol=0 if test_utils.wp_is_dp else 2e-4,
+        rtol=test_utils.scale_tol(1.0e-6),
     )
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("at_initial_timestep, substep_init", [(True, 1)])
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_vertically_implicit_solver_at_predictor_step(
+def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
     at_initial_timestep,
     substep_init,
     experiment,
     step_date_init,
     step_date_exit,
-    *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    istep_exit,
-    substep_exit,
     savepoint_vertically_implicit_dycore_solver_init,
     backend,
 ):
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
     xp = data_alloc.import_array_ns(backend)
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     at_first_substep = substep_init == 1
 
@@ -2091,8 +1984,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     dwdz_at_cells_on_model_levels = sp_stencil_init.z_dwdz_dd()
     exner_dynamical_increment = sp_stencil_init.exner_dyn_incr()
 
-    iau_wgt_dyn = config.iau_wgt_dyn
-    is_iau_active = config.is_iau_active
     divdamp_type = config.divdamp_type
 
     w_concorr_c_ref = sp_nh_exit.w_concorr_c()
@@ -2115,7 +2006,6 @@ def test_vertically_implicit_solver_at_predictor_step(
 
     offset_provider = {
         "C2E": icon_grid.get_connectivity("C2E"),
-        "Koff": dims.KDim,
     }
 
     vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step.with_backend(
@@ -2152,9 +2042,9 @@ def test_vertically_implicit_solver_at_predictor_step(
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
-        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         iau_wgt_dyn=iau_wgt_dyn,
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         is_iau_active=is_iau_active,
         rayleigh_type=config.rayleigh_type,
         divdamp_type=divdamp_type,
@@ -2171,24 +2061,25 @@ def test_vertically_implicit_solver_at_predictor_step(
         offset_provider=offset_provider,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         contravariant_correction_at_cells_on_half_levels.asnumpy(),
         w_concorr_c_ref.asnumpy(),
-        atol=1e-15,
+        # practically zero in APE (max abs value 1.9e-12)
+        atol=1e-15 if test_utils.wp_is_dp else 1e-7,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
+        atol=1e-12 if test_utils.wp_is_dp else 7e-5,
         rtol=1e-7,
-        atol=1e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         next_exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
     )
-    assert test_utils.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
+    test_utils.assert_dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
 
     # In ICON, z_dwdz_dd is computed from starting_vertical_index_for_3d_divdamp (kstart_dd3d in ICON).
     # serialized data of z_dwdz_dd can contain garbage value when k < starting_vertical_index_for_3d_divdamp.
@@ -2201,36 +2092,37 @@ def test_vertically_implicit_solver_at_predictor_step(
     )
     z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers = z_dwdz_dd_ref.asnumpy()
     z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[0:starting_vertical_index_for_3d_divdamp] = 0.0
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         dwdz_at_cells_on_model_levels.asnumpy()[start_cell_nudging:, :],
         z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers[start_cell_nudging:, :],
-        atol=1.0e-16,
+        atol=1.0e-16 if test_utils.wp_is_dp else 2.0e-7,
     )
 
-    assert test_utils.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
+    test_utils.assert_dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(2, 1, 2, 1, True)]
 )
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
+    "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
-def test_vertically_implicit_solver_at_corrector_step(
+def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
     istep_exit,
@@ -2239,14 +2131,10 @@ def test_vertically_implicit_solver_at_corrector_step(
     experiment,
     step_date_init,
     step_date_exit,
-    *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -2256,18 +2144,12 @@ def test_vertically_implicit_solver_at_corrector_step(
 ):
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
+    vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
 
     at_first_substep = substep_init == 0
     at_last_substep = substep_exit == 0
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = experiment.config.nonhydrostatic
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
@@ -2297,11 +2179,8 @@ def test_vertically_implicit_solver_at_corrector_step(
     exner_dynamical_increment = sp_stencil_init.exner_dyn_incr()
     advection_explicit_weight_parameter = nonhydro_params.advection_explicit_weight_parameter
     advection_implicit_weight_parameter = nonhydro_params.advection_implicit_weight_parameter
-    r_nsubsteps = 1.0 / ndyn_substeps
+    r_nsubsteps = wpfloat(1.0 / experiment.config.driver.ndyn_substeps)
     kstart_moist = vertical_params.kstart_moist
-
-    iau_wgt_dyn = config.iau_wgt_dyn
-    is_iau_active = config.is_iau_active
 
     w_ref = sp_nh_exit.w_new()
     rho_ref = sp_nh_exit.rho_new()
@@ -2319,7 +2198,6 @@ def test_vertically_implicit_solver_at_corrector_step(
 
     offset_provider = {
         "C2E": icon_grid.get_connectivity("C2E"),
-        "Koff": dims.KDim,
     }
 
     vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step.with_backend(
@@ -2357,11 +2235,13 @@ def test_vertically_implicit_solver_at_corrector_step(
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
-        lprep_adv=savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv"),
+        prepare_fluxes_for_advection=savepoint_nonhydro_init.get_metadata("prep_adv").get(
+            "prep_adv"
+        ),
         r_nsubsteps=r_nsubsteps,
-        ndyn_substeps_var=float(ndyn_substeps),
+        ndyn_substeps_var=wpfloat(experiment.config.driver.ndyn_substeps),
         iau_wgt_dyn=iau_wgt_dyn,
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         is_iau_active=is_iau_active,
         rayleigh_type=config.rayleigh_type,
         at_first_substep=at_first_substep,
@@ -2375,29 +2255,29 @@ def test_vertically_implicit_solver_at_corrector_step(
         offset_provider=offset_provider,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
+        atol=2e-15 if test_utils.wp_is_dp else 8e-5,
         rtol=1e-10,
-        atol=1e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         next_rho.asnumpy()[start_cell_nudging:, :], rho_ref.asnumpy()[start_cell_nudging:, :]
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         next_exner.asnumpy()[start_cell_nudging:, :], exner_ref.asnumpy()[start_cell_nudging:, :]
     )
-    assert test_utils.dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(next_theta_v.asnumpy(), theta_v_ref.asnumpy())
+    test_utils.assert_dallclose(
         dynamical_vertical_mass_flux_at_cells_on_half_levels.asnumpy()[start_cell_nudging:, :],
         mass_flx_ic_ref.asnumpy()[start_cell_nudging:, :],
+        atol=1e-12 if test_utils.wp_is_dp else 2e-5,
         rtol=1e-10,
-        atol=1e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels.asnumpy(),
         vol_flx_ic_ref.asnumpy(),
+        atol=1e-12 if test_utils.wp_is_dp else 2e-5,
         rtol=1e-10,
-        atol=1e-12,
     )
-    assert test_utils.dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())
+    test_utils.assert_dallclose(exner_dynamical_increment.asnumpy(), exner_dyn_incr_ref.asnumpy())

@@ -28,22 +28,7 @@ E.g. constructing 'array_infos' or translating 'array_infos' to arrays.
 """
 
 
-def to_np_dtype(dtype: _definitions.ScalarKind) -> np.dtype:
-    if dtype == _definitions.ScalarKind.INT32:
-        return np.dtype(np.int32)
-    elif dtype == _definitions.ScalarKind.INT64:
-        return np.dtype(np.int64)
-    elif dtype == _definitions.ScalarKind.FLOAT32:
-        return np.dtype(np.float32)
-    elif dtype == _definitions.ScalarKind.FLOAT64:
-        return np.dtype(np.float64)
-    elif dtype == _definitions.ScalarKind.BOOL:
-        return np.dtype(np.bool_)
-    else:
-        raise ValueError(f"Unsupported dtype: {dtype}")
-
-
-def from_np_dtype(dtype: np.dtype) -> _definitions.ScalarKind:
+def _from_np_dtype(dtype: np.dtype) -> _definitions.ScalarKind:
     dtype = np.dtype(dtype)
     if dtype == np.int32:
         return _definitions.ScalarKind.INT32
@@ -87,14 +72,11 @@ def array_to_array_info(
     xp = cp if on_gpu else np
     if ffi is None:
         ffi = cffi.FFI()
-    # TODO(havogt): need to move bool handling to Fortran side
-    if arr.dtype == np.bool_:
-        arr = arr.astype(np.int32, copy=True)
     if as_fortran_layout and not arr.flags["F_CONTIGUOUS"]:
         arr = xp.asfortranarray(arr)
 
     addr = arr.ctypes.data if not on_gpu else arr.data.ptr  # type: ignore[attr-defined] # we claim it's numpy while the 2nd case is for cupy
-    strtype = _codegen.BUILTIN_TO_CPP_TYPE[from_np_dtype(arr.dtype)]
+    strtype = _codegen.BUILTIN_TO_CPP_TYPE[_from_np_dtype(arr.dtype)]
     ptr = ffi.cast(f"{strtype}*", addr)
 
     if keep_alive:

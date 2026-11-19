@@ -1,0 +1,250 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
+import dataclasses
+import enum
+import types
+import typing
+
+import cattrs.gen
+import cattrs.preconf.pyyaml
+import numpy as np
+import yaml
+
+from icon4py.model.common import time
+from icon4py.model.common.config import options as config_options
+
+
+ET = typing.TypeVar("ET", bound=enum.Enum)
+T = typing.TypeVar("T")
+ST = typing.TypeVar("ST", bound="ConfigWithShared")
+
+
+CONV = cattrs.preconf.pyyaml.PyyamlConverter(forbid_extra_keys=True)
+
+
+class IndentSequencesDumper(yaml.Dumper):
+    def increase_indent(self, flow: bool = False, indentless: bool = False) -> None:
+        return super().increase_indent(flow, False)
+
+
+@dataclasses.dataclass
+class ConfigUnionStructurer[T]:
+    union_type: type[T]
+    type_map: typing.Mapping[str, type[T]]
+
+    def __call__(self, spec: dict, _: typing.Any) -> T:
+        config_type = spec.pop("type")
+        if config_type not in self.type_map:
+            raise TypeError(f"Unsupported type spec for {self.union_type}: {config_type}")
+        return CONV.structure(spec, self.type_map[config_type])
+
+
+@dataclasses.dataclass
+class SharedOptionSet:
+    options: dict[str, typing.Any]
+    consumers: list[str]
+
+    @classmethod
+    def __examples__(
+        cls: type[typing.Self],
+    ) -> typing.Iterator[tuple[typing.Self, type[typing.Self]]]:
+        yield (
+            cls(
+                options={"<option 1>": "<value 1>", "<option 2>": "<value 2>"},
+                consumers=["<section A>", "<section B>"],
+            ),
+            cls,
+        )
+
+
+@CONV.register_structure_hook
+def structure_shared_set(data: dict, _: typing.Any) -> SharedOptionSet:
+    return SharedOptionSet(
+        consumers=data["consumers"], options={k: v for k, v in data.items() if k != "consumers"}
+    )
+
+
+@CONV.register_unstructure_hook
+def unstructure_shared_set(shared_set: SharedOptionSet) -> dict:
+    return shared_set.options | {"consumers": shared_set.consumers}
+
+
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class ConfigWithShared:
+    shared: typing.Annotated[
+        list[SharedOptionSet],
+        config_options.ConfigOption(
+            description="Option - value pairs which are shared between sibling sections."
+        ),
+    ] = dataclasses.field(default_factory=list)
+
+    def __init_subclass__(cls: type[typing.Self], **kwargs: typing.Any):
+        super().__init_subclass__(**kwargs)
+        CONV.register_structure_hook(cls, structure_with_shared)
+        CONV.register_unstructure_hook(cls, unstructure_with_shared)
+
+
+# Both independent of the precision setting: configs hold wp values and float64 values.
+for float_type in (np.float32, np.float64):
+    CONV.register_structure_hook(float_type, lambda v, cl: cl(v))
+    CONV.register_unstructure_hook(float_type, float)
+yaml.add_representer(type(None), lambda d, _: d.represent_scalar("tag:yaml.org,2002:null", ""))
+
+
+def read_yaml_str[T](yaml_str: str, config_cls: type[T]) -> T:
+    return CONV.structure(yaml.safe_load(yaml_str), config_cls)
+
+
+def write_yaml_str[T](config_inst: T) -> str:
+    return yaml.dump(CONV.unstructure(config_inst), sort_keys=False, Dumper=IndentSequencesDumper)
+
+
+def structure_enum(val: str, enum_type: type[enum.Enum]) -> enum.Enum:
+    return enum_type.__members__[val.upper()]
+
+
+def unstructure_enum(val: enum.Enum) -> str:
+    return val.name.lower()
+
+
+def register_enum[ET](enum_type: type[ET]) -> type[ET]:
+    CONV.register_structure_hook(enum_type, structure_enum)
+    CONV.register_unstructure_hook(enum_type, unstructure_enum)
+    return enum_type
+
+
+def structure_with_shared[ST](spec: dict, config_cls: type[ST]) -> ST:
+    for option_set in [CONV.structure(i, SharedOptionSet) for i in spec.get("shared", [])]:
+        for consumer in option_set.consumers:
+            if spec[consumer] is None:
+                spec[consumer] = {}
+            if clashing := set(spec[consumer]).intersection(set(option_set.options)):
+                raise ValueError(
+                    f"multiple options given for {consumer}: {clashing} given in 'shared' as well as directly."
+                )
+            spec[consumer] |= option_set.options
+    return cattrs.gen.make_dict_structure_fn(config_cls, CONV)(spec, config_cls)
+
+
+def unstructure_with_shared(config_obj: ConfigWithShared) -> dict:
+    spec = cattrs.gen.make_dict_unstructure_fn(type(config_obj), CONV)(config_obj)
+    for shared_set in config_obj.shared:
+        for consumer in shared_set.consumers:
+            consistent = {k for k, v in shared_set.options.items() if spec[consumer][k] == v}
+            spec[consumer] = {
+                k: v for k, v in spec[consumer].items() if k not in consistent
+            } or None
+    if not spec["shared"]:
+        spec.pop("shared")
+    return spec
+
+
+@CONV.register_structure_hook
+def structure_abstime(abstime_val: str, _: typing.Any) -> time.AbsoluteTime:
+    if isinstance(abstime_val, time.AbsoluteTime):
+        return abstime_val
+    return time.AbsoluteTime.fromisoformat(abstime_val)
+
+
+@CONV.register_unstructure_hook
+def unstructure_abstime(abstime: time.AbsoluteTime) -> str:
+    return abstime.isoformat()
+
+
+@CONV.register_structure_hook
+def structure_reltime(reltime_val: str, _: typing.Any) -> time.RelativeTime:
+    if isinstance(reltime_val, time.RelativeTime):
+        return reltime_val
+    num, unit = reltime_val.split(" ")
+    return time.RelativeTime(**{unit: int(num)})
+
+
+@CONV.register_unstructure_hook
+def unstructure_reltime(reltime: time.RelativeTime) -> str:
+    seconds = reltime.total_seconds()
+    if seconds == int(seconds):
+        return f"{int(seconds)} seconds"
+    elif (milliseconds := seconds * 1000) == int(milliseconds):
+        return f"{int(milliseconds)} milliseconds"
+    else:
+        return f"{int(seconds * 1_000_000)} microseconds"
+
+
+def register_time_union[T](
+    union_type: types.UnionType, mapping: typing.Mapping[str, type[T]]
+) -> None:
+    """Register the tagged YAML form of a union of time types.
+
+    A value is written as a mapping of the member's tag and the member's own YAML form,
+    for example::
+
+        end_of_simulation:
+          type: numsteps
+          value: 10
+        output_interval:
+          type: relative
+          value: 30 minutes
+        start:
+          type: absolute
+          value: '2020-01-01T00:00:00'
+
+    ``mapping`` gives the tag of every member type of ``union_type``.
+    """
+    inverse_mapping: dict[type[T], str] = {member: tag for tag, member in mapping.items()}
+
+    def structure(spec: object, _: typing.Any) -> T:
+        if not isinstance(spec, dict) or set(spec) != {"type", "value"}:
+            raise TypeError(
+                f"Expected a tagged mapping with 'type' and 'value' entries for "
+                f"'{union_type}', got {spec!r}."
+            )
+        tag = spec["type"]
+        if tag not in mapping:
+            raise TypeError(
+                f"Unsupported time type '{tag}' for '{union_type}'; expected one of: "
+                f"{', '.join(mapping)}."
+            )
+        return CONV.structure(spec["value"], mapping[tag])
+
+    def unstructure(value: T) -> dict:
+        return {"type": inverse_mapping[type(value)], "value": CONV.unstructure(value)}
+
+    CONV.register_structure_hook(union_type, structure)
+    CONV.register_unstructure_hook(union_type, unstructure)
+
+
+register_time_union(
+    time.EndOfSimulation,
+    {"absolute": time.AbsoluteTime, "relative": time.RelativeTime, "numsteps": time.NumTimeSteps},
+)
+
+
+def register_config_union[T](union_type: type[T], mapping: typing.Mapping[str, type[T]]) -> None:
+    """Register the tagged YAML form of a union of config classes.
+
+    The member is picked by the ``type`` tag, written next to the member's own options,
+    for example::
+
+        initial_condition:
+          type: jablonowski_williamson
+          p_sfc: 100000.0
+
+    ``mapping`` gives the tag of every member class of ``union_type``.
+    """
+    inverse_mapping: dict[type[T], str] = {v: k for k, v in mapping.items()}
+
+    def unstructure(instance: T) -> dict:
+        return {"type": inverse_mapping[type(instance)], **CONV.unstructure(instance)}
+
+    CONV.register_structure_hook(
+        union_type, ConfigUnionStructurer(union_type=union_type, type_map=mapping)
+    )
+    CONV.register_unstructure_hook(union_type, unstructure)
