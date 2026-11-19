@@ -36,11 +36,6 @@ _log = logging.getLogger(__name__)
 _single_node_decomposer = decomp.SingleNodeDecomposer()
 
 
-def _nan_to_zero(array: data_alloc.NDArray, array_ns: ModuleType) -> data_alloc.NDArray:
-    """Replace NaN values with zero, using the given array namespace (numpy or cupy)."""
-    return array_ns.where(array_ns.isnan(array), array_ns.zeros_like(array), array)
-
-
 _fortran_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
 _refinement_control_dims_to_names = {
     dims.CellDim: gridfile.GridRefinementName.CONTROL_CELLS,
@@ -317,7 +312,7 @@ class GridManager:
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
-                _nan_to_zero(
+                xp.nan_to_num(
                     xp.asarray(
                         self._reader.variable(
                             gridfile.GeometryName.EDGE_CELL_DISTANCE,
@@ -325,7 +320,7 @@ class GridManager:
                             indices=local_edge_indices,
                         )
                     ),
-                    xp,
+                    nan=0.0,
                 ),
                 allocator=allocator,
             ),
