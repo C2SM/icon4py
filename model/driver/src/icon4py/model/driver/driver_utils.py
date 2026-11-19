@@ -15,7 +15,6 @@ import pathlib
 import sys
 from typing import Any, Literal
 
-import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
@@ -581,17 +580,6 @@ def spinup_second_order_divdamp_factor(
             / (transition_end_period - initial_period)
         )
     return ta.wpfloat("0.0")
-
-
-def find_maximum_from_field(
-    input_field: gtx.Field,
-) -> tuple[tuple[int, ...], float]:
-    array_ns = data_alloc.array_namespace(input_field.ndarray)
-    max_indices = array_ns.unravel_index(
-        array_ns.abs(input_field.ndarray).argmax(),
-        input_field.ndarray.shape,
-    )
-    return max_indices, input_field.ndarray[max_indices]  # type: ignore[return-value] ## this is congruent with observed numpy behavior
 
 
 def display_icon4py_logo_in_log_file() -> None:

@@ -121,3 +121,40 @@ def test_decomposition_info_as_host_copies_device_buffers() -> None:
         host.halo_levels(dims.CellDim),
     ):
         assert isinstance(array, np.ndarray)
+
+
+@pytest.mark.parametrize(
+    ("points", "expected_value", "expected_level"),
+    [
+        pytest.param({(1, 2): 5.0}, 5.0, 2, id="positive"),
+        pytest.param({(1, 2): 5.0, (2, 1): -7.0}, -7.0, 1, id="negative"),
+        pytest.param({(1, 0): -3.0, (0, 3): 3.0}, 3.0, 3, id="positive_wins_tie"),
+        pytest.param({(0, 2): 4.0, (2, 1): 4.0}, 4.0, 1, id="smallest_level"),
+    ],
+)
+def test_find_global_absolute_maximum_single_node(
+    points: dict[tuple[int, int], float], expected_value: float, expected_level: int
+) -> None:
+    buffer = np.full((3, 4), 0.5)
+    for index, point_value in points.items():
+        buffer[index] = point_value
+    owner_mask = np.ones(3, dtype=bool)
+
+    value, level = definitions.find_global_absolute_maximum(
+        buffer, owner_mask, definitions.SingleNodeReductions()
+    )
+
+    assert value == expected_value
+    assert level == expected_level
+
+
+def test_find_global_absolute_maximum_nan_has_no_level() -> None:
+    buffer = np.zeros((3, 4))
+    buffer[1, 2] = np.nan
+
+    value, level = definitions.find_global_absolute_maximum(
+        buffer, np.ones(3, dtype=bool), definitions.SingleNodeReductions()
+    )
+
+    assert np.isnan(value)
+    assert level == -1
