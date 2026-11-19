@@ -121,6 +121,24 @@ class TmxInputState:
 
 
 @dataclasses.dataclass(frozen=True)
+class TmxSurfaceFluxState:
+    """The surface fluxes tmx reads: the bottom boundary of its vertical diffusion."""
+
+    evapotranspiration: fa.CellField[ta.wpfloat]
+    """Surface evapotranspiration flux (``evspsbl``) [kg/(m^2 s)]."""
+    u_stress: fa.CellField[ta.wpfloat]
+    """Zonal surface wind stress (``tauu``) [N/m^2]."""
+    v_stress: fa.CellField[ta.wpfloat]
+    """Meridional surface wind stress (``tauv``) [N/m^2]."""
+    q_snocpymlt: fa.CellField[ta.wpfloat]
+    """Heat used to melt snow on the canopy (``q_snocpymlt``), zero off land [W/m^2]."""
+    thermal_energy_flux: fa.CellField[ta.wpfloat]
+    """Surface flux of internal energy from thermal exchange (``ufts``) [W/m^2]."""
+    vapor_energy_flux: fa.CellField[ta.wpfloat]
+    """Surface flux of internal energy from vapor exchange (``ufvs``) [W/m^2]."""
+
+
+@dataclasses.dataclass(frozen=True)
 class TmxDiagnosticState:
     """Diagnostic fields of tmx (``t_vdf_atmo_diags`` in mo_vdf_atmo_memory.f90)."""
 

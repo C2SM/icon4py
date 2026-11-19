@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
 from icon4py.model.common import field, framework as fw, model_backends, state, type_alias as ta
 from icon4py.model.common.framework import quantities as qty
-from icon4py.model.common.states import surface_flux_state
 
 
 if TYPE_CHECKING:
@@ -62,8 +61,6 @@ class Tmx(fw.Component["Tmx.Input", "Tmx.Output"]):
         rho: field.Field[qty.RhoOnCellK]
         air_mass: field.Field[qty.AirMassOnCellK]
         evapotranspiration: field.Field[qty.EvapotranspirationOnCell]
-        sensible_heat_flux: field.Field[qty.SensibleHeatFluxOnCell]
-        latent_heat_flux: field.Field[qty.LatentHeatFluxOnCell]
         u_stress: field.Field[qty.UStressOnCell]
         v_stress: field.Field[qty.VStressOnCell]
         q_snocpymlt: field.Field[qty.SnowCanopyMeltHeatOnCell]
@@ -128,10 +125,8 @@ class Tmx(fw.Component["Tmx.Input", "Tmx.Output"]):
                 rho=input.rho,
                 air_mass=input.air_mass,
             ),
-            surface_flux_state=surface_flux_state.SurfaceFluxState(
+            surface_flux_state=tmx_states.TmxSurfaceFluxState(
                 evapotranspiration=input.evapotranspiration,
-                sensible_heat_flux=input.sensible_heat_flux,
-                latent_heat_flux=input.latent_heat_flux,
                 u_stress=input.u_stress,
                 v_stress=input.v_stress,
                 q_snocpymlt=input.q_snocpymlt,
@@ -181,8 +176,6 @@ def collect_input(state: physics_state.PhysicsState) -> Tmx.Input:
         rho=state.rho,
         air_mass=fw.require(state.air_mass, "air_mass"),
         evapotranspiration=fw.require(state.evapotranspiration, "evapotranspiration"),
-        sensible_heat_flux=fw.require(state.sensible_heat_flux, "sensible_heat_flux"),
-        latent_heat_flux=fw.require(state.latent_heat_flux, "latent_heat_flux"),
         u_stress=fw.require(state.u_stress, "u_stress"),
         v_stress=fw.require(state.v_stress, "v_stress"),
         q_snocpymlt=fw.require(state.q_snocpymlt, "q_snocpymlt"),

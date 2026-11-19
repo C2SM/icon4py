@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import surface, surface_states
 from icon4py.model.common import dimension as dims, field, framework as fw, state
 from icon4py.model.common.framework import quantities as qty
-from icon4py.model.common.states import surface_flux_state
 
 
 if TYPE_CHECKING:
@@ -75,7 +74,7 @@ class Surface(fw.Component["Surface.Input", "Surface.Output"]):
                 surface_pressure=input.pressure_ifc[self._surface_level],
                 temperature=input.temperature[self._lowest_level],
             ),
-            out=surface_flux_state.SurfaceFluxState(
+            out=surface_states.SurfaceFluxState(
                 evapotranspiration=output.evapotranspiration,
                 sensible_heat_flux=output.sensible_heat_flux,
                 latent_heat_flux=output.latent_heat_flux,

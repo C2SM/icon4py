@@ -39,7 +39,6 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import icon as icon_grid_
-    from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
     from icon4py.model.testing import serialbox as sb
 
 
@@ -47,7 +46,7 @@ if TYPE_CHECKING:
 class _Setup:
     component: scalar_diffusion.ScalarDiffusion
     input_state: tmx_states.TmxInputState
-    surface_flux_state: SurfaceFluxState
+    surface_flux_state: tmx_states.TmxSurfaceFluxState
     diagnostic_state: tmx_states.TmxDiagnosticState
     tendency_state: tmx_states.TmxTendencyState
     new_state: tmx_states.TmxNewState

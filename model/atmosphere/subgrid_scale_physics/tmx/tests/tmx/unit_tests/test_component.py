@@ -23,11 +23,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
 from icon4py.model.common import framework as fw
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid, simple, states as grid_states
-from icon4py.model.common.states import surface_flux_state
 from icon4py.model.testing import component_tests
 
 
-_FLUXES = tuple(field.name for field in dataclasses.fields(surface_flux_state.SurfaceFluxState))
+_FLUXES = tuple(field.name for field in dataclasses.fields(tmx_states.TmxSurfaceFluxState))
 
 
 def _physics_state(**kwargs: object) -> physics_state.PhysicsState:
