@@ -69,6 +69,10 @@ class PrescribedTendencies:
         self._array_ns = data_alloc.import_array_ns(model_backends.get_allocator(backend))
         self._cell_indices = decomposition_info.global_index(dims.CellDim)
         self._edge_indices = decomposition_info.global_index(dims.EdgeDim)
+        # TODO(icon4py): the archive name is hardcoded to the single-rank (global) archive
+        # because the per-rank archives follow ICON's domain decomposition, not icon4py's,
+        # so each rank selects its rows by global index instead. Make this explicit
+        # (e.g. in the config) rather than hardcoding 'rank0'.
         self._serializer = serialbox.Serializer(
             serialbox.OpenModeKind.Read, str(config.data_path), "icon_pydycore_rank0"
         )
@@ -131,10 +135,10 @@ class PrescribedTendencies:
         savepoint: serialbox.Savepoint,
         indices: data_alloc.NDArray,
     ) -> None:
-        buffer = self._serializer.read(name, savepoint).astype(float).squeeze()
-        field.ndarray[:, :] = self._array_ns.asarray(  # type: ignore[index] # NDArrayObject Protocol doesn't support this
-            buffer[indices, :]
+        buffer = self._array_ns.asarray(
+            self._serializer.read(name, savepoint).astype(float).squeeze()
         )
+        field.ndarray[:, :] = buffer[indices, :]  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
     def _available_nonhydro_init_dates(self) -> str:
         dates = sorted(

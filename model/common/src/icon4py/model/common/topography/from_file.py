@@ -62,7 +62,10 @@ def read_from_file(
 
     data_path = config.data_path
 
-    # TODO(icon4pyTeam): the archive name is hardcoded to the single-rank (global)
+    # TODO(icon4py): the archive name is hardcoded to the single-rank (global) archive
+    # because the per-rank archives follow ICON's domain decomposition, not icon4py's,
+    # so each rank selects its rows by global index instead. Make this explicit
+    # (e.g. in the config) rather than hardcoding 'rank0'.
     ser = serialbox.Serializer(serialbox.OpenModeKind.Read, str(data_path), "icon_pydycore_rank0")
     sp = ser.savepoint["smooth-topo-savepoint"].as_savepoint()
     log.debug("Reading topography from %s / icon_pydycore_rank0", data_path)

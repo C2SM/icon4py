@@ -231,7 +231,7 @@ _KEPT_WITH_OWNED = {
     dims.EdgeDim: {
         _HALO_1: {1, 2, 3, 4, 5, 6} | _NEGATIVE,
         _HALO_2: {1, 2, 3, 4},
-        _HALO_3: {1, 2, 3, 4},
+        _HALO_3: {1, 2},
     },
     dims.VertexDim: {
         _HALO_1: {1, 2} | _NEGATIVE,

@@ -138,7 +138,10 @@ def read_initial_condition_from_file(
     array_ns = data_alloc.import_array_ns(model_backends.get_allocator(backend))
 
     log.info("Reading the initial condition from %s", ic_config.data_path)
-    # TODO(icon4pyTeam): the archive name is hardcoded to the single-rank (global)
+    # TODO(icon4py): the archive name is hardcoded to the single-rank (global) archive
+    # because the per-rank archives follow ICON's domain decomposition, not icon4py's,
+    # so each rank selects its rows by global index instead. Make this explicit
+    # (e.g. in the config) rather than hardcoding 'rank0'.
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
         str(ic_config.data_path),
@@ -196,7 +199,10 @@ def read_restart_from_file(
     date = _savepoint_formatted_date(config.start_of_timestepping + config.dtime)
 
     log.info("Restarting from the serialized state of the time step ending at %s", date)
-    # TODO(icon4pyTeam): the archive name is hardcoded to the single-rank (global)
+    # TODO(icon4py): the archive name is hardcoded to the single-rank (global) archive
+    # because the per-rank archives follow ICON's domain decomposition, not icon4py's,
+    # so each rank selects its rows by global index instead. Make this explicit
+    # (e.g. in the config) rather than hardcoding 'rank0'.
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
         str(ic_config.data_path),

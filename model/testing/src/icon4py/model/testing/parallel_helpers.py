@@ -84,10 +84,9 @@ def check_local_global_field(
     check_halos: bool,
     atol: float,
     rtol: float = 0.0,
-    equal_nan: bool = False,
 ) -> None:
     if dim.kind == gtx.DimensionKind.VERTICAL:
-        test_utils.assert_dallclose(global_reference_field, local_field, equal_nan=equal_nan)
+        test_utils.assert_dallclose(global_reference_field, local_field)
         return
 
     _log.info(
@@ -121,7 +120,6 @@ def check_local_global_field(
                     desired,
                     atol=atol,
                     rtol=rtol,
-                    equal_nan=equal_nan,
                     err_msg=entry_type.name,
                 )
 
@@ -166,6 +164,5 @@ def check_local_global_field(
             global_reference_field,
             atol=atol,
             rtol=rtol,
-            equal_nan=equal_nan,
             err_msg="internal",
         )
