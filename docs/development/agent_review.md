@@ -56,20 +56,18 @@ Without these, the workflow does not run, or runs without a key.
 
 ## Updating the pinned version
 
-The workflow uses the release **`v0.1.0`** of GridTools/ci-workflows (commit `fce720199ea669941f688b41dff6857e97faa401`, the tag's target), the same release as [PR Agent](pr_agent.md#updating-the-pinned-version); update both pins together. The `uses:` line pins a full commit SHA, with the release tag in a comment (`# vX.Y.Z`); never a branch or a tag name. To update it:
+The `uses:` line pins a release of GridTools/ci-workflows by full commit SHA, with the tag in a comment; never a branch or a tag name. [PR Agent](pr_agent.md#updating-the-pinned-version) uses the same release; update both pins together. Before merging an update, whether from Dependabot or by hand:
 
-1. Read the [release notes](https://github.com/GridTools/ci-workflows/releases). A new permission, a new required input, a raised cap or a harness or AWF change is marked as breaking there; a new permission must also be added to the calling job's `permissions:`, or every run fails at startup. Check the notes' "stricter behaviour" section against the rule files and the addendum configured here.
+1. Read the [release notes](https://github.com/GridTools/ci-workflows/releases). A new permission, a new required input, a raised cap or a harness or AWF change is marked as breaking there. A new permission must also be added to the calling job's `permissions:`, or every run fails at startup.
 
-2. Check the new pin. The commit must be on its `main` and the tag must point to it:
+2. Check that the commit is on its `main` and that the tag points to it:
 
    ```bash
    gh api repos/GridTools/ci-workflows/compare/main...<sha> --jq .status   # expect 'identical' or 'behind'
    gh api repos/GridTools/ci-workflows/git/ref/tags/<tag> --jq .object.sha  # expect <sha> (annotated tags: dereference)
    ```
 
-3. Replace the SHA (the commit the tag points to) and the comment.
-
-4. Test as below.
+3. After merging, test as below.
 
 ## Testing changes
 

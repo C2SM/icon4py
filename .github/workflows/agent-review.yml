@@ -1,25 +1,13 @@
 name: Agent Review
 
-# Advisory review of pull requests by a coding agent that runs inside the AWF
-# sandbox; never a required status check. The pipeline (four jobs, harness
-# adapters, sandbox configuration, prompt) is the reusable workflow in
-# GridTools/ci-workflows, where its security invariants are documented and
-# reviewed. This file only chooses when it runs, grants its permissions,
-# maps the key and sets the ICON4Py configuration.
+# Advisory review by a sandboxed coding agent; never a required check.
+# Caller of the reusable workflow in GridTools/ci-workflows.
 # See docs/development/agent_review.md.
 
 on:
-  # Not 'pull_request': fork pull requests get no secrets there. No
-  # 'issue_comment': PR Agent reacts to every comment starting with '/', and
-  # a comment trigger would add a second privileged entry point. No
-  # 'synchronize', as for PR Agent.
-  #
-  # Only the 'agent-review' label: the called workflow also handles an
-  # automatic review of PRs by writers ('opened', 'reopened',
-  # 'ready_for_review'), which is not enabled here.
-  #
-  # Both events read this file from 'main'. The Actions event policy for
-  # this file must allow both (see the docs).
+  # 'pull_request_target' because fork PRs get no secrets under
+  # 'pull_request'. The Actions event policy for this file's path must allow
+  # every event listed here.
   pull_request_target:
     types: [labeled]
   workflow_dispatch:
@@ -30,7 +18,6 @@ on:
         type: string
       harness:
         description: Harness; 'default' uses the AGENT_REVIEW_HARNESS variable
-        # A choice because it becomes a path: never free text.
         type: choice
         default: default
         options: [default, stub, opencode, pi]
@@ -39,52 +26,39 @@ on:
         type: boolean
         default: false
 
-# Each called job widens what it needs, within the calling job's ceiling.
 permissions: {}
 
-# No cancelling: a run joins its group when queued, before the job 'if' is
-# evaluated, so labelling a PR with an unrelated label would cancel its
-# in-flight review.
+# Never cancel: runs join the group before the job 'if' is evaluated, so any
+# other label added to the PR would cancel an in-flight review.
 concurrency:
   group: agent-review-${{ github.event.pull_request.number || inputs.pr || github.ref }}
   cancel-in-progress: false
 
 jobs:
   review:
-    # Saves creating the called jobs for unrelated labels; the called
-    # workflow checks the label, the bots and the labeller's permission.
     if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'agent-review'
-    # Pinned by full commit SHA; bump it only to a reviewed release of
-    # GridTools/ci-workflows, after reading its release notes.
+    # Pinned by commit SHA because the called workflow receives the key.
     uses: GridTools/ci-workflows/.github/workflows/agent-review.yml@fce720199ea669941f688b41dff6857e97faa401 # v0.1.0
-    # The ceiling for every job of the called workflow, checked at startup:
-    # exactly the union of what its jobs request.
+    # Must cover what the called jobs request, or the run fails at startup.
     permissions:
       contents: read
       pull-requests: write
     with:
+      # Only 'harness' and 'model' may come from variables, which any writer
+      # can change without review.
       harness: ${{ (inputs.harness == '' || inputs.harness == 'default') && vars.AGENT_REVIEW_HARNESS || inputs.harness }}
       model: ${{ vars.AGENT_REVIEW_MODEL }}
       pr: ${{ inputs.pr }}
       dry_run: ${{ inputs.dry_run == true }}
       project_name: ICON4Py
-      # Followed by the agent, in this order; each is reset to the PR's base
-      # version before the agent runs, so a PR cannot change them. 'CLAUDE.md'
-      # is a symlink to 'AGENTS.md', which the called workflow accepts since
-      # it resets both.
+      # Reset to the PR's base version, so a PR cannot change its own rules.
       rule_files: |
         .github/copilot-instructions.md
         AGENTS.md
         CODING_GUIDELINES.md
-      # Read from this repository at this workflow's commit, never the PR's.
       prompt_addendum: .github/agent-review/prompt-addendum.md
-      # No 'upload_audit': its artifact is public to signed-in users, so it is
-      # enabled only by a reviewed change, for debugging (see the docs). No
-      # 'api_base' and no 'environment' either. Only 'harness' and 'model'
-      # may come from variables.
-    # Explicit mapping, resolved only in the called job that uses the
-    # 'agent-review' environment (restricted to 'main'); a calling job cannot
-    # declare 'environment:' itself. Never 'secrets: inherit' (it does not
-    # cross organizations either), and never PR Agent's key.
+      # No 'upload_audit': any signed-in user could download the artifact.
+    # An environment secret ('agent-review', restricted to 'main'), so it must
+    # be mapped explicitly; never 'secrets: inherit'.
     secrets:
       inference_api_key: ${{ secrets.AGENT_REVIEW_INFERENCE_API_KEY }}
