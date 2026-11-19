@@ -217,27 +217,11 @@ class GodunovSplittingAdvection(Advection):
             self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
         )
         # Temporary holding the vertically advected tracer between the vertical and
-        # the horizontal transport step. On even timesteps `p_tracer_new` is both
-        # read (as `p_tracer_after_vertical`) and written by
-        # `compute_tracer_advection_after_horizontal_limiter`; programs do not
-        # support aliased in/out fields, so the input is frozen into this
-        # temporary first.
+        # the horizontal transport step (written by
+        # `compute_tracer_advection_before_horizontal_limiter`, read by
+        # `compute_tracer_advection_after_horizontal_limiter`).
         self._p_tracer_after_vertical = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
-        )
-
-        self._copy_field_on_cell_k = setup_program(
-            backend=self._backend,
-            program=generic_math_operations.copy_field_on_cell_k,
-            horizontal_sizes={
-                "horizontal_start": self._start_cell_nudging,
-                "horizontal_end": self._end_cell_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": self._grid.num_levels,
-            },
-            offset_provider=self._grid.connectivities,
         )
 
         self._apply_interpolated_tracer_time_tendency = setup_program(
@@ -405,7 +389,7 @@ class GodunovSplittingAdvection(Advection):
         self._compute_before_horizontal_limiter(
             rhodz_ast2=self._rhodz_ast2,
             p_mflx_tracer_v=_p_mflx_tracer_v,
-            p_tracer_after_vertical=p_tracer_new,
+            p_tracer_after_vertical=self._p_tracer_after_vertical,
             p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
             r_m=self._r_m,
             rhodz_now=diagnostic_state.airmass_now,
@@ -421,16 +405,6 @@ class GodunovSplittingAdvection(Advection):
         if self._horizontal_advection_limiter == HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
             # r_m is only read by the positive definite limiter
             self._exchange.exchange(dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM)
-
-        if self._even_timestep:
-            # `p_tracer_new` currently holds the vertically advected tracer (written
-            # by `compute_tracer_advection_before_horizontal_limiter`) and is read
-            # (as `p_tracer_after_vertical`) and written by
-            # `compute_tracer_advection_after_horizontal_limiter`. Freeze the input
-            # into a temporary so the program does not receive an aliased inout field.
-            self._copy_field_on_cell_k(
-                field=p_tracer_new, output_field=self._p_tracer_after_vertical
-            )
 
         self._compute_after_horizontal_limiter(
             p_mflx_tracer_h=diagnostic_state.hfl_tracer,
