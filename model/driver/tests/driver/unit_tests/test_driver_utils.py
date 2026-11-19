@@ -96,3 +96,22 @@ def test_write_experiment_config_with_io_goes_to_output_path(
     assert path == output_path / "foo.yaml"
     assert not (tmp_path / "foo.yaml").exists()
     assert config_io.read_yaml_str(path.read_text(), driver_config.ExperimentConfig) == config
+
+
+@dataclasses.dataclass(frozen=True)
+class _SecondOfTwoRanks(decomposition_defs.ProcessProperties):
+    comm: None = None
+    rank: int = 1
+    comm_name: str = ""
+    comm_size: int = 2
+
+
+def test_write_experiment_config_only_on_rank_zero(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    path = driver_utils.write_experiment_config(_minimal_experiment_config(), _SecondOfTwoRanks())
+
+    assert path is None
+    assert list(tmp_path.iterdir()) == []
