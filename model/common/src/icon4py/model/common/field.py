@@ -69,5 +69,5 @@ class _NumPyField[Q: quantity.Quantity](Field[Q], nd_array_field.NdArrayField):
 
 if hasattr(nd_array_field, "CuPyArrayField"):
 
-    class _CuPyField[Q: quantity.Quantity](Field[Q], nd_array_field.CuPyArrayField): # type: ignore[name-defined]
-        _plain = nd_array_field.CuPyArrayField # type: ignore[attr-defined]
+    class _CuPyField[Q: quantity.Quantity](Field[Q], nd_array_field.CuPyArrayField):  # type: ignore[name-defined]
+        _plain = nd_array_field.CuPyArrayField  # type: ignore[attr-defined]

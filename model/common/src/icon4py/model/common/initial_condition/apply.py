@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid
-    from icon4py.model.common.states import static_fields
+    from icon4py.model.common.old_states import static_fields
 
 
 def apply(

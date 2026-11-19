@@ -26,8 +26,8 @@ from icon4py.model.common.grid import base as grid_base, horizontal as h_grid
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
+from icon4py.model.common.old_states import factory
 from icon4py.model.common.physics.thermodynamics import compute_pressure, compute_temperature
-from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_output_sources as output_sources
 

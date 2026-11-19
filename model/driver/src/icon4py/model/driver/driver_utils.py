@@ -64,7 +64,7 @@ from icon4py.model.common.initial_condition import config as ic_config
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import static_fields
+from icon4py.model.common.old_states import static_fields
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver_constants, driver_states
 

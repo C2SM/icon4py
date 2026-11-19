@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.initial_condition.config import ConfigContext
-    from icon4py.model.common.states import static_fields
+    from icon4py.model.common.old_states import static_fields
 
 log = logging.getLogger(__name__)
 

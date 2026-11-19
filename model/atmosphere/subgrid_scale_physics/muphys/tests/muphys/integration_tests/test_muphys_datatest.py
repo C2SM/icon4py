@@ -29,7 +29,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
+from icon4py.model.common.old_states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403

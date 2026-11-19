@@ -26,7 +26,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
-from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
+from icon4py.model.common.old_states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 

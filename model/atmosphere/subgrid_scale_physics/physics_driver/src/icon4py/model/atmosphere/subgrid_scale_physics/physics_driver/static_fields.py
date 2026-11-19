@@ -22,7 +22,7 @@ from icon4py.model.common.metrics import metrics_attributes
 
 
 if TYPE_CHECKING:
-    from icon4py.model.common.states import factory
+    from icon4py.model.common.old_states import factory
 
 
 @dataclasses.dataclass(frozen=True)

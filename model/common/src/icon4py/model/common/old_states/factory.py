@@ -56,7 +56,7 @@ from gt4py.next import common as gtx_common
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
-from icon4py.model.common.states import model, utils as state_utils
+from icon4py.model.common.old_states import model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 

@@ -15,7 +15,7 @@ from gt4py import next as gtx
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.states import factory, model
+from icon4py.model.common.old_states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
 

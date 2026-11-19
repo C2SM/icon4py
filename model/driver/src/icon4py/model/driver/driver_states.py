@@ -24,7 +24,7 @@ from icon4py.model.common.framework import states
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
-from icon4py.model.common.states import static_fields
+from icon4py.model.common.old_states import static_fields
 from icon4py.model.driver import config as driver_config
 
 

@@ -28,7 +28,7 @@ from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
 from icon4py.model.common.io import io as common_io
-from icon4py.model.common.states import static_fields
+from icon4py.model.common.old_states import static_fields
 from icon4py.model.driver import driver_diagnostics, driver_output_sources as output_sources
 
 

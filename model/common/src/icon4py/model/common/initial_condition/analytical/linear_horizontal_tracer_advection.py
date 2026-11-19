@@ -24,7 +24,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 if TYPE_CHECKING:
     from icon4py.model.common.initial_condition.config import ConfigContext
-    from icon4py.model.common.states import static_fields
+    from icon4py.model.common.old_states import static_fields
 
 
 @config_io.register_enum

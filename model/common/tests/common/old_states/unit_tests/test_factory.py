@@ -22,7 +22,7 @@ from icon4py.model.common.math import (
     coordinate_transformations as coord_trans,
     vertical_operations as vertical_ops,
 )
-from icon4py.model.common.states import factory, model, utils as state_utils
+from icon4py.model.common.old_states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, serialbox
 from icon4py.model.testing.fixtures.datatest import (

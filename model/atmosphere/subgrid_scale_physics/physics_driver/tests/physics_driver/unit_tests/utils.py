@@ -131,7 +131,7 @@ def make_output(
     diagnostics: states.Diagnostics | None = None,
     perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None = None,
 ) -> physics_driver.PhysicsDriver.Output:
-    """The output continuing the given states, with new diagnostics on the simple grid if none."""
+    """The output continuing the given old_states, with new diagnostics on the simple grid if none."""
     if diagnostics is None:
         diagnostics = fw.allocate(states.Diagnostics, simple.simple_grid(), None)
     return physics_driver.PhysicsDriver.Output(

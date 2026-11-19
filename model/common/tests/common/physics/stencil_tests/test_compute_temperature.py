@@ -14,12 +14,12 @@ import pytest
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.physics.thermodynamics.compute_temperature import (
     _compute_virtual_potential_temperature,
     compute_temperature_from_internal_energy_per_area,
     compute_virtual_temperature_and_temperature,
 )
-from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import reference_funcs, stencil_tests
 

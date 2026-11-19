@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
 )
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
 from .test_add_analysis_increments_from_data_assimilation import (

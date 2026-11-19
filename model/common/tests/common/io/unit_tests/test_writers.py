@@ -27,7 +27,7 @@ from icon4py.model.common.io import (
     writers,
     zarr_writers,
 )
-from icon4py.model.common.states import metadata
+from icon4py.model.common.old_states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
