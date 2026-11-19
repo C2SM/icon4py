@@ -36,6 +36,9 @@ _log = logging.getLogger(__name__)
 _single_node_decomposer = decomp.SingleNodeDecomposer()
 
 
+def _nan_to_zero(array: data_alloc.NDArray, array_ns: ModuleType) -> data_alloc.NDArray:
+    """Replace NaN values with zero, using the given array namespace (numpy or cupy)."""
+    return array_ns.where(array_ns.isnan(array), array_ns.zeros_like(array), array)
 
 
 _fortran_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
