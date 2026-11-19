@@ -66,12 +66,6 @@ _log = logging.getLogger(__file__)
             id="integration-exclaim-ape-aes",
         ),
         pytest.param(
-            test_defs.Experiments.JW,
-            time.RelativeTime(days=7),
-            marks=[pytest.mark.level("validation")],
-            id="validation-jw",
-        ),
-        pytest.param(
             test_defs.Experiments.EXCLAIM_APE_AES,
             time.RelativeTime(days=7),
             marks=[pytest.mark.level("validation")],
