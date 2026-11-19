@@ -344,9 +344,10 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         self._rbf_interpolation(p_e_in=state.vn, p_u_out=state.u, p_v_out=state.v)
         # 4. halo sync for the horizontal operations of the physics: tmx interpolates w to the
         #    vertices and edges of its owned cells, and diffusion left the halo of w stale.
-        # TODO(yiluchen1066): move this exchange to driver.py: it writes the halo of
-        # `input.rho`, which the physics only reads. It also duplicates work: tmx syncs u and
-        # v itself and the dycore syncs rho at the end of the step; only w is stale here.
+        # TODO(yiluchen1066, jcanton): sync w at the end of `Diffusion.run`,
+        # which skips it under AES forcing, and drop this exchange: it writes
+        # the halo of `input.rho`, which the physics only reads, tmx syncs u
+        # and v itself and the dycore syncs rho at the end of the step.
         self._exchange.exchange(dims.CellDim, state.rho, state.u, state.v, state.w)
         return state
 
