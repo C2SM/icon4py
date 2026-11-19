@@ -106,6 +106,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         rhodz_now: np.ndarray,
         p_mflx_contra_v: np.ndarray,
         p_tracer_now: np.ndarray,
+        p_mflx_tracer_v: np.ndarray,
         p_mass_flx_e: np.ndarray,
         p_vn: np.ndarray,
         deepatmo_divzl: np.ndarray,
@@ -142,7 +143,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         p_tracer_after_vertical = integrate_tracer_vertically_numpy(
             p_tracer_now,
             rhodz_now,
-            p_mflx_contra_v,
+            p_mflx_tracer_v,
             deepatmo_divzl,
             deepatmo_divzu,
             rhodz_ast2,
@@ -238,7 +239,7 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         k = data_alloc.index_field(dims.KDim)
 
         rhodz_ast2 = data_alloc.zero_field(dims.CellDim, dims.KDim)
-        p_mflx_tracer_v = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
+        p_mflx_tracer_v = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         p_tracer_after_vertical = data_alloc.zero_field(dims.CellDim, dims.KDim)
         p_mflx_tracer_h_unlimited = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         r_m = data_alloc.zero_field(dims.CellDim, dims.KDim)
