@@ -143,20 +143,7 @@ def _run_driver_compare_single_multi_rank(
         backend=backend,
     )
 
-    multi_rank_config_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
-
-    data_overrides = {
-        section: {"data_path": getattr(single_rank_config, section).data_path}
-        for section in ("initial_condition", "topography", "prescribed_tendencies")
-        if hasattr(getattr(single_rank_config, section), "data_path")
-    }
-
-    multi_rank_config = driver_config.read_experiment_config_from_yaml(
-        multi_rank_config_path / "config.yml"
-    ).with_overrides(
-        **data_overrides,
-        driver={"end_of_simulation": end_of_simulation},
-    )
+    multi_rank_config = single_rank_config
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=multi_rank_config.vertical_grid,
