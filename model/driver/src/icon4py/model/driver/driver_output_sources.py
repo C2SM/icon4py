@@ -21,8 +21,7 @@ a field whose quantity has no standard name is not offered.
 
 from typing import Final
 
-from icon4py.model.common import field, framework as fw, quantity, state
-from icon4py.model.common.framework import states
+from icon4py.model.common import field, framework as fw, quantity, state, states
 
 
 # NOTE: temporary, replaced in parts 04 (recipes) and 05 (derived inputs): goes with

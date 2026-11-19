@@ -23,8 +23,8 @@ from icon4py.model.common import (
     model_backends,
     quantities as qty,
     quantity,
+    states,
 )
-from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.old_states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.common.type_alias import vpfloat, wpfloat

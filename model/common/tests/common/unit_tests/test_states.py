@@ -8,8 +8,7 @@
 
 import pytest
 
-from icon4py.model.common import framework as fw
-from icon4py.model.common.framework import states
+from icon4py.model.common import framework as fw, state, states
 from icon4py.model.common.grid import base as base_grid, simple
 
 
@@ -20,6 +19,6 @@ def grid() -> base_grid.Grid:
 
 def test_tracer_state_allocates_the_configured_tracers_only(grid: base_grid.Grid) -> None:
     config = states.TracerConfig.from_ntracer(2)
-    tracers = fw.allocate(states.TracerState, grid, allocator=None, only=config.active_names)
-    assert list(fw.fields(tracers)) == ["qv", "qc"]
+    tracers = state.allocate(states.TracerState, grid, allocator=None, only=config.active_names)
+    assert list(state.fields(tracers)) == ["qv", "qc"]
     assert tracers.qi is None

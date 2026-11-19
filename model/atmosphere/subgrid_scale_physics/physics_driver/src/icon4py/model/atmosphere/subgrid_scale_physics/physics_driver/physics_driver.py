@@ -28,9 +28,9 @@ from icon4py.model.common import (
     quantities as qty,
     quantity,
     state,
+    states,
     time,
 )
-from icon4py.model.common.framework import states
 from icon4py.model.common.interpolation.stencils import (
     compute_vn_from_uv,
     edge_2_cell_vector_rbf_interpolation as rbf,

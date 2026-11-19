@@ -14,9 +14,14 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common import dimension as dims, field, framework as fw, quantities as qty
+from icon4py.model.common import (
+    dimension as dims,
+    field,
+    framework as fw,
+    quantities as qty,
+    states,
+)
 from icon4py.model.common.constants import PhysicsConstants
-from icon4py.model.common.framework import states
 from icon4py.model.common.grid import simple, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.physics.thermodynamics import (

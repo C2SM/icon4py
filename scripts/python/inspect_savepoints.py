@@ -137,7 +137,7 @@ def component_labels(field: str, size: int) -> tuple[str, ...] | None:
     if TRACER_FIELD_MARKER not in field:
         return None
     # the serialization order of the tracers, as the model itself defines it
-    from icon4py.model.common.framework import states  # noqa: PLC0415 [import-outside-top-level]
+    from icon4py.model.common import states  # noqa: PLC0415 [import-outside-top-level]
 
     known = states.TRACERS
     return tuple(known[i] if i < len(known) else f"idx{i}" for i in range(size))

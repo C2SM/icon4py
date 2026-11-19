@@ -17,9 +17,8 @@ import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.exceptions as errors
-from icon4py.model.common import dimension as dims, field, quantities as qty
+from icon4py.model.common import dimension as dims, field, quantities as qty, states
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base, simple, vertical as v_grid
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.utils import data_allocation as data_alloc

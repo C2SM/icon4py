@@ -18,8 +18,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_process,
     physics_state,
 )
-from icon4py.model.common import dimension as dims, field, framework as fw, quantities as qty, state
-from icon4py.model.common.framework import states
+from icon4py.model.common import (
+    dimension as dims,
+    field,
+    framework as fw,
+    quantities as qty,
+    state,
+    states,
+)
 from icon4py.model.common.grid import base as base_grid, simple
 
 from .utils import (

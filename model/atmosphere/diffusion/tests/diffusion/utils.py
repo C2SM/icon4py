@@ -9,7 +9,7 @@
 import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.common.framework import states
+from icon4py.model.common import states
 from icon4py.model.testing import serialbox as sb, test_utils
 
 

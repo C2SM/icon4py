@@ -25,9 +25,8 @@ import pytest
 import xarray as xr
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
-from icon4py.model.common import model_backends, time
+from icon4py.model.common import model_backends, states, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.framework import states
 from icon4py.model.common.io import io as common_io
 from icon4py.model.driver import (
     config as driver_config,

@@ -42,6 +42,7 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     model_backends,
     state,
+    states,
     time,
     type_alias as ta,
 )
@@ -49,7 +50,6 @@ from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition_defs,
 )
-from icon4py.model.common.framework import states
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,

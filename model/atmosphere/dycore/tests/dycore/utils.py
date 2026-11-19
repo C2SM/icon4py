@@ -18,10 +18,10 @@ from icon4py.model.common import (
     field,
     framework as fw,
     quantities as qty,
+    states,
     type_alias as ta,
     utils as common_utils,
 )
-from icon4py.model.common.framework import states
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.testing import serialbox as sb
 

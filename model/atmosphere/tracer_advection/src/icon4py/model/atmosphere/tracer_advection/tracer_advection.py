@@ -36,11 +36,11 @@ from icon4py.model.common import (
     model_backends,
     quantities as qty,
     state,
+    states,
     type_alias as ta,
 )
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.framework import states
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program

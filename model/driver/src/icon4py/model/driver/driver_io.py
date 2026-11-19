@@ -23,9 +23,8 @@ from collections.abc import Collection, Mapping
 
 import gt4py.next as gtx
 
-from icon4py.model.common import exceptions, field, time
+from icon4py.model.common import exceptions, field, states, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.old_states import static_fields
