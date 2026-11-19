@@ -13,7 +13,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import C2E2C
 
 
-# TODO(nfarabullini, OngChia): this stencil has no test
 # TODO(nfarabullini, OngChia): move to common
 
 

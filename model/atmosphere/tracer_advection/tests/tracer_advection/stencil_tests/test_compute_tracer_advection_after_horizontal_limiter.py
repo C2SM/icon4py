@@ -27,7 +27,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
-from .test_compute_fused_tracer_advection_terms import (
+from .test_apply_positive_definite_horizontal_multiplicative_flux_factor import (
     apply_positive_definite_horizontal_multiplicative_flux_factor_numpy,
 )
 from .test_compute_ppm_quadratic_face_values import compute_ppm_quadratic_face_values_numpy

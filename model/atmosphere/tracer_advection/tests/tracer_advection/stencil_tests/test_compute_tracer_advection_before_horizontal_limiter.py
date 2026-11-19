@@ -30,15 +30,11 @@ from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import (
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import reference_funcs, stencil_tests
 
+from .test_apply_density_increment import apply_density_increment_numpy
 from .test_compute_barycentric_backtrajectory_alt import (
     compute_barycentric_backtrajectory_alt_numpy,
-)
-from .test_compute_fused_tracer_advection_terms import (
-    apply_density_increment_numpy,
-    compute_tangential_wind_numpy,
-    reconstruct_linear_coefficients_svd_numpy,
 )
 from .test_compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     compute_horizontal_tracer_flux_from_linear_coefficients_alt_numpy,
@@ -47,6 +43,7 @@ from .test_compute_positive_definite_horizontal_multiplicative_flux_factor impor
     compute_positive_definite_horizontal_multiplicative_flux_factor_numpy,
 )
 from .test_integrate_tracer_vertically import integrate_tracer_vertically_numpy
+from .test_reconstruct_linear_coefficients_svd import reconstruct_linear_coefficients_svd_numpy
 
 
 def compute_horizontal_tracer_flux_upwind_numpy(
@@ -157,7 +154,9 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         )
 
         if ihadv_tracer == HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value:
-            z_real_vt = compute_tangential_wind_numpy(p_vn, rbf_vec_coeff_e, connectivities)
+            z_real_vt = reference_funcs.compute_tangential_wind_numpy(
+                connectivities, p_vn, rbf_vec_coeff_e
+            )
             p_distv_bary_1, p_distv_bary_2 = compute_barycentric_backtrajectory_alt_numpy(
                 p_vn,
                 z_real_vt,
@@ -340,7 +339,9 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         )
         r_m = np.ones((grid.num_cells, grid.num_levels), dtype=rhodz_now.dtype)
         if ihadv_tracer == HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value:
-            z_real_vt = compute_tangential_wind_numpy(p_vn, rbf_vec_coeff_e, connectivities)
+            z_real_vt = reference_funcs.compute_tangential_wind_numpy(
+                connectivities, p_vn, rbf_vec_coeff_e
+            )
             p_distv_bary_1, p_distv_bary_2 = compute_barycentric_backtrajectory_alt_numpy(
                 p_vn,
                 z_real_vt,

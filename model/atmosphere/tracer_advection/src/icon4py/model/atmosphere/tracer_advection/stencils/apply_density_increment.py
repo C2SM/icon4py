@@ -13,9 +13,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO(nfarabullini, OngChia): this stencil has no test
-
-
 @gtx.field_operator
 def _apply_density_increment(
     rhodz_in: fa.CellKField[ta.wpfloat],
