@@ -36,10 +36,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
 )
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
+    component,
     constants,
     dimension as dims,
     field_type_aliases as fa,
-    framework as fw,
     model_backends,
     state,
     time,
@@ -492,7 +492,7 @@ def initialize_granules(
     # NOTE: temporary, replaced in part 02 (collect): the process collects its component's
     # `Input` by quantity, and the `collect_input` functions go.
     def process[I: state.State, O: state.State](
-        component: fw.Component[I, O],
+        component: component.Component[I, O],
         collect_input: Callable[[physics_state.PhysicsState], I],
     ) -> physics_process.PhysicsProcess[I, O]:
         return physics_process.PhysicsProcess(

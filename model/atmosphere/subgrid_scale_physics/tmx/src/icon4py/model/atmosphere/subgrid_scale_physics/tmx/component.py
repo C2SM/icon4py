@@ -14,7 +14,14 @@ import dataclasses
 from typing import TYPE_CHECKING
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
-from icon4py.model.common import field, framework as fw, model_backends, state, type_alias as ta
+from icon4py.model.common import (
+    component,
+    field,
+    framework as fw,
+    model_backends,
+    state,
+    type_alias as ta,
+)
 from icon4py.model.common.framework import quantities as qty
 
 
@@ -29,7 +36,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid, states as grid_states
 
 
-class Tmx(fw.Component["Tmx.Input", "Tmx.Output"]):
+class Tmx(component.Component["Tmx.Input", "Tmx.Output"]):
     """
     The tmx turbulent mixing: the tendencies of temperature, the three moist tracers it diffuses
     and the three wind components, and the turbulent viscosity and diffusivity `km` and `kh`.

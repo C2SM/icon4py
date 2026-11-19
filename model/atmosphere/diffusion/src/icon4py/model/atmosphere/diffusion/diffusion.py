@@ -32,6 +32,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.model.common import (
+    component,
     constants,
     dimension as dims,
     field,
@@ -449,7 +450,7 @@ class DiffusionParams:
         )
 
 
-class Diffusion(fw.Component):
+class Diffusion(component.Component):
     """
     Horizontal diffusion of the prognostic variables, in place: the caller
     passes the same buffers as input and output.

@@ -27,6 +27,8 @@
     matrix:
       - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         GRID: [icon_benchmark_regional, icon_benchmark_global]
+      - BACKEND: [dace_gpu]
+        GRID: [icon_benchmark_regional_large]
   extends: [.benchmark_model_base_variables]
   variables:
     SLURM_JOB_NUM_NODES: 1

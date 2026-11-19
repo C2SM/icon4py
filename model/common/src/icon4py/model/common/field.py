@@ -63,8 +63,8 @@ class Field[Q: quantity.Quantity](nd_array_field.NdArrayField):
         return f"Field({self.quantity.__name__}, {self.ndarray.shape})"
 
 
-class _NumPyField[Q: quantity.Quantity](Field[Q], nd_array_field.NumPyArrayField):
-    _plain = nd_array_field.NumPyArrayField
+class _NumPyField[Q: quantity.Quantity](Field[Q], nd_array_field.NdArrayField):
+    _plain = nd_array_field.NdArrayField
 
 
 if hasattr(nd_array_field, "CuPyArrayField"):

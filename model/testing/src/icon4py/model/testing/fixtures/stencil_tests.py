@@ -32,6 +32,7 @@ VALID_GRID_PRESETS: tuple[str, ...] = (
     "icon_regional",
     "icon_global",
     "icon_benchmark_regional",
+    "icon_benchmark_regional_large",
     "icon_benchmark_global",
 )
 
@@ -60,6 +61,13 @@ def _get_grid_manager_from_preset(
         case "icon_benchmark_regional":
             return grid_utils.get_grid_manager_from_identifier(
                 test_defs.Grids.MCH_OPR_R19B08_DOMAIN01,
+                num_levels=BENCHMARK_DEFAULT_LEVELS,
+                keep_skip_values=False,
+                allocator=allocator,
+            )
+        case "icon_benchmark_regional_large":
+            return grid_utils.get_grid_manager_from_identifier(
+                test_defs.Grids.MCH_OPR_R19B08_1GPU,
                 num_levels=BENCHMARK_DEFAULT_LEVELS,
                 keep_skip_values=False,
                 allocator=allocator,

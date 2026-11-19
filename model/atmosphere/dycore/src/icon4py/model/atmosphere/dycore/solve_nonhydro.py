@@ -51,11 +51,11 @@ from icon4py.model.atmosphere.dycore.stencils.velocity_advection_predictor impor
     compute_velocity_advection_in_predictor_step,
 )
 from icon4py.model.common import (
+    component,
     constants,
     dimension as dims,
     field,
     field_type_aliases as fa,
-    framework as fw,
     model_backends,
     state,
     type_alias as ta,
@@ -406,7 +406,7 @@ def _update_max_vertical_cfl(
     max_vertical_cfl[...] = vertical_cfl.array_ns.maximum(local_max, max_vertical_cfl)  # type: ignore[attr-defined]
 
 
-class SolveNonhydro(fw.Component):
+class SolveNonhydro(component.Component):
     class Input(state.State):
         rho: field.Field[qty.RhoOnCellK]
         w: field.Field[qty.WOnCellKHalf]

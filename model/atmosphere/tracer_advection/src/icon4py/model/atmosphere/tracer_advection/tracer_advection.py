@@ -29,10 +29,10 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_trace
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.common import (
+    component,
     dimension as dims,
     field,
     field_type_aliases as fa,
-    framework as fw,
     model_backends,
     state,
     type_alias as ta,
@@ -117,7 +117,7 @@ class AdvectionConfig:
     vertical_advection_limiter: VerticalAdvectionLimiter
 
 
-class Advection(fw.Component, ABC):
+class Advection(component.Component, ABC):
     """
     Runs one three-dimensional tracer advection step for every active tracer.
 

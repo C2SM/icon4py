@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_state,
     process_time_control,
 )
-from icon4py.model.common import framework as fw, quantity, state
+from icon4py.model.common import component, framework as fw, quantity, state
 from icon4py.model.common.grid import base as base_grid
 
 
@@ -31,7 +31,9 @@ if typing.TYPE_CHECKING:
 # Disable the default __eq__ so that PhysicsProcess compares by identity and
 # enables __hash__ so that a PhysicsProcess can be used in dicts.
 @dataclasses.dataclass(eq=False)
-class PhysicsProcess[I: state.State, O: state.State](fw.Component[physics_state.PhysicsState, O]):
+class PhysicsProcess[I: state.State, O: state.State](
+    component.Component[physics_state.PhysicsState, O]
+):
     """
     A component that gates its wrapped component by time control.
 
@@ -45,7 +47,7 @@ class PhysicsProcess[I: state.State, O: state.State](fw.Component[physics_state.
     Input = physics_state.PhysicsState
     Output: type[O] = dataclasses.field(init=False)
 
-    component: fw.Component[I, O]
+    component: component.Component[I, O]
     # the component's `Input` from the physics driver's physics state
     # NOTE: temporary, replaced in part 02 (collect): the process collects its component's
     # `Input` by quantity (`fw.collect`), and `collect_input` goes.
