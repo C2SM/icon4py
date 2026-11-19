@@ -31,6 +31,7 @@ if typing.TYPE_CHECKING:
     from icon4py.model.common import field_type_aliases as fa, type_alias as ta
     from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
 
 
 log = logging.getLogger(__name__)
@@ -109,7 +110,7 @@ class Tmx:
         self,
         *,
         input_state: tmx_states.TmxInputState,
-        surface_flux_state: tmx_states.TmxSurfaceFluxState,
+        surface_flux_state: SurfaceFluxState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
         tendency_state: tmx_states.TmxTendencyState,
         new_state: tmx_states.TmxNewState,

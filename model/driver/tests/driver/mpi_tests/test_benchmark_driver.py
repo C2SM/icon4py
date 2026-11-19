@@ -59,7 +59,7 @@ def test_benchmark_driver_init(
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-    assert driver_benchmark_config.driver.enable_output is False
+    assert driver_benchmark_config.io is None
 
     def _setup() -> tuple[tuple[Any, ...], dict[str, Any]]:
         return (
@@ -108,7 +108,7 @@ def test_benchmark_driver_timeloop(
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-    assert driver_benchmark_config.driver.enable_output is False
+    assert driver_benchmark_config.io is None
 
     def _setup() -> tuple[tuple[Any, ...], dict[str, Any]]:
         icon4py_driver = driver.initialize_driver(
@@ -145,7 +145,7 @@ def test_benchmark_driver_total(
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-    assert driver_benchmark_config.driver.enable_output is False
+    assert driver_benchmark_config.io is None
 
     def _timed() -> tuple[driver_states.DriverStates, driver.Icon4pyDriver]:
         return driver.run_driver(

@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import Any, Final, Literal, TypeAlias, TypeGuard
+from typing import Any, Final, TypeAlias, TypeGuard
 
 import gt4py.next as gtx
 import gt4py.next.custom_layout_allocators as gtx_allocators
@@ -83,8 +83,6 @@ def make_custom_dace_backend(
     auto_optimize: bool = True,
     async_sdfg_call: bool = True,
     optimization_args: dict[str, Any] | None = None,
-    fuse_scan_inputs: bool = False,
-    scan_fusion_scope: Literal["immediate", "field_operator"] = "immediate",
     use_metrics: bool = True,
     use_zero_origin: bool = False,
     use_max_domain_range_on_unstructured_shift: bool | None = None,
@@ -100,9 +98,6 @@ def make_custom_dace_backend(
             of GPU kernel execution with the Python driver code.
         optimization_args: A `dict` containing configuration parameters for
             the SDFG auto-optimize pipeline.
-        fuse_scan_inputs: Enable bounded scan-input fusion before SDFG lowering.
-        scan_fusion_scope: Use immediate producers or first prepare their local
-            arithmetic within the original field operator.
         use_metrics: Add SDFG instrumentation to collect the metric for stencil
             compute time.
         use_max_domain_range_on_unstructured_shift: When True, compute `as_fieldop`
@@ -137,8 +132,6 @@ def make_custom_dace_backend(
         async_sdfg_call=async_sdfg_call,
         external_workspace=external_workspace,
         optimization_args=optimization_args,
-        fuse_scan_inputs=fuse_scan_inputs,
-        scan_fusion_scope=scan_fusion_scope,
         unstructured_horizontal_has_unit_stride=True,
         use_metrics=use_metrics,
         use_zero_origin=use_zero_origin,

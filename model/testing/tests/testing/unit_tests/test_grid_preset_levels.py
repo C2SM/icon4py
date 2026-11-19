@@ -18,6 +18,7 @@ from icon4py.model.testing.fixtures import stencil_tests
         ("icon_regional", 40),
         ("icon_global", 40),
         ("icon_benchmark_regional", 80),
+        ("icon_benchmark_regional_large", 80),
         ("icon_benchmark_global", 80),
     ],
 )

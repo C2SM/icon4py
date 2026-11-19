@@ -6,7 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import numpy as np
 import pytest
+import xarray as xr
 
 from icon4py.model.common.io import cf_utils
 
@@ -18,3 +20,15 @@ def test_to_canonical_dim_order(input_):
     input_dims = input_.dims
     output = cf_utils.to_canonical_dim_order(input_)
     assert output.dims == (input_dims[1], input_dims[0])
+
+
+def test_to_canonical_dim_order_keeps_horizontal_only_fields() -> None:
+    # a surface field has no vertical dimension: it is canonical as it is
+    surface = xr.DataArray(np.zeros(3), dims=("cell",))
+    assert cf_utils.to_canonical_dim_order(surface) is surface
+
+
+@pytest.mark.parametrize("dim", ["level", "half_level", "time"])
+def test_to_canonical_dim_order_rejects_fields_without_horizontal_dimension(dim: str) -> None:
+    assert cf_utils.to_canonical_dim_order(xr.DataArray(np.zeros(3), dims=(dim,))) is None
+    assert cf_utils.to_canonical_dim_order(xr.DataArray(1.0)) is None

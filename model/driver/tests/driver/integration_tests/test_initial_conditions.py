@@ -97,7 +97,7 @@ def test_initial_conditions(
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
-    config = experiment.config.with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
+    config = experiment.config
 
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

@@ -27,7 +27,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_verte
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
 )
-from icon4py.model.common.math.stencils.compute_curl import _compute_curl
+from icon4py.model.common.math.differential_operators import compute_curl
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -555,7 +555,7 @@ def _compute_advection_in_horizontal_momentum(
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
-    upward_vorticity_at_vertices_on_model_levels = astype(_compute_curl(vn, geofac_rot), vpfloat)
+    upward_vorticity_at_vertices_on_model_levels = astype(compute_curl(vn, geofac_rot), vpfloat)
 
     normal_wind_advective_tendency = _compute_advective_normal_wind_tendency(
         horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,

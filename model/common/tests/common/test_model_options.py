@@ -110,7 +110,7 @@ def test_setup_program_defaults(
 
 
 @pytest.mark.parametrize(
-    "backend_params, expected_backend",
+    "backend_params, canonical_backend_params",
     [
         (model_backends.BACKENDS["embedded"], model_backends.BACKENDS["embedded"]),
         (
@@ -118,15 +118,24 @@ def test_setup_program_defaults(
                 "backend_factory": model_backends.make_custom_dace_backend,
                 "device": model_backends.GPU,
             },
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.GPU,
+            },
         ),
         (
             {"backend_factory": model_backends.make_custom_dace_backend},
-            model_backends.make_custom_dace_backend(device=model_backends.CPU),
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.CPU,
+            },
         ),
         (
             {"device": model_backends.GPU},
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.GPU,
+            },
         ),
     ],
 )
@@ -135,9 +144,12 @@ def test_setup_program_specify_inputs(
     | model_backends.DeviceType
     | model_backends.BackendDescriptor
     | None,
-    expected_backend: gtx_typing.Backend | None,
+    canonical_backend_params: model_backends.BackendDescriptor | None,
 ) -> None:
     testee = setup_program(backend=backend_params, program=program_return_field)
+    # Built through `customize_backend` so that the expected backend carries the same
+    # device-specific default options (e.g. GPU block sizes) as the one under test.
+    expected_backend = customize_backend(None, canonical_backend_params)
     if expected_backend is None:
         expected_program = functools.partial(
             program_return_field.with_backend(expected_backend), offset_provider={}
@@ -178,16 +190,10 @@ def test_setup_program_specify_inputs(
 )
 def test_selected_fusion_options(program: str, expected: dict) -> None:
     descriptor = {"optimization_args": {"optimization_hooks": {}}}
-    configured = model_options.get_dace_options(program, None, **descriptor)
-    options = configured["optimization_args"]
-    scan_keys = {"fuse_scan_inputs", "scan_fusion_scope"}
-    assert all(
-        (configured if key in scan_keys else options)[key] == value
-        for key, value in expected.items()
-    )
-    assert not (options.keys() & scan_keys)
+    options = model_options.get_dace_options(program, None, **descriptor)["optimization_args"]
+    assert all(options[key] == value for key, value in expected.items())
     assert "vertical_split_shared_output_data" not in options
-    assert configured.get("fuse_scan_inputs", False) == expected.get("fuse_scan_inputs", False)
+    assert options.get("fuse_scan_inputs", False) == expected.get("fuse_scan_inputs", False)
     assert options.get("vertical_split_allow_shared_output", False) == expected.get(
         "vertical_split_allow_shared_output", False
     )
@@ -203,11 +209,5 @@ def test_selected_fusion_options(program: str, expected: dict) -> None:
     ],
 )
 def test_fusion_can_be_disabled(program: str, flag: str) -> None:
-    if flag == "fuse_scan_inputs":
-        descriptor = {flag: False, "scan_fusion_scope": "immediate"}
-        options = model_options.get_dace_options(program, None, **descriptor)
-        assert options[flag] is False
-        assert options["scan_fusion_scope"] == "immediate"
-    else:
-        options = model_options.get_dace_options(program, None, optimization_args={flag: False})
-        assert options["optimization_args"][flag] is False
+    options = model_options.get_dace_options(program, None, optimization_args={flag: False})
+    assert options["optimization_args"][flag] is False

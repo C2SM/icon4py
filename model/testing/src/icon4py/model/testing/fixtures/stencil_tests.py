@@ -32,6 +32,7 @@ VALID_GRID_PRESETS: tuple[str, ...] = (
     "icon_regional",
     "icon_global",
     "icon_benchmark_regional",
+    "icon_benchmark_regional_large",
     "icon_benchmark_global",
 )
 
@@ -66,6 +67,13 @@ def _get_grid_manager_from_preset(
         case "icon_benchmark_regional":
             return grid_utils.get_grid_manager_from_identifier(
                 test_defs.Grids.MCH_OPR_R19B08_DOMAIN01,
+                num_levels=num_levels,
+                keep_skip_values=False,
+                allocator=allocator,
+            )
+        case "icon_benchmark_regional_large":
+            return grid_utils.get_grid_manager_from_identifier(
+                test_defs.Grids.MCH_OPR_R19B08_1GPU,
                 num_levels=num_levels,
                 keep_skip_values=False,
                 allocator=allocator,
@@ -148,11 +156,15 @@ def grid(
         return grid_manager.grid
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="class")
 def data_alloc(
-    grid: base_grid.Grid, backend_like: model_backends.BackendLike
+    grid: base_grid.Grid,
+    backend_like: model_backends.BackendLike,
+    request: pytest.FixtureRequest,
 ) -> _stencil_tests.DataAllocationWrapper:
-    """Field constructors with the grid and the selected backend's allocator bound."""
+    """Field constructors with the grid, the selected backend's allocator, and the suite's generator bound."""
     return _stencil_tests.DataAllocationWrapper(
-        grid=grid, allocator=model_backends.get_allocator(backend_like)
+        grid=grid,
+        allocator=model_backends.get_allocator(backend_like),
+        seed_sequence=_stencil_tests._suite_seed_sequence(request),
     )

@@ -179,7 +179,8 @@ class DriverTimers(enum.Enum):
     SOLVE_NH = "solve_nh"
     DIFFUSION_FIRST_STEP = "diffusion_first_step"
     DIFFUSION = "diffusion"
-    #: assembly of the output state: diagnostics computation + host transfer (every step)
+    #: assembly of the output state at capture steps: diagnostics computation + host
+    #: transfer (no sample at steps nobody captures)
     OUTPUT_ASSEMBLE = "output_assemble"
     #: handover to the IO monitor: gather/halo stripping + file writing (writes only at
     #: capture steps; a near-zero sample otherwise)

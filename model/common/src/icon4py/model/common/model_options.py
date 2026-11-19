@@ -62,8 +62,8 @@ def _set_program_specific_dace_options(
         )
         optimization_args.setdefault("scan_loop_unrolling", True)
         optimization_args.setdefault("scan_loop_unrolling_factor", 0)
-        backend_descriptor.setdefault("fuse_scan_inputs", True)
-        backend_descriptor.setdefault("scan_fusion_scope", "field_operator")
+        optimization_args.setdefault("fuse_scan_inputs", True)
+        optimization_args.setdefault("scan_fusion_scope", "field_operator")
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
@@ -197,8 +197,17 @@ def customize_backend(
         "backend_factory", model_backends.make_custom_dace_backend
     )
     custom_backend = backend_factory(**backend_descriptor)
+    # Log the workspace size only: formatting the array itself would copy it to host.
+    logged_options = backend_descriptor
+    if (workspace := backend_descriptor.get("external_workspace")) is not None:
+        logged_options = {
+            **backend_descriptor,
+            "external_workspace": {
+                dev: f"{slab.nbytes / 2**30:.2f} GiB" for dev, slab in workspace.items()
+            },
+        }
     log.info(
-        f"Using custom backend '{custom_backend.name}' for '{program_name}' with options: {backend_descriptor}."
+        f"Using custom backend '{custom_backend.name}' for '{program_name}' with options: {logged_options}."
     )
     return custom_backend
 

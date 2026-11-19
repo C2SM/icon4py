@@ -30,6 +30,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if typing.TYPE_CHECKING:
     import icon4py.model.common.grid.states as grid_states
     from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+    from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
 
 
 log = logging.getLogger(__name__)
@@ -160,7 +161,7 @@ class WindDiffusion:
         self,
         *,
         input_state: tmx_states.TmxInputState,
-        surface_flux_state: tmx_states.TmxSurfaceFluxState,
+        surface_flux_state: SurfaceFluxState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
         tendency_state: tmx_states.TmxTendencyState,
         new_state: tmx_states.TmxNewState,

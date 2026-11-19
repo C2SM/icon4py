@@ -30,10 +30,10 @@ class DiffusionDiagnosticState:
     # fields for 3D elements in turbdiff
     hdef_ic: fa.CellKHalfField[
         ta.vpfloat
-    ]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
+    ]  # ! horizontal wind field deformation (nproma,nlevp1,nblks_c)     [1/s^2]
     div_ic: fa.CellKHalfField[
         ta.vpfloat
-    ]  # ! horizontal wind field deformation (nproma,nlevp1,nblks_c)     [1/s^2]
+    ]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
     dwdx: fa.CellKHalfField[
         ta.vpfloat
     ]  # zonal gradient of vertical wind speed (nproma,nlevp1,nblks_c)     [1/s]

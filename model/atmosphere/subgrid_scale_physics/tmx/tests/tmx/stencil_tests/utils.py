@@ -76,7 +76,7 @@ def moist_heat_capacity_numpy(
         phy.cvd * (1.0 - qv - q_liquid - q_solid)
         + phy.cvv * qv
         + phy.cpl * q_liquid
-        + phy.cpi * q_solid
+        + phy.ci_thermo * q_solid
     )
 
 
