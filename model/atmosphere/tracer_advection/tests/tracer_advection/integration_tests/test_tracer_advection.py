@@ -78,7 +78,24 @@ from ..utils import (
             tracer_advection_type.VerticalAdvectionType.NO_ADVECTION,
             tracer_advection_type.VerticalAdvectionLimiter.NO_LIMITER,
         ),
-        (
+        # The vertical PPM variants take ~40 min each to compile with DaCe: both
+        # `compute_vertical_tracer_flux` and `compute_tracer_advection_after_horizontal_limiter`
+        # inline the PPM flux kernel, and each of them takes ~18 min to compile on dace_cpu.
+        #
+        # `model_options._set_program_specific_dace_options` sets
+        # `split_maps_with_nested_sdfg=False` for the after-limiter program to reduce its
+        # compile time, but these options do not take effect here: the `backend` fixture
+        # returns a generic backend built by `customize_backend(None, ...)`, and
+        # `setup_program` -> `customize_backend(program, backend)` returns a concrete backend
+        # unchanged, so the program-specific `optimization_args` are silently dropped (the
+        # driver builds its backend the same way). The after-limiter stencil test
+        # (`TestComputeTracerAdvectionAfterHorizontalLimiter`) is not affected and still runs on
+        # DaCe: `StencilTest` calls `customize_backend(self.PROGRAM, backend_like)` with the
+        # backend descriptor, so `split_maps_with_nested_sdfg=False` is applied there.
+        # 
+        # TODO(edopao, nfarabullini): Revisit this marker once program-specific options are
+        # applied to generic backends.
+        pytest.param(
             "2021-06-20T12:00:10.000",
             False,
             4,
@@ -86,8 +103,9 @@ from ..utils import (
             tracer_advection_type.HorizontalAdvectionLimiter.NO_LIMITER,
             tracer_advection_type.VerticalAdvectionType.THIRD_ORDER_PPM,
             tracer_advection_type.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+            marks=pytest.mark.dace_too_slow,
         ),
-        (
+        pytest.param(
             "2021-06-20T12:00:20.000",
             True,
             4,
@@ -95,6 +113,7 @@ from ..utils import (
             tracer_advection_type.HorizontalAdvectionLimiter.NO_LIMITER,
             tracer_advection_type.VerticalAdvectionType.THIRD_ORDER_PPM,
             tracer_advection_type.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+            marks=pytest.mark.dace_too_slow,
         ),
     ],
 )
