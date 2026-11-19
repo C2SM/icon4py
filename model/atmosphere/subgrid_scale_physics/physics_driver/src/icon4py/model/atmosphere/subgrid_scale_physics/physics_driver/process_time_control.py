@@ -22,7 +22,7 @@ class ProcessTimeControl:
 
     - `driver_dtime`: time step of the driver calling the process
     - `process_dtime`: time step of the process, must be a multiple of `driver_dtime`
-    - `window_start`, `window_end`: half-open `[window_start, window_end)` window
+    - `window_start`, `window_end`: non-empty, half-open `[window_start, window_end)` window
       during which the process is active
     - `start_of_simulation`: first step of the driver, only to check `window_start`
     """
@@ -34,6 +34,13 @@ class ProcessTimeControl:
     start_of_simulation: dataclasses.InitVar[time.AbsoluteTime]
 
     def __post_init__(self, start_of_simulation: time.AbsoluteTime) -> None:
+        if self.driver_dtime <= time.RelativeTime(0):
+            raise ValueError(f"Time-control 'driver_dtime' {self.driver_dtime} must be positive.")
+        if self.window_end <= self.window_start:
+            raise ValueError(
+                f"Time-control window is empty: 'window_start' {self.window_start} is not "
+                f"before 'window_end' {self.window_end}."
+            )
         if self.process_dtime <= time.RelativeTime(0) or self.process_dtime % self.driver_dtime:
             raise ValueError(
                 f"Time-control 'process_dtime' {self.process_dtime} must be a positive "

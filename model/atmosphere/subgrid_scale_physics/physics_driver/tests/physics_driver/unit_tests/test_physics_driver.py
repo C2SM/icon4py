@@ -67,6 +67,16 @@ def _qv(tracer_state: states.TracerState) -> np.ndarray:
 
 
 class TestProcessTimeControl:
+    @pytest.mark.parametrize("driver_dtime", [datetime.timedelta(0), -DT])
+    def test_rejects_a_non_positive_driver_dtime(self, driver_dtime: datetime.timedelta) -> None:
+        with pytest.raises(ValueError, match="'driver_dtime'"):
+            time_control(driver_dtime=driver_dtime)
+
+    @pytest.mark.parametrize("end", [T0, T0 - DT])
+    def test_rejects_an_empty_window(self, end: datetime.datetime) -> None:
+        with pytest.raises(ValueError, match="window is empty"):
+            time_control(end=end)
+
     @pytest.mark.parametrize("process_dtime", [datetime.timedelta(0), -DT])
     def test_rejects_a_non_positive_process_dtime(self, process_dtime: datetime.timedelta) -> None:
         with pytest.raises(ValueError, match="positive"):
