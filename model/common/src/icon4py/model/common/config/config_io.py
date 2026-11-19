@@ -97,6 +97,7 @@ for float_type in (np.float32, np.float64):
     CONV.register_structure_hook(float_type, lambda v, cl: cl(v))
     CONV.register_unstructure_hook(float_type, float)
 yaml.add_representer(type(None), lambda d, _: d.represent_scalar("tag:yaml.org,2002:null", ""))
+IndentSequencesDumper.add_representer(tuple, yaml.Dumper.represent_list)
 
 
 def read_yaml_str[T](yaml_str: str, config_cls: type[T]) -> T:

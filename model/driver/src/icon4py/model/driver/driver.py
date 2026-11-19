@@ -910,6 +910,7 @@ def run_driver(
         process_props=process_props,
         backend=backend,
     )
+    driver_utils.write_experiment_config(icon4py_driver.config, process_props)
     allocator = model_backends.get_allocator(backend)
     ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
     icon4py_driver.time_integration(ds)
