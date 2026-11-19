@@ -179,7 +179,9 @@ class Icon4pyDriver:
                 )
         else:
             state_to_store = {}
-        log.debug(f"storing output at {simulation_current_datetime} with {len(state_to_store)} variables")
+        log.debug(
+            f"storing output at {simulation_current_datetime} with {len(state_to_store)} variables"
+        )
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_STORE.value]:
             self.io_monitor.store(state_to_store, simulation_current_datetime)
 
