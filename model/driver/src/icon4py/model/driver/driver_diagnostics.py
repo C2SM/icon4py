@@ -20,8 +20,8 @@ from typing import Final, NamedTuple, Self
 
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, field, type_alias as ta
-from icon4py.model.common.framework import quantities as qty, states
+from icon4py.model.common import dimension as dims, field, quantities as qty, type_alias as ta
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf

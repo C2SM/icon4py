@@ -15,8 +15,7 @@ import datetime
 from collections.abc import Iterator
 from typing import Final
 
-from icon4py.model.common import field, state, utils as common_utils
-from icon4py.model.common.framework import quantities as qty
+from icon4py.model.common import field, quantities as qty, state, utils as common_utils
 
 
 class PrognosticState(state.State):

@@ -32,12 +32,13 @@ from icon4py.model.common import (
     model_backends,
     model_options,
     prescribed_tendencies,
+    quantities as qty,
     time,
     topography,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.framework import quantities as qty, states
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
     grid_manager as gm,

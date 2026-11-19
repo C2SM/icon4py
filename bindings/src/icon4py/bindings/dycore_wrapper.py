@@ -34,8 +34,7 @@ from icon4py.bindings import (
     icon4py_export,
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims, field, model_backends
-from icon4py.model.common.framework import quantities as qty
+from icon4py.model.common import dimension as dims, field, model_backends, quantities as qty
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 from icon4py.tools import py2fgen
 

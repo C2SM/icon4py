@@ -10,8 +10,7 @@
 
 from typing import Final
 
-from icon4py.model.common import field, quantity, state, time
-from icon4py.model.common.framework import quantities as qty
+from icon4py.model.common import field, quantities as qty, quantity, state, time
 
 
 # NOTE: temporary, replaced in part 02 (collect): the processes collect from the physics

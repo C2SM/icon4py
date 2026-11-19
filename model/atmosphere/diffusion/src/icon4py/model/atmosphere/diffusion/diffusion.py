@@ -38,12 +38,12 @@ from icon4py.model.common import (
     field,
     framework as fw,
     model_backends,
+    quantities as qty,
     state,
     type_alias as ta,
 )
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,

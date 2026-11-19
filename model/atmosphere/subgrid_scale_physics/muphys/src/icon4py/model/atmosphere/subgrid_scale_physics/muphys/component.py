@@ -24,11 +24,11 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     model_backends,
     model_options,
+    quantities as qty,
     state,
     time,
     type_alias as ta,
 )
-from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.physics.thermodynamics import compute_tendencies

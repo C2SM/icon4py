@@ -12,8 +12,13 @@ from __future__ import annotations
 
 import dataclasses
 
-from icon4py.model.common import field, field_type_aliases as fa, state, type_alias as ta
-from icon4py.model.common.framework import quantities as qty
+from icon4py.model.common import (
+    field,
+    field_type_aliases as fa,
+    quantities as qty,
+    state,
+    type_alias as ta,
+)
 
 
 @dataclasses.dataclass(frozen=True)

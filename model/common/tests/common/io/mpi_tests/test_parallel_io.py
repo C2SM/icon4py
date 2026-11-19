@@ -30,9 +30,14 @@ import xarray as xr
 import zarr
 
 import icon4py.model.common.exceptions as errors
-from icon4py.model.common import dimension as dims, field, quantity, time as common_time
+from icon4py.model.common import (
+    dimension as dims,
+    field,
+    quantities as qty,
+    quantity,
+    time as common_time,
+)
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.io import distributed, io as common_io, netcdf_writers, writers
 

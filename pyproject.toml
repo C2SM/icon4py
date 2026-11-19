@@ -195,6 +195,9 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/framework',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/topography',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/quantity.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/field.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/state.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/quantities.py',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
@@ -259,6 +262,9 @@ disallow_untyped_decorators = true
 extra_checks = true
 module = [
   "icon4py.model.common.framework.*",
+  'icon4py.model.common.quantity',
+  'icon4py.model.common.state',
+  'icon4py.model.common.quantities',
   "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.*",
   "icon4py.model.atmosphere.subgrid_scale_physics.muphys.component",
   "icon4py.model.atmosphere.subgrid_scale_physics.surface.component",

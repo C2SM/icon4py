@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from icon4py.model.common import dimension as dims, field, framework as fw
-from icon4py.model.common.framework import quantities as qty, states
+from icon4py.model.common import dimension as dims, field, framework as fw, quantities as qty
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.interpolation import interpolation_attributes as intp_attr
 from icon4py.model.common.io import utils as io_utils

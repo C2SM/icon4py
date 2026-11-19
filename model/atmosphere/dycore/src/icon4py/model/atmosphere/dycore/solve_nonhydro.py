@@ -58,12 +58,12 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     framework as fw,
     model_backends,
+    quantities as qty,
     state,
     type_alias as ta,
 )
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky, vertical_operations
 from icon4py.model.common.model_options import setup_program

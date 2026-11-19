@@ -10,8 +10,7 @@ import inspect
 
 import pytest
 
-from icon4py.model.common import dimension as dims, quantity
-from icon4py.model.common.framework import quantities as qty
+from icon4py.model.common import dimension as dims, quantities as qty, quantity
 
 
 PLACES = {

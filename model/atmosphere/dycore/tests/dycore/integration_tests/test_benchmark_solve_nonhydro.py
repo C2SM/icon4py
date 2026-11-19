@@ -10,18 +10,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import gt4py.next as gtx
 import pytest
-
-
-if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import field, framework as fw, model_backends, quantity
+from icon4py.model.common import framework as fw, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.framework import quantities as qty, states
+from icon4py.model.common.framework import states
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -30,7 +25,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,

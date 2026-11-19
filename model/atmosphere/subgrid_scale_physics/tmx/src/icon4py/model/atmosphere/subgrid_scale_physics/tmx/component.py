@@ -19,10 +19,10 @@ from icon4py.model.common import (
     field,
     framework as fw,
     model_backends,
+    quantities as qty,
     state,
     type_alias as ta,
 )
-from icon4py.model.common.framework import quantities as qty
 
 
 if TYPE_CHECKING:

@@ -16,9 +16,8 @@ import pytest
 import xarray as xr
 import zarr
 
-from icon4py.model.common import dimension as dims, field
+from icon4py.model.common import dimension as dims, field, quantities as qty
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
 from icon4py.model.common.io import (
     cf_utils,

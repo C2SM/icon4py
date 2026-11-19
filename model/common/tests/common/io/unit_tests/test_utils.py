@@ -7,8 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import icon4py.model.common.grid.simple as simple_grid
-from icon4py.model.common import dimension as dims, field
-from icon4py.model.common.framework import quantities as qty
+from icon4py.model.common import dimension as dims, field, quantities as qty
 from icon4py.model.common.io import ugrid, utils
 from icon4py.model.common.states import model
 from icon4py.model.common.utils import data_allocation as data_alloc

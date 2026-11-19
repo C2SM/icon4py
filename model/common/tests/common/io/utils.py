@@ -11,8 +11,7 @@ from collections.abc import Iterator
 import numpy as np
 import xarray as xr
 
-from icon4py.model.common import field
-from icon4py.model.common.framework import quantities as qty
+from icon4py.model.common import field, quantities as qty
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.io import utils
 from icon4py.model.common.utils import data_allocation as data_alloc

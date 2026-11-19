@@ -22,10 +22,9 @@ import uxarray as ux  # type: ignore[import-untyped]  # uxarray has no type hint
 import zarr
 
 import icon4py.model.common.exceptions as errors
-from icon4py.model.common import dimension as dims, field, time
+from icon4py.model.common import dimension as dims, field, quantities as qty, time
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import distributed, netcdf_writers, ugrid, utils as io_utils, writers
 from icon4py.model.common.io.io import (

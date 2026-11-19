@@ -25,9 +25,9 @@ from icon4py.model.common import (
     field as fd,
     framework as fw,
     model_backends,
+    quantities as qty,
     type_alias as ta,
 )
-from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.testing import definitions, test_utils

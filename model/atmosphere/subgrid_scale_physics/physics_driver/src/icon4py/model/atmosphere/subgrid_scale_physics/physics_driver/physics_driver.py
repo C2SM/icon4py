@@ -25,11 +25,12 @@ from icon4py.model.common import (
     framework as fw,
     model_backends,
     model_options,
+    quantities as qty,
     quantity,
     state,
     time,
 )
-from icon4py.model.common.framework import quantities as qty, states
+from icon4py.model.common.framework import states
 from icon4py.model.common.interpolation.stencils import (
     compute_vn_from_uv,
     edge_2_cell_vector_rbf_interpolation as rbf,
