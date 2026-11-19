@@ -188,6 +188,7 @@ class GodunovSplittingAdvection(Advection):
         self._backend = backend
         self._exchange = exchange
         self._even_timestep = even_timestep  # originally jstep_adv(:)%marchuk_order = 1
+        self._horizontal_advection_limiter = horizontal_advection_limiter
 
         self._determine_local_domains()
 
@@ -417,7 +418,9 @@ class GodunovSplittingAdvection(Advection):
             do_vertical_first=self._even_timestep,
         )
 
-        self._exchange.exchange(dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM)
+        if self._horizontal_advection_limiter == HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
+            # r_m is only read by the positive definite limiter
+            self._exchange.exchange(dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM)
 
         if self._even_timestep:
             # `p_tracer_new` currently holds the vertically advected tracer (written
