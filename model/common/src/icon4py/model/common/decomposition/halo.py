@@ -259,6 +259,8 @@ class IconLikeHaloConstructor(HaloConstructor):
         refinement = self._refinement_control[dim][all_indices]
         with_owned = grid_refinement.is_placed_with_owned(dim, halo_levels, refinement)
         front = self._xp.nonzero(with_owned)[0]
+        # Sorting the front block by global index gives the zone order because
+        # grid files sort the boundary zones first.
         order = self._xp.concatenate(
             (front[self._xp.argsort(all_indices[front])], self._xp.nonzero(~with_owned)[0])
         )
