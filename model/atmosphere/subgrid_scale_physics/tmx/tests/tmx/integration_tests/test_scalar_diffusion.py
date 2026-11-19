@@ -22,7 +22,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import scalar_diffusion, tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import TmxConfig
-from icon4py.model.common import model_backends
+from icon4py.model.common import framework as fw, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
 
@@ -39,7 +39,6 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import icon as icon_grid_
-    from icon4py.model.common.states.surface_flux_state import SurfaceFluxState
     from icon4py.model.testing import serialbox as sb
 
 
@@ -47,7 +46,7 @@ if TYPE_CHECKING:
 class _Setup:
     component: scalar_diffusion.ScalarDiffusion
     input_state: tmx_states.TmxInputState
-    surface_flux_state: SurfaceFluxState
+    surface_flux_state: tmx_states.TmxSurfaceFluxState
     diagnostic_state: tmx_states.TmxDiagnosticState
     tendency_state: tmx_states.TmxTendencyState
     new_state: tmx_states.TmxNewState
@@ -91,12 +90,12 @@ def _setup(
             allocator=allocator,
         ),
         diagnostic_state=dataclasses.replace(
-            tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),
+            fw.allocate(tmx_states.TmxDiagnosticState, icon_grid, allocator),
             kh_ic=diagnostics_exit_savepoint.kh_ic(),
             km_ie=diagnostics_exit_savepoint.km_ie(),
         ),
-        tendency_state=tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator),
-        new_state=tmx_states.TmxNewState.allocate(icon_grid, allocator=allocator),
+        tendency_state=fw.allocate(tmx_states.TmxTendencyState, icon_grid, allocator),
+        new_state=fw.allocate(tmx_states.TmxNewState, icon_grid, allocator),
     )
 
 

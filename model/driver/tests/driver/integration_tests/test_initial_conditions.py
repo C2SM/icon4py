@@ -11,10 +11,11 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import framework as fw, model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.framework import states
 from icon4py.model.common.initial_condition import apply as ic_apply
-from icon4py.model.common.states import data, prognostic_state as prognostics, tracer_states
+from icon4py.model.common.states import data
 from icon4py.model.driver import driver, driver_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -112,14 +113,13 @@ def test_initial_conditions(
         backend=backend,
     )
 
-    prognostic_state_now = prognostics.initialize_prognostic_state(
-        grid=icon4py_driver.grid,
-        allocator=allocator,
-    )
-    tracer_state_now = tracer_states.initialize_tracer_state(
-        grid=icon4py_driver.grid,
-        allocator=allocator,
-        tracer_config=icon4py_driver.config.tracer_config,
+    prognostic_state_now = fw.allocate(states.PrognosticState, icon4py_driver.grid, allocator)
+    tracer_config = icon4py_driver.config.tracer_config
+    tracer_state_now = fw.allocate(
+        states.TracerState,
+        icon4py_driver.grid,
+        allocator,
+        only=tracer_config.active_names if tracer_config is not None else (),
     )
     ic_apply(
         config=driver_utils.make_ic_config_ctx(icon4py_driver.config),
@@ -127,7 +127,7 @@ def test_initial_conditions(
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
         tracer_state_now=tracer_state_now,
-        solve_nonhydro_diagnostic_state=None,
+        dycore_diagnostics=None,
         tracer_prep_adv_state=None,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,

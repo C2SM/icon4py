@@ -176,6 +176,7 @@ def test_horizontal_tracer_advection_convergence(
             process_props=process_props,
             backend=backend,
         )
+        assert ds.tracers.current.qv is not None
         simulated_tracer = ds.tracers.current.qv.ndarray
 
         assert (
@@ -296,6 +297,7 @@ def test_vertical_tracer_advection_convergence(
             process_props=process_props,
             backend=backend,
         )
+        assert ds.tracers.current.qv is not None
         simulated_tracer = ds.tracers.current.qv.ndarray
 
         assert (

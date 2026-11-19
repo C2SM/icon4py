@@ -22,9 +22,10 @@ import uxarray as ux  # type: ignore[import-untyped]  # uxarray has no type hint
 import zarr
 
 import icon4py.model.common.exceptions as errors
-from icon4py.model.common import dimension as dims, time
+from icon4py.model.common import dimension as dims, field, time
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.framework import quantities as qty
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import distributed, netcdf_writers, ugrid, utils as io_utils, writers
 from icon4py.model.common.io.io import (
@@ -39,7 +40,6 @@ from icon4py.model.common.io.io import (
     OutputMode,
     generate_name,
 )
-from icon4py.model.common.states import data
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils
 
@@ -138,8 +138,8 @@ def test_io_monitor_write_ugrid_file(single_group_config: IOConfig) -> None:
 @pytest.mark.parametrize(
     "variables",
     (
-        ["air_density", "exner_function", "upward_air_velocity"],
-        ["normal_velocity", "upward_air_velocity", "theta_v"],
+        ["air_density", "dimensionless_exner_function", "upward_air_velocity"],
+        ["normal_velocity", "upward_air_velocity", "virtual_potential_temperature"],
     ),
 )
 def test_io_monitor_write_and_read_ugrid_dataset(
@@ -191,7 +191,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(
     uxds = read_back_as_uxarray(monitor.path)
     for var in variables:
         assert var in uxds.variables
-        if var in ["air_density", "exner_function", "theta_v"]:
+        if var in ["air_density", "dimensionless_exner_function", "virtual_potential_temperature"]:
             assert uxds[var].shape == (3, grid.num_levels, grid.num_cells)
         elif var == "upward_air_velocity":
             assert uxds[var].shape == (3, grid.num_levels + 1, grid.num_cells)
@@ -218,7 +218,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
     config = FieldGroupIOConfig(
         output_interval=time.NumTimeSteps(1),
         basename=basename_stub,
-        variables=["air_density", "exner_function", "upward_air_velocity"],
+        variables=["air_density", "dimensionless_exner_function", "upward_air_velocity"],
         timesteps_per_file=1,
         # the test pins the netCDF file-roll naming (``..._000N.nc``)
         backend=OutputBackend.NETCDF,
@@ -253,7 +253,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
                     grid.num_levels,
                     grid.num_cells,
                 )
-                assert ds.variables["exner_function"].shape == (
+                assert ds.variables["dimensionless_exner_function"].shape == (
                     1,
                     grid.num_levels,
                     grid.num_cells,
@@ -331,7 +331,7 @@ def create_field_group_monitor(
     config = FieldGroupIOConfig(
         basename="test_empty",
         output_interval=output_interval,
-        variables=["exner_function", "air_density"],
+        variables=["dimensionless_exner_function", "air_density"],
         # the tests built on this helper count plain files: netCDF (zarr stores are
         # directories)
         backend=OutputBackend.NETCDF,
@@ -365,13 +365,13 @@ def create_field_group_monitor(
         (
             "",
             1,
-            ["exner_function", "air_density"],
+            ["dimensionless_exner_function", "air_density"],
             "Output basename is missing.",
         ),
         (
             "/vars/prognostics",
             1,
-            ["exner_function", "air_density"],
+            ["dimensionless_exner_function", "air_density"],
             "absolute path",
         ),
         (
@@ -404,7 +404,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path: pa
     config = FieldGroupIOConfig(
         basename="vars/prognostics",
         output_interval=time.NumTimeSteps(1),
-        variables=["exner_function", "air_density"],
+        variables=["dimensionless_exner_function", "air_density"],
     )
     vertical_size = test_io_utils.simple_grid.config.vertical_size
     horizontal_size = test_io_utils.simple_grid.config.horizontal_config
@@ -476,7 +476,7 @@ def test_fieldgroup_monitor_wires_rank_blocks_into_netcdf_writer(
     config = FieldGroupIOConfig(
         basename="rank_block",
         output_interval=time.NumTimeSteps(1),
-        variables=["exner_function", "air_density"],
+        variables=["dimensionless_exner_function", "air_density"],
         backend=OutputBackend.NETCDF,
         mode=OutputMode.DISTRIBUTED,
     )
@@ -513,7 +513,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path: pathlib.
     config = FieldGroupIOConfig(
         basename="vars/prognostics",
         output_interval=time.NumTimeSteps(1),
-        variables=["exner_function", "air_density", "foo"],
+        variables=["dimensionless_exner_function", "air_density", "foo"],
     )
     vertical_size = test_io_utils.simple_grid.config.vertical_size
     horizontal_size = test_io_utils.simple_grid.config.horizontal_config
@@ -872,7 +872,7 @@ def test_io_config_rejects_duplicate_basenames() -> None:
             field_groups=[
                 FieldGroupIOConfig(basename="a", variables=["air_density"]),
                 FieldGroupIOConfig(basename="b", variables=["air_density"]),
-                FieldGroupIOConfig(basename="a", variables=["exner_function"]),
+                FieldGroupIOConfig(basename="a", variables=["dimensionless_exner_function"]),
             ]
         )
 
@@ -900,7 +900,9 @@ def test_fieldgroup_config_rejects_basename_outside_the_output_directory(basenam
 
 def test_fieldgroup_config_rejects_duplicate_variables() -> None:
     with pytest.raises(errors.InvalidConfigError, match="duplicated names: air_density"):
-        FieldGroupIOConfig(basename="a", variables=["air_density", "exner_function", "air_density"])
+        FieldGroupIOConfig(
+            basename="a", variables=["air_density", "dimensionless_exner_function", "air_density"]
+        )
 
 
 @pytest.mark.parametrize("value", [True, 2.5, "3"])
@@ -926,7 +928,7 @@ def test_io_monitor_variables_at_capture_time(test_path: pathlib.Path) -> None:
             ),
             FieldGroupIOConfig(
                 basename="every_other_step",
-                variables=["exner_function", "air_density"],
+                variables=["dimensionless_exner_function", "air_density"],
                 output_interval=time.NumTimeSteps(2),
                 backend=OutputBackend.NETCDF,
                 mode=OutputMode.GATHER,
@@ -947,12 +949,12 @@ def test_io_monitor_variables_at_capture_time(test_path: pathlib.Path) -> None:
     step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
 
     # the predicate is pure: asking twice gives the same answer
-    assert monitor.variables_at_capture_time() == {"air_density", "exner_function"}
-    assert monitor.variables_at_capture_time() == {"air_density", "exner_function"}
+    assert monitor.variables_at_capture_time() == {"air_density", "dimensionless_exner_function"}
+    assert monitor.variables_at_capture_time() == {"air_density", "dimensionless_exner_function"}
     monitor.store(state, step_time)
     assert monitor.variables_at_capture_time() == {"air_density"}
     monitor.store(state, step_time + dt.timedelta(hours=1))
-    assert monitor.variables_at_capture_time() == {"air_density", "exner_function"}
+    assert monitor.variables_at_capture_time() == {"air_density", "dimensionless_exner_function"}
     monitor.close()
 
 
@@ -960,9 +962,8 @@ def test_io_monitor_writes_horizontal_only_fields(test_path: pathlib.Path) -> No
     """A purely horizontal (surface) field is written as (time, cell) next to the 3D ones."""
     grid = test_io_utils.simple_grid
     state = test_io_utils.model_state(grid)
-    state["surface_pressure"] = io_utils.to_data_array(
-        data_alloc.random_field(grid, dims.CellDim),
-        data.DIAGNOSTIC_CF_ATTRIBUTES["surface_pressure"],
+    state["surface_pressure"] = field.Field(
+        qty.SurfacePressureOnCell, data_alloc.random_field(grid, dims.CellDim)
     )
     config = IOConfig(
         output_path=test_path / "output",
@@ -996,7 +997,7 @@ def test_io_monitor_writes_horizontal_only_fields(test_path: pathlib.Path) -> No
         assert ds["surface_pressure"].shape == (2, grid.num_cells)
         assert ds["surface_pressure"].attrs["standard_name"] == "air_pressure_at_ground_level"
         np.testing.assert_array_equal(
-            ds["surface_pressure"].values[1], state["surface_pressure"].values
+            ds["surface_pressure"].values[1], state["surface_pressure"].asnumpy()
         )
         assert ds["air_density"].dims == ("time", "level", "cell")
 
