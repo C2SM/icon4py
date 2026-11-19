@@ -74,15 +74,9 @@ def get_allocator(
     backend: BackendLike,
 ) -> gtx_typing.Allocator:
     """
-    Return a GT4Py allocator for the given 'BackendLike'.
+    Return a GT4Py allocator for a 'BackendLike'.
 
-    Needed because a 'BackendLike' is not necessarily an allocator: 'None', a 'DeviceType'
-    and a 'BackendDescriptor' must first be resolved to one.
-
-    A concrete backend is itself a 'gtx_typing.Allocator' (it implements
-    'FieldBufferAllocatorFactoryProtocol'), so it is returned unchanged. 'None' selects the
-    embedded backend and therefore the default CPU allocator; a 'DeviceType' or a
-    'BackendDescriptor' selects the default allocator of its device.
+    Needed for the 'BackendLike' cases that are not allocators themselves.
     """
     if isinstance(backend, gtx_backend.Backend):
         return backend
