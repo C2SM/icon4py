@@ -146,6 +146,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         utils.dycore_input(
             prognostic_states.current,
             forcing,
+            diagnostic_state_nh,
             second_order_divdamp_factor=second_order_divdamp_factor,
             dtime=dtime,
             ndyn_substeps_var=experiment.config.driver.ndyn_substeps,

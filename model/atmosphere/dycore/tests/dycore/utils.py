@@ -183,9 +183,15 @@ def construct_prognostic_states_from_savepoint(
 # NOTE: temporary, replaced in part 02 (collect): the view is collected by quantity
 # (`fw.collect`) instead of spelled out by keyword.
 def dycore_input(
-    prognostics: states.PrognosticState, forcing: states.DycoreForcing, **scalars: Any
+    prognostics: states.PrognosticState,
+    forcing: states.DycoreForcing,
+    dycore_diagnostics: states.DycoreDiagnostics,
+    **scalars: Any,
 ) -> solve_nonhydro.SolveNonhydro.Input:
-    """The dycore's input view over the prognostics at `current` and the forcing."""
+    """
+    The dycore's input view over the prognostics at `current`, the forcing and the dycore
+    diagnostics it updates in place.
+    """
     return solve_nonhydro.SolveNonhydro.Input(
         rho=prognostics.rho,
         w=prognostics.w,
@@ -201,6 +207,8 @@ def dycore_input(
         rho_iau_increment=forcing.rho_iau_increment,
         normal_wind_iau_increment=forcing.normal_wind_iau_increment,
         exner_iau_increment=forcing.exner_iau_increment,
+        perturbed_exner_at_cells_on_model_levels=dycore_diagnostics.perturbed_exner_at_cells_on_model_levels,
+        max_vertical_cfl=dycore_diagnostics.max_vertical_cfl,
         **scalars,
     )
 

@@ -369,6 +369,12 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     # adjust for Fortran indexes
     idyn_timestep = idyn_timestep - 1
 
+    # updated in place: the input and the output share them
+    perturbed_exner = field.Field(qty.PerturbedExnerOnCellK, exner_pr)
+    max_vertical_cfl = field.Field(
+        qty.MaxVerticalCflNumber,
+        gtx.as_field((), data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)),
+    )
     input = solve_nonhydro.SolveNonhydro.Input(
         rho=field.Field(qty.RhoOnCellK, rho_now),
         w=field.Field(qty.WOnCellKHalf, w_now),
@@ -388,6 +394,8 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         rho_iau_increment=field.Field(qty.RhoIauIncrementOnCellK, rho_incr),
         normal_wind_iau_increment=field.Field(qty.NormalWindIauIncrementOnEdgeK, vn_incr),
         exner_iau_increment=field.Field(qty.ExnerIauIncrementOnCellK, exner_incr),
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner,
+        max_vertical_cfl=max_vertical_cfl,
         second_order_divdamp_factor=divdamp_fac_o2,
         dtime=dtime,
         ndyn_substeps_var=ndyn_substeps_var,
@@ -412,7 +420,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=field.Field(
             qty.VerticalVolumetricFluxOnCellKHalf, vol_flx_ic
         ),
-        perturbed_exner_at_cells_on_model_levels=field.Field(qty.PerturbedExnerOnCellK, exner_pr),
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner,
         exner_dynamical_increment=field.Field(qty.ExnerDynamicalIncrementOnCellK, exner_dyn_incr),
         normal_wind_advective_tendency_predictor=field.Field(
             qty.NormalWindAdvectiveTendencyOnEdgeK, ddt_vn_apc_ntl1
@@ -426,10 +434,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         vertical_wind_advective_tendency_corrector=field.Field(
             qty.VerticalWindAdvectiveTendencyOnCellKHalf, ddt_w_adv_ntl2
         ),
-        max_vertical_cfl=field.Field(
-            qty.MaxVerticalCflNumber,
-            gtx.as_field((), data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)),
-        ),
+        max_vertical_cfl=max_vertical_cfl,
         tangential_wind=field.Field(qty.TangentialWindOnEdgeK, vt),
         vn_on_half_levels=field.Field(qty.VnOnEdgeKHalf, vn_ie),
         contravariant_correction_at_cells_on_half_levels=field.Field(

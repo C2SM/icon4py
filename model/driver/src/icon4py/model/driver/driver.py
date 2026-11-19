@@ -430,12 +430,16 @@ class Icon4pyDriver:
         self,
         prognostics_now: states.PrognosticState,
         forcing: states.DycoreForcing,
+        dycore_diagnostics: states.DycoreDiagnostics,
         *,
         second_order_divdamp_factor: ta.wpfloat,
         at_first_substep: bool,
         at_last_substep: bool,
     ) -> solve_nh.SolveNonhydro.Input:
-        """The dycore's input view: the prognostics at `current`, the forcing and the step's scalars."""
+        """
+        The dycore's input view: the prognostics at `current`, the forcing, the dycore
+        diagnostics it updates in place and the step's scalars.
+        """
         return solve_nh.SolveNonhydro.Input(
             rho=prognostics_now.rho,
             w=prognostics_now.w,
@@ -451,6 +455,8 @@ class Icon4pyDriver:
             rho_iau_increment=forcing.rho_iau_increment,
             normal_wind_iau_increment=forcing.normal_wind_iau_increment,
             exner_iau_increment=forcing.exner_iau_increment,
+            perturbed_exner_at_cells_on_model_levels=dycore_diagnostics.perturbed_exner_at_cells_on_model_levels,
+            max_vertical_cfl=dycore_diagnostics.max_vertical_cfl,
             second_order_divdamp_factor=second_order_divdamp_factor,
             dtime=self.model_time_variables.substep_timestep,
             ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
@@ -504,6 +510,9 @@ class Icon4pyDriver:
         # updated once per time step, and not cached: it decreases with the elapsed time
         second_order_divdamp_factor = self._second_order_divdamp_factor()
 
+        # reset max_vertical_cfl to zero
+        dycore_diagnostics.max_vertical_cfl.ndarray[...] = 0.0  # type: ignore[index]  # NDArrayObject declares no __setitem__
+
         timer_solve_nh = (
             self.timer_collection.timers[driver_states.DriverTimers.SOLVE_NH_FIRST_STEP.value]
             if self.model_time_variables.is_first_step_in_simulation
@@ -524,6 +533,7 @@ class Icon4pyDriver:
                     self._dycore_input(
                         prognostic_states.current,
                         dycore_forcing,
+                        dycore_diagnostics,
                         second_order_divdamp_factor=second_order_divdamp_factor,
                         at_first_substep=self._is_first_substep(dyn_substep),
                         at_last_substep=self._is_last_substep(dyn_substep),
@@ -624,9 +634,6 @@ class Icon4pyDriver:
                     )
                     self.model_time_variables.update_cfl_watch_mode(False)
 
-        # reset max_vertical_cfl to zero
-        dycore_diagnostics.max_vertical_cfl.ndarray[...] = 0.0  # type: ignore[index]  # NDArrayObject declares no __setitem__
-
     # NOTE: temporary, replaced in part 02 (collect): the views are collected by quantity
     # (`fw.collect`) instead of spelled out by keyword.
     def _advection_views(
@@ -692,6 +699,7 @@ class Icon4pyDriver:
             qs=tracer_state.qs,
             qg=tracer_state.qg,
             air_mass=air_mass,
+            perturbed_exner=perturbed_exner,
             simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
         )
         output = physics_driver.PhysicsDriver.Output(

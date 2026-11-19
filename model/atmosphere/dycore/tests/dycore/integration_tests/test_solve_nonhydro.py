@@ -228,6 +228,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         utils.dycore_input(
             prognostic_states.current,
             forcing,
+            diagnostic_state_nh,
             second_order_divdamp_factor=sp.divdamp_fac_o2(),
             dtime=dtime,
             ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
@@ -567,6 +568,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         utils.dycore_input(
             prognostic_states.current,
             forcing,
+            dycore_diagnostics,
             second_order_divdamp_factor=second_order_divdamp_factor,
             dtime=dtime,
             ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
@@ -745,6 +747,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         utils.dycore_input(
             prognostic_states.current,
             forcing,
+            dycore_diagnostics,
             second_order_divdamp_factor=second_order_divdamp_factor,
             dtime=dtime,
             ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
@@ -874,6 +877,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
             utils.dycore_input(
                 prognostic_states.current,
                 forcing,
+                dycore_diagnostics,
                 second_order_divdamp_factor=sp.divdamp_fac_o2(),
                 dtime=dtime,
                 ndyn_substeps_var=experiment.config.driver.ndyn_substeps,

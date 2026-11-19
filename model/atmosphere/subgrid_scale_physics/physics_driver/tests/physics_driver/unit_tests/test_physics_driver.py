@@ -377,7 +377,7 @@ def test_run_syncs_the_halos_at_entry_the_wind_sums_and_what_it_wrote(
     perturbed_exner = fw.zeros(qty.PerturbedExnerOnCellK, grid, None)
 
     physics.run(
-        make_input(prognostic, tracer_state),
+        make_input(prognostic, tracer_state, perturbed_exner=perturbed_exner),
         output=make_output(prognostic, tracer_state, perturbed_exner=perturbed_exner),
     )
 

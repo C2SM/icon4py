@@ -496,6 +496,11 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         rho_iau_increment=field.Field(qty.RhoIauIncrementOnCellK, rho_incr_field),
         normal_wind_iau_increment=field.Field(qty.NormalWindIauIncrementOnEdgeK, vn_incr_field),
         exner_iau_increment=field.Field(qty.ExnerIauIncrementOnCellK, exner_incr_field),
+        perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
+        max_vertical_cfl=field.Field(
+            qty.MaxVerticalCflNumber,
+            gtx.as_field((), data_alloc.scalar_like_array(max_vertical_cfl, backend)),
+        ),
         second_order_divdamp_factor=sp.divdamp_fac_o2(),
         dtime=sp.dtime(),
         ndyn_substeps_var=ndyn_substeps,

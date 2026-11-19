@@ -72,6 +72,7 @@ class PhysicsDriver(fw.Component["PhysicsDriver.Input", "PhysicsDriver.Output"])
         qs: field.Field[qty.QsOnCellK] | None = None
         qg: field.Field[qty.QgOnCellK] | None = None
         air_mass: field.Field[qty.AirMassOnCellK] | None = None
+        perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None = None
         simulation_current_datetime: time.AbsoluteTime
 
     class Output(state.State):

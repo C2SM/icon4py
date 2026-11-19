@@ -97,6 +97,7 @@ def make_input(
     *,
     simulation_current_datetime: datetime.datetime = T0 + DT,
     air_mass: field.Field[qty.AirMassOnCellK] | None = None,
+    perturbed_exner: field.Field[qty.PerturbedExnerOnCellK] | None = None,
 ) -> physics_driver.PhysicsDriver.Input:
     return physics_driver.PhysicsDriver.Input(
         vn=prognostic.vn,
@@ -111,6 +112,7 @@ def make_input(
         qs=tracer_state.qs,
         qg=tracer_state.qg,
         air_mass=air_mass,
+        perturbed_exner=perturbed_exner,
         simulation_current_datetime=simulation_current_datetime,
     )
 

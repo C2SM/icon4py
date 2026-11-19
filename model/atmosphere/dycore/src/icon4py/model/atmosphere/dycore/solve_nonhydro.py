@@ -424,6 +424,8 @@ class SolveNonhydro(fw.Component):
         rho_iau_increment: field.Field[qty.RhoIauIncrementOnCellK]
         normal_wind_iau_increment: field.Field[qty.NormalWindIauIncrementOnEdgeK]
         exner_iau_increment: field.Field[qty.ExnerIauIncrementOnCellK]
+        perturbed_exner_at_cells_on_model_levels: field.Field[qty.PerturbedExnerOnCellK]
+        max_vertical_cfl: field.Field[qty.MaxVerticalCflNumber]
         second_order_divdamp_factor: float
         dtime: float
         ndyn_substeps_var: int
@@ -1165,6 +1167,19 @@ class SolveNonhydro(fw.Component):
         log.info(
             f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {prepare_fluxes_for_advection}"
         )
+        # Updated in place: when the caller passes distinct buffers, start from
+        # the input's.
+        # Here we cannot use copy_to_output because it would also copy from
+        # now.* into next.*
+        for source, target in (
+            (
+                input.perturbed_exner_at_cells_on_model_levels,
+                output.perturbed_exner_at_cells_on_model_levels,
+            ),
+            (input.max_vertical_cfl, output.max_vertical_cfl),
+        ):
+            if target.ndarray is not source.ndarray:
+                target.ndarray[...] = source.ndarray  # type: ignore[index]  # NDArrayObject declares no __setitem__
 
         if self.p_test_run:
             self._init_test_fields(

@@ -266,6 +266,8 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         rho_iau_increment=forcing.rho_iau_increment,
         normal_wind_iau_increment=forcing.normal_wind_iau_increment,
         exner_iau_increment=forcing.exner_iau_increment,
+        perturbed_exner_at_cells_on_model_levels=dycore_diagnostics.perturbed_exner_at_cells_on_model_levels,
+        max_vertical_cfl=dycore_diagnostics.max_vertical_cfl,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
         ndyn_substeps_var=ndyn_substeps,
