@@ -166,8 +166,8 @@ def is_placed_with_owned(
 
     ICON erases the negative `refin_ctl` values only after this ordering, so they still matter here.
     """
-    first = halo_levels == decomposition.DecompositionFlag.FIRST_HALO_LEVEL
-    halo = halo_levels != decomposition.DecompositionFlag.OWNED
+    first = halo_levels == decomposition.DecompositionFlag.FIRST_HALO_LEVEL.value
+    halo = halo_levels != decomposition.DecompositionFlag.OWNED.value
     match dim:
         case dims.CellDim:
             # Following ICON (mo_setup_subdivision.f90, refine_cells_atm):
@@ -197,7 +197,7 @@ def is_placed_with_owned(
             raise ValueError(
                 f"Dimension must be one of the local horizontals: {list(dims.horizontal_dims())}"
             )
-    return (halo_levels == decomposition.DecompositionFlag.OWNED) | kept
+    return (halo_levels == decomposition.DecompositionFlag.OWNED.value) | kept
 
 
 def compute_domain_bounds(
