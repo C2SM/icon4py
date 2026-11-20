@@ -15,7 +15,6 @@ import pathlib
 import sys
 from typing import Any, Literal
 
-import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
@@ -43,6 +42,7 @@ from icon4py.model.common import (
     time,
     type_alias as ta,
 )
+from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition_defs,
@@ -583,17 +583,6 @@ def spinup_second_order_divdamp_factor(
     return ta.wpfloat("0.0")
 
 
-def find_maximum_from_field(
-    input_field: gtx.Field,
-) -> tuple[tuple[int, ...], float]:
-    array_ns = data_alloc.array_namespace(input_field.ndarray)
-    max_indices = array_ns.unravel_index(
-        array_ns.abs(input_field.ndarray).argmax(),
-        input_field.ndarray.shape,
-    )
-    return max_indices, input_field.ndarray[max_indices]  # type: ignore[return-value] ## this is congruent with observed numpy behavior
-
-
 def display_icon4py_logo_in_log_file() -> None:
     r"""
     Print out icon4py signature and some important information of the initial setup to the log file.
@@ -666,6 +655,24 @@ def _describe_output_group(group: common_io.FieldGroupIOConfig) -> str:
         f"  output group '{group.basename}': {schedule}, {per_file}, "
         f"{group.backend.value}/{group.mode.value}, variables: {', '.join(group.variables)}"
     )
+
+
+def write_experiment_config(
+    config: driver_config.ExperimentConfig,
+    process_props: decomposition_defs.ProcessProperties,
+) -> pathlib.Path | None:
+    """Write the resolved experiment configuration as ``<experiment_name>.yaml`` on rank 0.
+
+    The file goes to the output directory of the run, or to the current working directory
+    when the run has no ``io`` section. Returns the written path on rank 0, ``None`` otherwise.
+    """
+    if process_props.rank != 0:
+        return None
+    directory = config.io.output_path if config.io is not None else pathlib.Path.cwd()
+    config_file_path = directory / f"{config.driver.experiment_name}.yaml"
+    config_file_path.write_text(config_io.write_yaml_str(config))
+    log.info(f"experiment configuration written to {config_file_path}")
+    return config_file_path
 
 
 def display_driver_setup_in_log_file(
