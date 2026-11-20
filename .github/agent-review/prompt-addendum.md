@@ -1,0 +1,5 @@
+- `.github/copilot-instructions.md` says what to flag, what not to comment on, and the review style. It restates the review-relevant part of the other two files; where it is silent, they apply.
+- `CODING_GUIDELINES.md` and `AGENTS.md` are the project conventions. The "Shared code and generic naming" section of the first decides whether new code belongs in a component or in `model/common`: search `model/common` for an existing stencil or helper before accepting a new one in a component.
+- The repository is a uv workspace of namespace packages under `model/`, `tools/` and `bindings/`, whose allowed dependencies `AGENTS.md` lists. For a change in one package, read the callers in the packages that depend on it.
+- Each package keeps its tests under `tests/<component>/`. Check that a changed code path has a test there by reading the tests, without running them: the sandbox has no network access.
+- Do not comment on anything that `ruff`, `mypy`, `tach` or the pre-commit hooks enforce.
