@@ -72,7 +72,7 @@ elif [[ "$ICON_GRID" == *"R02B08"* ]]; then
     SUFFIX="R02B08"
 fi
 
-export GT4PY_BUILD_CACHE_DIR="MI300A_JW_external${GIBS_EXT}GiB_mpi_roctx_${SUFFIX}_120lvl_ntasks${SLURM_NTASKS}"
+export GT4PY_BUILD_CACHE_DIR="MI300A_JW_external${GIBS_EXTERNAL}GiB_mpi_roctx_${SUFFIX}_35lvl_ntasks${SLURM_NTASKS}"
 export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_wall
 export CONFIG_DIR="exclaim_nh35_tri_jws_r2b7_120lev_${SLURM_NNODES}nodes"
 
