@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import copy
+import logging
 from collections.abc import Sequence
 from typing import Any
 
@@ -19,6 +20,9 @@ from dace import (
 )
 from gt4py.next import config as gtx_config
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
+
+
+log = logging.getLogger(__name__)
 
 
 def _cleanup_local_self_update(
@@ -422,43 +426,64 @@ def _graupel_run_self_copy_removal_inside_if_stmt(  # noqa: PLR0912, PLR0915 [to
         if_region.remove_branch(else_br)
 
 
-def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
-    assert len(sdfg.states()) == 1
-    st = sdfg.states()[0]
-    assert (
-        len(
-            list(
-                node
-                for node in st.nodes()
-                if isinstance(node, dace_nodes.NestedSDFG) and node.label.startswith("scan_")
-            )
-        )
-        == 1
-    )
-    scan_nsdfg_node = next(
+def _find_scan_layout(  # noqa: PLR0911 [too-many-return-statements]
+    sdfg: dace.SDFG,
+) -> tuple[dace.SDFGState, dace_nodes.NestedSDFG, dace.SDFGState, dace.SDFGState] | None:
+    """The parts of the graupel SDFG that ``remove_self_copy_inside_scan`` rewrites.
+
+    Returns ``(state, scan node, scan compute state, scan update state)``, or ``None`` if
+    the SDFG does not have the layout the hook was written for: one top-level state with
+    one scan nested SDFG, whose loop body is exactly a compute and an update state.
+    """
+    states = list(sdfg.states())
+    if len(states) != 1:
+        return None
+    st = states[0]
+    scan_nsdfg_nodes = [
         node
         for node in st.nodes()
         if isinstance(node, dace_nodes.NestedSDFG) and node.label.startswith("scan_")
-    )
+    ]
+    if len(scan_nsdfg_nodes) != 1:
+        return None
+    scan_nsdfg_node = scan_nsdfg_nodes[0]
     scan_sdfg = scan_nsdfg_node.sdfg
-    assert len(scan_sdfg.nodes()) == 3
-    assert isinstance(scan_sdfg.nodes()[1], dace_sdfg.state.LoopRegion)
+    if len(scan_sdfg.nodes()) != 3 or not isinstance(
+        scan_sdfg.nodes()[1], dace_sdfg.state.LoopRegion
+    ):
+        return None
     loop_regions = [
         scan_sdfg_node
         for scan_sdfg_node in scan_sdfg.nodes()
         if isinstance(scan_sdfg_node, dace_sdfg.state.LoopRegion)
     ]
-    assert len(loop_regions) == 1
+    if len(loop_regions) != 1:
+        return None
     scan_loop = loop_regions[0]
-    assert len(scan_loop.nodes()) == 2 and all(
+    if len(scan_loop.nodes()) != 2 or not all(
         isinstance(node, dace.SDFGState) for node in scan_loop.nodes()
-    )
-    if scan_loop.nodes()[0].label.startswith("scan_compute"):
-        assert scan_loop.nodes()[1].label.startswith("scan_update")
-        scan_compute_st, scan_update_st = scan_loop.nodes()
-    else:
-        assert scan_loop.nodes()[0].label.startswith("scan_update")
-        scan_update_st, scan_compute_st = scan_loop.nodes()
+    ):
+        return None
+    first, second = scan_loop.nodes()
+    if first.label.startswith("scan_compute") and second.label.startswith("scan_update"):
+        return st, scan_nsdfg_node, first, second
+    if first.label.startswith("scan_update") and second.label.startswith("scan_compute"):
+        return st, scan_nsdfg_node, second, first
+    return None
+
+
+def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
+    layout = _find_scan_layout(sdfg)
+    if layout is None:
+        # TODO(iomaganaris): the scan lowering of gt4py 1.2.5 / dace 2.0.0b2 puts the
+        #   if-statements in ``ConditionalBlock`` regions of the loop instead of
+        #   ``if_stmt_`` nested SDFGs in a compute state; port the hook to that layout.
+        log.warning(
+            "graupel: skipping the remove_self_copy_inside_scan dace hook, the SDFG does "
+            "not have the scan layout it was written for (correct, but slower)"
+        )
+        return
+    st, scan_nsdfg_node, scan_compute_st, scan_update_st = layout
 
     if_stmt_nodes = [
         node
@@ -560,8 +585,6 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
 
 
 def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
-    assert len(sdfg.states()) == 1
-    st: dace.SDFGState = sdfg.states()[0]
     access_node_renaming_dict = {
         "q_out_2": "q_in_2",
         "q_out_3": "q_in_3",
@@ -569,6 +592,16 @@ def rename_intermediate_access_nodes(sdfg: dace.SDFG) -> None:
         "q_out_5": "q_in_5",
         "t_out": "te",
     }
+    states = list(sdfg.states())
+    if len(states) != 1 or not all(
+        name in sdfg.arrays for item in access_node_renaming_dict.items() for name in item
+    ):
+        log.warning(
+            "graupel: skipping the rename_intermediate_access_nodes dace hook, the SDFG "
+            "does not have the layout it was written for (correct, but slower)"
+        )
+        return
+    st: dace.SDFGState = states[0]
 
     def _update_repl_impl(
         repl: dict[str, str],
