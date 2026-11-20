@@ -26,9 +26,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+    from icon4py.model.common import field_type_aliases as fa, model_backends, type_alias as ta
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.common.states import (
         diagnostic_state,
@@ -141,7 +139,7 @@ class PhysicsDriver:
         geometry: factory.FieldSource,
         interpolation: factory.FieldSource,
         metrics: factory.FieldSource,
-        backend: gtx_typing.Backend | None = None,
+        backend: model_backends.BackendLike = None,
         process_props: decomposition.ProcessProperties,
         decomposition_info: decomposition.DecompositionInfo,
     ) -> PhysicsDriver:
