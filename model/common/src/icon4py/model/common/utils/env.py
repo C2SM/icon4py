@@ -45,3 +45,16 @@ def str_enum[T: enum.StrEnum](name: str, enum_type: type[T], default: T) -> T:
 def path(name: str, default: pathlib.Path) -> pathlib.Path:
     value = os.environ.get(name)
     return pathlib.Path(value) if value is not None else default
+
+
+def non_negative_int(name: str) -> int | None:
+    """A non-negative integer value, or `None` when the variable is unset or empty."""
+    raw = os.environ.get(name)
+    if not raw:
+        return None
+    if not raw.isdecimal():
+        raise ValueError(
+            f"Invalid value {raw!r} for environment variable {name!r}: it must be"
+            " a non-negative integer."
+        )
+    return int(raw)

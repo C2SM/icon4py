@@ -127,6 +127,65 @@ def update_exner_and_theta_v(  # noqa: PLR0917 [too-many-positional-arguments]
     )
 
 
+@gtx.field_operator
+def _update_exner_theta_v_and_perturbed_exner(  # noqa: PLR0917 [too-many-positional-arguments]
+    rho: fa.CellKField[ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
+    exner: fa.CellKField[ta.wpfloat],
+    perturbed_exner: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
+) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
+    """
+    Update exner and theta_v as `_update_exner_and_theta_v`, and add the exner change to the
+    perturbation: ``exner_pr_new = exner_pr + exner_new - exner`` (mo_interface_iconam_aes.f90).
+
+    Args:
+        rho: air density [kg m-3]
+        virtual_temperature: virtual temperature [K]
+        virtual_temperature_tendency: physics virtual-temperature tendency [K s-1]
+        exner: exner function
+        perturbed_exner: exner perturbation from the reference state
+        dtime: time step [s]
+    Returns:
+        (exner, theta_v [K], perturbed_exner)
+    """
+    new_exner, new_theta_v = _update_exner_and_theta_v(
+        rho, virtual_temperature, virtual_temperature_tendency, dtime
+    )
+    new_perturbed_exner = perturbed_exner + new_exner - exner
+    return new_exner, new_theta_v, new_perturbed_exner
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def update_exner_theta_v_and_perturbed_exner(  # noqa: PLR0917 [too-many-positional-arguments]
+    rho: fa.CellKField[ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
+    exner: fa.CellKField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    perturbed_exner: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _update_exner_theta_v_and_perturbed_exner(
+        rho=rho,
+        virtual_temperature=virtual_temperature,
+        virtual_temperature_tendency=virtual_temperature_tendency,
+        exner=exner,
+        perturbed_exner=perturbed_exner,
+        dtime=dtime,
+        out=(exner, theta_v, perturbed_exner),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_temperature_from_internal_energy_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
     internal_energy_per_area: fa.CellKField[ta.wpfloat],

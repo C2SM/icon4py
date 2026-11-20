@@ -42,10 +42,12 @@ NUM_LEVELS = 4
 GLOBAL_SIZES = {dims.CellDim: 109, dims.EdgeDim: 75, dims.VertexDim: 41}
 GRID_ID = uuid.UUID("00000000-0000-0000-0000-00000000c1c0")
 NUM_STEPS = 3
-#: variable name -> (CF dimension name, dimension) of the synthetic output fields
-VARIABLES: dict[str, tuple[str, gtx.Dimension]] = {
-    "air_density": ("cell", dims.CellDim),
-    "normal_velocity": ("edge", dims.EdgeDim),
+#: variable name -> (CF dimension name, dimension, number of levels) of the synthetic
+#: output fields; 0 levels is a purely horizontal (surface) field
+VARIABLES: dict[str, tuple[str, gtx.Dimension, int]] = {
+    "air_density": ("cell", dims.CellDim, NUM_LEVELS),
+    "normal_velocity": ("edge", dims.EdgeDim, NUM_LEVELS),
+    "surface_pressure": ("cell", dims.CellDim, 0),
 }
 
 
@@ -97,14 +99,18 @@ def expected_value(global_index: np.ndarray, level: int, step: int) -> np.ndarra
 def synthetic_state(info: decomp_defs.DecompositionInfo, step: int) -> dict[str, xr.DataArray]:
     """Local state whose entries (halos included) carry their analytic global values."""
     state: dict[str, xr.DataArray] = {}
-    for name, (dim_name, dim) in VARIABLES.items():
+    for name, (dim_name, dim, num_levels) in VARIABLES.items():
         local_global = info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.ALL)
-        data = np.stack(
-            [expected_value(local_global, level, step) for level in range(NUM_LEVELS)], axis=1
-        )
+        if num_levels:
+            data = np.stack(
+                [expected_value(local_global, level, step) for level in range(num_levels)],
+                axis=1,
+            )
+        else:
+            data = expected_value(local_global, 0, step)
         state[name] = xr.DataArray(
             data,
-            dims=(dim_name, "level"),
+            dims=(dim_name, "level") if num_levels else (dim_name,),
             attrs=dict(
                 units="1",
                 standard_name=name,
@@ -161,24 +167,25 @@ def assert_dataset_is_exact(
 ) -> None:
     """Reassemble to global order and compare exactly (float64 arithmetic throughout)."""
     assert dataset.sizes["time"] == num_slices
-    for name, (dim_name, dim) in VARIABLES.items():
+    for name, (dim_name, dim, num_levels) in VARIABLES.items():
         values = dataset[name].values
         index = global_index[dim_name]
         valid = index >= 0
         assert int(valid.sum()) == GLOBAL_SIZES[dim]
+        global_range = np.arange(GLOBAL_SIZES[dim])
         for slice_pos in range(num_slices):
             step = first_step + slice_pos
-            reassembled = np.empty((NUM_LEVELS, GLOBAL_SIZES[dim]))
-            reassembled[:, index[valid]] = values[slice_pos][:, valid]
-            expected = np.stack(
-                [
-                    expected_value(np.arange(GLOBAL_SIZES[dim]), level, step)
-                    for level in range(NUM_LEVELS)
-                ]
+            # a (levels, horizontal) slice, or a (horizontal,) one for a surface field
+            reassembled = np.empty((*values.shape[1:-1], GLOBAL_SIZES[dim]))
+            reassembled[..., index[valid]] = values[slice_pos][..., valid]
+            expected = (
+                np.stack([expected_value(global_range, level, step) for level in range(num_levels)])
+                if num_levels
+                else expected_value(global_range, 0, step)
             )
             assert np.array_equal(reassembled, expected), f"'{name}' differs at step {step}"
         if valid.shape[0] > int(valid.sum()):
-            assert np.all(np.isnan(values[:, :, ~valid])), f"'{name}' padding is not NaN"
+            assert np.all(np.isnan(values[..., ~valid])), f"'{name}' padding is not NaN"
 
 
 @pytest.mark.mpi(min_size=2)
@@ -245,7 +252,7 @@ def test_parallel_output_synthetic_decomposition(
     suffix = common_io.FILE_SUFFIXES[output_backend]
     files = sorted(output_path.glob(f"synthetic_output_*{suffix}"))
     assert len(files) == 2, f"expected two files after the rollover, got: {files}"
-    identity = {name: np.arange(GLOBAL_SIZES[dim]) for name, dim in VARIABLES.values()}
+    identity = {name: np.arange(GLOBAL_SIZES[dim]) for name, dim, _ in VARIABLES.values()}
     for path, num_slices, first_step in ((files[0], 2, 0), (files[1], 1, 2)):
         if output_backend == common_io.OutputBackend.NETCDF:
             dataset = xr.open_dataset(path, decode_times=False)
@@ -255,7 +262,7 @@ def test_parallel_output_synthetic_decomposition(
             if output_mode == common_io.OutputMode.DISTRIBUTED:
                 global_index = {
                     name: dataset[f"{writers.GLOBAL_INDEX_PREFIX}_{name}"].values
-                    for name, _ in VARIABLES.values()
+                    for name, *_ in VARIABLES.values()
                 }
             else:
                 global_index = identity

@@ -1,0 +1,24 @@
+# PR Agent review policy, read from 'main'. See docs/development/pr_agent.md.
+
+[config]
+# Names the model that answered, which may be a fallback.
+output_run_details = true
+# The rules file goes first: the line budget truncates from the end.
+repo_context_files = [".github/copilot-instructions.md", "CODING_GUIDELINES.md", "AGENTS.md"]
+repo_context_max_lines = 700
+
+[pr_code_suggestions]
+suggestions_score_threshold = 6
+
+[pr_reviewer]
+# A diff over the token budget is reviewed in up to 3 parallel chunks, each
+# billed as a call, instead of dropping the files that do not fit.
+enable_large_pr_chunking = true
+extra_instructions = "Follow the review rules in `.github/copilot-instructions.md`, included in the repository context below."
+final_update_message = false
+inline_key_issues = true
+num_max_findings = 10
+require_can_be_split_review = true
+require_failure_modes = true
+require_merge_recommendation = true
+require_score_review = true

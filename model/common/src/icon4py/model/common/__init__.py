@@ -27,3 +27,15 @@ __license__: Final = "BSD-3-Clause"
 
 __version__: Final = "0.5.0"
 __version_info__: Final = pkg_version.parse(__version__)
+
+
+def _disable_mpi4py_auto_initialization() -> None:
+    """Leave MPI initialization to icon4py; see "Parallel netCDF" in the ``io`` docs."""
+    try:
+        import mpi4py  # noqa: PLC0415 [import-outside-top-level]
+    except ImportError:  # serial installation
+        return
+    mpi4py.rc.initialize = False
+
+
+_disable_mpi4py_auto_initialization()

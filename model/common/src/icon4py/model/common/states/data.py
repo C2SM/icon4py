@@ -204,4 +204,77 @@ TENDENCY_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     qr=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qr"]),
     qs=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qs"]),
     qg=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qg"]),
+    u=tendency_of(DIAGNOSTIC_CF_ATTRIBUTES["eastward_wind"]),
+    v=tendency_of(DIAGNOSTIC_CF_ATTRIBUTES["northward_wind"]),
+    w=tendency_of(PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"]),
+)
+
+#: CF attributes of the surface fields the surface scheme hands to the atmosphere
+SURFACE_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
+    evapotranspiration=model.FieldMetaData(
+        standard_name="water_evapotranspiration_flux",
+        long_name="surface evapotranspiration flux",
+        units="kg m-2 s-1",
+        icon_var_name="evspsbl",
+    ),
+    sensible_heat_flux=model.FieldMetaData(
+        standard_name="surface_upward_sensible_heat_flux",
+        long_name="surface sensible heat flux",
+        units="W m-2",
+        icon_var_name="hfss",
+    ),
+    latent_heat_flux=model.FieldMetaData(
+        standard_name="surface_upward_latent_heat_flux",
+        long_name="surface latent heat flux",
+        units="W m-2",
+        icon_var_name="hfls",
+    ),
+    u_stress=model.FieldMetaData(
+        standard_name="surface_downward_eastward_stress",
+        long_name="zonal surface wind stress",
+        units="N m-2",
+        icon_var_name="tauu",
+    ),
+    v_stress=model.FieldMetaData(
+        standard_name="surface_downward_northward_stress",
+        long_name="meridional surface wind stress",
+        units="N m-2",
+        icon_var_name="tauv",
+    ),
+    q_snocpymlt=model.FieldMetaData(
+        standard_name="surface_snow_and_canopy_melt_heat_flux",
+        long_name="heat used to melt snow on the canopy",
+        units="W m-2",
+        icon_var_name="q_snocpymlt",
+    ),
+    thermal_energy_flux=model.FieldMetaData(
+        standard_name="surface_upward_internal_energy_flux_due_to_thermal_exchange",
+        long_name="surface flux of internal energy from thermal exchange",
+        units="W m-2",
+        icon_var_name="ufts",
+    ),
+    vapor_energy_flux=model.FieldMetaData(
+        standard_name="surface_upward_internal_energy_flux_due_to_vapor_exchange",
+        long_name="surface flux of internal energy from vapor exchange",
+        units="W m-2",
+        icon_var_name="ufvs",
+    ),
+    surface_temperature=model.FieldMetaData(
+        standard_name="surface_temperature",
+        long_name="surface temperature",
+        units="K",
+        icon_var_name="ts",
+    ),
+    exchange_coefficient_momentum=model.FieldMetaData(
+        standard_name="surface_exchange_coefficient_for_momentum",
+        long_name="surface exchange coefficient for momentum",
+        units="1",
+        icon_var_name="km_sfc",
+    ),
+    exchange_coefficient_heat=model.FieldMetaData(
+        standard_name="surface_exchange_coefficient_for_heat",
+        long_name="surface exchange coefficient for heat",
+        units="1",
+        icon_var_name="kh_sfc",
+    ),
 )

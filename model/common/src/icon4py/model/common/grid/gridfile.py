@@ -385,9 +385,10 @@ class GridFile:
             target_shape = (*n, -1)
 
             _log.debug(f"reading {name}: transposing = {transpose}")
-            # Read the whole variable and select the indices in numpy: passing
-            # scattered indices to netCDF4 results in one read per contiguous
-            # run of indices, which is very slow for decomposed grids.
+            # Read the whole variable and select the indices in numpy
+            # TODO(iomaganaris,msimberg): this trades memory for speed, since every
+            # rank holds the full global variable in memory until the selection is
+            # done. Revisit if this becomes a limit for large grids.
             data = np.asarray(variable[:])
             if indices is not None and indices.size > 0:
                 # apply the selection to the correct dimension
