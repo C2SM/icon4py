@@ -23,6 +23,19 @@ from ..utils import dummy_four_ranks
 from .test_definitions import get_neighbor_tables_for_simple_grid, offsets
 
 
+def _zero_refinement_control(neighbor_tables: dict) -> dict:
+    """Return zero-valued refinement control arrays for all three dimensions.
+
+    For non-LAM grids all refinement control values are zero; this helper
+    produces the required dict so tests don't need to repeat the boilerplate.
+    """
+    return {
+        dims.CellDim: np.zeros(neighbor_tables["C2E2C"].shape[0], dtype=np.int32),
+        dims.EdgeDim: np.zeros(neighbor_tables["E2C"].shape[0], dtype=np.int32),
+        dims.VertexDim: np.zeros(neighbor_tables["V2E"].shape[0], dtype=np.int32),
+    }
+
+
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like):
     process_props = utils.DummyProps(rank=rank)
@@ -30,6 +43,7 @@ def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         process_props=process_props,
+        refinement_control=_zero_refinement_control(simple_neighbor_tables),
         allocator=allocator,
     )
     xp = data_alloc.import_array_ns(allocator)
@@ -54,6 +68,7 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         process_props=process_props,
+        refinement_control=_zero_refinement_control(simple_neighbor_tables),
     )
 
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
@@ -81,6 +96,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         process_props=process_props,
+        refinement_control=_zero_refinement_control(simple_neighbor_tables),
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     my_halo_levels = decomp_info.halo_levels(dim)
@@ -166,6 +182,7 @@ def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tabl
         halo_generator = halo.IconLikeHaloConstructor(
             connectivities=simple_neighbor_tables,
             process_props=process_props,
+            refinement_control=_zero_refinement_control(simple_neighbor_tables),
         )
         halo_generator(np.zeros((num_cells, 3), dtype=int))
     assert f"should have shape ({num_cells},)" in e.value.args[0]
@@ -180,6 +197,7 @@ def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor
         halo_generator = halo.IconLikeHaloConstructor(
             connectivities=simple_neighbor_tables,
             process_props=process_props,
+            refinement_control=_zero_refinement_control(simple_neighbor_tables),
         )
         halo_generator(distribution)
     assert "The distribution assumes more nodes than the current run" in e.value.args[0]
@@ -192,6 +210,7 @@ def test_owned_halo_mask_contiguous(rank):
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         process_props=process_props,
+        refinement_control=_zero_refinement_control(simple_neighbor_tables),
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
 
@@ -216,7 +235,15 @@ def test_global_to_local_index(offset, rank):
         k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
     process_props = dummy_four_ranks(rank)
-    halo_constructor = halo.IconLikeHaloConstructor(process_props, neighbor_tables)
+    halo_constructor = halo.IconLikeHaloConstructor(
+        process_props,
+        neighbor_tables,
+        refinement_control={
+            dims.CellDim: np.zeros(grid.num_cells, dtype=np.int32),
+            dims.EdgeDim: np.zeros(grid.num_edges, dtype=np.int32),
+            dims.VertexDim: np.zeros(grid.num_vertices, dtype=np.int32),
+        },
+    )
     decomposition_info = halo_constructor(utils.SIMPLE_DISTRIBUTION)
     source_indices_on_local_grid = decomposition_info.global_index(offset.target[0])
 
@@ -249,6 +276,7 @@ def test_horizontal_size(rank):
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         process_props=process_props,
+        refinement_control=_zero_refinement_control(simple_neighbor_tables),
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     horizontal_size = decomp_info.get_horizontal_size()

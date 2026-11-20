@@ -20,7 +20,6 @@ from icon4py.model.testing import (
     definitions as test_defs,
     grid_utils,
     serialbox,
-    test_utils,
 )
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -80,9 +79,7 @@ def test_compute_domain_bounds(  # noqa: PLR0917 [too-many-positional-arguments]
     decomposition_info = grid_savepoint.construct_decomposition_info()
     refin_ctrl = {dim: grid_savepoint.refin_ctrl(dim) for dim in dims.horizontal_dims()}
     start_indices, end_indices = grid_refinement.compute_domain_bounds(
-        dim,
-        refin_ctrl,
-        decomposition_info,
+        dim, refin_ctrl, decomposition_info
     )
     if (
         experiment.description == test_defs.Experiments.GAUSS3D
@@ -90,7 +87,8 @@ def test_compute_domain_bounds(  # noqa: PLR0917 [too-many-positional-arguments]
         and zone in (h_grid.Zone.LOCAL, h_grid.Zone.INTERIOR, h_grid.Zone.HALO)
     ):
         pytest.xfail(
-            f"start or end index is known to be inconsistent with {experiment.name=} for {dim=} and {zone=}"
+            "ICON orders the halo with the negative refin_ctl values of the grid file and erases them "
+            "afterwards (mo_setup_subdivision.f90), the serialized refin_ctl no longer has them."
         )
 
     ref_start_index = ref_grid.start_index(domain)
@@ -116,9 +114,6 @@ def test_bounds_decomposition(
     experiment: test_defs.Experiment,
     dim: gtx.Dimension,
 ) -> None:
-    if experiment.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
-
     file = dt_utils.get_grid_filepath(experiment.grid)
     _log.info(f"running on {process_props.comm} with {process_props.comm_size} ranks")
 
@@ -141,49 +136,30 @@ def test_bounds_decomposition(
     start_index = grid_manager.grid.start_index
     end_index = grid_manager.grid.end_index
     domain = h_grid.domain(dim)
-
-    assert test_utils.is_sorted(decomposition_info.halo_levels(dim)), (
-        f"Halo levels for {dim} should be sorted, but are {decomposition_info.halo_levels(dim)}"
+    halo_levels = decomposition_info.halo_levels(dim)
+    owner_mask = decomposition_info.owner_mask(dim)
+    with_owned = grid_refinement.is_placed_with_owned(
+        dim, halo_levels, grid_manager.grid.refinement_control[dim].ndarray
     )
 
-    local_owned_size = decomposition_info.local_index(
-        dim, decomp_defs.DecompositionInfo.EntryType.OWNED
-    ).shape[0]
-    local_all_size = decomposition_info.local_index(
-        dim, decomp_defs.DecompositionInfo.EntryType.ALL
-    ).shape[0]
-    local_halo_size = decomposition_info.local_index(
-        dim, decomp_defs.DecompositionInfo.EntryType.HALO
-    ).shape[0]
-    global_owned_size = decomposition_info.global_index(
-        dim, decomp_defs.DecompositionInfo.EntryType.OWNED
-    ).shape[0]
-    global_all_size = decomposition_info.global_index(
-        dim, decomp_defs.DecompositionInfo.EntryType.ALL
-    ).shape[0]
-    global_halo_size = decomposition_info.global_index(
-        dim, decomp_defs.DecompositionInfo.EntryType.HALO
-    ).shape[0]
+    num_with_owned = int(with_owned.sum())
 
-    # NOTE: These assumptions may change once limited area grids are supported
-    # for icon4py domain decomposition.
+    # owned points and the halo points ICON keeps with them come first
+    assert with_owned[:num_with_owned].all()
+    assert not owner_mask[num_with_owned:].any()
     assert start_index(domain(h_grid.Zone.LOCAL)) == 0
-    assert end_index(domain(h_grid.Zone.LOCAL)) == local_owned_size
-    assert end_index(domain(h_grid.Zone.LOCAL)) == global_owned_size
+    assert end_index(domain(h_grid.Zone.LOCAL)) == num_with_owned
+    assert end_index(domain(h_grid.Zone.INTERIOR)) == num_with_owned
 
-    assert start_index(domain(h_grid.Zone.INTERIOR)) == 0
-    assert end_index(domain(h_grid.Zone.INTERIOR)) == local_owned_size
-    assert end_index(domain(h_grid.Zone.INTERIOR)) == global_owned_size
-
-    assert start_index(domain(h_grid.Zone.HALO)) == local_owned_size
-    assert start_index(domain(h_grid.Zone.HALO)) == global_owned_size
-    assert end_index(domain(h_grid.Zone.END)) == local_all_size
-    assert end_index(domain(h_grid.Zone.END)) == global_all_size
+    # then the other halo points, level by level
+    position = num_with_owned
+    for halo_domain in sorted(h_grid.get_halo_domains(dim), key=lambda d: d.zone.level):
+        start, end = start_index(halo_domain), end_index(halo_domain)
+        assert start == position
+        assert (halo_levels[start:end] == halo_domain.zone.level).all()
+        position = end
+    assert position == end_index(domain(h_grid.Zone.END)) == halo_levels.size
     assert (
-        end_index(domain(h_grid.Zone.END)) - start_index(domain(h_grid.Zone.HALO))
-        == local_halo_size
-    )
-    assert (
-        end_index(domain(h_grid.Zone.END)) - start_index(domain(h_grid.Zone.HALO))
-        == global_halo_size
+        decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.ALL).size
+        == halo_levels.size
     )

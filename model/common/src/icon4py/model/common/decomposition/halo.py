@@ -15,7 +15,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import definitions as defs
-from icon4py.model.common.grid import base, gridfile
+from icon4py.model.common.grid import base, grid_refinement, gridfile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -62,6 +62,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         self,
         process_props: defs.ProcessProperties,
         connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
+        refinement_control: dict[gtx.Dimension, data_alloc.NDArray],
         allocator: gtx_typing.Allocator | None = None,
     ):
         """
@@ -69,11 +70,15 @@ class IconLikeHaloConstructor(HaloConstructor):
         Args:
             process_props: contains information on the communicator and local compute node.
             connectivities: connectivity arrays needed to construct the halos
+            refinement_control: raw `refin_ctl` values of the full grid. Used by
+                is_placed_with_owned to decide which halo points to keep in the
+                owned block. Pass zeros for all dimensions on non-LAM grids.
             allocator: GT4Py buffer allocator
         """
         self._xp = data_alloc.import_array_ns(allocator)
         self._process_props = process_props
         self._connectivities = {self._value(k): v for k, v in connectivities.items()}
+        self._refinement_control = refinement_control
         self._assert_all_neighbor_tables()
 
     @staticmethod
@@ -251,7 +256,15 @@ class IconLikeHaloConstructor(HaloConstructor):
         assert (halo_levels[third_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value).all()
         halo_levels[third_halo_level_mask] = defs.DecompositionFlag.THIRD_HALO_LEVEL
 
-        decomp_info.set_dimension(dim, all_indices, owner_mask, halo_levels)
+        refinement = self._refinement_control[dim][all_indices]
+        with_owned = grid_refinement.is_placed_with_owned(dim, halo_levels, refinement)
+        front = self._xp.nonzero(with_owned)[0]
+        # Sorting the front block by global index gives the zone order because
+        # grid files sort the boundary zones first.
+        order = self._xp.concatenate(
+            (front[self._xp.argsort(all_indices[front])], self._xp.nonzero(~with_owned)[0])
+        )
+        decomp_info.set_dimension(dim, all_indices[order], owner_mask[order], halo_levels[order])
 
     def __call__(self, cell_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         """
@@ -387,6 +400,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         )
 
         # Vertices
+        vertex_on_halo_cells = self._find_vertex_neighbors_for_cells(total_halo_cells)
         vertex_second_halo = self._xp.setdiff1d(vertex_on_halo_cells, vertex_on_cutting_line)
         all_vertices = self._xp.hstack((vertex_on_owned_cells, vertex_second_halo))
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
@@ -485,7 +499,8 @@ def get_halo_constructor(
     process_props: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
     connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
-    allocator: gtx_typing.Allocator | None,
+    refinement_control: dict[gtx.Dimension, data_alloc.NDArray],
+    allocator: gtx_typing.Allocator | None = None,
 ) -> HaloConstructor:
     """
     Factory method to create the halo constructor.
@@ -495,9 +510,11 @@ def get_halo_constructor(
     parameter
     Args:
         process_props:
-        full_grid_size
-        allocator:
+        full_grid_size:
         connectivities:
+        refinement_control: raw `refin_ctl` values of the full grid. Pass zeros
+            for all dimensions on non-LAM grids.
+        allocator:
 
     Returns: a HaloConstructor suitable for the process_props
 
@@ -511,6 +528,7 @@ def get_halo_constructor(
     return IconLikeHaloConstructor(
         process_props=process_props,
         connectivities=connectivities,
+        refinement_control=refinement_control,
         allocator=allocator,
     )
 
