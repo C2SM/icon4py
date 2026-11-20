@@ -668,6 +668,29 @@ def _describe_output_group(group: common_io.FieldGroupIOConfig) -> str:
     )
 
 
+def log_time_step_count(config: driver_config.DriverConfig) -> None:
+    """
+    On a restart, warn users when the given number of time steps before the restart does not
+    equal the time since the start of the simulation with the current ``dtime``: either
+    ``dtime`` was changed at the restart, which is allowed, or
+    ``time_steps_before_start_of_timestepping`` is wrong.
+    """
+    time_steps_before = config.time_steps_before_start_of_timestepping
+    if not config.is_restart:
+        return
+    time_before_restart = config.start_of_timestepping - config.start_of_simulation
+    if time_steps_before * config.dtime != time_before_restart:
+        log.warning(
+            f"the {time_steps_before} time steps before the restart at "
+            f"{config.start_of_timestepping} cover "
+            f"{time_before_restart.total_seconds()} s since the start of the simulation, "
+            f"i.e. {time_before_restart.total_seconds() / time_steps_before} s per time step, "
+            f"but dtime is {config.dtime.total_seconds()} s: this is expected only if dtime "
+            f"was changed at the restart, otherwise check "
+            f"'time_steps_before_start_of_timestepping'."
+        )
+
+
 def display_driver_setup_in_log_file(
     config: driver_config.DriverConfig,
     model_time_variables: driver_states.ModelTimeVariables,
@@ -681,6 +704,9 @@ def display_driver_setup_in_log_file(
     log.info(f"Experiment name        : {config.experiment_name}")
     log.info(f"Time step              : {config.dtime.total_seconds()} s")
     log.info(f"Start of simulation    : {model_time_variables.simulation_start_datetime}")
+    log.info(f"Start of timestepping  : {config.start_of_timestepping}")
+    log.info(f"Time steps before start: {config.time_steps_before_start_of_timestepping}")
+    log_time_step_count(config)
     log.info(f"End of simulation      : {model_time_variables.simulation_end_datetime}")
     log.info(f"Number of timesteps    : {model_time_variables.n_time_steps}")
     match config.end_of_simulation:
