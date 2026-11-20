@@ -142,14 +142,14 @@ class TmxDiagnosticState:
     km: fa.CellKField[ta.wpfloat]
     """
     Above the lowest level: turbulent viscosity from the half level below [kg/(m s)].
-    At the lowest level: the surface exchange coefficient `km_sfc` [dimensionless], or
-    `km_const` [m^2/s] when `use_km_const=True`.
+    At the lowest level: the surface exchange coefficient for momentum of the surface scheme
+    (`km_sfc`) [dimensionless].
     """
     kh: fa.CellKField[ta.wpfloat]
     """
     Above the lowest level: turbulent diffusivity from the half level below [kg/(m s)].
-    At the lowest level: the surface exchange coefficient `kh_sfc` [dimensionless], or
-    `km_const / turb_prandtl` [m^2/s] when `use_km_const=True`.
+    At the lowest level: the surface exchange coefficient for heat of the surface scheme
+    (`kh_sfc`) [dimensionless].
     """
     dissip_ke: fa.CellKField[ta.wpfloat]
     """Kinetic energy dissipated by the wind diffusion, per layer [W/m^2]."""

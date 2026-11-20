@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import energy_update, tmx_states
-from icon4py.model.common import model_backends
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
 
@@ -64,6 +64,7 @@ def test_tmx_run_energy_update_single_step(
     hor_wind_savepoint = data_provider.from_savepoint_tmx_hor_wind_exit(date=date)
     exit_savepoint = data_provider.from_savepoint_tmx_exit(date=date)
     tmx_entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
+    surface_level = dims.KDim(icon_grid.num_levels - 1)
 
     component = energy_update.EnergyUpdate(
         grid=icon_grid,
@@ -75,9 +76,6 @@ def test_tmx_run_energy_update_single_step(
         backend=backend,
         exchange=decomposition.SingleNodeExchange(),
         dissipation_factor=tmx_config.dissipation_factor,
-        turb_prandtl=tmx_config.turb_prandtl,
-        use_km_const=tmx_config.use_km_const,
-        km_const=tmx_config.km_const,
     )
     diagnostic_state = dataclasses.replace(
         tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),
@@ -102,6 +100,9 @@ def test_tmx_run_energy_update_single_step(
             tmx_entry_savepoint,
             allocator=allocator,
         ),
+        # the surface exchange coefficients of ICON's surface scheme: the lowest level of km and kh
+        surface_exchange_coefficient_momentum=exit_savepoint.km()[surface_level],
+        surface_exchange_coefficient_heat=exit_savepoint.kh()[surface_level],
         heat_diffusion_tendency=temperature_savepoint.tend_ta(),
         diagnostic_state=diagnostic_state,
         tendency_state=tendency_state,
@@ -111,11 +112,6 @@ def test_tmx_run_energy_update_single_step(
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
 
-    # the lowest level of km and kh is the surface exchange coefficient, which tmx only writes
-    # with `use_km_const`; see the TODO in `assert_tmx_exit_fields`
-    exchange_coefficient_levels = slice(
-        None, None if tmx_config.use_km_const else icon_grid.num_levels - 1
-    )
     # (computed, reference, atol, rtol), chosen as described in `assert_tmx_exit_fields`
     fields = {
         # measured atol=5.2e-19, rtol=2.6e-5
@@ -152,13 +148,9 @@ def test_tmx_run_energy_update_single_step(
         test_utils.assert_dallclose(
             computed.asnumpy(), reference.asnumpy(), atol=atol, rtol=rtol, err_msg=name
         )
-    # copies of the serialized km_ic and kh_ic: exact on every backend
+    # copies of the serialized km_ic, kh_ic and surface coefficients: exact on every backend
     for name, computed, reference in (
         ("km", diagnostic_state.km, exit_savepoint.km()),
         ("kh", diagnostic_state.kh, exit_savepoint.kh()),
     ):
-        np.testing.assert_array_equal(
-            computed.asnumpy()[:, exchange_coefficient_levels],
-            reference.asnumpy()[:, exchange_coefficient_levels],
-            err_msg=name,
-        )
+        np.testing.assert_array_equal(computed.asnumpy(), reference.asnumpy(), err_msg=name)

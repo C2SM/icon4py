@@ -24,6 +24,10 @@ def test_config_defaults_are_the_fortran_defaults() -> None:
     config = _ape_config()
     assert config.kinematic_sensible_heat_flux == 0.1
     assert config.kinematic_latent_heat_flux == 0.0
+    assert config.surface_layer_fraction == 0.4
+    assert config.minimum_roughness_length == 1.5e-5
+    assert config.ocean_roughness_length == 1.0e-3
+    assert config.minimum_surface_wind == 0.3
 
 
 def test_config_coerces_enum_from_int() -> None:
