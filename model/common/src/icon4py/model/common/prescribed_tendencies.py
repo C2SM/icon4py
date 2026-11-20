@@ -39,8 +39,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid
 
@@ -60,7 +58,7 @@ class PrescribedTendencies:
         *,
         config: PrescribedTendenciesConfig,
         grid: icon_grid.IconGrid,
-        backend: gtx_typing.Backend | None,
+        backend: model_backends.BackendLike,
         decomposition_info: decomposition_defs.DecompositionInfo,
     ) -> None:
         # data_path is None only for testcases, which do not construct this reader.

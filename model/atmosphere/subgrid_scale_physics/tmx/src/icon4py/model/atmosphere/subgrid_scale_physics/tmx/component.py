@@ -20,7 +20,6 @@ from icon4py.model.common.states import surface_flux_state
 
 if TYPE_CHECKING:
     import gt4py.next as gtx
-    import gt4py.next.typing as gtx_typing
 
     from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
     from icon4py.model.common import time
@@ -55,7 +54,7 @@ class TmxComponent:
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         dtime: time.RelativeTime,
-        backend: gtx_typing.Backend | None = None,
+        backend: model_backends.BackendLike = None,
         exchange: decomposition.ExchangeRuntime,
     ) -> None:
         self._dt_seconds = ta.wpfloat(dtime.total_seconds())

@@ -22,8 +22,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.common.grid import grid_manager as gm
 
 
@@ -42,7 +40,7 @@ def read_from_file(
     *,
     config: FromFileConfig,
     grid_manager: gm.GridManager,
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """Read the topography field from a serialised ICON snapshot.
