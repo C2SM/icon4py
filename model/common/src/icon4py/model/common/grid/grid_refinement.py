@@ -177,7 +177,7 @@ def is_placed_with_owned(
             # Following ICON (mo_setup_subdivision.f90, refine_edges): refin 1-2 edges are kept
             # at any halo level, refin 3-4 at halo levels 1-2, refin 5-6 and negative at level 1.
             first_or_second = first | (
-                halo_levels == decomposition.DecompositionFlag.SECOND_HALO_LEVEL
+                halo_levels == decomposition.DecompositionFlag.SECOND_HALO_LEVEL.value
             )
             kept = (
                 (halo & ((refinement_ctrl == 1) | (refinement_ctrl == 2)))
