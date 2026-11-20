@@ -164,9 +164,9 @@ class MuphysComponent:
         density go straight in without a copy, since the granule only reads them.
 
         Returns the tendencies together with the precip diagnostics at the surface:
-        the granule writes the precip fluxes as (cell, level) full 3D fields. whose lowest
-        level is the flux reaching the ground binded to via 
-        ``bind_output_buffers`` those diagnostic entries are the caller's own buffers, filled in place.
+        the granule writes the precip fluxes as (cell, level) full 3D fields, whose lowest
+        level is the flux reaching the ground bound to the caller's own buffers via
+        ``bind_output_buffers``.
         """
         fields = cast("dict[str, fa.CellKField[ta.wpfloat]]", state)
 

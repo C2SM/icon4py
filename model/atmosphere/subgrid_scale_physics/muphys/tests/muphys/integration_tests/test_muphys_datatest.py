@@ -180,7 +180,7 @@ def test_muphys_granule(
         expected[cells, :] = (updated.asnumpy()[cells, :] - old[cells, :]) / dtime
         np.testing.assert_array_equal(outputs[f"tend_{name}"].asnumpy(), expected, err_msg=name)
 
-    # The component returns the precip diagnostics at the surface. 
+    # The component returns the precip diagnostics at the surface.
     # Verify each against the direct muphys call.
     for name in muphys_data.PRECIP_PORTS:
         np.testing.assert_array_equal(
