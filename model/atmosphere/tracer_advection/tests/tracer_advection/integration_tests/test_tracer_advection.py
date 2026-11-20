@@ -93,8 +93,8 @@ from ..utils import (
         # DaCe: `StencilTest` calls `customize_backend(self.PROGRAM, backend_like)` with the
         # backend descriptor, so `split_maps_with_nested_sdfg=False` is applied there.
         #
-        # TODO(edopao, nfarabullini): Revisit this marker once program-specific options are
-        # applied to generic backends.
+        # FIXME[#1559](edopao, nfarabullini): Revisit this marker once program-specific options
+        # are applied to generic backends.
         pytest.param(
             "2021-06-20T12:00:10.000",
             False,
