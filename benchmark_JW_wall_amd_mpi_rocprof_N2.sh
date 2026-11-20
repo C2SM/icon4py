@@ -88,20 +88,18 @@ if [[ ! -d ${GT4PY_BUILD_CACHE_DIR} ]]; then
         --config-file-path ${CONFIG_DIR}/config.yml \
         --grid-file-path $(realpath ${ICON_GRID}) \
         --icon4py-backend dace_gpu \
-        --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \
-        --output-path ${OUTPUT_PATH} \
-        --no-enable-output'
+        --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL}'
     rm -rf ${OUTPUT_PATH}
 fi
 
 export ROCPROF_OUTPUT_FILENAME="rocprofv3_${GT4PY_BUILD_CACHE_DIR}"
+export ICON4PY_PROFILE_MARKERS=roctx
+
 srun -u --cpus-per-task=$SLURM_CPUS_PER_TASK --cpu-bind=cores \
     bash -c 'export CUPY_CACHE_DIR=$(pwd)/cupy_rocm_cache/rank_$SLURM_PROCID; export HIP_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${HIP_VISIBLE_DEVICES}"; rocprofv3 --kernel-trace on --marker-trace on --rccl-trace on --output-format pftrace -o ${ROCPROF_OUTPUT_FILENAME}_rank${SLURM_PROCID} --perfetto-buffer-size 2097152 --perfetto-shmem-size-hint 16384 --perfetto-buffer-fill-policy discard -- \
     icon4py-driver \
     --config-file-path ${CONFIG_DIR}/config.yml \
     --grid-file-path $(realpath ${ICON_GRID}) \
     --icon4py-backend dace_gpu \
-    --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \
-    --output-path ${OUTPUT_PATH} \
-    --no-enable-output'
+    --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL}'
 rm -rf ${OUTPUT_PATH}
