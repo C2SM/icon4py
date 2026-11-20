@@ -595,6 +595,38 @@ class SingleNodeReductions(Reductions):
         return array_ns.sum(buffer).item() / buffer.size
 
 
+def find_global_absolute_maximum(
+    buffer: data_alloc.NDArray,
+    owner_mask: data_alloc.NDArray,
+    reductions: Reductions,
+) -> tuple[state_utils.ScalarType, int]:
+    """
+    Find the largest value of buffer on all ranks, with the sign of the value is kept.
+
+    Args:
+        buffer: local buffer.
+        owner_mask: owner mask of 'buffer'.
+        reductions: global reductions of the current decomposition.
+
+    Returns:
+        The largest value and the smallest vertical index at which the largest value is found.
+    """
+    array_ns = data_alloc.array_namespace(buffer)
+    global_max = reductions.max(buffer)
+    global_min = reductions.min(buffer)
+    value = global_max if global_max >= -global_min else global_min
+
+    num_levels = buffer.shape[1]
+    level_holds_value = array_ns.any(buffer[owner_mask] == value, axis=0)
+    local_level = (
+        int(array_ns.argmax(level_holds_value))
+        if bool(array_ns.any(level_holds_value))
+        else num_levels
+    )
+    level = int(reductions.min(array_ns.asarray(local_level)))
+    return value, level if level < num_levels else -1
+
+
 def get_runtype(with_mpi: bool = False) -> RunType:
     if with_mpi:
         return MultiNodeRun()
