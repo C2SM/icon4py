@@ -47,10 +47,10 @@ def _from_np_dtype(dtype: np.dtype) -> _definitions.ScalarKind:
 def array_info(
     ptr: cffi.FFI.CData,
     shape: tuple[int, ...],
-    on_gpu: bool,
+    use_device: bool,
     is_optional: bool,
 ) -> _definitions.ArrayInfo:
-    return (ptr, shape, on_gpu, is_optional)
+    return (ptr, shape, use_device, is_optional)
 
 
 def array_to_array_info(
@@ -68,14 +68,14 @@ def array_to_array_info(
     - the array is kept alive to avoid deallocation of the array before the pointer in 'ArrayInfo' is used;
     - the array is converted to Fortran layout.
     """
-    on_gpu = not isinstance(arr, np.ndarray)
-    xp = cp if on_gpu else np
+    use_device = not isinstance(arr, np.ndarray)
+    xp = cp if use_device else np
     if ffi is None:
         ffi = cffi.FFI()
     if as_fortran_layout and not arr.flags["F_CONTIGUOUS"]:
         arr = xp.asfortranarray(arr)
 
-    addr = arr.ctypes.data if not on_gpu else arr.data.ptr  # type: ignore[attr-defined] # we claim it's numpy while the 2nd case is for cupy
+    addr = arr.ctypes.data if not use_device else arr.data.ptr  # type: ignore[attr-defined] # we claim it's numpy while the 2nd case is for cupy
     strtype = _codegen.BUILTIN_TO_CPP_TYPE[_from_np_dtype(arr.dtype)]
     ptr = ffi.cast(f"{strtype}*", addr)
 
@@ -83,4 +83,4 @@ def array_to_array_info(
         # bind the lifetime of the `arr` to `ptr`
         ptr = ffi.gc(ptr, lambda _=arr: None)  # type: ignore[misc] # cannot infer type of lambda
 
-    return array_info(ptr, arr.shape, on_gpu, False)
+    return array_info(ptr, arr.shape, use_device, False)

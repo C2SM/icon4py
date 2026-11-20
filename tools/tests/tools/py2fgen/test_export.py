@@ -56,3 +56,28 @@ def test_get_param_descriptor_from_annotation(testee, expected):
             testee, annotation_descriptor_hook=float_param_descriptor_hook
         )
         assert result == expected
+
+
+def test_metadata_param():
+    @py2fgen.export()
+    def testee(
+        a: Annotated[int, py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32)],
+        _metadata: py2fgen.Metadata,
+    ) -> None:
+        received.update(a=a, _metadata=_metadata)
+
+    received: dict[str, Any] = {}
+    metadata = py2fgen.Metadata(use_device=False)
+
+    assert testee.with_metadata
+    assert list(testee.param_descriptors) == ["a"]
+    testee(ffi=None, perf_counters=None, a=1, _metadata=metadata)
+    assert received == {"a": 1, "_metadata": metadata}
+
+
+def test_without_metadata_param():
+    @py2fgen.export()
+    def testee(a: Annotated[int, py2fgen.ScalarParamDescriptor(dtype=py2fgen.INT32)]) -> None:
+        pass
+
+    assert not testee.with_metadata
