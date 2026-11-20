@@ -436,6 +436,12 @@ class SolveNonhydro:
         self._metric_state_nonhydro = metric_state_nonhydro
         self._interpolation_state = interpolation_state
         self._vertical_params = vertical_params
+        if self._vertical_params.nflatlev == 0:
+            # TODO(havogt): needs the upward extrapolation of the top half level, see
+            # https://github.com/C2SM/icon4py/issues/1418
+            raise NotImplementedError(
+                "nflatlev == 0 (no flat levels below the model top) is not supported."
+            )
         self._edge_geometry = edge_geometry
         self._cell_params = cell_geometry
         self._determine_local_domains()
@@ -710,6 +716,18 @@ class SolveNonhydro:
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels + 1),
+            },
+        )
+        self._set_constant_on_surface_half_level_on_cells = setup_program(
+            backend=backend,
+            program=vertical_operations.set_constant_on_half_levels_on_cells,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary,
+                "horizontal_end": self._end_cell_end,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(self._grid.num_levels),
                 "vertical_end": gtx.int32(self._grid.num_levels + 1),
             },
         )
@@ -1247,6 +1265,13 @@ class SolveNonhydro:
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             current_exner=prognostic_states.current.exner,
         )
+        # No mass flux through the ground: the interpolation above stops one half level short
+        # of the surface, and the implicit solver multiplies rho_ic there by the surface w
+        # (ICON relies on the zero initialization instead)
+        self._set_constant_on_surface_half_level_on_cells(
+            field=diagnostic_state_nh.rho_at_cells_on_half_levels,
+            value=ta.wpfloat(0.0),
+        )
 
         log.debug("predictor: start stencil compute_rho_theta_pgrad_and_update_vn")
         self._compute_hydrostatic_correction_term(
@@ -1540,6 +1565,13 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
+        if prepare_fluxes_for_advection:
+            # No mass flux through the ground for the tracers' density update: the solver above
+            # stops one half level short of the surface (ICON relies on the zero initialization)
+            self._set_constant_on_surface_half_level_on_cells(
+                field=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                value=ta.wpfloat(0.0),
+            )
 
         # prepare flux field for tracer advection on lateral boundary, if exists
         if self._grid.limited_area:
