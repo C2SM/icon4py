@@ -7,17 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from gt4py.next import typing as gtx_typing
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.atmosphere.tracer_advection import tracer_advection
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_type
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid import (
-    base as base_grid,
-    geometry_attributes as geometry_attrs,
-    horizontal as h_grid,
-)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions as test_defs,
@@ -62,37 +56,37 @@ from ..utils import (
             "2021-06-20T12:00:10.000",
             False,
             1,
-            tracer_advection.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
-            tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            tracer_advection.VerticalAdvectionType.NO_ADVECTION,
-            tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
+            tracer_advection_type.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
+            tracer_advection_type.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            tracer_advection_type.VerticalAdvectionType.NO_ADVECTION,
+            tracer_advection_type.VerticalAdvectionLimiter.NO_LIMITER,
         ),
         (
             "2021-06-20T12:00:20.000",
             True,
             1,
-            tracer_advection.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
-            tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            tracer_advection.VerticalAdvectionType.NO_ADVECTION,
-            tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
+            tracer_advection_type.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
+            tracer_advection_type.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            tracer_advection_type.VerticalAdvectionType.NO_ADVECTION,
+            tracer_advection_type.VerticalAdvectionLimiter.NO_LIMITER,
         ),
         (
             "2021-06-20T12:00:10.000",
             False,
             4,
-            tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
-            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            tracer_advection.VerticalAdvectionType.THIRD_ORDER_PPM,
-            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+            tracer_advection_type.HorizontalAdvectionType.NO_ADVECTION,
+            tracer_advection_type.HorizontalAdvectionLimiter.NO_LIMITER,
+            tracer_advection_type.VerticalAdvectionType.THIRD_ORDER_PPM,
+            tracer_advection_type.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
         (
             "2021-06-20T12:00:20.000",
             True,
             4,
-            tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
-            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            tracer_advection.VerticalAdvectionType.THIRD_ORDER_PPM,
-            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+            tracer_advection_type.HorizontalAdvectionType.NO_ADVECTION,
+            tracer_advection_type.HorizontalAdvectionLimiter.NO_LIMITER,
+            tracer_advection_type.VerticalAdvectionType.THIRD_ORDER_PPM,
+            tracer_advection_type.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
     ],
 )

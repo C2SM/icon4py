@@ -71,6 +71,15 @@ def _set_program_specific_dace_options(
         backend_descriptor["use_zero_origin"] = True
         optimization_args.setdefault("vertical_split_allow_shared_output", True)
         optimization_args.setdefault("vertical_split_shared_output_dimension", dimension.KDim)
+    # Splitting maps creates a deep copy of the nested SDFGs for every fragment,
+    # which makes the optimization and compilation very slow. Both tracer programs
+    # inline the vertical PPM flux kernel; on dace_cpu (MCH grid) this flag cuts their
+    # compile time from ~1100s to ~200s each.
+    if program_name in (
+        "compute_tracer_advection_after_horizontal_limiter",
+        "compute_vertical_tracer_flux",
+    ):
+        optimization_args["split_maps_with_nested_sdfg"] = False
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
         if device != model_backends.DeviceType.ROCM:

@@ -14,9 +14,40 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_vertically import (
     integrate_tracer_vertically,
 )
+from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import VerticalAdvectionType
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
+
+
+def integrate_tracer_vertically_numpy(  # noqa: PLR0917
+    tracer_now: np.ndarray,
+    rhodz_now: np.ndarray,
+    p_mflx_tracer_v: np.ndarray,
+    deepatmo_divzl: np.ndarray,
+    deepatmo_divzu: np.ndarray,
+    rhodz_new: np.ndarray,
+    k: np.ndarray,
+    p_dtime: float,
+    ivadv_tracer: int,
+    iadv_slev_jt: int,
+) -> np.ndarray:
+    if ivadv_tracer != VerticalAdvectionType.NO_ADVECTION.value:
+        tracer_new = np.where(
+            (iadv_slev_jt <= k),
+            (
+                tracer_now * rhodz_now
+                + p_dtime
+                * (
+                    p_mflx_tracer_v[:, 1:] * deepatmo_divzl
+                    - p_mflx_tracer_v[:, :-1] * deepatmo_divzu
+                )
+            )
+            / rhodz_new,
+            tracer_now,
+        )
+        return tracer_new
+    return tracer_now
 
 
 class TestIntegrateTracerVertically(stencil_tests.StencilTest):
@@ -39,23 +70,18 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
         p_dtime: float,
         **kwargs: Any,
     ) -> dict:
-        if ivadv_tracer != 0:
-            tracer_new = np.where(
-                (iadv_slev_jt <= k),
-                (
-                    tracer_now * rhodz_now
-                    + p_dtime
-                    * (
-                        p_mflx_tracer_v[:, 1:] * deepatmo_divzl
-                        - p_mflx_tracer_v[:, :-1] * deepatmo_divzu
-                    )
-                )
-                / rhodz_new,
-                tracer_now,
-            )
-        else:
-            tracer_new = tracer_now
-
+        tracer_new = integrate_tracer_vertically_numpy(
+            tracer_now,
+            rhodz_now,
+            p_mflx_tracer_v,
+            deepatmo_divzl,
+            deepatmo_divzu,
+            rhodz_new,
+            k,
+            p_dtime,
+            ivadv_tracer,
+            iadv_slev_jt,
+        )
         return dict(tracer_new=tracer_new)
 
     @stencil_tests.input_data_fixture

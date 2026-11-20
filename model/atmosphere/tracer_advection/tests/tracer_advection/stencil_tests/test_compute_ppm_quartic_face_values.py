@@ -19,6 +19,49 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
+def compute_ppm_quartic_face_values_numpy(
+    p_cc: np.ndarray,
+    p_cellhgt_mc_now: np.ndarray,
+    z_slope: np.ndarray,
+) -> np.ndarray:
+    """Return p_face for interior levels k=2..nlev-1 (shape: (ncells, nlev-2))."""
+    p_cellhgt_mc_now_k_minus_1 = p_cellhgt_mc_now[:, 1:-2]
+    p_cellhgt_mc_now_k_minus_2 = p_cellhgt_mc_now[:, 0:-3]
+    p_cellhgt_mc_now_k_plus_1 = p_cellhgt_mc_now[:, 3:]
+    p_cellhgt_mc_now = p_cellhgt_mc_now[:, 2:-1]
+
+    p_cc_k_minus_1 = p_cc[:, 1:-1]
+    p_cc = p_cc[:, 2:]
+    z_slope_k_minus_1 = z_slope[:, 1:-1]
+    z_slope = z_slope[:, 2:]
+
+    zgeo1 = p_cellhgt_mc_now_k_minus_1 / (p_cellhgt_mc_now_k_minus_1 + p_cellhgt_mc_now)
+    zgeo2 = 1.0 / (
+        p_cellhgt_mc_now_k_minus_2
+        + p_cellhgt_mc_now_k_minus_1
+        + p_cellhgt_mc_now
+        + p_cellhgt_mc_now_k_plus_1
+    )
+    zgeo3 = (p_cellhgt_mc_now_k_minus_2 + p_cellhgt_mc_now_k_minus_1) / (
+        2.0 * p_cellhgt_mc_now_k_minus_1 + p_cellhgt_mc_now
+    )
+    zgeo4 = (p_cellhgt_mc_now_k_plus_1 + p_cellhgt_mc_now) / (
+        2 * p_cellhgt_mc_now + p_cellhgt_mc_now_k_minus_1
+    )
+
+    p_face = (
+        p_cc_k_minus_1
+        + zgeo1 * (p_cc - p_cc_k_minus_1)
+        + zgeo2
+        * (
+            (2 * p_cellhgt_mc_now * zgeo1) * (zgeo3 - zgeo4) * (p_cc - p_cc_k_minus_1)
+            - zgeo3 * p_cellhgt_mc_now_k_minus_1 * z_slope
+            + zgeo4 * p_cellhgt_mc_now * z_slope_k_minus_1
+        )
+    )
+    return p_face
+
+
 class TestComputePpmQuarticFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_quartic_face_values
     OUTPUTS = (stencil_tests.Output("p_face", gtslice=(slice(None), slice(2, -1))),)
@@ -32,40 +75,7 @@ class TestComputePpmQuarticFaceValues(stencil_tests.StencilTest):
         z_slope: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        p_cellhgt_mc_now_k_minus_1 = p_cellhgt_mc_now[:, 1:-2]
-        p_cellhgt_mc_now_k_minus_2 = p_cellhgt_mc_now[:, 0:-3]
-        p_cellhgt_mc_now_k_plus_1 = p_cellhgt_mc_now[:, 3:]
-        p_cellhgt_mc_now = p_cellhgt_mc_now[:, 2:-1]
-
-        p_cc_k_minus_1 = p_cc[:, 1:-1]
-        p_cc = p_cc[:, 2:]
-        z_slope_k_minus_1 = z_slope[:, 1:-1]
-        z_slope = z_slope[:, 2:]
-
-        zgeo1 = p_cellhgt_mc_now_k_minus_1 / (p_cellhgt_mc_now_k_minus_1 + p_cellhgt_mc_now)
-        zgeo2 = 1.0 / (
-            p_cellhgt_mc_now_k_minus_2
-            + p_cellhgt_mc_now_k_minus_1
-            + p_cellhgt_mc_now
-            + p_cellhgt_mc_now_k_plus_1
-        )
-        zgeo3 = (p_cellhgt_mc_now_k_minus_2 + p_cellhgt_mc_now_k_minus_1) / (
-            2.0 * p_cellhgt_mc_now_k_minus_1 + p_cellhgt_mc_now
-        )
-        zgeo4 = (p_cellhgt_mc_now_k_plus_1 + p_cellhgt_mc_now) / (
-            2 * p_cellhgt_mc_now + p_cellhgt_mc_now_k_minus_1
-        )
-
-        p_face = (
-            p_cc_k_minus_1
-            + zgeo1 * (p_cc - p_cc_k_minus_1)
-            + zgeo2
-            * (
-                (2 * p_cellhgt_mc_now * zgeo1) * (zgeo3 - zgeo4) * (p_cc - p_cc_k_minus_1)
-                - zgeo3 * p_cellhgt_mc_now_k_minus_1 * z_slope
-                + zgeo4 * p_cellhgt_mc_now * z_slope_k_minus_1
-            )
-        )
+        p_face = compute_ppm_quartic_face_values_numpy(p_cc, p_cellhgt_mc_now, z_slope)
         return dict(p_face=p_face)
 
     @stencil_tests.input_data_fixture

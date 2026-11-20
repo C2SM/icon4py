@@ -19,6 +19,16 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
+def compute_ppm4gpu_parabola_coefficients_numpy(
+    z_face_up: np.ndarray,
+    z_face_low: np.ndarray,
+    p_cc: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    z_delta_q = 0.5 * (z_face_up - z_face_low)
+    z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)
+    return z_delta_q, z_a1
+
+
 class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
     PROGRAM = compute_ppm4gpu_parabola_coefficients
     OUTPUTS = ("z_delta_q", "z_a1")
@@ -32,8 +42,7 @@ class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
         p_cc: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_delta_q = 0.5 * (z_face_up - z_face_low)
-        z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)
+        z_delta_q, z_a1 = compute_ppm4gpu_parabola_coefficients_numpy(z_face_up, z_face_low, p_cc)
         return dict(z_delta_q=z_delta_q, z_a1=z_a1)
 
     @stencil_tests.input_data_fixture

@@ -8,6 +8,7 @@
 
 import gt4py.next as gtx
 from gt4py.next import abs, astype, floor, where  # noqa: A004
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import wpfloat
@@ -24,6 +25,7 @@ def _sum_neighbor_contributions_all(
     js: fa.CellKHalfField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
+    elev: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     js_gt0 = js >= wpfloat(0.0)
     js_gt1 = js >= wpfloat(1.0)
@@ -33,52 +35,92 @@ def _sum_neighbor_contributions_all(
 
     prod_p0 = where(
         mask1 & js_gt0,
-        p_cc(dims.KHalfDim + 0.5) * p_cellmass_now(dims.KHalfDim + 0.5),
+        concat_where(
+            dims.KHalfDim < elev + 1,
+            p_cc(dims.KHalfDim + 0.5) * p_cellmass_now(dims.KHalfDim + 0.5),
+            wpfloat(0.0),
+        ),
         wpfloat(0.0),
     )
     prod_p1 = where(
         mask1 & js_gt1,
-        p_cc(dims.KHalfDim + 1.5) * p_cellmass_now(dims.KHalfDim + 1.5),
+        concat_where(
+            dims.KHalfDim < elev,
+            p_cc(dims.KHalfDim + 1.5) * p_cellmass_now(dims.KHalfDim + 1.5),
+            wpfloat(0.0),
+        ),
         wpfloat(0.0),
     )
     prod_p2 = where(
         mask1 & js_gt2,
-        p_cc(dims.KHalfDim + 2.5) * p_cellmass_now(dims.KHalfDim + 2.5),
+        concat_where(
+            dims.KHalfDim < elev - 1,
+            p_cc(dims.KHalfDim + 2.5) * p_cellmass_now(dims.KHalfDim + 2.5),
+            wpfloat(0.0),
+        ),
         wpfloat(0.0),
     )
     prod_p3 = where(
         mask1 & js_gt3,
-        p_cc(dims.KHalfDim + 3.5) * p_cellmass_now(dims.KHalfDim + 3.5),
+        concat_where(
+            dims.KHalfDim < elev - 2,
+            p_cc(dims.KHalfDim + 3.5) * p_cellmass_now(dims.KHalfDim + 3.5),
+            wpfloat(0.0),
+        ),
         wpfloat(0.0),
     )
     prod_p4 = where(
         mask1 & js_gt4,
-        p_cc(dims.KHalfDim + 4.5) * p_cellmass_now(dims.KHalfDim + 4.5),
+        concat_where(
+            dims.KHalfDim < elev - 3,
+            p_cc(dims.KHalfDim + 4.5) * p_cellmass_now(dims.KHalfDim + 4.5),
+            wpfloat(0.0),
+        ),
         wpfloat(0.0),
     )
     prod_m0 = where(
         mask2 & js_gt0,
-        p_cc(dims.KHalfDim - 0.5) * p_cellmass_now(dims.KHalfDim - 0.5),
+        concat_where(
+            dims.KHalfDim > 0,
+            p_cc(dims.KHalfDim - 0.5) * p_cellmass_now(dims.KHalfDim - 0.5),
+            wpfloat(0.0),
+        ),
         wpfloat(0.0),
     )
     prod_m1 = where(
         mask2 & js_gt1,
-        p_cc(dims.KHalfDim - 1.5) * p_cellmass_now(dims.KHalfDim - 1.5),
+        concat_where(
+            dims.KHalfDim > 1,
+            p_cc(dims.KHalfDim - 1.5) * p_cellmass_now(dims.KHalfDim - 1.5),
+            wpfloat(0.0),
+        ),
         wpfloat(0.0),
     )
     prod_m2 = where(
         mask2 & js_gt2,
-        p_cc(dims.KHalfDim - 2.5) * p_cellmass_now(dims.KHalfDim - 2.5),
+        concat_where(
+            dims.KHalfDim > 2,
+            p_cc(dims.KHalfDim - 2.5) * p_cellmass_now(dims.KHalfDim - 2.5),
+            wpfloat(0.0),
+        ),
         wpfloat(0.0),
     )
     prod_m3 = where(
         mask2 & js_gt3,
-        p_cc(dims.KHalfDim - 3.5) * p_cellmass_now(dims.KHalfDim - 3.5),
+        concat_where(
+            dims.KHalfDim > 3,
+            p_cc(dims.KHalfDim - 3.5) * p_cellmass_now(dims.KHalfDim - 3.5),
+            wpfloat(0.0),
+        ),
         wpfloat(0.0),
     )
     prod_m4 = where(
         mask2 & js_gt4,
-        p_cc(dims.KHalfDim - 4.5) * p_cellmass_now(dims.KHalfDim - 4.5),
+        concat_where(
+            dims.KHalfDim > 4,
+            p_cc(dims.KHalfDim - 4.5) * p_cellmass_now(dims.KHalfDim - 4.5),
+            wpfloat(0.0),
+        ),
         wpfloat(0.0),
     )
 
@@ -105,6 +147,7 @@ def _compute_ppm4gpu_integer_flux(
     p_upflux: fa.CellKHalfField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
+    elev: gtx.int32,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     js = floor(abs(z_cfl)) - wpfloat(1.0)
@@ -121,6 +164,7 @@ def _compute_ppm4gpu_integer_flux(
         js=js,
         p_cc=p_cc,
         p_cellmass_now=p_cellmass_now,
+        elev=elev,
     )
 
     z_iflx = wsign * p_cc_cellmass_now_jks
@@ -138,6 +182,7 @@ def compute_ppm4gpu_integer_flux(
     p_upflux: fa.CellKHalfField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
+    elev: gtx.int32,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -151,6 +196,7 @@ def compute_ppm4gpu_integer_flux(
         p_upflux=p_upflux,
         k_half=k_half,
         slev=slev,
+        elev=elev,
         p_dtime=p_dtime,
         out=p_upflux,
         domain={
