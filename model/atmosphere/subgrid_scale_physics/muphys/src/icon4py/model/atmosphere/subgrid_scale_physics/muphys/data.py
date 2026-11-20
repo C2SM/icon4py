@@ -45,9 +45,7 @@ OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     # Dimensions are added where the field is used, keeping the shared registry
     # dimension-agnostic. PhysicsState uses them to allocate output buffers.
     **{
-        port: dataclasses.replace(
-            data.PRECIPITATION_CF_ATTRIBUTES[key], dims=(dims.CellDim, dims.KDim)
-        )
+        port: dataclasses.replace(data.PRECIPITATION_CF_ATTRIBUTES[key], dims=(dims.CellDim,))
         for port, key in _PRECIP_KEY.items()
     },
 }

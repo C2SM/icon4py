@@ -180,13 +180,11 @@ def test_muphys_granule(
         expected[cells, :] = (updated.asnumpy()[cells, :] - old[cells, :]) / dtime
         np.testing.assert_array_equal(outputs[f"tend_{name}"].asnumpy(), expected, err_msg=name)
 
-    # ICON saves only aggregate surface diagnostics. Verify the full pflx
-    # profile and each surface diagnostic against the direct muphys call.
-    np.testing.assert_array_equal(outputs["pflx"].asnumpy(), direct_precip["pflx"].asnumpy())
-    for name in ("pr", "ps", "pi", "pg", "pre"):
+    # The component returns the precip diagnostics at the surface. 
+    # Verify each against the direct muphys call.
+    for name in muphys_data.PRECIP_PORTS:
         np.testing.assert_array_equal(
-            outputs[name].asnumpy()[:, -1],
-            direct_precip[name].asnumpy()[:, -1],
+            outputs[name].asnumpy(), direct_precip[name].asnumpy()[:, -1], err_msg=name
         )
 
     for name, tracer_index in (
@@ -224,14 +222,13 @@ def test_muphys_granule(
         err_msg="tend_temperature above cloud",
     )
 
-    # surface precip: the granule keeps the surface value in the last level; ICON
-    # only stores the aggregated prm_field diagnostics (rsfl = rain,
-    # ssfl = ice + snow + graupel, pr = total, ufcs = energy flux)
-    rain = outputs["pr"].asnumpy()[:, -1]
-    ice = outputs["pi"].asnumpy()[:, -1]
-    snow = outputs["ps"].asnumpy()[:, -1]
-    graupel = outputs["pg"].asnumpy()[:, -1]
-    energy_flux = outputs["pre"].asnumpy()[:, -1]
+    # surface precip: ICON only stores the aggregated prm_field diagnostics
+    # (rsfl = rain, ssfl = ice + snow + graupel, pr = total, ufcs = energy flux)
+    rain = outputs["pr"].asnumpy()
+    ice = outputs["pi"].asnumpy()
+    snow = outputs["ps"].asnumpy()
+    graupel = outputs["pg"].asnumpy()
+    energy_flux = outputs["pre"].asnumpy()
 
     test_utils.assert_dallclose(
         rain,

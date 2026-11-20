@@ -227,9 +227,15 @@ def test_driver_writes_precipitation_from_muphys(
         _find_one(tmp_path, "precipitation_*.nc"), common_io.OutputBackend.NETCDF
     ) as ds:
         assert ds.sizes["time"] == 2
-        for name in ("precipitation_flux", "rainfall_flux", "qv", "temperature"):
+        for name, dims in (
+            # the precipitation fluxes are surface fields
+            ("precipitation_flux", ("time", "cell")),
+            ("rainfall_flux", ("time", "cell")),
+            ("qv", ("time", "level", "cell")),
+            ("temperature", ("time", "level", "cell")),
+        ):
             assert name in ds.variables, f"{name} missing from output"
-            assert ds[name].dims == ("time", "level", "cell")
+            assert ds[name].dims == dims, name
             assert np.isfinite(ds[name].values).all()
         assert ds["precipitation_flux"].attrs["standard_name"] == "precipitation_flux"
         assert ds["qv"].attrs["standard_name"] == "specific_humidity"
