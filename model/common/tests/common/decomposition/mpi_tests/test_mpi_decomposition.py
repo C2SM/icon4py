@@ -8,6 +8,7 @@
 import copy
 import functools
 import logging
+import math
 from typing import Any
 
 import gt4py.next as gtx
@@ -359,6 +360,30 @@ def test_exchange_and_reduction_cached(
     reductions1 = decomp_defs.create_reduction(process_props, decomposition_info)
     reductions2 = decomp_defs.create_reduction(process_props, decomposition_info)
     assert reductions1 is reductions2
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("non_finite", [np.nan, np.inf, -np.inf])
+def test_global_sum_propagates_a_non_finite_value_held_by_one_rank(
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
+    non_finite: float,
+) -> None:
+    """``MPI.MAX`` does not reliably propagate NaN, so the fixed-point sum must be bypassed
+    whenever any rank holds a non-finite value, and the plain sum propagates it like NumPy."""
+    reductions = decomp_defs.create_reduction(process_props, decomposition_info)
+    owner_mask = decomposition_info.owner_mask(dims.CellDim)
+    values = np.ones(owner_mask.shape[0])
+    if process_props.rank == 0:
+        values[np.flatnonzero(owner_mask)[0]] = non_finite
+
+    result = reductions.sum(values)
+
+    assert math.isnan(result) if math.isnan(non_finite) else result == non_finite, (
+        f"rank={process_props.rank}: sum = {result}, expected {non_finite}"
+    )
 
 
 @pytest.mark.mpi(min_size=2)

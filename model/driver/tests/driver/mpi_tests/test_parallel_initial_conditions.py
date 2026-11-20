@@ -67,10 +67,6 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     if experiment.description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
-    atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11
-    # NOTE: actually vn, w, exner, theta_v, rho have delta = 0.0 also on
-    # distributed GPU, u,v do not because they are computed with RBF
-
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
         model_options.customize_backend(program=None, backend=backend_like)
     ):
@@ -80,14 +76,14 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         # dace_cpu should also be deterministic, but it results in 1.8e-14
         # delta on vn and 4.3e-19 on w on the initial condition. We haven't
         # investigated this yet.
-        # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
-        # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
-        # 0.0 is too strict.
-        rtol = 1e-15
+        rtol = 0.0
         atol = 0.0
     else:
+        # NOTE: actually vn, w, exner, theta_v, rho have delta = 0.0 also on
+        # distributed GPU, u,v do not because they are computed with RBF
         rtol = 0.0
         atol = 2e-11
+    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=rtol)
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
