@@ -38,11 +38,12 @@ export GHEX_GPU_TYPE=NVIDIA
 export GHEX_GPU_ARCH=90
 export GHEX_TRANSPORT_BACKEND=MPI
 export PYTHONOPTIMIZE=2
-export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx17300m_res3290m/torus_100000mx17300m_res3290m.nc
+# export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx17300m_res3290m/torus_100000mx17300m_res3290m.nc
 # export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res100m/torus_100000mx100000m_res100m.nc
 # export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res500m/torus_100000mx100000m_res500m.nc
-# export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res5000m/torus_100000mx100000m_res5000m.nc
-export CONFIG_FILE=/capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/dry_warm_bubble.yaml
+export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res5000m/torus_100000mx100000m_res5000m.nc
+# export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res1000m/torus_100000mx100000m_res1000m.nc
+export CONFIG_FILE=/capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/warm_bubble.yaml
 
 #  --print-distributed-debug-msg
 # cpu run
