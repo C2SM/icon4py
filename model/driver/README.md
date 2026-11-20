@@ -82,8 +82,8 @@ The variables a run can write are validated at startup. They are
 - the precipitation fluxes of the microphysics (`precipitation_flux`,
   `rainfall_flux`, `snowfall_flux`, `graupelfall_flux`, `icefall_flux`,
   `precipitation_energy_flux`), when `muphys` is configured. The physics needs all
-  six tracers active. The fluxes are written per model level (the surface value is the
-  lowest level), and the initial time slice is zero since the physics has not run yet.
+  six tracers active. The fluxes are surface fields, written as `(time, cell)`, and the
+  initial time slice is zero since the physics has not run yet.
 
 Fields are written with their horizontal dimension (`cell`, `edge` or `vertex`) and,
 if they have one, their vertical dimension (model or half levels): a surface field
