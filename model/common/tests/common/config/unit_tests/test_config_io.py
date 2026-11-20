@@ -153,6 +153,18 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
     assert config_io.read_yaml_str(config_io.write_yaml_str(reference), ExampleConfig) == reference
 
 
+@dataclasses.dataclass
+class TupleConfig:
+    center: tuple[float, float] = (0.25, 0.5)
+
+
+def test_write_yaml_str_tuple_as_plain_sequence() -> None:
+    reference = TupleConfig()
+    yaml_str = config_io.write_yaml_str(reference)
+    assert yaml_str == "center:\n  - 0.25\n  - 0.5\n"
+    assert config_io.read_yaml_str(yaml_str, TupleConfig) == reference
+
+
 @pytest.mark.parametrize(
     ("input_str", "config_type", "reference"),
     (
