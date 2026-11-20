@@ -19,7 +19,6 @@ Being datatests, they require the JW grid and experiment configuration.
 
 import pathlib
 
-import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 import xarray as xr
@@ -58,7 +57,7 @@ def _open_output(path: pathlib.Path, output_backend: common_io.OutputBackend) ->
 def _run_driver(
     experiment_description: test_defs.ExperimentDescription,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend: model_backends.BackendLike,
     config: driver_config.ExperimentConfig,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
@@ -89,7 +88,7 @@ def test_driver_writes_output(
     download_ser_data: None,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> None:
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
     config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
@@ -104,7 +103,7 @@ def test_driver_writes_output(
         ),
     )
 
-    _run_driver(experiment_description, process_props, backend, config)
+    _run_driver(experiment_description, process_props, backend_like, config)
 
     # the UGRID grid file is written on monitor init
     _find_one(tmp_path, "*_ugrid.nc")
@@ -139,7 +138,7 @@ def test_driver_writes_configured_field_groups(
     download_ser_data: None,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> None:
     """Two field groups on their own schedules, each in its own file series."""
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
@@ -166,7 +165,7 @@ def test_driver_writes_configured_field_groups(
         ),
     )
 
-    _run_driver(experiment_description, process_props, backend, config)
+    _run_driver(experiment_description, process_props, backend_like, config)
 
     # only the configured groups are written
     assert not list(tmp_path.rglob(f"{OUTPUT_BASENAME}_*"))
@@ -198,7 +197,7 @@ def test_driver_writes_precipitation_from_muphys(
     download_ser_data: None,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> None:
     """A moist run with microphysics offers the tracers and the precipitation fluxes."""
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
@@ -221,7 +220,7 @@ def test_driver_writes_precipitation_from_muphys(
         ),
     )
 
-    _run_driver(experiment_description, process_props, backend, config)
+    _run_driver(experiment_description, process_props, backend_like, config)
 
     with _open_output(
         _find_one(tmp_path, "precipitation_*.nc"), common_io.OutputBackend.NETCDF

@@ -13,7 +13,7 @@ from typing import Annotated
 
 import typer
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
@@ -81,11 +81,9 @@ def main(
 
     config = driver_config.read_experiment_config_from_yaml(config_file_path)
 
-    backend = model_options.customize_backend(
-        program=None,
-        backend=driver_utils.get_backend_from_name(icon4py_backend),
-        backend_config=config.driver.backend_config,
-    )
+    # Kept as a `BackendLike`: every program builds its own concrete backend from it,
+    # with the options `model_options.get_options` selects for the program's name.
+    backend = driver_utils.get_backend_from_name(icon4py_backend)
     allocator = model_backends.get_allocator(backend)
 
     grid_manager = driver_utils.create_grid_manager(

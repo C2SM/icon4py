@@ -21,7 +21,13 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
-from icon4py.model.common import dimension as dims, time, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    model_backends,
+    model_options,
+    time,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_attributes
@@ -212,7 +218,7 @@ class TimerCollection:
         of it. The percentages need not sum to 100: the difference is time spent
         outside any timer.
         """
-        log.info("===== ICON4Py timer report =====")
+        log.warning("===== ICON4Py timer report =====")
         wall_time = total_wall_time if total_wall_time > 0 else None
         table_titles = (
             f"|{'timer name':^30}|"
@@ -223,8 +229,8 @@ class TimerCollection:
             f"{'max time (s)':^23}|"
             f"{'% of wall time':^23}|"
         )
-        log.info(table_titles)
-        log.info("-" * len(table_titles))
+        log.warning(table_titles)
+        log.warning("-" * len(table_titles))
         timed_total = 0.0
         for timer_name, timer in self.timers.items():
             times = []
@@ -235,7 +241,7 @@ class TimerCollection:
             if len(times) > 0:
                 timed_total += sum(times)
                 share = f"{100 * sum(times) / wall_time:.2f}" if wall_time is not None else "n/a"
-                log.info(
+                log.warning(
                     f"|{timer_name:^30}|"
                     f"{len(times):^23}|"
                     f"{statistics.mean(times):^23.8f}|"
@@ -245,14 +251,14 @@ class TimerCollection:
                     f"{share:^23}|"
                 )
             else:
-                log.info(
+                log.warning(
                     f"|{timer_name:^30}|{'not started':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|"
                 )
         if wall_time is not None:
-            log.info("-" * len(table_titles))
-            log.info(f"total wall-clock time of the simulation: {wall_time:.8f} s")
+            log.warning("-" * len(table_titles))
+            log.warning(f"total wall-clock time of the simulation: {wall_time:.8f} s")
             timed_share = 100 * timed_total / wall_time
-            log.info(
+            log.warning(
                 f"timed regions total: {timed_total:.8f} s  "
                 f"({timed_share:.2f}% of wall time; {100 - timed_share:.2f}% untimed)"
             )
@@ -287,7 +293,7 @@ def assemble_driver_states(
     *,
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
     exchange: decomposition_defs.ExchangeRuntime,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
@@ -318,7 +324,9 @@ def assemble_driver_states(
     rbf_vec_coeff_c1 = static_fields.interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C1)
     rbf_vec_coeff_c2 = static_fields.interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2)
 
-    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+    model_options.with_backend(
+        edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation, backend
+    )(
         p_e_in=prognostic_states.current.vn,
         ptr_coeff_1=rbf_vec_coeff_c1,
         ptr_coeff_2=rbf_vec_coeff_c2,

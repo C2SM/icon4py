@@ -19,6 +19,7 @@ from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
     field_type_aliases as fa,
+    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.constants import PhysicsConstants
@@ -167,7 +168,7 @@ def compute_surface_and_hydrostatic_pressure_ndarray(
         grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
     cell_domain = h_grid.domain(dims.CellDim)
-    compute_surface_and_hydrostatic_pressure.with_backend(backend)(
+    model_options.with_backend(compute_surface_and_hydrostatic_pressure, backend)(
         exner=exner,
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,

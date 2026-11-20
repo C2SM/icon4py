@@ -80,6 +80,7 @@ def test_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> None:
     _run_driver_compare_single_multi_rank(
         experiment_description=experiment_description,
@@ -87,15 +88,18 @@ def test_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional
         tmp_path=tmp_path,
         process_props=process_props,
         backend=backend,
+        backend_like=backend_like,
     )
 
 
 def _run_driver_compare_single_multi_rank(
+    *,
     experiment_description: test_defs.ExperimentDescription,
     end_of_simulation: time.EndOfSimulation,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> None:
     if experiment_description.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
@@ -139,7 +143,7 @@ def _run_driver_compare_single_multi_rank(
         config=single_rank_config,
         grid_manager=single_rank_grid_manager,
         process_props=single_rank_process_props,
-        backend=backend,
+        backend=backend_like,
     )
 
     multi_rank_config = config.with_overrides(driver={"end_of_simulation": end_of_simulation})
@@ -153,7 +157,7 @@ def _run_driver_compare_single_multi_rank(
         config=multi_rank_config,
         grid_manager=multi_rank_grid_manager,
         process_props=process_props,
-        backend=backend,
+        backend=backend_like,
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]

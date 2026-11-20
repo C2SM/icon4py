@@ -20,11 +20,10 @@ import pathlib
 import uuid
 from collections.abc import Collection, Iterable, Mapping
 
-import gt4py.next as gtx
 import xarray as xr
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
-from icon4py.model.common import exceptions, time
+from icon4py.model.common import exceptions, model_backends, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
 from icon4py.model.common.io import io as common_io
@@ -104,7 +103,7 @@ class OutputStateAssembler:
         *,
         io_config: common_io.IOConfig,
         grid: grid_base.Grid,
-        backend: gtx.typing.Backend | None,
+        backend: model_backends.BackendLike,
         static_field_factories: static_fields.StaticFieldFactories,
         tracer_config: tracer_states.TracerConfig | None,
         physics_diagnostics: Iterable[physics_state.DiagnosticOutput] | None,

@@ -15,7 +15,12 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils import (
     saturation_adjustment_stencils as satad_stencils,
 )
-from icon4py.model.common import field_type_aliases as fa, model_options, type_alias as ta
+from icon4py.model.common import (
+    field_type_aliases as fa,
+    model_backends,
+    model_options,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -111,7 +116,7 @@ class SaturationAdjustment:
         self._grid = grid
         self._vertical_params: v_grid.VerticalGrid = vertical_params
         self._metric_state: MetricStateSaturationAdjustment = metric_state
-        self._xp = data_alloc.import_array_ns(self._backend)
+        self._xp = data_alloc.import_array_ns(model_backends.get_allocator(self._backend))
 
         self._allocate_local_variables()
         self._determine_horizontal_domains()
@@ -127,23 +132,43 @@ class SaturationAdjustment:
     def _allocate_local_variables(self):
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
         self._temperature1 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            dtype=ta.wpfloat,
+            allocator=model_backends.get_allocator(self._backend),
         )
         #: it was originally named as twork in ICON. New temperature before iteration.
         self._temperature2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            dtype=ta.wpfloat,
+            allocator=model_backends.get_allocator(self._backend),
         )
         #: A mask that indicates whether the grid cell is subsaturated or not.
         self._subsaturated_mask = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=bool, allocator=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            dtype=bool,
+            allocator=model_backends.get_allocator(self._backend),
         )
         #: A mask that indicates whether next Newton iteration is required.
         self._newton_iteration_mask = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=bool, allocator=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            dtype=bool,
+            allocator=model_backends.get_allocator(self._backend),
         )
         #: latent heat vaporization / dry air heat capacity at constant volume
         self._lwdocvd = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            dtype=ta.wpfloat,
+            allocator=model_backends.get_allocator(self._backend),
         )
 
     def _initialize_gt4py_programs(self):

@@ -68,7 +68,7 @@ class Icon4pyDriver:
         self,
         *,
         config: driver_config.ExperimentConfig,
-        backend: gtx.typing.Backend | None,
+        backend: model_backends.BackendLike,
         grid: IconGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: static_fields.StaticFieldFactories,
@@ -256,7 +256,7 @@ class Icon4pyDriver:
                     prep_adv=prep_adv,
                     tracer_prep_adv=tracer_prep_adv,
                 )
-                device_utils.sync(self.backend)
+                device_utils.sync(self._allocator)
 
                 self.model_time_variables.is_first_step_in_simulation = False
 
@@ -714,7 +714,7 @@ def initialize_driver(
     config: driver_config.ExperimentConfig,
     grid_manager: gm.GridManager,
     process_props: decomposition_defs.ProcessProperties,
-    backend: gtx.typing.Backend | None,
+    backend: model_backends.BackendLike,
 ) -> Icon4pyDriver:
     if config.io is not None:
         # an existing output directory is never reused: a timestamped one is created
@@ -724,6 +724,8 @@ def initialize_driver(
             process_props=process_props,
         )
         config = config.with_overrides(io=dataclasses.replace(config.io, output_path=output_path))
+    # every program customizes its own backend from it, see `model_options.customize_backend`
+    backend = model_options.with_backend_config(backend, config.driver.backend_config)
 
     allocator = model_backends.get_allocator(backend)
 
@@ -902,7 +904,7 @@ def run_driver(
     config: driver_config.ExperimentConfig,
     grid_manager: gm.GridManager,
     process_props: decomposition_defs.ProcessProperties,
-    backend: gtx.typing.Backend | None,
+    backend: model_backends.BackendLike,
 ) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
     icon4py_driver = initialize_driver(
         config=config,
