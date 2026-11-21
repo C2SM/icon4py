@@ -20,6 +20,7 @@ from icon4py.model.common.initial_condition.analytical import (
     linear_horizontal_tracer_advection,
     linear_vertical_tracer_advection,
 )
+from icon4py.model.common.io import io_ranks as common_io_ranks
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver, driver_utils
@@ -173,8 +174,8 @@ def test_horizontal_tracer_advection_convergence(
         ds, icon4py_driver = driver.run_driver(
             config=experiment_config,
             grid_manager=grid_managers[i],
-            process_props=process_props,
             backend=backend,
+            rank_roles=common_io_ranks.NoIORanks(process_props),
         )
         simulated_tracer = ds.tracers.current.qv.ndarray
 
@@ -293,8 +294,8 @@ def test_vertical_tracer_advection_convergence(
         ds, icon4py_driver = driver.run_driver(
             config=experiment_config_local,
             grid_manager=grid_manager,
-            process_props=process_props,
             backend=backend,
+            rank_roles=common_io_ranks.NoIORanks(process_props),
         )
         simulated_tracer = ds.tracers.current.qv.ndarray
 

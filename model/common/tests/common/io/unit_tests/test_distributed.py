@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from unittest import mock
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -87,6 +89,23 @@ def test_gather_distribution_single_rank_global_sizes_are_owned_counts() -> None
     assert horizontal_size.num_cells == int(CELL_OWNER_MASK.sum())
     assert horizontal_size.num_edges == int(EDGE_OWNER_MASK.sum())
     assert horizontal_size.num_vertices == int(VERTEX_OWNER_MASK.sum())
+
+
+def test_global_horizontal_size_counts_owned_entries_only() -> None:
+    # the local grid holds its halos; the undecomposed sizes are the owned entries
+    # summed over the communicator (a single rank here). Only the counts are exchanged:
+    # the decomposition info is not copied to host for them
+    with mock.patch.object(
+        decomposition.DecompositionInfo, "as_host", side_effect=AssertionError("host copy")
+    ):
+        size = distributed.global_horizontal_size(
+            decomposition.SingleNodeProcessProperties(), synthetic_decomposition_info()
+        )
+    assert size == base.HorizontalGridSize(
+        num_cells=int(CELL_OWNER_MASK.sum()),
+        num_edges=int(EDGE_OWNER_MASK.sum()),
+        num_vertices=int(VERTEX_OWNER_MASK.sum()),
+    )
 
 
 def test_gather_distribution_rejects_unknown_leading_dimension() -> None:

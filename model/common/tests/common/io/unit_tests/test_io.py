@@ -13,6 +13,7 @@ import re
 import textwrap
 import uuid
 from typing import Any
+from unittest import mock
 
 import cattrs
 import gt4py.next as gtx
@@ -34,9 +35,12 @@ from icon4py.model.common.io.io import (
     FieldGroupMonitor,
     IOConfig,
     IOMonitor,
+    IORanksInTotal,
+    IORanksPerNode,
     OutputBackend,
     OutputInterval,
     OutputMode,
+    OutputSchedule,
     generate_name,
 )
 from icon4py.model.common.states import data
@@ -860,6 +864,41 @@ def test_io_monitor_builds_alignment_aware_rank_block_distributions(
     assert unaligned.rank_blocks["cell"].size == 4
 
 
+def test_io_monitor_decides_once_whether_its_state_is_the_undecomposed_grid(
+    test_path: pathlib.Path,
+) -> None:
+    """The identity check compares whole index arrays: one evaluation, however many groups."""
+    config = IOConfig(
+        output_path=test_path / "output",
+        field_groups=[
+            FieldGroupIOConfig(
+                basename=basename, variables=["air_density"], backend=OutputBackend.ZARR, mode=mode
+            )
+            for basename, mode in (("a", OutputMode.DISTRIBUTED), ("b", OutputMode.GATHER))
+        ],
+    )
+    is_identity = decomposition_defs.DecompositionInfo.is_identity
+    with mock.patch.object(
+        decomposition_defs.DecompositionInfo, "is_identity", autospec=True, side_effect=is_identity
+    ) as mock_is_identity:
+        monitor = IOMonitor(
+            config=config,
+            vertical_size=_simple_grid_vertical(),
+            horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+            grid_file_name=test_io_utils.grid_file,
+            grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+            dtime=time.RelativeTime(hours=1),
+            process_props=decomposition_defs.SingleNodeProcessProperties(),
+            decomposition_info=synthetic_decomposition_info(),
+        )
+    mock_is_identity.assert_called_once()
+    # a single rank whose entries are not the undecomposed grid writes through the
+    # distribution of every group's mode
+    rank_block, gather = (m._distribution for m in monitor._group_monitors)
+    assert isinstance(rank_block, distributed.RankBlockDistribution)
+    assert isinstance(gather, distributed.GatherDistribution)
+
+
 def test_io_config_requires_field_groups() -> None:
     with pytest.raises(errors.InvalidConfigError, match="at least one output field group"):
         IOConfig(field_groups=[])
@@ -1075,6 +1114,9 @@ def test_io_config_yaml_roundtrip_two_groups() -> None:
             nc_comment: ICON inspired code in Python and GT4Py
         time_units: seconds since 1970-01-01 00:00:00
         calendar: proleptic_gregorian
+        io_ranks:
+          type: total
+          count: 2
         """
     )
     config = config_io.read_yaml_str(yaml_str, IOConfig)
@@ -1084,4 +1126,84 @@ def test_io_config_yaml_roundtrip_two_groups() -> None:
     assert config.field_groups[1].backend is OutputBackend.NETCDF
     assert config.field_groups[1].mode is OutputMode.GATHER
     assert config.field_groups[1].timesteps_per_file == 0
+    assert config.io_ranks == IORanksInTotal(count=2)
     assert config_io.write_yaml_str(config) == yaml_str
+
+
+def test_output_schedule_counts_steps() -> None:
+    schedule = OutputSchedule(time.NumTimeSteps(3), time.RelativeTime(hours=1))
+    captures = []
+    for _ in range(7):
+        # the predicate is pure: asking twice gives the same answer
+        assert schedule.at_capture_time() == schedule.at_capture_time()
+        captures.append(schedule.at_capture_time())
+        schedule.advance()
+    assert captures == [True, False, False, True, False, False, True]
+
+
+def test_output_schedule_normalizes_time_deltas() -> None:
+    dtime = time.RelativeTime(hours=1)
+    schedule = OutputSchedule(time.RelativeTime(hours=2), dtime)
+    captures = []
+    for _ in range(4):
+        captures.append(schedule.at_capture_time())
+        schedule.advance()
+    assert captures == [True, False, True, False]
+    with pytest.raises(errors.InvalidConfigError, match="not a multiple"):
+        OutputSchedule(time.RelativeTime(minutes=90), dtime)
+
+
+@pytest.mark.parametrize("io_ranks_type", [IORanksPerNode, IORanksInTotal])
+@pytest.mark.parametrize("count", [0, -1, True, 1.5])
+def test_io_ranks_reject_invalid_counts(
+    io_ranks_type: type[IORanksPerNode | IORanksInTotal], count: object
+) -> None:
+    with pytest.raises(errors.InvalidConfigError, match="'count'"):
+        io_ranks_type(count=count)  # type: ignore[arg-type]  # invalid on purpose
+
+
+def test_io_config_dedicates_no_ranks_to_output_by_default() -> None:
+    group = FieldGroupIOConfig(basename="single", variables=["air_density"])
+    # by default the ranks running the model write themselves
+    assert IOConfig(field_groups=[group]).io_ranks is None
+    assert IORanksPerNode().count == 1
+    in_total = IOConfig(field_groups=[group], io_ranks=IORanksInTotal(count=2))
+    assert in_total.io_ranks == IORanksInTotal(count=2)
+
+
+_SINGLE_GROUP_YAML = "field_groups:\n  - basename: single\n    variables: [air_density]\n"
+
+
+@pytest.mark.parametrize(
+    "io_ranks_yaml, io_ranks",
+    [
+        ("", None),
+        ("io_ranks:\n", None),
+        ("io_ranks: {type: per_node}\n", IORanksPerNode(count=1)),
+        ("io_ranks: {type: per_node, count: 2}\n", IORanksPerNode(count=2)),
+        ("io_ranks: {type: total, count: 3}\n", IORanksInTotal(count=3)),
+    ],
+    ids=["absent", "empty", "per-node-default", "per-node", "total"],
+)
+def test_io_config_yaml_reads_the_tagged_io_ranks(
+    io_ranks_yaml: str, io_ranks: IORanksPerNode | IORanksInTotal | None
+) -> None:
+    config = config_io.read_yaml_str(_SINGLE_GROUP_YAML + io_ranks_yaml, IOConfig)
+    assert config.io_ranks == io_ranks
+
+
+@pytest.mark.parametrize(
+    "io_ranks_yaml",
+    [
+        "io_ranks: 2\n",
+        "io_ranks: {count: 2}\n",
+        "io_ranks: {type: last_ranks, count: 2}\n",
+        "io_ranks: {type: total}\n",
+        "io_ranks: {type: total, count: 0}\n",
+        "io_ranks_per_node: 1\n",
+    ],
+    ids=["untagged-number", "untagged", "unknown-type", "missing-count", "zero", "former-option"],
+)
+def test_io_config_yaml_rejects_invalid_io_ranks(io_ranks_yaml: str) -> None:
+    with pytest.raises(cattrs.ClassValidationError):
+        config_io.read_yaml_str(_SINGLE_GROUP_YAML + io_ranks_yaml, IOConfig)

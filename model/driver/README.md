@@ -11,7 +11,10 @@ It supports both single-node and distributed (MPI) runs, including distributed
 output: in MPI runs the ranks write either through the root rank (`gather` mode)
 or each into its own block of a shared store (`distributed` mode, the default;
 see `icon4py.model.common.io`). Which variables are written, how often and into
-which files is configured in field groups (see [Output](#output)).
+which files is configured in field groups (see [Output](#output)). Optionally,
+some ranks are dedicated to output (`io.io_ranks`): the ranks running the
+model ship their fields to them and continue while the IO ranks write (see
+[Dedicated IO ranks](#dedicated-io-ranks)).
 
 ## Installation
 
@@ -42,6 +45,10 @@ mpirun -np 4 icon4py-driver \
     --config-file-path $CONFIG_FOLDER \
     --icon4py-backend gtfn_cpu
 ```
+
+With dedicated IO ranks (`io_ranks` in the `io` section) the launcher provides the
+compute *and* the IO ranks; [Dedicated IO ranks](#dedicated-io-ranks) describes how to
+launch them.
 
 ## Output
 
@@ -88,6 +95,132 @@ The variables a run can write are validated at startup. They are
 Fields are written with their horizontal dimension (`cell`, `edge` or `vertex`) and,
 if they have one, their vertical dimension (model or half levels): a surface field
 such as `surface_pressure` is stored as `(time, cell)`.
+
+### Dedicated IO ranks
+
+Some ranks of an MPI run can be dedicated to output: the model runs on the remaining
+compute ranks, which ship their output fields to the IO ranks at every capture step
+and continue computing while the IO ranks write (through the same backends and
+modes, on the IO ranks' communicator; see "Dedicated IO ranks" in
+`icon4py.model.common.io`). The launcher provides the tasks of both roles and the
+`io` section says which of them write; the driver reads no Slurm variables. So launch
+the compute ranks plus the IO ranks, and aim for
+
+- one GPU per compute rank, and cores of the socket that GPU is attached to;
+- a few cores per IO rank (it computes nothing on a GPU);
+- the same number of compute ranks on every node.
+
+There are two ways to say which ranks write. The examples below were run as shown on
+four nodes with four GPUs each (one GPU per 72-core socket, Slurm, Cray MPICH), with
+four compute ranks per node (`C` computes, `O` writes).
+
+**IO ranks on every node** (`type: per_node`). On every node the
+last ranks write for the compute ranks of that node, so no output crosses the
+network. Every node needs at least twice as many ranks as IO ranks; launch one task
+per node more than compute ranks:
+
+```yaml
+io:
+  io_ranks:
+    type: per_node
+    count: 1
+```
+
+```bash
+# nodes 1-4:  C C C C O
+srun --ntasks-per-node=5 --cpu-bind=sockets ./select_gpu.sh icon4py-driver ...
+```
+
+`select_gpu.sh` is a three-line wrapper that gives every task a GPU; its contents are
+shown with the batch script below.
+
+**A total number of IO ranks** (`type: total`), for fewer IO ranks than nodes. The IO
+ranks are the last ranks of the nodes holding the most ranks, so launch as many tasks
+more than compute ranks. Slurm fills the nodes in order and puts the surplus tasks on
+the first ones (`SLURM_TASKS_PER_NODE` reads `5(x2),4(x2)` here), and these two tasks
+write. The compute ranks of those two nodes ship to the IO rank of their node; the
+other nodes are shared evenly between the two IO ranks:
+
+```yaml
+io:
+  io_ranks:
+    type: total
+    count: 2
+```
+
+```bash
+# nodes 1-2:  C C C C O
+# nodes 3-4:  C C C C
+srun --ntasks=18 --cpu-bind=sockets ./select_gpu.sh icon4py-driver ...
+```
+
+A batch script around the first one:
+
+```bash
+#!/bin/bash
+#SBATCH --nodes=4
+#SBATCH --exclusive
+#SBATCH --gpus-per-node=4
+
+srun --ntasks-per-node=5 --cpu-bind=sockets ./select_gpu.sh icon4py-driver \
+  --grid-file-path grid.nc --config-file-path config.yml --icon4py-backend gtfn_gpu
+```
+
+and `select_gpu.sh`, an executable file next to it:
+
+```bash
+#!/bin/bash
+# task i of a node uses GPU i; the fifth task (the IO rank) shares GPU 0
+export CUDA_VISIBLE_DEVICES=$((SLURM_LOCALID % 4))
+exec "$@"
+```
+
+What the options are for:
+
+- `--cpu-bind=sockets` binds task `i` of a node to socket `i`, next to GPU `i`, and
+  the fifth task (the IO rank) to the first socket again, which it shares with the
+  first compute rank. Without a binding option the tasks of a five-task node are not
+  bound at all: each may run on all 288 cores, while the tasks of a four-task node get
+  a socket each.
+
+- The GPUs are requested per node, since `--gpus-per-task=1` cannot place five tasks
+  on four GPUs. Every task then sees all four GPUs, and `select_gpu.sh` gives every
+  compute rank its own. The IO rank, a node's fifth task, shares GPU 0. It computes
+  nothing there, but a GPU-aware MPI library initializes on the GPU it sees (about
+  0.5 GB of device memory); with Cray MPICH and `MPICH_GPU_SUPPORT_ENABLED=1`, a run
+  whose IO rank sees no GPU hangs at startup.
+
+The IO ranks are taken from the tasks the launcher provides, whatever their number,
+so check the layout the driver logs at startup, the compute and IO ranks of every
+node:
+
+```
+Dedicated IO ranks: 16 compute rank(s) and 2 IO rank(s) on 4 node(s); compute+IO ranks per node: 4+1 (x2), 4+0 (x2).
+```
+
+A launch that does not match the configuration still runs. With a `count` of 3 the 18
+tasks above give `3+2, 4+1, 4+0 (x2)`: the third IO rank takes a compute rank from
+the first node, the model runs on 15 ranks and one GPU idles. The driver then warns
+that the nodes hold unequal numbers of compute ranks. It cannot warn when every node
+is short of the same number of tasks: `--ntasks-per-node=4` in the first example gives
+`3+1 (x4)`, three compute ranks and an idle GPU on every node, and only the layout
+line shows it. IO rank 0 also logs the node it runs on and the compute ranks it
+serves, once the compute ranks have initialized.
+
+The IO rank needs few cores, on one socket, and more than one only for zarr output
+in many chunks. The output code starts no threads, but the zarr library compresses
+and writes the chunks of a capture on a thread pool of its own; netCDF output is
+written by HDF5 on a single thread. With output at every step (four compute
+ranks shipping about 1 GB per capture to one IO rank, zarr with
+`horizontal_chunk_size: 16384`), a capture took the IO rank 2.4 s to write on one
+core, 1.0 s on four and 0.8 to 0.9 s on 8 to 72 cores of one socket, but 1.1 s on
+cores spread over all four sockets: that is what `--cpus-per-task=57` gives it (the
+cores left over on every socket) in exchange for cores no compute rank shares. With
+the default chunking, one chunk per rank block, the cores made no difference (3.7 to
+4.0 s per capture).
+
+Without `io_ranks` the ranks running the model write themselves. Every IO rank needs
+at least one compute rank to serve.
 
 ## Configuration directory
 

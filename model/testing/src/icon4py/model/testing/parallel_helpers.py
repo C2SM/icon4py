@@ -5,9 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import contextlib
 import functools
 import logging
 import operator
+import sys
+import traceback
+from collections.abc import Iterator
 
 import numpy as np
 import pytest
@@ -15,6 +19,7 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.io import io_ranks
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
@@ -29,6 +34,24 @@ def check_comm_size(
         pytest.xfail(
             f"wrong comm size: {process_props.comm_size}: test only works for comm-sizes: {sizes}"
         )
+
+
+@contextlib.contextmanager
+def abort_on_failure(rank_roles: io_ranks.RankRoles) -> Iterator[None]:
+    """``rank_roles.abort_on_failure()`` for a test: the failure also goes to stderr.
+
+    The abort ends pytest on every rank before it reports anything, and the record
+    the failing rank logs stays in pytest's log capture. Run with ``-s``, as the MPI
+    tests are, the traceback written here is what shows why the run was aborted. Skip
+    a test before entering: a skip inside would abort the run too.
+    """
+    with rank_roles.abort_on_failure():
+        try:
+            yield
+        except BaseException:
+            traceback.print_exc()
+            sys.stderr.flush()
+            raise
 
 
 def log_process_properties(process_props: decomp_defs.ProcessProperties) -> None:

@@ -40,7 +40,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initial_condition import apply as ic_apply
-from icon4py.model.common.io import io as common_io
+from icon4py.model.common.io import io as common_io, io_ranks as common_io_ranks
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -76,7 +76,7 @@ class Icon4pyDriver:
         model_time_variables: driver_states.ModelTimeVariables,
         vertical_grid_config: v_grid.VerticalGridConfig,
         process_props: decomposition_defs.ProcessProperties,
-        io_monitor: common_io.IOMonitor | None = None,
+        io_monitor: common_io.OutputMonitor | None = None,
         output_assembler: driver_io.OutputStateAssembler | None = None,
         tendencies: prescribed_tendencies.PrescribedTendencies | None = None,
     ):
@@ -713,9 +713,16 @@ def initialize_driver(
     *,
     config: driver_config.ExperimentConfig,
     grid_manager: gm.GridManager,
-    process_props: decomposition_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
+    rank_roles: common_io_ranks.RankRoles,
 ) -> Icon4pyDriver:
+    """Set up the model on this rank.
+
+    The model works on the communicator of ``rank_roles``: the run's, or with
+    dedicated IO ranks the compute ranks' (this rank is then a compute rank, and the
+    output monitor ships to the IO ranks instead of writing).
+    """
+    process_props = rank_roles.process_props
     if config.io is not None:
         # an existing output directory is never reused: a timestamped one is created
         output_path = driver_config.prepare_output_directory(
@@ -797,8 +804,8 @@ def initialize_driver(
             grid=grid_manager.grid,
             vertical_grid=vertical_grid,
             dtime=config.driver.dtime,
-            process_props=process_props,
             decomposition_info=decomposition_info,
+            rank_roles=rank_roles,
         )
 
     icon4py_driver = Icon4pyDriver(
@@ -901,14 +908,14 @@ def run_driver(
     *,
     config: driver_config.ExperimentConfig,
     grid_manager: gm.GridManager,
-    process_props: decomposition_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
+    rank_roles: common_io_ranks.RankRoles,
 ) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
     icon4py_driver = initialize_driver(
         config=config,
         grid_manager=grid_manager,
-        process_props=process_props,
         backend=backend,
+        rank_roles=rank_roles,
     )
     allocator = model_backends.get_allocator(backend)
     ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)

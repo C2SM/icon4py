@@ -14,6 +14,7 @@ import pytest
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.initial_condition import apply as ic_apply
+from icon4py.model.common.io import io_ranks as common_io_ranks
 from icon4py.model.common.states import data, prognostic_state as prognostics, tracer_states
 from icon4py.model.driver import driver, driver_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
@@ -108,8 +109,8 @@ def test_initial_conditions(
     icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
         config=config,
         grid_manager=grid_manager,
-        process_props=process_props,
         backend=backend,
+        rank_roles=common_io_ranks.NoIORanks(process_props),
     )
 
     prognostic_state_now = prognostics.initialize_prognostic_state(
