@@ -22,10 +22,13 @@ from icon4py.model.driver import config as driver_config, driver_states
 
 
 _DATA_DIR = pathlib.Path(__file__).parent / "data"
+_HALF_AN_HOUR_IN = datetime.datetime(2000, 1, 1, 0, 30, tzinfo=datetime.UTC)
 
 
 def _driver_config(
     start_of_timestepping: datetime.datetime | None = None,
+    time_steps_before_start_of_timestepping: int = 0,
+    dtime: str = "PT120S",
 ) -> driver_config.DriverConfig:
     # the experiment runs from 2000-01-01T00:00:00 to 01:00:00, with a 120 s time step
     start = datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
@@ -33,13 +36,17 @@ def _driver_config(
     config = driver_config.DriverConfig.make_initial(
         experiment_name="test",
         profiling_options=None,
-        dtime=driver_config.relativetime_from_iso8601("PT120S"),
+        dtime=driver_config.relativetime_from_iso8601(dtime),
         start_of_simulation=start,
         end_of_simulation=end,
     )
-    if start_of_timestepping is None:
+    if start_of_timestepping is None and time_steps_before_start_of_timestepping == 0:
         return config
-    return dataclasses.replace(config, start_of_timestepping=start_of_timestepping)
+    return dataclasses.replace(
+        config,
+        start_of_timestepping=start_of_timestepping or start,
+        time_steps_before_start_of_timestepping=time_steps_before_start_of_timestepping,
+    )
 
 
 def test_time_loop_starts_at_the_beginning_of_the_simulation() -> None:
@@ -57,17 +64,63 @@ def test_the_time_loop_cannot_start_before_the_simulation() -> None:
 
 
 def test_restart_starts_the_time_loop_at_start_of_timestepping() -> None:
-    start_of_timestepping = datetime.datetime(
-        2000, 1, 1, 0, 30, tzinfo=datetime.UTC
-    )  # half an hour into the simulation
-    model_time = driver_states.ModelTimeVariables(config=_driver_config(start_of_timestepping))
+    model_time = driver_states.ModelTimeVariables(config=_driver_config(_HALF_AN_HOUR_IN, 15))
 
-    assert model_time.simulation_current_datetime == start_of_timestepping
+    assert model_time.simulation_current_datetime == _HALF_AN_HOUR_IN
     # linit_dyn is false on a restart
     assert model_time.is_first_step_in_simulation is False
     # ICON measures the elapsed time from the beginning of the simulation
     assert model_time.elapsed_time_in_seconds == 1800.0
     assert model_time.n_time_steps == 15
+
+
+def test_current_time_step_counts_from_one_at_the_beginning_of_the_simulation() -> None:
+    model_time = driver_states.ModelTimeVariables(config=_driver_config())
+
+    time_steps = []
+    for _ in range(4):
+        # the driver advances the datetime before integrating the step
+        model_time.advance_simulation_datetime()
+        time_steps.append(model_time.current_time_step)
+
+    assert time_steps == [1, 2, 3, 4]
+
+
+def test_current_time_step_continues_the_count_on_a_restart() -> None:
+    model_time = driver_states.ModelTimeVariables(config=_driver_config(_HALF_AN_HOUR_IN, 15))
+
+    model_time.advance_simulation_datetime()
+
+    assert model_time.current_time_step == 16
+
+
+def test_current_time_step_on_a_restart_with_a_halved_dtime() -> None:
+    model_time = driver_states.ModelTimeVariables(
+        config=_driver_config(_HALF_AN_HOUR_IN, 15, dtime="PT60S")
+    )
+    assert model_time.n_time_steps == 30
+
+    time_steps = []
+    for _ in range(3):
+        model_time.advance_simulation_datetime()
+        time_steps.append(model_time.current_time_step)
+
+    assert time_steps == [16, 17, 18]
+
+
+def test_a_restart_requires_the_number_of_time_steps_before_it() -> None:
+    with pytest.raises(ValueError, match="set 'time_steps_before_start_of_timestepping'"):
+        _driver_config(_HALF_AN_HOUR_IN)
+
+
+def test_an_initial_run_has_no_time_steps_before_it() -> None:
+    with pytest.raises(ValueError, match="must be 0 when the time loop starts at the beginning"):
+        _driver_config(time_steps_before_start_of_timestepping=3)
+
+
+def test_the_number_of_time_steps_before_a_restart_is_not_negative() -> None:
+    with pytest.raises(ValueError, match="must not be negative"):
+        _driver_config(_HALF_AN_HOUR_IN, -1)
 
 
 #: The smallest experiment configuration: required sections only.
