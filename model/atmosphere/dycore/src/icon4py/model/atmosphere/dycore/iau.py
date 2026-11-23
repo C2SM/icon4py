@@ -7,28 +7,34 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-Weights of the incremental analysis update (IAU) for the dynamical core.
+Weights of the incremental analysis update (IAU) for the dynamical core, top-hat window only.
 
-Port of `compute_iau_wgt` and its window functions from ICON's `src/atm_dyn_iconam/mo_iau.f90`
-(lines 332-389 and 399-460). The weight accumulated for tracer advection (`iau_wgt_adv`) is not
-ported: it belongs to the caller that runs advection.
+Port of `compute_iau_wgt` with `iau_top_hat` from ICON's `src/atm_dyn_iconam/mo_iau.f90`
+(lines 332-389 and 399-413). ICON's other windows, sin² and sin (`type_iau_wgt` 2 and 3), are
+not ported: MeteoSwiss runs the top-hat window, and callers reject the others. The weight
+accumulated for tracer advection (`iau_wgt_adv`) is not ported: it belongs to the caller that
+runs advection.
 """
 
 from __future__ import annotations
 
 import dataclasses
-import enum
-import math
+from typing import Final
 
 from icon4py.model.common import type_alias as ta
 
 
-class IauWindowFunction(enum.IntEnum):
-    """Shape of the IAU weight over the IAU window; ICON's `type_iau_wgt` (mo_initicon_nml.f90)."""
+TOP_HAT_WINDOW: Final = 1
+"""ICON's `type_iau_wgt` (mo_initicon_nml.f90) of the top-hat window, the only one supported."""
 
-    TOP_HAT = 1
-    SIN2 = 2
-    SIN = 3
+
+def check_window_function(type_iau_wgt: int) -> None:
+    """Raise unless ICON's `type_iau_wgt` is the top-hat window, the only one ported here."""
+    if type_iau_wgt != TOP_HAT_WINDOW:
+        raise NotImplementedError(
+            f"IAU window type_iau_wgt = {type_iau_wgt} is not supported, only the top-hat window"
+            f" ({TOP_HAT_WINDOW}); sin² (2) and sin (3) are not ported."
+        )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -39,39 +45,17 @@ class IauWeight:
     """Weight of the increments in one dynamics step (ICON's `iau_wgt_dyn`)."""
 
 
-def _window_function(
-    window_function: IauWindowFunction, window: ta.wpfloat, time: ta.wpfloat
-) -> ta.wpfloat:
-    """`iau_top_hat`, `iau_sin2` and `iau_sin` (mo_iau.f90:399-460); each integrates to 1 over the window."""
-    if time > window:
-        return 0.0
-    match window_function:
-        case IauWindowFunction.TOP_HAT:
-            return 1.0 / window
-        case IauWindowFunction.SIN2:
-            return (2.0 / window) * math.sin(math.pi * time / window) ** 2
-        case IauWindowFunction.SIN:
-            return ((math.pi / 2.0) / window) * math.sin(math.pi * time / window)
-    raise ValueError(f"Invalid IAU window function {window_function!r}: must be 1, 2 or 3.")
-
-
-def compute_iau_weight(
-    time: ta.wpfloat,
-    dtime: ta.wpfloat,
-    window: ta.wpfloat,
-    window_function: IauWindowFunction,
-) -> IauWeight:
+def compute_iau_weight(time: ta.wpfloat, dtime: ta.wpfloat, window: ta.wpfloat) -> IauWeight:
     """
-    IAU weight for a dynamics step of length `dtime` at `time` seconds into the IAU window
-    (`compute_iau_wgt`, mo_iau.f90:332-389).
+    Top-hat IAU weight for a dynamics step of length `dtime` at `time` seconds into the IAU
+    window (`compute_iau_wgt` with `iau_top_hat`, mo_iau.f90:332-389, 399-413).
 
-    The window is active while `time <= window`, as in ICON; outside it the weight is 0.
+    The window is active while `time <= window`, as in ICON; outside it the weight is 0. Inside
+    it the weight is `(1 / window) * dtime`, in ICON's operation order.
     """
     if time > window:
         return IauWeight(is_active=False, dynamics=0.0)
-    return IauWeight(
-        is_active=True, dynamics=_window_function(window_function, window, time) * dtime
-    )
+    return IauWeight(is_active=True, dynamics=(1.0 / window) * dtime)
 
 
 def compute_iau_weights_for_substeps(
@@ -79,7 +63,6 @@ def compute_iau_weights_for_substeps(
     dtime: ta.wpfloat,
     ndyn_substeps: int,
     window: ta.wpfloat,
-    window_function: IauWindowFunction,
 ) -> list[IauWeight]:
     """
     IAU weights of the `ndyn_substeps` dynamics substeps of one time step, in order.
@@ -93,10 +76,7 @@ def compute_iau_weights_for_substeps(
     """
     return [
         compute_iau_weight(
-            time_at_end_of_step + (substep - ndyn_substeps - 0.5) * dtime,
-            dtime,
-            window,
-            window_function,
+            time_at_end_of_step + (substep - ndyn_substeps - 0.5) * dtime, dtime, window
         )
         for substep in range(1, ndyn_substeps + 1)
     ]
