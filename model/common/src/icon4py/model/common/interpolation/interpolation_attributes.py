@@ -11,7 +11,7 @@ from typing import Final
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.states import model
+from icon4py.model.common.old_states import model
 
 
 C_LIN_E: Final[str] = "interpolation_coefficient_from_cell_to_edge"
