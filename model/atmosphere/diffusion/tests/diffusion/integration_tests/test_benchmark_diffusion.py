@@ -15,14 +15,7 @@ import pytest
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common import (
-    constants,
-    framework as fw,
-    model_backends,
-    model_options,
-    state,
-    states,
-)
+from icon4py.model.common import constants, model_backends, model_options, state, states
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,

@@ -115,16 +115,16 @@ class CollectInputTest:
     """
     `collect_input(state)` builds the component's input from views of `state`, no copies.
 
-    The subclass sets `collect_input = staticmethod(...)` and provides a `state` fixture.
+    The subclass sets `collect_input = staticmethod(...)` and provides a `pstate` fixture.
     """
 
     @staticmethod
     def collect_input(state: Any) -> state.State:
         raise NotImplementedError
 
-    def test_collect_input_views_the_state(self, some_state: state.State) -> None:
-        input = self.collect_input(some_state)
+    def test_collect_input_views_the_state(self, pstate: state.State) -> None:
+        input = self.collect_input(pstate)
 
-        leaves = state.fields(some_state).values()
+        leaves = state.fields(pstate).values()
         for name, field in state.fields(input).items():
             assert any(field is leaf for leaf in leaves), name

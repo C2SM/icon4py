@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
     config as surface_config,
     surface_states,
 )
-from icon4py.model.common import framework as fw, state
+from icon4py.model.common import state
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import component_tests
 
@@ -41,7 +41,7 @@ class TestSurface(component_tests.ComponentTest, component_tests.CollectInputTes
         return surface_component.Surface(grid=grid, config=_CONFIG)
 
     @pytest.fixture
-    def state(self, grid: base_grid.Grid) -> physics_state.PhysicsState:
+    def pstate(self, grid: base_grid.Grid) -> physics_state.PhysicsState:
         return state.allocate(
             physics_state.PhysicsState, grid, None, step_start=datetime.datetime(2008, 9, 1)
         )

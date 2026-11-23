@@ -17,7 +17,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import component as muphys_component
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, framework as fw, state
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, state
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import component_tests

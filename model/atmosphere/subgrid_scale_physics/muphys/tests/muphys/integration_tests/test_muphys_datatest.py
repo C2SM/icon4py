@@ -23,7 +23,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_ful
 from icon4py.model.common import (
     dimension as dims,
     field as fd,
-    framework as fw,
     model_backends,
     quantities as qty,
     state,
@@ -126,7 +125,9 @@ def test_muphys_granule(
         qs=init_savepoint.qs(),
         qg=init_savepoint.qg(),
     )
-    input_before = fw.copy(input, fw.allocate(muphys_component.Muphys.Input, icon_grid, allocator))
+    input_before = state.copy(
+        input, state.allocate(muphys_component.Muphys.Input, icon_grid, allocator)
+    )
     muphys_program = run_full_muphys.setup_muphys(
         ncells=icon_grid.num_cells,
         nlev=icon_grid.num_levels,
@@ -144,7 +145,9 @@ def test_muphys_granule(
         # The default Component setup is the separate-program mode.
         compute=muphys_program if single_program else None,
     )
-    output = component.run(input, fw.allocate(muphys_component.Muphys.Output, icon_grid, allocator))
+    output = component.run(
+        input, state.allocate(muphys_component.Muphys.Output, icon_grid, allocator)
+    )
     # run reads its input only
     for name, field in state.fields(input).items():
         np.testing.assert_array_equal(
@@ -152,7 +155,7 @@ def test_muphys_granule(
         )
 
     # the direct run advances its own copy of the input in place
-    direct = fw.copy(input, fw.allocate(muphys_component.Muphys.Input, icon_grid, allocator))
+    direct = state.copy(input, state.allocate(muphys_component.Muphys.Input, icon_grid, allocator))
     direct_q = muphys_defs.Q(**{s: getattr(direct, f"q{s}") for s in muphys_defs.SPECIES})
     direct_precip = {
         port: gtx.zeros(input.te.domain, dtype=ta.wpfloat, allocator=allocator)

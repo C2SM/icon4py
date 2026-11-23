@@ -18,14 +18,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
     physics_process,
     physics_state,
 )
-from icon4py.model.common import (
-    dimension as dims,
-    field,
-    framework as fw,
-    quantities as qty,
-    state,
-    states,
-)
+from icon4py.model.common import dimension as dims, field, quantities as qty, state, states
 from icon4py.model.common.grid import base as base_grid, simple
 
 from .utils import (
@@ -354,7 +347,7 @@ def test_diagnose_views_the_inputs_and_the_driver_diagnostics(grid: base_grid.Gr
     prognostic, tracer_state = prognostics(grid), tracers(grid)
     air_mass = field.zeros(qty.AirMassOnCellK, grid, None)
     driver_input = make_input(prognostic, tracer_state, air_mass=air_mass)
-    diagnostics = fw.allocate(states.Diagnostics, grid, None)
+    diagnostics = state.allocate(states.Diagnostics, grid, None)
 
     physics.run(driver_input, output=make_output(prognostic, tracer_state, diagnostics=diagnostics))
 

@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.surface import (
     surface,
     surface_states,
 )
-from icon4py.model.common import dimension as dims, framework as fw, model_backends, state
+from icon4py.model.common import dimension as dims, model_backends, state
 from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403

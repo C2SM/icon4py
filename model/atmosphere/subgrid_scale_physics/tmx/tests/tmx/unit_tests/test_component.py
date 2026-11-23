@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
     config as tmx_config,
     tmx_states,
 )
-from icon4py.model.common import framework as fw, state
+from icon4py.model.common import state
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid, simple, states as grid_states
 from icon4py.model.testing import component_tests
@@ -58,7 +58,7 @@ class TestTmx(component_tests.ComponentTest, component_tests.CollectInputTest):
         )
 
     @pytest.fixture
-    def state(self) -> physics_state.PhysicsState:
+    def pstate(self) -> physics_state.PhysicsState:
         return _physics_state()
 
     @pytest.mark.parametrize(

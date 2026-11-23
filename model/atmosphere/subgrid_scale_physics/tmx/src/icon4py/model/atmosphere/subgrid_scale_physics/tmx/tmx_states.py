@@ -18,10 +18,10 @@ from icon4py.model.common import (
     dimension as dims,
     field,
     field_type_aliases as fa,
+    quantities as qty,
     state,
     type_alias as ta,
 )
-from icon4py.model.common.framework import quantities as qty
 
 
 @dataclasses.dataclass(frozen=True)

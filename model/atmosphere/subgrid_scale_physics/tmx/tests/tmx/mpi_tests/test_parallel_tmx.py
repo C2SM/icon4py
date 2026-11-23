@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
-from icon4py.model.common import dimension as dims, framework as fw, model_backends
+from icon4py.model.common import dimension as dims, model_backends, state
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, parallel_helpers
@@ -89,8 +89,8 @@ def test_parallel_tmx_run_single_step(
         backend=backend,
         exchange=decomp_defs.create_exchange(process_props, decomposition_info),
     )
-    diagnostic_state = fw.allocate(tmx_states.TmxDiagnosticState, icon_grid, allocator)
-    tendency_state = fw.allocate(tmx_states.TmxTendencyState, icon_grid, allocator)
+    diagnostic_state = state.allocate(tmx_states.TmxDiagnosticState, icon_grid, allocator)
+    tendency_state = state.allocate(tmx_states.TmxTendencyState, icon_grid, allocator)
 
     tmx_entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
     component.run(
@@ -102,7 +102,7 @@ def test_parallel_tmx_run_single_step(
         ),
         diagnostic_state=diagnostic_state,
         tendency_state=tendency_state,
-        new_state=fw.allocate(tmx_states.TmxNewState, icon_grid, allocator),
+        new_state=state.allocate(tmx_states.TmxNewState, icon_grid, allocator),
         dtime=experiment.config.driver.dtime.total_seconds(),
     )
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: tmx step done")

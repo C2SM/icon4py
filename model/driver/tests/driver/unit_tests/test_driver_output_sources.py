@@ -19,14 +19,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from icon4py.model.common import (
-    dimension as dims,
-    field,
-    framework as fw,
-    quantities as qty,
-    state,
-    states,
-)
+from icon4py.model.common import dimension as dims, field, quantities as qty, state, states
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.io import utils as io_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -46,7 +39,7 @@ def grid() -> base.Grid:
 
 @pytest.fixture
 def prognostic_state(grid: base.Grid) -> states.PrognosticState:
-    return fw.allocate(states.PrognosticState, grid, None)
+    return state.allocate(states.PrognosticState, grid, None)
 
 
 #: The prognostic output variables with the dims of their fields, stated independently of
@@ -119,7 +112,7 @@ def test_a_leaf_without_a_standard_name_is_not_offered() -> None:
         rho: field.Field[qty.RhoOnCellK]
         rho_ic: field.Field[qty.RhoOnCellKHalf]
 
-    some_state = fw.allocate(_State, simple.simple_grid(), None)
+    some_state = state.allocate(_State, simple.simple_grid(), None)
 
     assert qty.RhoOnCellKHalf.standard_name is None
     assert driver_output_sources.standard_names(_State) == {"rho": "air_density"}
@@ -135,9 +128,9 @@ def test_data_is_host_numpy(
     Parameterized on the backend (``--backend``) so that with a GPU backend the inputs
     really are device buffers and the host transfer is exercised.
     """
-    prognostic_state = fw.allocate(states.PrognosticState, grid, backend)
-    state = _dataarrays(driver_output_sources.by_standard_name(prognostic_state))
-    for da in state.values():
+    prognostic_state = state.allocate(states.PrognosticState, grid, backend)
+    dataarrays = _dataarrays(driver_output_sources.by_standard_name(prognostic_state))
+    for da in dataarrays.values():
         assert isinstance(da.data, np.ndarray)
 
 

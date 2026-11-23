@@ -12,7 +12,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import framework as fw, model_backends, model_options, state, states
+from icon4py.model.common import model_backends, model_options, state, states
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.driver import config as driver_config, driver, driver_states, driver_utils

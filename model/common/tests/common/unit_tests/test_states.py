@@ -8,7 +8,7 @@
 
 import pytest
 
-from icon4py.model.common import framework as fw, state, states
+from icon4py.model.common import state, states
 from icon4py.model.common.grid import base as base_grid, simple
 
 

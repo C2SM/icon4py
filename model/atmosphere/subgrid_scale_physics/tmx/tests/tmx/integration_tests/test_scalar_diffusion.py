@@ -22,7 +22,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import scalar_diffusion, tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import TmxConfig
-from icon4py.model.common import framework as fw, model_backends
+from icon4py.model.common import model_backends, state
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
 
@@ -90,12 +90,12 @@ def _setup(
             allocator=allocator,
         ),
         diagnostic_state=dataclasses.replace(
-            fw.allocate(tmx_states.TmxDiagnosticState, icon_grid, allocator),
+            state.allocate(tmx_states.TmxDiagnosticState, icon_grid, allocator),
             kh_ic=diagnostics_exit_savepoint.kh_ic(),
             km_ie=diagnostics_exit_savepoint.km_ie(),
         ),
-        tendency_state=fw.allocate(tmx_states.TmxTendencyState, icon_grid, allocator),
-        new_state=fw.allocate(tmx_states.TmxNewState, icon_grid, allocator),
+        tendency_state=state.allocate(tmx_states.TmxTendencyState, icon_grid, allocator),
+        new_state=state.allocate(tmx_states.TmxNewState, icon_grid, allocator),
     )
 
 

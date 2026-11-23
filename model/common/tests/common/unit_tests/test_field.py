@@ -17,7 +17,6 @@ from icon4py.model.common import (
     dimension as dims,
     field,
     field_type_aliases as fa,
-    framework as fw,
     type_alias as ta,
 )
 from icon4py.model.common.grid import base as base_grid
