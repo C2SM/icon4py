@@ -194,3 +194,10 @@ def test_sum_of_finite_values_overflows_to_infinity_like_a_plain_sum(sign: float
     values = sign * np.array([1e308, 1e308])
     with np.errstate(over="ignore"):
         assert definitions.SingleNodeReductions().sum(values) == np.sum(values) == sign * np.inf
+
+
+def test_fixed_point_sum_refuses_a_buffer_that_could_overflow_int64() -> None:
+    # a stride-0 view reaches the size without allocating 64 GiB; the check fires first
+    too_many = np.broadcast_to(np.float64(1.0), (definitions.MAX_FIXED_POINT_ELEMENTS,))
+    with pytest.raises(ValueError, match="Too many elements for the fixed-point sum"):
+        definitions.order_insensitive_sum(too_many, abs_max=1.0)

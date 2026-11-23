@@ -579,8 +579,12 @@ class Reductions(Protocol):
 #: ICON scales the values so that the largest magnitude lies below ``2**30``
 #: (``fact = 2**(30 - iexp)``). The integer part and the fraction then each fit in 30 bits:
 #: every value keeps 60 bits below the leading bit of the largest one, more than the 53 bits
-#: of a double, and the int64 accumulators cannot overflow before ``2**33`` elements.
+#: of a double.
 FIXED_POINT_BITS: Final[int] = 30
+#: Each rank accumulates the integer parts and the scaled fractions in int64. Both are below
+#: ``2**FIXED_POINT_BITS`` in magnitude, so fewer than ``2**(63 - FIXED_POINT_BITS)`` of them
+#: always fit; beyond that numpy's integer sum wraps around silently.
+MAX_FIXED_POINT_ELEMENTS: Final[int] = 2 ** (63 - FIXED_POINT_BITS)
 #: ICON returns 0 when the binary exponent of the largest magnitude is below -980: the
 #: scale factor ``2**(30 - iexp)`` would exceed ``2**1010``, close to the largest double
 #: exponent (1023). Values that small count as zero.
@@ -598,13 +602,22 @@ def fixed_point_total(buffer: data_alloc.NDArray, shift: int) -> int:
     As in ICON, the integer parts and the scaled fractions of ``buffer * 2**shift`` are
     accumulated separately in int64 (``isum``, ``fsum``); the two sums are then combined
     into one Python integer, which cannot overflow.
+
+    Raises:
+        ValueError: when ``buffer`` holds ``MAX_FIXED_POINT_ELEMENTS`` or more elements, which
+            could overflow the int64 accumulators.
     """
+    if buffer.size >= MAX_FIXED_POINT_ELEMENTS:
+        raise ValueError(
+            "Too many elements for the fixed-point sum on one rank: the int64 accumulators are "
+            f"exact for fewer than {MAX_FIXED_POINT_ELEMENTS} elements, got {buffer.size}."
+        )
     array_ns = data_alloc.array_namespace(buffer)
     scaled = array_ns.ldexp(buffer, shift)  # |scaled| < 2**FIXED_POINT_BITS
     integer_part = scaled.astype(array_ns.int64)  # truncates towards zero like Fortran INT
     fraction_part = array_ns.ldexp(scaled - integer_part, FIXED_POINT_BITS).astype(array_ns.int64)
     # both parts are below 2**FIXED_POINT_BITS in magnitude, so the int64 sums cannot
-    # overflow for fewer than 2**33 elements
+    # overflow for fewer than MAX_FIXED_POINT_ELEMENTS elements, checked above
     return (int(integer_part.sum()) << FIXED_POINT_BITS) + int(fraction_part.sum())
 
 
