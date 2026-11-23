@@ -486,7 +486,7 @@ class GlobalReductions(Reductions):
         return array_ns.asarray([dtype.type(0)])
 
     @staticmethod
-    def _max_or_inf_if_not_finite(buffer: data_alloc.NDArray) -> data_alloc.ScalarLikeArray:
+    def _max_nan_as_inf(buffer: data_alloc.NDArray) -> data_alloc.ScalarLikeArray:
         """Local maximum, replaced by +inf when it is NaN.
 
         ``MPI.MAX`` compares with ``>``, which is false for NaN, so a NaN would survive the
@@ -579,7 +579,7 @@ class GlobalReductions(Reductions):
             array_ns.abs(buffer)
             if buffer.size != 0
             else self._sum_identity(buffer.dtype, array_ns),
-            self._max_or_inf_if_not_finite,
+            self._max_nan_as_inf,
             mpi4py.MPI.MAX,
         )
         return decomp_defs.order_insensitive_sum(buffer, abs_max, allreduce=self._allreduce_exact)
