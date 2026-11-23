@@ -27,7 +27,7 @@ import xarray as xr
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.io import io as common_io
+from icon4py.model.common.io import io as common_io, io_ranks as common_io_ranks
 from icon4py.model.common.states import tracer_states
 from icon4py.model.driver import (
     config as driver_config,
@@ -71,8 +71,8 @@ def _run_driver(
     driver.run_driver(
         config=config,
         grid_manager=grid_manager,
-        process_props=process_props,
         backend=backend,
+        rank_roles=common_io_ranks.NoIORanks(process_props),
     )
 
 

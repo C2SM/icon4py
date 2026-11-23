@@ -41,6 +41,7 @@ The IO module is configured with an `IOConfig` holding
 - `field_groups`: list of field group configurations (see below); at least one, with unique `basename`s.
 - `time_units` (optional, default is "seconds since 1970-01-01 00:00:00"): unit of the time coordinate in the data files.
 - `calendar` (optional, default is "proleptic_gregorian"): calendar of the time coordinate in the data files.
+- `io_ranks` (optional, default is none): the MPI ranks dedicated to output, see "Dedicated IO ranks" below. Either `IORanksPerNode` (`type: per_node` in YAML) with the `count` of IO ranks on every node, or `IORanksInTotal` (`type: total`) with their total `count`, for fewer IO ranks than nodes. The program running the model splits the communicator accordingly (the driver's `main` does); the module itself only carries the value.
 
 A field group is a set of variables written on the same schedule into the same file series; it is configured with
 
@@ -166,6 +167,78 @@ shared netCDF file, which the installed `netCDF4` package must support:
   variables are created with `fill_value=False` (NC_NOFILL): every entry is written anyway,
   and parallel HDF5 would otherwise write every chunk twice.
 
+### Dedicated IO ranks
+
+Instead of writing themselves, the ranks running the model can ship their output to
+dedicated IO ranks (`io_servers`): the run's communicator is split
+(`io_ranks.split_io_ranks`) into compute ranks and IO ranks, and the two roles talk
+through an inter-communicator. A program gets the roles of its ranks from
+`io_ranks.create_rank_roles`, whether or not the run dedicates ranks to output
+(`io_ranks.RankRoles`: this rank's role, the communicator the role works on, and what
+to do when the rank fails). The launcher provides the tasks of both roles; the
+`IOConfig` says which of them write (`io_ranks.assign_io_ranks`):
+
+- `IORanksPerNode(count=k)`: on every node the last `k` ranks. The nodes
+  are found through MPI's shared-memory split, so the choice does not depend on how the
+  launcher places the ranks: a compute rank always ships to an IO rank on its own node,
+  and the node's compute ranks are shared evenly among its IO ranks. With the launcher's
+  usual block placement and one task per node more than compute ranks (e.g. five tasks
+  on a node with four GPUs and one IO rank per node), the IO rank is the node's last
+  task and every compute rank keeps a GPU of its own.
+- `IORanksInTotal(count=n)`: `n` ranks in total, for fewer IO ranks than nodes. They
+  are the last ranks of the nodes holding the most ranks, spread evenly over equally
+  full nodes. Launched with `n` tasks more than compute ranks, the surplus tasks on
+  nodes that also hold compute ranks, a run turns exactly the surplus tasks into IO
+  ranks and every node keeps its compute ranks (e.g. 18 tasks on four nodes with four
+  GPUs each and two IO ranks in total: two nodes get a fifth task, which writes).
+  Surplus tasks on nodes of their own are not recognized: the IO ranks are taken from
+  the fullest nodes, whatever their tasks were meant for (a single surplus task on a
+  node of its own computes, and the IO rank is taken from another node). A compute
+  rank still ships to an IO rank on its own node if there is one; the compute ranks
+  of the other nodes ship across nodes, in contiguous blocks that level the number of
+  compute ranks per IO rank.
+
+The IO ranks are taken from the tasks the launcher provides, whatever their number, so a
+launch that does not match the configuration still runs: one IO rank more than surplus
+tasks takes a compute rank from some node, whose accelerator then idles. The layout is
+therefore reported (`RankRoles.report_layout`, called by the driver at startup): the
+compute and IO ranks of every node, e.g. `4+1 (x2), 4+0 (x8)`, and a warning when the
+nodes hold unequal numbers of compute ranks. A launch short of the same number of tasks
+on every node (e.g. four tasks per node where five were meant gives `3+1` everywhere)
+is not warned about: only the layout shows it.
+
+- The compute ranks use an `IOClient` as their output monitor; it offers the interface
+  of the `IOMonitor` (`store`, `variables_at_capture_time`, `close`, see
+  `OutputMonitor`). At a capture step it strips the halos of the capturing groups'
+  fields into host buffers, posts nonblocking sends to its IO rank and returns: the
+  transfer overlaps the following model steps. The sends are synchronous, so a transfer
+  completes once the IO rank has received it. At most
+  `io_servers.MAX_IN_FLIGHT_CAPTURES` capture steps are in flight per compute rank;
+  at that bound `store` blocks until the IO rank has received the oldest one (timed as
+  the phase `"send_wait"`, the signal that the IO ranks do not keep up).
+- Every IO rank holds the concatenation of the owned entries of the compute ranks it
+  serves as its local state -- a decomposition without halos. It writes
+  through the ordinary stack on the IO ranks' communicator (an `IOServer` feeding an
+  `IOMonitor`): `mode`, `backend` and the chunking options apply unchanged, the rank
+  blocks of a `"distributed"` store being those of the IO ranks. A single IO rank thus
+  writes a one-block rank-block store, or -- in `"gather"` mode -- a plain serial file
+  in global order (a single IO rank serving a single compute rank holds the
+  undecomposed grid and writes it as a serial run does, whatever the mode).
+  Distributed netCDF still needs the parallel installation, on the IO ranks, once
+  there is more than one. The output code starts no threads on an IO rank: one core
+  is all it uses, except that the zarr library compresses and writes the chunks of a
+  capture on a thread pool of its own, so zarr output in many chunks gains from a few
+  cores (measurements in the driver README).
+- The compute ranks define the output: their configuration is shipped to the IO ranks
+  at setup, so the two sides cannot diverge. Of their own, the IO ranks need only the
+  vertical grid, the model time step and the grid file (for the UGRID topology).
+- Failure envelope: neither role can observe the other's failure (an IO rank waits for
+  its compute ranks, compute ranks wait at the in-flight bound for their IO rank), so a
+  program using dedicated IO ranks must abort the run when any rank fails:
+  `RankRoles.abort_on_failure` does, and the driver's `main` runs inside it. A failing
+  IO rank leaves its files open, since closing a parallel netCDF file is collective
+  and would wait for the other IO ranks in place of aborting.
+
 ### Restrictions
 
 - We support NETCDF4 files and zarr stores (zarr format 3).
@@ -173,7 +246,7 @@ shared netCDF file, which the installed `netCDF4` package must support:
 - Fields need a horizontal dimension (`cell`, `edge` or `vertex`); a vertical dimension (model or half levels) is optional, so a purely horizontal (surface) field is written as `(time, cell)`.
 - Horizontal coordinates the latitude and longitude in radians as provided by the ICON grid file.
 - Vertical coordinates are the model levels, there is no transformation to pressure levels.
-- Writing is synchronous: `store` returns once the data is written.
+- Writing is synchronous: `store` returns once the data is written. With dedicated IO ranks the compute ranks' `store` returns once the transfer to the IO rank is posted, after waiting at the in-flight bound if the IO rank is behind (see "Dedicated IO ranks" above); the IO ranks then write synchronously.
 - Distributed (MPI) runs write either gathered on the root rank (any backend) or with every rank writing its own block of a shared store (zarr with any installation; netCDF with an MPI-parallel netCDF4 installation, see "Parallel netCDF" above).
 - Global attributes of the datafiles and field metadata is only scarcely available and needs to be augmented.
 

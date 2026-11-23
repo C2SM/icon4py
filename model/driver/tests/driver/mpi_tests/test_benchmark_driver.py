@@ -17,6 +17,7 @@ import pytest
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import grid_manager as gm
+from icon4py.model.common.io import io_ranks as common_io_ranks
 from icon4py.model.driver import config as driver_config, driver, driver_states
 from icon4py.model.testing.fixtures.datatest import backend, process_props
 
@@ -78,8 +79,8 @@ def test_benchmark_driver_init(
         icon4py_driver = driver.initialize_driver(
             config=config,
             grid_manager=grid_manager,
-            process_props=props,
             backend=bench_backend,
+            rank_roles=common_io_ranks.NoIORanks(props),
         )
         allocator = model_backends.get_allocator(bench_backend)
         return driver.initialize_driver_states(
@@ -114,8 +115,8 @@ def test_benchmark_driver_timeloop(
         icon4py_driver = driver.initialize_driver(
             config=driver_benchmark_config,
             grid_manager=driver_benchmark_grid_manager,
-            process_props=process_props,
             backend=backend,
+            rank_roles=common_io_ranks.NoIORanks(process_props),
         )
         allocator = model_backends.get_allocator(backend)
         ds = driver.initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
@@ -151,8 +152,8 @@ def test_benchmark_driver_total(
         return driver.run_driver(
             config=driver_benchmark_config,
             grid_manager=driver_benchmark_grid_manager,
-            process_props=process_props,
             backend=backend,
+            rank_roles=common_io_ranks.NoIORanks(process_props),
         )
 
     benchmark.pedantic(

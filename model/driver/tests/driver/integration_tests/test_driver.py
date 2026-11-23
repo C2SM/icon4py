@@ -14,6 +14,7 @@ import pytest
 
 from icon4py.model.common import model_backends, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.io import io_ranks as common_io_ranks
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -198,8 +199,8 @@ def test_driver(
     ds, _ = driver.run_driver(
         config=config,
         grid_manager=grid_manager,
-        process_props=process_props,
         backend=backend,
+        rank_roles=common_io_ranks.NoIORanks(process_props),
     )
 
     prognostics = ds.prognostics.current

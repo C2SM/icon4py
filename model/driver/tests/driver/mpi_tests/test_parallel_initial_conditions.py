@@ -15,6 +15,7 @@ import pytest
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.initial_condition import apply as ic_apply
+from icon4py.model.common.io import io_ranks as common_io_ranks
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     nonhydro_states,
@@ -108,8 +109,8 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     single_rank_icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
         config=single_rank_config,
         grid_manager=single_rank_grid_manager,
-        process_props=single_rank_process_props,
         backend=backend,
+        rank_roles=common_io_ranks.NoIORanks(single_rank_process_props),
     )
 
     single_rank_prognostic = prognostics.initialize_prognostic_state(
@@ -166,8 +167,8 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     multi_rank_icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
         config=multi_rank_config,
         grid_manager=multi_rank_grid_manager,
-        process_props=process_props,
         backend=backend,
+        rank_roles=common_io_ranks.NoIORanks(process_props),
     )
 
     multi_rank_prognostic = prognostics.initialize_prognostic_state(

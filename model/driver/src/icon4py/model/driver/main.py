@@ -18,7 +18,8 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.driver import config as driver_config, driver, driver_utils
+from icon4py.model.common.io import io_ranks as common_io_ranks
+from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 
 
 log = logging.getLogger(__name__)
@@ -67,40 +68,57 @@ def main(
 
     The configuration, output included (its ``io`` section), is read from the YAML
     file at ``config_file_path``; the driver is initialized, an initial condition is
-    generated, and the time integration is run.
+    generated, and the time integration is run. With dedicated IO ranks
+    (``io.io_ranks``) the run's communicator is split first:
+    the IO ranks only receive and write the compute ranks' output, and a failure on any
+    rank aborts the whole run (see ``io_ranks.RankRoles``).
     """
 
     process_props = decomposition_defs.get_process_properties(
         decomposition_defs.get_runtype(with_mpi=mpi_decomp.mpi4py is not None)
     )
-    driver_utils.configure_logging(
-        logging_level=log_level,
-        print_distributed_debug_msg=print_distributed_debug_msg,
-        process_props=process_props,
-    )
 
     config = driver_config.read_experiment_config_from_yaml(config_file_path)
 
-    backend = model_options.customize_backend(
-        program=None,
-        backend=driver_utils.get_backend_from_name(icon4py_backend),
-        backend_config=config.driver.backend_config,
+    rank_roles = common_io_ranks.create_rank_roles(config.io, process_props)
+    # From here on a rank works on the communicator of its role only: the model (grid
+    # manager, halo exchanges, reductions) on the compute ranks', the output stack on the
+    # IO ranks'. Without dedicated IO ranks that is the run's communicator. Each role
+    # logs with its own rank numbering and communicator name.
+    driver_utils.configure_logging(
+        logging_level=log_level,
+        print_distributed_debug_msg=print_distributed_debug_msg,
+        process_props=rank_roles.process_props,
     )
-    allocator = model_backends.get_allocator(backend)
+    rank_roles.report_layout()
 
-    grid_manager = driver_utils.create_grid_manager(
-        grid_file_path=grid_file_path,
-        vertical_grid_config=config.vertical_grid,
-        allocator=allocator,
-        process_props=process_props,
-    )
+    with rank_roles.abort_on_failure():
+        if rank_roles.is_io_rank:
+            driver_io.run_io_server(
+                config=config, grid_file_path=grid_file_path, rank_roles=rank_roles
+            )
+            return
 
-    driver.run_driver(
-        config=config,
-        grid_manager=grid_manager,
-        process_props=process_props,
-        backend=backend,
-    )
+        backend = model_options.customize_backend(
+            program=None,
+            backend=driver_utils.get_backend_from_name(icon4py_backend),
+            backend_config=config.driver.backend_config,
+        )
+        allocator = model_backends.get_allocator(backend)
+
+        grid_manager = driver_utils.create_grid_manager(
+            grid_file_path=grid_file_path,
+            vertical_grid_config=config.vertical_grid,
+            allocator=allocator,
+            process_props=rank_roles.process_props,
+        )
+
+        driver.run_driver(
+            config=config,
+            grid_manager=grid_manager,
+            backend=backend,
+            rank_roles=rank_roles,
+        )
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ import pytest
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.io import io_ranks as common_io_ranks
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -138,8 +139,8 @@ def _run_driver_compare_single_multi_rank(
     single_rank_ds, _ = driver.run_driver(
         config=single_rank_config,
         grid_manager=single_rank_grid_manager,
-        process_props=single_rank_process_props,
         backend=backend,
+        rank_roles=common_io_ranks.NoIORanks(single_rank_process_props),
     )
 
     multi_rank_config = config.with_overrides(driver={"end_of_simulation": end_of_simulation})
@@ -152,8 +153,8 @@ def _run_driver_compare_single_multi_rank(
     multi_rank_ds, multi_rank_driver = driver.run_driver(
         config=multi_rank_config,
         grid_manager=multi_rank_grid_manager,
-        process_props=process_props,
         backend=backend,
+        rank_roles=common_io_ranks.NoIORanks(process_props),
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
