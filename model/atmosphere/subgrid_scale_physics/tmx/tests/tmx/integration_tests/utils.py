@@ -139,7 +139,6 @@ def assert_tmx_exit_fields(
     tendency_state: tmx_states.TmxTendencyState,
     diagnostic_state: tmx_states.TmxDiagnosticState,
     exit_savepoint: sb.TmxExitSavepoint,
-    use_km_const: bool,
     owner_mask: np.ndarray,
 ) -> None:
     """
@@ -149,13 +148,6 @@ def assert_tmx_exit_fields(
     the halo; every other output only on the owned cells, because ICON leaves its halo
     unsynced.
     """
-    num_levels = diagnostic_state.km.ndarray.shape[1]
-    # the lowest level of km and kh is the surface exchange coefficient (km_sfc, kh_sfc of
-    # ICON's surface Compute_diagnostics), which tmx only writes with `use_km_const`
-    # TODO(yilu): drop this slicing once the surface component computes the exchange
-    # coefficients (follow-up of #1516) and tmx writes them into the lowest level, as
-    # Update_diagnostics in mo_vdf.f90 does.
-    exchange_coefficient_levels = slice(None, None if use_km_const else num_levels - 1)
     synced_fields = {"tend_ta", "tend_ua", "tend_va"}
     # Tolerances of the tmx datatests, per field. The comment above each field gives the worst
     # deviations from the serialized ICON fields measured on the five backends (CSCS, v13
@@ -222,8 +214,8 @@ def assert_tmx_exit_fields(
         ("kh", diagnostic_state.kh, exit_savepoint.kh(), 0.0, 5.0e-11),
     ):
         test_utils.assert_dallclose(
-            computed.asnumpy()[owner_mask, exchange_coefficient_levels],
-            reference.asnumpy()[owner_mask, exchange_coefficient_levels],
+            computed.asnumpy()[owner_mask],
+            reference.asnumpy()[owner_mask],
             atol=atol,
             rtol=rtol,
             err_msg=name,

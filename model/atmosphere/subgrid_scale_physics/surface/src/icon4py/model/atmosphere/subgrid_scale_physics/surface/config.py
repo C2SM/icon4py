@@ -61,6 +61,37 @@ class SurfaceConfig:
         ),
     ]
 
+    surface_layer_fraction: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Weight of the air in the mean virtual potential temperature of the "
+            "surface layer that the Richardson number is formed with [1].",
+        ),
+    ] = 0.4
+
+    minimum_roughness_length: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Lower bound of the roughness length over the sea [m].",
+        ),
+    ] = 1.5e-5
+
+    ocean_roughness_length: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Roughness length of the sea at the first step, before the Charnock "
+            "relation takes over [m].",
+        ),
+    ] = 1.0e-3
+
+    minimum_surface_wind: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Lower bound of the wind speed at the lowest level in the surface "
+            "layer [m/s].",
+        ),
+    ] = 0.3
+
     def __post_init__(self) -> None:
         try:
             self.surface_flux_type = SurfaceFluxType(self.surface_flux_type)

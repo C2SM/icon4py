@@ -108,6 +108,9 @@ class IconOption:
     unnamed_index: int | None = None
     #: when False, a missing namelist entry leaves the ICON4Py default in place
     required: bool = True
+    #: name of the member in the input namelist, when it differs from `field`; used to
+    #: match an option read by position against the value the input namelist sets by name
+    icon_name: str | None = None
 
 
 def _field_type(config_cls: type, field: str) -> typing.Callable[[Any], Any]:
@@ -429,14 +432,33 @@ _SURFACE_TESTCASE_DEFAULTS: typing.Final = {
     "ape_sst_val": 29.0,
 }
 
+# The surface scheme reads from the test case namelist and from the surface-layer members
+# of `t_vdiff_config`, pinned by position like TMX:
+# `{"testcase_nml": testcase_nml, "model_cfg": atm_dict}`.
+_SURFACE_VDIFF_PATH: typing.Final = ("model_cfg", *_TMX_VDIFF_PATH)
+
 SURFACE = ConfigMapping(
     surface_config.SurfaceConfig,
     [
         # read as a plain int so that `SurfaceConfig.__post_init__` reports the unported schemes
-        IconOption("surface_flux_type", ("isrfc_type",), converter=int),
-        IconOption("kinematic_sensible_heat_flux", ("shflx",), required=False),
-        IconOption("kinematic_latent_heat_flux", ("lhflx",), required=False),
-        IconOption("sea_surface_temperature", ("ape_sst_val",), converter=_sst_in_kelvin),
+        IconOption("surface_flux_type", ("testcase_nml", "isrfc_type"), converter=int),
+        IconOption("kinematic_sensible_heat_flux", ("testcase_nml", "shflx"), required=False),
+        IconOption("kinematic_latent_heat_flux", ("testcase_nml", "lhflx"), required=False),
+        IconOption(
+            "sea_surface_temperature", ("testcase_nml", "ape_sst_val"), converter=_sst_in_kelvin
+        ),
+        IconOption(
+            "surface_layer_fraction", _SURFACE_VDIFF_PATH, unnamed_index=15, icon_name="fsl"
+        ),
+        IconOption(
+            "minimum_roughness_length", _SURFACE_VDIFF_PATH, unnamed_index=18, icon_name="z0m_min"
+        ),
+        IconOption(
+            "ocean_roughness_length", _SURFACE_VDIFF_PATH, unnamed_index=20, icon_name="z0m_oce"
+        ),
+        IconOption(
+            "minimum_surface_wind", _SURFACE_VDIFF_PATH, unnamed_index=39, icon_name="min_sfc_wind"
+        ),
     ],
 )
 
@@ -480,7 +502,9 @@ def _check_tmx_positions(*, atm_dict: dict[str, Any], input_dict: dict[str, Any]
     # the first domain, the record the pinned positions read
     named = input_dict["aes_vdf_nml"]["aes_vdf_config"][0]
     positions = {"use_tmx": _TMX_USE_TMX_INDEX} | {
-        opt.field: opt.unnamed_index for opt in TMX.options
+        (opt.icon_name or opt.field): opt.unnamed_index
+        for opt in (*TMX.options, *SURFACE.options)
+        if opt.unnamed_index is not None
     }
     for name, value in named.items():
         if name not in positions:
@@ -517,7 +541,7 @@ def make_surface_config(
         raise NotImplementedError(
             f"ape_sst_case = {sst_case!r}: only the constant SST ('sst_const') is ported."
         )
-    return SURFACE.build(testcase_nml)
+    return SURFACE.build({"testcase_nml": testcase_nml, "model_cfg": atm_dict})
 
 
 # The analytical test cases are read from `nh_testcase_nml`, which ICON does not dump
