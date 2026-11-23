@@ -165,7 +165,10 @@ def initialize_solve_nonhydro_diagnostic_state(
             dtype=ta.vpfloat,
         ),
     )
-    max_vertical_cfl = data_alloc.scalar_like_array(0.0, allocator)
+    # `ta.wpfloat(0.0)`, not `0.0`, which is float64 in every precision mode: the dtype set
+    # here is kept (`_update_max_vertical_cfl` takes the `maximum` with this array), and the
+    # driver passes this array as is to the global MPI max, which reduces in its dtype.
+    max_vertical_cfl = data_alloc.scalar_like_array(ta.wpfloat(0.0), allocator)
     theta_v_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,

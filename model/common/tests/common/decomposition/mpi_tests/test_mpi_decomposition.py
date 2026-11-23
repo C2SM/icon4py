@@ -8,6 +8,7 @@
 import copy
 import functools
 import logging
+import math
 from typing import Any
 
 import gt4py.next as gtx
@@ -16,7 +17,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon
 from icon4py.model.common.interpolation import interpolation_fields
@@ -396,3 +397,118 @@ def test_exchange_and_reduction_cache_isolated_by_decomp_info(
     reductions1 = decomp_defs.create_reduction(process_props, decomposition_info)
     reductions2 = decomp_defs.create_reduction(process_props, other_decomposition_info)
     assert reductions1 is not reductions2
+
+
+# Synthetic decomposition for the reduction tests: per dimension, the number of owned
+# points (plus the rank, so that ranks differ) followed by the number of halo points.
+# The local sizes of the dimensions differ, as `GlobalReductions` resolves owner masks
+# by size. Halo points hold NaN, which poisons any reduction that does not mask them.
+_REDUCTION_TEST_SIZES = {
+    dims.CellDim: (10, 2),
+    dims.EdgeDim: (30, 3),
+    dims.VertexDim: (50, 2),
+}
+_REDUCTION_TEST_NUM_LEVELS = 4
+_REDUCTIONS = ("min", "max", "sum", "mean")
+
+
+def _reduction_test_num_owned(dim: gtx.Dimension, rank: int) -> int:
+    return _REDUCTION_TEST_SIZES[dim][0] + rank
+
+
+def _reduction_test_decomposition_info(rank: int, xp: Any) -> decomp_defs.DecompositionInfo:
+    decomposition_info = decomp_defs.DecompositionInfo()
+    for dim, (_, num_halo) in _REDUCTION_TEST_SIZES.items():
+        num_owned = _reduction_test_num_owned(dim, rank)
+        local_size = num_owned + num_halo
+        decomposition_info.set_dimension(
+            dim, xp.arange(local_size), xp.arange(local_size) < num_owned, None
+        )
+    return decomposition_info
+
+
+def _reduction_test_owned_values(
+    dim: gtx.Dimension, rank: int, trailing_shape: tuple[int, ...]
+) -> np.ndarray:
+    num_owned = _reduction_test_num_owned(dim, rank)
+    values = np.arange(num_owned * math.prod(trailing_shape), dtype=np.float64)
+    # alternate the sign of the offset so that the extrema are on different ranks
+    return values.reshape(num_owned, *trailing_shape) + (-1.0) ** rank * 1000.0 * rank
+
+
+def _reduction_test_setup(
+    process_props: decomp_defs.ProcessProperties, backend: gtx_typing.Backend | None
+) -> tuple[Any, mpi_decomposition.GlobalReductions]:
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend))
+    decomposition_info = _reduction_test_decomposition_info(process_props.rank, xp)
+    return xp, mpi_decomposition.GlobalReductions(process_props, decomposition_info)
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("reduction", _REDUCTIONS)
+def test_global_reductions_of_0d_arrays(
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
+    reduction: str,
+) -> None:
+    xp, reductions = _reduction_test_setup(process_props, backend)
+    per_rank_values = [(-1.0) ** rank * (rank + 1.5) for rank in range(process_props.comm_size)]
+
+    result = getattr(reductions, reduction)(xp.asarray(per_rank_values[process_props.rank]))
+
+    assert result == pytest.approx(getattr(np, reduction)(per_rank_values), rel=1e-15)
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("reduction", _REDUCTIONS)
+@pytest.mark.parametrize("dim", list(_REDUCTION_TEST_SIZES), ids=lambda dim: dim.value)
+@pytest.mark.parametrize(
+    "trailing_shape",
+    [(), (_REDUCTION_TEST_NUM_LEVELS,), (_REDUCTION_TEST_NUM_LEVELS + 1,)],
+    ids=["horizontal", "full_levels", "half_levels"],
+)
+def test_global_reductions_over_owned_points(
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
+    trailing_shape: tuple[int, ...],
+    dim: gtx.Dimension,
+    reduction: str,
+) -> None:
+    xp, reductions = _reduction_test_setup(process_props, backend)
+    owned_values = [
+        _reduction_test_owned_values(dim, rank, trailing_shape)
+        for rank in range(process_props.comm_size)
+    ]
+    halo_values = np.full((_REDUCTION_TEST_SIZES[dim][1], *trailing_shape), np.nan)
+    buffer = xp.asarray(np.concatenate([owned_values[process_props.rank], halo_values]))
+    expected = getattr(np, reduction)(np.concatenate(owned_values))
+
+    # the first call communicates the global number of owned points, the second reuses it
+    first_result = getattr(reductions, reduction)(buffer)
+    second_result = getattr(reductions, reduction)(buffer)
+
+    assert first_result == pytest.approx(expected, rel=1e-12)
+    assert second_result == first_result
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("reduction", _REDUCTIONS)
+def test_global_reductions_of_empty_buffer_raise_on_all_ranks(
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
+    reduction: str,
+) -> None:
+    xp, reductions = _reduction_test_setup(process_props, backend)
+    num_owned, num_halo = _REDUCTION_TEST_SIZES[dims.CellDim]
+    buffer = xp.zeros((num_owned + process_props.rank + num_halo, 0))
+
+    with pytest.raises(ValueError, match=f"global_{reduction} requires a non-empty buffer"):
+        getattr(reductions, reduction)(buffer)
+    # every rank raised, so none of them is left waiting in a collective
+    process_props.comm.Barrier()
