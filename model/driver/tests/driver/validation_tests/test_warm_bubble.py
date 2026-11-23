@@ -123,18 +123,15 @@ def _profile_maxima(
         return np.empty(0)
     nfine = y_center.size * 3 # 2048
     spline = interpolate.CubicSpline(
-        # np.append(y_center, y_center[0] + domain_height), np.append(data, data[0]), bc_type="periodic"
-        y_center, data, bc_type="natural"
+        np.append(y_center, y_center[0] + domain_height), np.append(data, data[0]), bc_type="periodic"
+        # y_center, data, bc_type="natural"
     )
     y_fine = y_center[0] + np.arange(nfine) * (domain_height / nfine)
     value_fine = spline(y_fine)
-    # tile three periods so that maxima and prominences near the boundary are right
-    # peaks, _ = signal.find_peaks(np.tile(value_fine, 3), prominence=min_prominence * top)
-    # peaks = peaks[(peaks >= nfine) & (peaks < 2 * nfine)] - nfine
-    # return y_fine[peaks]
-    peaks, _ = signal.find_peaks(value_fine, prominence=min_prominence * top)
+    peaks, _ = signal.find_peaks(np.tile(value_fine, 3), prominence=min_prominence * top)
+    peaks = peaks[(peaks >= nfine) & (peaks < 2 * nfine)] - nfine
     return y_fine[peaks]
-
+    
 
 def _check_mass_conservation(
     atmospheric_state: xr.Dataset, precipitation: xr.Dataset, weights: np.ndarray, dz: np.ndarray, dtime: float
@@ -211,7 +208,7 @@ def test_warm_bubble(
     output_path = tmp_path / "output"
     config = experiment_config.with_overrides(io=_validation_io_config(output_path))
     grid_manager = driver_utils.create_grid_manager(
-        grid_file_path=grid_utils._download_grid_file(test_defs.Grids.TORUS_100X116_1000M),
+        grid_file_path=grid_utils._download_grid_file(test_defs.Grids.TORUS_20X24_5000M),
         vertical_grid_config=config.vertical_grid,
         allocator=model_backends.get_allocator(backend),
         process_props=process_props,

@@ -508,8 +508,9 @@ def main() -> None:  # noqa: PLR0915 [too-many-statements] linear plotting scrip
 
     ly = float(grid.attrs["domain_height"])
     t_sel = t_min[its]
+    # nfine = max(nfine, c.size * 3)  # at least 3 points per bin
     peaks = [
-        find_profile_peaks(y_centres, profile, ly, min_prominence=args.min_prominence)
+        find_profile_peaks(y_centres, profile, ly, min_prominence=args.min_prominence, nfine=y_centres.size * 3)
         for profile in cwp_profiles
     ]
     plot_cwp_y_profile(
