@@ -21,7 +21,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_advection import (
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_tracer_advection import (
     compute_tracer_advection_before_horizontal_limiter,
 )
 from icon4py.model.atmosphere.tracer_advection.tracer_advection import HorizontalAdvectionType

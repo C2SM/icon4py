@@ -23,11 +23,8 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_density_increment 
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_positive_definite_horizontal_multiplicative_flux_factor import (
     _apply_positive_definite_horizontal_multiplicative_flux_factor,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_backtrajectory_alt import (
-    _compute_barycentric_backtrajectory_alt,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
-    _compute_horizontal_tracer_flux_from_linear_coefficients_alt,
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_2nd_order_miura_horizontal_flux import (
+    _compute_2nd_order_miura_horizontal_flux,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_upwind import (
     _compute_horizontal_tracer_flux_upwind,
@@ -35,28 +32,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_trace
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     _compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm4gpu_courant_number import (
-    _compute_ppm4gpu_courant_number,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm4gpu_fractional_flux import (
-    _compute_ppm4gpu_fractional_flux,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm4gpu_integer_flux import (
-    _compute_ppm4gpu_integer_flux,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm4gpu_parabola_coefficients import (
-    _compute_ppm4gpu_parabola_coefficients,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_quadratic_face_values import (
-    _compute_ppm_quadratic_face_values,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_quartic_face_values import (
-    _compute_ppm_quartic_face_values,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_slope import _compute_ppm_slope
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_parabola_limiter_condition import (
-    _compute_vertical_parabola_limiter_condition,
-)
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm import _compute_ppm_flux
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_tracer_flux_upwind import (
     _compute_vertical_tracer_flux_upwind,
 )
@@ -66,119 +42,13 @@ from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_horizon
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_vertically import (
     _integrate_tracer_vertically,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.limit_vertical_parabola_semi_monotonically import (
-    _limit_vertical_parabola_semi_monotonically,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.limit_vertical_slope_semi_monotonically import (
-    _limit_vertical_slope_semi_monotonically,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coefficients_svd import (
-    _reconstruct_linear_coefficients_svd,
-)
 from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import (
     HorizontalAdvectionLimiter,
     HorizontalAdvectionType,
-    VerticalAdvectionLimiter,
     VerticalAdvectionType,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
-    _compute_tangential_wind,
-)
 from icon4py.model.common.type_alias import wpfloat
-
-
-@gtx.field_operator
-def _compute_ppm4gpu_flux(
-    p_cc: fa.CellKField[ta.wpfloat],
-    p_cellmass_now: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
-    p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
-    slev: gtx.int32,
-    slevp1_ti: gtx.int32,
-    elev: gtx.int32,
-    wp_eps: ta.wpfloat,
-    p_dtime: ta.wpfloat,
-    itype_vlimit: gtx.int32,
-) -> fa.CellKHalfField[ta.wpfloat]:
-    z_cfl = broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim))
-    z_cfl = concat_where(
-        (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
-        _compute_ppm4gpu_courant_number(
-            p_mflx_contra_v=p_mflx_contra_v,
-            p_cellmass_now=p_cellmass_now,
-            z_cfl=z_cfl,
-            k_half=k,
-            slevp1_ti=slevp1_ti,
-            nlev=elev,
-            wp_eps=wp_eps,
-            p_dtime=p_dtime,
-        ),
-        z_cfl,
-    )
-    z_slope_raw = concat_where(
-        (dims.KDim > 0) & (dims.KDim <= elev),
-        _compute_ppm_slope(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, elev=elev),
-        broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim)),
-    )
-    z_slope = (
-        _limit_vertical_slope_semi_monotonically(p_cc=p_cc, z_slope=z_slope_raw, elev=elev)
-        if (itype_vlimit == VerticalAdvectionLimiter.SEMI_MONOTONIC)
-        else z_slope_raw
-    )
-    p_face = concat_where(
-        dims.KHalfDim == 0,
-        p_cc(dims.KHalfDim + 0.5),
-        concat_where(
-            dims.KHalfDim < elev + 1,
-            concat_where(
-                (dims.KHalfDim > 1) & (dims.KHalfDim < elev),
-                _compute_ppm_quartic_face_values(
-                    p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, z_slope=z_slope
-                ),
-                _compute_ppm_quadratic_face_values(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now),
-            ),
-            p_cc(dims.KHalfDim - 0.5),
-        ),
-    )
-    l_limit = (
-        _compute_vertical_parabola_limiter_condition(p_face=p_face, p_cc=p_cc)
-        if itype_vlimit == VerticalAdvectionLimiter.SEMI_MONOTONIC
-        else broadcast(0, (dims.CellDim, dims.KDim))
-    )
-    z_face_up, z_face_low = _limit_vertical_parabola_semi_monotonically(
-        l_limit=l_limit, p_face=p_face, p_cc=p_cc
-    )
-    z_delta_q, z_a1 = _compute_ppm4gpu_parabola_coefficients(
-        z_face_up=z_face_up, z_face_low=z_face_low, p_cc=p_cc
-    )
-    p_upflux = _compute_ppm4gpu_fractional_flux(
-        p_cc=p_cc,
-        p_cellmass_now=p_cellmass_now,
-        z_cfl=z_cfl,
-        z_delta_q=z_delta_q,
-        z_a1=z_a1,
-        k_half=k,
-        slev=slev,
-        elev=elev,
-        p_dtime=p_dtime,
-    )
-    p_upflux = _compute_ppm4gpu_integer_flux(
-        p_cc=p_cc,
-        p_cellmass_now=p_cellmass_now,
-        z_cfl=z_cfl,
-        p_upflux=p_upflux,
-        k_half=k,
-        slev=slev,
-        elev=elev,
-        p_dtime=p_dtime,
-    )
-    return concat_where(
-        (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
-        p_upflux,
-        broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim)),
-    )
 
 
 @gtx.field_operator
@@ -212,7 +82,7 @@ def _compute_vertical_tracer_flux(
         )
         if (ivadv_tracer == VerticalAdvectionType.FIRST_ORDER_UPWIND)
         else (
-            _compute_ppm4gpu_flux(
+            _compute_ppm_flux(
                 p_cc=p_cc,
                 p_cellmass_now=p_cellmass_now,
                 p_mflx_contra_v=p_mflx_contra_v,
@@ -273,48 +143,6 @@ def compute_vertical_tracer_flux(
 
 
 @gtx.field_operator
-def _compute_2nd_order_miura_horizontal_flux(
-    p_cc: fa.CellKField[ta.wpfloat],
-    p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
-    p_vn: fa.EdgeKField[ta.wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
-    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
-    p_dtime: ta.wpfloat,
-) -> fa.EdgeKField[ta.wpfloat]:
-    z_real_vt = _compute_tangential_wind(vn=p_vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
-    p_distv_bary_1, p_distv_bary_2 = _compute_barycentric_backtrajectory_alt(
-        p_vn=p_vn,
-        p_vt=z_real_vt,
-        pos_on_tplane_e_1=pos_on_tplane_e_1,
-        pos_on_tplane_e_2=pos_on_tplane_e_2,
-        primal_normal_cell_1=primal_normal_cell_1,
-        dual_normal_cell_1=dual_normal_cell_1,
-        primal_normal_cell_2=primal_normal_cell_2,
-        dual_normal_cell_2=dual_normal_cell_2,
-        p_dthalf=wpfloat(0.5) * p_dtime,
-    )
-    p_coeff_1, p_coeff_2, p_coeff_3 = _reconstruct_linear_coefficients_svd(
-        p_cc=p_cc, lsq_pseudoinv_1=lsq_pseudoinv_1, lsq_pseudoinv_2=lsq_pseudoinv_2
-    )
-    return _compute_horizontal_tracer_flux_from_linear_coefficients_alt(
-        z_lsq_coeff_1=p_coeff_1,
-        z_lsq_coeff_2=p_coeff_2,
-        z_lsq_coeff_3=p_coeff_3,
-        distv_bary_1=p_distv_bary_1,
-        distv_bary_2=p_distv_bary_2,
-        p_mass_flx_e=p_mass_flx_e,
-        p_vn=p_vn,
-    )
-
-
-@gtx.field_operator
 def _compute_tracer_advection_before_horizontal_limiter(
     rhodz_now: fa.CellKField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
@@ -350,7 +178,8 @@ def _compute_tracer_advection_before_horizontal_limiter(
     fa.CellKField[ta.wpfloat],
 ]:
     # p_mflx_tracer_v is pre-computed by the caller via compute_vertical_tracer_flux
-    # (zeros for no advection or odd timesteps; upwind or PPM flux otherwise).
+    # and only read when do_vertical_first is set (even timesteps); on odd timesteps
+    # the vertical flux is computed after the horizontal step.
     # It is NOT re-computed here to avoid fusing the large PPM kernel (which uses
     # concat_where on KHalfDim with fractional K-shifts) into this already-large
     # field_operator, which causes CUDA shared-memory overflow on aarch64/Santis.
@@ -599,7 +428,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
         )
         if (ivadv_tracer == VerticalAdvectionType.FIRST_ORDER_UPWIND)
         else (
-            _compute_ppm4gpu_flux(
+            _compute_ppm_flux(
                 p_cc=p_tracer_after_horizontal,
                 p_cellmass_now=rhodz_ast2,
                 p_mflx_contra_v=p_mflx_contra_v,

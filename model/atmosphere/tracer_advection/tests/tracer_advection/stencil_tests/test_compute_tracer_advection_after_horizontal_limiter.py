@@ -14,7 +14,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_advection import (
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_tracer_advection import (
     compute_tracer_advection_after_horizontal_limiter,
 )
 from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import (
@@ -134,7 +134,7 @@ def _ppm_courant_number_numpy(
     p_dtime: float,
     num_levels: int,
 ) -> np.ndarray:
-    """numpy port of `_compute_ppm4gpu_courant_number` (below + above)."""
+    """numpy port of `_compute_ppm_courant_number` (below + above)."""
     ncells = p_cellmass_now.shape[0]
     kh = np.arange(num_levels + 1)
 
@@ -199,7 +199,7 @@ def _ppm_courant_number_numpy(
     return below(z_mass, zero) + above(z_mass, zero)
 
 
-def _ppm4gpu_flux_numpy(
+def _ppm_flux_numpy(
     *,
     p_cc: np.ndarray,
     p_cellmass_now: np.ndarray,
@@ -213,7 +213,7 @@ def _ppm4gpu_flux_numpy(
     itype_vlimit: int,
     num_levels: int,
 ) -> np.ndarray:
-    """numpy port of `_compute_ppm4gpu_flux` (THIRD_ORDER_PPM vertical flux)."""
+    """numpy port of `_compute_ppm_flux` (THIRD_ORDER_PPM vertical flux)."""
     ncells = p_cc.shape[0]
     kh = np.arange(num_levels + 1)
 
@@ -438,7 +438,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
                 * p_mflx_contra_v[:, 1:-1]
             )
         elif ivadv_tracer == VerticalAdvectionType.THIRD_ORDER_PPM.value:
-            p_mflx_tracer_v_computed = _ppm4gpu_flux_numpy(
+            p_mflx_tracer_v_computed = _ppm_flux_numpy(
                 p_cc=p_tracer_new,
                 p_cellmass_now=rhodz_ast2,
                 p_mflx_contra_v=p_mflx_contra_v,

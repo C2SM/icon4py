@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_tracer_time_tendency import (
     apply_interpolated_tracer_time_tendency,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_advection import (
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_tracer_advection import (
     compute_tracer_advection_after_horizontal_limiter,
     compute_tracer_advection_before_horizontal_limiter,
     compute_vertical_tracer_flux,
@@ -213,16 +213,6 @@ class GodunovSplittingAdvection(Advection):
             dtype=gtx.int32,
             allocator=allocator,
         )
-        self._p_mflx_tracer_v_zero = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
-        )
-        # Temporary holding the vertically advected tracer between the vertical and
-        # the horizontal transport step (written by
-        # `compute_tracer_advection_before_horizontal_limiter`, read by
-        # `compute_tracer_advection_after_horizontal_limiter`).
-        self._p_tracer_after_vertical = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator
-        )
 
         self._apply_interpolated_tracer_time_tendency = setup_program(
             backend=self._backend,
@@ -378,14 +368,11 @@ class GodunovSplittingAdvection(Advection):
                 p_mflx_contra_v=prep_adv.mass_flx_ic,
                 p_dtime=dtime,
             )
-            _p_mflx_tracer_v = diagnostic_state.vfl_tracer
-        else:
-            _p_mflx_tracer_v = self._p_mflx_tracer_v_zero
 
         self._compute_before_horizontal_limiter(
             rhodz_ast2=self._rhodz_ast2,
-            p_mflx_tracer_v=_p_mflx_tracer_v,
-            p_tracer_after_vertical=self._p_tracer_after_vertical,
+            p_mflx_tracer_v=diagnostic_state.vfl_tracer,
+            p_tracer_after_vertical=p_tracer_new,
             p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
             r_m=self._r_m,
             rhodz_now=diagnostic_state.airmass_now,
@@ -409,7 +396,7 @@ class GodunovSplittingAdvection(Advection):
             r_m=self._r_m,
             p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
             p_tracer_now=p_tracer_now,
-            p_tracer_after_vertical=self._p_tracer_after_vertical,
+            p_tracer_after_vertical=p_tracer_new,
             rhodz_ast2=self._rhodz_ast2,
             rhodz_now=diagnostic_state.airmass_now,
             rhodz_new=diagnostic_state.airmass_new,

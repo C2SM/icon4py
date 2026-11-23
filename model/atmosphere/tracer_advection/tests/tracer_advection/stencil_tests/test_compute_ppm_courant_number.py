@@ -12,8 +12,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm4gpu_courant_number import (
-    compute_ppm4gpu_courant_number,
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm import (
+    compute_ppm_courant_number,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
@@ -22,7 +22,7 @@ from icon4py.model.testing import stencil_tests
 
 @pytest.mark.uses_concat_where
 class TestComputePpm4gpuCourantNumber(stencil_tests.StencilTest):
-    PROGRAM = compute_ppm4gpu_courant_number
+    PROGRAM = compute_ppm_courant_number
     OUTPUTS = ("z_cfl",)
 
     @stencil_tests.static_reference

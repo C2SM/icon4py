@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_slope import compute_ppm_slope
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm import compute_ppm_slope
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests

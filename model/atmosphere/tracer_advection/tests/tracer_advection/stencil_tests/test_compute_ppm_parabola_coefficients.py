@@ -11,15 +11,15 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm4gpu_parabola_coefficients import (
-    compute_ppm4gpu_parabola_coefficients,
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm import (
+    compute_ppm_parabola_coefficients,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
-def compute_ppm4gpu_parabola_coefficients_numpy(
+def compute_ppm_parabola_coefficients_numpy(
     z_face_up: np.ndarray,
     z_face_low: np.ndarray,
     p_cc: np.ndarray,
@@ -30,7 +30,7 @@ def compute_ppm4gpu_parabola_coefficients_numpy(
 
 
 class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
-    PROGRAM = compute_ppm4gpu_parabola_coefficients
+    PROGRAM = compute_ppm_parabola_coefficients
     OUTPUTS = ("z_delta_q", "z_a1")
 
     @stencil_tests.static_reference
@@ -42,7 +42,7 @@ class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
         p_cc: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_delta_q, z_a1 = compute_ppm4gpu_parabola_coefficients_numpy(z_face_up, z_face_low, p_cc)
+        z_delta_q, z_a1 = compute_ppm_parabola_coefficients_numpy(z_face_up, z_face_low, p_cc)
         return dict(z_delta_q=z_delta_q, z_a1=z_a1)
 
     @stencil_tests.input_data_fixture
