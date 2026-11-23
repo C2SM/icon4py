@@ -278,7 +278,7 @@ class GridManager:
                     indices=local_vertex_indices,
                 )
             ),
-            0,
+            -1,
         )
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
