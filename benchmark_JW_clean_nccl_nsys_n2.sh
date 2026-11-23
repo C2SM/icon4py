@@ -129,9 +129,7 @@ if [[ ! -d ${GT4PY_BUILD_CACHE_DIR} ]]; then
         --config-file-path ${CONFIG_DIR}/config.yml \
         --grid-file-path $(realpath ${ICON_GRID}) \
         --icon4py-backend dace_gpu \
-        --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \
-        --output-path ${OUTPUT_PATH} \
-        --no-enable-output'
+        --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL}'
 fi
 
 export NSYS_REPORT_DIR=$(pwd)/nsys_reports
@@ -158,8 +156,6 @@ srun -u --cpus-per-task=$SLURM_CPUS_PER_TASK --cpu-bind=cores --gres-flags=allow
     --config-file-path ${CONFIG_DIR}/config.yml \
     --grid-file-path $(realpath ${ICON_GRID}) \
     --icon4py-backend dace_gpu \
-    --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \
-    --output-path ${OUTPUT_PATH} \
-    --no-enable-output'
+    --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL}'
 
 rm -rf ${OUTPUT_PATH}
