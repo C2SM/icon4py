@@ -480,10 +480,19 @@ class Icon4pyDriver:
         self,
         solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
     ) -> None:
+        """
+        Adapt the number of dynamics substeps to the global maximum vertical CFL number.
+
+        TODO: the global maximum is a blocking GPU-aware ``MPI_Allreduce`` on a 0-d
+        device array at every time step, during which the GPU idles. Alternatives:
+        - reduce on the host, ``comm.allreduce(float(max_vertical_cfl), op=MPI.MAX)``,
+          to avoid the latency of GPU-aware MPI for a single value;
+        - start a non-blocking ``Iallreduce`` after the last dynamics substep and wait
+          for it after diffusion (which does not change ``max_vertical_cfl``), to
+          overlap the communication with the diffusion kernels.
+        """
         global_max_vertical_cfl = self.global_reductions.max(
-            self._xp.asarray(
-                solve_nonhydro_diagnostic_state.max_vertical_cfl[()], dtype=ta.wpfloat
-            ),
+            solve_nonhydro_diagnostic_state.max_vertical_cfl
         )
         if (
             global_max_vertical_cfl
