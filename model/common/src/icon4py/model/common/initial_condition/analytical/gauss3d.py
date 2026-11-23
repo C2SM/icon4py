@@ -27,8 +27,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.common.initial_condition.config import ConfigContext
     from icon4py.model.common.old_states import static_fields
 
@@ -64,7 +62,7 @@ def gauss3d(
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: states.PrognosticState,
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
     """

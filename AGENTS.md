@@ -8,7 +8,7 @@ Always read the CODING_GUIDELINES.md document first and follow it.
 
 In particular, before adding a stencil, a helper, an enum or an options dictionary to a component, check the "Shared code and generic naming" section: if it can be described using only grid entities and mathematical operations, it belongs in `model/common` and must be named after the operation, not after the calling code's variables.
 
-`.github/copilot-instructions.md` restates the review-relevant subset of these guidelines for the AI reviewers (Copilot and PR Agent). Update it when a guideline it restates changes.
+`.github/copilot-instructions.md` restates the review-relevant subset of these guidelines for the AI reviewers (Copilot, PR Agent and the agent review). Update it when a guideline it restates changes.
 
 ## Monorepo structure
 

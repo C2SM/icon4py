@@ -25,8 +25,6 @@ from icon4py.model.common import (
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     # a type-only import: tmx does not depend on the physics driver
     from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
     from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
@@ -94,7 +92,7 @@ class Tmx(component.Component["Tmx.Input", "Tmx.Output"]):
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         dtime: time.RelativeTime,
-        backend: gtx_typing.Backend | None = None,
+        backend: model_backends.BackendLike = None,
         exchange: decomposition.ExchangeRuntime,
     ) -> None:
         self._dt_seconds = ta.wpfloat(dtime.total_seconds())

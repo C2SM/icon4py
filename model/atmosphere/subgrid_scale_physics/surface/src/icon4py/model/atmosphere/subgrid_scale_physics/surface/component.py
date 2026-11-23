@@ -14,12 +14,17 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import surface, surface_states
-from icon4py.model.common import component, dimension as dims, field, quantities as qty, state
+from icon4py.model.common import (
+    component,
+    dimension as dims,
+    field,
+    model_backends,
+    quantities as qty,
+    state,
+)
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     # a type-only import: the surface scheme does not depend on the physics driver
     from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
     from icon4py.model.atmosphere.subgrid_scale_physics.surface import config as surface_config
@@ -58,7 +63,7 @@ class Surface(component.Component["Surface.Input", "Surface.Output"]):
         *,
         grid: base_grid.Grid,
         config: surface_config.SurfaceConfig,
-        backend: gtx_typing.Backend | None = None,
+        backend: model_backends.BackendLike = None,
         compute: Callable[..., None] | None = None,
     ) -> None:
         self._surface = surface.Surface(grid=grid, config=config, backend=backend)

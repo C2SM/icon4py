@@ -26,8 +26,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.common.initial_condition.config import ConfigContext
 
 
@@ -111,7 +109,7 @@ def read_initial_condition_from_file(
     grid: icon_grid.IconGrid,
     prognostic_state_now: states.PrognosticState,
     tracer_state_now: states.TracerState,
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
     """Initialise the prognostic and tracer states from the serialized ICON initial state."""
@@ -143,7 +141,7 @@ def read_restart_from_file(
     grid: icon_grid.IconGrid,
     prognostic_state_now: states.PrognosticState,
     dycore_diagnostics: states.DycoreDiagnostics,
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
     """

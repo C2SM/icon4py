@@ -27,8 +27,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.initial_condition.config import ConfigContext
     from icon4py.model.common.old_states import static_fields
@@ -143,7 +141,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: states.PrognosticState,
     tracer_state_now: states.TracerState,
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
     """
