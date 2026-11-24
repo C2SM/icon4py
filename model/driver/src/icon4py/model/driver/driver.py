@@ -564,7 +564,7 @@ class Icon4pyDriver:
             overlap the communication with the diffusion kernels.
         """
         global_max_vertical_cfl = self.global_reductions.max(
-            dycore_diagnostics.max_vertical_cfl
+            dycore_diagnostics.max_vertical_cfl.ndarray
         )
         if (
             global_max_vertical_cfl
