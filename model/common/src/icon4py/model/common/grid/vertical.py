@@ -19,7 +19,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-import icon4py.model.common.states.metadata as data
+import icon4py.model.common.old_states.metadata as data
 from icon4py.model.common import (
     dimension as dims,
     exceptions,
@@ -175,7 +175,7 @@ class VerticalGrid:
 
     def __str__(self) -> str:
         vertical_params_properties = ["Model interface height properties:"]
-        for key, value in self.metadata_interface_physical_height.items():
+        for key, value in self.metadata_interface_physical_height.as_dict().items():
             vertical_params_properties.append(f"    {key}: {value}")
         vertical_params_properties.append("Level    Coordinate    Thickness:")
         vct_a_array = self.vct_a.ndarray

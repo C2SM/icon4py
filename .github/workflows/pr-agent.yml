@@ -1,0 +1,46 @@
+name: PR Agent
+
+# Advisory AI review by PR Agent; never a required check.
+# Caller of the reusable workflow in GridTools/ci-workflows; the review
+# policy is '.pr_agent.toml'. See docs/development/pr_agent.md.
+
+on:
+  # 'pull_request_target' because fork PRs get no secrets under
+  # 'pull_request'. The Actions event policy for this file's path must allow
+  # every event listed here.
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+# Never cancel: runs join the group before the called jobs filter the event,
+# so any PR comment would cancel an in-flight review.
+concurrency:
+  group: pr-agent-${{ github.event_name }}-${{ github.event.comment.id || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  pr-agent:
+    # Pinned by commit SHA because the called workflow receives the key.
+    uses: GridTools/ci-workflows/.github/workflows/pr-agent.yml@fce720199ea669941f688b41dff6857e97faa401 # v0.1.0
+    # Must cover what the called jobs request, or the run fails at startup.
+    # No 'contents: write': a prompt injection must not become a way to push.
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    with:
+      # Only these may come from variables, which any writer can change
+      # without review; never 'api_base' or 'environment'.
+      model: ${{ vars.PR_AGENT_MODEL }}
+      fallback_models: ${{ vars.PR_AGENT_FALLBACK_MODELS }}
+      token_budget: ${{ vars.PR_AGENT_TOKEN_BUDGET }}
+      max_output_tokens: ${{ vars.PR_AGENT_MAX_OUTPUT_TOKENS }}
+      ai_timeout: ${{ vars.PR_AGENT_AI_TIMEOUT }}
+      docs_url: https://github.com/C2SM/icon4py/blob/main/docs/development/pr_agent.md
+    # An environment secret ('pr-agent', restricted to 'main'), so it must be
+    # mapped explicitly; never 'secrets: inherit'.
+    secrets:
+      inference_api_key: ${{ secrets.PR_AGENT_INFERENCE_API_KEY }}

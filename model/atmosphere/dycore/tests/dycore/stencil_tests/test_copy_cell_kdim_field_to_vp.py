@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import 
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
 
