@@ -680,10 +680,12 @@ def write_experiment_config(
     config: driver_config.ExperimentConfig,
     process_props: decomposition_defs.ProcessProperties,
 ) -> pathlib.Path | None:
-    if process_props.rank != 0:
+    """
+    Write the configuration as ``<experiment_name>.yaml`` into the output directory.
+    """
+    if config.io is None or process_props.rank != 0:
         return None
-    directory = config.io.output_path if config.io is not None else pathlib.Path.cwd()
-    config_file_path = directory / f"{config.driver.experiment_name}.yaml"
+    config_file_path = config.io.output_path / f"{config.driver.experiment_name}.yaml"
     config_file_path.write_text(config_io.write_yaml_str(config))
     log.info(f"experiment configuration written to {config_file_path}")
     return config_file_path

@@ -64,7 +64,7 @@ def _minimal_experiment_config(with_io: bool = False) -> driver_config.Experimen
     return config_io.read_yaml_str(config_str, driver_config.ExperimentConfig)
 
 
-def test_write_experiment_config_without_io_goes_to_cwd(
+def test_write_experiment_config_without_io_writes_nothing(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
@@ -75,8 +75,8 @@ def test_write_experiment_config_without_io_goes_to_cwd(
         config, decomposition_defs.SingleNodeProcessProperties()
     )
 
-    assert path == tmp_path / "foo.yaml"
-    assert config_io.read_yaml_str(path.read_text(), driver_config.ExperimentConfig) == config
+    assert path is None
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_write_experiment_config_with_io_goes_to_output_path(
@@ -110,8 +110,14 @@ def test_write_experiment_config_only_on_rank_zero(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
+    output_path = tmp_path / "run_output"
+    output_path.mkdir()
+    config = _minimal_experiment_config(with_io=True)
+    assert config.io is not None
+    config = config.with_overrides(io=dataclasses.replace(config.io, output_path=output_path))
 
-    path = driver_utils.write_experiment_config(_minimal_experiment_config(), _SecondOfTwoRanks())
+    path = driver_utils.write_experiment_config(config, _SecondOfTwoRanks())
 
     assert path is None
-    assert list(tmp_path.iterdir()) == []
+    assert list(output_path.iterdir()) == []
+    assert list(tmp_path.iterdir()) == [output_path]

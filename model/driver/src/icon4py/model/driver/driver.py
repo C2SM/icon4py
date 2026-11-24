@@ -912,6 +912,7 @@ def initialize_driver(
             process_props=process_props,
         )
         config = config.with_overrides(io=dataclasses.replace(config.io, output_path=output_path))
+        driver_utils.write_experiment_config(config, process_props)
 
     allocator = model_backends.get_allocator(backend)
 
@@ -1096,7 +1097,6 @@ def run_driver(
         process_props=process_props,
         backend=backend,
     )
-    driver_utils.write_experiment_config(icon4py_driver.config, process_props)
     allocator = model_backends.get_allocator(backend)
     ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
     icon4py_driver.time_integration(ds)
