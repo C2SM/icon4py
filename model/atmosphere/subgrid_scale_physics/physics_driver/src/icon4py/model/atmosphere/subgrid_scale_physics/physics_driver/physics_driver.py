@@ -11,11 +11,14 @@
 from __future__ import annotations
 
 import dataclasses
-import logging
 import datetime
+import logging
 from typing import TYPE_CHECKING, Any, Protocol
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    config as physics_config,
+    physics_state,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
@@ -105,12 +108,15 @@ class PhysicsProcess:
 
 
 class PhysicsDriver:
-    """Runs the physics processes under ICON's sequential coupling.
+    """Runs the physics processes under sequential or parallel coupling.
 
     In one timestep (``run``) the PhysicsState is diagnosed once from the model
-    state, then the processes run in list order. The coupling is sequential: each
-    process's tendencies are summed over the processes (``Tendencies.accumulate``)
-    and added to the state in place before the next one runs (``PhysicsState.update``).
+    state, then the processes run in list order and their tendencies are summed
+    (``Tendencies.accumulate``). The ``coupling`` decides when the state is advanced
+    in place by the tendencies (``PhysicsState.update``):
+
+    - sequential (ICON AES): by each process's tendencies, before the next one runs;
+    - parallel: by the sums, once, after all processes have read the step-entry state.
 
     At the end of the step ``PhysicsState.update_prognostics`` writes exner, theta_v and
     vn back and syncs the halos of what the physics wrote.
@@ -121,16 +127,22 @@ class PhysicsDriver:
         processes: list[PhysicsProcess],
         state: physics_state.PhysicsState,
         tendencies: physics_state.Tendencies,
+        coupling: physics_config.CouplingType = physics_config.CouplingType.SEQUENTIAL,
     ) -> None:
         self._processes = processes
         self._state = state
         self._tendencies = tendencies
+        self._coupling = coupling
         for process in processes:
             process.component.bind_output_buffers(
                 state.allocate_process_diagnostics(
                     process.name, process.component.outputs_properties
                 )
             )
+
+    @property
+    def coupling(self) -> physics_config.CouplingType:
+        return self._coupling
 
     def diagnostic_outputs(self) -> Iterator[physics_state.DiagnosticOutput]:
         """The processes' diagnostic output buffers with their metadata, for the model output."""
@@ -148,6 +160,7 @@ class PhysicsDriver:
         backend: gtx_typing.Backend | None = None,
         process_props: decomposition.ProcessProperties,
         decomposition_info: decomposition.DecompositionInfo,
+        coupling: physics_config.CouplingType = physics_config.CouplingType.SEQUENTIAL,
     ) -> PhysicsDriver:
         """Build the driver together with the coupling pieces it owns.
 
@@ -166,6 +179,7 @@ class PhysicsDriver:
                 backend=backend,
             ),
             tendencies=physics_state.Tendencies(backend=backend),
+            coupling=coupling,
         )
 
     def run(
@@ -183,10 +197,18 @@ class PhysicsDriver:
         self._state.compute_diagnostics(prognostic, tracers, diagnostics, air_mass)
         self._tendencies.zero()
         dt_seconds = dtime.total_seconds()
+        sequential = self._coupling is physics_config.CouplingType.SEQUENTIAL
         for process in self._processes:
             log.info(f"Running {process.component.__class__}")
             outputs = process.run(self._state, step_start_datetime, dtime)
-            outputs_properties = process.component.outputs_properties
-            self._tendencies.accumulate(outputs, outputs_properties)
-            self._state.update(outputs, outputs_properties, dt_seconds)
+            tendencies = physics_state.tendency_outputs(
+                outputs, process.component.outputs_properties
+            )
+            self._tendencies.accumulate(tendencies)
+            if sequential:
+                # the next process reads the state advanced by this one's tendencies
+                self._state.update(tendencies, dt_seconds)
+        if not sequential:
+            # every process read the step-entry state: advance it once by the sums
+            self._state.update(self._tendencies.sums, dt_seconds)
         self._state.update_prognostics(self._tendencies.sums, dt_seconds, perturbed_exner)

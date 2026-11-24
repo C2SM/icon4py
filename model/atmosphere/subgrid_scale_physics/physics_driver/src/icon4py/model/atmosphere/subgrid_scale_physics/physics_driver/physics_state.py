@@ -8,9 +8,11 @@
 
 """The two-layer coupling pieces of the PhysicsDriver.
 
-The ``PhysicsState`` is read and updated by the processes in turn, as ICON AES does: each
-process gets as input the state that the previous ones have already updated. The
-``Tendencies`` are accumulated over the processes.
+The ``PhysicsState`` is what the processes read, and the ``Tendencies`` sum their
+tendencies. How the state is advanced by the tendencies depends on the coupling
+(``config.CouplingType``): under sequential coupling, as in ICON AES, each process
+reads the state that the previous ones have already updated; under parallel coupling
+every process reads the step-entry state, which is advanced once by the sums.
 """
 
 from __future__ import annotations
@@ -65,6 +67,25 @@ MOISTURE_SPECIES: Final = ("qv", "qc", "qi", "qr", "qs", "qg")
 def tendency_name(name: str) -> str:
     """The output name of the tendency of the state field ``name``."""
     return f"tend_{name}"
+
+
+def tendency_outputs(
+    outputs: Mapping[str, gtx.Field], outputs_properties: Mapping[str, model.FieldMetaData]
+) -> dict[str, gtx.Field]:
+    """The tendencies among a process's outputs, keyed by tendency name.
+
+    Only outputs whose metadata ``kind`` is ``TENDENCY`` are tendencies; the rest are
+    diagnostics, written by the components into the buffers the ``PhysicsState``
+    allocates for them. A process that did not run this step has no outputs, hence
+    no tendencies.
+    """
+    if not outputs:
+        return {}
+    return {
+        name: outputs[name]
+        for name, props in outputs_properties.items()
+        if props.kind == model.FieldKind.TENDENCY
+    }
 
 
 class DiagnosticOutput(NamedTuple):
@@ -333,20 +354,18 @@ class PhysicsState:
             dims.CellDim, self.rho, self.diagnostics.u, self.diagnostics.v, self.w
         )
 
-    def update(
-        self,
-        outputs: dict[str, gtx.Field],
-        outputs_properties: dict[str, model.FieldMetaData],
-        dt_seconds: float,
-    ) -> None:
+    def update(self, tendencies: Mapping[str, gtx.Field], dt_seconds: float) -> None:
         """Update the state in place as ``field = field + dt_seconds * tend_field``.
 
-        After each process the next one reads the advanced temperature, u, v, w and
-        moisture tracers (sequential coupling, ICON AES ``fc_xxx = 1``); the virtual
-        temperature and the pressure stay at step start. Each tendency output must be
-        the tendency of one of these fields.
+        The advanced fields are the temperature, u, v, w and the moisture tracers; the
+        virtual temperature and the pressure stay at step start. ``tendencies`` are
+        keyed by tendency name, and each must be the tendency of one of these fields.
+
+        Under sequential coupling (ICON AES ``fc_xxx = 1``) the driver calls this with
+        the tendencies of each process, so the next process reads the advanced fields.
+        Under parallel coupling it calls this once, with the sums over all processes.
         """
-        if not outputs:
+        if not tendencies:
             return
         tracers = self.tracers
         assert tracers is not None and self.w is not None, "compute_diagnostics must run first"
@@ -357,15 +376,12 @@ class PhysicsState:
             tendency_name("w"): self.w,
             **{tendency_name(name): getattr(tracers, name) for name in MOISTURE_SPECIES},
         }
-        for name, props in outputs_properties.items():
-            if props.kind != model.FieldKind.TENDENCY:
-                continue
+        for name, field in tendencies.items():
             if (target := targets.get(name)) is None:
                 raise ValueError(
                     f"Tendency output '{name}' is not the tendency of an advanced field; "
                     f"expected one of {list(targets)}."
                 )
-            field = outputs[name]
             apply_tendency = (
                 self._apply_tendency_on_half_levels
                 if dims.KHalfDim in target.domain.dims
@@ -461,8 +477,8 @@ class PhysicsState:
         """Write exner, theta_v, the perturbed exner and vn back at exit (phy2dyn).
 
         The tracers, temperature, u, v and w were already advanced in place by
-        ``update``; exner and theta_v follow from the final temperature and
-        moisture, and vn from the summed wind tendencies ``sums``.
+        ``update``, whatever the coupling; exner and theta_v follow from the final
+        temperature and moisture, and vn from the summed wind tendencies ``sums``.
 
         The exit halo exchanges of the interface happen here, as in ICON's
         ``mo_interface_iconam_aes``: the summed wind tendencies before their projection,
@@ -552,14 +568,15 @@ class Tendencies:
     TODO (Yilu): the sums are the untyped stand-in for a typed state of #1510, one field
     per tendency; restructure them on top of it once it is merged.
 
-    One timestep is ``zero``, then ``accumulate`` once per process, each followed by
-    ``PhysicsState.update`` of that process's tendencies, then
-    ``PhysicsState.update_prognostics`` with the sums.
+    One timestep is ``zero``, then ``accumulate`` once per process, then
+    ``PhysicsState.update_prognostics`` with the sums. ``PhysicsState.update`` advances
+    the state by each process's tendencies under sequential coupling, and by the sums
+    after the last process under parallel coupling.
 
     Sums are keyed by tendency name (``tend_<field>``) and allocated on the first
-    contribution, so which sums exist depends on which processes ran. Only outputs whose
-    metadata carries ``kind`` ``TENDENCY`` accumulate; the rest are diagnostics, written by
-    the components directly into the buffers the ``PhysicsState`` allocates for them.
+    contribution, so which sums exist depends on which processes ran. Only tendencies
+    accumulate (see ``tendency_outputs``); the diagnostics are written by the components
+    directly into the buffers the ``PhysicsState`` allocates for them.
     """
 
     def __init__(self, *, backend: gtx_typing.Backend | None = None) -> None:
@@ -576,21 +593,14 @@ class Tendencies:
         for buffer in self._sums.values():
             buffer.ndarray[...] = 0.0  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
-    def accumulate(
-        self, outputs: dict[str, gtx.Field], outputs_properties: dict[str, model.FieldMetaData]
-    ) -> None:
-        """Add a process's tendency outputs to the per-variable sums.
+    def accumulate(self, tendencies: Mapping[str, gtx.Field]) -> None:
+        """Add a process's tendencies, keyed by tendency name, to the per-variable sums.
 
         Element-wise sum with no neighbor access, so a plain array operation on
         the field buffers rather than a stencil. A process that did not run this
-        step has no outputs and contributes nothing.
+        step has no tendencies and contributes nothing.
         """
-        if not outputs:
-            return
-        for name, props in outputs_properties.items():
-            if props.kind != model.FieldKind.TENDENCY:
-                continue
-            field = outputs[name]
+        for name, field in tendencies.items():
             if (buffer := self._sums.get(name)) is None:
                 buffer = self._sums[name] = gtx.zeros(
                     field.domain, dtype=field.dtype, allocator=self._allocator

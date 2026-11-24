@@ -34,6 +34,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    config as physics_driver_config,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import config as surface_config
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
@@ -822,6 +825,12 @@ def convert_experiment(
         muphys=muphys_cfg,
         tmx=tmx_cfg,
         surface=surface_cfg,
+        # ICON AES advances the physics state after every process (fc_xxx = 1)
+        physics_coupling=(
+            physics_driver_config.CouplingType.SEQUENTIAL
+            if aes_physics_on
+            else physics_driver_config.CouplingType.PARALLEL
+        ),
         topography=topography_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=make_prescribed_tendencies_config(atm_dict),

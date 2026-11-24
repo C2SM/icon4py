@@ -74,7 +74,8 @@ examples:
     \ false\n    scale_turb_energy_flux: 1.0\n    smag_constant: 0.23\n    turb_prandtl:\
     \ 0.33333333333\n    km_min: 0.001\n    max_turb_scale: 300.0\n  surface:\n  \
     \  surface_flux_type: fixed_heat_fluxes\n    kinematic_sensible_heat_flux: 0.0\n\
-    \    kinematic_latent_heat_flux: 0.0\n    sea_surface_temperature: 0.0\n"
+    \    kinematic_latent_heat_flux: 0.0\n    sea_surface_temperature: 0.0\n  physics_coupling:\
+    \ parallel\n"
 children:
   - display_name: shared
     type_name: list[icon4py.model.common.config.config_io.SharedOptionSet]
@@ -4796,6 +4797,37 @@ children:
       - surface
     module_path: types
     is_union: true
+  - display_name: physics_coupling
+    type_name: <enum 'CouplingType'>
+    description: '
+
+      Decide how the physics processes see each other''s updates within one timestep.
+
+
+      The choice applies to all processes. Either way the processes run in list order,
+
+      their tendencies are summed, and at the end exner and theta_v are recomputed
+      once
+
+      from the final temperature and moisture, and vn is updated once from the summed
+
+      (u, v) tendencies.
+
+      '
+    default: CouplingType.SEQUENTIAL
+    optional: true
+    examples:
+      - 'physics_coupling: parallel
+
+        '
+      - 'physics_coupling: sequential
+
+        '
+    children: []
+    config_name_path:
+      - physics_coupling
+    module_path: icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.config
+    is_union: false
 config_name_path:
   - Config File
 module_path: icon4py.model.driver.config

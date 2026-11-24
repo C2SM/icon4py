@@ -546,6 +546,7 @@ def initialize_granules(
             backend=backend,
             process_props=process_props,
             decomposition_info=decomposition_info,
+            coupling=config.physics_coupling,
         )
 
     return Granules(

@@ -6,15 +6,21 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests of the PhysicsState layer (PhysicsState, process diagnostics, tendency sums, single update)."""
+"""Tests of the PhysicsState layer (PhysicsState, process diagnostics, tendency sums, updates, coupling)."""
 
 import dataclasses
+import datetime
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    config as physics_config,
+    physics_driver,
+    physics_state,
+    process_time_control,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry_attributes, simple
@@ -212,33 +218,38 @@ def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
 # ---------------------------------------------------------------------------
 
 
-def test_accumulate_sums_tendencies_and_skips_diagnostics():
+def test_tendency_outputs_skip_diagnostics():
+    grid = simple.simple_grid()
+    props = {"tend_qv": _meta(kind=_TENDENCY), "km": _meta()}
+    tend_qv = data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)
+    out = {"tend_qv": tend_qv, "km": data_alloc.constant_field(grid, 5.0, dims.CellDim, dims.KDim)}
+
+    assert physics_state.tendency_outputs(out, props) == {"tend_qv": tend_qv}
+    # a process that did not run has no outputs, hence no tendencies
+    assert physics_state.tendency_outputs({}, props) == {}
+
+
+def test_accumulate_sums_tendencies():
     grid = simple.simple_grid()
     acc = _tendencies()
-    props = {"tend_qv": _meta(kind=_TENDENCY), "km": _meta()}
-    out = {
-        "tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim),
-        "km": data_alloc.constant_field(grid, 5.0, dims.CellDim, dims.KDim),
-    }
+    out = {"tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
     acc.zero()
-    acc.accumulate(out, props)
-    acc.accumulate(out, props)  # a second process contributing the same tendency
+    acc.accumulate(out)
+    acc.accumulate(out)  # a second process contributing the same tendency
 
     np.testing.assert_allclose(acc.sums["tend_qv"].asnumpy(), 2e-7, rtol=1e-12)
-    assert "km" not in acc.sums
 
 
 def test_zero_resets_between_steps():
     grid = simple.simple_grid()
     acc = _tendencies()
-    props = {"tend_qv": _meta(kind=_TENDENCY)}
     out = {"tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
     acc.zero()
-    acc.accumulate(out, props)
+    acc.accumulate(out)
     acc.zero()
-    acc.accumulate(out, props)
+    acc.accumulate(out)
 
     np.testing.assert_allclose(acc.sums["tend_qv"].asnumpy(), 1e-7, rtol=1e-12)
 
@@ -255,10 +266,9 @@ def _tendencies() -> physics_state.Tendencies:
 def _accumulated(grid, state, **tendencies) -> physics_state.Tendencies:
     """Tendencies of one process with the given constant tendencies, summed and advanced into ``state``."""
     acc = _tendencies()
-    props = {name: _meta(kind=_TENDENCY) for name in tendencies}
     acc.zero()
-    acc.accumulate(tendencies, props)
-    state.update(tendencies, props, _DT_SECONDS)
+    acc.accumulate(tendencies)
+    state.update(tendencies, _DT_SECONDS)
     return acc
 
 
@@ -341,8 +351,7 @@ def test_sums_are_allocated_on_the_first_contribution():
         {
             "tend_w": data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KHalfDim),
             "tend_temperature": data_alloc.constant_field(grid, 1e-3, dims.CellDim, dims.KDim),
-        },
-        {"tend_w": _meta(kind=_TENDENCY), "tend_temperature": _meta(kind=_TENDENCY)},
+        }
     )
 
     # exactly the tendencies produced, shaped like them: w lives on half levels
@@ -359,7 +368,7 @@ def test_update_rejects_a_tendency_of_no_advanced_field():
     out = {"tend_dummy": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
     with pytest.raises(ValueError, match="'tend_dummy' is not the tendency"):
-        ws.update(out, {"tend_dummy": _meta(kind=_TENDENCY)}, _DT_SECONDS)
+        ws.update(out, _DT_SECONDS)
 
 
 def test_physics_state_links_the_callers_diagnostic_state():
@@ -520,3 +529,106 @@ def test_update_prognostics_syncs_the_written_fields():
             ],
         ),
     ]
+
+
+# ---------------------------------------------------------------------------
+# Coupling: which state the processes read
+# ---------------------------------------------------------------------------
+
+
+_T0 = datetime.datetime(2024, 1, 1)
+_DT = datetime.timedelta(seconds=_DT_SECONDS)
+
+
+class _TemperatureProbe:
+    """A process component that records the temperature it reads and heats at a fixed rate."""
+
+    inputs_properties: dict = {}
+    outputs_properties: dict = {
+        "tend_temperature": _meta(dims.CellDim, dims.KDim, kind=_TENDENCY)
+    }
+
+    def __init__(self, heating_rate: gtx.Field) -> None:
+        self._heating_rate = heating_rate
+        self.seen_temperature: np.ndarray | None = None
+
+    def __call__(self, state: dict, time_step: datetime.datetime) -> dict:
+        self.seen_temperature = state["temperature"].asnumpy().copy()
+        return {"tend_temperature": self._heating_rate}
+
+    def bind_output_buffers(self, buffers: dict) -> None:
+        pass
+
+
+class _TemperatureInput:
+    """The ComponentState of the probe: hands it the state's current temperature."""
+
+    def as_component_input(self, state: physics_state.PhysicsState) -> dict:
+        return {"temperature": state.diagnostics.temperature}
+
+
+def _run_two_probes(grid, coupling: physics_config.CouplingType):
+    """One driver step of two heating probes; the probes and the model state after it."""
+    heating_rate = data_alloc.constant_field(grid, 1e-3, dims.CellDim, dims.KDim)
+    probes = (_TemperatureProbe(heating_rate), _TemperatureProbe(heating_rate))
+    time_control = process_time_control.ProcessTimeControl(
+        interval=_DT, start_date=_T0, end_date=_T0 + datetime.timedelta(days=1)
+    )
+    driver = physics_driver.PhysicsDriver(
+        [
+            physics_driver.PhysicsProcess(
+                name=f"probe_{i}",
+                component=probe,
+                state=_TemperatureInput(),
+                time_control=time_control,
+            )
+            for i, probe in enumerate(probes)
+        ],
+        state=_physics_state(grid),
+        tendencies=_tendencies(),
+        coupling=coupling,
+    )
+    prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
+    tracers = _tracer_state(grid, qv=1e-3)
+    diagnostics = _diagnostic_state(grid)
+    driver.run(
+        prognostic=prognostic,
+        tracers=tracers,
+        diagnostics=diagnostics,
+        dtime=_DT,
+        simulation_current_datetime=_T0 + _DT,
+    )
+    return probes, prognostic, diagnostics
+
+
+@pytest.mark.parametrize("coupling", list(physics_config.CouplingType))
+def test_coupling_decides_the_state_the_next_process_reads(coupling):
+    grid = simple.simple_grid()
+
+    (first, second), _, diagnostics = _run_two_probes(grid, coupling)
+
+    entry_temperature = first.seen_temperature
+    assert entry_temperature is not None and second.seen_temperature is not None
+    heating = 1e-3 * _DT_SECONDS
+    if coupling is physics_config.CouplingType.SEQUENTIAL:
+        # the second process reads the temperature the first one has advanced
+        np.testing.assert_allclose(second.seen_temperature, entry_temperature + heating, rtol=1e-12)
+    else:
+        # both processes read the step-entry temperature
+        np.testing.assert_array_equal(second.seen_temperature, entry_temperature)
+    # either way the step ends at the temperature advanced by both tendencies
+    np.testing.assert_allclose(
+        diagnostics.temperature.asnumpy(), entry_temperature + 2 * heating, rtol=1e-12
+    )
+
+
+def test_couplings_agree_when_the_tendencies_do_not_depend_on_the_state():
+    grid = simple.simple_grid()
+
+    _, sequential, _ = _run_two_probes(grid, physics_config.CouplingType.SEQUENTIAL)
+    _, parallel, _ = _run_two_probes(grid, physics_config.CouplingType.PARALLEL)
+
+    for name in ("exner", "theta_v", "rho", "w", "vn"):
+        np.testing.assert_allclose(
+            getattr(parallel, name).asnumpy(), getattr(sequential, name).asnumpy(), rtol=1e-12
+        )

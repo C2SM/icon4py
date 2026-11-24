@@ -20,6 +20,9 @@ import fortran_config_converter as fcc
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    config as physics_driver_config,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.surface import config as surface_config
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.common import constants, prescribed_tendencies
@@ -263,6 +266,18 @@ def test_convert_experiment_testcase(tmp_path: pathlib.Path) -> None:
     )
     assert config.graupel is None
     assert config.muphys is None
+    assert config.physics_coupling is physics_driver_config.CouplingType.PARALLEL
+
+
+def test_convert_experiment_couples_aes_physics_sequentially(tmp_path: pathlib.Path) -> None:
+    atm = copy.deepcopy(ATM_NML)
+    atm["aes_phy_nml"] = {"aes_phy_config": [{"dt_mig": "PT5M"}]}
+    _write_namelists(tmp_path, atm=atm)
+
+    config = fcc.convert_experiment(tmp_path)
+
+    assert config.muphys is not None
+    assert config.physics_coupling is physics_driver_config.CouplingType.SEQUENTIAL
 
 
 def test_convert_experiment_from_file_paths_resolve_against_the_config_file(

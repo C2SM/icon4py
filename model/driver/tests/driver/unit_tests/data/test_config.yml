@@ -90,3 +90,4 @@ graupel:
 muphys:
 tmx:
 surface:
+physics_coupling: sequential

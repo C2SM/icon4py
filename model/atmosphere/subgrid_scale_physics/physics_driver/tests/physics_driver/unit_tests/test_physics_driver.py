@@ -11,6 +11,7 @@ import datetime
 
 import pytest
 
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.config import CouplingType
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_driver import (
     PhysicsDriver,
     PhysicsProcess,
@@ -197,23 +198,27 @@ class RecordingCoupling:
     def update_prognostics(self, sums, dt_seconds, perturbed_exner=None) -> None:
         self.events.append(("update_prognostics", dt_seconds, perturbed_exner))
 
-    def update(self, outputs, outputs_properties, dt_seconds) -> None:
-        self.events.append(("update", dict(outputs), dt_seconds))
+    def update(self, tendencies, dt_seconds) -> None:
+        self.events.append(("update", dict(tendencies), dt_seconds))
 
     # Tendencies surface
     def zero(self) -> None:
         self.events.append(("zero",))
 
-    def accumulate(self, outputs, outputs_properties) -> None:
-        self.events.append(("accumulate", dict(outputs)))
+    def accumulate(self, tendencies) -> None:
+        self.events.append(("accumulate", dict(tendencies)))
 
-    #: the tendency sums the driver hands to update_prognostics
+    #: the tendency sums the driver hands to update (parallel) and update_prognostics
     sums: dict = dataclasses.field(default_factory=lambda: {"tend_u": "SUM_TU", "tend_v": "SUM_TV"})
 
 
-def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
+def _driver(
+    processes, coupling_type: CouplingType = CouplingType.SEQUENTIAL
+) -> tuple[PhysicsDriver, RecordingCoupling]:
     coupling = RecordingCoupling()
-    driver = PhysicsDriver(processes=processes, state=coupling, tendencies=coupling)
+    driver = PhysicsDriver(
+        processes=processes, state=coupling, tendencies=coupling, coupling=coupling_type
+    )
     return driver, coupling
 
 
@@ -245,8 +250,8 @@ def test_run_diagnoses_once_updates_after_each_process_and_writes_back_once() ->
     assert comp_a.call_count == 1
     assert comp_b.call_count == 1
     # buffers allocated at construction, compute_diagnostics + zero once at entry, one
-    # update per process (before the next process runs), exactly one update_prognostics
-    # at the very end
+    # update per process (before the next process runs) with its tendencies only,
+    # exactly one update_prognostics at the very end
     assert coupling.events == [
         ("allocate", "A"),
         ("allocate", "B"),
@@ -254,8 +259,8 @@ def test_run_diagnoses_once_updates_after_each_process_and_writes_back_once() ->
         ("zero",),
         ("accumulate", {"tend_temperature": "A"}),
         ("update", {"tend_temperature": "A"}, 300.0),
-        ("accumulate", {"tend_temperature": "B", "kh": "KH"}),
-        ("update", {"tend_temperature": "B", "kh": "KH"}, 300.0),
+        ("accumulate", {"tend_temperature": "B"}),
+        ("update", {"tend_temperature": "B"}, 300.0),
         ("update_prognostics", 300.0, None),
     ]
     # both processes translated the same PhysicsState object, advanced in place in between
@@ -263,6 +268,52 @@ def test_run_diagnoses_once_updates_after_each_process_and_writes_back_once() ->
     # the state holds the layer-allocated buffers the granule writes into, by process
     assert coupling.allocated["B"] == {"kh": "BUF_kh"}
     assert coupling.allocated["A"] == {}
+
+
+def test_parallel_coupling_updates_once_with_the_sums_after_all_processes() -> None:
+    state = RecordingComponentState()
+    comp_a = RecordingComponent(
+        outputs={"tend_temperature": "A"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
+    )
+    comp_b = RecordingComponent(
+        outputs={"tend_temperature": "B", "kh": "KH"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY, "kh": None},
+    )
+    driver, coupling = _driver(
+        [
+            PhysicsProcess(name="A", component=comp_a, state=state, time_control=_tc()),
+            PhysicsProcess(name="B", component=comp_b, state=state, time_control=_tc()),
+        ],
+        CouplingType.PARALLEL,
+    )
+
+    driver.run(
+        prognostic="prog",
+        tracers="tracers",
+        diagnostics="diag",
+        dtime=_DT,
+        simulation_current_datetime=_T0 + _DT,
+    )
+
+    # no update between the processes: both read the step-entry state, which is then
+    # advanced once by the sums, before the write-back
+    assert coupling.events == [
+        ("allocate", "A"),
+        ("allocate", "B"),
+        ("compute_diagnostics", "prog", "diag"),
+        ("zero",),
+        ("accumulate", {"tend_temperature": "A"}),
+        ("accumulate", {"tend_temperature": "B"}),
+        ("update", coupling.sums, 300.0),
+        ("update_prognostics", 300.0, None),
+    ]
+
+
+def test_default_coupling_is_sequential() -> None:
+    coupling = RecordingCoupling()
+    driver = PhysicsDriver(processes=[], state=coupling, tendencies=coupling)
+    assert driver.coupling is CouplingType.SEQUENTIAL
 
 
 def test_run_raises_for_non_multiple_interval() -> None:
@@ -313,7 +364,7 @@ def test_out_of_window_process_does_nothing() -> None:
 
     assert comp.call_count == 0
     assert state.input_calls == []
-    # the accumulate and update calls still happen, with nothing in them to add
+    # the accumulate and update calls still happen, with no tendencies in them to add
     assert coupling.events == [
         ("allocate", "future"),
         ("compute_diagnostics", "prog", "diag"),

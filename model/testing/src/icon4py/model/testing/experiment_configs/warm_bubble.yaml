@@ -2,7 +2,7 @@ geometry: {}
 metrics: {}
 interpolation: {}
 vertical_grid:
-  num_levels: 100
+  num_levels: 70
   model_top_height: 20000.0
   lowest_layer_thickness: 0.0
 topography:
@@ -33,13 +33,13 @@ prescribed_tendencies:
 driver:
   experiment_name: warm_bubble
   profiling_options:
-  dtime: 200 milliseconds
+  dtime: 10 seconds
   enable_statistics_logging: True
   start_of_simulation: 1970-01-01T00:00:00
   start_of_timestepping: 1970-01-01T00:00:00
   end_of_simulation:
     type: numsteps
-    value: 36000
+    value: 720
 tracer_config:
   qv: true
   qc: true
@@ -60,10 +60,11 @@ surface:
   kinematic_sensible_heat_flux: 0.0
   kinematic_latent_heat_flux: 0.0
   sea_surface_temperature: 300.0
+physics_coupling: sequential
 io:
   output_path: output_sample
   field_groups:
-    - basename: winds
+    - basename: atmospheric_state
       variables:
         - eastward_wind
         - northward_wind
@@ -79,7 +80,7 @@ io:
         - qg
       output_interval:
         type: numsteps
-        value: 300
+        value: 6
       timesteps_per_file: 0
       backend: netcdf
       mode: gather
@@ -96,7 +97,7 @@ io:
         - precipitation_energy_flux
       output_interval:
         type: numsteps
-        value: 300
+        value: 1
       timesteps_per_file: 0
       backend: netcdf
       mode: gather
