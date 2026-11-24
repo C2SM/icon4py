@@ -11,10 +11,10 @@ import pytest
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.physics.compute_brunt_vaisala_frequency import (
     _compute_brunt_vaisala_frequency,
 )
-from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import reference_funcs, stencil_tests
 

@@ -48,7 +48,6 @@ from icon4py.model.common.interpolation.stencils.compute_tangential_wind import 
     compute_tangential_wind,
 )
 from icon4py.model.common.math.stencils import generic_math_operations
-from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -202,7 +201,8 @@ class SemiLagrangianTracerFlux(ABC):
     def compute_tracer_flux(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        vn_traj: fa.EdgeKField[ta.wpfloat],
+        mass_flx_me: fa.EdgeKField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
@@ -290,7 +290,8 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
     def compute_tracer_flux(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        vn_traj: fa.EdgeKField[ta.wpfloat],
+        mass_flx_me: fa.EdgeKField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
@@ -320,8 +321,8 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             z_lsq_coeff_3=self._p_coeff_3,
             distv_bary_1=p_distv_bary_1,
             distv_bary_2=p_distv_bary_2,
-            p_mass_flx_e=prep_adv.mass_flx_me,
-            p_vn=prep_adv.vn_traj,
+            p_mass_flx_e=mass_flx_me,
+            p_vn=vn_traj,
             p_out_e=p_mflx_tracer_h,
         )
         log.debug(
@@ -345,7 +346,8 @@ class HorizontalAdvection(ABC):
     def run(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        vn_traj: fa.EdgeKField[ta.wpfloat],
+        mass_flx_me: fa.EdgeKField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -357,7 +359,8 @@ class HorizontalAdvection(ABC):
         Run a horizontal tracer_advection step.
 
         Args:
-            prep_adv: input argument, data class that contains precalculated tracer_advection fields
+            vn_traj: input argument, horizontal velocity at edges for the backward trajectories, averaged over the dynamics substeps
+            mass_flx_me: input argument, mass flux at edges, averaged over the dynamics substeps
             p_tracer_now: input argument, field that contains current tracer mass fraction
             p_tracer_new: output argument, field that contains new tracer mass fraction
             rhodz_now: input argument, field that contains current air mass in each layer
@@ -407,7 +410,8 @@ class NoAdvection(HorizontalAdvection):
     def run(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        vn_traj: fa.EdgeKField[ta.wpfloat],
+        mass_flx_me: fa.EdgeKField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -437,7 +441,8 @@ class FiniteVolume(HorizontalAdvection):
     def run(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        vn_traj: fa.EdgeKField[ta.wpfloat],
+        mass_flx_me: fa.EdgeKField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -448,7 +453,8 @@ class FiniteVolume(HorizontalAdvection):
         log.debug("horizontal tracer_advection run - start")
 
         self._compute_numerical_flux(
-            prep_adv=prep_adv,
+            vn_traj=vn_traj,
+            mass_flx_me=mass_flx_me,
             p_tracer_now=p_tracer_now,
             rhodz_now=rhodz_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
@@ -469,7 +475,8 @@ class FiniteVolume(HorizontalAdvection):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        vn_traj: fa.EdgeKField[ta.wpfloat],
+        mass_flx_me: fa.EdgeKField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
@@ -554,7 +561,9 @@ class FirstOrderUpwind(FiniteVolume):
 
     def _compute_numerical_flux(
         self,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        *,
+        vn_traj: fa.EdgeKField[ta.wpfloat],
+        mass_flx_me: fa.EdgeKField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
@@ -565,8 +574,8 @@ class FirstOrderUpwind(FiniteVolume):
         log.debug("running stencil compute_horizontal_tracer_flux_upwind - start")
         self._compute_horizontal_tracer_flux_upwind(
             p_cc=p_tracer_now,
-            p_mass_flx_e=prep_adv.mass_flx_me,
-            p_vn=prep_adv.vn_traj,
+            p_mass_flx_e=mass_flx_me,
+            p_vn=vn_traj,
             p_out_e=p_mflx_tracer_h,
         )
         log.debug("running stencil compute_horizontal_tracer_flux_upwind - end")
@@ -713,7 +722,8 @@ class SemiLagrangian(FiniteVolume):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
+        vn_traj: fa.EdgeKField[ta.wpfloat],
+        mass_flx_me: fa.EdgeKField[ta.wpfloat],
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
@@ -726,7 +736,7 @@ class SemiLagrangian(FiniteVolume):
         # compute tangential velocity
         log.debug("running stencil compute_tangential_wind - start")
         self._compute_tangential_wind(
-            vn=prep_adv.vn_traj,
+            vn=vn_traj,
             vt=self._z_real_vt,
         )
         log.debug("running stencil compute_tangential_wind - end")
@@ -734,7 +744,7 @@ class SemiLagrangian(FiniteVolume):
         # backtrajectory calculation
         log.debug("running stencil compute_barycentric_backtrajectory_alt - start")
         self._compute_barycentric_backtrajectory_alt(
-            p_vn=prep_adv.vn_traj,
+            p_vn=vn_traj,
             p_vt=self._z_real_vt,
             p_distv_bary_1=self._p_distv_bary_1,
             p_distv_bary_2=self._p_distv_bary_2,
@@ -745,7 +755,8 @@ class SemiLagrangian(FiniteVolume):
         ## tracer-specific part
 
         self._tracer_flux.compute_tracer_flux(
-            prep_adv=prep_adv,
+            vn_traj=vn_traj,
+            mass_flx_me=mass_flx_me,
             p_tracer_now=p_tracer_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
             p_distv_bary_1=self._p_distv_bary_1,

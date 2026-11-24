@@ -30,6 +30,7 @@ from icon4py.model.common import (
     backend_configuration as backend_cfg,
     initial_condition,
     prescribed_tendencies,
+    states,
     time,
     topography,
     type_alias as ta,
@@ -40,7 +41,6 @@ from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states import tracer_states
 from icon4py.model.common.utils.time_utils import relativetime_from_iso8601
 
 
@@ -198,7 +198,7 @@ class ExperimentConfig(config_io.ConfigWithShared):
     ] = None
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
-    tracer_config: tracer_states.TracerConfig | None = None
+    tracer_config: states.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     muphys: muphys_config.MuphysConfig | None = None

@@ -12,7 +12,13 @@ from __future__ import annotations
 
 import dataclasses
 
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import (
+    field,
+    field_type_aliases as fa,
+    quantities as qty,
+    state,
+    type_alias as ta,
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -23,3 +29,24 @@ class SurfaceInputState:
     """Pressure at the surface, the lowest half level (``psfc``) [Pa]."""
     temperature: fa.CellField[ta.wpfloat]
     """Air temperature at the lowest full level (``ta(nlev)``) [K]."""
+
+
+class SurfaceFluxState(state.State):
+    """The surface fluxes of the surface scheme: the bottom boundary of tmx's vertical diffusion."""
+
+    evapotranspiration: field.Field[qty.EvapotranspirationOnCell]
+    """Surface evapotranspiration flux (``evspsbl``) [kg/(m^2 s)]."""
+    sensible_heat_flux: field.Field[qty.SensibleHeatFluxOnCell]
+    """Surface sensible heat flux (``hfss``) [W/m^2]."""
+    latent_heat_flux: field.Field[qty.LatentHeatFluxOnCell]
+    """Surface latent heat flux (``hfls``) [W/m^2]."""
+    u_stress: field.Field[qty.UStressOnCell]
+    """Zonal surface wind stress (``tauu``) [N/m^2]."""
+    v_stress: field.Field[qty.VStressOnCell]
+    """Meridional surface wind stress (``tauv``) [N/m^2]."""
+    q_snocpymlt: field.Field[qty.SnowCanopyMeltHeatOnCell]
+    """Heat used to melt snow on the canopy (``q_snocpymlt``), zero off land [W/m^2]."""
+    thermal_energy_flux: field.Field[qty.ThermalEnergyFluxOnCell]
+    """Surface flux of internal energy from thermal exchange (``ufts``) [W/m^2]."""
+    vapor_energy_flux: field.Field[qty.VaporEnergyFluxOnCell]
+    """Surface flux of internal energy from vapor exchange (``ufvs``) [W/m^2]."""
