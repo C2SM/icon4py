@@ -1658,12 +1658,8 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-sdist = { url = "https://files.pythonhosted.org/packages/9b/45/2ac1807165efde53a794be36983a13b3aee840d52c9041b90aac3560e617/gt4py-1.2.5.tar.gz", hash = "sha256:25484f9b32e1ff8503b05ac96eea46c62b56df3111d407385803c077577be828", size = 907553, upload-time = "2026-11-18T13:59:34.81Z" }
-source = { registry = "https://pypi.org/simple" }
-version = "1.2.5"
-wheels = [
-  { url = "https://files.pythonhosted.org/packages/db/97/947b406a50b5859dc65f7834baab2f2f73a9efc0b4b803d13932da1b3213/gt4py-1.2.5-py3-none-any.whl", hash = "sha256:1f243030fa8c42884df5ac2f1bba7b9885410708859245f8801ac1b3e3b96b83", size = 1131903, upload-time = "2026-11-18T13:59:32.703Z" }
-]
+source = { git = "https://github.com/havogt/gt4py?branch=jax-jit#6a8861b5f0a55f60e0411935e0d835459674b8e5" }
+version = "1.2.5+unknown.version.details"
 
 [package.optional-dependencies]
 cuda12 = [
@@ -2066,7 +2062,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2083,7 +2079,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2100,7 +2096,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2117,7 +2113,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-common", extras = ["io"], editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2134,7 +2130,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2151,7 +2147,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2168,7 +2164,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2185,7 +2181,7 @@ version = "0.5.0"
 
 [package.metadata]
 requires-dist = [
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-common", editable = "model/common" },
   { name = "packaging", specifier = ">=20.0" }
 ]
@@ -2213,9 +2209,9 @@ requires-dist = [
   { name = "click", specifier = ">=8.0" },
   { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
   { name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0" },
-  { name = "gt4py", specifier = "==1.2.5" },
-  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
-  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
+  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
+  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
   { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
   { name = "icon4py-common", extras = ["distributed"], editable = "model/common" },
@@ -2265,10 +2261,10 @@ requires-dist = [
   { name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1" },
   { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
   { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0" },
-  { name = "gt4py", specifier = "==1.2.5" },
-  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
-  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'" },
-  { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
+  { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
+  { name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
+  { name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
   { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
   { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -2356,7 +2352,7 @@ version = "0.5.0"
 [package.metadata]
 requires-dist = [
   { name = "devtools", specifier = ">=0.12" },
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
   { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
   { name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics" },
@@ -2390,7 +2386,7 @@ version = "0.5.0"
 [package.metadata]
 requires-dist = [
   { name = "filelock", specifier = ">=3.18.0,<3.20" },
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-common", extras = ["io"], editable = "model/common" },
   { name = "icon4py-driver", editable = "model/driver" },
   { name = "numpy", specifier = ">=1.23.3" },
@@ -2421,7 +2417,7 @@ requires-dist = [
   { name = "click", specifier = ">=8.1.7" },
   { name = "configargparse", specifier = ">=1.7.1" },
   { name = "fprettify", specifier = ">=0.3.7" },
-  { name = "gt4py", specifier = "==1.2.5" },
+  { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=jax-jit" },
   { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
   { name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common" },
   { name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common" },
