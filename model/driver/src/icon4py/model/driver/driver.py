@@ -912,7 +912,8 @@ def initialize_driver(
             process_props=process_props,
         )
         config = config.with_overrides(io=dataclasses.replace(config.io, output_path=output_path))
-        driver_utils.write_experiment_config(config, process_props)
+
+    driver_utils.write_experiment_config(config, process_props)
 
     allocator = model_backends.get_allocator(backend)
 

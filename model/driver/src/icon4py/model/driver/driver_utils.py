@@ -683,7 +683,12 @@ def write_experiment_config(
     """
     Write the configuration as ``<experiment_name>.yaml`` into the output directory.
     """
-    if config.io is None or process_props.rank != 0:
+    if process_props.rank != 0:
+        return None
+    if config.io is None:
+        log.warning(
+            "No output configuration provided, experiment configuration will NOT be written to file."
+        )
         return None
     config_file_path = config.io.output_path / f"{config.driver.experiment_name}.yaml"
     config_file_path.write_text(config_io.write_yaml_str(config))
