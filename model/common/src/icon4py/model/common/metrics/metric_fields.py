@@ -157,12 +157,12 @@ def _compute_scaling_factor_for_3d_divdamp(
             vct_a(dims.KDim - 0.5) + vct_a(dims.KDim + 0.5)
         )  # depends on nshift_total, assumed to be always 0
         scaling_factor_for_3d_divdamp = where(
-            zf >= divdamp_trans_end, 0.0, scaling_factor_for_3d_divdamp
-        )
-        scaling_factor_for_3d_divdamp = where(
             zf >= divdamp_trans_start,
             (divdamp_trans_end - zf) / (divdamp_trans_end - divdamp_trans_start),
             scaling_factor_for_3d_divdamp,
+        )
+        scaling_factor_for_3d_divdamp = where(
+            zf >= divdamp_trans_end, 0.0, scaling_factor_for_3d_divdamp
         )
     return scaling_factor_for_3d_divdamp
 
