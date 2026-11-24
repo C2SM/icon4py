@@ -129,6 +129,7 @@ def _sum_on_emulated_ranks(values: np.ndarray, num_ranks: int) -> float:
     """Sum ``values`` as ``GlobalReductions`` does: one exact fixed-point total per rank, allreduced.
 
     Only the allreduce is emulated: it adds the totals of the other ranks to the one of rank 0.
+    The MPI path itself is checked by ``test_global_reductions_single_vs_multi_rank``.
     """
     chunks = np.array_split(values, num_ranks)
     abs_max = float(np.max(np.abs(values)))
@@ -151,7 +152,7 @@ def test_order_insensitive_sum_does_not_depend_on_the_decomposition(num_ranks: i
     assert _sum_on_emulated_ranks(values, num_ranks) == single_rank
     # the only error is the truncation of every contribution below abs_max * 2**-60
     abs_max = float(np.max(np.abs(values)))
-    assert abs(single_rank - math.fsum(values)) <= size * abs_max * 2.0**-59
+    assert single_rank == pytest.approx(math.fsum(values), abs=size * abs_max * 2.0**-59)
 
 
 def test_single_node_sum_and_mean() -> None:
