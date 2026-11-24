@@ -42,6 +42,10 @@ if TYPE_CHECKING:
 
 
 class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
+    """
+    The Component interface to the muphys microphysics.
+    """
+
     class Input(state.State):
         te: field.Field[qty.TemperatureOnCellK]
         p: field.Field[qty.PressureOnCellK]
