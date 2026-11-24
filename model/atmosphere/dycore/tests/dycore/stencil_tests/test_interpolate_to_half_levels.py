@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wi
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
 from .test_velocity_advection_terms import interpolate_vn_to_half_levels_numpy

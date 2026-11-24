@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_der
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.testing import stencil_tests
 

@@ -13,7 +13,7 @@ import numpy as np
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.math import derivative
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.testing import stencil_tests
 

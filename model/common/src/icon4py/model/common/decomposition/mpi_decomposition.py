@@ -27,7 +27,7 @@ from icon4py.model.common.decomposition.definitions import (
     SingleNodeExchange,
     SingleNodeReductions,
 )
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
