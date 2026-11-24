@@ -238,7 +238,9 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     second_order_divdamp_factor = ta.wpfloat(0.02)
 
     def random(name: str, field_dims: tuple[Any, ...]) -> Any:
-        return data_alloc.random_field(mesh, *field_dims, allocator=allocator, dtype=ta.wpfloat).ndarray
+        return data_alloc.random_field(
+            mesh, *field_dims, allocator=allocator, dtype=ta.wpfloat
+        ).ndarray
 
     current = state.allocate(states.PrognosticState, mesh, allocator, fill=random)
     next_ = state.allocate(states.PrognosticState, mesh, allocator, fill=random)
