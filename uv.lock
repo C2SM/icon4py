@@ -1658,7 +1658,7 @@ dependencies = [
   { name = "xxhash" }
 ]
 name = "gt4py"
-source = { git = "https://github.com/havogt/gt4py?branch=jax-jit#6a8861b5f0a55f60e0411935e0d835459674b8e5" }
+source = { git = "https://github.com/havogt/gt4py?branch=jax-jit#e18797b3bbfc019b36a742fcae6a948fd810bcfc" }
 version = "1.2.5+unknown.version.details"
 
 [package.optional-dependencies]
