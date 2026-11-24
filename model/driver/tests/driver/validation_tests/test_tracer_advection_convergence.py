@@ -20,7 +20,7 @@ from icon4py.model.common.initial_condition.analytical import (
     linear_horizontal_tracer_advection,
     linear_vertical_tracer_advection,
 )
-from icon4py.model.common.states import factory as states_factory
+from icon4py.model.common.old_states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils
@@ -176,6 +176,7 @@ def test_horizontal_tracer_advection_convergence(
             process_props=process_props,
             backend=backend,
         )
+        assert ds.tracers.current.qv is not None
         simulated_tracer = ds.tracers.current.qv.ndarray
 
         assert (
@@ -296,6 +297,7 @@ def test_vertical_tracer_advection_convergence(
             process_props=process_props,
             backend=backend,
         )
+        assert ds.tracers.current.qv is not None
         simulated_tracer = ds.tracers.current.qv.ndarray
 
         assert (

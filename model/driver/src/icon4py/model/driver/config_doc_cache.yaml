@@ -3188,7 +3188,7 @@ children:
     module_path: types
     is_union: true
   - display_name: 'tracer_config: one of the following'
-    type_name: icon4py.model.common.states.tracer_states.TracerConfig | None
+    type_name: icon4py.model.common.framework.states.TracerConfig | None
     description: ??
     default: None
     optional: true
@@ -3199,8 +3199,8 @@ children:
         '
     children:
       - display_name: 'type: TracerConfig'
-        type_name: <class 'icon4py.model.common.states.tracer_states.TracerConfig'>
-        description: "Which tracers are active in the model configuration.\n\n    Each boolean field indicates whether the corresponding tracer is active.\n    Used instead of a raw ``ntracer: int`` to provide type-safe tracer selection.\n    "
+        type_name: <class 'icon4py.model.common.framework.states.TracerConfig'>
+        description: "\n    Which tracers are active in the model configuration.\n\n    Each boolean field indicates whether the corresponding tracer is active.\n    Used instead of a raw ``ntracer: int`` to provide type-safe tracer selection.\n    "
         default: None
         optional: true
         examples:
@@ -3305,7 +3305,7 @@ children:
         config_name_path:
           - tracer_config
           - 'type: TracerConfig'
-        module_path: icon4py.model.common.states.tracer_states
+        module_path: icon4py.model.common.framework.states
         is_union: false
       - display_name: 'type: NoneType'
         type_name: <class 'NoneType'>
@@ -3365,7 +3365,7 @@ children:
               - tracer_advection
               - 'type: AdvectionConfig'
               - horizontal_advection_type
-            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection_type
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
             is_union: false
           - display_name: horizontal_advection_limiter
             type_name: <enum 'HorizontalAdvectionLimiter'>
@@ -3384,7 +3384,7 @@ children:
               - tracer_advection
               - 'type: AdvectionConfig'
               - horizontal_advection_limiter
-            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection_type
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
             is_union: false
           - display_name: vertical_advection_type
             type_name: <enum 'VerticalAdvectionType'>
@@ -3406,7 +3406,7 @@ children:
               - tracer_advection
               - 'type: AdvectionConfig'
               - vertical_advection_type
-            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection_type
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
             is_union: false
           - display_name: vertical_advection_limiter
             type_name: <enum 'VerticalAdvectionLimiter'>
@@ -3425,7 +3425,7 @@ children:
               - tracer_advection
               - 'type: AdvectionConfig'
               - vertical_advection_limiter
-            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection_type
+            module_path: icon4py.model.atmosphere.tracer_advection.tracer_advection
             is_union: false
         config_name_path:
           - tracer_advection
