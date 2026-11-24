@@ -21,7 +21,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 

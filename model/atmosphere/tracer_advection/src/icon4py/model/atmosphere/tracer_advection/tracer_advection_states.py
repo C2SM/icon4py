@@ -8,38 +8,10 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.common.grid import icon as icon_grid
-
-
-@dataclasses.dataclass(frozen=True)
-class AdvectionDiagnosticState:
-    """Represents the diagnostic fields needed in tracer_advection."""
-
-    #: mass of air in layer at physics time step now [kg/m^2]
-    airmass_now: fa.CellKField[ta.wpfloat]
-
-    #: mass of air in layer at physics time step new [kg/m^2]
-    airmass_new: fa.CellKField[ta.wpfloat]
-
-    #: tracer tendency field for use in grid refinement [kg/kg/s]
-    grf_tend_tracer: fa.CellKField[ta.wpfloat]
-
-    #: horizontal tracer flux at edges [kg/m/s]
-    hfl_tracer: fa.EdgeKField[ta.wpfloat]
-
-    #: vertical tracer flux at cells [kg/m/s]
-    vfl_tracer: fa.CellKHalfField[ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -91,30 +63,3 @@ class AdvectionMetricState:
 
     #: vertical grid spacing at full levels
     ddqz_z_full: fa.CellKField[ta.wpfloat]
-
-
-def initialize_advection_diagnostic_state(
-    grid: icon_grid.IconGrid,
-    allocator: gtx_typing.Allocator,
-) -> AdvectionDiagnosticState:
-    return AdvectionDiagnosticState(
-        airmass_now=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-        ),
-        airmass_new=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-        ),
-        grf_tend_tracer=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-        ),
-        hfl_tracer=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-        ),
-        vfl_tracer=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KHalfDim,
-            allocator=allocator,
-            dtype=ta.wpfloat,
-        ),
-    )

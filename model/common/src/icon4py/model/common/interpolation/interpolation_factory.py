@@ -32,7 +32,7 @@ from icon4py.model.common.interpolation import (
     interpolation_fields,
     rbf_interpolation as rbf,
 )
-from icon4py.model.common.states import factory, model
+from icon4py.model.common.old_states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 

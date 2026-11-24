@@ -9,7 +9,6 @@ import functools
 import typing
 
 import gt4py.next as gtx
-import gt4py.next.typing as gtx_typing
 import pytest
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
@@ -92,10 +91,7 @@ def test_custom_backend_with_external_workspace_config_and_no_explicit_device() 
     ],
 )
 def test_setup_program_defaults(
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend: model_backends.BackendLike,
 ) -> None:
     testee = setup_program(backend=backend, program=program_return_field)
     expected_backend = model_backends.make_custom_dace_backend(device=model_backends.CPU)
@@ -142,10 +138,7 @@ def test_setup_program_defaults(
     ],
 )
 def test_setup_program_specify_inputs(
-    backend_params: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend_params: model_backends.BackendLike,
     canonical_backend_params: model_backends.BackendDescriptor | None,
 ) -> None:
     testee = setup_program(backend=backend_params, program=program_return_field)

@@ -48,7 +48,7 @@ from icon4py.model.common.metrics import (
     reference_atmosphere,
     reference_atmosphere as ra,
 )
-from icon4py.model.common.states import factory, model
+from icon4py.model.common.old_states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 

@@ -190,10 +190,7 @@ def with_backend_config(
 
 def customize_backend(
     program: gtx_typing.Program | gtx.typing.FieldOperator | None,
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend: model_backends.BackendLike,
     backend_config: backend_cfg.BackendConfig | None = None,
 ) -> gtx_typing.Backend | None:
     """
@@ -204,6 +201,12 @@ def customize_backend(
     The descriptor may carry the `BackendConfig` under the 'backend_config' key, so that it
     travels with the descriptor to every program; an explicit `backend_config` argument
     takes precedence, and 'ICON4PY_BACKEND_WORKSPACE_SIZE' is the fallback.
+
+    In case a certain option is already provided in the 'BackendDescriptor', the customization
+    should not override it. Any option that doesn't apply to the backend factory should be ignored.
+
+    Note: The current customization mechanism is an adhoc solution that needs better design,
+    e.g. program specific options should not be gathered in this general module.
     """
     program_name = program.__name__ if program is not None else ""
     if backend is None or isinstance(backend, gtx_backend.Backend):
@@ -259,10 +262,7 @@ def with_backend[P: (gtx_typing.Program, gtx.typing.FieldOperator)](
 def setup_program(
     *,
     program: gtx_typing.Program,
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend: model_backends.BackendLike,
     constant_args: dict[str, gtx.Field | gtx_typing.Scalar] | None = None,
     variants: dict[str, list[gtx_typing.Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
@@ -273,9 +273,10 @@ def setup_program(
     """
     This function processes arguments to the GT4Py program. It
     - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', 'vertical_sizes');
-    - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile').
+    - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile');
+    - instantiates a concrete backend according to the provided 'BackendLike'.
     Args:
-        - backend: GT4Py backend,
+        - backend: GT4Py backend or a 'BackendLike' specification,
         - program: GT4Py program,
         - constant_args: constant fields and scalars,
         - variants: list of all scalars potential values from which one is selected at run time,

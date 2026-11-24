@@ -11,7 +11,7 @@ from typing import Final
 import cftime  # type: ignore[import-untyped] # mypy cannot find the corresponding cftime type hints
 import xarray
 
-from icon4py.model.common.states import metadata
+from icon4py.model.common.old_states import metadata
 
 
 #: from standard name table https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
@@ -34,7 +34,7 @@ CF conventions encourage to use the COARDS conventions for the order of the dime
     `Y` (latitude),
     `X` (longitude).
 In the unstructured case `Y` and `X`  combine to the horizontal dimension.
-The axis labels live in ``common.states.metadata`` (``COARDS_*_COORDINATE_NAME``).
+The axis labels live in ``common.old_states.metadata`` (``COARDS_*_COORDINATE_NAME``).
 """
 
 
