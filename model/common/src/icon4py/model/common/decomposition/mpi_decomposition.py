@@ -548,9 +548,8 @@ class GlobalReductions(Reductions):
     def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         """Sum of the owned entries over all ranks.
 
-        Floating-point buffers are summed with the order-insensitive sum of ICON
-        (``decomp_defs.order_insensitive_sum``), so that the result is bitwise identical
-        to the single-rank sum of the same values, whatever the decomposition.
+        Floating-point buffers use ICON's order-insensitive sum, so the result does not depend
+        on the decomposition.
         """
         buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer) == 0:
@@ -559,8 +558,7 @@ class GlobalReductions(Reductions):
 
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
-        # one size reduction serves both the check and the division: every reduction is a
-        # collective, so `mean` must not go through `sum`, which would compute the size again
+        # computed once, for the check and the division: going through `sum` would reduce it twice
         global_buffer_size = self._calc_buffer_size(buffer)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")

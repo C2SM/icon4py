@@ -573,23 +573,15 @@ class Reductions(Protocol):
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
 
 
-#: Fixed-point sum of ICON (``order_insensit_sum`` in ``mo_sync.f90``): every value is
-#: scaled by one common power of two and split into an integer part and a scaled fraction,
-#: both accumulated as integers. Integer addition is exact, so the result does not depend
-#: on the summation order, and a decomposed run reproduces the single-rank sum bitwise.
-#:
 #: ICON scales the values so that the largest magnitude lies below ``2**30``
-#: (``fact = 2**(30 - iexp)``). The integer part and the fraction then each fit in 30 bits:
-#: every value keeps 60 bits below the leading bit of the largest one, more than the 53 bits
-#: of a double.
+#: (``fact = 2**(30 - iexp)``): the integer part and the scaled fraction of every value then
+#: each fit in 30 bits, 60 bits in total, more than the 53 bits of a double.
 FIXED_POINT_BITS: Final[int] = 30
-#: Each rank accumulates the integer parts and the scaled fractions in int64. Both are below
-#: ``2**FIXED_POINT_BITS`` in magnitude, so fewer than ``2**(63 - FIXED_POINT_BITS)`` of them
-#: always fit; beyond that numpy's integer sum wraps around silently.
+#: Both parts of a value are below ``2**FIXED_POINT_BITS``, so fewer than
+#: ``2**(63 - FIXED_POINT_BITS)`` of them cannot overflow a rank's int64 accumulators.
 MAX_FIXED_POINT_ELEMENTS: Final[int] = 2 ** (63 - FIXED_POINT_BITS)
-#: ICON returns 0 when the binary exponent of the largest magnitude is below -980: the
-#: scale factor ``2**(30 - iexp)`` would exceed ``2**1010``, close to the largest double
-#: exponent (1023). Values that small count as zero.
+#: ICON returns 0 when the binary exponent of the largest magnitude is below -980, where the
+#: scale factor ``2**(30 - iexp)`` comes close to the largest double exponent (1023).
 _MIN_FIXED_POINT_EXPONENT: Final[int] = -980
 
 
@@ -618,8 +610,6 @@ def fixed_point_total(buffer: data_alloc.NDArray, shift: int) -> int:
     scaled = array_ns.ldexp(buffer, shift)  # |scaled| < 2**FIXED_POINT_BITS
     integer_part = scaled.astype(array_ns.int64)  # truncates towards zero like Fortran INT
     fraction_part = array_ns.ldexp(scaled - integer_part, FIXED_POINT_BITS).astype(array_ns.int64)
-    # both parts are below 2**FIXED_POINT_BITS in magnitude, so the int64 sums cannot
-    # overflow for fewer than MAX_FIXED_POINT_ELEMENTS elements, checked above
     return (int(integer_part.sum()) << FIXED_POINT_BITS) + int(fraction_part.sum())
 
 
@@ -629,6 +619,11 @@ def order_insensitive_sum(
     allreduce: Callable[[int | float], int | float] | None = None,
 ) -> float:
     """Sum ``buffer`` independently of the order of its elements (ICON's ``order_insensit_sum``).
+
+    Every value is scaled by one common power of two and split into an integer part and a
+    scaled fraction, both accumulated as integers. Integer addition is exact, so the result
+    does not depend on the summation order and a decomposed run reproduces the single-rank
+    sum bitwise.
 
     Args:
         buffer: the local contributions.
@@ -663,8 +658,7 @@ def order_insensitive_sum(
     if abs_max == 0.0 or math.frexp(abs_max)[1] < _MIN_FIXED_POINT_EXPONENT:
         return 0.0
     shift = fixed_point_shift(abs_max)
-    # exact total in units of 2**-(FIXED_POINT_BITS + shift); Python integers do not overflow
-    total: int | float = fixed_point_total(buffer, shift)
+    total: int | float = fixed_point_total(buffer, shift) # excat total in units of 2**-(FIXED_POINT_BITS + shift)
     if allreduce is not None:
         total = allreduce(total)
     try:
