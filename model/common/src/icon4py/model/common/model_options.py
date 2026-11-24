@@ -62,11 +62,15 @@ def _set_program_specific_dace_options(
         )
         optimization_args.setdefault("scan_loop_unrolling", True)
         optimization_args.setdefault("scan_loop_unrolling_factor", 0)
+        optimization_args.setdefault("fuse_scan_inputs", True)
+        optimization_args.setdefault("scan_fusion_scope", "field_operator")
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
+        optimization_args.setdefault("vertical_split_allow_shared_output", True)
+        optimization_args.setdefault("vertical_split_shared_output_dimension", dimension.KDim)
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
         if device != model_backends.DeviceType.ROCM:
@@ -111,8 +115,9 @@ def get_dace_options(
     **backend_descriptor: Any,
 ) -> model_backends.BackendDescriptor:
     device = backend_descriptor.get("device") or model_backends.CPU
-    optimization_args = backend_descriptor.get("optimization_args", {})
-    optimization_hooks = optimization_args.get("optimization_hooks", {})
+    # A caller may reuse the descriptor for programs with different options.
+    optimization_args = dict(backend_descriptor.get("optimization_args", {}))
+    optimization_hooks = dict(optimization_args.get("optimization_hooks", {}))
 
     if backend_config is not None:
         # The workspace memory allows to avoid the overhead of runtime allocations,
@@ -166,12 +171,19 @@ def get_options(
 
 def customize_backend(
     program: gtx_typing.Program | gtx.typing.FieldOperator | None,
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend: model_backends.BackendLike,
     backend_config: backend_cfg.BackendConfig | None = None,
 ) -> gtx_typing.Backend | None:
+    """
+    Customizes the backend according to the provided 'BackendLike' and program name.
+
+    In case a certain option is already provided in the 'BackendDescriptor', the customization
+    should not override it. Any option that doesn't apply to the backend factory should be ignored.
+
+    Note: The current customization mechanism is an adhoc solution that needs better design,
+    e.g. program specific options should not be gathered in this general module.
+    """
+
     backend_config = backend_config or backend_cfg.backend_config_from_env()
     program_name = program.__name__ if program is not None else ""
     if backend is None or isinstance(backend, gtx_backend.Backend):
@@ -210,10 +222,7 @@ def customize_backend(
 def setup_program(
     *,
     program: gtx_typing.Program,
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend: model_backends.BackendLike,
     constant_args: dict[str, gtx.Field | gtx_typing.Scalar] | None = None,
     variants: dict[str, list[gtx_typing.Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
@@ -224,9 +233,10 @@ def setup_program(
     """
     This function processes arguments to the GT4Py program. It
     - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', 'vertical_sizes');
-    - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile').
+    - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile');
+    - instantiates a concrete backend according to the provided 'BackendLike'.
     Args:
-        - backend: GT4Py backend,
+        - backend: GT4Py backend or a 'BackendLike' specification,
         - program: GT4Py program,
         - constant_args: constant fields and scalars,
         - variants: list of all scalars potential values from which one is selected at run time,
