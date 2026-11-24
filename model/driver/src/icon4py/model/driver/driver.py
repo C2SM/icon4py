@@ -564,7 +564,9 @@ class Icon4pyDriver:
           for it after diffusion (which does not change ``max_vertical_cfl``), to
           overlap the communication with the diffusion kernels.
         """
-        global_max_vertical_cfl = self.global_reductions.max(dycore_diagnostics.max_vertical_cfl)
+        global_max_vertical_cfl = self.global_reductions.max(
+            dycore_diagnostics.max_vertical_cfl.ndarray
+        )
         if (
             global_max_vertical_cfl
             > driver_constants.CFL_ENTER_WATCHMODE_FACTOR
