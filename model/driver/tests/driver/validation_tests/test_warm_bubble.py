@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import datetime
 import pathlib
 from typing import Final
@@ -8,23 +16,43 @@ import pytest
 import xarray as xr
 from scipy import interpolate, signal
 
-from icon4py.model.common import model_backends, time
+from icon4py.model.common import model_backends, quantities, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.io import io as common_io
-from icon4py.model.common.states import data as state_data
-from icon4py.model.driver import config as driver_config, driver, driver_utils
+from icon4py.model.driver import (
+    config as driver_config,
+    driver,
+    driver_output_sources as output_sources,
+    driver_utils,
+)
 from icon4py.model.testing import definitions as test_defs, grid_utils
 
 from ..fixtures import *  # noqa: F403
 
 
-_AIR_DENSITY: Final = state_data.PROGNOSTIC_CF_ATTRIBUTES["air_density"].standard_name
-_WATER_SPECIES: Final = tuple(state_data.COMMON_TRACER_CF_ATTRIBUTES)
-_CONDENSATES: Final = tuple(name for name in _WATER_SPECIES if name != "qv")
+_AIR_DENSITY: Final = output_sources.standard_name(quantities.RhoOnCellK)
+_WATER_SPECIES: Final = tuple(
+    output_sources.standard_name(qty)
+    for qty in (
+        quantities.QvOnCellK,
+        quantities.QcOnCellK,
+        quantities.QiOnCellK,
+        quantities.QrOnCellK,
+        quantities.QsOnCellK,
+        quantities.QgOnCellK,
+    )
+)
+_CONDENSATES: Final = tuple(
+    name for name in _WATER_SPECIES if name != output_sources.standard_name(quantities.QvOnCellK)
+)
 _SURFACE_WATER_FLUXES: Final = tuple(
-    name
-    for name in state_data.PRECIPITATION_CF_ATTRIBUTES
-    if name not in ("precipitation_flux", "precipitation_energy_flux")
+    output_sources.standard_name(qty)
+    for qty in (
+        quantities.RainfallFluxOnCellK,
+        quantities.SnowfallFluxOnCellK,
+        quantities.GraupelfallFluxOnCellK,
+        quantities.IcefallFluxOnCellK,
+    )
 )
 
 _ATMOSPHERIC_STATE_GROUP: Final = "atmospheric_state"
@@ -39,7 +67,7 @@ _SPLIT_TIME: Final = datetime.timedelta(minutes=100)
 _MIN_PROMINENCE: Final = 0.2
 
 
-def _validation_io_config(output_path: pathlib.Path) -> common_io.IOConfig:
+def _io_config(output_path: pathlib.Path) -> common_io.IOConfig:
     """Just the fields the checks need: the density and the tracers on a coarse
     schedule, and the surface precipitation every step so its time integral is exact."""
     return common_io.IOConfig(
@@ -77,12 +105,6 @@ def _open_grid(output_path: pathlib.Path) -> xr.Dataset:
     return xr.open_dataset(files[0])
 
 
-def _layer_thickness(data: xr.Dataset) -> np.ndarray:
-    """Thickness (m) of the full levels from the half-level heights (top to bottom)."""
-    h = data["height"].values
-    return h[:-1] - h[1:]
-
-
 def _surface_flux(flux: xr.DataArray) -> xr.DataArray:
     return flux.isel(level=-1) if "level" in flux.dims else flux
 
@@ -116,25 +138,30 @@ def _x_mean(data: np.ndarray, y_index: np.ndarray, area: np.ndarray, nrows: int)
 
 def _profile_maxima(
     y_center: np.ndarray, data: np.ndarray, domain_height: float, min_prominence: float
-) -> np.ndarray:
+) -> np.ndarray[tuple[int]]:
     """find the y-coordinate of maxima of a data, using cubic spline interpolation to get a smooth profile."""
     top = float(data.max())
     if top <= 0.0:
         return np.empty(0)
-    nfine = y_center.size * 3 # 2048
+    nfine = y_center.size * 3  # 2048
     spline = interpolate.CubicSpline(
-        np.append(y_center, y_center[0] + domain_height), np.append(data, data[0]), bc_type="periodic"
-        # y_center, data, bc_type="natural"
+        np.append(y_center, y_center[0] + domain_height),
+        np.append(data, data[0]),
+        bc_type="periodic",
     )
     y_fine = y_center[0] + np.arange(nfine) * (domain_height / nfine)
     value_fine = spline(y_fine)
     peaks, _ = signal.find_peaks(np.tile(value_fine, 3), prominence=min_prominence * top)
-    peaks = peaks[(peaks >= nfine) & (peaks < 2 * nfine)] - nfine
-    return y_fine[peaks]
-    
+    central_peaks = peaks[(peaks >= nfine) & (peaks < 2 * nfine)] - nfine
+    return y_fine[central_peaks]
+
 
 def _check_mass_conservation(
-    atmospheric_state: xr.Dataset, precipitation: xr.Dataset, weights: np.ndarray, dz: np.ndarray, dtime: float
+    atmospheric_state: xr.Dataset,
+    precipitation: xr.Dataset,
+    weights: np.ndarray,
+    dz: np.ndarray,
+    dtime: float,
 ) -> None:
     layer_mass = atmospheric_state[_AIR_DENSITY].values * dz[None, :, None]
     q_total = sum(atmospheric_state[name].values for name in _WATER_SPECIES)
@@ -160,9 +187,13 @@ def _check_mass_conservation(
     )
 
 
-def _check_storm_split(atmospheric_state: xr.Dataset, grid: xr.Dataset, area: np.ndarray, dz: np.ndarray) -> None:
+def _check_storm_split(
+    atmospheric_state: xr.Dataset, grid: xr.Dataset, area: np.ndarray, dz: np.ndarray
+) -> None:
     condensate = sum(atmospheric_state[name].values for name in _CONDENSATES)
-    water_path = np.sum(atmospheric_state[_AIR_DENSITY].values * condensate * dz[None, :, None], axis=1)
+    water_path = np.sum(
+        atmospheric_state[_AIR_DENSITY].values * condensate * dz[None, :, None], axis=1
+    )
 
     domain_height = float(grid.attrs["domain_height"])
     y_center, y_index = _y_rows(grid["cell_circumcenter_cartesian_y"].values, domain_height)
@@ -174,12 +205,7 @@ def _check_storm_split(atmospheric_state: xr.Dataset, grid: xr.Dataset, area: np
     maxima = {
         float(elapsed[it] / 60.0): _profile_maxima(
             y_center=y_center,
-            data=_x_mean(
-                data=water_path[it],
-                y_index=y_index, 
-                area=area,
-                nrows=y_center.size
-            ),
+            data=_x_mean(data=water_path[it], y_index=y_index, area=area, nrows=y_center.size),
             domain_height=domain_height,
             min_prominence=_MIN_PROMINENCE,
         )
@@ -206,7 +232,7 @@ def test_warm_bubble(
     backend: gtx_typing.Backend,
 ) -> None:
     output_path = tmp_path / "output"
-    config = experiment_config.with_overrides(io=_validation_io_config(output_path))
+    config = experiment_config.with_overrides(io=_io_config(output_path))
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_utils._download_grid_file(test_defs.Grids.TORUS_20X24_5000M),
         vertical_grid_config=config.vertical_grid,
@@ -226,10 +252,14 @@ def test_warm_bubble(
     precipitation_data = _open_group(output_path, _PRECIPITATION_GROUP)
     grid_data = _open_grid(output_path)
     for name in (_AIR_DENSITY, *_WATER_SPECIES):
-        assert np.isfinite(atmospheric_state_data[name].values).all(), f"model crashed, {name} is not finite"
+        assert np.isfinite(atmospheric_state_data[name].values).all(), (
+            f"model crashed, {name} is not finite"
+        )
     area = grid_data["cell_area"].values
     height = atmospheric_state_data["height"].values
     dz = height[:-1] - height[1:]
     weights = area / area.sum()
-    _check_mass_conservation(atmospheric_state_data, precipitation_data, weights, dz, config.driver.dtime.total_seconds())
+    _check_mass_conservation(
+        atmospheric_state_data, precipitation_data, weights, dz, config.driver.dtime.total_seconds()
+    )
     _check_storm_split(atmospheric_state_data, grid_data, area, dz)
