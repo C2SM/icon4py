@@ -17,7 +17,7 @@ import pytest
 from icon4py.bindings import common as wrapper_common, dycore_wrapper
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, field, quantities as qty
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import base as base_grid, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
@@ -375,7 +375,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
     )  # TODO(): p.vol_flx_ic()
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
@@ -402,11 +402,11 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
     vn_incr_field = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
-    vn_incr = test_utils.array_to_array_info(vn_incr_field.ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn_incr = test_utils.array_to_array_info(vn_incr_field.ndarray)
     rho_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    rho_incr = test_utils.array_to_array_info(rho_incr_field.ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho_incr = test_utils.array_to_array_info(rho_incr_field.ndarray)
     exner_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    exner_incr = test_utils.array_to_array_info(exner_incr_field.ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner_incr = test_utils.array_to_array_info(exner_incr_field.ndarray)
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
@@ -505,7 +505,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
         max_vertical_cfl=field.Field(
             qty.MaxVerticalCflNumber,
-            gtx.as_field((), data_alloc.scalar_like_array(max_vertical_cfl, backend)),
+            data_alloc.constant_field(icon_grid, max_vertical_cfl),
         ),
         second_order_divdamp_factor=sp.divdamp_fac_o2(),
         dtime=sp.dtime(),
@@ -538,7 +538,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         vertical_wind_advective_tendency_corrector=sp.ddt_w_adv_pc(1),
         max_vertical_cfl=field.Field(
             qty.MaxVerticalCflNumber,
-            gtx.as_field((), data_alloc.scalar_like_array(max_vertical_cfl, backend)),
+            data_alloc.constant_field(icon_grid, max_vertical_cfl),
         ),
         tangential_wind=sp.vt(),
         vn_on_half_levels=sp.vn_ie(),
@@ -793,7 +793,7 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
     )
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
@@ -820,13 +820,13 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
     vn_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
     )
     rho_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
     )
     exner_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
     )
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
@@ -976,7 +976,7 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
     )
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
@@ -1007,13 +1007,13 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
     vn_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
     )
     rho_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
     )
     exner_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
     )
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
