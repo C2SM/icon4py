@@ -14,7 +14,7 @@ import pytest
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import model_backends, state, states
+from icon4py.model.common import model_backends, state, states, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -218,6 +218,7 @@ def solve_nonhydro(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
+@pytest.mark.single_precision_ready
 def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_manager: gm.GridManager,
     solve_nonhydro: solve_nh.SolveNonhydro,
@@ -229,15 +230,17 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     allocator = model_backends.get_allocator(backend_like)
     mesh = grid_manager.grid
 
-    dtime = 10.0 if mesh.limited_area else 90.0
+    dtime = ta.wpfloat(10.0 if mesh.limited_area else 90.0)
 
     prepare_fluxes_for_advection = True
     ndyn_substeps = 5
     at_initial_timestep = False
-    second_order_divdamp_factor = 0.02
+    second_order_divdamp_factor = ta.wpfloat(0.02)
 
     def random(name: str, field_dims: tuple[Any, ...]) -> Any:
-        return data_alloc.random_field(mesh, *field_dims, allocator=allocator).ndarray
+        return data_alloc.random_field(
+            mesh, *field_dims, allocator=allocator, dtype=ta.wpfloat
+        ).ndarray
 
     current = state.allocate(states.PrognosticState, mesh, allocator, fill=random)
     next_ = state.allocate(states.PrognosticState, mesh, allocator, fill=random)
