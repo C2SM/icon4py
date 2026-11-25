@@ -658,7 +658,7 @@ def order_insensitive_sum(
     if abs_max == 0.0 or math.frexp(abs_max)[1] < _MIN_FIXED_POINT_EXPONENT:
         return 0.0
     shift = fixed_point_shift(abs_max)
-    total: int | float = fixed_point_total(buffer, shift) # excat total in units of 2**-(FIXED_POINT_BITS + shift)
+    total: int | float = fixed_point_total(buffer, shift) # exact total in units of 2**-(FIXED_POINT_BITS + shift)
     if allreduce is not None:
         total = allreduce(total)
     try:
