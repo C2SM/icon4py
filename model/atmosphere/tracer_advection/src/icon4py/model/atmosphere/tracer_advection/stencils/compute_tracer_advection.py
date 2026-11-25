@@ -394,16 +394,12 @@ def _compute_tracer_advection_after_horizontal_limiter(
     rhodz_for_h_now = rhodz_ast2 if do_vertical_first else rhodz_now
     rhodz_for_h_new = rhodz_new if do_vertical_first else rhodz_ast2
 
-    p_mflx_tracer_h_new = concat_where(
-        (dims.KDim >= 0) & (dims.KDim < end_lvl + 1),
-        (
-            _apply_positive_definite_horizontal_multiplicative_flux_factor(
-                r_m=r_m, p_mflx_tracer_h=p_mflx_tracer_h_unlimited
-            )
-            if (itype_hlimit == HorizontalAdvectionLimiter.POSITIVE_DEFINITE)
-            else p_mflx_tracer_h_unlimited
-        ),
-        broadcast(wpfloat(0.0), (dims.EdgeDim, dims.KDim)),
+    p_mflx_tracer_h_new = (
+        _apply_positive_definite_horizontal_multiplicative_flux_factor(
+            r_m=r_m, p_mflx_tracer_h=p_mflx_tracer_h_unlimited
+        )
+        if (itype_hlimit == HorizontalAdvectionLimiter.POSITIVE_DEFINITE)
+        else p_mflx_tracer_h_unlimited
     )
     p_tracer_after_horizontal = concat_where(
         (dims.KDim >= 0) & (dims.KDim < end_lvl + 1),
