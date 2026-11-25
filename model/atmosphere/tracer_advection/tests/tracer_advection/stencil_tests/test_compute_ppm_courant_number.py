@@ -48,7 +48,7 @@ class TestComputePpm4gpuCourantNumber(stencil_tests.StencilTest):
         grid: base.Grid,
         request: pytest.FixtureRequest,
     ) -> dict:
-        k_half_index, nlev, slevp1_ti, transported_mass = request.param
+        k_half_index, nlev, start_lvl_plus1, transported_mass = request.param
         p_cellmass_now = np.ones((grid.num_cells, grid.num_levels), dtype=ta.wpfloat)
         mflx_contra_v = np.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
         mflx_contra_v[:, k_half_index] = transported_mass
@@ -58,7 +58,7 @@ class TestComputePpm4gpuCourantNumber(stencil_tests.StencilTest):
             p_cellmass_now=data_alloc.as_field(p_cellmass_now, dims.CellDim, dims.KDim),
             z_cfl=data_alloc.zero_field(dims.CellDim, dims.KHalfDim),
             k_half=data_alloc.index_field(dims.KHalfDim),
-            slevp1_ti=gtx.int32(slevp1_ti),
+            start_lvl_plus1=gtx.int32(start_lvl_plus1),
             nlev=gtx.int32(nlev),
             wp_eps=ta.wpfloat(1e-9),
             p_dtime=ta.wpfloat(1.0),

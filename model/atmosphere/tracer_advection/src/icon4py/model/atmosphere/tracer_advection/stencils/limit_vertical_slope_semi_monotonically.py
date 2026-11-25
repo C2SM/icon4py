@@ -40,10 +40,10 @@ def _limit_vertical_slope_semi_monotonically_last(
 def _limit_vertical_slope_semi_monotonically(
     p_cc: fa.CellKField[ta.wpfloat],
     z_slope: fa.CellKField[ta.wpfloat],
-    elev: gtx.int32,
+    end_lvl: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
     return concat_where(
-        dims.KDim == elev,
+        dims.KDim == end_lvl,
         _limit_vertical_slope_semi_monotonically_last(p_cc=p_cc, z_slope=z_slope),
         _limit_vertical_slope_semi_monotonically_inner(p_cc=p_cc, z_slope=z_slope),
     )
@@ -53,7 +53,7 @@ def _limit_vertical_slope_semi_monotonically(
 def limit_vertical_slope_semi_monotonically(
     p_cc: fa.CellKField[ta.wpfloat],
     z_slope: fa.CellKField[ta.wpfloat],
-    elev: gtx.int32,
+    end_lvl: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -62,7 +62,7 @@ def limit_vertical_slope_semi_monotonically(
     _limit_vertical_slope_semi_monotonically(
         p_cc=p_cc,
         z_slope=z_slope,
-        elev=elev,
+        end_lvl=end_lvl,
         out=z_slope,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

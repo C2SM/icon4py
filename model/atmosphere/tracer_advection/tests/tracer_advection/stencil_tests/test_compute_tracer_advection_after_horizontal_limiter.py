@@ -72,7 +72,7 @@ def _ppm_sum_neighbor_contributions_numpy(
     mask2: np.ndarray,
     js: np.ndarray,
     field: np.ndarray,
-    elev: int,
+    end_lvl: int,
     num_levels: int,
 ) -> np.ndarray:
     """numpy port of `_sum_neighbor_contributions` (fractional flux).
@@ -85,9 +85,9 @@ def _ppm_sum_neighbor_contributions_numpy(
     f_k = _gather_at_khalf(field, 0.5, num_levels)
     contrib = np.zeros((ncells, num_levels + 1))
     for j in range(5):
-        # plus side: concat_where(KHalfDim < elev - (j - 1), field(KHalf + j + 0.5), f_k)
+        # plus side: concat_where(KHalfDim < end_lvl - (j - 1), field(KHalf + j + 0.5), f_k)
         plus_val = _gather_at_khalf(field, j + 0.5, num_levels)
-        plus_val[:, elev - j + 1 :] = f_k[:, elev - j + 1 :]
+        plus_val[:, end_lvl - j + 1 :] = f_k[:, end_lvl - j + 1 :]
         contrib += np.where(mask1 & (js == j), plus_val, 0.0)
         # minus side: concat_where(KHalfDim > j, field(KHalf - j - 0.5), f_k)
         minus_val = _gather_at_khalf(field, -(j + 0.5), num_levels)
@@ -103,7 +103,7 @@ def _ppm_sum_neighbor_contributions_all_numpy(
     js: np.ndarray,
     field1: np.ndarray,
     field2: np.ndarray,
-    elev: int,
+    end_lvl: int,
     num_levels: int,
 ) -> np.ndarray:
     """numpy port of `_sum_neighbor_contributions_all` (integer flux).
@@ -119,7 +119,7 @@ def _ppm_sum_neighbor_contributions_all_numpy(
         minus_idx = np.clip(kh - j - 1, 0, num_levels - 1)
         prod_plus = field1[:, plus_idx] * field2[:, plus_idx]
         prod_minus = field1[:, minus_idx] * field2[:, minus_idx]
-        contrib += np.where(mask1 & (js >= j) & (kh < elev + 1 - j)[None, :], prod_plus, 0.0)
+        contrib += np.where(mask1 & (js >= j) & (kh < end_lvl + 1 - j)[None, :], prod_plus, 0.0)
         contrib += np.where(mask2 & (js >= j) & (kh > j)[None, :], prod_minus, 0.0)
     return contrib
 
@@ -128,7 +128,7 @@ def _ppm_courant_number_numpy(
     *,
     p_mflx_contra_v: np.ndarray,
     p_cellmass_now: np.ndarray,
-    slevp1_ti: int,
+    start_lvl_plus1: int,
     nlev: int,
     wp_eps: float,
     p_dtime: float,
@@ -172,16 +172,20 @@ def _ppm_courant_number_numpy(
         cellmass = {}
         gt = {}
         z_m = z_mass.copy()
-        for j, guard in enumerate([slevp1_ti + 1, slevp1_ti + 1, slevp1_ti + 2, slevp1_ti + 3]):
+        for j, guard in enumerate(
+            [start_lvl_plus1 + 1, start_lvl_plus1 + 1, start_lvl_plus1 + 2, start_lvl_plus1 + 3]
+        ):
             cellmass[j] = np.where(
                 kh >= guard, _gather_at_khalf(p_cellmass_now, -(j + 0.5), num_levels), 0.0
             )
         cellmass[4] = np.where(
-            kh >= slevp1_ti + 4, _gather_at_khalf(p_cellmass_now, -4.5, num_levels), 0.0
+            kh >= start_lvl_plus1 + 4, _gather_at_khalf(p_cellmass_now, -4.5, num_levels), 0.0
         )
         prev = np.ones_like(z_m, dtype=bool)
         for j in range(4):
-            gt[j] = prev & z_mass_neg & (kh >= slevp1_ti + j + 1) & (np.abs(z_m) >= cellmass[j])
+            gt[j] = (
+                prev & z_mass_neg & (kh >= start_lvl_plus1 + j + 1) & (np.abs(z_m) >= cellmass[j])
+            )
             z_m = z_m + np.where(gt[j], cellmass[j], 0.0)
             prev = gt[j]
         for j in range(4):
@@ -205,9 +209,9 @@ def _ppm_flux_numpy(
     p_cellmass_now: np.ndarray,
     p_mflx_contra_v: np.ndarray,
     p_cellhgt_mc_now: np.ndarray,
-    slev: int,
-    slevp1_ti: int,
-    elev: int,
+    start_lvl: int,
+    start_lvl_plus1: int,
+    end_lvl: int,
     wp_eps: float,
     p_dtime: float,
     itype_vlimit: int,
@@ -218,12 +222,12 @@ def _ppm_flux_numpy(
     kh = np.arange(num_levels + 1)
 
     z_cfl = np.where(
-        (kh[None, :] > 0) & (kh[None, :] < elev + 1),
+        (kh[None, :] > 0) & (kh[None, :] < end_lvl + 1),
         _ppm_courant_number_numpy(
             p_mflx_contra_v=p_mflx_contra_v,
             p_cellmass_now=p_cellmass_now,
-            slevp1_ti=slevp1_ti,
-            nlev=elev,
+            start_lvl_plus1=start_lvl_plus1,
+            nlev=end_lvl,
             wp_eps=wp_eps,
             p_dtime=p_dtime,
             num_levels=num_levels,
@@ -231,30 +235,32 @@ def _ppm_flux_numpy(
         0.0,
     )
     z_slope_raw = np.zeros((ncells, num_levels))
-    z_slope_raw[:, 1 : num_levels - 1] = compute_ppm_slope_numpy(p_cc, p_cellhgt_mc_now, elev)
+    z_slope_raw[:, 1 : num_levels - 1] = compute_ppm_slope_numpy(p_cc, p_cellhgt_mc_now, end_lvl)
     z_slope = np.zeros_like(z_slope_raw)
     z_slope[:, 1 : num_levels - 1] = limit_vertical_slope_semi_monotonically_numpy(
-        p_cc, z_slope_raw, elev, num_levels
+        p_cc, z_slope_raw, end_lvl, num_levels
     )
     if itype_vlimit != VerticalAdvectionLimiter.SEMI_MONOTONIC.value:
         z_slope = z_slope_raw
 
-    # faces: kh=0 -> p_cc[0]; 1 <= kh <= elev -> quadratic/quartic; kh >= elev+1 -> p_cc[kh-1]
+    # faces: kh=0 -> p_cc[0]; 1 <= kh <= end_lvl -> quadratic/quartic; kh >= end_lvl+1 -> p_cc[kh-1]
     p_face = np.empty((ncells, num_levels + 1))
     p_face[:, 0] = p_cc[:, 0]
-    p_face[:, elev + 1 :] = p_cc[:, -1:]
+    p_face[:, end_lvl + 1 :] = p_cc[:, -1:]
     quadratic = compute_ppm_quadratic_face_values_numpy(p_cc, p_cellhgt_mc_now)
     quartic = np.zeros((ncells, num_levels))
     # `compute_ppm_quartic_face_values_numpy` mirrors the standalone stencil test, which
     # allocates `p_cellhgt_mc_now` with one extra K-extended level (the stencil reads
     # `p_cellhgt_mc_now(KHalf + 1.5)`). Here the quartic values are only consumed for
-    # faces kh = 2..elev - 1, where those reads stay within the allocated field; the
+    # faces kh = 2..end_lvl - 1, where those reads stay within the allocated field; the
     # extra level only affects the unused top entry, so replicating the top level is safe.
     p_cellhgt_mc_now_k_ext = np.concatenate((p_cellhgt_mc_now, p_cellhgt_mc_now[:, -1:]), axis=1)
     quartic[:, 2:] = compute_ppm_quartic_face_values_numpy(p_cc, p_cellhgt_mc_now_k_ext, z_slope)
-    face_kh = np.arange(1, elev + 1)
-    p_face[:, 1 : elev + 1] = np.where(
-        (face_kh > 1) & (face_kh < elev), quartic[:, 1 : elev + 1], quadratic[:, 1 : elev + 1]
+    face_kh = np.arange(1, end_lvl + 1)
+    p_face[:, 1 : end_lvl + 1] = np.where(
+        (face_kh > 1) & (face_kh < end_lvl),
+        quartic[:, 1 : end_lvl + 1],
+        quadratic[:, 1 : end_lvl + 1],
     )
 
     l_limit = (
@@ -272,18 +278,28 @@ def _ppm_flux_numpy(
     mask1 = (z_cfl > 0.0) & (z_cflfrac != 0.0)
     mask2 = (z_cfl < 0.0) & (z_cflfrac != 0.0)
     wsign = np.where(z_cfl > 0.0, 1.0, -1.0)
-    in_slev_bounds = kh[None, :] - js_frac >= slev
+    in_slev_bounds = kh[None, :] - js_frac >= start_lvl
     p_cc_jks = _ppm_sum_neighbor_contributions_numpy(
-        mask1=mask1, mask2=mask2, js=js_frac, field=p_cc, elev=elev, num_levels=num_levels
+        mask1=mask1, mask2=mask2, js=js_frac, field=p_cc, end_lvl=end_lvl, num_levels=num_levels
     )
     mass_jks = _ppm_sum_neighbor_contributions_numpy(
-        mask1=mask1, mask2=mask2, js=js_frac, field=p_cellmass_now, elev=elev, num_levels=num_levels
+        mask1=mask1,
+        mask2=mask2,
+        js=js_frac,
+        field=p_cellmass_now,
+        end_lvl=end_lvl,
+        num_levels=num_levels,
     )
     delta_jks = _ppm_sum_neighbor_contributions_numpy(
-        mask1=mask1, mask2=mask2, js=js_frac, field=z_delta_q, elev=elev, num_levels=num_levels
+        mask1=mask1,
+        mask2=mask2,
+        js=js_frac,
+        field=z_delta_q,
+        end_lvl=end_lvl,
+        num_levels=num_levels,
     )
     a1_jks = _ppm_sum_neighbor_contributions_numpy(
-        mask1=mask1, mask2=mask2, js=js_frac, field=z_a1, elev=elev, num_levels=num_levels
+        mask1=mask1, mask2=mask2, js=js_frac, field=z_a1, end_lvl=end_lvl, num_levels=num_levels
     )
     z_q_int = (
         p_cc_jks
@@ -295,19 +311,19 @@ def _ppm_flux_numpy(
     # integer flux
     js_int = np.floor(np.abs(z_cfl)) - 1.0
     wsign_int = np.where(z_cfl > 0.0, 1.0, -1.0)
-    in_slev_bounds_int = kh[None, :] - js_int >= slev
+    in_slev_bounds_int = kh[None, :] - js_int >= start_lvl
     prod_jks = _ppm_sum_neighbor_contributions_all_numpy(
         mask1=z_cfl > 0.0,
         mask2=z_cfl < 0.0,
         js=js_int,
         field1=p_cc,
         field2=p_cellmass_now,
-        elev=elev,
+        end_lvl=end_lvl,
         num_levels=num_levels,
     )
     p_upflux = p_upflux + np.where(in_slev_bounds_int, wsign_int * prod_jks / p_dtime, 0.0)
 
-    return np.where((kh[None, :] > 0) & (kh[None, :] < elev + 1), p_upflux, 0.0)
+    return np.where((kh[None, :] > 0) & (kh[None, :] < end_lvl + 1), p_upflux, 0.0)
 
 
 # Compile like the production driver (`tracer_advection.py`): `setup_program` bakes
@@ -324,9 +340,9 @@ _HORIZONTAL_PARAMS = (
     "end_edge_halo",
 )
 _VERTICAL_PARAMS = (
-    "slev",
-    "slevp1_ti",
-    "elev",
+    "start_lvl",
+    "start_lvl_plus1",
+    "end_lvl",
     "iadv_slev_jt",
     "vertical_end",
 )
@@ -390,9 +406,9 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         ihadv_tracer: int,
         itype_hlimit: int,
         itype_vlimit: int,
-        slev: int,
-        slevp1_ti: int,
-        elev: int,
+        start_lvl: int,
+        start_lvl_plus1: int,
+        end_lvl: int,
         wp_eps: float,
         iadv_slev_jt: int,
         p_dtime: float,
@@ -443,9 +459,9 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
                 p_cellmass_now=rhodz_ast2,
                 p_mflx_contra_v=p_mflx_contra_v,
                 p_cellhgt_mc_now=p_cellhgt_mc_now,
-                slev=slev,
-                slevp1_ti=slevp1_ti,
-                elev=elev,
+                start_lvl=start_lvl,
+                start_lvl_plus1=start_lvl_plus1,
+                end_lvl=end_lvl,
                 wp_eps=wp_eps,
                 p_dtime=p_dtime,
                 itype_vlimit=itype_vlimit,
@@ -523,9 +539,9 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             deepatmo_divzu=deepatmo_divzu,
             k=k,
             k_half=k_half,
-            slev=gtx.int32(0),
-            slevp1_ti=gtx.int32(1),
-            elev=gtx.int32(grid.num_levels - 1),
+            start_lvl=gtx.int32(0),
+            start_lvl_plus1=gtx.int32(1),
+            end_lvl=gtx.int32(grid.num_levels - 1),
             do_vertical_first=do_vertical_first,
             ivadv_tracer=gtx.int32(ivadv_tracer),
             ihadv_tracer=gtx.int32(2),

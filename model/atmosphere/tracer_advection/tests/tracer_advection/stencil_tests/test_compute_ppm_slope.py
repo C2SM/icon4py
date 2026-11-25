@@ -20,7 +20,7 @@ from icon4py.model.testing import stencil_tests
 def compute_ppm_slope_numpy(
     p_cc: np.ndarray,
     p_cellhgt_mc_now: np.ndarray,
-    elev: int,
+    end_lvl: int,
 ) -> np.ndarray:
     """Return z_slope for interior k levels."""
     zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
@@ -47,7 +47,7 @@ def compute_ppm_slope_numpy(
         + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 1:-1]) * zfac_m1
     )
     k = np.arange(p_cc.shape[1])
-    return np.where(k[1:-1] < elev, z_slope_a, z_slope_b)
+    return np.where(k[1:-1] < end_lvl, z_slope_a, z_slope_b)
 
 
 @pytest.mark.uses_concat_where
@@ -65,10 +65,10 @@ class TestComputePpmSlope(stencil_tests.StencilTest):
         *,
         p_cc: np.ndarray,
         p_cellhgt_mc_now: np.ndarray,
-        elev: gtx.int32,
+        end_lvl: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        z_slope = compute_ppm_slope_numpy(p_cc, p_cellhgt_mc_now, elev)
+        z_slope = compute_ppm_slope_numpy(p_cc, p_cellhgt_mc_now, end_lvl)
         return dict(z_slope=z_slope)
 
     @stencil_tests.input_data_fixture
@@ -77,12 +77,12 @@ class TestComputePpmSlope(stencil_tests.StencilTest):
         p_cc = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
-        elev = grid.num_levels - 2
+        end_lvl = grid.num_levels - 2
         return dict(
             p_cc=p_cc,
             p_cellhgt_mc_now=p_cellhgt_mc_now,
             z_slope=z_slope,
-            elev=elev,
+            end_lvl=end_lvl,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=1,

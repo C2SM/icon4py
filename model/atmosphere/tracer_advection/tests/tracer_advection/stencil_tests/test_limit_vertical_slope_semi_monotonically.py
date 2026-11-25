@@ -22,13 +22,13 @@ from icon4py.model.testing import stencil_tests
 def limit_vertical_slope_semi_monotonically_numpy(
     p_cc: np.ndarray,
     z_slope: np.ndarray,
-    elev: int,
+    end_lvl: int,
     num_levels: int,
 ) -> np.ndarray:
     """Return z_slope for interior levels k=1..num_levels-2 (shape: (ncells, num_levels-2))."""
     k = np.arange(num_levels)
     p_cc_min_last = np.minimum(p_cc[:, :-2], p_cc[:, 1:-1])
-    p_cc_min = np.where(k[1:-1] == elev, p_cc_min_last, np.minimum(p_cc_min_last, p_cc[:, 2:]))
+    p_cc_min = np.where(k[1:-1] == end_lvl, p_cc_min_last, np.minimum(p_cc_min_last, p_cc[:, 2:]))
     slope_l = np.minimum(np.abs(z_slope[:, 1:-1]), 2.0 * (p_cc[:, 1:-1] - p_cc_min))
     return np.where(z_slope[:, 1:-1] >= 0.0, slope_l, -slope_l)
 
@@ -44,10 +44,12 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
         *,
         p_cc: np.ndarray,
         z_slope: np.ndarray,
-        elev: gtx.int32,
+        end_lvl: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        slope = limit_vertical_slope_semi_monotonically_numpy(p_cc, z_slope, elev, grid.num_levels)
+        slope = limit_vertical_slope_semi_monotonically_numpy(
+            p_cc, z_slope, end_lvl, grid.num_levels
+        )
         return dict(z_slope=slope)
 
     @stencil_tests.input_data_fixture
@@ -56,11 +58,11 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
         z_slope = data_alloc.random_field(dims.CellDim, dims.KDim)
         k = data_alloc.index_field(dims.KDim)
 
-        elev = k[-2].as_scalar()
+        end_lvl = k[-2].as_scalar()
         return dict(
             p_cc=p_cc,
             z_slope=z_slope,
-            elev=elev,
+            end_lvl=end_lvl,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=1,

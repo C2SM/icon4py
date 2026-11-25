@@ -121,7 +121,7 @@ def compute_ppm_quartic_face_values(
 
 
 # TODO(nfarabullini, OngChia): this stencil is imported but never called
-# TODO(nfarabullini, OngChia): slev/elev and vertical_start/end are redundant
+# TODO(nfarabullini, OngChia): start_lvl/end_lvl and vertical_start/end are redundant
 
 
 @gtx.field_operator
@@ -129,20 +129,20 @@ def _compute_ppm_all_face_values(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     p_face_in: fa.CellKHalfField[ta.wpfloat],
-    slev: gtx.int32,
-    elev: gtx.int32,
-    slevp1: gtx.int32,
-    elevp1: gtx.int32,
+    start_lvl: gtx.int32,
+    end_lvl: gtx.int32,
+    start_lvl_plus1: gtx.int32,
+    end_lvl_plus1: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     p_face = concat_where(
-        (dims.KHalfDim == slevp1) | (dims.KHalfDim == elev),
+        (dims.KHalfDim == start_lvl_plus1) | (dims.KHalfDim == end_lvl),
         _compute_ppm_quadratic_face_values(p_cc, p_cellhgt_mc_now),
         p_face_in,
     )
 
-    p_face = concat_where(dims.KHalfDim == slev, p_cc(dims.KHalfDim + 0.5), p_face)
+    p_face = concat_where(dims.KHalfDim == start_lvl, p_cc(dims.KHalfDim + 0.5), p_face)
 
-    p_face = concat_where(dims.KHalfDim == elevp1, p_cc(dims.KHalfDim - 0.5), p_face)
+    p_face = concat_where(dims.KHalfDim == end_lvl_plus1, p_cc(dims.KHalfDim - 0.5), p_face)
 
     return p_face
 
@@ -153,10 +153,10 @@ def compute_ppm_all_face_values(
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     p_face_in: fa.CellKHalfField[ta.wpfloat],
     p_face: fa.CellKHalfField[ta.wpfloat],
-    slev: gtx.int32,
-    elev: gtx.int32,
-    slevp1: gtx.int32,
-    elevp1: gtx.int32,
+    start_lvl: gtx.int32,
+    end_lvl: gtx.int32,
+    start_lvl_plus1: gtx.int32,
+    end_lvl_plus1: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -166,10 +166,10 @@ def compute_ppm_all_face_values(
         p_cc=p_cc,
         p_cellhgt_mc_now=p_cellhgt_mc_now,
         p_face_in=p_face_in,
-        slev=slev,
-        elev=elev,
-        slevp1=slevp1,
-        elevp1=elevp1,
+        start_lvl=start_lvl,
+        end_lvl=end_lvl,
+        start_lvl_plus1=start_lvl_plus1,
+        end_lvl_plus1=end_lvl_plus1,
         out=p_face,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -215,10 +215,10 @@ def _compute_ppm_slope_b(
 def _compute_ppm_slope(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
-    elev: gtx.int32,
+    end_lvl: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
     z_slope = concat_where(
-        dims.KDim == elev,
+        dims.KDim == end_lvl,
         _compute_ppm_slope_b(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now),
         _compute_ppm_slope_a(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now),
     )
@@ -231,7 +231,7 @@ def compute_ppm_slope(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     z_slope: fa.CellKField[ta.wpfloat],
-    elev: gtx.int32,
+    end_lvl: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -240,7 +240,7 @@ def compute_ppm_slope(
     _compute_ppm_slope(
         p_cc=p_cc,
         p_cellhgt_mc_now=p_cellhgt_mc_now,
-        elev=elev,
+        end_lvl=end_lvl,
         out=z_slope,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -327,30 +327,30 @@ def _compute_courant_number_above(
     z_mass: fa.CellKHalfField[ta.wpfloat],
     z_cfl: fa.CellKHalfField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
-    slevp1_ti: gtx.int32,
+    start_lvl_plus1: gtx.int32,
     wp_eps: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     z_mass_neg = z_mass <= wpfloat(0.0)
 
-    in_bounds_m0 = k_half >= slevp1_ti + 1
-    in_bounds_m1 = k_half >= slevp1_ti + 2
-    in_bounds_m2 = k_half >= slevp1_ti + 3
-    in_bounds_m3 = k_half >= slevp1_ti + 4
+    in_bounds_m0 = k_half >= start_lvl_plus1 + 1
+    in_bounds_m1 = k_half >= start_lvl_plus1 + 2
+    in_bounds_m2 = k_half >= start_lvl_plus1 + 3
+    in_bounds_m3 = k_half >= start_lvl_plus1 + 4
 
     p_cellmass_m0 = concat_where(
-        dims.KHalfDim >= slevp1_ti + 1, p_cellmass_now(dims.KHalfDim - 0.5), wpfloat(0.0)
+        dims.KHalfDim >= start_lvl_plus1 + 1, p_cellmass_now(dims.KHalfDim - 0.5), wpfloat(0.0)
     )
     p_cellmass_m1 = concat_where(
-        dims.KHalfDim >= slevp1_ti + 1, p_cellmass_now(dims.KHalfDim - 1.5), wpfloat(0.0)
+        dims.KHalfDim >= start_lvl_plus1 + 1, p_cellmass_now(dims.KHalfDim - 1.5), wpfloat(0.0)
     )
     p_cellmass_m2 = concat_where(
-        dims.KHalfDim >= slevp1_ti + 2, p_cellmass_now(dims.KHalfDim - 2.5), wpfloat(0.0)
+        dims.KHalfDim >= start_lvl_plus1 + 2, p_cellmass_now(dims.KHalfDim - 2.5), wpfloat(0.0)
     )
     p_cellmass_m3 = concat_where(
-        dims.KHalfDim >= slevp1_ti + 3, p_cellmass_now(dims.KHalfDim - 3.5), wpfloat(0.0)
+        dims.KHalfDim >= start_lvl_plus1 + 3, p_cellmass_now(dims.KHalfDim - 3.5), wpfloat(0.0)
     )
     p_cellmass_m4 = concat_where(
-        dims.KHalfDim >= slevp1_ti + 4, p_cellmass_now(dims.KHalfDim - 4.5), wpfloat(0.0)
+        dims.KHalfDim >= start_lvl_plus1 + 4, p_cellmass_now(dims.KHalfDim - 4.5), wpfloat(0.0)
     )
 
     mass_gt_cellmass_m0 = where(z_mass_neg & in_bounds_m0, abs(z_mass) >= p_cellmass_m0, False)
@@ -396,7 +396,7 @@ def _compute_ppm_courant_number(
     p_cellmass_now: fa.CellKField[ta.wpfloat],
     z_cfl: fa.CellKHalfField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
-    slevp1_ti: gtx.int32,
+    start_lvl_plus1: gtx.int32,
     nlev: gtx.int32,
     wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
@@ -416,7 +416,7 @@ def _compute_ppm_courant_number(
         z_mass=z_mass,
         z_cfl=z_cfl,
         k_half=k_half,
-        slevp1_ti=slevp1_ti,
+        start_lvl_plus1=start_lvl_plus1,
         wp_eps=wp_eps,
     )
 
@@ -431,7 +431,7 @@ def compute_ppm_courant_number(
     p_cellmass_now: fa.CellKField[ta.wpfloat],
     z_cfl: fa.CellKHalfField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
-    slevp1_ti: gtx.int32,
+    start_lvl_plus1: gtx.int32,
     nlev: gtx.int32,
     wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
@@ -445,7 +445,7 @@ def compute_ppm_courant_number(
         p_cellmass_now=p_cellmass_now,
         z_cfl=z_cfl,
         k_half=k_half,
-        slevp1_ti=slevp1_ti,
+        start_lvl_plus1=start_lvl_plus1,
         nlev=nlev,
         wp_eps=wp_eps,
         p_dtime=p_dtime,
@@ -467,7 +467,7 @@ def _sum_neighbor_contributions(
     mask2: fa.CellKHalfField[bool],
     js: fa.CellKHalfField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
-    elev: gtx.int32,
+    end_lvl: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     js_eq0 = js == wpfloat("0.0")
     js_eq1 = js == wpfloat("1.0")
@@ -479,22 +479,22 @@ def _sum_neighbor_contributions(
     p_cc_p0 = where(mask1 & js_eq0, p_cc_k, wpfloat("0.0"))
     p_cc_p1 = where(
         mask1 & js_eq1,
-        concat_where(dims.KHalfDim < elev, p_cc(dims.KHalfDim + 1.5), p_cc_k),
+        concat_where(dims.KHalfDim < end_lvl, p_cc(dims.KHalfDim + 1.5), p_cc_k),
         wpfloat("0.0"),
     )
     p_cc_p2 = where(
         mask1 & js_eq2,
-        concat_where(dims.KHalfDim < elev - 1, p_cc(dims.KHalfDim + 2.5), p_cc_k),
+        concat_where(dims.KHalfDim < end_lvl - 1, p_cc(dims.KHalfDim + 2.5), p_cc_k),
         wpfloat("0.0"),
     )
     p_cc_p3 = where(
         mask1 & js_eq3,
-        concat_where(dims.KHalfDim < elev - 2, p_cc(dims.KHalfDim + 3.5), p_cc_k),
+        concat_where(dims.KHalfDim < end_lvl - 2, p_cc(dims.KHalfDim + 3.5), p_cc_k),
         wpfloat("0.0"),
     )
     p_cc_p4 = where(
         mask1 & js_eq4,
-        concat_where(dims.KHalfDim < elev - 3, p_cc(dims.KHalfDim + 4.5), p_cc_k),
+        concat_where(dims.KHalfDim < end_lvl - 3, p_cc(dims.KHalfDim + 4.5), p_cc_k),
         wpfloat("0.0"),
     )
 
@@ -547,8 +547,8 @@ def _compute_ppm_fractional_flux(
     z_delta_q: fa.CellKField[ta.wpfloat],
     z_a1: fa.CellKField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
-    slev: gtx.int32,
-    elev: gtx.int32,
+    start_lvl: gtx.int32,
+    end_lvl: gtx.int32,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     js = floor(abs(z_cfl))
@@ -562,16 +562,20 @@ def _compute_ppm_fractional_flux(
     mask1 = z_cfl_pos & z_cflfrac_nonzero
     mask2 = z_cfl_neg & z_cflfrac_nonzero
 
-    in_slev_bounds = astype(k_half, wpfloat) - js >= astype(slev, wpfloat)
+    in_slev_bounds = astype(k_half, wpfloat) - js >= astype(start_lvl, wpfloat)
 
-    p_cc_jks = _sum_neighbor_contributions(mask1=mask1, mask2=mask2, js=js, p_cc=p_cc, elev=elev)
+    p_cc_jks = _sum_neighbor_contributions(
+        mask1=mask1, mask2=mask2, js=js, p_cc=p_cc, end_lvl=end_lvl
+    )
     p_cellmass_now_jks = _sum_neighbor_contributions(
-        mask1=mask1, mask2=mask2, js=js, p_cc=p_cellmass_now, elev=elev
+        mask1=mask1, mask2=mask2, js=js, p_cc=p_cellmass_now, end_lvl=end_lvl
     )
     z_delta_q_jks = _sum_neighbor_contributions(
-        mask1=mask1, mask2=mask2, js=js, p_cc=z_delta_q, elev=elev
+        mask1=mask1, mask2=mask2, js=js, p_cc=z_delta_q, end_lvl=end_lvl
     )
-    z_a1_jks = _sum_neighbor_contributions(mask1=mask1, mask2=mask2, js=js, p_cc=z_a1, elev=elev)
+    z_a1_jks = _sum_neighbor_contributions(
+        mask1=mask1, mask2=mask2, js=js, p_cc=z_a1, end_lvl=end_lvl
+    )
 
     z_q_int = (
         p_cc_jks
@@ -596,8 +600,8 @@ def compute_ppm_fractional_flux(
     z_a1: fa.CellKField[ta.wpfloat],
     p_upflux: fa.CellKHalfField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
-    slev: gtx.int32,
-    elev: gtx.int32,
+    start_lvl: gtx.int32,
+    end_lvl: gtx.int32,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -611,8 +615,8 @@ def compute_ppm_fractional_flux(
         z_delta_q=z_delta_q,
         z_a1=z_a1,
         k_half=k_half,
-        slev=slev,
-        elev=elev,
+        start_lvl=start_lvl,
+        end_lvl=end_lvl,
         p_dtime=p_dtime,
         out=p_upflux,
         domain={
@@ -633,7 +637,7 @@ def _sum_neighbor_contributions_all(
     js: fa.CellKHalfField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
-    elev: gtx.int32,
+    end_lvl: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     js_gt0 = js >= wpfloat(0.0)
     js_gt1 = js >= wpfloat(1.0)
@@ -644,7 +648,7 @@ def _sum_neighbor_contributions_all(
     prod_p0 = where(
         mask1 & js_gt0,
         concat_where(
-            dims.KHalfDim < elev + 1,
+            dims.KHalfDim < end_lvl + 1,
             p_cc(dims.KHalfDim + 0.5) * p_cellmass_now(dims.KHalfDim + 0.5),
             wpfloat(0.0),
         ),
@@ -653,7 +657,7 @@ def _sum_neighbor_contributions_all(
     prod_p1 = where(
         mask1 & js_gt1,
         concat_where(
-            dims.KHalfDim < elev,
+            dims.KHalfDim < end_lvl,
             p_cc(dims.KHalfDim + 1.5) * p_cellmass_now(dims.KHalfDim + 1.5),
             wpfloat(0.0),
         ),
@@ -662,7 +666,7 @@ def _sum_neighbor_contributions_all(
     prod_p2 = where(
         mask1 & js_gt2,
         concat_where(
-            dims.KHalfDim < elev - 1,
+            dims.KHalfDim < end_lvl - 1,
             p_cc(dims.KHalfDim + 2.5) * p_cellmass_now(dims.KHalfDim + 2.5),
             wpfloat(0.0),
         ),
@@ -671,7 +675,7 @@ def _sum_neighbor_contributions_all(
     prod_p3 = where(
         mask1 & js_gt3,
         concat_where(
-            dims.KHalfDim < elev - 2,
+            dims.KHalfDim < end_lvl - 2,
             p_cc(dims.KHalfDim + 3.5) * p_cellmass_now(dims.KHalfDim + 3.5),
             wpfloat(0.0),
         ),
@@ -680,7 +684,7 @@ def _sum_neighbor_contributions_all(
     prod_p4 = where(
         mask1 & js_gt4,
         concat_where(
-            dims.KHalfDim < elev - 3,
+            dims.KHalfDim < end_lvl - 3,
             p_cc(dims.KHalfDim + 4.5) * p_cellmass_now(dims.KHalfDim + 4.5),
             wpfloat(0.0),
         ),
@@ -754,8 +758,8 @@ def _compute_ppm_integer_flux(
     z_cfl: fa.CellKHalfField[ta.wpfloat],
     p_upflux: fa.CellKHalfField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
-    slev: gtx.int32,
-    elev: gtx.int32,
+    start_lvl: gtx.int32,
+    end_lvl: gtx.int32,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     js = floor(abs(z_cfl)) - wpfloat(1.0)
@@ -764,7 +768,7 @@ def _compute_ppm_integer_flux(
     z_cfl_neg = z_cfl < wpfloat(0.0)
     wsign = where(z_cfl_pos, wpfloat(1.0), wpfloat(-1.0))
 
-    in_slev_bounds = astype(k_half, wpfloat) - js >= astype(slev, wpfloat)
+    in_slev_bounds = astype(k_half, wpfloat) - js >= astype(start_lvl, wpfloat)
 
     p_cc_cellmass_now_jks = _sum_neighbor_contributions_all(
         mask1=z_cfl_pos,
@@ -772,7 +776,7 @@ def _compute_ppm_integer_flux(
         js=js,
         p_cc=p_cc,
         p_cellmass_now=p_cellmass_now,
-        elev=elev,
+        end_lvl=end_lvl,
     )
 
     z_iflx = wsign * p_cc_cellmass_now_jks
@@ -789,8 +793,8 @@ def compute_ppm_integer_flux(
     z_cfl: fa.CellKHalfField[ta.wpfloat],
     p_upflux: fa.CellKHalfField[ta.wpfloat],
     k_half: fa.KHalfField[gtx.int32],
-    slev: gtx.int32,
-    elev: gtx.int32,
+    start_lvl: gtx.int32,
+    end_lvl: gtx.int32,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -803,8 +807,8 @@ def compute_ppm_integer_flux(
         z_cfl=z_cfl,
         p_upflux=p_upflux,
         k_half=k_half,
-        slev=slev,
-        elev=elev,
+        start_lvl=start_lvl,
+        end_lvl=end_lvl,
         p_dtime=p_dtime,
         out=p_upflux,
         domain={
@@ -857,35 +861,35 @@ def _compute_ppm_flux(
     p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     k: fa.KHalfField[gtx.int32],
-    slev: gtx.int32,
-    slevp1_ti: gtx.int32,
-    elev: gtx.int32,
+    start_lvl: gtx.int32,
+    start_lvl_plus1: gtx.int32,
+    end_lvl: gtx.int32,
     wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
     itype_vlimit: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     z_cfl = broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim))
     z_cfl = concat_where(
-        (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
+        (dims.KHalfDim > 0) & (dims.KHalfDim < end_lvl + 1),
         _compute_ppm_courant_number(
             p_mflx_contra_v=p_mflx_contra_v,
             p_cellmass_now=p_cellmass_now,
             z_cfl=z_cfl,
             k_half=k,
-            slevp1_ti=slevp1_ti,
-            nlev=elev,
+            start_lvl_plus1=start_lvl_plus1,
+            nlev=end_lvl,
             wp_eps=wp_eps,
             p_dtime=p_dtime,
         ),
         z_cfl,
     )
     z_slope_raw = concat_where(
-        (dims.KDim > 0) & (dims.KDim <= elev),
-        _compute_ppm_slope(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, elev=elev),
+        (dims.KDim > 0) & (dims.KDim <= end_lvl),
+        _compute_ppm_slope(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, end_lvl=end_lvl),
         broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim)),
     )
     z_slope = (
-        _limit_vertical_slope_semi_monotonically(p_cc=p_cc, z_slope=z_slope_raw, elev=elev)
+        _limit_vertical_slope_semi_monotonically(p_cc=p_cc, z_slope=z_slope_raw, end_lvl=end_lvl)
         if (itype_vlimit == VerticalAdvectionLimiter.SEMI_MONOTONIC)
         else z_slope_raw
     )
@@ -893,9 +897,9 @@ def _compute_ppm_flux(
         dims.KHalfDim == 0,
         p_cc(dims.KHalfDim + 0.5),
         concat_where(
-            dims.KHalfDim < elev + 1,
+            dims.KHalfDim < end_lvl + 1,
             concat_where(
-                (dims.KHalfDim > 1) & (dims.KHalfDim < elev),
+                (dims.KHalfDim > 1) & (dims.KHalfDim < end_lvl),
                 _compute_ppm_quartic_face_values(
                     p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, z_slope=z_slope
                 ),
@@ -922,8 +926,8 @@ def _compute_ppm_flux(
         z_delta_q=z_delta_q,
         z_a1=z_a1,
         k_half=k,
-        slev=slev,
-        elev=elev,
+        start_lvl=start_lvl,
+        end_lvl=end_lvl,
         p_dtime=p_dtime,
     )
     p_upflux = _compute_ppm_integer_flux(
@@ -932,12 +936,12 @@ def _compute_ppm_flux(
         z_cfl=z_cfl,
         p_upflux=p_upflux,
         k_half=k,
-        slev=slev,
-        elev=elev,
+        start_lvl=start_lvl,
+        end_lvl=end_lvl,
         p_dtime=p_dtime,
     )
     return concat_where(
-        (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
+        (dims.KHalfDim > 0) & (dims.KHalfDim < end_lvl + 1),
         p_upflux,
         broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim)),
     )
