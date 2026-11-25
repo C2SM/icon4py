@@ -554,7 +554,7 @@ class GlobalReductions(Reductions):
         buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
-        return self._sum_of_owned(buffer)
+        return self._sum(buffer)
 
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
@@ -562,10 +562,10 @@ class GlobalReductions(Reductions):
         global_buffer_size = self._calc_buffer_size(buffer)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
-        return self._sum_of_owned(buffer) / global_buffer_size
+        return self._sum(buffer) / global_buffer_size
 
-    def _sum_of_owned(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        """Sum of an owned-entries buffer that is known to be non-empty over all ranks."""
+    def _sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        """Sum of a prepared buffer that is non-empty over all ranks."""
         array_ns = data_alloc.array_namespace(buffer)
         if not np.issubdtype(buffer.dtype, np.floating):
             return self._reduce(

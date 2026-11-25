@@ -625,6 +625,10 @@ def order_insensitive_sum(
     does not depend on the summation order and a decomposed run reproduces the single-rank
     sum bitwise.
 
+    The split truncates every value below ``abs_max * 2**-59``, so the result is within
+    ``buffer.size * abs_max * 2**-59`` of the exact sum before its final rounding: tighter than
+    the bound of a plain sum, which grows with the partial sums.
+
     Args:
         buffer: the local contributions.
         abs_max: the largest magnitude over *all* contributions, those of other ranks included;
@@ -658,7 +662,8 @@ def order_insensitive_sum(
     if abs_max == 0.0 or math.frexp(abs_max)[1] < _MIN_FIXED_POINT_EXPONENT:
         return 0.0
     shift = fixed_point_shift(abs_max)
-    total: int | float = fixed_point_total(buffer, shift) # exact total in units of 2**-(FIXED_POINT_BITS + shift)
+    # exact total in units of 2**-(FIXED_POINT_BITS + shift)
+    total: int | float = fixed_point_total(buffer, shift)
     if allreduce is not None:
         total = allreduce(total)
     try:
