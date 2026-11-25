@@ -163,6 +163,7 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
         metric_state=metric_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        even_timestep=even_timestep,
         backend=backend,
         exchange=decomposition.SingleNodeExchange(),
     )

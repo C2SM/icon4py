@@ -265,6 +265,7 @@ class GodunovSplittingAdvection(Advection):
         metric_state: tracer_advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
         exchange: decomposition.ExchangeRuntime,
+        even_timestep: bool = False,
     ):
         log.debug("tracer_advection class init - start")
 
@@ -275,6 +276,7 @@ class GodunovSplittingAdvection(Advection):
         self._metric_state = metric_state
         self._backend = backend
         self._exchange = exchange
+        self._even_timestep = even_timestep  # originally jstep_adv(:)%marchuk_order = 1
 
         # density fields
         #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
@@ -555,6 +557,7 @@ def convert_config_to_advection(
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime,
+    even_timestep: bool = False,
 ) -> Advection:
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
@@ -582,6 +585,7 @@ def convert_config_to_advection(
         metric_state=metric_state,
         backend=backend,
         exchange=exchange,
+        even_timestep=even_timestep,
     )
 
     return advection
