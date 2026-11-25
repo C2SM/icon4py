@@ -21,7 +21,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -174,7 +174,9 @@ class DecompositionInfo:
         self._halo_levels[dim] = halo_levels
 
     def is_distributed(self) -> bool:
-        return max(self._halo_levels[dims.CellDim]).item() > DecompositionFlag.OWNED
+        halo_levels = self._halo_levels[dims.CellDim]
+        array_ns = data_alloc.array_namespace(halo_levels)
+        return array_ns.max(halo_levels).item() > DecompositionFlag.OWNED
 
     def as_host(self) -> DecompositionInfo:
         """This decomposition info with host (numpy) buffers.

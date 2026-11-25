@@ -20,7 +20,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-import icon4py.model.common.states.metadata as data
+import icon4py.model.common.old_states.metadata as data
 from icon4py.model.common import (
     dimension as dims,
     exceptions,
@@ -29,7 +29,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.states import model
+from icon4py.model.common.old_states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 

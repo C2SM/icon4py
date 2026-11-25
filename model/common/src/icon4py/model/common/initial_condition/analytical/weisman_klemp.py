@@ -13,7 +13,7 @@ import logging
 import typing
 from typing import TYPE_CHECKING
 
-from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
+from icon4py.model.common import constants as phy_const, dimension as dims, model_backends, states
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
@@ -23,16 +23,13 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.physics.thermodynamics import compute_moisture, compute_pressure
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.initial_condition.config import ConfigContext
-    from icon4py.model.common.states import static_fields
+    from icon4py.model.common.old_states import static_fields
 
 log = logging.getLogger(__name__)
 
@@ -142,9 +139,9 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     config: ConfigContext,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
-    prognostic_state_now: prognostics.PrognosticState,
-    tracer_state_now: tracer_states.TracerState,
-    backend: gtx_typing.Backend | None,
+    prognostic_state_now: states.PrognosticState,
+    tracer_state_now: states.TracerState,
+    backend: model_backends.BackendLike,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
     """

@@ -24,7 +24,7 @@ from icon4py.model.common.interpolation import (
     interpolation_factory,
     rbf_interpolation as rbf,
 )
-from icon4py.model.common.states import factory
+from icon4py.model.common.old_states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,

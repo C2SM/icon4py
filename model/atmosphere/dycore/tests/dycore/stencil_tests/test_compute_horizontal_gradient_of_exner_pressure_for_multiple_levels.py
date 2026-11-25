@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
 
@@ -106,7 +106,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(stencil_test
             (grid.size[dims.EdgeDim], grid.size[dims.E2CDim], grid.size[dims.KDim]),
             dtype=gtx.int32,
         )
-        rng = np.random.default_rng()
+        rng = data_alloc.rng
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
             ikoffset_buffer[:, :, k] = rng.integers(

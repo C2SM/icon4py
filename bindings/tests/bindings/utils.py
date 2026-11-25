@@ -14,6 +14,8 @@ from typing import Any
 import numpy as np
 from gt4py.next.embedded.nd_array_field import NdArrayField
 
+from icon4py.model.common import field
+
 
 try:
     import cupy as cp  # type: ignore[import-not-found]  # optional dependency without stubs
@@ -21,9 +23,15 @@ except ImportError:
     cp = None
 
 
-def compare_values_shallow(  # noqa: PLR0911, PLR0912
-    value1: Any, value2: Any, obj_name: str = "value"
-) -> tuple[bool, str | None]:
+def compare_values_shallow(value1, value2, obj_name="value"):  # noqa: PLR0911, PLR0912
+    # Handle typed fields of the components framework: the same quantity, then the same data
+    if (
+        isinstance(value1, field.Field)
+        and isinstance(value2, field.Field)
+        and value1.quantity is not value2.quantity
+    ):
+        return False, f"Quantity mismatch for {obj_name}: {value1.quantity} != {value2.quantity}"
+
     # Handle comparison of NdArrayField objects
     if isinstance(value1, NdArrayField) and isinstance(value2, NdArrayField):
         try:

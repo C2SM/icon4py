@@ -177,7 +177,7 @@ $MYPY_CONFIG_FILE_DIR/model/driver/tests:
 $MYPY_CONFIG_FILE_DIR/model/testing/src:
 $MYPY_CONFIG_FILE_DIR/tools/src:
 $MYPY_CONFIG_FILE_DIR/bindings/src:
-$MYPY_CONFIG_FILE_DIR/tools:
+$MYPY_CONFIG_FILE_DIR/model/common:
 '''
 namespace_packages = true
 plugins = ["gt4py.next.type_system.mypy_plugin", "icon4py.model.common.type_system.mypy_plugin"]
@@ -204,7 +204,6 @@ markers = [
   "cpu_only",
   "infinite_concat_where",
   "gtfn_too_slow",
-  "dace_too_slow",
   "continuous_benchmarking",
   "benchmark_only: benchmark only tests without verification",
   "snapshots: snapshot tests for textual TUI apps (like config docs)"
@@ -296,6 +295,10 @@ extend-immutable-calls = [
   "icon4py.model.common.time.RelativeTime"
 ]
 
+[tool.ruff.lint.flake8-builtins]
+# Components read `input` and write `output`, nothing calls the builtin `input()`
+ignorelist = ["input"]
+
 [tool.ruff.lint.isort]
 combine-as-imports = true
 known-first-party = ['icon4py']
@@ -361,9 +364,9 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
-# dace = {index = "gridtools"}
-# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
-# gt4py = {index = "test.pypi"}
+# dace = { index = "gridtools" }
+# gt4py = { git = "https://github.com/GridTools/gt4py", branch = "main" }
+# gt4py = { index = "test.pypi" }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
 icon4py-atmosphere-microphysics = { workspace = true }

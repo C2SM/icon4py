@@ -11,7 +11,7 @@ from typing import Final
 import cftime  # type: ignore[import-untyped] # mypy cannot find the corresponding cftime type hints
 import xarray
 
-from icon4py.model.common.states import metadata
+from icon4py.model.common.old_states import metadata
 
 
 #: from standard name table https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
@@ -34,7 +34,7 @@ CF conventions encourage to use the COARDS conventions for the order of the dime
     `Y` (latitude),
     `X` (longitude).
 In the unstructured case `Y` and `X`  combine to the horizontal dimension.
-The axis labels live in ``common.states.metadata`` (``COARDS_*_COORDINATE_NAME``).
+The axis labels live in ``common.old_states.metadata`` (``COARDS_*_COORDINATE_NAME``).
 """
 
 
@@ -52,11 +52,20 @@ def date2num(
     return cftime.date2num(date, units=units, calendar=calendar)
 
 
+#: Names of the horizontal (unstructured) dimensions.
+HORIZONTAL_DIM_NAMES: Final[tuple[str, ...]] = ("cell", "edge", "vertex")
+
+
 def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray | None:
-    """Check for spatial dimensions being in canonical order ('T', 'Z', 'Y', 'X') and return them in this order."""
+    """Check for spatial dimensions being in canonical order ('T', 'Z', 'Y', 'X') and return them in this order.
+
+    A purely horizontal field (a single ``cell``/``edge``/``vertex`` dimension) is canonical
+    as it is; a one-dimensional field without a horizontal dimension, or a scalar, gives
+    ``None``.
+    """
     dims = data.dims
     if len(dims) >= 2:
-        if dims[0] in ("cell", "edge", "vertex") and dims[1] in (
+        if dims[0] in HORIZONTAL_DIM_NAMES and dims[1] in (
             metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME,
             "level",
             "half_level",
@@ -64,4 +73,6 @@ def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray | None:
             return data.transpose(dims[1], dims[0], *dims[2:], transpose_coords=True)
         else:
             return data
+    if len(dims) == 1 and dims[0] in HORIZONTAL_DIM_NAMES:
+        return data
     return None

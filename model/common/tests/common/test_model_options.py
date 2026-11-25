@@ -9,13 +9,14 @@ import functools
 import typing
 
 import gt4py.next as gtx
-import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import (
     backend_configuration as backend_cfg,
+    dimension,
     field_type_aliases as fa,
     model_backends,
+    model_options,
 )
 from icon4py.model.common.model_options import customize_backend, setup_program
 
@@ -88,10 +89,7 @@ def test_custom_backend_with_external_workspace_config_and_no_explicit_device() 
     ],
 )
 def test_setup_program_defaults(
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend: model_backends.BackendLike,
 ) -> None:
     testee = setup_program(backend=backend, program=program_return_field)
     expected_backend = model_backends.make_custom_dace_backend(device=model_backends.CPU)
@@ -108,7 +106,7 @@ def test_setup_program_defaults(
 
 
 @pytest.mark.parametrize(
-    "backend_params, expected_backend",
+    "backend_params, canonical_backend_params",
     [
         (model_backends.BACKENDS["embedded"], model_backends.BACKENDS["embedded"]),
         (
@@ -116,26 +114,35 @@ def test_setup_program_defaults(
                 "backend_factory": model_backends.make_custom_dace_backend,
                 "device": model_backends.GPU,
             },
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.GPU,
+            },
         ),
         (
             {"backend_factory": model_backends.make_custom_dace_backend},
-            model_backends.make_custom_dace_backend(device=model_backends.CPU),
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.CPU,
+            },
         ),
         (
             {"device": model_backends.GPU},
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+            {
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.GPU,
+            },
         ),
     ],
 )
 def test_setup_program_specify_inputs(
-    backend_params: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
-    expected_backend: gtx_typing.Backend | None,
+    backend_params: model_backends.BackendLike,
+    canonical_backend_params: model_backends.BackendDescriptor | None,
 ) -> None:
     testee = setup_program(backend=backend_params, program=program_return_field)
+    # Built through `customize_backend` so that the expected backend carries the same
+    # device-specific default options (e.g. GPU block sizes) as the one under test.
+    expected_backend = customize_backend(None, canonical_backend_params)
     if expected_backend is None:
         expected_program = functools.partial(
             program_return_field.with_backend(expected_backend), offset_provider={}
@@ -151,3 +158,49 @@ def test_setup_program_specify_inputs(
         )
     # TODO(havogt): test should be improved to work without string comparison
     assert repr(testee) == repr(expected_program)
+
+
+@pytest.mark.parametrize(
+    "program, expected",
+    [
+        (
+            "compute_rho_theta_pgrad_and_update_vn",
+            {
+                "vertical_split_allow_shared_output": True,
+                "vertical_split_shared_output_dimension": dimension.KDim,
+            },
+        ),
+        (
+            "vertically_implicit_solver_at_predictor_step",
+            {"fuse_scan_inputs": True, "scan_fusion_scope": "field_operator"},
+        ),
+        (
+            "vertically_implicit_solver_at_corrector_step",
+            {"fuse_scan_inputs": True, "scan_fusion_scope": "field_operator"},
+        ),
+        ("another_program", {}),
+    ],
+)
+def test_selected_fusion_options(program: str, expected: dict) -> None:
+    descriptor = {"optimization_args": {"optimization_hooks": {}}}
+    options = model_options.get_dace_options(program, None, **descriptor)["optimization_args"]
+    assert all(options[key] == value for key, value in expected.items())
+    assert "vertical_split_shared_output_data" not in options
+    assert options.get("fuse_scan_inputs", False) == expected.get("fuse_scan_inputs", False)
+    assert options.get("vertical_split_allow_shared_output", False) == expected.get(
+        "vertical_split_allow_shared_output", False
+    )
+    assert descriptor == {"optimization_args": {"optimization_hooks": {}}}
+
+
+@pytest.mark.parametrize(
+    "program, flag",
+    [
+        ("compute_rho_theta_pgrad_and_update_vn", "vertical_split_allow_shared_output"),
+        ("vertically_implicit_solver_at_predictor_step", "fuse_scan_inputs"),
+        ("vertically_implicit_solver_at_corrector_step", "fuse_scan_inputs"),
+    ],
+)
+def test_fusion_can_be_disabled(program: str, flag: str) -> None:
+    options = model_options.get_dace_options(program, None, optimization_args={flag: False})
+    assert options["optimization_args"][flag] is False

@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_ter
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
 
@@ -141,7 +141,7 @@ class TestComputeHydrostaticCorrectionTerm(stencil_tests.StencilTest):
             (grid.size[dims.EdgeDim], grid.size[dims.E2CDim], grid.size[dims.KDim]),
             dtype=gtx.int32,
         )
-        rng = np.random.default_rng()
+        rng = data_alloc.rng
         for k in range(grid.num_levels):
             # `theta_v` and `inv_ddqz_z_full` are model-level fields, so `k + ikoffset` must stay
             # below `num_levels`; the `+1` read of the half-level `theta_v_ic` is then still in range.

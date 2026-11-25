@@ -30,6 +30,7 @@ from icon4py.model.common import (
     backend_configuration as backend_cfg,
     initial_condition,
     prescribed_tendencies,
+    states,
     time,
     topography,
     type_alias as ta,
@@ -41,7 +42,6 @@ from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states import tracer_states
 from icon4py.model.common.utils.time_utils import relativetime_from_iso8601
 
 
@@ -109,12 +109,6 @@ class DriverConfig:
             description="End date and time of a simulation.",
         ),
     ]
-    output_path: typing.Annotated[
-        pathlib.Path,
-        common_conf_opt.ConfigOption(
-            description="Output directory path, relative to the working directory.",
-        ),
-    ] = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
@@ -152,15 +146,6 @@ class DriverConfig:
             description="Compute and log variable statistics.",
         ),
     ] = False
-    enable_output: typing.Annotated[
-        bool,
-        common_conf_opt.ConfigOption(
-            description=(
-                "Enable output to file. For now this is only documented in "
-                "'icon4py.model.driver.driver_io'."
-            ),
-        ),
-    ] = False
     backend_config: typing.Annotated[
         backend_cfg.BackendConfig | None,
         common_conf_opt.ConfigOption(
@@ -171,23 +156,6 @@ class DriverConfig:
             ),
         ),
     ] = dataclasses.field(default_factory=backend_cfg.backend_config_from_env)
-    output_backend: typing.Annotated[
-        common_io.OutputBackend,
-        common_conf_opt.ConfigOption(
-            description="File format of the output field groups ('netcdf' or 'zarr').",
-        ),
-    ] = common_io.OutputBackend.ZARR
-    output_mode: typing.Annotated[
-        common_io.OutputMode,
-        common_conf_opt.ConfigOption(
-            description=(
-                "Write strategy of distributed runs ('gather' or 'distributed', see "
-                "'icon4py.model.common.io.OutputMode'); 'distributed' netCDF needs an "
-                "MPI-parallel netCDF4 installation in multi-rank runs (see 'Parallel "
-                "netCDF' in 'icon4py.model.common.io')."
-            ),
-        ),
-    ] = common_io.OutputMode.DISTRIBUTED
 
     def __post_init__(self) -> None:
         if self.start_of_timestepping < self.start_of_simulation:
@@ -220,9 +188,18 @@ class ExperimentConfig(config_io.ConfigWithShared):
     topography: topography.TOPO_CONFIG
     prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig
     driver: DriverConfig
+    io: typing.Annotated[
+        common_io.IOConfig | None,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Output configuration: the output directory and the field groups (see "
+                "'icon4py.model.common.io'); without it no output is written."
+            ),
+        ),
+    ] = None
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
-    tracer_config: tracer_states.TracerConfig | None = None
+    tracer_config: states.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     muphys: muphys_config.MuphysConfig | None = None

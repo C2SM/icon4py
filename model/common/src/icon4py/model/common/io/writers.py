@@ -26,7 +26,7 @@ import xarray as xr
 
 from icon4py.model.common.grid import base
 from icon4py.model.common.io import cf_utils
-from icon4py.model.common.states import metadata
+from icon4py.model.common.old_states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -112,7 +112,7 @@ def horizontal_axis_sizes(horizontal: base.HorizontalGridSize) -> dict[str, int]
 
 # ------------------------------------------------------------------------------------
 # Coordinate attributes, shared between the writers so the file formats stay identical
-# (the static per-axis attribute dicts live in ``common.states.metadata``)
+# (the static per-axis attribute dicts live in ``common.old_states.metadata``)
 # ------------------------------------------------------------------------------------
 
 
@@ -190,8 +190,8 @@ def canonicalize_time_slice(
         canonical_slice = cf_utils.to_canonical_dim_order(new_slice)
         if canonical_slice is None:
             raise ValueError(
-                f"Cannot write field '{var_name}': only fields with a horizontal and a "
-                f"vertical dimension are supported."
+                f"Cannot write field '{var_name}': only fields with a horizontal "
+                f"dimension (optionally with a vertical one) are supported."
             )
         horizontal_name = str(canonical_slice.dims[-1])
         if horizontal_name not in horizontal_sizes:

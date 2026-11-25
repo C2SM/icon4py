@@ -16,10 +16,6 @@ from icon4py.model.testing import config as test_config
 
 
 @pytest.fixture
-def experiment_config(
-    experiment_case: str, tmp_path: pathlib.Path
-) -> driver_config.ExperimentConfig:
+def experiment_config(experiment_case: str) -> driver_config.ExperimentConfig:
     config_path = test_config.EXPERIMENT_CONFIG_PATH / f"{experiment_case}.yaml"
-    return config_io.read_yaml_str(
-        config_path.read_text(), driver_config.ExperimentConfig
-    ).with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
+    return config_io.read_yaml_str(config_path.read_text(), driver_config.ExperimentConfig)

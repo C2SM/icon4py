@@ -17,11 +17,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-    tracer_states as tracers,
-)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils
 
@@ -71,60 +66,6 @@ def test_graupel(
 
     dtime = entry_savepoint.dtime()
 
-    tracer_state = tracers.TracerState(
-        qv=entry_savepoint.qv(),
-        qc=entry_savepoint.qc(),
-        qr=entry_savepoint.qr(),
-        qi=entry_savepoint.qi(),
-        qs=entry_savepoint.qs(),
-        qg=entry_savepoint.qg(),
-    )
-    assert tracer_state.qv is not None
-    assert tracer_state.qc is not None
-    assert tracer_state.qr is not None
-    assert tracer_state.qi is not None
-    assert tracer_state.qs is not None
-    assert tracer_state.qg is not None
-    vn = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
-    )
-    w = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
-    )
-    exner = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
-    )
-    theta_v = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
-    )
-    prognostic_state = prognostics.PrognosticState(
-        rho=entry_savepoint.rho(),
-        vn=vn,
-        w=w,
-        exner=exner,
-        theta_v=theta_v,
-    )
-    virtual_temperature = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
-    )
-    pressure_ifc = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
-    )
-    u = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
-    )
-    v = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
-    )
-    diagnostic_state = diagnostics.DiagnosticState(
-        temperature=entry_savepoint.temperature(),
-        virtual_temperature=virtual_temperature,
-        pressure=entry_savepoint.pressure(),
-        pressure_ifc=pressure_ifc,
-        u=u,
-        v=v,
-    )
-
     graupel_config = experiment.config.graupel
     assert graupel_config is not None, "expected microphysics configuration for this experiment"
 
@@ -162,15 +103,15 @@ def test_graupel(
 
     graupel_microphysics.run(
         dtime=dtime,
-        rho=prognostic_state.rho,
-        temperature=diagnostic_state.temperature,
-        pressure=diagnostic_state.pressure,
-        qv=tracer_state.qv,
-        qc=tracer_state.qc,
-        qr=tracer_state.qr,
-        qi=tracer_state.qi,
-        qs=tracer_state.qs,
-        qg=tracer_state.qg,
+        rho=entry_savepoint.rho(),
+        temperature=entry_savepoint.temperature(),
+        pressure=entry_savepoint.pressure(),
+        qv=entry_savepoint.qv(),
+        qc=entry_savepoint.qc(),
+        qr=entry_savepoint.qr(),
+        qi=entry_savepoint.qi(),
+        qs=entry_savepoint.qs(),
+        qg=entry_savepoint.qg(),
         qnc=qnc,
         temperature_tendency=temperature_tendency,
         qv_tendency=qv_tendency,

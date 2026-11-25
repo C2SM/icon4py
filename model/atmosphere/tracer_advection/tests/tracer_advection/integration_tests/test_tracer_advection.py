@@ -9,7 +9,7 @@
 import pytest
 from gt4py.next import typing as gtx_typing
 
-from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_type
+from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
@@ -37,12 +37,13 @@ from icon4py.model.testing.fixtures.datatest import (
 
 from ..fixtures import advection_exit_savepoint, advection_init_savepoint
 from ..utils import (
-    construct_diagnostic_exit_state,
-    construct_diagnostic_init_state,
+    advection_views,
+    construct_diagnostic_exit_state_from_savepoint,
+    construct_diagnostic_init_state_from_savepoint,
     construct_interpolation_state,
     construct_least_squares_state,
     construct_metric_state,
-    construct_prep_adv,
+    construct_prep_adv_state_from_savepoint,
     log_serialized,
     verify_advection_fields,
 )
@@ -70,37 +71,37 @@ from ..utils import (
             "2021-06-20T12:00:10.000",
             False,
             1,
-            tracer_advection_type.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
-            tracer_advection_type.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            tracer_advection_type.VerticalAdvectionType.NO_ADVECTION,
-            tracer_advection_type.VerticalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
+            tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            tracer_advection.VerticalAdvectionType.NO_ADVECTION,
+            tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
         ),
         (
             "2021-06-20T12:00:20.000",
             True,
             1,
-            tracer_advection_type.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
-            tracer_advection_type.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            tracer_advection_type.VerticalAdvectionType.NO_ADVECTION,
-            tracer_advection_type.VerticalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
+            tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            tracer_advection.VerticalAdvectionType.NO_ADVECTION,
+            tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
         ),
         (
             "2021-06-20T12:00:10.000",
             False,
             4,
-            tracer_advection_type.HorizontalAdvectionType.NO_ADVECTION,
-            tracer_advection_type.HorizontalAdvectionLimiter.NO_LIMITER,
-            tracer_advection_type.VerticalAdvectionType.THIRD_ORDER_PPM,
-            tracer_advection_type.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+            tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
+            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.VerticalAdvectionType.THIRD_ORDER_PPM,
+            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
         (
             "2021-06-20T12:00:20.000",
             True,
             4,
-            tracer_advection_type.HorizontalAdvectionType.NO_ADVECTION,
-            tracer_advection_type.HorizontalAdvectionLimiter.NO_LIMITER,
-            tracer_advection_type.VerticalAdvectionType.THIRD_ORDER_PPM,
-            tracer_advection_type.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+            tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
+            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.VerticalAdvectionType.THIRD_ORDER_PPM,
+            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
     ],
 )
@@ -175,10 +176,10 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
         exchange=decomposition.SingleNodeExchange(),
     )
 
-    diagnostic_state = construct_diagnostic_init_state(
+    diagnostic_state = construct_diagnostic_init_state_from_savepoint(
         icon_grid, advection_init_savepoint, ntracer, backend=backend
     )
-    prep_adv = construct_prep_adv(advection_init_savepoint)
+    prep_adv = construct_prep_adv_state_from_savepoint(advection_init_savepoint, icon_grid, backend)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
     p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     dtime = advection_init_savepoint.dtime()
@@ -186,14 +187,10 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
     log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
 
     advection_granule.run(
-        diagnostic_state=diagnostic_state,
-        prep_adv=prep_adv,
-        p_tracer_now=p_tracer_now,
-        p_tracer_new=p_tracer_new,
-        dtime=dtime,
+        *advection_views(diagnostic_state, prep_adv, p_tracer_now, p_tracer_new, dtime)
     )
 
-    diagnostic_state_ref = construct_diagnostic_exit_state(
+    diagnostic_state_ref = construct_diagnostic_exit_state_from_savepoint(
         icon_grid=icon_grid,
         savepoint=advection_exit_savepoint,
         ntracer=ntracer,

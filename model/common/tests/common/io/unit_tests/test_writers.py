@@ -16,7 +16,7 @@ import pytest
 import xarray as xr
 import zarr
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, field, quantities as qty
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
 from icon4py.model.common.io import (
@@ -27,7 +27,7 @@ from icon4py.model.common.io import (
     writers,
     zarr_writers,
 )
-from icon4py.model.common.states import data, metadata
+from icon4py.model.common.old_states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
@@ -149,7 +149,7 @@ def test_writer_append_timeslice_create_new_var(test_path: pathlib.Path, random_
     assert len(dataset.variables[writers.TIME]) == 0
     assert "air_density" not in dataset.variables
 
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     dataset.append(state, time)
     assert len(dataset.variables[writers.TIME]) == 1
     assert "air_density" in dataset.variables
@@ -169,15 +169,13 @@ def test_writer_append_timeslice_create_new_var(test_path: pathlib.Path, random_
 def test_writer_append_timeslice_to_existing_var(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     dataset.append(state, time)
     assert len(dataset.variables[writers.TIME]) == 1
     assert "air_density" in dataset.variables
 
     new_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    state["air_density"] = utils.to_data_array(
-        new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
-    )
+    state["air_density"] = utils.to_data_array(field.Field(qty.RhoOnCellK, new_rho))
 
     new_time = time + timedelta(hours=1)
     dataset.append(state, new_time)
@@ -239,7 +237,7 @@ def test_zarr_writer_append_timeslice_create_new_var(
 ) -> None:
     writer, store_path = initialized_zarr_writer(test_path, random_name)
     grid = test_io_utils.simple_grid
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     writer.close()
     with xr.open_zarr(store_path) as ds:
@@ -258,14 +256,12 @@ def test_zarr_writer_append_timeslice_to_existing_var(
 ) -> None:
     writer, store_path = initialized_zarr_writer(test_path, random_name)
     grid = test_io_utils.simple_grid
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     first_time = datetime.now()
     writer.append(state, first_time)
 
     new_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    state["air_density"] = utils.to_data_array(
-        new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
-    )
+    state["air_density"] = utils.to_data_array(field.Field(qty.RhoOnCellK, new_rho))
     writer.append(state, first_time + timedelta(hours=1))
     writer.close()
     with xr.open_zarr(store_path) as ds:
@@ -381,7 +377,7 @@ def test_zarr_writer_rank_block_writes_padded_block(
     writer, store_path = initialized_zarr_writer(
         test_path, random_name, grid, rank_blocks=rank_blocks, horizontal=padded_horizontal
     )
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     writer.close()
     with xr.open_zarr(store_path) as ds:
@@ -443,7 +439,7 @@ def test_zarr_writer_rank_block_writes_at_nonzero_start(
     writer, store_path = initialized_zarr_writer(
         test_path, random_name, grid, rank_blocks=rank_blocks, horizontal=padded_horizontal
     )
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     writer.close()
     cell_block = rank_blocks[writers.CELL]
@@ -470,7 +466,7 @@ def test_zarr_writer_horizontal_chunk_and_shard_sizes(
     writer, store_path = initialized_zarr_writer(
         test_path, random_name, horizontal_chunk_size=4, horizontal_shard_size=8
     )
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     writer.close()
     air_density = zarr.open_group(store_path, mode="r")["air_density"]
@@ -517,7 +513,7 @@ def test_zarr_writer_rank_block_chunk_and_shard_sizes(
         horizontal_chunk_size=chunk_size,
         horizontal_shard_size=shard_size,
     )
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     writer.close()
     group = zarr.open_group(store_path, mode="r")
@@ -638,7 +634,7 @@ def test_netcdf_writer_rank_block_writes_padded_block(
     writer, file_path = initialized_netcdf_rank_block_writer(
         test_path, random_name, grid, rank_blocks, padded_horizontal
     )
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     writer.close()
     with xr.open_dataset(file_path) as ds:
@@ -698,7 +694,7 @@ def test_netcdf_writer_rank_block_writes_at_nonzero_start(
     writer, file_path = initialized_netcdf_rank_block_writer(
         test_path, random_name, grid, rank_blocks, padded_horizontal
     )
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     writer.close()
     cell_block = rank_blocks[writers.CELL]
@@ -723,7 +719,7 @@ def test_netcdf_writer_rank_block_writes_at_nonzero_start(
 def test_netcdf_writer_horizontal_chunk_size(test_path: pathlib.Path, random_name: str) -> None:
     # a serial file is chunked only when configured
     writer, grid = initialized_writer(test_path, random_name, horizontal_chunk_size=4)
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     assert writer.variables["air_density"].chunking() == [1, grid.num_levels, 4]
     writer.close()
@@ -735,7 +731,7 @@ def test_netcdf_writer_horizontal_chunk_size_clamped_to_axis(
     # netCDF rejects chunks larger than a fixed dimension: an oversized configured
     # chunk is clamped to the axis size
     writer, grid = initialized_writer(test_path, random_name, horizontal_chunk_size=10_000)
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     assert writer.variables["air_density"].chunking() == [1, grid.num_levels, grid.num_cells]
     writer.close()
@@ -778,7 +774,7 @@ def test_netcdf_writer_rank_block_horizontal_chunk_size(
         padded_horizontal,
         horizontal_chunk_size=chunk_size,
     )
-    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    state = dict(air_density=test_io_utils.model_dataarrays(grid)["air_density"])
     writer.append(state, datetime.now())
     writer.close()
     with nc.Dataset(file_path) as raw:
@@ -1001,8 +997,137 @@ def test_netcdf_writer_append_two_fields_sharing_standard_name(
     # variables resolve by name (like the zarr writer): a shared standard_name must
     # yield two variables, not silently overwrite the first
     writer, grid = initialized_writer(test_path, random_name)
-    field = test_io_utils.model_state(grid)["air_density"]
+    field = test_io_utils.model_dataarrays(grid)["air_density"]
     writer.append({"air_density": field, "air_density_copy": field.copy(deep=True)}, datetime.now())
     assert "air_density" in writer.variables
     assert "air_density_copy" in writer.variables
     writer.close()
+
+
+def _surface_field(grid: grid_def.Grid) -> xr.DataArray:
+    """A purely horizontal (surface) cell field, like the surface pressure."""
+    return utils.to_data_array(
+        field.Field(qty.SurfacePressureOnCell, data_alloc.random_field(grid, dims.CellDim))
+    )
+
+
+def _padded_rank_blocks(
+    grid: grid_def.Grid, padding: int
+) -> tuple[dict[str, distributed.RankBlock], grid_def.HorizontalGridSize]:
+    """Single-rank rank blocks with ``padding`` unused entries on every horizontal axis."""
+    rank_blocks = {
+        dim_name: distributed.RankBlock(
+            start=0,
+            count=size,
+            size=size + padding,
+            padded_size=size + padding,
+            global_size=size,
+            global_index=np.arange(size, dtype=np.int64),
+        )
+        for dim_name, size in (
+            (writers.CELL, grid.num_cells),
+            (writers.EDGE, grid.num_edges),
+            (writers.VERTEX, grid.num_vertices),
+        )
+    }
+    padded_horizontal = grid_def.HorizontalGridSize(
+        num_cells=grid.num_cells + padding,
+        num_edges=grid.num_edges + padding,
+        num_vertices=grid.num_vertices + padding,
+    )
+    return rank_blocks, padded_horizontal
+
+
+def test_netcdf_writer_writes_horizontal_only_fields(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    """A surface field is a (time, cell) variable next to the (time, level, cell) ones."""
+    writer, grid = initialized_writer(test_path, random_name)
+    state = {
+        "surface_pressure": _surface_field(grid),
+        "air_density": test_io_utils.model_dataarrays(grid)["air_density"],
+    }
+    time = datetime.now()
+    writer.append(state, time)
+    writer.append(state, time + timedelta(hours=1))
+
+    surface_pressure = writer.variables["surface_pressure"]
+    assert surface_pressure.dimensions == (writers.TIME, writers.CELL)
+    assert surface_pressure.shape == (2, grid.num_cells)
+    assert surface_pressure.standard_name == "air_pressure_at_ground_level"
+    test_utils.assert_dallclose(surface_pressure[1], state["surface_pressure"].data)
+    assert writer.variables["air_density"].dimensions == (
+        writers.TIME,
+        writers.MODEL_LEVEL,
+        writers.CELL,
+    )
+
+
+def test_zarr_writer_writes_horizontal_only_fields(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    grid = test_io_utils.simple_grid
+    writer, store_path = initialized_zarr_writer(test_path, random_name, grid)
+    state = {"surface_pressure": _surface_field(grid)}
+    writer.append(state, datetime.now())
+    writer.close()
+
+    with xr.open_zarr(store_path) as ds:
+        assert ds["surface_pressure"].dims == ("time", "cell")
+        assert ds["surface_pressure"].shape == (1, grid.num_cells)
+        assert ds["surface_pressure"].attrs["standard_name"] == "air_pressure_at_ground_level"
+        test_utils.assert_dallclose(
+            ds["surface_pressure"].values[0], state["surface_pressure"].data
+        )
+
+
+def test_netcdf_writer_rank_block_pads_horizontal_only_fields(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # the rank-block layout of a surface field: data in the rank's block, NaN padding,
+    # one chunk per block along the only (horizontal) axis
+    grid = test_io_utils.simple_grid
+    padding = 3
+    rank_blocks, padded_horizontal = _padded_rank_blocks(grid, padding)
+    writer, file_path = initialized_netcdf_rank_block_writer(
+        test_path, random_name, grid, rank_blocks, padded_horizontal
+    )
+    state = {"surface_pressure": _surface_field(grid)}
+    writer.append(state, datetime.now())
+    writer.close()
+
+    with xr.open_dataset(file_path) as ds:
+        assert ds["surface_pressure"].dims == ("time", "cell")
+        assert ds["surface_pressure"].shape == (1, grid.num_cells + padding)
+        values = ds["surface_pressure"].values[0]
+        test_utils.assert_dallclose(values[: grid.num_cells], state["surface_pressure"].data)
+        assert np.all(np.isnan(values[grid.num_cells :]))
+        assert ds["surface_pressure"].attrs[writers.LAYOUT_ATTRIBUTE] == writers.RANK_BLOCK_LAYOUT
+    with nc.Dataset(file_path) as raw:
+        assert raw["surface_pressure"].chunking() == [1, rank_blocks[writers.CELL].size]
+
+
+def test_zarr_writer_rank_block_pads_horizontal_only_fields(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    grid = test_io_utils.simple_grid
+    padding = 3
+    rank_blocks, padded_horizontal = _padded_rank_blocks(grid, padding)
+    writer, store_path = initialized_zarr_writer(
+        test_path, random_name, grid, rank_blocks=rank_blocks, horizontal=padded_horizontal
+    )
+    state = {"surface_pressure": _surface_field(grid)}
+    writer.append(state, datetime.now())
+    writer.close()
+
+    with xr.open_zarr(store_path) as ds:
+        assert ds["surface_pressure"].dims == ("time", "cell")
+        assert ds["surface_pressure"].shape == (1, grid.num_cells + padding)
+        values = ds["surface_pressure"].values[0]
+        test_utils.assert_dallclose(values[: grid.num_cells], state["surface_pressure"].data)
+        assert np.all(np.isnan(values[grid.num_cells :]))
+        assert ds["surface_pressure"].attrs[writers.LAYOUT_ATTRIBUTE] == writers.RANK_BLOCK_LAYOUT
+    group = zarr.open_group(store_path, mode="r")
+    surface_pressure = group["surface_pressure"]
+    assert isinstance(surface_pressure, zarr.Array)
+    assert surface_pressure.chunks == (1, rank_blocks[writers.CELL].size)

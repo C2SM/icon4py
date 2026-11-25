@@ -21,7 +21,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics_ste
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import reference_funcs, stencil_tests
 
@@ -125,7 +125,7 @@ def _coefficient_field(
     """Three quadratic extrapolation coefficient rows, aligned to the levels they multiply."""
     return gtx.as_field(
         gtx.domain({horizontal_dim: (0, size), dims.KDim: (k_start, k_start + 3)}),
-        np.random.default_rng().uniform(size=(size, 3)),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        data_alloc.rng.uniform(size=(size, 3)),
         dtype=wpfloat,
         allocator=data_alloc.allocator,
     )

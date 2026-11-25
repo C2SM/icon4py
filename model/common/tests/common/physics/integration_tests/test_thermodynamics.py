@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, field, quantities as qty, states
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import simple, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
@@ -23,7 +23,6 @@ from icon4py.model.common.physics.thermodynamics import (
     compute_temperature,
     compute_tendencies,
 )
-from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_states as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -187,7 +186,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     )
     exner_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
 
-    tracer_state = tracers.TracerState(
+    tracer_state = states.TracerState(
         qv=satad_exit.qv(),
         qc=satad_exit.qc(),
         qr=satad_init.qr(),
@@ -197,13 +196,13 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     )
     exner = satad_init.exner()
 
-    diagnostic_state = diagnostics.DiagnosticState(
+    diagnostic_state = states.Diagnostics(
         temperature=satad_exit.temperature(),
         virtual_temperature=satad_init.virtual_temperature(),
         pressure=satad_init.pressure(),
         pressure_ifc=satad_init.pressure_ifc(),
-        u=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
-        v=None,  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
+        u=field.zeros(qty.UOnCellK, icon_grid, backend),
+        v=field.zeros(qty.VOnCellK, icon_grid, backend),
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
