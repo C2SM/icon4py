@@ -361,6 +361,51 @@ def compute_tracer_advection_before_horizontal_limiter(
 
 
 @gtx.field_operator
+def _compute_horizontal_tracer_advection(
+    r_m: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_h_unlimited: fa.EdgeKField[ta.wpfloat],
+    tracer_now: fa.CellKField[ta.wpfloat],
+    rhodz_now: fa.CellKField[ta.wpfloat],
+    rhodz_new: fa.CellKField[ta.wpfloat],
+    deepatmo_divh: fa.KField[ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
+    end_lvl: gtx.int32,
+    ihadv_tracer: gtx.int32,
+    itype_hlimit: gtx.int32,
+    p_dtime: ta.wpfloat,
+) -> tuple[fa.EdgeKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
+    """Apply the horizontal flux limiter and integrate the tracer horizontally.
+
+    Returns the limited horizontal tracer flux and the tracer after horizontal transport.
+    """
+    p_mflx_tracer_h_new = (
+        _apply_positive_definite_horizontal_multiplicative_flux_factor(
+            r_m=r_m, p_mflx_tracer_h=p_mflx_tracer_h_unlimited
+        )
+        if (itype_hlimit == HorizontalAdvectionLimiter.POSITIVE_DEFINITE)
+        else p_mflx_tracer_h_unlimited
+    )
+    p_tracer_after_horizontal = concat_where(
+        (dims.KDim >= 0) & (dims.KDim < end_lvl + 1),
+        (
+            _integrate_tracer_horizontally(
+                p_mflx_tracer_h=p_mflx_tracer_h_new,
+                deepatmo_divh=deepatmo_divh,
+                tracer_now=tracer_now,
+                rhodz_now=rhodz_now,
+                rhodz_new=rhodz_new,
+                geofac_div=geofac_div,
+                p_dtime=p_dtime,
+            )
+            if (ihadv_tracer != HorizontalAdvectionType.NO_ADVECTION)
+            else tracer_now
+        ),
+        broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim)),
+    )
+    return p_mflx_tracer_h_new, p_tracer_after_horizontal
+
+
+@gtx.field_operator
 def _compute_tracer_advection_after_horizontal_limiter(
     r_m: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h_unlimited: fa.EdgeKField[ta.wpfloat],
@@ -394,29 +439,18 @@ def _compute_tracer_advection_after_horizontal_limiter(
     rhodz_for_h_now = rhodz_ast2 if do_vertical_first else rhodz_now
     rhodz_for_h_new = rhodz_new if do_vertical_first else rhodz_ast2
 
-    p_mflx_tracer_h_new = (
-        _apply_positive_definite_horizontal_multiplicative_flux_factor(
-            r_m=r_m, p_mflx_tracer_h=p_mflx_tracer_h_unlimited
-        )
-        if (itype_hlimit == HorizontalAdvectionLimiter.POSITIVE_DEFINITE)
-        else p_mflx_tracer_h_unlimited
-    )
-    p_tracer_after_horizontal = concat_where(
-        (dims.KDim >= 0) & (dims.KDim < end_lvl + 1),
-        (
-            _integrate_tracer_horizontally(
-                p_mflx_tracer_h=p_mflx_tracer_h_new,
-                deepatmo_divh=deepatmo_divh,
-                tracer_now=tracer_now_for_h,
-                rhodz_now=rhodz_for_h_now,
-                rhodz_new=rhodz_for_h_new,
-                geofac_div=geofac_div,
-                p_dtime=p_dtime,
-            )
-            if (ihadv_tracer != HorizontalAdvectionType.NO_ADVECTION)
-            else tracer_now_for_h
-        ),
-        broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim)),
+    p_mflx_tracer_h_new, p_tracer_after_horizontal = _compute_horizontal_tracer_advection(
+        r_m=r_m,
+        p_mflx_tracer_h_unlimited=p_mflx_tracer_h_unlimited,
+        tracer_now=tracer_now_for_h,
+        rhodz_now=rhodz_for_h_now,
+        rhodz_new=rhodz_for_h_new,
+        deepatmo_divh=deepatmo_divh,
+        geofac_div=geofac_div,
+        end_lvl=end_lvl,
+        ihadv_tracer=ihadv_tracer,
+        itype_hlimit=itype_hlimit,
+        p_dtime=p_dtime,
     )
     p_mflx_tracer_v_computed = _compute_vertical_tracer_flux(
         p_cc=p_tracer_after_horizontal,
