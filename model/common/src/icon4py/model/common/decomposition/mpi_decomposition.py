@@ -573,13 +573,10 @@ class GlobalReductions(Reductions):
                 array_ns.sum,
                 mpi4py.MPI.SUM,
             )
-        abs_max = self._reduce(
-            array_ns.abs(buffer)
-            if buffer.size != 0
-            else self._sum_identity(buffer.dtype, array_ns),
-            self._max_nan_as_inf,
-            mpi4py.MPI.MAX,
+        magnitudes = (
+            array_ns.abs(buffer) if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)
         )
+        abs_max = self._reduce(magnitudes, self._max_nan_as_inf, mpi4py.MPI.MAX)
         return decomp_defs.order_insensitive_sum(buffer, abs_max, allreduce=self._allreduce_exact)
 
     def _allreduce_exact(self, value: int | float) -> int | float:
