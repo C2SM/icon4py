@@ -41,6 +41,19 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
+class _Full3DPrecip(state.State):
+    """
+    The 3D precipitation fluxes, a workaround.
+    See the TODO in Muphys.__init__ for when this can be removed.
+    """
+
+    pr: field.Field[qty.RainfallFluxOnCellK]
+    ps: field.Field[qty.SnowfallFluxOnCellK]
+    pi: field.Field[qty.IcefallFluxOnCellK]
+    pg: field.Field[qty.GraupelfallFluxOnCellK]
+    pre: field.Field[qty.PrecipitationEnergyFluxOnCellK]
+
+
 class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
     """
     The Component interface to the muphys microphysics.
@@ -71,15 +84,6 @@ class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
         pi: field.Field[qty.IcefallFluxOnCell]
         pg: field.Field[qty.GraupelfallFluxOnCell]
         pre: field.Field[qty.PrecipitationEnergyFluxOnCell]
-
-    class Full3DPrecip(state.State):
-        """The granule's precip fluxes on all levels, of which only the lowest is an output."""
-
-        pr: field.Field[qty.RainfallFluxOnCellK]
-        ps: field.Field[qty.SnowfallFluxOnCellK]
-        pi: field.Field[qty.IcefallFluxOnCellK]
-        pg: field.Field[qty.GraupelfallFluxOnCellK]
-        pre: field.Field[qty.PrecipitationEnergyFluxOnCellK]
 
     def __init__(
         self,
@@ -134,7 +138,7 @@ class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
         # level, the flux reaching the ground.
         # TODO (Chia Rui): a workaround until either the gt4py scan operator can return a
         #   CellField or the io supports level selection
-        self._precip_3d = state.allocate(self.Full3DPrecip, grid, allocator)
+        self._precip_3d = state.allocate(_Full3DPrecip, grid, allocator)
 
         # the private copies the granule overwrites
         self._te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
