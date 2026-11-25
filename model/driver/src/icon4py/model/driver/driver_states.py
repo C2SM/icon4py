@@ -137,6 +137,21 @@ class ModelTimeVariables:
         """
         return ta.wpfloat(self.elapsed_time_in_seconds - 0.5 * self.dtime_in_seconds)
 
+    @property
+    def current_time_step(self) -> int:
+        """
+        One-based number of the current time step, counted from the beginning of the
+        simulation, also when restarting.
+
+        Equals jstep_adv%marchuk_order in mo_nh_stepping.f90, which ICON increments before
+        the advection of each time step and keeps in its restart files.
+        'advance_simulation_datetime' is called before the step is integrated, so
+        'simulation_current_datetime' is already at the end of it.
+        """
+        return round(
+            (self.simulation_current_datetime - self.simulation_start_datetime) / self.dtime
+        )
+
     def advance_simulation_datetime(self) -> None:
         self.simulation_current_datetime += self.dtime
         self.elapsed_time_in_seconds += self.dtime_in_seconds

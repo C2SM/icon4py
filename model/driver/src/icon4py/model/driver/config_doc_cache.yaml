@@ -23,7 +23,11 @@ children:
     is_union: false
   - display_name: geometry
     type_name: <class 'icon4py.model.common.grid.geometry_config.GeometryConfig'>
-    description: "\n    Contains parameters to configure the computation of grid geometry fields.\n    "
+    description: '
+
+      Contains parameters to configure the computation of grid geometry fields.
+
+      '
     default: No default value.
     optional: false
     examples:
@@ -401,7 +405,18 @@ children:
     is_union: false
   - display_name: vertical_grid
     type_name: <class 'icon4py.model.common.grid.vertical.VerticalGridConfig'>
-    description: "\n    Contains necessary parameter to configure vertical grid.\n\n    Encapsulates namelist parameters.\n    Values should be read from configuration.\n    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.\n    "
+    description: '
+
+      Contains necessary parameter to configure vertical grid.
+
+
+      Encapsulates namelist parameters.
+
+      Values should be read from configuration.
+
+      Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
+
+      '
     default: No default value.
     optional: false
     examples:
@@ -543,7 +558,7 @@ children:
         module_path: numpy
         is_union: false
       - display_name: 'file_path: one of the following'
-        type_name: pathlib.Path | None
+        type_name: pathlib._local.Path | None
         description: ??
         default: None
         optional: true
@@ -556,7 +571,7 @@ children:
             '
         children:
           - display_name: 'type: Path'
-            type_name: <class 'pathlib.Path'>
+            type_name: <class 'pathlib._local.Path'>
             description: ??
             default: None
             optional: true
@@ -569,7 +584,7 @@ children:
               - vertical_grid
               - file_path
               - 'type: Path'
-            module_path: pathlib
+            module_path: pathlib._local
             is_union: false
           - display_name: 'type: NoneType'
             type_name: <class 'NoneType'>
@@ -1567,7 +1582,7 @@ children:
           - "initial_condition:\n  data_path: .\n"
         children:
           - display_name: data_path
-            type_name: <class 'pathlib.Path'>
+            type_name: <class 'pathlib._local.Path'>
             description: Path to the serialised data directory (typically '<experiment>/ser_data').
             default: No default value.
             optional: false
@@ -1580,7 +1595,7 @@ children:
               - initial_condition
               - 'type: FromFileConfig'
               - data_path
-            module_path: pathlib
+            module_path: pathlib._local
             is_union: false
         config_name_path:
           - initial_condition
@@ -1748,7 +1763,7 @@ children:
           - "topography:\n  data_path: .\n"
         children:
           - display_name: data_path
-            type_name: <class 'pathlib.Path'>
+            type_name: <class 'pathlib._local.Path'>
             description: ??
             default: No default value.
             optional: false
@@ -1761,7 +1776,7 @@ children:
               - topography
               - 'type: FromFileConfig'
               - data_path
-            module_path: pathlib
+            module_path: pathlib._local
             is_union: false
         config_name_path:
           - topography
@@ -1781,7 +1796,7 @@ children:
       - "prescribed_tendencies:\n  data_path:\n"
     children:
       - display_name: 'data_path: one of the following'
-        type_name: pathlib.Path | None
+        type_name: pathlib._local.Path | None
         description: ??
         default: None
         optional: true
@@ -1794,7 +1809,7 @@ children:
             '
         children:
           - display_name: 'type: Path'
-            type_name: <class 'pathlib.Path'>
+            type_name: <class 'pathlib._local.Path'>
             description: ??
             default: None
             optional: true
@@ -1807,7 +1822,7 @@ children:
               - prescribed_tendencies
               - data_path
               - 'type: Path'
-            module_path: pathlib
+            module_path: pathlib._local
             is_union: false
           - display_name: 'type: NoneType'
             type_name: <class 'NoneType'>
@@ -1836,7 +1851,14 @@ children:
     is_union: false
   - display_name: driver
     type_name: <class 'icon4py.model.driver.config.DriverConfig'>
-    description: "\n    Standalone driver configuration.\n\n    Default values should correspond to default values in ICON.\n    "
+    description: '
+
+      Standalone driver configuration.
+
+
+      Default values should correspond to default values in ICON.
+
+      '
     default: No default value.
     optional: false
     examples:
@@ -2224,7 +2246,7 @@ children:
           - "io:\n  output_path: output\n  field_groups:\n    - basename: winds\n      variables:\n        - eastward_wind\n        - northward_wind\n      output_interval:\n        type: numsteps\n        value: 10\n      timesteps_per_file: 10\n      backend: zarr\n      mode: distributed\n      horizontal_chunk_size:\n      horizontal_shard_size:\n      nc_title: ICON4Py Simulation\n      nc_comment: ICON inspired code in Python and GT4Py\n  time_units: seconds since 1970-01-01 00:00:00\n  calendar: proleptic_gregorian\n"
         children:
           - display_name: output_path
-            type_name: <class 'pathlib.Path'>
+            type_name: <class 'pathlib._local.Path'>
             description: Output directory, the root of all field groups; relative to the working directory.
             default: output
             optional: true
@@ -2237,7 +2259,7 @@ children:
               - io
               - 'type: IOConfig'
               - output_path
-            module_path: pathlib
+            module_path: pathlib._local
             is_union: false
           - display_name: field_groups
             type_name: list[icon4py.model.common.io.io.FieldGroupIOConfig]
@@ -2325,7 +2347,18 @@ children:
     children:
       - display_name: 'type: NonHydrostaticConfig'
         type_name: <class 'icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticConfig'>
-        description: "\n    Contains necessary parameter to configure a nonhydro run.\n\n    Encapsulates namelist parameters and derived parameters.\n    TODO: (magdalena) values should be read from a configuration file.\n    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.\n    "
+        description: '
+
+          Contains necessary parameter to configure a nonhydro run.
+
+
+          Encapsulates namelist parameters and derived parameters.
+
+          TODO: (magdalena) values should be read from a configuration file.
+
+          Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
+
+          '
         default: None
         optional: true
         examples:
@@ -2724,7 +2757,18 @@ children:
     children:
       - display_name: 'type: DiffusionConfig'
         type_name: <class 'icon4py.model.atmosphere.diffusion.diffusion.DiffusionConfig'>
-        description: "\n    Contains necessary parameter to configure a diffusion run.\n\n    Encapsulates namelist parameters and derived parameters.\n    Values should be read from configuration.\n    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.\n    "
+        description: '
+
+          Contains necessary parameter to configure a diffusion run.
+
+
+          Encapsulates namelist parameters and derived parameters.
+
+          Values should be read from configuration.
+
+          Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
+
+          '
         default: None
         optional: true
         examples:
@@ -3339,7 +3383,11 @@ children:
     children:
       - display_name: 'type: AdvectionConfig'
         type_name: <class 'icon4py.model.atmosphere.tracer_advection.tracer_advection.AdvectionConfig'>
-        description: "\n    Contains necessary parameters to configure an tracer advection run.\n    "
+        description: '
+
+          Contains necessary parameters to configure an tracer advection run.
+
+          '
         default: None
         optional: true
         examples:
@@ -3347,7 +3395,11 @@ children:
         children:
           - display_name: horizontal_advection_type
             type_name: <enum 'HorizontalAdvectionType'>
-            description: "\n    Horizontal operator scheme for tracer advection (originally ihadv_tracer).\n    "
+            description: '
+
+              Horizontal operator scheme for tracer advection (originally ihadv_tracer).
+
+              '
             default: No default value.
             optional: false
             examples:
@@ -3369,7 +3421,11 @@ children:
             is_union: false
           - display_name: horizontal_advection_limiter
             type_name: <enum 'HorizontalAdvectionLimiter'>
-            description: "\n    Limiter for horizontal tracer advection operator (originally itype_hlimit).\n    "
+            description: '
+
+              Limiter for horizontal tracer advection operator (originally itype_hlimit).
+
+              '
             default: No default value.
             optional: false
             examples:
@@ -3388,7 +3444,11 @@ children:
             is_union: false
           - display_name: vertical_advection_type
             type_name: <enum 'VerticalAdvectionType'>
-            description: "\n    Vertical operator scheme for tracer advection (originally ivadv_tracer).\n    "
+            description: '
+
+              Vertical operator scheme for tracer advection (originally ivadv_tracer).
+
+              '
             default: No default value.
             optional: false
             examples:
@@ -3410,7 +3470,11 @@ children:
             is_union: false
           - display_name: vertical_advection_limiter
             type_name: <enum 'VerticalAdvectionLimiter'>
-            description: "\n    Limiter for vertical tracer advection operator (originally itype_vlimit).\n    "
+            description: '
+
+              Limiter for vertical tracer advection operator (originally itype_vlimit).
+
+              '
             default: No default value.
             optional: false
             examples:
@@ -3464,7 +3528,35 @@ children:
     children:
       - display_name: 'type: SingleMomentSixClassIconGraupelConfig'
         type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.microphysics.single_moment_six_class_gscp_graupel.SingleMomentSixClassIconGraupelConfig'>
-        description: "\n    Contains necessary parameters to configure icon graupel microphysics scheme.\n\n    Encapsulates namelist parameters.\n    Values should be read from configuration.\n    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.\n\n    lsedi_ice (option for whether ice sedimendation is performed), lstickeff (option for different empirical formulae of sticking efficiency), and lred_depgrow (option for reduced depositional growth) are removed because they are set to True in the original code gscp_graupel.f90.\n\n    lpres_pri is removed because it is a duplicated option for lsedi_ice.\n\n    ldiag_ttend, and ldiag_qtend are removed because default outputs in icon4py physics granules include tendencies.\n\n    l_cv is removed. This option is to swtich between whether the microphysical processes are isochoric or isobaric. Originally defined as  as input to the graupel in ICON. It is hardcoded to True in ICON.\n    The reason for its existence and isobaric may have a positive effect on reducing sound waves. In case it needs to be restored, is_isochoric is a better name.\n\n    The COSMO microphysics documentation \"A Description of the Nonhydrostatic Regional COSMO-Model Part II Physical Parameterizations\" can be downloaded via this link: https://www.cosmo-model.org/content/model/cosmo/coreDocumentation/cosmo_physics_6.00.pdf\n    "
+        description: '
+
+          Contains necessary parameters to configure icon graupel microphysics scheme.
+
+
+          Encapsulates namelist parameters.
+
+          Values should be read from configuration.
+
+          Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
+
+
+          lsedi_ice (option for whether ice sedimendation is performed), lstickeff (option for different empirical formulae of sticking efficiency), and lred_depgrow (option for reduced depositional growth) are removed because they are set to True in the original code gscp_graupel.f90.
+
+
+          lpres_pri is removed because it is a duplicated option for lsedi_ice.
+
+
+          ldiag_ttend, and ldiag_qtend are removed because default outputs in icon4py physics granules include tendencies.
+
+
+          l_cv is removed. This option is to swtich between whether the microphysical processes are isochoric or isobaric. Originally defined as  as input to the graupel in ICON. It is hardcoded to True in ICON.
+
+          The reason for its existence and isobaric may have a positive effect on reducing sound waves. In case it needs to be restored, is_isochoric is a better name.
+
+
+          The COSMO microphysics documentation "A Description of the Nonhydrostatic Regional COSMO-Model Part II Physical Parameterizations" can be downloaded via this link: https://www.cosmo-model.org/content/model/cosmo/coreDocumentation/cosmo_physics_6.00.pdf
+
+          '
         default: None
         optional: true
         examples:
@@ -3472,7 +3564,11 @@ children:
         children:
           - display_name: liquid_autoconversion_option
             type_name: <enum 'LiquidAutoConversionType'>
-            description: "\n    Options for computing liquid auto conversion rate\n    "
+            description: '
+
+              Options for computing liquid auto conversion rate
+
+              '
             default: LiquidAutoConversionType.SEIFERT_BEHENG
             optional: true
             examples:
@@ -3491,7 +3587,11 @@ children:
             is_union: false
           - display_name: snow_intercept_option
             type_name: <enum 'SnowInterceptParameterization'>
-            description: "\n    Options for deriving snow intercept parameter\n    "
+            description: '
+
+              Options for deriving snow intercept parameter
+
+              '
             default: SnowInterceptParameterization.FIELD_GENERAL_MOMENT_ESTIMATION
             optional: true
             examples:
@@ -3748,7 +3848,13 @@ children:
     children:
       - display_name: 'type: TmxConfig'
         type_name: <class 'icon4py.model.atmosphere.subgrid_scale_physics.tmx.config.TmxConfig'>
-        description: "\n    Default values are taken from ``vdiff_config_init`` in the corresponding ICON\n    Fortran module ``mo_turb_vdiff_config.f90`` (namelist ``aes_vdf_nml``).\n    "
+        description: '
+
+          Default values are taken from ``vdiff_config_init`` in the corresponding ICON
+
+          Fortran module ``mo_turb_vdiff_config.f90`` (namelist ``aes_vdf_nml``).
+
+          '
         default: None
         optional: true
         examples:

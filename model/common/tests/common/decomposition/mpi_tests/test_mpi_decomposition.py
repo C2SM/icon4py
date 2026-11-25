@@ -396,3 +396,35 @@ def test_exchange_and_reduction_cache_isolated_by_decomp_info(
     reductions1 = decomp_defs.create_reduction(process_props, decomposition_info)
     reductions2 = decomp_defs.create_reduction(process_props, other_decomposition_info)
     assert reductions1 is not reductions2
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("dimension", dims.horizontal_dims())
+def test_find_global_absolute_maximum(
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
+    dimension: gtx.Dimension,
+) -> None:
+    num_levels = 7
+    owner_mask = decomposition_info.owner_mask(dimension)
+    xp = data_alloc.array_namespace(owner_mask)
+    global_index = decomposition_info.global_index(dimension)
+    # a function of (global index, level) only: every rank holds a piece of the same global field
+    buffer = xp.sin(0.37 * global_index[:, None] + 1.3 * xp.arange(num_levels)[None, :]) * (
+        1.0 + 1.0e-4 * global_index[:, None]
+    )
+    # halo points must not take part
+    buffer[~owner_mask, :] = -1.0e30
+    reductions = decomp_defs.create_reduction(process_props, decomposition_info)
+
+    value, level = decomp_defs.find_global_absolute_maximum(buffer, owner_mask, reductions)
+
+    all_owned = np.concatenate(
+        process_props.comm.allgather(data_alloc.as_numpy(buffer[owner_mask]))
+    )
+    expected_value = all_owned.flat[np.abs(all_owned).argmax()]
+    expected_level = int(np.nonzero((all_owned == expected_value).any(axis=0))[0][0])
+    assert value == expected_value
+    assert level == expected_level
