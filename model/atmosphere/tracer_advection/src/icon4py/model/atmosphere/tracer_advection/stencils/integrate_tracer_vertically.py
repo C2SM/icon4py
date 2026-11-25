@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next import where
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import VerticalAdvectionType
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
@@ -46,14 +46,13 @@ def _integrate_tracer_vertically(
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
     p_dtime: ta.wpfloat,
     ivadv_tracer: gtx.int32,
     iadv_slev_jt: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
     tracer_new = (
-        where(
-            (iadv_slev_jt <= k),
+        concat_where(
+            dims.KDim >= iadv_slev_jt,
             _integrate_tracer_vertically_a(
                 tracer_now=tracer_now,
                 rhodz_now=rhodz_now,
@@ -81,7 +80,6 @@ def integrate_tracer_vertically(
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
     tracer_new: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
     p_dtime: ta.wpfloat,
     ivadv_tracer: gtx.int32,
     iadv_slev_jt: gtx.int32,
@@ -97,7 +95,6 @@ def integrate_tracer_vertically(
         deepatmo_divzl=deepatmo_divzl,
         deepatmo_divzu=deepatmo_divzu,
         rhodz_new=rhodz_new,
-        k=k,
         p_dtime=p_dtime,
         ivadv_tracer=ivadv_tracer,
         iadv_slev_jt=iadv_slev_jt,

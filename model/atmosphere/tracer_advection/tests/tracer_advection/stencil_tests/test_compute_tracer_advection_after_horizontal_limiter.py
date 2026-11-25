@@ -400,7 +400,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         deepatmo_divzl: np.ndarray,
         deepatmo_divzu: np.ndarray,
         geofac_div: np.ndarray,
-        k: np.ndarray,
         do_vertical_first: bool,
         ivadv_tracer: int,
         ihadv_tracer: int,
@@ -479,7 +478,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
                 deepatmo_divzl,
                 deepatmo_divzu,
                 rhodz_new,
-                k,
                 p_dtime,
                 ivadv_tracer,
                 iadv_slev_jt,
@@ -512,7 +510,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         deepatmo_divh = data_alloc.random_field(dims.KDim)
         deepatmo_divzl = data_alloc.random_field(dims.KDim)
         deepatmo_divzu = data_alloc.random_field(dims.KDim)
-        k = data_alloc.index_field(dims.KDim)
         k_half = data_alloc.index_field(dims.KHalfDim)
         geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
 
@@ -537,7 +534,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             deepatmo_divh=deepatmo_divh,
             deepatmo_divzl=deepatmo_divzl,
             deepatmo_divzu=deepatmo_divzu,
-            k=k,
             k_half=k_half,
             start_lvl=gtx.int32(0),
             start_lvl_plus1=gtx.int32(1),

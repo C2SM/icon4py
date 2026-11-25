@@ -27,14 +27,13 @@ def integrate_tracer_vertically_numpy(  # noqa: PLR0917
     deepatmo_divzl: np.ndarray,
     deepatmo_divzu: np.ndarray,
     rhodz_new: np.ndarray,
-    k: np.ndarray,
     p_dtime: float,
     ivadv_tracer: int,
     iadv_slev_jt: int,
 ) -> np.ndarray:
     if ivadv_tracer != VerticalAdvectionType.NO_ADVECTION.value:
         tracer_new = np.where(
-            (iadv_slev_jt <= k),
+            (iadv_slev_jt <= np.arange(tracer_now.shape[1])),
             (
                 tracer_now * rhodz_now
                 + p_dtime
@@ -64,7 +63,6 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
         deepatmo_divzl: np.ndarray,
         deepatmo_divzu: np.ndarray,
         rhodz_new: np.ndarray,
-        k: np.ndarray,
         ivadv_tracer: gtx.int32,
         iadv_slev_jt: gtx.int32,
         p_dtime: float,
@@ -77,7 +75,6 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
             deepatmo_divzl,
             deepatmo_divzu,
             rhodz_new,
-            k,
             p_dtime,
             ivadv_tracer,
             iadv_slev_jt,
@@ -93,7 +90,6 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
         deepatmo_divzu = data_alloc.random_field(dims.KDim)
         rhodz_new = data_alloc.random_field(dims.CellDim, dims.KDim)
         tracer_new = data_alloc.zero_field(dims.CellDim, dims.KDim)
-        k = data_alloc.index_field(dims.KDim)
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4
@@ -105,7 +101,6 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
             deepatmo_divzu=deepatmo_divzu,
             rhodz_new=rhodz_new,
             tracer_new=tracer_new,
-            k=k,
             p_dtime=p_dtime,
             ivadv_tracer=ivadv_tracer,
             iadv_slev_jt=iadv_slev_jt,

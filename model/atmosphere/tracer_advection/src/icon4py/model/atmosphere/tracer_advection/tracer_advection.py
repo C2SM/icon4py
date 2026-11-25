@@ -244,12 +244,6 @@ class GodunovSplittingAdvection(Advection):
         self._p_mflx_tracer_h_unlimited = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
-        self._k = data_alloc.index_field(
-            self._grid,
-            dims.KDim,
-            dtype=gtx.int32,
-            allocator=allocator,
-        )
         self._k_half = data_alloc.index_field(
             self._grid,
             dims.KHalfDim,
@@ -290,7 +284,6 @@ class GodunovSplittingAdvection(Advection):
         shared_vertical_args: dict[str, gtx.Field | gtx_typing.Scalar] = {
             "deepatmo_divzl": metric_state.deepatmo_divzl,
             "deepatmo_divzu": metric_state.deepatmo_divzu,
-            "k": self._k,
             "ivadv_tracer": gtx.int32(vertical_advection_type.value),
             "iadv_slev_jt": gtx.int32(0),
             "wp_eps": constants.WP_EPS,

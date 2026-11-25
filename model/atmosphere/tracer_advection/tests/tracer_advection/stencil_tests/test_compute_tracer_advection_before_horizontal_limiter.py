@@ -124,7 +124,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         ivadv_tracer: int,
         ihadv_tracer: int,
         itype_hlimit: int,
-        k: np.ndarray,
         iadv_slev_jt: int,
         p_dtime: float,
         wp_eps: float,
@@ -147,7 +146,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             deepatmo_divzl,
             deepatmo_divzu,
             rhodz_ast2,
-            k,
             p_dtime,
             ivadv_tracer,
             iadv_slev_jt,
@@ -238,7 +236,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         lsq_pseudoinv_1 = data_alloc.random_field(dims.CellDim, dims.C2E2CDim)
         lsq_pseudoinv_2 = data_alloc.random_field(dims.CellDim, dims.C2E2CDim)
         geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
-        k = data_alloc.index_field(dims.KDim)
 
         rhodz_ast2 = data_alloc.zero_field(dims.CellDim, dims.KDim)
         p_mflx_tracer_v = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
@@ -260,7 +257,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             p_vn=p_vn,
             deepatmo_divzl=deepatmo_divzl,
             deepatmo_divzu=deepatmo_divzu,
-            k=k,
             ivadv_tracer=ivadv_tracer,
             ihadv_tracer=ihadv_tracer,
             itype_hlimit=gtx.int32(4),
@@ -420,7 +416,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         lsq_pseudoinv_1 = data_alloc.random_field(dims.CellDim, dims.C2E2CDim)
         lsq_pseudoinv_2 = data_alloc.random_field(dims.CellDim, dims.C2E2CDim)
         geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
-        k = data_alloc.index_field(dims.KDim)
 
         rhodz_ast2 = data_alloc.zero_field(dims.CellDim, dims.KDim)
         p_mflx_tracer_v = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
@@ -442,7 +437,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
             p_vn=p_vn,
             deepatmo_divzl=deepatmo_divzl,
             deepatmo_divzu=deepatmo_divzu,
-            k=k,
             ivadv_tracer=gtx.int32(0),
             ihadv_tracer=request.param,
             itype_hlimit=gtx.int32(4),
