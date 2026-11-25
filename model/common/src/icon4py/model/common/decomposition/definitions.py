@@ -613,10 +613,15 @@ def fixed_point_total(buffer: data_alloc.NDArray, shift: int) -> int:
     return (int(integer_part.sum()) << FIXED_POINT_BITS) + int(fraction_part.sum())
 
 
+def _no_allreduce(total: int | float) -> int | float:
+    """Stands in for the allreduce on a single rank."""
+    return total
+
+
 def order_insensitive_sum(
     buffer: data_alloc.NDArray,
     abs_max: float,
-    allreduce: Callable[[int | float], int | float] | None = None,
+    allreduce: Callable[[int | float], int | float] = _no_allreduce,
 ) -> float:
     """Sum ``buffer`` independently of the order of its elements (ICON's ``order_insensit_sum``).
 
@@ -633,8 +638,8 @@ def order_insensitive_sum(
         buffer: the local contributions.
         abs_max: the largest magnitude over *all* contributions, those of other ranks included;
             NaN or infinity when any contribution is.
-        allreduce: sums a Python number over all ranks, exactly when it is an integer;
-            ``None`` on a single rank.
+        allreduce: sums a Python number over all ranks, exactly when it is an integer; the
+            identity on a single rank.
 
     Returns:
         the sum, correctly rounded from the exact fixed-point total; 0 when ``abs_max`` is 0
@@ -657,15 +662,12 @@ def order_insensitive_sum(
     if not math.isfinite(abs_max):
         # some contribution is NaN or infinite: a plain sum propagates it
         array_ns = data_alloc.array_namespace(buffer)
-        local_sum = float(array_ns.sum(buffer))
-        return allreduce(local_sum) if allreduce is not None else local_sum
+        return allreduce(float(array_ns.sum(buffer)))
     if abs_max == 0.0 or math.frexp(abs_max)[1] < _MIN_FIXED_POINT_EXPONENT:
         return 0.0
     shift = fixed_point_shift(abs_max)
     # exact total in units of 2**-(FIXED_POINT_BITS + shift)
-    total: int | float = fixed_point_total(buffer, shift)
-    if allreduce is not None:
-        total = allreduce(total)
+    total = allreduce(fixed_point_total(buffer, shift))
     try:
         return math.ldexp(float(total), -(FIXED_POINT_BITS + shift))
     except OverflowError:

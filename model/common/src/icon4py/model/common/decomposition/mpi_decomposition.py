@@ -580,8 +580,9 @@ class GlobalReductions(Reductions):
         return decomp_defs.order_insensitive_sum(buffer, abs_max, allreduce=self._allreduce_exact)
 
     def _allreduce_exact(self, value: int | float) -> int | float:
-        # the pickling ``allreduce`` adds Python numbers: exact for the integer total of the
-        # order-insensitive sum, unlike an int64 ``Allreduce``
+        # ICON reduces its two int64 sums with an integer MPI sum; here they are combined into
+        # one Python integer of up to 93 bits per rank, which the pickling ``allreduce`` adds
+        # exactly. A float only passes here on the plain-sum fallback for a non-finite abs_max.
         return self.process_props.comm.allreduce(value, op=mpi4py.MPI.SUM)
 
 
