@@ -76,9 +76,14 @@ def _compute_vertical_tracer_flux(
         broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim)),
     )
     return (
-        _compute_vertical_tracer_flux_upwind(
-            p_cc=p_cc,
-            p_mflx_contra_v=p_mflx_contra_v,
+        # zero flux at the model top and bottom half levels
+        concat_where(
+            (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
+            _compute_vertical_tracer_flux_upwind(
+                p_cc=p_cc,
+                p_mflx_contra_v=p_mflx_contra_v,
+            ),
+            broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim)),
         )
         if (ivadv_tracer == VerticalAdvectionType.FIRST_ORDER_UPWIND)
         else (
@@ -417,33 +422,19 @@ def _compute_tracer_advection_after_horizontal_limiter(
         ),
         broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim)),
     )
-    p_mflx_tracer_v_computed = (
-        concat_where(
-            (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
-            _compute_vertical_tracer_flux_upwind(
-                p_cc=p_tracer_after_horizontal,
-                p_mflx_contra_v=p_mflx_contra_v,
-            ),
-            broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim)),
-        )
-        if (ivadv_tracer == VerticalAdvectionType.FIRST_ORDER_UPWIND)
-        else (
-            _compute_ppm_flux(
-                p_cc=p_tracer_after_horizontal,
-                p_cellmass_now=rhodz_ast2,
-                p_mflx_contra_v=p_mflx_contra_v,
-                p_cellhgt_mc_now=p_cellhgt_mc_now,
-                k=k_half,
-                slev=slev,
-                slevp1_ti=slevp1_ti,
-                elev=elev,
-                wp_eps=wp_eps,
-                p_dtime=p_dtime,
-                itype_vlimit=itype_vlimit,
-            )
-            if (ivadv_tracer == VerticalAdvectionType.THIRD_ORDER_PPM)
-            else broadcast(wpfloat(0.0), (dims.CellDim, dims.KHalfDim))
-        )
+    p_mflx_tracer_v_computed = _compute_vertical_tracer_flux(
+        p_cc=p_tracer_after_horizontal,
+        p_cellmass_now=rhodz_ast2,
+        p_mflx_contra_v=p_mflx_contra_v,
+        p_cellhgt_mc_now=p_cellhgt_mc_now,
+        k=k_half,
+        slev=slev,
+        slevp1_ti=slevp1_ti,
+        elev=elev,
+        wp_eps=wp_eps,
+        p_dtime=p_dtime,
+        itype_vlimit=itype_vlimit,
+        ivadv_tracer=ivadv_tracer,
     )
     p_mflx_tracer_v_out = p_mflx_tracer_v if do_vertical_first else p_mflx_tracer_v_computed
     p_tracer_new = (
