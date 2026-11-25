@@ -388,7 +388,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         r_m: np.ndarray,
         p_mflx_tracer_h_unlimited: np.ndarray,
         p_tracer_now: np.ndarray,
-        p_tracer_after_vertical: np.ndarray,
+        p_tracer_new: np.ndarray,
         p_mflx_tracer_v: np.ndarray,
         rhodz_ast2: np.ndarray,
         rhodz_now: np.ndarray,
@@ -412,6 +412,8 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
+        # input value of p_tracer_new: the tracer after the vertical step
+        p_tracer_after_vertical = p_tracer_new
 
         tracer_now_for_h = p_tracer_now
         rhodz_for_h_now = rhodz_now
@@ -497,7 +499,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         r_m = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_mflx_tracer_h_unlimited = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         p_tracer_now = data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_tracer_after_vertical = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_mflx_tracer_v = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         rhodz_ast2 = data_alloc.random_field(dims.CellDim, dims.KDim)
         rhodz_now = data_alloc.random_field(dims.CellDim, dims.KDim)
@@ -511,7 +512,7 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
 
         p_mflx_tracer_h = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
-        p_tracer_new = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_tracer_new = data_alloc.random_field(dims.CellDim, dims.KDim)
 
         do_vertical_first, ivadv_tracer, itype_vlimit = request.param
 
@@ -522,7 +523,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             r_m=r_m,
             p_mflx_tracer_h_unlimited=p_mflx_tracer_h_unlimited,
             p_tracer_now=p_tracer_now,
-            p_tracer_after_vertical=p_tracer_after_vertical,
             rhodz_ast2=rhodz_ast2,
             rhodz_now=rhodz_now,
             rhodz_new=rhodz_new,

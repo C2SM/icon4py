@@ -425,7 +425,6 @@ class GodunovSplittingAdvection(Advection):
             r_m=self._r_m,
             p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
             p_tracer_now=p_tracer_now,
-            p_tracer_after_vertical=p_tracer_new,
             rhodz_ast2=self._rhodz_ast2,
             rhodz_now=input.airmass_now,
             rhodz_new=input.airmass_new,

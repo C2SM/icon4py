@@ -482,7 +482,6 @@ def compute_tracer_advection_after_horizontal_limiter(
     r_m: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h_unlimited: fa.EdgeKField[ta.wpfloat],
     p_tracer_now: fa.CellKField[ta.wpfloat],
-    p_tracer_after_vertical: fa.CellKField[ta.wpfloat],
     rhodz_ast2: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
@@ -513,7 +512,9 @@ def compute_tracer_advection_after_horizontal_limiter(
         r_m=r_m,
         p_mflx_tracer_h_unlimited=p_mflx_tracer_h_unlimited,
         p_tracer_now=p_tracer_now,
-        p_tracer_after_vertical=p_tracer_after_vertical,
+        # p_tracer_new holds the tracer after the vertical step (written by the
+        # before-limiter program); it is only read pointwise, so in-place is safe
+        p_tracer_after_vertical=p_tracer_new,
         p_mflx_tracer_v=p_mflx_tracer_v,
         rhodz_ast2=rhodz_ast2,
         rhodz_now=rhodz_now,
