@@ -167,8 +167,12 @@ def test_single_node_sum_and_mean() -> None:
     assert reductions.sum(np.array([-2.5, 1.25, 4.0])) == 2.75
     assert reductions.sum(np.zeros(5)) == 0.0
     assert reductions.sum(np.array([1, 2, 3])) == 6
-    assert math.isnan(reductions.sum(np.array([1.0, np.nan])))
-    assert reductions.sum(np.array([1.0, np.inf])) == np.inf
+
+
+@pytest.mark.parametrize("non_finite", [np.nan, np.inf, -np.inf])
+def test_single_node_sum_refuses_a_non_finite_value(non_finite: float) -> None:
+    with pytest.raises(ValueError, match="requires finite contributions"):
+        definitions.SingleNodeReductions().sum(np.array([1.0, non_finite]))
 
 
 @pytest.mark.parametrize("name", ["min", "max", "sum", "mean"])
@@ -183,20 +187,16 @@ def test_order_insensitive_sum_of_a_rank_without_owned_entries() -> None:
     abs_max = 4.0
     total = definitions.fixed_point_total(values, definitions.fixed_point_shift(abs_max))
     nothing = np.array([])
-    # the rank contributes an exact zero to the allreduce, in both branches of the sum
+    # the rank contributes an exact zero to the allreduce
     assert (
         definitions.order_insensitive_sum(nothing, abs_max, allreduce=lambda t: t + total) == 2.75
-    )
-    assert (
-        definitions.order_insensitive_sum(nothing, np.inf, allreduce=lambda s: s + np.inf) == np.inf
     )
 
 
 @pytest.mark.parametrize("sign", [1.0, -1.0])
-def test_sum_of_finite_values_overflows_to_infinity_like_a_plain_sum(sign: float) -> None:
-    values = sign * np.array([1e308, 1e308])
-    with np.errstate(over="ignore"):
-        assert definitions.SingleNodeReductions().sum(values) == np.sum(values) == sign * np.inf
+def test_sum_that_exceeds_the_largest_double_raises(sign: float) -> None:
+    with pytest.raises(OverflowError, match="exceeds the largest double"):
+        definitions.SingleNodeReductions().sum(sign * np.array([1e308, 1e308]))
 
 
 def test_fixed_point_sum_refuses_a_buffer_that_could_overflow_int64() -> None:

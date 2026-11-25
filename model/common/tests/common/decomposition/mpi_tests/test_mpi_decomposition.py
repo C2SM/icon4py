@@ -366,12 +366,12 @@ def test_exchange_and_reduction_cached(
 @pytest.mark.level("unit")
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize("non_finite", [np.nan, np.inf, -np.inf])
-def test_global_sum_propagates_a_non_finite_value_held_by_one_rank(
+def test_global_sum_raises_on_a_non_finite_value_held_by_one_rank(
     process_props: decomp_defs.ProcessProperties,
     non_finite: float,
 ) -> None:
-    """``MPI.MAX`` does not reliably propagate NaN, so the fixed-point sum must be bypassed
-    whenever any rank holds a non-finite value, and the plain sum propagates it like NumPy."""
+    """Every rank raises, none is left waiting in a collective: the NaN is turned into +inf
+    before the MAX reduction, which would not propagate it reliably."""
     decomposition_info = parallel_helpers.synthetic_decomposition_info(process_props)
     reductions = decomp_defs.create_reduction(process_props, decomposition_info)
     owner_mask = decomposition_info.owner_mask(dims.CellDim)
@@ -379,11 +379,8 @@ def test_global_sum_propagates_a_non_finite_value_held_by_one_rank(
     if process_props.rank == 0:
         values[np.flatnonzero(owner_mask)[0]] = non_finite
 
-    result = reductions.sum(values)
-
-    assert math.isnan(result) if math.isnan(non_finite) else result == non_finite, (
-        f"rank={process_props.rank}: sum = {result}, expected {non_finite}"
-    )
+    with pytest.raises(ValueError, match="requires finite contributions"):
+        reductions.sum(values)
 
 
 def _synthetic_values() -> np.ndarray:

@@ -613,7 +613,7 @@ def fixed_point_total(buffer: data_alloc.NDArray, shift: int) -> int:
     return (int(integer_part.sum()) << FIXED_POINT_BITS) + int(fraction_part.sum())
 
 
-def _no_allreduce(total: int | float) -> int | float:
+def _no_allreduce(total: int) -> int:
     """Stands in for the allreduce on a single rank."""
     return total
 
@@ -621,7 +621,7 @@ def _no_allreduce(total: int | float) -> int | float:
 def order_insensitive_sum(
     buffer: data_alloc.NDArray,
     abs_max: float,
-    allreduce: Callable[[int | float], int | float] = _no_allreduce,
+    allreduce: Callable[[int], int] = _no_allreduce,
 ) -> float:
     """Sum ``buffer`` independently of the order of its elements (ICON's ``order_insensit_sum``).
 
@@ -636,15 +636,17 @@ def order_insensitive_sum(
 
     Args:
         buffer: the local contributions.
-        abs_max: the largest magnitude over *all* contributions, those of other ranks included;
-            NaN or infinity when any contribution is.
-        allreduce: sums a Python number over all ranks, exactly when it is an integer; the
-            identity on a single rank.
+        abs_max: the largest magnitude over *all* contributions, those of other ranks included.
+        allreduce: sums a Python integer over all ranks, exactly; the identity on a single rank.
 
     Returns:
         the sum, correctly rounded from the exact fixed-point total; 0 when ``abs_max`` is 0
-        or so small that ICON's scaling would overflow; NaN or infinity, propagated as by a
-        plain sum, when ``abs_max`` is not finite or the sum exceeds the largest double.
+        or so small that ICON's scaling would overflow.
+
+    Raises:
+        ValueError: when ``abs_max`` is not finite, that is when a contribution is NaN or
+            infinite, or when ``buffer`` has too many elements for the int64 accumulators.
+        OverflowError: when the sum exceeds the largest double.
 
     Example::
 
@@ -660,9 +662,9 @@ def order_insensitive_sum(
         result        = total * 2**-(30 + shift)                  = 1234.6
     """
     if not math.isfinite(abs_max):
-        # some contribution is NaN or infinite: a plain sum propagates it
-        array_ns = data_alloc.array_namespace(buffer)
-        return allreduce(float(array_ns.sum(buffer)))
+        raise ValueError(
+            f"order_insensitive_sum requires finite contributions, the largest magnitude is {abs_max}"
+        )
     if abs_max == 0.0 or math.frexp(abs_max)[1] < _MIN_FIXED_POINT_EXPONENT:
         return 0.0
     shift = fixed_point_shift(abs_max)
@@ -670,8 +672,8 @@ def order_insensitive_sum(
     total = allreduce(fixed_point_total(buffer, shift))
     try:
         return math.ldexp(float(total), -(FIXED_POINT_BITS + shift))
-    except OverflowError:
-        return math.copysign(math.inf, total)
+    except OverflowError as error:
+        raise OverflowError("the sum exceeds the largest double") from error
 
 
 class SingleNodeReductions(Reductions):
@@ -680,7 +682,8 @@ class SingleNodeReductions(Reductions):
     Single-rank runs have no halos, so all elements are owned and no masking
     is needed. The entire buffer is reduced directly. Floating-point sums use the
     order-insensitive sum of ICON, so that a distributed run reproduces them bitwise.
-    An empty buffer raises ``ValueError``, as in the distributed implementation.
+    An empty buffer raises ``ValueError``, as in the distributed implementation, and so does
+    a NaN or infinite value in a floating-point sum.
     """
 
     @staticmethod

@@ -490,7 +490,8 @@ class GlobalReductions(Reductions):
         """Local maximum, replaced by +inf when it is NaN.
 
         ``MPI.MAX`` compares with ``>``, which is false for NaN, so a NaN would survive the
-        reduction on some ranks only. +inf compares reliably and marks the buffer as non-finite.
+        reduction on some ranks only. +inf compares reliably, so every rank sees that the
+        buffer is not finite and all of them raise together.
         """
         array_ns = data_alloc.array_namespace(buffer)
         local_max = array_ns.max(buffer)
@@ -549,7 +550,8 @@ class GlobalReductions(Reductions):
         """Sum of the owned entries over all ranks.
 
         Floating-point buffers use ICON's order-insensitive sum, so the result does not depend
-        on the decomposition.
+        on the decomposition. A NaN or infinite entry on any rank raises ``ValueError`` on
+        every rank.
         """
         buffer = self._prepare_buffer(buffer)
         if self._calc_buffer_size(buffer) == 0:
@@ -579,11 +581,11 @@ class GlobalReductions(Reductions):
         abs_max = self._reduce(magnitudes, self._max_nan_as_inf, mpi4py.MPI.MAX)
         return decomp_defs.order_insensitive_sum(buffer, abs_max, allreduce=self._allreduce_exact)
 
-    def _allreduce_exact(self, value: int | float) -> int | float:
+    def _allreduce_exact(self, total: int) -> int:
         # ICON reduces its two int64 sums with an integer MPI sum; here they are combined into
         # one Python integer of up to 93 bits per rank, which the pickling ``allreduce`` adds
-        # exactly. A float only passes here on the plain-sum fallback for a non-finite abs_max.
-        return self.process_props.comm.allreduce(value, op=mpi4py.MPI.SUM)
+        # exactly
+        return self.process_props.comm.allreduce(total, op=mpi4py.MPI.SUM)
 
 
 @decomp_defs.create_reduction.register(MPICommProcessProperties)
