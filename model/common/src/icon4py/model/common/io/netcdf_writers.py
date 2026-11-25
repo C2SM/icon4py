@@ -21,7 +21,7 @@ import xarray as xr
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils, distributed, writers
-from icon4py.model.common.states import metadata
+from icon4py.model.common.old_states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 

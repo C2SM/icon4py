@@ -32,17 +32,21 @@ from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import (
     VerticalAdvectionType,
 )
 from icon4py.model.common import (
+    component,
     constants,
     dimension as dims,
+    field,
     field_type_aliases as fa,
     model_backends,
+    quantities as qty,
+    state,
+    states,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -65,38 +69,84 @@ class AdvectionConfig:
     vertical_advection_limiter: VerticalAdvectionLimiter
 
 
-class Advection(ABC):
+class Advection(component.Component, ABC):
     """
-    Runs one three-dimensional tracer advection step.
+    Runs one three-dimensional tracer advection step for every active tracer.
+
+    The tracers are optional leaves: a tracer is advected when it is given at the current
+    time level (input) and the next one (output). The Marchuk order of the horizontal and
+    vertical transport alternates once per step, for all tracers (jstep_adv%marchuk_order
+    in ICON).
 
     Missing tracer advection-specific features:
-        -tracer loops: currently the `run` method only advects one type of tracer at once
         -optional tendency output: depending on the physics package, opt_ddt_tracer_adv might be needed
         -maximum tracer advection height: tracer-specific control over which levels are used for tracer_advection
     """
 
+    _exchange: decomposition.ExchangeRuntime
+
+    class Input(state.State):
+        qv: field.Field[qty.QvOnCellK] | None = None
+        qc: field.Field[qty.QcOnCellK] | None = None
+        qi: field.Field[qty.QiOnCellK] | None = None
+        qr: field.Field[qty.QrOnCellK] | None = None
+        qs: field.Field[qty.QsOnCellK] | None = None
+        qg: field.Field[qty.QgOnCellK] | None = None
+        airmass_now: field.Field[qty.AirMassOnCellK]
+        airmass_new: field.Field[qty.AirMassOnCellK]
+        grf_tend_tracer: field.Field[qty.GrfTendencyOfTracerOnCellK]
+        vn_traj: field.Field[qty.VnOnEdgeK]
+        mass_flx_me: field.Field[qty.HorizontalMassFluxOnEdgeK]
+        mass_flx_ic: field.Field[qty.VerticalMassFluxOnCellKHalf]
+        dtime: float
+
+    class Output(state.State):
+        qv: field.Field[qty.QvOnCellK] | None = None
+        qc: field.Field[qty.QcOnCellK] | None = None
+        qi: field.Field[qty.QiOnCellK] | None = None
+        qr: field.Field[qty.QrOnCellK] | None = None
+        qs: field.Field[qty.QsOnCellK] | None = None
+        qg: field.Field[qty.QgOnCellK] | None = None
+        hfl_tracer: field.Field[qty.HorizontalTracerFluxOnEdgeK]
+        vfl_tracer: field.Field[qty.VerticalTracerFluxOnCellKHalf]
+
+    def run(self, input: Input, output: Output) -> Output:
+        self._prepare(input)
+        for name in states.TRACERS:
+            tracer_now = getattr(input, name)
+            if tracer_now is None:
+                continue
+            tracer_new = getattr(output, name)
+            if tracer_new is None:
+                raise ValueError(
+                    f"Tracer '{name}' is given at the current time level but not at the next one."
+                )
+            self._advect(input, output, p_tracer_now=tracer_now, p_tracer_new=tracer_new)
+        self._finalize()
+        return output
+
+    def _prepare(self, input: Input) -> None:
+        """Before the tracers: the halo exchange of the vertical mass flux."""
+        log.debug("communication of prep_adv cell field: mass_flx_ic - start")
+        self._exchange.exchange(
+            dims.CellDim, input.mass_flx_ic, stream=decomposition.DEFAULT_STREAM
+        )
+        log.debug("communication of prep_adv cell field: mass_flx_ic - end")
+
     @abstractmethod
-    def run(
+    def _advect(
         self,
+        input: Input,
+        output: Output,
         *,
-        diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
-        dtime: ta.wpfloat,
     ) -> None:
-        """
-        Run an tracer advection step.
-
-        Args:
-            diagnostic_state: output argument, data class that contains diagnostic variables
-            prep_adv: input argument, data class that contains precalculated fields for tracer advection
-            p_tracer_now: input argument, field that contains current tracer mass fraction
-            p_tracer_new: output argument, field that contains new tracer mass fraction
-            dtime: input argument, the time step
-
-        """
+        """Advect one tracer from `p_tracer_now` to `p_tracer_new`."""
         ...
+
+    def _finalize(self) -> None:
+        """After the tracers."""
 
 
 class NoAdvection(Advection):
@@ -135,22 +185,15 @@ class NoAdvection(Advection):
             offset_provider=self._grid.connectivities,
         )
 
-    def run(
+    def _advect(
         self,
+        input: Advection.Input,
+        output: Advection.Output,
         *,
-        diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
-        dtime: ta.wpfloat,
     ) -> None:
         log.debug("tracer_advection run - start")
-        log.debug("communication of prep_adv cell field: mass_flx_ic - start")
-        self._exchange.exchange(
-            dims.CellDim, prep_adv.mass_flx_ic, stream=decomposition.DEFAULT_STREAM
-        )
-        log.debug("communication of prep_adv cell field: mass_flx_ic - end")
-
         log.debug("running stencil copy_field_on_cell_k - start")
         self._copy_field_on_cell_k(
             field=p_tracer_now,
@@ -343,44 +386,38 @@ class GodunovSplittingAdvection(Advection):
         )
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
-    def run(
+    def _advect(
         self,
+        input: Advection.Input,
+        output: Advection.Output,
         *,
-        diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
-        dtime: ta.wpfloat,
     ) -> None:
         log.debug("tracer_advection run - start")
-
-        self._exchange.exchange(
-            dims.CellDim,
-            prep_adv.mass_flx_ic,
-            stream=decomposition.DEFAULT_STREAM,
-        )
+        dtime = ta.wpfloat(input.dtime)
 
         if self._even_timestep:
             self._compute_vertical_tracer_flux(
-                p_upflux=diagnostic_state.vfl_tracer,
+                p_upflux=output.vfl_tracer,
                 p_cc=p_tracer_now,
-                p_cellmass_now=diagnostic_state.airmass_now,
-                p_mflx_contra_v=prep_adv.mass_flx_ic,
+                p_cellmass_now=input.airmass_now,
+                p_mflx_contra_v=input.mass_flx_ic,
                 p_dtime=dtime,
             )
 
         self._compute_before_horizontal_limiter(
             rhodz_ast2=self._rhodz_ast2,
-            p_mflx_tracer_v=diagnostic_state.vfl_tracer,
+            p_mflx_tracer_v=output.vfl_tracer,
             p_tracer_after_vertical=p_tracer_new,
             p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
             r_m=self._r_m,
-            rhodz_now=diagnostic_state.airmass_now,
-            rhodz_new=diagnostic_state.airmass_new,
-            p_mflx_contra_v=prep_adv.mass_flx_ic,
+            rhodz_now=input.airmass_now,
+            rhodz_new=input.airmass_new,
+            p_mflx_contra_v=input.mass_flx_ic,
             p_tracer_now=p_tracer_now,
-            p_mass_flx_e=prep_adv.mass_flx_me,
-            p_vn=prep_adv.vn_traj,
+            p_mass_flx_e=input.mass_flx_me,
+            p_vn=input.vn_traj,
             p_dtime=dtime,
             do_vertical_first=self._even_timestep,
         )
@@ -390,17 +427,17 @@ class GodunovSplittingAdvection(Advection):
             self._exchange.exchange(dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM)
 
         self._compute_after_horizontal_limiter(
-            p_mflx_tracer_h=diagnostic_state.hfl_tracer,
-            p_mflx_tracer_v=diagnostic_state.vfl_tracer,
+            p_mflx_tracer_h=output.hfl_tracer,
+            p_mflx_tracer_v=output.vfl_tracer,
             p_tracer_new=p_tracer_new,
             r_m=self._r_m,
             p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
             p_tracer_now=p_tracer_now,
             p_tracer_after_vertical=p_tracer_new,
             rhodz_ast2=self._rhodz_ast2,
-            rhodz_now=diagnostic_state.airmass_now,
-            rhodz_new=diagnostic_state.airmass_new,
-            p_mflx_contra_v=prep_adv.mass_flx_ic,
+            rhodz_now=input.airmass_now,
+            rhodz_new=input.airmass_new,
+            p_mflx_contra_v=input.mass_flx_ic,
             do_vertical_first=self._even_timestep,
             p_dtime=dtime,
         )
@@ -408,7 +445,7 @@ class GodunovSplittingAdvection(Advection):
         if self._grid.limited_area:
             self._apply_interpolated_tracer_time_tendency(
                 p_tracer_now=p_tracer_now,
-                p_grf_tend_tracer=diagnostic_state.grf_tend_tracer,
+                p_grf_tend_tracer=input.grf_tend_tracer,
                 p_tracer_new=p_tracer_new,
                 p_dtime=dtime,
             )
@@ -418,9 +455,12 @@ class GodunovSplittingAdvection(Advection):
             p_tracer_new,
             stream=decomposition.DEFAULT_STREAM,
         )
-        self._even_timestep = not self._even_timestep
 
         log.debug("tracer_advection run - end")
+
+    def _finalize(self) -> None:
+        # the Marchuk order alternates once per step, for all tracers
+        self._even_timestep = not self._even_timestep
 
 
 def convert_config_to_advection(

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
-    from icon4py.model.common.states import model
+    from icon4py.model.common.old_states import model
 
 
 @dataclasses.dataclass(frozen=True)
