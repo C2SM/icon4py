@@ -68,7 +68,7 @@ io:
         - eastward_wind
         - northward_wind
         - air_density
-        - exner_function
+        - dimensionless_exner_function
         - virtual_potential_temperature
         - upward_air_velocity
         - specific_humidity
