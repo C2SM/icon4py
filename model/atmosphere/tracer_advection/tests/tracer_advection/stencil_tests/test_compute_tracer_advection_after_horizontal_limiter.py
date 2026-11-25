@@ -343,7 +343,6 @@ _VERTICAL_PARAMS = (
     "start_lvl",
     "start_lvl_plus1",
     "end_lvl",
-    "iadv_slev_jt",
     "vertical_end",
 )
 
@@ -409,7 +408,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         start_lvl_plus1: int,
         end_lvl: int,
         wp_eps: float,
-        iadv_slev_jt: int,
         p_dtime: float,
         **kwargs: Any,
     ) -> dict:
@@ -480,7 +478,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
                 rhodz_new,
                 p_dtime,
                 ivadv_tracer,
-                iadv_slev_jt,
             )
 
         return dict(
@@ -543,7 +540,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             ihadv_tracer=gtx.int32(2),
             itype_hlimit=gtx.int32(4),
             itype_vlimit=gtx.int32(itype_vlimit),
-            iadv_slev_jt=gtx.int32(0),
             geofac_div=geofac_div,
             wp_eps=ta.wpfloat(1e-9),
             p_dtime=ta.wpfloat(5.0),

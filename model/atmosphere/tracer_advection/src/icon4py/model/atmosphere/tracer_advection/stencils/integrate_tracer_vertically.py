@@ -7,13 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import VerticalAdvectionType
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-
-
-# TODO(nfarabullini, OngChia): k/iadv_slev_jt and vertical_start/end are redundant
 
 
 @gtx.field_operator
@@ -48,21 +44,16 @@ def _integrate_tracer_vertically(
     rhodz_new: fa.CellKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
     ivadv_tracer: gtx.int32,
-    iadv_slev_jt: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
     tracer_new = (
-        concat_where(
-            dims.KDim >= iadv_slev_jt,
-            _integrate_tracer_vertically_a(
-                tracer_now=tracer_now,
-                rhodz_now=rhodz_now,
-                p_mflx_tracer_v=p_mflx_tracer_v,
-                deepatmo_divzl=deepatmo_divzl,
-                deepatmo_divzu=deepatmo_divzu,
-                rhodz_new=rhodz_new,
-                p_dtime=p_dtime,
-            ),
-            tracer_now,
+        _integrate_tracer_vertically_a(
+            tracer_now=tracer_now,
+            rhodz_now=rhodz_now,
+            p_mflx_tracer_v=p_mflx_tracer_v,
+            deepatmo_divzl=deepatmo_divzl,
+            deepatmo_divzu=deepatmo_divzu,
+            rhodz_new=rhodz_new,
+            p_dtime=p_dtime,
         )
         if (ivadv_tracer != VerticalAdvectionType.NO_ADVECTION)
         else tracer_now
@@ -82,7 +73,6 @@ def integrate_tracer_vertically(
     tracer_new: fa.CellKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
     ivadv_tracer: gtx.int32,
-    iadv_slev_jt: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -97,7 +87,6 @@ def integrate_tracer_vertically(
         rhodz_new=rhodz_new,
         p_dtime=p_dtime,
         ivadv_tracer=ivadv_tracer,
-        iadv_slev_jt=iadv_slev_jt,
         out=tracer_new,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

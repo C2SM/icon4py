@@ -69,10 +69,7 @@ _HORIZONTAL_PARAMS = (
     "start_edge_lateral_boundary_level_5",
     "end_edge_halo",
 )
-_VERTICAL_PARAMS = (
-    "iadv_slev_jt",
-    "vertical_end",
-)
+_VERTICAL_PARAMS = ("vertical_end",)
 _BEFORE_LIMITER_STATIC_PARAMS = {
     stencil_tests.StandardStaticVariants.NONE: _STATIC_GENERIC_PARAMS,
     stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
@@ -124,7 +121,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
         ivadv_tracer: int,
         ihadv_tracer: int,
         itype_hlimit: int,
-        iadv_slev_jt: int,
         p_dtime: float,
         wp_eps: float,
         **kwargs: Any,
@@ -148,7 +144,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             rhodz_ast2,
             p_dtime,
             ivadv_tracer,
-            iadv_slev_jt,
         )
 
         if ihadv_tracer == HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA.value:
@@ -260,7 +255,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             ivadv_tracer=ivadv_tracer,
             ihadv_tracer=ihadv_tracer,
             itype_hlimit=gtx.int32(4),
-            iadv_slev_jt=gtx.int32(0),
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             pos_on_tplane_e_1=pos_on_tplane_e_1,
             pos_on_tplane_e_2=pos_on_tplane_e_2,
@@ -440,7 +434,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
             ivadv_tracer=gtx.int32(0),
             ihadv_tracer=request.param,
             itype_hlimit=gtx.int32(4),
-            iadv_slev_jt=gtx.int32(0),
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             pos_on_tplane_e_1=pos_on_tplane_e_1,
             pos_on_tplane_e_2=pos_on_tplane_e_2,

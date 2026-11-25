@@ -285,7 +285,6 @@ class GodunovSplittingAdvection(Advection):
             "deepatmo_divzl": metric_state.deepatmo_divzl,
             "deepatmo_divzu": metric_state.deepatmo_divzu,
             "ivadv_tracer": gtx.int32(vertical_advection_type.value),
-            "iadv_slev_jt": gtx.int32(0),
             "wp_eps": constants.WP_EPS,
         }
         horizontal_domains: dict[str, gtx.int32] = {

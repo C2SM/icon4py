@@ -161,7 +161,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
     ivadv_tracer: gtx.int32,
     ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
-    iadv_slev_jt: gtx.int32,
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
@@ -207,7 +206,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
             rhodz_new=rhodz_ast2,
             p_dtime=p_dtime,
             ivadv_tracer=ivadv_tracer,
-            iadv_slev_jt=iadv_slev_jt,
         )
         if do_vertical_first
         else p_tracer_now
@@ -281,7 +279,6 @@ def compute_tracer_advection_before_horizontal_limiter(
     ivadv_tracer: gtx.int32,
     ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
-    iadv_slev_jt: gtx.int32,
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
@@ -315,7 +312,6 @@ def compute_tracer_advection_before_horizontal_limiter(
         ivadv_tracer=ivadv_tracer,
         ihadv_tracer=ihadv_tracer,
         itype_hlimit=itype_hlimit,
-        iadv_slev_jt=iadv_slev_jt,
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         pos_on_tplane_e_1=pos_on_tplane_e_1,
         pos_on_tplane_e_2=pos_on_tplane_e_2,
@@ -425,7 +421,6 @@ def _compute_tracer_advection_after_horizontal_limiter(
     ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
     itype_vlimit: gtx.int32,
-    iadv_slev_jt: gtx.int32,
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
@@ -474,7 +469,6 @@ def _compute_tracer_advection_after_horizontal_limiter(
             rhodz_new=rhodz_new,
             p_dtime=p_dtime,
             ivadv_tracer=ivadv_tracer,
-            iadv_slev_jt=iadv_slev_jt,
         )
     )
     return p_mflx_tracer_h_new, p_mflx_tracer_v_out, p_tracer_new
@@ -506,7 +500,6 @@ def compute_tracer_advection_after_horizontal_limiter(
     ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
     itype_vlimit: gtx.int32,
-    iadv_slev_jt: gtx.int32,
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
@@ -539,7 +532,6 @@ def compute_tracer_advection_after_horizontal_limiter(
         ihadv_tracer=ihadv_tracer,
         itype_hlimit=itype_hlimit,
         itype_vlimit=itype_vlimit,
-        iadv_slev_jt=iadv_slev_jt,
         geofac_div=geofac_div,
         wp_eps=wp_eps,
         p_dtime=p_dtime,

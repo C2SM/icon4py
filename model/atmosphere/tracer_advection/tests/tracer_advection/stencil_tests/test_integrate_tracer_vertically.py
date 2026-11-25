@@ -29,22 +29,13 @@ def integrate_tracer_vertically_numpy(  # noqa: PLR0917
     rhodz_new: np.ndarray,
     p_dtime: float,
     ivadv_tracer: int,
-    iadv_slev_jt: int,
 ) -> np.ndarray:
     if ivadv_tracer != VerticalAdvectionType.NO_ADVECTION.value:
-        tracer_new = np.where(
-            (iadv_slev_jt <= np.arange(tracer_now.shape[1])),
-            (
-                tracer_now * rhodz_now
-                + p_dtime
-                * (
-                    p_mflx_tracer_v[:, 1:] * deepatmo_divzl
-                    - p_mflx_tracer_v[:, :-1] * deepatmo_divzu
-                )
-            )
-            / rhodz_new,
-            tracer_now,
-        )
+        tracer_new = (
+            tracer_now * rhodz_now
+            + p_dtime
+            * (p_mflx_tracer_v[:, 1:] * deepatmo_divzl - p_mflx_tracer_v[:, :-1] * deepatmo_divzu)
+        ) / rhodz_new
         return tracer_new
     return tracer_now
 
@@ -64,7 +55,6 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
         deepatmo_divzu: np.ndarray,
         rhodz_new: np.ndarray,
         ivadv_tracer: gtx.int32,
-        iadv_slev_jt: gtx.int32,
         p_dtime: float,
         **kwargs: Any,
     ) -> dict:
@@ -77,7 +67,6 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
             rhodz_new,
             p_dtime,
             ivadv_tracer,
-            iadv_slev_jt,
         )
         return dict(tracer_new=tracer_new)
 
@@ -92,7 +81,6 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
         tracer_new = data_alloc.zero_field(dims.CellDim, dims.KDim)
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
-        iadv_slev_jt = 4
         return dict(
             tracer_now=tracer_now,
             rhodz_now=rhodz_now,
@@ -103,7 +91,6 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
             tracer_new=tracer_new,
             p_dtime=p_dtime,
             ivadv_tracer=ivadv_tracer,
-            iadv_slev_jt=iadv_slev_jt,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
