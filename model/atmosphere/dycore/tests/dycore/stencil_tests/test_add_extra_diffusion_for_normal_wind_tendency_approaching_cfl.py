@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_win
 from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import VerticalCflConstants
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
 

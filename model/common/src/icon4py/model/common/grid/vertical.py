@@ -19,7 +19,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-import icon4py.model.common.states.metadata as data
+import icon4py.model.common.old_states.metadata as data
 from icon4py.model.common import (
     dimension as dims,
     exceptions,

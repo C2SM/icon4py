@@ -3497,7 +3497,7 @@ children:
     module_path: types
     is_union: true
   - display_name: 'tracer_config: one of the following'
-    type_name: icon4py.model.common.states.tracer_states.TracerConfig | None
+    type_name: icon4py.model.common.framework.states.TracerConfig | None
     description: ??
     default: None
     optional: true
@@ -3509,15 +3509,8 @@ children:
         '
     children:
       - display_name: 'type: TracerConfig'
-        type_name: <class 'icon4py.model.common.states.tracer_states.TracerConfig'>
-        description: 'Which tracers are active in the model configuration.
-
-
-          Each boolean field indicates whether the corresponding tracer is active.
-
-          Used instead of a raw ``ntracer: int`` to provide type-safe tracer selection.
-
-          '
+        type_name: <class 'icon4py.model.common.framework.states.TracerConfig'>
+        description: "\n    Which tracers are active in the model configuration.\n\n    Each boolean field indicates whether the corresponding tracer is active.\n    Used instead of a raw ``ntracer: int`` to provide type-safe tracer selection.\n    "
         default: None
         optional: true
         examples:
@@ -3623,7 +3616,7 @@ children:
         config_name_path:
           - tracer_config
           - 'type: TracerConfig'
-        module_path: icon4py.model.common.states.tracer_states
+        module_path: icon4py.model.common.framework.states
         is_union: false
       - display_name: 'type: NoneType'
         type_name: <class 'NoneType'>

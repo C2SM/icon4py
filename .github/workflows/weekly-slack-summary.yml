@@ -29,7 +29,7 @@ jobs:
 
       - name: Generate OpenCode config
         env:
-          OPENCODE_MODEL_ID: moonshotai/Kimi-K2.7-Code
+          OPENCODE_MODEL_ID: zai-org/GLM-5.3-Flash
           CSCS_INFERENCE_BASE_URL: https://api.inference.cscs.ch/v1
         run: |
           ./scripts/run generate-weekly-summary-opencode-config \

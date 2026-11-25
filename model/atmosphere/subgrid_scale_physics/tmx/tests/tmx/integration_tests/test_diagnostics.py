@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import diagnostics, tmx_states
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, state
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
 
@@ -104,7 +104,7 @@ def test_tmx_init_and_run_diagnostics_single_step(
         else:
             test_utils.assert_dallclose(computed.asnumpy(), reference.asnumpy(), err_msg=name)
 
-    diagnostic_state = tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator)
+    diagnostic_state = state.allocate(tmx_states.TmxDiagnosticState, icon_grid, allocator)
     component.run(
         input_state=construct_input_state(entry_savepoint), diagnostic_state=diagnostic_state
     )
