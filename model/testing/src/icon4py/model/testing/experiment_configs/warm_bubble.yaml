@@ -60,7 +60,7 @@ surface:
   kinematic_sensible_heat_flux: 0.0
   kinematic_latent_heat_flux: 0.0
   sea_surface_temperature: 300.0
-physics_coupling: sequential
+physics_coupling: parallel
 io:
   output_path: output_sample
   field_groups:
