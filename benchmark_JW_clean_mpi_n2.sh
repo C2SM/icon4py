@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=JW4Py_mpi
-#SBATCH --nodes=2
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=4
 #SBATCH --cpus-per-task=16
 #SBATCH --time=08:00:00
@@ -29,7 +29,7 @@ export CUDA_CACHE_DISABLE=1
 # Python optimization level
 export PYTHONOPTIMIZE=2
 # External workspace storage per device (one large hip/cuMalloc allocation for temp variables in DaCe - necessary for MI300A perf)
-GIBS_EXTERNAL=48
+GIBS_EXTERNAL=10
 export ICON4PY_BACKEND_WORKSPACE_SIZE=$((${GIBS_EXTERNAL}*1073741824))
 # Set the logging level for ICON4Py driver to warning to avoid printing overhead when measuring. Requires the changes in `show_timer_report`
 export ICON4PY_DRIVER_LOGGING_LEVEL="warning"
@@ -60,7 +60,7 @@ export MPICH_CXX=$(which g++)
 export ICON_GRID="/capstor/store/cscs/userlab/cwd01/cong/grids/torus_100000mx100000m_res100m.nc"
 SUFFIX="torus_100000mx100000m_res100m"
 
-export GT4PY_BUILD_CACHE_DIR_PREFIX="GH200_WB_external${GIBS_EXTERNAL}Gib_mpi_${SUFFIX}_${SLURM_NNODES}nodes"
+export GT4PY_BUILD_CACHE_DIR_PREFIX="GH200_WB_external_mpi_${SUFFIX}_${SLURM_NNODES}nodes"
 export VERSION_SUFFIX="baseline"
 
 echo "Executing JW4Py on ${SLURM_NNODES} GH200 nodes to check the WALL CLOCK timer reported at the end of the run (MPI)"

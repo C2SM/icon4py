@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=JW4Py_mpi
-#SBATCH --nodes=2
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=4
 #SBATCH --time=04:00:00
 ##SBATCH --gpus-per-task=1
@@ -10,7 +10,7 @@
 #SBATCH --view=default
 #SBATCH --partition mi300
 #SBATCH --reservation cscs
-#SBATCH --exclude=nid[002668,002676],nid[002936,002956]
+#SBATCH --exclude=nid[002668,002676],nid[002936,002956],nid[002922,002924]
 
 ICON4PY_GIT_ROOT=$(git rev-parse --show-toplevel)
 cd $ICON4PY_GIT_ROOT
@@ -36,7 +36,7 @@ export AMD_COMGR_CACHE=0
 # Python optimization level
 export PYTHONOPTIMIZE=2
 # External workspace storage per device (one large hip/cuMalloc allocation for temp variables in DaCe - necessary for MI300A perf)
-GIBS_EXTERNAL=48
+GIBS_EXTERNAL=8
 export ICON4PY_BACKEND_WORKSPACE_SIZE=$((${GIBS_EXTERNAL}*1073741824))
 # Set the logging level for ICON4Py driver to warning to avoid printing overhead when measuring. Requires the changes in `show_timer_report`
 export ICON4PY_DRIVER_LOGGING_LEVEL="warning"
@@ -60,7 +60,7 @@ export GT4PY_SKIP_DACE_WARNINGS=1
 export ICON_GRID="/capstor/store/cscs/userlab/cwd01/cong/grids/torus_100000mx100000m_res100m.nc"
 SUFFIX="torus_100000mx100000m_res100m"
 
-export GT4PY_BUILD_CACHE_DIR="MI300A_WB_external${GIBS_EXTERNAL}GiB_mpi_${SUFFIX}_ntasks${SLURM_NTASKS}_baseline"
+export GT4PY_BUILD_CACHE_DIR="MI300A_WB_external_mpi_${SUFFIX}_ntasks${SLURM_NTASKS}_baseline"
 export CONFIG="/iopsstor/scratch/cscs/ioannmag/ICON4PY/icon4py-JW-benchmarks/warm_bubble_noIO.yaml"
 
 if [[ ! -d ${GT4PY_BUILD_CACHE_DIR} ]]; then
