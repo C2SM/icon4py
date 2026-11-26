@@ -20,7 +20,6 @@ import icon4py.model.common.grid.gridfile
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import (
-    base as base_grid,
     grid_manager as gm,
     grid_refinement as refin,
     gridfile,
@@ -33,7 +32,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
-    grid_utils,
+    parallel_helpers,
     test_utils,
 )
 
@@ -62,7 +61,6 @@ from icon4py.model.testing.fixtures import (
     process_props,
 )
 
-from ...decomposition import utils as decomp_utils
 from .. import utils
 
 
@@ -672,7 +670,7 @@ def test_local_connectivity(
     field_offset: gtx.FieldOffset,
     backend_like: model_backends.BackendLike,
 ) -> None:
-    process_props = decomp_utils.DummyProps(rank=rank)
+    process_props = parallel_helpers.dummy_four_ranks(rank=rank)
     caplog.set_level(logging.INFO)
     partitioner = decomp.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)

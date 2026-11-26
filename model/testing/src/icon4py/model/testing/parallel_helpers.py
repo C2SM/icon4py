@@ -5,9 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import dataclasses
 import functools
 import logging
 import operator
+from typing import Any
 
 import numpy as np
 import pytest
@@ -41,6 +43,24 @@ def log_local_field_size(decomposition_info: decomp_defs.DecompositionInfo) -> N
         f"edges={decomposition_info.global_index(dims.EdgeDim).size}, "
         f"vertices={decomposition_info.global_index(dims.VertexDim).size}"
     )
+
+
+@dataclasses.dataclass(frozen=True, init=False)
+class DummyProps(decomp_defs.ProcessProperties):
+    comm: Any
+    comm_name: str
+    comm_size: int
+    rank: int
+
+    def __init__(self, rank: int, comm_size: int) -> None:
+        object.__setattr__(self, "rank", rank % comm_size)
+        object.__setattr__(self, "comm", None)
+        object.__setattr__(self, "comm_name", f"dummy on comm size {comm_size}")
+        object.__setattr__(self, "comm_size", comm_size)
+
+
+def dummy_four_ranks(rank: int) -> decomp_defs.ProcessProperties:
+    return DummyProps(rank=rank, comm_size=4)
 
 
 def gather_field(field: np.ndarray, process_props: decomp_defs.ProcessProperties) -> tuple:

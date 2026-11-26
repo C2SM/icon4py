@@ -14,18 +14,17 @@ from icon4py.model.common import dimension as dims, exceptions, model_backends
 from icon4py.model.common.decomposition import decomposer as decomp, definitions, halo
 from icon4py.model.common.grid import base as base_grid, simple
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import test_utils
+from icon4py.model.testing import parallel_helpers, test_utils
 
 from ...fixtures import backend_like, process_props
 from .. import utils
 from ..fixtures import simple_neighbor_tables
-from ..utils import dummy_four_ranks
 from .test_definitions import get_neighbor_tables_for_simple_grid, offsets
 
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like):
-    process_props = utils.DummyProps(rank=rank)
+    process_props = parallel_helpers.dummy_four_ranks(rank=rank)
     allocator = model_backends.get_allocator(backend_like)
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
@@ -45,7 +44,7 @@ def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbor_tables, dim):
-    process_props = utils.dummy_four_ranks(rank=rank)
+    process_props = parallel_helpers.dummy_four_ranks(rank=rank)
     if process_props.comm_size != 4:
         pytest.skip(
             f"This test requires exactly 4 MPI ranks, current run has {process_props.comm_size}"
@@ -77,7 +76,7 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
 @pytest.mark.parametrize("dim", [dims.EdgeDim])
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neighbor_tables):
-    process_props = utils.DummyProps(rank=rank)
+    process_props = parallel_helpers.dummy_four_ranks(rank=rank)
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         process_props=process_props,
@@ -160,7 +159,7 @@ def test_no_halo():
 
 
 def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tables):
-    process_props = utils.DummyProps(rank=2)
+    process_props = parallel_helpers.dummy_four_ranks(rank=2)
     num_cells = simple_neighbor_tables["C2E2C"].shape[0]
     with pytest.raises(exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
@@ -173,7 +172,7 @@ def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tabl
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor_tables):
-    process_props = utils.DummyProps(rank=rank)
+    process_props = parallel_helpers.dummy_four_ranks(rank=rank)
     num_cells = simple_neighbor_tables["C2E2C"].shape[0]
     distribution = np.full(num_cells, process_props.comm_size + 1, dtype=int)
     with pytest.raises(expected_exception=exceptions.ValidationError) as e:
@@ -188,7 +187,7 @@ def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_owned_halo_mask_contiguous(rank):
     simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
-    process_props = dummy_four_ranks(rank)
+    process_props = parallel_helpers.dummy_four_ranks(rank=rank)
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         process_props=process_props,
@@ -215,7 +214,7 @@ def test_global_to_local_index(offset, rank):
     neighbor_tables = {
         k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
-    process_props = dummy_four_ranks(rank)
+    process_props = parallel_helpers.dummy_four_ranks(rank=rank)
     halo_constructor = halo.IconLikeHaloConstructor(process_props, neighbor_tables)
     decomposition_info = halo_constructor(utils.SIMPLE_DISTRIBUTION)
     source_indices_on_local_grid = decomposition_info.global_index(offset.target[0])
@@ -245,7 +244,7 @@ def test_global_to_local_index(offset, rank):
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_horizontal_size(rank):
     simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
-    process_props = dummy_four_ranks(rank)
+    process_props = parallel_helpers.dummy_four_ranks(rank=rank)
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         process_props=process_props,

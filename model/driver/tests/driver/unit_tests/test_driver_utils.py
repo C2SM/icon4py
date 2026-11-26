@@ -17,6 +17,7 @@ import pytest
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.driver import config as driver_config, driver_utils
+from icon4py.model.testing import parallel_helpers
 
 
 _DATA_DIR = pathlib.Path(__file__).parent / "data"
@@ -98,14 +99,6 @@ def test_write_experiment_config_with_io_goes_to_output_path(
     assert config_io.read_yaml_str(path.read_text(), driver_config.ExperimentConfig) == config
 
 
-@dataclasses.dataclass(frozen=True)
-class _SecondOfTwoRanks(decomposition_defs.ProcessProperties):
-    comm: None = None
-    rank: int = 1
-    comm_name: str = ""
-    comm_size: int = 2
-
-
 def test_write_experiment_config_only_on_rank_zero(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -116,7 +109,7 @@ def test_write_experiment_config_only_on_rank_zero(
     assert config.io is not None
     config = config.with_overrides(io=dataclasses.replace(config.io, output_path=output_path))
 
-    path = driver_utils.write_experiment_config(config, _SecondOfTwoRanks())
+    path = driver_utils.write_experiment_config(config, parallel_helpers.dummy_four_ranks(rank=1))
 
     assert path is None
     assert list(output_path.iterdir()) == []
