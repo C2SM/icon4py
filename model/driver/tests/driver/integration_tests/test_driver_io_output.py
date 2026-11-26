@@ -26,6 +26,7 @@ import xarray as xr
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.common import model_backends, states, time
+from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.io import io as common_io
 from icon4py.model.driver import (
@@ -108,6 +109,13 @@ def test_driver_writes_output(
 
     # the UGRID grid file is written on monitor init
     _find_one(tmp_path, "*_ugrid.nc")
+
+    # the effective configuration is dumped into the output directory
+    assert config.io is not None
+    config_dump = config.io.output_path / f"{config.driver.experiment_name}.yaml"
+    assert (
+        config_io.read_yaml_str(config_dump.read_text(), driver_config.ExperimentConfig) == config
+    )
 
     # single data file: all prognostic AND diagnostic fields together. Two time slices:
     # the initial state (always written) plus the one integrated step.

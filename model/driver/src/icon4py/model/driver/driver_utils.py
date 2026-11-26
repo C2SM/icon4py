@@ -46,6 +46,7 @@ from icon4py.model.common import (
     time,
     type_alias as ta,
 )
+from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition_defs,
@@ -673,6 +674,26 @@ def _describe_output_group(group: common_io.FieldGroupIOConfig) -> str:
         f"  output group '{group.basename}': {schedule}, {per_file}, "
         f"{group.backend.value}/{group.mode.value}, variables: {', '.join(group.variables)}"
     )
+
+
+def write_experiment_config(
+    config: driver_config.ExperimentConfig,
+    process_props: decomposition_defs.ProcessProperties,
+) -> pathlib.Path | None:
+    """
+    Write the configuration as ``<experiment_name>.yaml`` into the output directory.
+    """
+    if process_props.rank != 0:
+        return None
+    if config.io is None:
+        log.warning(
+            "No output configuration provided, experiment configuration will NOT be written to file."
+        )
+        return None
+    config_file_path = config.io.output_path / f"{config.driver.experiment_name}.yaml"
+    config_file_path.write_text(config_io.write_yaml_str(config))
+    log.info(f"experiment configuration written to {config_file_path}")
+    return config_file_path
 
 
 def display_driver_setup_in_log_file(
