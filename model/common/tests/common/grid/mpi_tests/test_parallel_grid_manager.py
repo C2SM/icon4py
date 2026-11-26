@@ -31,7 +31,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -838,7 +838,7 @@ def test_global_reductions_single_vs_multi_rank(
     # Also verify against plain NumPy as a sanity check.
     np_reference = getattr(np, reduction)(data_alloc.as_numpy(single_rank_field))
 
-    assert result == pytest.approx(expected, rel=1e-15), (
+    assert result == expected, (
         f"rank={process_props.rank}: multi-rank {reduction}({field_name}) = {result}, "
         f"single-rank = {expected}"
     )

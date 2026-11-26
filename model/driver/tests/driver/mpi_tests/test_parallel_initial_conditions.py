@@ -12,16 +12,9 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import model_backends, model_options, state, states
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.initial_condition import apply as ic_apply
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    nonhydro_states,
-    prognostic_state as prognostics,
-    tracer_prep_adv_states as prep_adv_states,
-    tracer_states,
-)
 from icon4py.model.driver import config as driver_config, driver, driver_states, driver_utils
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -64,9 +57,6 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     backend: gtx_typing.Backend,
     download_ser_data: None,
 ) -> None:
-    atol = 0.0 if model_backends.is_cpu_backend(backend_like) else 2e-11
-    # NOTE: actually vn, w, exner, theta_v, rho have delta = 0.0 also on
-    # distributed GPU, u,v do not because they are computed with RBF
 
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
         model_options.customize_backend(program=None, backend=backend_like)
@@ -77,14 +67,14 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         # dace_cpu should also be deterministic, but it results in 1.8e-14
         # delta on vn and 4.3e-19 on w on the initial condition. We haven't
         # investigated this yet.
-        # atol = 0.0 has been relaxed with rtol = 1e-16 because on torus grid
-        # global sum/avg reductions result in ~2e-16 roundoff errors, so atol =
-        # 0.0 is too strict.
-        rtol = 1e-15
+        rtol = 0.0
         atol = 0.0
     else:
+        # NOTE: actually vn, w, exner, theta_v, rho have delta = 0.0 also on
+        # distributed GPU, u,v do not because they are computed with RBF
         rtol = 0.0
         atol = 2e-11
+    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=rtol)
 
     _log.info(
         f"running on {process_props.comm} with {process_props.comm_size} ranks and atol = {atol}, rtol = {rtol}"
@@ -113,20 +103,26 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=backend,
     )
 
-    single_rank_prognostic = prognostics.initialize_prognostic_state(
-        grid=single_rank_icon4py_driver.grid,
-        allocator=allocator,
+    single_rank_prognostic = state.allocate(
+        states.PrognosticState, single_rank_icon4py_driver.grid, allocator
     )
-    single_rank_tracer = tracer_states.initialize_tracer_state(
-        grid=single_rank_icon4py_driver.grid,
-        allocator=allocator,
-        tracer_config=single_rank_icon4py_driver.config.tracer_config,
+    single_rank_tracer_config = single_rank_icon4py_driver.config.tracer_config
+    single_rank_tracer = state.allocate(
+        states.TracerState,
+        single_rank_icon4py_driver.grid,
+        allocator,
+        only=single_rank_tracer_config.active_names
+        if single_rank_tracer_config is not None
+        else (),
     )
-    single_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
-        grid=single_rank_icon4py_driver.grid, allocator=allocator
+    single_rank_dycore_forcing = state.allocate(
+        states.DycoreForcing, single_rank_icon4py_driver.grid, allocator
     )
-    single_rank_tracer_prep_adv_state = prep_adv_states.initialize_tracer_prep_adv_state(
-        grid=single_rank_icon4py_driver.grid, allocator=allocator
+    single_rank_dycore_diagnostics = state.allocate(
+        states.DycoreDiagnostics, single_rank_icon4py_driver.grid, allocator
+    )
+    single_rank_prep_adv = state.allocate(
+        states.PrepAdvection, single_rank_icon4py_driver.grid, allocator
     )
     ic_apply(
         config=driver_utils.make_ic_config_ctx(single_rank_icon4py_driver.config),
@@ -137,12 +133,12 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=single_rank_icon4py_driver.backend,
         exchange=single_rank_icon4py_driver.exchange,
         global_reductions=single_rank_icon4py_driver.global_reductions,
-        solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
-        tracer_prep_adv_state=single_rank_tracer_prep_adv_state,
+        dycore_diagnostics=single_rank_dycore_diagnostics,
+        tracer_prep_adv_state=single_rank_prep_adv,
         decomposition_info=single_rank_icon4py_driver.decomposition_info,
     )
-    single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
-        grid=single_rank_icon4py_driver.grid, allocator=allocator
+    single_rank_diagnostic = state.allocate(
+        states.Diagnostics, single_rank_icon4py_driver.grid, allocator
     )
     single_rank_ds: driver_states.DriverStates = driver_states.assemble_driver_states(
         grid=single_rank_icon4py_driver.grid,
@@ -154,8 +150,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         tracer_state_now=single_rank_tracer,
         diagnostic_state=single_rank_diagnostic,
         experiment_config=single_rank_icon4py_driver.config,
-        solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
-        tracer_prep_adv_state=single_rank_tracer_prep_adv_state,
+        dycore_forcing=single_rank_dycore_forcing,
+        dycore_diagnostics=single_rank_dycore_diagnostics,
+        prep_adv=single_rank_prep_adv,
     )
 
     multi_rank_config = single_rank_config
@@ -172,20 +169,24 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=backend,
     )
 
-    multi_rank_prognostic = prognostics.initialize_prognostic_state(
-        grid=multi_rank_icon4py_driver.grid,
-        allocator=allocator,
+    multi_rank_prognostic = state.allocate(
+        states.PrognosticState, multi_rank_icon4py_driver.grid, allocator
     )
-    multi_rank_tracer = tracer_states.initialize_tracer_state(
-        grid=multi_rank_icon4py_driver.grid,
-        allocator=allocator,
-        tracer_config=multi_rank_icon4py_driver.config.tracer_config,
+    multi_rank_tracer_config = multi_rank_icon4py_driver.config.tracer_config
+    multi_rank_tracer = state.allocate(
+        states.TracerState,
+        multi_rank_icon4py_driver.grid,
+        allocator,
+        only=multi_rank_tracer_config.active_names if multi_rank_tracer_config is not None else (),
     )
-    multi_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
-        grid=multi_rank_icon4py_driver.grid, allocator=allocator
+    multi_rank_dycore_forcing = state.allocate(
+        states.DycoreForcing, multi_rank_icon4py_driver.grid, allocator
     )
-    multi_rank_tracer_prep_adv_state = prep_adv_states.initialize_tracer_prep_adv_state(
-        grid=multi_rank_icon4py_driver.grid, allocator=allocator
+    multi_rank_dycore_diagnostics = state.allocate(
+        states.DycoreDiagnostics, multi_rank_icon4py_driver.grid, allocator
+    )
+    multi_rank_prep_adv = state.allocate(
+        states.PrepAdvection, multi_rank_icon4py_driver.grid, allocator
     )
     ic_apply(
         config=driver_utils.make_ic_config_ctx(multi_rank_icon4py_driver.config),
@@ -196,12 +197,12 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=multi_rank_icon4py_driver.backend,
         exchange=multi_rank_icon4py_driver.exchange,
         global_reductions=multi_rank_icon4py_driver.global_reductions,
-        solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
-        tracer_prep_adv_state=multi_rank_tracer_prep_adv_state,
+        dycore_diagnostics=multi_rank_dycore_diagnostics,
+        tracer_prep_adv_state=multi_rank_prep_adv,
         decomposition_info=multi_rank_icon4py_driver.decomposition_info,
     )
-    multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
-        grid=multi_rank_icon4py_driver.grid, allocator=allocator
+    multi_rank_diagnostic = state.allocate(
+        states.Diagnostics, multi_rank_icon4py_driver.grid, allocator
     )
     multi_rank_ds: driver_states.DriverStates = driver_states.assemble_driver_states(
         grid=multi_rank_icon4py_driver.grid,
@@ -213,8 +214,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         tracer_state_now=multi_rank_tracer,
         diagnostic_state=multi_rank_diagnostic,
         experiment_config=multi_rank_icon4py_driver.config,
-        solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
-        tracer_prep_adv_state=multi_rank_tracer_prep_adv_state,
+        dycore_forcing=multi_rank_dycore_forcing,
+        dycore_diagnostics=multi_rank_dycore_diagnostics,
+        prep_adv=multi_rank_prep_adv,
     )
 
     fields_to_check: list[tuple[str, object, object]] = [

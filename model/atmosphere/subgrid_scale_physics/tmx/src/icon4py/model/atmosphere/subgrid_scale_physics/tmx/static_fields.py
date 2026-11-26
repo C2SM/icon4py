@@ -16,7 +16,7 @@ from icon4py.model.common.metrics import metrics_attributes
 
 
 if TYPE_CHECKING:
-    from icon4py.model.common.states import factory as states_factory
+    from icon4py.model.common.old_states import factory as states_factory
 
 
 def build_metric_state(metrics_source: states_factory.FieldSource) -> tmx_states.TmxMetricState:

@@ -33,8 +33,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import serialbox  # type: ignore[import-untyped]
 
-from icon4py.model.common import dimension as dims, model_backends, time
-from icon4py.model.common.states import nonhydro_states
+from icon4py.model.common import dimension as dims, model_backends, states, time
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -78,7 +77,7 @@ class PrescribedTendencies:
     def update(
         self,
         *,
-        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
+        forcing: states.DycoreForcing,
         at_datetime: time.AbsoluteTime,
     ) -> None:
         """
@@ -108,19 +107,19 @@ class PrescribedTendencies:
         log.debug("Reading the prescribed tendencies of %s", date)
 
         # lateral boundary tendencies
-        self._fill(diagnostic_state_nh.grf_tend_rho, "grf_tend_rho", savepoint, self._cell_indices)
-        self._fill(diagnostic_state_nh.grf_tend_thv, "grf_tend_thv", savepoint, self._cell_indices)
-        self._fill(diagnostic_state_nh.grf_tend_w, "grf_tend_w", savepoint, self._cell_indices)
-        self._fill(diagnostic_state_nh.grf_tend_vn, "grf_tend_vn", savepoint, self._edge_indices)
+        self._fill(forcing.grf_tend_rho, "grf_tend_rho", savepoint, self._cell_indices)
+        self._fill(forcing.grf_tend_thv, "grf_tend_thv", savepoint, self._cell_indices)
+        self._fill(forcing.grf_tend_w, "grf_tend_w", savepoint, self._cell_indices)
+        self._fill(forcing.grf_tend_vn, "grf_tend_vn", savepoint, self._edge_indices)
         # slow physics tendencies
         self._fill(
-            diagnostic_state_nh.exner_tendency_due_to_slow_physics,
+            forcing.exner_tendency_due_to_slow_physics,
             "ddt_exner_phy",
             savepoint,
             self._cell_indices,
         )
         self._fill(
-            diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
+            forcing.normal_wind_tendency_due_to_slow_physics_process,
             "ddt_vn_phy",
             savepoint,
             self._edge_indices,

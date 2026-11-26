@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+import itertools
 import logging
 import operator
 
@@ -166,3 +167,51 @@ def check_local_global_field(
             rtol=rtol,
             err_msg="internal",
         )
+
+
+#: Global sizes of the synthetic decomposition, one small grid per horizontal dimension.
+SYNTHETIC_GLOBAL_SIZES = {dims.CellDim: 109, dims.EdgeDim: 75, dims.VertexDim: 41}
+#: Fake halo entries per rank; distinct per dimension so that the local sizes differ, which
+#: ``GlobalReductions`` relies on to resolve the owner mask of a buffer by its size.
+_SYNTHETIC_NUM_HALOS = {dims.CellDim: 2, dims.EdgeDim: 3, dims.VertexDim: 4}
+
+
+def synthetic_decomposition_info(
+    process_props: decomp_defs.ProcessProperties,
+) -> decomp_defs.DecompositionInfo:
+    """Uneven partition with shuffled local order and fake halos; the last rank owns nothing."""
+    empty_rank = process_props.comm_size - 1
+    info = decomp_defs.DecompositionInfo()
+    for dim, global_size in SYNTHETIC_GLOBAL_SIZES.items():
+        # deterministic, rank-independent seed (hash() is per-process randomized)
+        rng = np.random.default_rng(seed=sum(ord(c) for c in dim.value))
+        permutation = rng.permutation(global_size)
+        working_ranks = [r for r in range(process_props.comm_size) if r != empty_rank]
+        bounds = np.linspace(0, global_size, len(working_ranks) + 1).astype(int)
+        owned_by_rank = {
+            rank: permutation[start:stop]
+            for rank, (start, stop) in zip(working_ranks, itertools.pairwise(bounds), strict=False)
+        }
+        owned_by_rank[empty_rank] = np.asarray([], dtype=np.int64)
+        owned = owned_by_rank[process_props.rank]
+        # fake halos: entries owned by the next working rank, as a real decomposition
+        # would have (at 2 ranks there is only one working rank, which then donates its
+        # own entries -- still halos in the sense that the owner mask is False on them)
+        halo_donor = working_ranks[0] if process_props.rank == empty_rank else None
+        if halo_donor is None:
+            next_index = (working_ranks.index(process_props.rank) + 1) % len(working_ranks)
+            halo_donor = working_ranks[next_index]
+        halos = owned_by_rank[halo_donor][: _SYNTHETIC_NUM_HALOS[dim]]
+        local_global_index = np.concatenate([owned, halos]).astype(np.int64)
+        owner_mask = np.zeros(local_global_index.shape[0], dtype=bool)
+        owner_mask[: owned.shape[0]] = True
+        local_shuffle = rng.permutation(local_global_index.shape[0])
+        local_global_index = local_global_index[local_shuffle]
+        owner_mask = owner_mask[local_shuffle]
+        halo_levels = np.where(
+            owner_mask,
+            decomp_defs.DecompositionFlag.OWNED.value,
+            decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL.value,
+        )
+        info.set_dimension(dim, local_global_index, owner_mask, halo_levels)
+    return info
