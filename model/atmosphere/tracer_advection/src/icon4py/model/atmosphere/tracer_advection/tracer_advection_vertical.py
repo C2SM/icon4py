@@ -99,8 +99,8 @@ class NoFluxCondition(BoundaryConditions):
         self._backend = backend
 
         # stencils
-        self._set_constant_on_half_levels_on_cells = (
-            vertical_operations.set_constant_on_half_levels_on_cells.with_backend(self._backend)
+        self._set_constant_on_half_levels_on_cells = model_options.with_backend(
+            vertical_operations.set_constant_on_half_levels_on_cells, self._backend
         )
 
     def run(

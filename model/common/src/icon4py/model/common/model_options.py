@@ -169,6 +169,22 @@ def get_options(
     return backend_descriptor
 
 
+def with_backend_config(
+    backend: model_backends.BackendLike,
+    backend_config: backend_cfg.BackendConfig | None,
+) -> model_backends.BackendLike:
+    """`backend` with `backend_config` attached, for `customize_backend` to use for every program.
+
+    A concrete backend (or `None` for embedded) is already configured and is returned as is.
+    """
+    if backend is None or isinstance(backend, gtx_backend.Backend) or backend_config is None:
+        return backend
+    backend_descriptor = (
+        {"device": backend} if isinstance(backend, model_backends.DeviceType) else dict(backend)
+    )
+    return {**backend_descriptor, "backend_config": backend_config}
+
+
 def customize_backend(
     program: gtx_typing.Program | gtx.typing.FieldOperator | None,
     backend: model_backends.BackendLike,
@@ -177,14 +193,18 @@ def customize_backend(
     """
     Customizes the backend according to the provided 'BackendLike' and program name.
 
+    A descriptor (or device) is customized with the options that `get_options` selects for
+    the program's name; a concrete backend (or `None` for embedded) is returned as is.
     In case a certain option is already provided in the 'BackendDescriptor', the customization
     should not override it. Any option that doesn't apply to the backend factory should be ignored.
+
+    The descriptor may carry the `BackendConfig` under the 'backend_config' key, so that it
+    travels with the descriptor to every program; an explicit `backend_config` argument
+    takes precedence, and 'ICON4PY_BACKEND_WORKSPACE_SIZE' is the fallback.
 
     Note: The current customization mechanism is an adhoc solution that needs better design,
     e.g. program specific options should not be gathered in this general module.
     """
-
-    backend_config = backend_config or backend_cfg.backend_config_from_env()
     program_name = program.__name__ if program is not None else ""
     if backend is None or isinstance(backend, gtx_backend.Backend):
         backend_name = backend.name if backend is not None else "embedded"
@@ -192,7 +212,13 @@ def customize_backend(
         return backend  # type: ignore[return-value]
 
     backend_descriptor = (
-        {"device": backend} if isinstance(backend, model_backends.DeviceType) else backend
+        {"device": backend}
+        if isinstance(backend, model_backends.DeviceType)
+        else dict(backend)  # don't modify the caller's descriptor
+    )
+    descriptor_backend_config = backend_descriptor.pop("backend_config", None)
+    backend_config = (
+        backend_config or descriptor_backend_config or backend_cfg.backend_config_from_env()
     )
     backend_descriptor = get_options(
         program_name, backend_config=backend_config, **backend_descriptor
@@ -217,6 +243,14 @@ def customize_backend(
         f"Using custom backend '{custom_backend.name}' for '{program_name}' with options: {logged_options}."
     )
     return custom_backend
+
+
+def with_backend[P: (gtx_typing.Program, gtx.typing.FieldOperator)](
+    program: P,
+    backend: model_backends.BackendLike,
+) -> P:
+    """`program` with the backend that `customize_backend` builds for it from `backend`."""
+    return program.with_backend(customize_backend(program, backend))  # type: ignore[return-value]
 
 
 def setup_program(

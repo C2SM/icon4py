@@ -84,8 +84,13 @@ class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
     ) -> None:
         allocator = model_backends.get_allocator(backend_like)
         self._dt_seconds = ta.wpfloat(dtime.total_seconds())
-        self._dz = dz
-        backend = model_options.customize_backend(program=None, backend=backend_like)
+        self._qnc = qnc
+        self._backend = model_options.customize_backend(program=None, backend=backend_like)
+
+        full_horizontal_sizes = {
+            "horizontal_start": gtx.int32(0),
+            "horizontal_end": gtx.int32(self._ncells),
+        }
 
         cell_domain = h_grid.domain(dims.CellDim)
         # the tendencies only on the prognostic subdomain

@@ -10,14 +10,13 @@ from __future__ import annotations
 
 from typing import Any
 
-import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.driver import config as driver_config, driver, driver_states
-from icon4py.model.testing.fixtures.datatest import backend, process_props
+from icon4py.model.testing.fixtures.datatest import backend_like, process_props
 
 from ..fixtures import (
     BENCHMARK_ROUNDS,
@@ -36,7 +35,7 @@ def test_benchmark_driver_init(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend | None,
+    backend_like: model_backends.BackendLike,
     benchmark: Any,
 ) -> None:
     assert driver_benchmark_config.io is None
@@ -46,14 +45,14 @@ def test_benchmark_driver_init(
             driver_benchmark_config,
             driver_benchmark_grid_manager,
             process_props,
-            backend,
+            backend_like,
         ), {}
 
     def _timed(
         config: driver_config.ExperimentConfig,
         grid_manager: gm.GridManager,
         props: decomp_defs.ProcessProperties,
-        bench_backend: gtx_typing.Backend | None,
+        bench_backend: model_backends.BackendLike,
     ) -> driver_states.DriverStates:
         icon4py_driver = driver.initialize_driver(
             config=config,
@@ -83,7 +82,7 @@ def test_benchmark_driver_timeloop(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend | None,
+    backend_like: model_backends.BackendLike,
     benchmark: Any,
 ) -> None:
     assert driver_benchmark_config.io is None
@@ -93,9 +92,9 @@ def test_benchmark_driver_timeloop(
             config=driver_benchmark_config,
             grid_manager=driver_benchmark_grid_manager,
             process_props=process_props,
-            backend=backend,
+            backend=backend_like,
         )
-        allocator = model_backends.get_allocator(backend)
+        allocator = model_backends.get_allocator(backend_like)
         ds = driver.initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
         return (icon4py_driver, ds), {}
 
@@ -118,7 +117,7 @@ def test_benchmark_driver_total(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend | None,
+    backend_like: model_backends.BackendLike,
     benchmark: Any,
 ) -> None:
     assert driver_benchmark_config.io is None
@@ -128,7 +127,7 @@ def test_benchmark_driver_total(
             config=driver_benchmark_config,
             grid_manager=driver_benchmark_grid_manager,
             process_props=process_props,
-            backend=backend,
+            backend=backend_like,
         )
 
     benchmark.pedantic(

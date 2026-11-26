@@ -23,7 +23,7 @@ from collections.abc import Collection, Mapping
 
 import gt4py.next as gtx
 
-from icon4py.model.common import exceptions, field, states, time
+from icon4py.model.common import exceptions, field, states, time, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as grid_base, vertical as v_grid
 from icon4py.model.common.io import io as common_io
@@ -100,7 +100,7 @@ class OutputStateAssembler:
         *,
         io_config: common_io.IOConfig,
         grid: grid_base.Grid,
-        backend: gtx.typing.Backend | None,
+        backend: model_backends.BackendLike,
         static_field_factories: static_fields.StaticFieldFactories,
         tracer_config: states.TracerConfig | None,
         physics_fields: Mapping[str, field.Field] | None,

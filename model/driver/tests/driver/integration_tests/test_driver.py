@@ -9,7 +9,6 @@
 import datetime
 import pathlib
 
-import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends, state, type_alias as ta
@@ -136,7 +135,7 @@ def test_driver(
     request: pytest.FixtureRequest,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
     savepoint_time_step_exit: sb.IconTimeStepExitSavepoint,
 ) -> None:
     """End-to-end standalone-driver validation over one time step.
@@ -170,7 +169,7 @@ def test_driver(
     The muphys, surface and tmx granules are validated in isolation against their own
     savepoints in the datatests of their packages.
     """
-    allocator = model_backends.get_allocator(backend)
+    allocator = model_backends.get_allocator(backend_like)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
@@ -199,7 +198,7 @@ def test_driver(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,
-        backend=backend,
+        backend=backend_like,
     )
 
     prognostics = ds.prognostics.current
