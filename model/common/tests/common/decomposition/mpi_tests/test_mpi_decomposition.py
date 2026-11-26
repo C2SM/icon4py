@@ -8,6 +8,7 @@
 import copy
 import functools
 import logging
+import math
 from typing import Any
 
 import gt4py.next as gtx
@@ -359,6 +360,107 @@ def test_exchange_and_reduction_cached(
     reductions1 = decomp_defs.create_reduction(process_props, decomposition_info)
     reductions2 = decomp_defs.create_reduction(process_props, decomposition_info)
     assert reductions1 is reductions2
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("non_finite", [np.nan, np.inf, -np.inf])
+def test_global_sum_raises_on_a_non_finite_value_held_by_one_rank(
+    process_props: decomp_defs.ProcessProperties,
+    non_finite: float,
+) -> None:
+    """Every rank raises, none is left waiting in a collective: the NaN is turned into +inf
+    before the MAX reduction, which would not propagate it reliably."""
+    decomposition_info = parallel_helpers.synthetic_decomposition_info(process_props)
+    reductions = decomp_defs.create_reduction(process_props, decomposition_info)
+    owner_mask = decomposition_info.owner_mask(dims.CellDim)
+    values = np.ones(owner_mask.shape[0])
+    if process_props.rank == 0:
+        values[np.flatnonzero(owner_mask)[0]] = non_finite
+
+    with pytest.raises(ValueError, match="requires finite contributions"):
+        reductions.sum(values)
+
+
+def _synthetic_values() -> np.ndarray:
+    """Values of both signs with magnitudes over many binades, the same on every rank.
+
+    For this seed, no summation order of plain double sums over the per-rank parts of the
+    tests below reproduces the single-rank sum at 2 to 12 ranks, so their bitwise checks
+    fail without the order-insensitive sum.
+    """
+    num_cells, num_levels = parallel_helpers.SYNTHETIC_GLOBAL_SIZES[dims.CellDim], 5
+    rng = np.random.default_rng(15)
+    return rng.lognormal(0.0, 4.0, (num_cells, num_levels)) * rng.choice(
+        [-1.0, 1.0], (num_cells, num_levels)
+    )
+
+
+def _exact_sum_and_truncation_bound(values: np.ndarray) -> tuple[float, float]:
+    """Exact sum of ``values`` and the largest error of its order-insensitive sum.
+
+    Every contribution is truncated below ``abs_max * 2**-59``, then the total is rounded once.
+    """
+    exact = math.fsum(values.ravel())
+    return exact, values.size * np.max(np.abs(values)) * 2.0**-59 + abs(exact) * 2.0**-52
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_order_insensitive_sum_of_synthetic_values_matches_single_rank_bitwise(
+    process_props: decomp_defs.ProcessProperties,
+) -> None:
+    """``order_insensitive_sum`` over a real MPI allreduce, with nothing else in between.
+
+    The rows are split unevenly over the ranks and the last rank holds none.
+    """
+    global_values = _synthetic_values()
+    rows = [*np.array_split(global_values, process_props.comm_size - 1), global_values[:0]]
+    local_values = rows[process_props.rank]
+    abs_max = float(np.max(np.abs(global_values)))
+
+    single_rank = decomp_defs.order_insensitive_sum(global_values, abs_max)
+    # the pickling ``allreduce`` adds Python integers exactly; its default operation is the sum
+    result = decomp_defs.order_insensitive_sum(
+        local_values, abs_max, allreduce=process_props.comm.allreduce
+    )
+
+    assert result == single_rank, f"rank={process_props.rank}: {result} != {single_rank}"
+    exact, bound = _exact_sum_and_truncation_bound(global_values)
+    assert result == pytest.approx(exact, abs=bound)
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("reduction", ["min", "max", "sum", "mean"])
+def test_global_reductions_of_synthetic_values_match_single_rank_bitwise(
+    process_props: decomp_defs.ProcessProperties,
+    reduction: str,
+) -> None:
+    """Counterpart of ``test_global_reductions_single_vs_multi_rank`` without grid data.
+
+    The synthetic decomposition has a shuffled local order, fake halos and a rank without
+    owned entries.
+    """
+    decomposition_info = parallel_helpers.synthetic_decomposition_info(process_props)
+    global_values = _synthetic_values()
+    local_values = global_values[decomposition_info.global_index(dims.CellDim)]
+
+    single_rank = getattr(decomp_defs.SingleNodeReductions(), reduction)(global_values)
+    reductions = decomp_defs.create_reduction(process_props, decomposition_info)
+    result = getattr(reductions, reduction)(local_values)
+
+    assert result == single_rank, (
+        f"rank={process_props.rank}: multi-rank {reduction} = {result}, single-rank = {single_rank}"
+    )
+    if reduction in ("sum", "mean"):
+        exact, bound = _exact_sum_and_truncation_bound(global_values)
+        if reduction == "mean":
+            exact, bound = exact / global_values.size, bound / global_values.size
+        assert result == pytest.approx(exact, abs=bound)
 
 
 @pytest.mark.mpi(min_size=2)
