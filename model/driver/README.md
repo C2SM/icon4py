@@ -85,8 +85,9 @@ standard name of its quantity. They are
 - the precipitation fluxes of the microphysics (`precipitation_flux`,
   `rainfall_flux`, `snowfall_flux`, `graupelfall_flux`, `icefall_flux`,
   `precipitation_energy_flux`), when `muphys` is configured. The physics needs all
-  six tracers active. The fluxes are written per model level (the surface value is the
-  lowest level), and the initial time slice is zero since the physics has not run yet;
+  six tracers active. `precipitation_flux` is written per model level, the other fluxes
+  are surface fields, written as `(time, cell)`. The initial time slice is zero since
+  the physics has not run yet;
 - the outputs of the surface scheme (`water_evapotranspiration_flux`,
   `surface_upward_sensible_heat_flux`, `surface_upward_latent_heat_flux`,
   `surface_downward_eastward_stress`, `surface_downward_northward_stress`,

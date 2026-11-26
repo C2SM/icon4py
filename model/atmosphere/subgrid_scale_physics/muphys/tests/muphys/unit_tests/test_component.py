@@ -25,10 +25,16 @@ from icon4py.model.testing import component_tests
 
 DTIME = datetime.timedelta(seconds=10)
 
+# the precip fluxes the component reports at the surface only
+SURFACE_PRECIP = ("pr", "ps", "pi", "pg", "pre")
+
 
 @dataclasses.dataclass
 class GranuleStandIn:
-    """Overwrites what it is given, as the granule does: te + 1, qv + 2, pflx = 3."""
+    """
+    Overwrites what it is given, as the granule does: te + 1, qv + 2, pflx = 3, and the
+    other precip fluxes as 10 * (index of the flux + 1) + level.
+    """
 
     calls: list[dict[str, Any]] = dataclasses.field(default_factory=list)
 
@@ -39,6 +45,9 @@ class GranuleStandIn:
         t_out.ndarray[...] = te.ndarray + 1.0
         q_out.v.ndarray[...] = q_in.v.ndarray + 2.0
         pflx.ndarray[...] = 3.0
+        for i, name in enumerate(SURFACE_PRECIP):
+            precip = kwargs[name].ndarray
+            precip[...] = 10.0 * (i + 1) + np.arange(precip.shape[1])[None, :]
 
 
 class TestMuphys(component_tests.ComponentTest, component_tests.CollectInputTest):
@@ -87,3 +96,22 @@ class TestMuphys(component_tests.ComponentTest, component_tests.CollectInputTest
         assert call["dz"] is dz
         assert call["p"] is input.p
         assert call["rho"] is input.rho
+
+    def test_run_reports_the_precip_fluxes_at_the_surface(
+        self,
+        grid: base_grid.Grid,
+        component: muphys_component.Muphys,
+        input: muphys_component.Muphys.Input,
+        output: muphys_component.Muphys.Output,
+    ) -> None:
+        component.run(input, output)
+
+        # pflx on all levels, the other fluxes only their lowest level
+        assert output.pflx.domain.dims == (dims.CellDim, dims.KDim)
+        lowest_level = grid.num_levels - 1
+        for i, name in enumerate(SURFACE_PRECIP):
+            surface_flux = getattr(output, name)
+            assert surface_flux.domain.dims == (dims.CellDim,), name
+            np.testing.assert_array_equal(
+                surface_flux.asnumpy(), 10.0 * (i + 1) + lowest_level, err_msg=name
+            )

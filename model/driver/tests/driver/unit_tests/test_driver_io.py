@@ -34,7 +34,11 @@ from .test_driver_diagnostics import (
 
 def rainfall_fields(grid: base.Grid) -> dict[str, field.Field]:
     """The physics diagnostics of a run with a rainfall flux, as the physics driver offers them."""
-    return {"rainfall_flux": field.Field(qty.RainfallFluxOnCellK, _zero_cell_k(grid))}
+    return {
+        "rainfall_flux": field.Field(
+            qty.RainfallFluxOnCell, data_alloc.zero_field(grid, dims.CellDim)
+        )
+    }
 
 
 def _zero_cell_k(grid: base.Grid) -> gtx.Field:

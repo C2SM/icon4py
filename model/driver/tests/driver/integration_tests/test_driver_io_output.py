@@ -40,6 +40,16 @@ from ..fixtures import *  # noqa: F403
 from ..fixtures import ALL_OUTPUT_VARIABLES, OUTPUT_BASENAME, io_config_with_all_variables
 
 
+# the precipitation fluxes muphys reports at the surface only
+SURFACE_PRECIPITATION_VARIABLES = (
+    "rainfall_flux",
+    "snowfall_flux",
+    "icefall_flux",
+    "graupelfall_flux",
+    "precipitation_energy_flux",
+)
+
+
 def _find_one(directory: pathlib.Path, pattern: str) -> pathlib.Path:
     matches = sorted(directory.rglob(pattern))
     assert matches, f"no file matching {pattern!r} under {directory}"
@@ -219,7 +229,7 @@ def test_driver_writes_precipitation_from_muphys(
                     basename="precipitation",
                     variables=[
                         "precipitation_flux",
-                        "rainfall_flux",
+                        *SURFACE_PRECIPITATION_VARIABLES,
                         "specific_humidity",
                         "air_temperature",
                     ],
@@ -236,9 +246,16 @@ def test_driver_writes_precipitation_from_muphys(
         _find_one(tmp_path, "precipitation_*.nc"), common_io.OutputBackend.NETCDF
     ) as ds:
         assert ds.sizes["time"] == 2
-        for name in ("precipitation_flux", "rainfall_flux", "specific_humidity", "air_temperature"):
+        for name, dims in (
+            # the total precipitation flux is written on all levels, the other
+            # precipitation fluxes are surface fields
+            ("precipitation_flux", ("time", "level", "cell")),
+            *((surface_flux, ("time", "cell")) for surface_flux in SURFACE_PRECIPITATION_VARIABLES),
+            ("specific_humidity", ("time", "level", "cell")),
+            ("air_temperature", ("time", "level", "cell")),
+        ):
             assert name in ds.variables, f"{name} missing from output"
-            assert ds[name].dims == ("time", "level", "cell")
+            assert ds[name].dims == dims, name
             assert np.isfinite(ds[name].values).all()
         assert ds["precipitation_flux"].attrs["standard_name"] == "precipitation_flux"
         assert ds["specific_humidity"].attrs["standard_name"] == "specific_humidity"

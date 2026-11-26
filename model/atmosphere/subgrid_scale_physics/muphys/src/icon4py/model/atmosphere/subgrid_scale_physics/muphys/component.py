@@ -41,6 +41,19 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
 
 
+class _Full3DPrecip(state.State):
+    """
+    The 3D precipitation fluxes, a workaround.
+    See the TODO in Muphys.__init__ for when this can be removed.
+    """
+
+    pr: field.Field[qty.RainfallFluxOnCellK]
+    ps: field.Field[qty.SnowfallFluxOnCellK]
+    pi: field.Field[qty.IcefallFluxOnCellK]
+    pg: field.Field[qty.GraupelfallFluxOnCellK]
+    pre: field.Field[qty.PrecipitationEnergyFluxOnCellK]
+
+
 class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
     """
     The Component interface to the muphys microphysics.
@@ -66,11 +79,11 @@ class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
         tend_qs: field.Field[qty.TendencyOfQsOnCellK]
         tend_qg: field.Field[qty.TendencyOfQgOnCellK]
         pflx: field.Field[qty.PrecipitationFluxOnCellK]
-        pr: field.Field[qty.RainfallFluxOnCellK]
-        ps: field.Field[qty.SnowfallFluxOnCellK]
-        pi: field.Field[qty.IcefallFluxOnCellK]
-        pg: field.Field[qty.GraupelfallFluxOnCellK]
-        pre: field.Field[qty.PrecipitationEnergyFluxOnCellK]
+        pr: field.Field[qty.RainfallFluxOnCell]
+        ps: field.Field[qty.SnowfallFluxOnCell]
+        pi: field.Field[qty.IcefallFluxOnCell]
+        pg: field.Field[qty.GraupelfallFluxOnCell]
+        pre: field.Field[qty.PrecipitationEnergyFluxOnCell]
 
     def __init__(
         self,
@@ -121,6 +134,12 @@ class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
             )
         self._compute = compute
 
+        # The granule writes the precip fluxes on all levels; the outputs are their lowest
+        # level, the flux reaching the ground.
+        # TODO (Chia Rui): a workaround until either the gt4py scan operator can return a
+        #   CellField or the io supports level selection
+        self._precip_3d = state.allocate(_Full3DPrecip, grid, allocator)
+
         # the private copies the granule overwrites
         self._te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
         self._q = Q(
@@ -132,12 +151,15 @@ class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
 
     def run(self, input: Input, output: Output) -> Output:
         """
-        Run the granule and return the tendencies.
+        Run the granule and return the tendencies and the precip diagnostics.
 
         The temperature and the tracers are copied because muphys overwrites
         them and the original values are needed afterwards. The layer
         thickness, pressure and density go in as they are, since muphys only
         reads them.
+
+        The total precipitation flux `pflx` is returned on all levels; the rain, snow,
+        ice, graupel and energy fluxes only at the surface (their lowest level).
         """
         self._copy_field(field=input.te, output_field=self._te)
         for s in SPECIES:
@@ -152,11 +174,11 @@ class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
             q_out=self._q,
             t_out=self._te,
             pflx=output.pflx,
-            pr=output.pr,
-            ps=output.ps,
-            pi=output.pi,
-            pg=output.pg,
-            pre=output.pre,
+            pr=self._precip_3d.pr,
+            ps=self._precip_3d.ps,
+            pi=self._precip_3d.pi,
+            pg=self._precip_3d.pg,
+            pre=self._precip_3d.pre,
         )
 
         self._calculate_tendency(
@@ -172,6 +194,9 @@ class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
                 new_field=getattr(self._q, s),
                 tendency=getattr(output, f"tend_q{s}"),
             )
+
+        for name, precip in state.fields(self._precip_3d).items():
+            getattr(output, name).ndarray[...] = precip.ndarray[:, -1]
         return output
 
 
