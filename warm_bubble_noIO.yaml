@@ -38,8 +38,8 @@ driver:
   start_of_simulation: 1970-01-01T00:00:00
   start_of_timestepping: 1970-01-01T00:00:00
   end_of_simulation:
-    type: numsteps
-    value: 600
+    type: absolute
+    value: '1970-01-01T00:02:00'
 tracer_config:
   qv: true
   qc: true
