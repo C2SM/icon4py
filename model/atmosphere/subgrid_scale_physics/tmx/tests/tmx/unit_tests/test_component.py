@@ -11,6 +11,7 @@
 
 import dataclasses
 import datetime
+from typing import Any
 
 import pytest
 
@@ -29,7 +30,7 @@ from icon4py.model.testing import component_tests
 _FLUXES = tuple(field.name for field in dataclasses.fields(tmx_states.TmxSurfaceFluxState))
 
 
-def _physics_state(**kwargs: object) -> physics_state.PhysicsState:
+def _physics_state(**kwargs: Any) -> physics_state.PhysicsState:
     return state.allocate(
         physics_state.PhysicsState,
         simple.simple_grid(),
