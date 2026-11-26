@@ -23,7 +23,9 @@ except ImportError:
     cp = None
 
 
-def compare_values_shallow(value1, value2, obj_name="value"):  # noqa: PLR0911, PLR0912
+def compare_values_shallow(
+    value1: Any, value2: Any, obj_name: str = "value"
+) -> tuple[bool, str | None]:  # noqa: PLR0911, PLR0912
     # Handle typed fields of the components framework: the same quantity, then the same data
     if (
         isinstance(value1, field.Field)
