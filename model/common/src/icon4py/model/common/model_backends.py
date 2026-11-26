@@ -53,6 +53,7 @@ def is_backend_descriptor(
         return all(isinstance(key, str) for key in backend)
     return False
 
+
 class _DeviceTypedAllocator(Protocol):
     """Allocator exposing its target device type."""
 

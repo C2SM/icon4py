@@ -10,7 +10,7 @@ import pytest
 from gt4py.next import typing as gtx_typing
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.atmosphere.tracer_advection import tracer_advection
+from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
