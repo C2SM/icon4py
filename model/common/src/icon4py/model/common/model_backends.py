@@ -23,7 +23,7 @@ Use 'get_allocator' to get the allocator for any 'BackendLike'.
 
 from __future__ import annotations
 
-from typing import Any, Final, TypeAlias, TypeGuard
+from typing import Any, Final, Protocol, TypeAlias, TypeGuard, cast
 
 import gt4py.next as gtx
 import gt4py.next.custom_layout_allocators as gtx_allocators
@@ -53,17 +53,30 @@ def is_backend_descriptor(
         return all(isinstance(key, str) for key in backend)
     return False
 
+class _DeviceTypedAllocator(Protocol):
+    """Allocator exposing its target device type."""
+
+    @property
+    def __gt_device_type__(self) -> DeviceType: ...
+
+
+def _allocator_device_type(
+    backend: BackendLike,
+) -> DeviceType:
+    """Return the device type of the allocator for a 'BackendLike'."""
+    return cast(_DeviceTypedAllocator, get_allocator(backend)).__gt_device_type__
+
 
 def is_cpu_backend(
     backend: BackendLike,
 ) -> bool:
-    return get_allocator(backend).__gt_device_type__ == CPU
+    return _allocator_device_type(backend) == CPU
 
 
 def is_gpu_backend(
     backend: BackendLike,
 ) -> bool:
-    return get_allocator(backend).__gt_device_type__ == GPU
+    return _allocator_device_type(backend) == GPU
 
 
 def get_allocator(
