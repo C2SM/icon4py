@@ -24,7 +24,7 @@ from icon4py.model.common import (
     type_alias as ta,
     utils as common_utils,
 )
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, serialbox, test_utils
