@@ -39,7 +39,7 @@ def valid_e2c_neighbors(
     return valid_neighbor_0, valid_neighbor_1, safe_e2c
 
 
-def revert_repeated_index_to_invalid(offset: np.ndarray):
+def revert_repeated_index_to_invalid(offset: np.ndarray) -> np.ndarray:
     num_elements = offset.shape[0]
     for i in range(num_elements):
         # convert repeated indices back into -1

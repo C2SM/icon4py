@@ -15,8 +15,12 @@ import pytest
 from icon4py.bindings import common as wrapper_common, diffusion_wrapper
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims, field, quantities as qty
-from icon4py.model.common.grid import states as grid_states, vertical as v_grid
-from icon4py.model.testing import definitions as test_defs, test_utils as testing_test_utils
+from icon4py.model.common.grid import base as base_grid, states as grid_states, vertical as v_grid
+from icon4py.model.testing import (
+    definitions as test_defs,
+    serialbox,
+    test_utils as testing_test_utils,
+)
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 
@@ -37,16 +41,17 @@ from .test_grid_init import grid_init
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-arguments]
-    savepoint_diffusion_init,
-    savepoint_diffusion_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
-    grid_savepoint,
-    grid_init,  # initializes the grid as side-effect
-    icon_grid,
-    experiment,
-):
+    savepoint_diffusion_init: serialbox.IconDiffusionInitSavepoint,
+    savepoint_diffusion_exit: serialbox.IconDiffusionExitSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    grid_init: None,  # initializes the grid as side-effect
+    icon_grid: base_grid.Grid,
+    experiment: test_defs.Experiment,
+) -> None:
     cfg = experiment.config.diffusion
+    assert cfg is not None
 
     # --- Extract Metric State Parameters ---
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -94,11 +99,11 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
     div_ic = test_utils.array_to_array_info(savepoint_diffusion_init.div_ic().ndarray)
     dwdx = test_utils.array_to_array_info(savepoint_diffusion_init.dwdx().ndarray)
     dwdy = test_utils.array_to_array_info(savepoint_diffusion_init.dwdy().ndarray)
-    w = test_utils.array_to_array_info(savepoint_diffusion_init.w().ndarray)
-    vn = test_utils.array_to_array_info(savepoint_diffusion_init.vn().ndarray)
-    exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)
-    theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)
-    rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)
+    w = test_utils.array_to_array_info(savepoint_diffusion_init.w().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn = test_utils.array_to_array_info(savepoint_diffusion_init.vn().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     dtime = savepoint_diffusion_init.dtime()
 
     # --- Expected objects that form inputs into init and run functions
@@ -143,6 +148,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
         dwdy=savepoint_diffusion_init.dwdy(),
     )
     expected_config = experiment.config.diffusion
+    assert expected_config is not None
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Mock and Test Diffusion.init ---
@@ -276,17 +282,18 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    savepoint_diffusion_init,
-    savepoint_diffusion_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
-    grid_savepoint,
-    grid_init,  # initializes the grid as side-effect
-    experiment,
-    step_date_init,
-    step_date_exit,
-):
+    savepoint_diffusion_init: serialbox.IconDiffusionInitSavepoint,
+    savepoint_diffusion_exit: serialbox.IconDiffusionExitSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    grid_init: None,  # initializes the grid as side-effect
+    experiment: test_defs.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+) -> None:
     cfg = experiment.config.diffusion
+    assert cfg is not None
 
     # Metric state parameters
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -335,11 +342,11 @@ def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-ar
     dwdy = test_utils.array_to_array_info(savepoint_diffusion_init.dwdy().ndarray)
 
     # Prognostic state parameters
-    w = test_utils.array_to_array_info(savepoint_diffusion_init.w().ndarray)
-    vn = test_utils.array_to_array_info(savepoint_diffusion_init.vn().ndarray)
-    exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)
-    theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)
-    rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)
+    w = test_utils.array_to_array_info(savepoint_diffusion_init.w().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn = test_utils.array_to_array_info(savepoint_diffusion_init.vn().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     dtime = savepoint_diffusion_init.dtime()
 
     ffi = cffi.FFI()
@@ -415,17 +422,17 @@ def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-ar
     dwdx_ = savepoint_diffusion_exit.dwdx()
     dwdy_ = savepoint_diffusion_exit.dwdy()
 
-    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, w), w_.asnumpy(), atol=1e-12)
-    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, vn), vn_.asnumpy(), atol=1e-12)
-    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, exner), exner_.asnumpy(), atol=1e-12)
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, theta_v), theta_v_.asnumpy(), atol=1e-12
-    )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, hdef_ic), hdef_ic_.asnumpy(), atol=1e-12
-    )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, div_ic), div_ic_.asnumpy(), atol=1e-12
-    )
-    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, dwdx), dwdx_.asnumpy(), atol=1e-12)
-    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, dwdy), dwdy_.asnumpy(), atol=1e-12)
+    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, w), w_.asnumpy(), atol=1e-12)  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
+    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, vn), vn_.asnumpy(), atol=1e-12)  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
+    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, exner), exner_.asnumpy(), atol=1e-12)  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
+    theta_v_arr = py2fgen.as_array(ffi, theta_v)
+    assert theta_v_arr is not None
+    assert testing_test_utils.dallclose(theta_v_arr, theta_v_.asnumpy(), atol=1e-12)
+    hdef_ic_arr = py2fgen.as_array(ffi, hdef_ic)
+    assert hdef_ic_arr is not None
+    assert testing_test_utils.dallclose(hdef_ic_arr, hdef_ic_.asnumpy(), atol=1e-12)
+    div_ic_arr = py2fgen.as_array(ffi, div_ic)
+    assert div_ic_arr is not None
+    assert testing_test_utils.dallclose(div_ic_arr, div_ic_.asnumpy(), atol=1e-12)
+    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, dwdx), dwdx_.asnumpy(), atol=1e-12)  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here
+    assert testing_test_utils.dallclose(py2fgen.as_array(ffi, dwdy), dwdy_.asnumpy(), atol=1e-12)  # type: ignore[arg-type]  # py2fgen.as_array returns None only for NULL buffers, which cannot occur here

@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# mypy: ignore-errors
+# Sphinx build configuration for the dycore documentation, outside the
+# type-checked packages.
 
 # fmt: off
 # ruff: noqa

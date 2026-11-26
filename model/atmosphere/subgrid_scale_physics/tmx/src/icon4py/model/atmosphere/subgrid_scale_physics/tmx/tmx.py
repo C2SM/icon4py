@@ -21,14 +21,12 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
     tmx_states,
     wind_diffusion,
 )
-from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common import field, model_backends, quantities as qty
 
 
 if typing.TYPE_CHECKING:
     import icon4py.model.common.grid.states as grid_states
     from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
-    from icon4py.model.common import field_type_aliases as fa, type_alias as ta
     from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.common.grid import base as base_grid
 
@@ -101,8 +99,8 @@ class Tmx:
         )
         # the temperature tendency of the heat diffusion, before the energy update adds the
         # dissipation heating and writes the total to the tendency state
-        self._heat_diffusion_tendency: fa.CellKField[ta.wpfloat] = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=model_backends.get_allocator(backend)
+        self._heat_diffusion_tendency: field.Field[qty.TendencyOfTemperatureOnCellK] = field.zeros(
+            qty.TendencyOfTemperatureOnCellK, grid, allocator=model_backends.get_allocator(backend)
         )
 
     def run(

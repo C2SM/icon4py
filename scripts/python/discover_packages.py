@@ -26,7 +26,10 @@ from typing import Annotated
 
 import packaging.requirements
 import typer
-from helpers import common, pyproject
+from helpers import (  # type: ignore[import-not-found]  # sibling module in scripts/python
+    common,
+    pyproject,
+)
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)

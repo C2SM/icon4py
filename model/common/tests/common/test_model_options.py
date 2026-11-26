@@ -26,12 +26,12 @@ def clear_backend_workspace_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ICON4PY_BACKEND_WORKSPACE_SIZE", raising=False)
 
 
-@gtx.field_operator  # type: ignore[call-overload]
+@gtx.field_operator
 def field_op_return_field(field: fa.CellKField[float], factor: float) -> fa.CellKField[float]:
     return field + factor
 
 
-@gtx.program  # type: ignore[call-overload]
+@gtx.program
 def program_return_field(field: fa.CellKField[float], factor: float):  # type: ignore[no-untyped-def]
     field_op_return_field(field, factor, out=field)
 
@@ -182,7 +182,7 @@ def test_setup_program_specify_inputs(
     ],
 )
 def test_selected_fusion_options(program: str, expected: dict) -> None:
-    descriptor = {"optimization_args": {"optimization_hooks": {}}}
+    descriptor: dict[str, typing.Any] = {"optimization_args": {"optimization_hooks": {}}}
     options = model_options.get_dace_options(program, None, **descriptor)["optimization_args"]
     assert all(options[key] == value for key, value in expected.items())
     assert "vertical_split_shared_output_data" not in options

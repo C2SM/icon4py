@@ -23,7 +23,7 @@ Use 'get_allocator' to get the allocator for any 'BackendLike'.
 
 from __future__ import annotations
 
-from typing import Any, Final, TypeAlias, TypeGuard
+from typing import Any, Final, Protocol, TypeAlias, TypeGuard, cast
 
 import gt4py.next as gtx
 import gt4py.next.custom_layout_allocators as gtx_allocators
@@ -54,20 +54,30 @@ def is_backend_descriptor(
     return False
 
 
+class _DeviceTypedAllocator(Protocol):
+    """Allocator exposing its target device type."""
+
+    @property
+    def __gt_device_type__(self) -> DeviceType: ...
+
+
+def _allocator_device_type(
+    backend: BackendLike,
+) -> DeviceType:
+    """Return the device type of the allocator for a 'BackendLike'."""
+    return cast(_DeviceTypedAllocator, get_allocator(backend)).__gt_device_type__
+
+
 def is_cpu_backend(
     backend: BackendLike,
 ) -> bool:
-    if isinstance(backend, gtx_backend.Backend):
-        return backend.allocator.device_type == CPU
-    return get_allocator(backend).device_type == CPU
+    return _allocator_device_type(backend) == CPU
 
 
 def is_gpu_backend(
     backend: BackendLike,
 ) -> bool:
-    if isinstance(backend, gtx_backend.Backend):
-        return backend.allocator.device_type == GPU
-    return get_allocator(backend).device_type == GPU
+    return _allocator_device_type(backend) == GPU
 
 
 def get_allocator(
@@ -79,7 +89,7 @@ def get_allocator(
     Needed for the 'BackendLike' cases that are not allocators themselves.
     """
     if isinstance(backend, gtx_backend.Backend):
-        return backend
+        return backend.allocator
     if backend is None:
         # TODO(havogt): currently the testing infrastructure doesn't allow to specify
         # embedded backend aka `None` for cupy, as there is no separation
@@ -93,7 +103,7 @@ def get_allocator(
     raise ValueError(f"Cannot get allocator from {backend}")
 
 
-def make_custom_gtfn_backend(device: DeviceType, **_) -> gtx_typing.Backend:
+def make_custom_gtfn_backend(device: DeviceType, **_: Any) -> gtx_typing.Backend:
     on_gpu = device == GPU
     return gtfn.make_gtfn_toolchain(gtfn.GTFNConfig(gpu=on_gpu))
 
@@ -108,7 +118,7 @@ def make_custom_dace_backend(
     use_zero_origin: bool = False,
     use_max_domain_range_on_unstructured_shift: bool | None = None,
     external_workspace: gtx_wfdcommon.ExternalWorkspace | None = None,
-    **_,
+    **_: Any,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
 

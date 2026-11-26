@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -25,12 +27,12 @@ class TestQsatRho(stencil_tests.StencilTest):
         grid: base.Grid,
         *,
         rho: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(pressure=np.full(rho.shape, 0.0038828182695875113))
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
             rho=data_alloc.constant_field(1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
             pressure=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),

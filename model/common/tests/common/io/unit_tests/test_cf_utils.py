@@ -16,9 +16,10 @@ from .. import utils as test_io_utils
 
 
 @pytest.mark.parametrize("input_", test_io_utils.state_values())
-def test_to_canonical_dim_order(input_):
+def test_to_canonical_dim_order(input_: xr.DataArray) -> None:
     input_dims = input_.dims
     output = cf_utils.to_canonical_dim_order(input_)
+    assert output is not None
     assert output.dims == (input_dims[1], input_dims[0])
 
 

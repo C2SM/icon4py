@@ -20,7 +20,10 @@ import textwrap
 from typing import Annotated
 
 import typer
-from helpers import common, pyproject
+from helpers import (  # type: ignore[import-not-found]  # sibling module in scripts/python
+    common,
+    pyproject,
+)
 
 
 cli = typer.Typer(

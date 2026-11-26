@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Final
+from typing import Any, Final
 
 import gt4py.next as gtx
 
@@ -499,7 +499,7 @@ attrs: dict[str, model.FieldMetaData] = {
 
 
 def metadata_for_inverse(metadata: model.FieldMetaData) -> model.FieldMetaData:
-    def inv_name(name: str):
+    def inv_name(name: str) -> Any:
         x = name.split("%", 1)
         x[-1] = f"inv_{x[-1]}"
         return "%".join(x)
@@ -510,5 +510,5 @@ def metadata_for_inverse(metadata: model.FieldMetaData) -> model.FieldMetaData:
         dims=metadata.dims,
         dtype=metadata.dtype,
         long_name=f"inverse of {metadata.long_name}" if metadata.long_name else "",
-        icon_var_name=inv_name(metadata.icon_var_name),
+        icon_var_name=inv_name(metadata.icon_var_name),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
     )

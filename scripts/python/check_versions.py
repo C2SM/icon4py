@@ -15,7 +15,10 @@ from __future__ import annotations
 import sys
 
 import typer
-from bump_versions import _find_package_dirs, _validate_package_versions
+from bump_versions import (  # type: ignore[import-not-found]  # sibling module in scripts/python
+    _find_package_dirs,
+    _validate_package_versions,
+)
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)

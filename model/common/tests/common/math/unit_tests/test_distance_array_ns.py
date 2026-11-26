@@ -26,7 +26,7 @@ def test_horizontal_distance_to_point_requires_wrap() -> None:
     x = np.array([1.0])
     y = np.array([1.0])
     with pytest.raises(TypeError, match="wrap"):
-        distance_array_ns.horizontal_distance_to_point(x=x, y=y, point_x=0.0, point_y=0.0)  # type: ignore[call-arg]
+        distance_array_ns.horizontal_distance_to_point(x=x, y=y, point_x=0.0, point_y=0.0)  # type: ignore[call-arg]  # omit `wrap` to verify TypeError
 
 
 def test_minimum_image_separation() -> None:

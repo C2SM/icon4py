@@ -46,19 +46,21 @@ def construct_least_squares_state(
     return tracer_advection_states.AdvectionLeastSquaresState(
         lsq_pseudoinv_1=gtx.as_field(
             (dims.CellDim, dims.C2E2CDim),
-            least_squares_coeffs[:, 0, :],
+            least_squares_coeffs[:, 0, :],  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             allocator=backend,
         ),
         lsq_pseudoinv_2=gtx.as_field(
             (dims.CellDim, dims.C2E2CDim),
-            least_squares_coeffs[:, 1, :],
+            least_squares_coeffs[:, 1, :],  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
             allocator=backend,
         ),
     )
 
 
 def construct_metric_state(
-    icon_grid, savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend | None
+    icon_grid: icon_grid.IconGrid,
+    savepoint: sb.MetricSavepoint,
+    backend: gtx_typing.Backend | None,
 ) -> tracer_advection_states.AdvectionMetricState:
     constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim, allocator=backend)
     ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
@@ -71,7 +73,7 @@ def construct_metric_state(
 
 
 def construct_diagnostic_init_state_from_savepoint(
-    icon_grid,
+    icon_grid: icon_grid.IconGrid,
     savepoint: sb.AdvectionInitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
@@ -86,7 +88,7 @@ def construct_diagnostic_init_state_from_savepoint(
 
 
 def construct_diagnostic_exit_state_from_savepoint(
-    icon_grid,
+    icon_grid: icon_grid.IconGrid,
     savepoint: sb.AdvectionExitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
@@ -102,7 +104,7 @@ def construct_diagnostic_exit_state_from_savepoint(
 
 def construct_prep_adv_state_from_savepoint(
     savepoint: sb.AdvectionInitSavepoint,
-    icon_grid,
+    icon_grid: icon_grid.IconGrid,
     backend: gtx_typing.Backend | None,
 ) -> states.PrepAdvection:
     return states.PrepAdvection(
@@ -143,7 +145,7 @@ def advection_views(
     return input, output
 
 
-def log_dbg(field, name=""):
+def log_dbg(field: data_alloc.NDArray, name: str = "") -> None:
     log.debug(f"{name}: min={field.min()}, max={field.max()}, mean={field.mean()}")
 
 
@@ -152,7 +154,7 @@ def log_serialized(
     prep_adv: states.PrepAdvection,
     p_tracer_now: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
-):
+) -> None:
     log_dbg(diagnostic_state.airmass_now.asnumpy(), "airmass_now")
     log_dbg(diagnostic_state.airmass_new.asnumpy(), "airmass_new")
     log_dbg(diagnostic_state.grf_tend_tracer.asnumpy(), "grf_tend_tracer")
@@ -171,7 +173,7 @@ def verify_advection_fields(
     p_tracer_new: fa.CellKField[ta.wpfloat],
     p_tracer_new_ref: fa.CellKField[ta.wpfloat],
     even_timestep: bool,
-):
+) -> None:
     # cell indices
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_lateral_boundary = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))

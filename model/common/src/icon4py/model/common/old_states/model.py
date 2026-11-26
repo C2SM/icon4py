@@ -86,8 +86,8 @@ class DataField(Protocol):
 
 @dataclasses.dataclass
 class ModelField(DataField):
-    data: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT]
-    attrs: FieldMetaData
+    data: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT]  # type: ignore[valid-type]  # GT4Py Field generics / ScalarT variance
+    attrs: FieldMetaData  # type: ignore[assignment]  # GT4Py field/metadata type inference limitation
 
     @functools.cached_property
     def metadata(self) -> FieldMetaData:

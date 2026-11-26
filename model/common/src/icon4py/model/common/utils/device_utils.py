@@ -20,7 +20,7 @@ import gt4py.next.typing as gtx_typing
 log = logging.getLogger(__name__)
 
 try:
-    import cupy as cp  # type: ignore[import-not-found]
+    import cupy as cp  # type: ignore[import-not-found]  # optional dependency without stubs
 except ImportError:
     cp = None
 
@@ -53,7 +53,7 @@ def is_cupy_device(allocator: gtx_typing.Allocator | None) -> bool:
     if gtx.CUPY_DEVICE_TYPE is None:
         return False
 
-    return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)  # type: ignore [type-var] #gt4py-related typing
+    return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)  # type: ignore[type-var]  # gt4py-related typing
 
 
 def sync(allocator: gtx_typing.Allocator | None = None) -> None:

@@ -6,9 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
+from icon4py.model.common import model_backends
 from icon4py.model.testing.fixtures import stencil_tests
 
 
@@ -23,19 +25,23 @@ from icon4py.model.testing.fixtures import stencil_tests
     ],
 )
 @pytest.mark.parametrize("suffix, explicit", [("", None), (":", None), (":40", 40), (":120", 120)])
-def test_grid_option_reaches_preset(monkeypatch, name, default, suffix, explicit):
+def test_grid_option_reaches_preset(
+    monkeypatch: pytest.MonkeyPatch, name: str, default: int, suffix: str, explicit: int | None
+) -> None:
     request = SimpleNamespace(config=SimpleNamespace(getoption=lambda key: name + suffix))
-    preset, levels = stencil_tests._evaluate_grid_option(request)
+    preset, levels = stencil_tests._evaluate_grid_option(request)  # type: ignore[arg-type]  # test fake stands in for FixtureRequest
     assert levels == explicit
     captured = {}
 
-    def load_grid(identifier, **kwargs):
+    def load_grid(identifier: str, **kwargs: Any) -> str:
         captured.update(kwargs)
         return "grid manager"
 
     monkeypatch.setattr(stencil_tests.grid_utils, "get_grid_manager_from_identifier", load_grid)
     assert (
-        stencil_tests._get_grid_manager_from_preset(preset, num_levels=levels, allocator=None)
+        stencil_tests._get_grid_manager_from_preset(
+            preset, num_levels=levels, allocator=model_backends.get_allocator(None)
+        )
         == "grid manager"
     )
     assert captured["num_levels"] == (default if explicit is None else explicit)

@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from pytest_benchmark.fixture import BenchmarkFixture
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
@@ -224,7 +225,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     at_first_substep: bool,
     at_last_substep: bool,
     backend_like: model_backends.BackendLike,
-    benchmark: Any,
+    benchmark: BenchmarkFixture,
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)
     mesh = grid_manager.grid

@@ -10,6 +10,7 @@
 
 import dataclasses
 import datetime
+from typing import Any, cast
 
 import numpy as np
 import pytest
@@ -421,7 +422,8 @@ def test_a_process_output_is_offered_to_the_others_through_the_physics_state(
     physics.run(make_input(prognostic, tracer_state), output=make_output(prognostic, tracer_state))
 
     (some_state,) = recorder.states
-    assert some_state.sensible_heat_flux is physics._process_outputs[provider].sensible_heat_flux
+    provider_output = cast(FluxOutput, physics._process_outputs[provider])
+    assert some_state.sensible_heat_flux is provider_output.sensible_heat_flux
     np.testing.assert_array_equal(some_state.sensible_heat_flux.asnumpy(), 5.0)
 
 
@@ -441,7 +443,8 @@ def test_diagnostic_fields_are_keyed_by_standard_name_and_skip_the_tendencies(
     ((name, field_),) = physics.diagnostic_fields().items()
 
     assert name == qty.SensibleHeatFluxOnCell.standard_name
-    assert field_ is physics._process_outputs[process].sensible_heat_flux
+    flux_output = cast(FluxOutput, physics._process_outputs[process])
+    assert field_ is flux_output.sensible_heat_flux
 
 
 def _empty(_: physics_state.PhysicsState) -> state.Empty:

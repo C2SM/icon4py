@@ -734,7 +734,7 @@ def test_metrics_mask_prog_halo_c(
 
     attrs_name = metrics_attributes.MASK_PROG_HALO_C
     field = multi_rank_metrics.get(attrs_name).ndarray
-    c_refin_ctrl = multi_rank_gm.grid.refinement_control[dims.CellDim].ndarray
+    c_refin_ctrl = multi_rank_gm.grid.refinement_control[dims.CellDim].ndarray  # type: ignore[index]  # GT4Py NDArrayObject protocol limitation
     assert not (
         field[
             multi_rank_gm.decomposition_info.local_index(

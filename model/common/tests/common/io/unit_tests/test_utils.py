@@ -13,7 +13,7 @@ from icon4py.model.common.old_states import model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def test_data_array_has_ugrid_and_cf_attributes():
+def test_data_array_has_ugrid_and_cf_attributes() -> None:
     grid = simple_grid.simple_grid()
     buffer = field.Field(qty.RhoOnCellK, data_alloc.random_field(grid, dims.CellDim, dims.KDim))
     data_array = utils.to_data_array(buffer)

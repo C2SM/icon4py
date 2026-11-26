@@ -20,7 +20,7 @@ import tomllib
 from typing import Annotated, Final
 
 import typer
-from helpers import common
+from helpers import common  # type: ignore[import-not-found]  # sibling module in scripts/python
 
 
 def _find_package_dirs() -> list[pathlib.Path]:

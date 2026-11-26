@@ -36,7 +36,7 @@ output_filename = "bench_blueline_stencil_compute"
 # the default 'file_prefix' assumes that the json files are in the script folder
 file_prefix = pathlib.Path(__file__).parent
 openacc_input = file_prefix / "../data/bencher=mch_icon-ch1_medium_stencils=0.939946=OPENACC.json"
-gt4py_input = {}
+gt4py_input: dict[str, pathlib.Path] = {}
 gt4py_metrics = ["compute"]  # here we can add other metrics, e.g. 'total'
 gt4py_unmatched_ncalls_threshold = (
     2  # ignore unmatched icon4py stencils if less than this threshold
@@ -123,7 +123,7 @@ for fortran_stencil, v in fortran_to_icon4py.items():
     if v is None:
         # expect same stencil name in fortran and icon4py
         icon4py_stencil = fortran_stencil
-        variant = (fortran_stencil, {})
+        variant: VariantDescriptor = (fortran_stencil, {})
     else:
         icon4py_stencil, desc = v
         variant = (fortran_stencil, desc)
@@ -133,7 +133,7 @@ for fortran_stencil, v in fortran_to_icon4py.items():
         icon4py_stencils[icon4py_stencil] = [variant]
 
 
-def load_openacc_log(filename: pathlib.Path) -> dict:
+def load_openacc_log(filename: pathlib.Path) -> tuple[dict, dict]:
     log.info(f"Loading openacc data from {filename}")
     with filename.open("r") as f:
         j = json.load(f)
@@ -257,7 +257,7 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
 
 
 @cli.command(help=__doc__)
-def compare_icon4py_openacc():
+def compare_icon4py_openacc() -> None:
     import matplotlib.pyplot as plt  # noqa: PLC0415 [import-outside-top-level]
     import numpy as np  # noqa: PLC0415 [import-outside-top-level]
 
@@ -308,6 +308,8 @@ def compare_icon4py_openacc():
     bar_width = 8.0
     spacing = 20.0  # Additional spacing between stencil names
     gap = spacing * 4
+    if unmatched_stencil_names is None:
+        unmatched_stencil_names = []
     index = np.arange(len(stencil_names)) * (bar_width * len(backends) + spacing)
     extended_index = (
         np.arange(len(unmatched_stencil_names)) * (bar_width * (len(backends) - 1) + spacing)

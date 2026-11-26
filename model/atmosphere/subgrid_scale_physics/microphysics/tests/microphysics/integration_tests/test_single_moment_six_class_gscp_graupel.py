@@ -26,7 +26,7 @@ from ..fixtures import *  # noqa: F403
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import icon as icon_grid
+    from icon4py.model.common.grid import icon as grid_icon
     from icon4py.model.testing import serialbox as sb
 
 
@@ -47,9 +47,9 @@ def test_graupel(
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
-    icon_grid: icon_grid.IconGrid,
+    icon_grid: grid_icon.IconGrid,
     backend: gtx_typing.Backend,
-):
+) -> None:
     vertical_config = experiment.config.vertical_grid
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,

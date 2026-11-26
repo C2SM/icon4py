@@ -41,7 +41,7 @@ def _first_bracketing_level(
 
 def compute_zdiff_gradp(
     *,
-    e2c,
+    e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,

@@ -24,7 +24,7 @@ _SNAPSHOT_SUFFIXES = (".py", ".f90", ".h")
 
 
 @pytest.fixture
-def cli_runner():
+def cli_runner() -> CliRunner:
     return CliRunner()
 
 
@@ -51,7 +51,7 @@ def diff(reference: pathlib.Path, actual: pathlib.Path) -> bool:
     return clean
 
 
-def test_references(cli_runner):
+def test_references(cli_runner: CliRunner) -> None:
     cli_args = []
     for suffix in _SNAPSHOT_SUFFIXES:
         cli_args += [f"--output-{suffix[1:]}", str(_actual(suffix))]

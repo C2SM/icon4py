@@ -97,7 +97,7 @@ class ScalarDiffusion:
         self.diffuse_tracer = setup_program(
             backend=backend,
             program=scalar_stencils.diffuse_tracer,
-            constant_args={**horizontal_diffusion_args, "prefactor": 1.0},
+            constant_args={**horizontal_diffusion_args, "prefactor": 1.0},  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
             horizontal_sizes=horizontal_sizes,
             vertical_sizes=vertical_sizes,
             offset_provider=grid.connectivities,
@@ -117,7 +117,7 @@ class ScalarDiffusion:
             backend=backend,
             program=scalar_stencils.diffuse_energy_and_update_temperature,
             constant_args={
-                **horizontal_diffusion_args,
+                **horizontal_diffusion_args,  # type: ignore[dict-item]  # GT4Py field dimension inference limitation
                 "inv_dz": metric_state.inv_ddqz_z_half,
                 "height_above_ground": metric_state.height_above_ground,
                 "prefactor": energy_flux_factor,

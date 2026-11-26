@@ -12,5 +12,5 @@ import pytest
 
 
 @pytest.fixture
-def test_temp_dir():
+def test_temp_dir() -> str | None:
     return os.getenv("TEST_TEMP_DIR", None)

@@ -37,4 +37,4 @@ if __name__ == "__main__":
         )
         sys.exit(127)
 
-    import scripts.__main__
+    import scripts.__main__  # type: ignore[import-not-found]  # module not present at type-check time

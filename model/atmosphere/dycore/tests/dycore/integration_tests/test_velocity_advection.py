@@ -10,6 +10,7 @@ import logging
 import gt4py.next as gtx
 import numpy as np
 import pytest
+from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import solve_nonhydro
 from icon4py.model.atmosphere.dycore.stencils import (
@@ -23,7 +24,7 @@ from icon4py.model.common import (
     type_alias as ta,
     utils as common_utils,
 )
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, serialbox, test_utils
@@ -82,7 +83,11 @@ def create_vertical_params(
         (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
-def test_extra_diffusion_constants_match_icon(experiment, step_date_init, savepoint_velocity_init):
+def test_extra_diffusion_constants_match_icon(
+    experiment: test_defs.Experiment,
+    step_date_init: str,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+) -> None:
     # ICON serializes both constants per second, divided by dtime.
     dtime = savepoint_velocity_init.dtime()
     assert VerticalCflConstants.W_LIMIT / dtime == savepoint_velocity_init.cfl_w_limit()
@@ -111,18 +116,18 @@ def test_extra_diffusion_constants_match_icon(experiment, step_date_init, savepo
     ],
 )
 def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    grid_savepoint,
-    savepoint_velocity_init,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_velocity_exit,
-    backend,
-    caplog,
-):
+    experiment: test_defs.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: base.Grid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    savepoint_velocity_exit: serialbox.IconVelocityExitSavepoint,
+    backend: gtx_typing.Backend,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
@@ -349,19 +354,19 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     ],
 )
 def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    istep_init,
-    istep_exit,
-    experiment,
-    step_date_init,
-    step_date_exit,
-    icon_grid,
-    grid_savepoint,
-    savepoint_velocity_init,
-    savepoint_velocity_exit,
-    interpolation_savepoint,
-    metrics_savepoint,
-    backend,
-):
+    istep_init: int,
+    istep_exit: int,
+    experiment: test_defs.Experiment,
+    step_date_init: str,
+    step_date_exit: str,
+    icon_grid: base.Grid,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
+    savepoint_velocity_exit: serialbox.IconVelocityExitSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
     dtime = init_savepoint.dtime()

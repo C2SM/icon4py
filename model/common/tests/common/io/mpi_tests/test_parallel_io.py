@@ -78,7 +78,8 @@ def synthetic_state(info: decomp_defs.DecompositionInfo, step: int) -> dict[str,
         else:
             data = expected_value(local_global, 0, step)
         state[name] = field.Field(
-            QUANTITIES[name], gtx.as_field((dim, dims.KDim) if num_levels else (dim,), data)
+            QUANTITIES[name],
+            gtx.as_field((dim, dims.KDim) if num_levels else (dim,), data),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         )
     return state
 
@@ -105,7 +106,7 @@ def create_monitor(
     )
     vertical = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=NUM_LEVELS),
-        vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, NUM_LEVELS + 1)),
+        vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, NUM_LEVELS + 1)),  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         vct_b=None,
     )
     return common_io.FieldGroupMonitor(

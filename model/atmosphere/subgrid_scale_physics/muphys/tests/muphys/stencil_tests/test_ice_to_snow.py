@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -28,12 +30,12 @@ class TestIceToSnow(stencil_tests.StencilTest):
         ns: np.ndarray,
         lam: np.ndarray,
         sticking_eff: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 3.3262745200740486e-11))
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
             qi=data_alloc.constant_field(6.43223e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
             ns=data_alloc.constant_field(1.93157e07, dims.CellDim, dims.KDim, dtype=wpfloat),

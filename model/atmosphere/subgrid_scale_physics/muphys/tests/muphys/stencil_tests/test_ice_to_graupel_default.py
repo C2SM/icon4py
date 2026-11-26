@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -29,12 +31,12 @@ class TestIceToGraupel(stencil_tests.StencilTest):
         qg: np.ndarray,
         qi: np.ndarray,
         sticking_eff: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(aggregation=np.full(rho.shape, 7.1049436957697864e-19))
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict[str, Any]:
         return dict(
             rho=data_alloc.constant_field(1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),
             qr=data_alloc.constant_field(6.00408e-13, dims.CellDim, dims.KDim, dtype=wpfloat),
