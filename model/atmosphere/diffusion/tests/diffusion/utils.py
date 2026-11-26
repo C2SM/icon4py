@@ -62,7 +62,7 @@ def verify_diffusion_fields(
     config: diffusion.DiffusionConfig,
     diagnostic_state: states.DiffusionDiagnostics,
     prognostic_state: states.PrognosticState,
-    diffusion_savepoint: sb.IconDiffusionExitSavepoint,
+    diffusion_savepoint: sb.IconDiffusionInitSavepoint | sb.IconDiffusionExitSavepoint,
 ) -> None:
     ref_w = diffusion_savepoint.w().asnumpy()
     val_w = prognostic_state.w.asnumpy()
