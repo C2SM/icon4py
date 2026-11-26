@@ -25,7 +25,7 @@ import pytest
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import simple
+from icon4py.model.common.grid import base, simple
 from icon4py.model.common.utils import data_allocation, env
 from icon4py.model.testing import config, stencil_tests
 
@@ -148,31 +148,33 @@ class TestStaticReference:
 
 class TestInputDataFixture:
     @staticmethod
-    def input_data(data_alloc, request):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, request: Any) -> dict:
         return {"field": data_alloc.random_field(dims.CellDim)}
 
-    def test_returns_a_marked_class_scoped_static_fixture(self):
+    def test_returns_a_marked_class_scoped_static_fixture(self) -> None:
         fixture = stencil_tests.input_data_fixture(valid_input_data())
 
         # a staticmethod: pytest deprecated class-scoped fixtures defined as instance methods
         assert isinstance(fixture, staticmethod)
         assert getattr(fixture, "__stencil_test_input_fixture__", False)
-        assert fixture.__func__._fixture_function_marker.scope == "class"  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol limitation
+        assert fixture.__func__._fixture_function_marker.scope == "class"  # type: ignore[attr-defined]  # pytest FixtureFunctionDefinition exposes no typed __func__
 
-    def test_forwards_keyword_arguments_to_pytest_fixture(self):
+    def test_forwards_keyword_arguments_to_pytest_fixture(self) -> None:
         fixture = stencil_tests.input_data_fixture(params=[1, 2], scope="function")(self.input_data)
-        marker = fixture.__func__._fixture_function_marker
+        marker = fixture.__func__._fixture_function_marker  # type: ignore[attr-defined]  # pytest FixtureFunctionDefinition exposes no typed __func__
 
         assert getattr(fixture, "__stencil_test_input_fixture__", False)
         assert marker.params == (1, 2)
         assert marker.scope == "function"  # an explicit scope wins over the default
 
     @pytest.mark.parametrize("ids", [None, str], ids=["default_ids", "callable_ids"])
-    def test_hands_a_parametrized_fixture_a_per_param_wrapper(self, grid, ids):
+    def test_hands_a_parametrized_fixture_a_per_param_wrapper(
+        self, grid: base.Grid, ids: type[str] | None
+    ) -> None:
         """Each parametrization instance must draw from its own derived generator."""
 
         fixture = stencil_tests.input_data_fixture(params=[1, 2], ids=ids)(self.input_data)
-        wrapped = fixture.__func__._get_wrapped_function()
+        wrapped = fixture.__func__._get_wrapped_function()  # type: ignore[attr-defined]  # pytest FixtureFunctionDefinition exposes no typed __func__
 
         # pytest resolves the fixture arguments from the signature, which stays the
         # plain fixture's so that `grid` and `request` are still injected.
@@ -185,22 +187,22 @@ class TestInputDataFixture:
             field.asnumpy(), wrapper.for_param("1").random_field(dims.CellDim).asnumpy()
         )
 
-    def test_rejects_a_parametrized_fixture_without_request(self):
+    def test_rejects_a_parametrized_fixture_without_request(self) -> None:
         """Regression: the wrapper needs `request` to read the parametrization id."""
 
-        def input_data(data_alloc):
+        def input_data(data_alloc: stencil_tests.DataAllocationWrapper) -> dict:
             return {"field": data_alloc.random_field(dims.CellDim)}
 
         with pytest.raises(TypeError, match="must declare a 'request' parameter"):
             stencil_tests.input_data_fixture(params=[1, 2])(input_data)
 
-    def test_rejects_sequence_ids(self):
+    def test_rejects_sequence_ids(self) -> None:
         """Regression: an `ids` sequence was ignored, so params with the same `str()` collided."""
 
         with pytest.raises(TypeError, match="must be a callable"):
             stencil_tests.input_data_fixture(params=[10, 20], ids=["a", "b"])(self.input_data)
 
-    def test_accepts_an_existing_staticmethod(self):
+    def test_accepts_an_existing_staticmethod(self) -> None:
         fixture = stencil_tests.input_data_fixture(staticmethod(valid_input_data()))
 
         assert isinstance(fixture, staticmethod)
@@ -486,7 +488,7 @@ class TestConnectivitiesAsNumpy:
 # -- DataAllocationWrapper -------------------------------------------------------------
 
 
-def _seeded_wrapper(grid, key: str) -> stencil_tests.DataAllocationWrapper:
+def _seeded_wrapper(grid: base.Grid, key: str) -> stencil_tests.DataAllocationWrapper:
     """A wrapper seeded from `key`, as the `data_alloc` fixture seeds one."""
     return stencil_tests.DataAllocationWrapper(
         grid=grid,
@@ -497,7 +499,7 @@ def _seeded_wrapper(grid, key: str) -> stencil_tests.DataAllocationWrapper:
 
 class TestDataAllocationWrapper:
     @pytest.fixture
-    def wrapper(self, grid):
+    def wrapper(self, grid: base.Grid) -> stencil_tests.DataAllocationWrapper:
         """A wrapper seeded as the `data_alloc` fixture seeds one."""
         return _seeded_wrapper(grid, f"{__name__}:{type(self).__name__}:")
 
@@ -609,7 +611,7 @@ class TestDataAllocationWrapper:
 
 
 class TestSeededWrapper:
-    def test_identical_keys_produce_identical_fields(self, grid):
+    def test_identical_keys_produce_identical_fields(self, grid: base.Grid) -> None:
         """Every rank and xdist worker derives the same streams from the same key."""
         first = _seeded_wrapper(grid, "module:Suite:param0")
         second = _seeded_wrapper(grid, "module:Suite:param0")
@@ -619,7 +621,7 @@ class TestSeededWrapper:
             second.random_field(dims.CellDim).asnumpy(),
         )
 
-    def test_different_keys_produce_different_fields(self, grid):
+    def test_different_keys_produce_different_fields(self, grid: base.Grid) -> None:
         """A different parametrization id must not collide on one seed."""
         first = _seeded_wrapper(grid, "module:Suite:param0")
         second = _seeded_wrapper(grid, "module:Suite:param1")
@@ -629,7 +631,7 @@ class TestSeededWrapper:
             second.random_field(dims.CellDim).asnumpy(),
         )
 
-    def test_successive_draws_differ(self, grid):
+    def test_successive_draws_differ(self, grid: base.Grid) -> None:
         wrapper = _seeded_wrapper(grid, "module:Suite:")
 
         first = wrapper.random_field(dims.CellDim).asnumpy()
@@ -637,7 +639,9 @@ class TestSeededWrapper:
 
         assert not np.array_equal(first, second)
 
-    def test_numeric_seed_mixes_a_global_base_into_the_derivation(self, grid, monkeypatch):
+    def test_numeric_seed_mixes_a_global_base_into_the_derivation(
+        self, grid: base.Grid, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """The same numeric base reproduces the same data; another base shifts it."""
         monkeypatch.setattr(config, "TEST_SEED", 41)
         first = _seeded_wrapper(grid, "module:Suite:")
@@ -650,7 +654,7 @@ class TestSeededWrapper:
         np.testing.assert_array_equal(base, second.random_field(dims.CellDim).asnumpy())
         assert not np.array_equal(base, third.random_field(dims.CellDim).asnumpy())
 
-    def test_for_param_reproduces_one_parametrization_stream(self, grid):
+    def test_for_param_reproduces_one_parametrization_stream(self, grid: base.Grid) -> None:
         """The same param id draws the same data; a different one draws different data."""
         wrapper = _seeded_wrapper(grid, "module:Suite:")
 
@@ -663,7 +667,7 @@ class TestSeededWrapper:
             first, wrapper.for_param("param1").random_field(dims.CellDim).asnumpy()
         )
 
-    def test_for_param_differs_from_the_class_wrapper(self, grid):
+    def test_for_param_differs_from_the_class_wrapper(self, grid: base.Grid) -> None:
         """A parametrized fixture must not share the class generator's stream."""
         wrapper = _seeded_wrapper(grid, "module:Suite:")
 
@@ -672,7 +676,7 @@ class TestSeededWrapper:
             wrapper.for_param("param0").random_field(dims.CellDim).asnumpy(),
         )
 
-    def test_reference_rng_is_deterministic(self, grid):
+    def test_reference_rng_is_deterministic(self, grid: base.Grid) -> None:
         """Identically seeded wrappers derive the same reference stream."""
         first = _seeded_wrapper(grid, "module:Suite:")
         second = _seeded_wrapper(grid, "module:Suite:")
@@ -682,7 +686,7 @@ class TestSeededWrapper:
             second.reference_rng.random(16),
         )
 
-    def test_reference_rng_differs_from_the_input_data_stream(self, grid):
+    def test_reference_rng_differs_from_the_input_data_stream(self, grid: base.Grid) -> None:
         """The reference stream is not the input data's stream."""
         wrapper = _seeded_wrapper(grid, "module:Suite:")
 
@@ -691,7 +695,7 @@ class TestSeededWrapper:
             wrapper.rng.random(16),
         )
 
-    def test_reference_rng_differs_from_a_for_param_stream(self, grid):
+    def test_reference_rng_differs_from_a_for_param_stream(self, grid: base.Grid) -> None:
         """A `for_param` stream must not collide with the reference stream."""
         wrapper = _seeded_wrapper(grid, "module:Suite:")
 
@@ -700,11 +704,11 @@ class TestSeededWrapper:
             wrapper.for_param("param0").rng.random(16),
         )
 
-    def test_reference_expects_rng_detects_the_parameter(self):
-        def with_rng(grid, *, rng):
+    def test_reference_expects_rng_detects_the_parameter(self) -> None:
+        def with_rng(grid: base.Grid, *, rng: np.random.Generator) -> None:
             pass
 
-        def without_rng(grid):
+        def without_rng(grid: base.Grid) -> None:
             pass
 
         assert stencil_tests._reference_expects_rng(with_rng)
@@ -714,29 +718,33 @@ class TestSeededWrapper:
         ("value", "expected"),
         [("41", 41), ("0", 0), ("", None)],
     )
-    def test_read_test_seed(self, value, expected, monkeypatch):
+    def test_read_test_seed(
+        self, value: str, expected: int | None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """An empty value counts as unset."""
         monkeypatch.setenv("ICON4PY_TEST_SEED", value)
 
         assert env.non_negative_int("ICON4PY_TEST_SEED") == expected
 
-    def test_read_test_seed_when_unset(self, monkeypatch):
+    def test_read_test_seed_when_unset(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("ICON4PY_TEST_SEED", raising=False)
 
         assert env.non_negative_int("ICON4PY_TEST_SEED") is None
 
     @pytest.mark.parametrize("value", ["-1", "1.5", "deterministic", " 41", "random"])
-    def test_read_test_seed_rejects_invalid_values(self, value, monkeypatch):
+    def test_read_test_seed_rejects_invalid_values(
+        self, value: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setenv("ICON4PY_TEST_SEED", value)
 
         with pytest.raises(ValueError, match="a non-negative integer"):
             env.non_negative_int("ICON4PY_TEST_SEED")
 
-    def test_random_field_accepts_an_omitted_seed(self, grid):
+    def test_random_field_accepts_an_omitted_seed(self, grid: base.Grid) -> None:
         """Omitting the seed draws OS entropy, as before the seeding change."""
         field = data_allocation.random_field(grid, dims.CellDim)
 
-        assert field.shape == (grid.num_cells,)
+        assert field.shape == (grid.num_cells,)  # type: ignore[attr-defined]  # GT4Py Field shape attribute is not typed
 
 
 # -- StencilTest.verify_data -----------------------------------------------------------
@@ -829,11 +837,13 @@ class TestTestAndBenchmark:
             pytest.param(types.SimpleNamespace(), "", id="not_parametrized"),
         ],
     )
-    def test_passes_the_reference_the_case_reference_stream(self, grid, node, case_key):
+    def test_passes_the_reference_the_case_reference_stream(
+        self, grid: base.Grid, node: types.SimpleNamespace, case_key: str
+    ) -> None:
         """The reference draws from the stream keyed on the case, through `for_param`."""
         seen: dict[str, np.ndarray] = {}
 
-        def reference(grid, *, rng=None, out=None):
+        def reference(grid: base.Grid, *, rng: np.random.Generator, out: np.ndarray) -> dict:
             seen["draw"] = rng.random(3)
             return {"out": out}
 
@@ -855,7 +865,7 @@ class TestTestAndBenchmark:
             input_data={"out": cell_field(3 * [0.0])},
             data_alloc=wrapper,
             configured_program=lambda **kwargs: None,
-            request=request,
+            request=request,  # type: ignore[arg-type]  # test passes a SimpleNamespace instead of a real FixtureRequest
         )
 
         np.testing.assert_array_equal(seen["draw"], expected)
