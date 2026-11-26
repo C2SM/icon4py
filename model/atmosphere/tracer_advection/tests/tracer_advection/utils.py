@@ -73,7 +73,7 @@ def construct_metric_state(
 
 
 def construct_diagnostic_init_state_from_savepoint(
-    icon_grid,
+    icon_grid: icon_grid.IconGrid,
     savepoint: sb.AdvectionInitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
@@ -88,7 +88,7 @@ def construct_diagnostic_init_state_from_savepoint(
 
 
 def construct_diagnostic_exit_state_from_savepoint(
-    icon_grid,
+    icon_grid: icon_grid.IconGrid,
     savepoint: sb.AdvectionExitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
@@ -104,7 +104,7 @@ def construct_diagnostic_exit_state_from_savepoint(
 
 def construct_prep_adv_state_from_savepoint(
     savepoint: sb.AdvectionInitSavepoint,
-    icon_grid,
+    icon_grid: icon_grid.IconGrid,
     backend: gtx_typing.Backend | None,
 ) -> states.PrepAdvection:
     return states.PrepAdvection(
@@ -145,7 +145,7 @@ def advection_views(
     return input, output
 
 
-def log_dbg(field, name=""):
+def log_dbg(field: data_alloc.NDArray, name: str = "") -> None:
     log.debug(f"{name}: min={field.min()}, max={field.max()}, mean={field.mean()}")
 
 
