@@ -19,7 +19,6 @@ Works with any rank count >= 2 (``mpirun -np 8 ... --with-mpi``), no test data n
 """
 
 import datetime as dt
-import itertools
 import pathlib
 import uuid
 
@@ -40,12 +39,12 @@ from icon4py.model.common import (
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.io import distributed, io as common_io, netcdf_writers, writers
+from icon4py.model.testing import parallel_helpers
 
 from ...fixtures import process_props
 
 
 NUM_LEVELS = 4
-GLOBAL_SIZES = {dims.CellDim: 109, dims.EdgeDim: 75, dims.VertexDim: 41}
 GRID_ID = uuid.UUID("00000000-0000-0000-0000-00000000c1c0")
 NUM_STEPS = 3
 #: variable name -> (CF dimension name, dimension, number of levels) of the synthetic
@@ -60,47 +59,6 @@ QUANTITIES: dict[str, type[quantity.Quantity]] = {
     "normal_velocity": qty.VnOnEdgeK,
     "surface_pressure": qty.SurfacePressureOnCell,
 }
-
-
-def synthetic_decomposition_info(
-    process_props: decomp_defs.ProcessProperties,
-) -> decomp_defs.DecompositionInfo:
-    """Uneven partition with shuffled local order and fake halos; the last rank owns nothing."""
-    empty_rank = process_props.comm_size - 1
-    info = decomp_defs.DecompositionInfo()
-    for dim, global_size in GLOBAL_SIZES.items():
-        # deterministic, rank-independent seed (hash() is per-process randomized)
-        rng = np.random.default_rng(seed=sum(ord(c) for c in dim.value))
-        permutation = rng.permutation(global_size)
-        working_ranks = [r for r in range(process_props.comm_size) if r != empty_rank]
-        bounds = np.linspace(0, global_size, len(working_ranks) + 1).astype(int)
-        owned_by_rank = {
-            rank: permutation[start:stop]
-            for rank, (start, stop) in zip(working_ranks, itertools.pairwise(bounds), strict=False)
-        }
-        owned_by_rank[empty_rank] = np.asarray([], dtype=np.int64)
-        owned = owned_by_rank[process_props.rank]
-        # fake halos: entries owned by the next working rank, as a real decomposition
-        # would have (at 2 ranks there is only one working rank, which then donates its
-        # own entries -- still halos in the sense that the owner mask is False on them)
-        halo_donor = working_ranks[0] if process_props.rank == empty_rank else None
-        if halo_donor is None:
-            next_index = (working_ranks.index(process_props.rank) + 1) % len(working_ranks)
-            halo_donor = working_ranks[next_index]
-        halos = owned_by_rank[halo_donor][:2]
-        local_global_index = np.concatenate([owned, halos]).astype(np.int64)
-        owner_mask = np.zeros(local_global_index.shape[0], dtype=bool)
-        owner_mask[: owned.shape[0]] = True
-        local_shuffle = rng.permutation(local_global_index.shape[0])
-        local_global_index = local_global_index[local_shuffle]
-        owner_mask = owner_mask[local_shuffle]
-        halo_levels = np.where(
-            owner_mask,
-            decomp_defs.DecompositionFlag.OWNED.value,
-            decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL.value,
-        )
-        info.set_dimension(dim, local_global_index, owner_mask, halo_levels)
-    return info
 
 
 def expected_value(global_index: np.ndarray, level: int, step: int) -> np.ndarray:
@@ -174,12 +132,14 @@ def assert_dataset_is_exact(
         values = dataset[name].values
         index = global_index[dim_name]
         valid = index >= 0
-        assert int(valid.sum()) == GLOBAL_SIZES[dim]
-        global_range = np.arange(GLOBAL_SIZES[dim])
+        assert int(valid.sum()) == parallel_helpers.SYNTHETIC_GLOBAL_SIZES[dim]
+        global_range = np.arange(parallel_helpers.SYNTHETIC_GLOBAL_SIZES[dim])
         for slice_pos in range(num_slices):
             step = first_step + slice_pos
             # a (levels, horizontal) slice, or a (horizontal,) one for a surface field
-            reassembled = np.empty((*values.shape[1:-1], GLOBAL_SIZES[dim]))
+            reassembled = np.empty(
+                (*values.shape[1:-1], parallel_helpers.SYNTHETIC_GLOBAL_SIZES[dim])
+            )
             reassembled[..., index[valid]] = values[slice_pos][..., valid]
             expected = (
                 np.stack([expected_value(global_range, level, step) for level in range(num_levels)])
@@ -226,7 +186,7 @@ def test_parallel_output_synthetic_decomposition(
         process_props.comm.bcast(str(tmp_path) if process_props.rank == 0 else None, root=0)
     )
     chunk_size, shard_size = chunking if chunking is not None else (None, None)
-    info = synthetic_decomposition_info(process_props)
+    info = parallel_helpers.synthetic_decomposition_info(process_props)
     distribution: distributed.OutputDistribution = (
         distributed.GatherDistribution(process_props, info)
         if output_mode == common_io.OutputMode.GATHER
@@ -255,7 +215,10 @@ def test_parallel_output_synthetic_decomposition(
     suffix = common_io.FILE_SUFFIXES[output_backend]
     files = sorted(output_path.glob(f"synthetic_output_*{suffix}"))
     assert len(files) == 2, f"expected two files after the rollover, got: {files}"
-    identity = {name: np.arange(GLOBAL_SIZES[dim]) for name, dim, _ in VARIABLES.values()}
+    identity = {
+        name: np.arange(parallel_helpers.SYNTHETIC_GLOBAL_SIZES[dim])
+        for name, dim, _ in VARIABLES.values()
+    }
     for path, num_slices, first_step in ((files[0], 2, 0), (files[1], 1, 2)):
         if output_backend == common_io.OutputBackend.NETCDF:
             dataset = xr.open_dataset(path, decode_times=False)
@@ -297,7 +260,7 @@ def test_gather_mode_overwrite_refusal_raises_on_all_ranks(
     output_path = pathlib.Path(
         process_props.comm.bcast(str(tmp_path) if process_props.rank == 0 else None, root=0)
     )
-    info = synthetic_decomposition_info(process_props)
+    info = parallel_helpers.synthetic_decomposition_info(process_props)
     distribution = distributed.GatherDistribution(process_props, info)
     monitor = create_monitor(
         common_io.OutputBackend.NETCDF,
