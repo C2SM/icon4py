@@ -246,9 +246,9 @@ def _fill_prep_adv_from_prescribed_wind_field(
     vn_traj = prep_adv_state.vn_traj.ndarray
     mass_flx_me = prep_adv_state.mass_flx_me.ndarray
     mass_flx_ic = prep_adv_state.dynamical_vertical_mass_flux_at_cells_on_half_levels.ndarray
-    vn_traj[:, :] = vn[:, None]
-    mass_flx_me[:, :] = vn[:, None]
-    mass_flx_ic[:, :] = 0.0
+    vn_traj[:, :] = vn[:, None]  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
+    mass_flx_me[:, :] = vn[:, None]  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
+    mass_flx_ic[:, :] = 0.0  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
 
 
 def _fill_tracer_from_analytical_profile(
