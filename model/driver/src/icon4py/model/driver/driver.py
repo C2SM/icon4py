@@ -834,7 +834,7 @@ class Icon4pyDriver:
     ) -> None:
         """
         Compute relevant statistics of prognostic variables at the beginning of every time step. The statistics include:
-        maximum value of rho, vn, and w over all ranks, as well as the levels at which their maximum value is found.
+        maximum deviation from 0 of rho, vn, and w over all ranks, as well as the levels at which their most extreme value is found.
         """
         if self.config.driver.enable_statistics_logging:
 
