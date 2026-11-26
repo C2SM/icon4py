@@ -39,11 +39,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import (
-    geometry_attributes as geom_attr,
-    grid_manager as gm,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.io import io as common_io
@@ -185,6 +181,9 @@ class Icon4pyDriver:
                 )
         else:
             state_to_store = {}
+        log.debug(
+            f"storing output at {simulation_current_datetime} with {len(state_to_store)} variables"
+        )
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_STORE.value]:
             self.io_monitor.store(state_to_store, simulation_current_datetime)
 
@@ -358,6 +357,7 @@ class Icon4pyDriver:
         if self.granules.tracer_advection is not None:
             assert tracer_advection_diagnostic_state is not None
             assert prep_adv is not None
+            log.debug(f"Running {self.granules.tracer_advection.__class__}")
             self.granules.tracer_advection.run(
                 *self._advection_views(tracers, tracer_advection_diagnostic_state, prep_adv)
             )
@@ -546,7 +546,6 @@ class Icon4pyDriver:
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
-        self._compute_total_mass_and_energy(prognostic_states.next)
 
     # watch_mode is true if step is <= 1 or cfl already near or exceeding threshold.
     # omit spinup feature and the option that if the model starts from IFS or COSMO data
@@ -835,17 +834,21 @@ class Icon4pyDriver:
     ) -> None:
         """
         Compute relevant statistics of prognostic variables at the beginning of every time step. The statistics include:
-        absolute maximum value of rho, vn, and w, as well as the levels at which their maximum value is found.
+        maximum deviation from 0 of rho, vn, and w over all ranks, as well as the levels at which their most extreme value is found.
         """
         if self.config.driver.enable_statistics_logging:
-            # TODO (Chia Rui): Do global max when multinode is ready
-            rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
-                prognostic_states.rho,
-            )
-            vn_arg_max, max_vn = driver_utils.find_maximum_from_field(
-                prognostic_states.vn,
-            )
-            w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w)
+
+            def _find_global_absolute_maximum(field: gtx.Field) -> tuple[float, int]:
+                value, level = decomposition_defs.find_global_absolute_maximum(
+                    field.ndarray,
+                    self.decomposition_info.owner_mask(field.domain.dims[0]),
+                    self.global_reductions,
+                )
+                return float(value), level
+
+            max_rho, rho_level = _find_global_absolute_maximum(prognostic_states.rho)
+            max_vn, vn_level = _find_global_absolute_maximum(prognostic_states.vn)
+            max_w, w_level = _find_global_absolute_maximum(prognostic_states.w)
 
             def _determine_sign(input_number: float) -> str:
                 return " " if input_number >= 0.0 else "-"
@@ -856,28 +859,12 @@ class Icon4pyDriver:
 
             log.info(
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self.model_time_variables.ndyn_substeps_var:3d} == "
-                f"MAX RHO: {rho_sign}{abs(max_rho):.5e} at lvl {rho_arg_max[1]:4d}, MAX VN: {vn_sign}{abs(max_vn):.5e} at lvl {vn_arg_max[1]:4d}, MAX W: {w_sign}{abs(max_w):.5e} at lvl {w_arg_max[1]:4d}"
+                f"MAX RHO: {rho_sign}{abs(max_rho):.5e} at lvl {rho_level:4d}, MAX VN: {vn_sign}{abs(max_vn):.5e} at lvl {vn_level:4d}, MAX W: {w_sign}{abs(max_w):.5e} at lvl {w_level:4d}"
             )
         else:
             log.info(
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self.model_time_variables.ndyn_substeps_var:3d}"
             )
-
-    def _compute_total_mass_and_energy(self, prognostic_states: states.PrognosticState) -> None:
-        if self.config.driver.enable_statistics_logging:
-            rho_ndarray = prognostic_states.rho.ndarray
-            cell_area_ndarray = self.static_field_factories.geometry.get(
-                geom_attr.CELL_AREA
-            ).ndarray
-            cell_thickness_ndarray = self.static_field_factories.metrics.get(
-                metrics_attr.DDQZ_Z_FULL
-            ).ndarray
-            local_mass = (
-                rho_ndarray * cell_area_ndarray[:, self._xp.newaxis] * cell_thickness_ndarray
-            )
-            global_total_mass = self.global_reductions.sum(local_mass)
-            # TODO (Chia Rui): compute total energy
-            log.info(f"GLOBAL TOTAL MASS: {global_total_mass:.15e} kg")
 
     def _compute_mean_at_final_time_step(self, prognostic_states: states.PrognosticState) -> None:
         if self.config.driver.enable_statistics_logging:
