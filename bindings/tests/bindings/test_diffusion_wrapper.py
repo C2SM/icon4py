@@ -99,11 +99,11 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
     div_ic = test_utils.array_to_array_info(savepoint_diffusion_init.div_ic().ndarray)
     dwdx = test_utils.array_to_array_info(savepoint_diffusion_init.dwdx().ndarray)
     dwdy = test_utils.array_to_array_info(savepoint_diffusion_init.dwdy().ndarray)
-    w = test_utils.array_to_array_info(savepoint_diffusion_init.w().ndarray)
-    vn = test_utils.array_to_array_info(savepoint_diffusion_init.vn().ndarray)
-    exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)
-    theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)
-    rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)
+    w = test_utils.array_to_array_info(savepoint_diffusion_init.w().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn = test_utils.array_to_array_info(savepoint_diffusion_init.vn().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     dtime = savepoint_diffusion_init.dtime()
 
     # --- Expected objects that form inputs into init and run functions
@@ -342,11 +342,11 @@ def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-ar
     dwdy = test_utils.array_to_array_info(savepoint_diffusion_init.dwdy().ndarray)
 
     # Prognostic state parameters
-    w = test_utils.array_to_array_info(savepoint_diffusion_init.w().ndarray)
-    vn = test_utils.array_to_array_info(savepoint_diffusion_init.vn().ndarray)
-    exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)
-    theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)
-    rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)
+    w = test_utils.array_to_array_info(savepoint_diffusion_init.w().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn = test_utils.array_to_array_info(savepoint_diffusion_init.vn().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner = test_utils.array_to_array_info(savepoint_diffusion_init.exner().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    theta_v = test_utils.array_to_array_info(savepoint_diffusion_init.theta_v().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho = test_utils.array_to_array_info(savepoint_diffusion_init.rho().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     dtime = savepoint_diffusion_init.dtime()
 
     ffi = cffi.FFI()

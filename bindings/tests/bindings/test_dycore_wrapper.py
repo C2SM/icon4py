@@ -373,55 +373,55 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     second_order_divdamp_factor = sp.divdamp_fac_o2()
 
     # PrepAdvection
-    vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
+    vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )  # TODO(): p.vol_flx_ic()
-    mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
-    mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
+    mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
 
     # Diagnostic state parameters
     max_vertical_cfl = 0.0
     max_vcfl_size1_array = test_utils.array_to_array_info(
         np.full(1, max_vertical_cfl, dtype=np.float64)
     )
-    theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
-    exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
-    rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)
-    ddt_exner_phy = test_utils.array_to_array_info(sp.ddt_exner_phy().ndarray)
-    grf_tend_rho = test_utils.array_to_array_info(sp.grf_tend_rho().ndarray)
-    grf_tend_thv = test_utils.array_to_array_info(sp.grf_tend_thv().ndarray)
-    grf_tend_w = test_utils.array_to_array_info(sp.grf_tend_w().ndarray)
-    mass_fl_e = test_utils.array_to_array_info(sp.mass_fl_e().ndarray)
-    ddt_vn_phy = test_utils.array_to_array_info(sp.ddt_vn_phy().ndarray)
-    grf_tend_vn = test_utils.array_to_array_info(sp.grf_tend_vn().ndarray)
-    ddt_vn_apc_ntl1 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(0).ndarray)
-    ddt_vn_apc_ntl2 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(1).ndarray)
-    ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)
-    ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
-    vt = test_utils.array_to_array_info(sp.vt().ndarray)
-    vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
+    theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_exner_phy = test_utils.array_to_array_info(sp.ddt_exner_phy().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_rho = test_utils.array_to_array_info(sp.grf_tend_rho().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_thv = test_utils.array_to_array_info(sp.grf_tend_thv().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_w = test_utils.array_to_array_info(sp.grf_tend_w().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    mass_fl_e = test_utils.array_to_array_info(sp.mass_fl_e().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_vn_phy = test_utils.array_to_array_info(sp.ddt_vn_phy().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_vn = test_utils.array_to_array_info(sp.grf_tend_vn().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_vn_apc_ntl1 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(0).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_vn_apc_ntl2 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(1).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vt = test_utils.array_to_array_info(sp.vt().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     vn_incr_field = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
-    vn_incr = test_utils.array_to_array_info(vn_incr_field.ndarray)
+    vn_incr = test_utils.array_to_array_info(vn_incr_field.ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     rho_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    rho_incr = test_utils.array_to_array_info(rho_incr_field.ndarray)
+    rho_incr = test_utils.array_to_array_info(rho_incr_field.ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     exner_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    exner_incr = test_utils.array_to_array_info(exner_incr_field.ndarray)
-    w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
+    exner_incr = test_utils.array_to_array_info(exner_incr_field.ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
     # Prognostic state parameters
-    w_now = test_utils.array_to_array_info(sp.w_now().ndarray)
-    vn_now = test_utils.array_to_array_info(sp.vn_now().ndarray)
-    theta_v_now = test_utils.array_to_array_info(sp.theta_v_now().ndarray)
-    rho_now = test_utils.array_to_array_info(sp.rho_now().ndarray)
-    exner_now = test_utils.array_to_array_info(sp.exner_now().ndarray)
+    w_now = test_utils.array_to_array_info(sp.w_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn_now = test_utils.array_to_array_info(sp.vn_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    theta_v_now = test_utils.array_to_array_info(sp.theta_v_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho_now = test_utils.array_to_array_info(sp.rho_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner_now = test_utils.array_to_array_info(sp.exner_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
 
-    w_new = test_utils.array_to_array_info(sp.w_new().ndarray)
-    vn_new = test_utils.array_to_array_info(sp.vn_new().ndarray)
-    theta_v_new = test_utils.array_to_array_info(sp.theta_v_new().ndarray)
-    rho_new = test_utils.array_to_array_info(sp.rho_new().ndarray)
-    exner_new = test_utils.array_to_array_info(sp.exner_new().ndarray)
+    w_new = test_utils.array_to_array_info(sp.w_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn_new = test_utils.array_to_array_info(sp.vn_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    theta_v_new = test_utils.array_to_array_info(sp.theta_v_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho_new = test_utils.array_to_array_info(sp.rho_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner_new = test_utils.array_to_array_info(sp.exner_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
 
     # using fortran indices
     substep = substep_init
@@ -791,58 +791,58 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
     second_order_divdamp_factor = sp.divdamp_fac_o2()  # This is a scalar, don't convert
 
     # PrepAdvection
-    vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
+    vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
-    mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
-    mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
+    mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
 
     # Diagnostic state parameters
     max_vertical_cfl = 0.0
     max_vcfl_size1_array = test_utils.array_to_array_info(
         np.full(1, max_vertical_cfl, dtype=np.float64)
     )
-    theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
-    exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
-    rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)
-    ddt_exner_phy = test_utils.array_to_array_info(sp.ddt_exner_phy().ndarray)
-    grf_tend_rho = test_utils.array_to_array_info(sp.grf_tend_rho().ndarray)
-    grf_tend_thv = test_utils.array_to_array_info(sp.grf_tend_thv().ndarray)
-    grf_tend_w = test_utils.array_to_array_info(sp.grf_tend_w().ndarray)
-    mass_fl_e = test_utils.array_to_array_info(sp.mass_fl_e().ndarray)
-    ddt_vn_phy = test_utils.array_to_array_info(sp.ddt_vn_phy().ndarray)
-    grf_tend_vn = test_utils.array_to_array_info(sp.grf_tend_vn().ndarray)
-    ddt_vn_apc_ntl1 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(0).ndarray)
-    ddt_vn_apc_ntl2 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(1).ndarray)
-    ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)
-    ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
-    vt = test_utils.array_to_array_info(sp.vt().ndarray)
-    vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
+    theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_exner_phy = test_utils.array_to_array_info(sp.ddt_exner_phy().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_rho = test_utils.array_to_array_info(sp.grf_tend_rho().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_thv = test_utils.array_to_array_info(sp.grf_tend_thv().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_w = test_utils.array_to_array_info(sp.grf_tend_w().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    mass_fl_e = test_utils.array_to_array_info(sp.mass_fl_e().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_vn_phy = test_utils.array_to_array_info(sp.ddt_vn_phy().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_vn = test_utils.array_to_array_info(sp.grf_tend_vn().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_vn_apc_ntl1 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(0).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_vn_apc_ntl2 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(1).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vt = test_utils.array_to_array_info(sp.vt().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     vn_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     rho_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     exner_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
-    w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
+    w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
     # Prognostic state parameters
-    w_now = test_utils.array_to_array_info(sp.w_now().ndarray)
-    vn_now = test_utils.array_to_array_info(sp.vn_now().ndarray)
-    theta_v_now = test_utils.array_to_array_info(sp.theta_v_now().ndarray)
-    rho_now = test_utils.array_to_array_info(sp.rho_now().ndarray)
-    exner_now = test_utils.array_to_array_info(sp.exner_now().ndarray)
+    w_now = test_utils.array_to_array_info(sp.w_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn_now = test_utils.array_to_array_info(sp.vn_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    theta_v_now = test_utils.array_to_array_info(sp.theta_v_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho_now = test_utils.array_to_array_info(sp.rho_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner_now = test_utils.array_to_array_info(sp.exner_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
 
-    w_new = test_utils.array_to_array_info(sp.w_new().ndarray)
-    vn_new = test_utils.array_to_array_info(sp.vn_new().ndarray)
-    theta_v_new = test_utils.array_to_array_info(sp.theta_v_new().ndarray)
-    rho_new = test_utils.array_to_array_info(sp.rho_new().ndarray)
-    exner_new = test_utils.array_to_array_info(sp.exner_new().ndarray)
+    w_new = test_utils.array_to_array_info(sp.w_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn_new = test_utils.array_to_array_info(sp.vn_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    theta_v_new = test_utils.array_to_array_info(sp.theta_v_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho_new = test_utils.array_to_array_info(sp.rho_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner_new = test_utils.array_to_array_info(sp.exner_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
 
     # using fortran indices
     substep = substep_init
@@ -974,62 +974,62 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
     second_order_divdamp_factor = sp.divdamp_fac_o2()
 
     # PrepAdvection
-    vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
+    vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
-    mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
-    mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
+    mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
 
     # Diagnostic state parameters
     max_vertical_cfl = 0.0
     max_vcfl_size1_array = test_utils.array_to_array_info(
         np.full(1, max_vertical_cfl, dtype=np.float64)
     )
-    theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
-    exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
-    rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)
-    ddt_exner_phy = test_utils.array_to_array_info(sp.ddt_exner_phy().ndarray)
-    grf_tend_rho = test_utils.array_to_array_info(sp.grf_tend_rho().ndarray)
-    grf_tend_thv = test_utils.array_to_array_info(sp.grf_tend_thv().ndarray)
-    grf_tend_w = test_utils.array_to_array_info(sp.grf_tend_w().ndarray)
-    mass_fl_e = test_utils.array_to_array_info(sp.mass_fl_e().ndarray)
-    ddt_vn_phy = test_utils.array_to_array_info(sp.ddt_vn_phy().ndarray)
-    grf_tend_vn = test_utils.array_to_array_info(sp.grf_tend_vn().ndarray)
-    ddt_vn_apc_ntl1 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(0).ndarray)
-    ddt_vn_apc_ntl2 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(1).ndarray)
+    theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho_ic = test_utils.array_to_array_info(sp.rho_ic().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_exner_phy = test_utils.array_to_array_info(sp.ddt_exner_phy().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_rho = test_utils.array_to_array_info(sp.grf_tend_rho().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_thv = test_utils.array_to_array_info(sp.grf_tend_thv().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_w = test_utils.array_to_array_info(sp.grf_tend_w().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    mass_fl_e = test_utils.array_to_array_info(sp.mass_fl_e().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_vn_phy = test_utils.array_to_array_info(sp.ddt_vn_phy().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    grf_tend_vn = test_utils.array_to_array_info(sp.grf_tend_vn().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_vn_apc_ntl1 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(0).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    ddt_vn_apc_ntl2 = test_utils.array_to_array_info(sp.ddt_vn_apc_pc(1).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     if linit:
-        ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)
-        ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
+        ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     else:
-        ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
-        ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)
-    vt = test_utils.array_to_array_info(sp.vt().ndarray)
-    vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
+        ddt_w_adv_ntl1 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+        ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(0).ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vt = test_utils.array_to_array_info(sp.vt().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     vn_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     rho_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
     exner_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     )
-    w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
+    w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
 
     # Prognostic state parameters
-    w_now = test_utils.array_to_array_info(sp.w_now().ndarray)
-    vn_now = test_utils.array_to_array_info(sp.vn_now().ndarray)
-    theta_v_now = test_utils.array_to_array_info(sp.theta_v_now().ndarray)
-    rho_now = test_utils.array_to_array_info(sp.rho_now().ndarray)
-    exner_now = test_utils.array_to_array_info(sp.exner_now().ndarray)
+    w_now = test_utils.array_to_array_info(sp.w_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn_now = test_utils.array_to_array_info(sp.vn_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    theta_v_now = test_utils.array_to_array_info(sp.theta_v_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho_now = test_utils.array_to_array_info(sp.rho_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner_now = test_utils.array_to_array_info(sp.exner_now().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
 
-    w_new = test_utils.array_to_array_info(sp.w_new().ndarray)
-    vn_new = test_utils.array_to_array_info(sp.vn_new().ndarray)
-    theta_v_new = test_utils.array_to_array_info(sp.theta_v_new().ndarray)
-    rho_new = test_utils.array_to_array_info(sp.rho_new().ndarray)
-    exner_new = test_utils.array_to_array_info(sp.exner_new().ndarray)
+    w_new = test_utils.array_to_array_info(sp.w_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    vn_new = test_utils.array_to_array_info(sp.vn_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    theta_v_new = test_utils.array_to_array_info(sp.theta_v_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    rho_new = test_utils.array_to_array_info(sp.rho_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
+    exner_new = test_utils.array_to_array_info(sp.exner_new().ndarray)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol incompatible with NumPy ndarray typing
 
     ffi = cffi.FFI()
     # use fortran indices in the driving loop to compute i_substep

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import cffi
 import numpy as np
-from gt4py._core.definitions import NDArrayObject
 
 from icon4py.tools.py2fgen import _codegen, _definitions
 
@@ -55,7 +54,7 @@ def array_info(
 
 
 def array_to_array_info(
-    arr: np.ndarray | NDArrayObject,
+    arr: np.ndarray,  # or cp.ndarray
     *,
     ffi: cffi.FFI | None = None,
     keep_alive: bool = True,
@@ -70,17 +69,12 @@ def array_to_array_info(
     - the array is converted to Fortran layout.
     """
     on_gpu = not isinstance(arr, np.ndarray)
-    # narrow the static type: GT4Py field buffers are numpy arrays at runtime
-    if not isinstance(arr, np.ndarray):
-        arr = np.asarray(arr)
     xp = cp if on_gpu else np
     if ffi is None:
         ffi = cffi.FFI()
     if as_fortran_layout and not arr.flags["F_CONTIGUOUS"]:
         arr = xp.asfortranarray(arr)
 
-    if not isinstance(arr, np.ndarray):
-        arr = np.asarray(arr)
     addr = arr.ctypes.data if not on_gpu else arr.data.ptr  # type: ignore[attr-defined] # we claim it's numpy while the 2nd case is for cupy
     strtype = _codegen.BUILTIN_TO_CPP_TYPE[_from_np_dtype(arr.dtype)]
     ptr = ffi.cast(f"{strtype}*", addr)
