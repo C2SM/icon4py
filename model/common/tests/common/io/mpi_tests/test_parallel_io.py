@@ -120,7 +120,7 @@ def synthetic_state(info: decomp_defs.DecompositionInfo, step: int) -> dict[str,
         else:
             data = expected_value(local_global, 0, step)
         state[name] = field.Field(
-            QUANTITIES[name], gtx.as_field((dim, dims.KDim) if num_levels else (dim,), data)
+            QUANTITIES[name], gtx.as_field((dim, dims.KDim) if num_levels else (dim,), data)  # type: ignore[arg-type]  # GT4Py NDArrayObject protocol limitation
         )
     return state
 
