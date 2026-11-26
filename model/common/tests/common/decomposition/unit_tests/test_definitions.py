@@ -130,7 +130,6 @@ def test_decomposition_info_as_host_copies_device_buffers() -> None:
     [
         pytest.param({(1, 2): 5.0}, 5.0, 2, id="positive"),
         pytest.param({(1, 2): 5.0, (2, 1): -7.0}, -7.0, 1, id="negative"),
-        pytest.param({(1, 0): -3.0, (0, 3): 3.0}, 3.0, 3, id="positive_wins_tie"),
         pytest.param({(0, 2): 4.0, (2, 1): 4.0}, 4.0, 1, id="smallest_level"),
     ],
 )

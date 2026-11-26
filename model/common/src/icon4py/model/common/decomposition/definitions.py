@@ -719,7 +719,7 @@ def find_global_absolute_maximum(
     reductions: Reductions,
 ) -> tuple[state_utils.ScalarType, int]:
     """
-    Find the largest value of buffer on all ranks, with the sign of the value is kept.
+    Find the value in a buffer for which |value| is largest over all ranks (returning it with sign preserved).
 
     Args:
         buffer: local buffer.
@@ -727,7 +727,7 @@ def find_global_absolute_maximum(
         reductions: global reductions of the current decomposition.
 
     Returns:
-        The largest value and the smallest vertical index at which the largest value is found.
+        The largest absolute value with sign preserved and the smallest vertical index at which it is found.
     """
     array_ns = data_alloc.array_namespace(buffer)
     global_max = reductions.max(buffer)
