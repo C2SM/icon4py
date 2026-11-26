@@ -99,6 +99,7 @@ class NeedsExchange(Protocol):
             # ghex assumes all fields to in one call to have the same `dtype`, this is not the case for all producer functions in icon4py,
             # hence as a simple workaround we loop over the fields
             for name, field in fields.items():
+                field = typing.cast("state_utils.GTXFieldType", field)
                 log.debug(
                     f"preparing exchange of {name} - domain={field.domain} dtype={field.dtype}"
                 )
