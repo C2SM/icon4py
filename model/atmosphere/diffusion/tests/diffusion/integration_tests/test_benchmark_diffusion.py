@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import pytest
+from typing import Any
 from pytest_benchmark.fixture import BenchmarkFixture
 
 import icon4py.model.common.dimension as dims
