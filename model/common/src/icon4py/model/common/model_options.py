@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
+import os
 from collections.abc import Callable
 from typing import Any
 
@@ -105,9 +106,34 @@ def _set_device_specific_dace_options(
         optimization_args["blocking_size"] = 4
         optimization_args["blocking_only_if_independent_nodes"] = False
     elif device == model_backends.DeviceType.CUDA:
-        optimization_args.setdefault("gpu_block_size_2d", (32, 8, 1))
-        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
+        # optimization_args.setdefault("gpu_block_size_2d", (32, 4, 1))
+        # optimization_args.setdefault("gpu_block_size_1d", (64, 1, 1))
+        # optimization_args["blocking_dims"] = list(dimension.vertical_dims())
+        # optimization_args["blocking_size"] = 2
+        # optimization_args["blocking_only_if_independent_nodes"] = False
+        _env_2d = os.environ.get("ICON4PY_SWEEP_BLOCK_SIZE_2D")
+        _env_1d = os.environ.get("ICON4PY_SWEEP_BLOCK_SIZE_1D")
+        _env_blk = os.environ.get("ICON4PY_SWEEP_BLOCKING_SIZE")
 
+        _block_2d = tuple(int(v) for v in _env_2d.split(",")) if _env_2d else (32, 4, 1)
+        _block_1d = tuple(int(v) for v in _env_1d.split(",")) if _env_1d else (64, 1, 1)
+        _blocking_size = int(_env_blk) if _env_blk is not None else 2
+
+        optimization_args.setdefault("gpu_block_size_2d", _block_2d)
+        optimization_args.setdefault("gpu_block_size_1d", _block_1d)
+
+        if _blocking_size > 0:
+            optimization_args["blocking_dims"] = list(dimension.vertical_dims())
+            optimization_args["blocking_size"] = _blocking_size
+            optimization_args["blocking_only_if_independent_nodes"] = False
+
+        log.info(
+            "CUDA optimization args: gpu_block_size_2d=%s, gpu_block_size_1d=%s, "
+            "blocking_size=%s",
+            _block_2d,
+            _block_1d,
+            _blocking_size,
+        )
 
 def get_dace_options(
     program_name: str,

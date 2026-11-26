@@ -73,6 +73,11 @@ class GridManager:
         self._geometry: GeometryDict = {}
         self._coordinates: CoordinateDict = {}
         self._reader = None
+        print(
+            f"[GridManager] initializing '{self._file_name}' "
+            f"with num_levels={self._vertical_config.num_levels}",
+            flush=True,
+        )
 
     def open(self):
         """Open the gridfile resource for reading."""
