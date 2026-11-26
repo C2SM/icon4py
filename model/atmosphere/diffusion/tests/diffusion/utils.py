@@ -13,6 +13,7 @@ import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.common import states
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import serialbox as sb, test_utils
 
 
@@ -62,7 +63,7 @@ def verify_diffusion_fields(
     diagnostic_state: states.DiffusionDiagnostics,
     prognostic_state: states.PrognosticState,
     diffusion_savepoint: sb.IconDiffusionExitSavepoint,
-):
+) -> None:
     ref_w = diffusion_savepoint.w().asnumpy()
     val_w = prognostic_state.w.asnumpy()
     ref_exner = diffusion_savepoint.exner().asnumpy()
