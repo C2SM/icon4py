@@ -2,41 +2,34 @@
 #SBATCH --job-name=JW4Py_mpi
 #SBATCH --nodes=4
 #SBATCH --ntasks-per-node=4
-#SBATCH --time=04:00:00
-##SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-task=16
-#SBATCH --uenv=prgenv-gnu/7.2.3:v2
+#SBATCH --time=08:00:00
+#SBATCH --gres=gpu:4
+#SBATCH --uenv=icon/26.7:v1@santis
 #SBATCH -A csstaff
 #SBATCH --view=default
-#SBATCH --partition mi300
-#SBATCH --reservation cscs
-#SBATCH --exclude=nid[002668,002676],nid[002936,002956],nid[002922,002924]
+#SBATCH --partition=normal
 
 ICON4PY_GIT_ROOT=$(git rev-parse --show-toplevel)
 cd $ICON4PY_GIT_ROOT
 
-source setup_amd_env.sh
+source venv_gh200/bin/activate
 
-source venv_mi300/bin/activate
-
-# ROCm + cray-mpich related options
+# MPI options from ICON
 export MPICH_GPU_SUPPORT_ENABLED=1
-export HSA_ENABLE_IPC_MODE_LEGACY=1
-# Options from Santis
 export CUDA_BUFFER_PAGE_IN_THRESHOLD_MS=0.001
 export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=0
 export FI_CXI_RX_MATCH_MODE=software
 export FI_MR_CACHE_MONITOR=disabled
 
-# Avoid caching CUDA/COMGR kernels to avoid inode limit
+# Avoid caching CUDA kernels to avoid inode limit
 export CUDA_CACHE_DISABLE=1
-export AMD_COMGR_CACHE=0
 
 # ICON4Py performance related options
 # Python optimization level
 export PYTHONOPTIMIZE=2
 # External workspace storage per device (one large hip/cuMalloc allocation for temp variables in DaCe - necessary for MI300A perf)
-GIBS_EXTERNAL=8
+GIBS_EXTERNAL=10
 export ICON4PY_BACKEND_WORKSPACE_SIZE=$((${GIBS_EXTERNAL}*1073741824))
 # Set the logging level for ICON4Py driver to warning to avoid printing overhead when measuring. Requires the changes in `show_timer_report`
 export ICON4PY_DRIVER_LOGGING_LEVEL="warning"
@@ -57,10 +50,23 @@ export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE="1"
 # Skip verbose DaCe warnings during compilation
 export GT4PY_SKIP_DACE_WARNINGS=1
 
+# UENV specific settings
+export LD_LIBRARY_PATH=/user-environment/linux-neoverse_v2/nvhpc-26.1-eyhld4lfk55ld66egsyukpzmvejqlqa2/Linux_aarch64/26.1/compilers/lib:$LD_LIBRARY_PATH
+export CC=$(which gcc)
+export CXX=$(which g++)
+export MPICH_CC=$(which gcc)
+export MPICH_CXX=$(which g++)
+
 export ICON_GRID="/capstor/store/cscs/userlab/cwd01/cong/grids/torus_100000mx100000m_res100m.nc"
 SUFFIX="torus_100000mx100000m_res100m"
 
-export GT4PY_BUILD_CACHE_DIR="MI300A_WB_external_mpi_${SUFFIX}_ntasks${SLURM_NTASKS}_baseline"
+export GT4PY_BUILD_CACHE_DIR_PREFIX="GH200_WB_external_mpi_${SUFFIX}_${SLURM_NNODES}nodes"
+export VERSION_SUFFIX="baseline"
+
+echo "Executing JW4Py on ${SLURM_NNODES} GH200 nodes to check the WALL CLOCK timer reported at the end of the run (MPI)"
+
+export GT4PY_BUILD_CACHE_DIR="${GT4PY_BUILD_CACHE_DIR_PREFIX}_${VERSION_SUFFIX}"
+export GT4PY_BUILD_CACHE_DIR="/iopsstor/scratch/cscs/ioannmag/ICON4PY/icon4py-JW-benchmarks/GH200_WB_external_mpi_torus_100000mx100000m_res100m_4nodes_baseline" # Use prebuilt cache to avoid compilation time overhead
 export CONFIG="/iopsstor/scratch/cscs/ioannmag/ICON4PY/icon4py-JW-benchmarks/warm_bubble_noIO.yaml"
 
 if [[ ! -d ${GT4PY_BUILD_CACHE_DIR} ]]; then
@@ -68,12 +74,10 @@ if [[ ! -d ${GT4PY_BUILD_CACHE_DIR} ]]; then
 fi
 
 echo "Variables used for this run:"
-printenv | grep -E '^(SLURM_|ICON4PY_|GT4PY_|GHEX_|NCCL_|CUDA_|HIP_|CUPY_|FI_|HSA_|AMD_)' | sort
+printenv | grep -E '^(SLURM_|ICON4PY_|GT4PY_|GHEX_|NCCL_|CUDA_|CUPY_|FI_)' | sort
 
-echo "Executing JW4Py on ${SLURM_NNODES} MI300A nodes to check the WALL CLOCK timer reported at the end of the run (MPI)"
-
-srun -u --cpus-per-task=$SLURM_CPUS_PER_TASK --cpu-bind=cores \
-    bash -c 'export CUPY_CACHE_DIR=$(pwd)/cupy_rocm_cache/rank_$SLURM_PROCID; export HIP_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${HIP_VISIBLE_DEVICES}"; \
+srun -u --cpus-per-task=$SLURM_CPUS_PER_TASK --cpu-bind=cores --gres-flags=allow-task-sharing \
+    bash -c 'export CUPY_CACHE_DIR=$(pwd)/cupy_cache/rank_$SLURM_PROCID; export CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${CUDA_VISIBLE_DEVICES}"; \
     icon4py-driver \
     --config-file-path ${CONFIG} \
     --grid-file-path $(realpath ${ICON_GRID}) \
