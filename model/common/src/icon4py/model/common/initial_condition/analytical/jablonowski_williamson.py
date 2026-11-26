@@ -263,7 +263,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
         eta_old = eta_old - newton_function / newton_function_prime
 
-    eta_v_ndarray[:, :] = (eta_old - eta_0) * math.pi * 0.5
+    eta_v_ndarray[:, :] = (eta_old - eta_0) * math.pi * 0.5  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
     exner_dp = (eta_old * p_sfc / gtx.float64(phy_const.P0REF)) ** gtx.float64(phy_const.RD_O_CPD)
     theta_v_dp = temperature_jw / exner_dp
     rho_dp = (
