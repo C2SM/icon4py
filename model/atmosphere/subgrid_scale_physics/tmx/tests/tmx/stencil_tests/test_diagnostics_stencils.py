@@ -125,7 +125,7 @@ def _coefficient_field(
     """Three quadratic extrapolation coefficient rows, aligned to the levels they multiply."""
     return gtx.as_field(
         gtx.domain({horizontal_dim: (0, size), dims.KDim: (k_start, k_start + 3)}),
-        data_alloc.rng.uniform(size=(size, 3)),
+        data_alloc.rng.uniform(size=(size, 3)),  # type: ignore[arg-type]  # numpy dtype[float] does not satisfy gt4py NDArrayObject protocol
         dtype=wpfloat,
         allocator=data_alloc.allocator,
     )
