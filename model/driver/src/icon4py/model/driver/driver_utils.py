@@ -239,8 +239,6 @@ def initialize_granules(
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
     backend: model_backends.BackendLike,
-    process_props: decomposition_defs.ProcessProperties,
-    decomposition_info: decomposition_defs.DecompositionInfo,
 ) -> Granules:
     geometry_field_source = static_field_factories.geometry
     interpolation_field_source = static_field_factories.interpolation
