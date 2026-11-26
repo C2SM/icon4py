@@ -116,9 +116,11 @@ def default_mapping(
         # one mapper per parameter, maxsize=2 covers double-buffering identical calls
         @functools.lru_cache(maxsize=2)
         def array_mapper(
-            array_info: _definitions.ArrayInfo, *, ffi: cffi.FFI
+            value: _definitions.ArrayInfo | bool | int | float, *, ffi: cffi.FFI
         ) -> _definitions.NDArray:
-            return as_array(ffi, array_info)
+            # Array parameters are always delivered as ``ArrayInfo`` tuples.
+            assert isinstance(value, tuple)
+            return as_array(ffi, value)
 
         return array_mapper
     if (
