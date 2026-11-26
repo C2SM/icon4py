@@ -15,7 +15,7 @@ import pytest
 
 from icon4py.tools.py2fgen import _codegen, _definitions, _generator
 
-from tests.tools.py2fgen.wrappers import simple
+from tests.tools.py2fgen.wrappers import simple  # type: ignore[import-untyped]  # name collision with model/common/tests prevents source resolution
 
 
 def test_parse_functions_on_wrapper() -> None:

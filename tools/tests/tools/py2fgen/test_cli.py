@@ -19,7 +19,7 @@ from click.testing import CliRunner, Result
 import icon4py.tools.py2fgen._utils as utils
 from icon4py.tools.py2fgen._cli import main
 
-from tests.tools.py2fgen.wrappers import simple
+from tests.tools.py2fgen.wrappers import simple  # type: ignore[import-untyped]  # name collision with model/common/tests prevents source resolution
 
 
 @pytest.fixture
