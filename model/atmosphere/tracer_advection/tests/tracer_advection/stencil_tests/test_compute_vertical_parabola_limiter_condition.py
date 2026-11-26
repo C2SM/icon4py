@@ -19,6 +19,15 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
+def compute_vertical_parabola_limiter_condition_numpy(
+    p_face: np.ndarray,
+    p_cc: np.ndarray,
+) -> np.ndarray:
+    z_delta = p_face[:, :-1] - p_face[:, 1:]
+    z_a6i = 6.0 * (p_cc - 0.5 * (p_face[:, :-1] + p_face[:, 1:]))
+    return np.where(np.abs(z_delta) < -1 * z_a6i, 1, 0)
+
+
 class TestComputeVerticalParabolaLimiterCondition(stencil_tests.StencilTest):
     PROGRAM = compute_vertical_parabola_limiter_condition
     OUTPUTS = ("l_limit",)
@@ -31,9 +40,7 @@ class TestComputeVerticalParabolaLimiterCondition(stencil_tests.StencilTest):
         p_cc: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        z_delta = p_face[:, :-1] - p_face[:, 1:]
-        z_a6i = 6.0 * (p_cc - 0.5 * (p_face[:, :-1] + p_face[:, 1:]))
-        l_limit = np.where(np.abs(z_delta) < -1 * z_a6i, 1, 0)
+        l_limit = compute_vertical_parabola_limiter_condition_numpy(p_face, p_cc)
         return dict(l_limit=l_limit)
 
     @stencil_tests.input_data_fixture

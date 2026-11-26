@@ -14,9 +14,30 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_vertically import (
     integrate_tracer_vertically,
 )
+from icon4py.model.atmosphere.tracer_advection.tracer_advection_type import VerticalAdvectionType
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
+
+
+def integrate_tracer_vertically_numpy(  # noqa: PLR0917
+    tracer_now: np.ndarray,
+    rhodz_now: np.ndarray,
+    p_mflx_tracer_v: np.ndarray,
+    deepatmo_divzl: np.ndarray,
+    deepatmo_divzu: np.ndarray,
+    rhodz_new: np.ndarray,
+    p_dtime: float,
+    ivadv_tracer: int,
+) -> np.ndarray:
+    if ivadv_tracer != VerticalAdvectionType.NO_ADVECTION.value:
+        tracer_new = (
+            tracer_now * rhodz_now
+            + p_dtime
+            * (p_mflx_tracer_v[:, 1:] * deepatmo_divzl - p_mflx_tracer_v[:, :-1] * deepatmo_divzu)
+        ) / rhodz_new
+        return tracer_new
+    return tracer_now
 
 
 class TestIntegrateTracerVertically(stencil_tests.StencilTest):
@@ -33,29 +54,20 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
         deepatmo_divzl: np.ndarray,
         deepatmo_divzu: np.ndarray,
         rhodz_new: np.ndarray,
-        k: np.ndarray,
         ivadv_tracer: gtx.int32,
-        iadv_slev_jt: gtx.int32,
         p_dtime: float,
         **kwargs: Any,
     ) -> dict:
-        if ivadv_tracer != 0:
-            tracer_new = np.where(
-                (iadv_slev_jt <= k),
-                (
-                    tracer_now * rhodz_now
-                    + p_dtime
-                    * (
-                        p_mflx_tracer_v[:, 1:] * deepatmo_divzl
-                        - p_mflx_tracer_v[:, :-1] * deepatmo_divzu
-                    )
-                )
-                / rhodz_new,
-                tracer_now,
-            )
-        else:
-            tracer_new = tracer_now
-
+        tracer_new = integrate_tracer_vertically_numpy(
+            tracer_now,
+            rhodz_now,
+            p_mflx_tracer_v,
+            deepatmo_divzl,
+            deepatmo_divzu,
+            rhodz_new,
+            p_dtime,
+            ivadv_tracer,
+        )
         return dict(tracer_new=tracer_new)
 
     @stencil_tests.input_data_fixture
@@ -67,10 +79,8 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
         deepatmo_divzu = data_alloc.random_field(dims.KDim)
         rhodz_new = data_alloc.random_field(dims.CellDim, dims.KDim)
         tracer_new = data_alloc.zero_field(dims.CellDim, dims.KDim)
-        k = data_alloc.index_field(dims.KDim)
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
-        iadv_slev_jt = 4
         return dict(
             tracer_now=tracer_now,
             rhodz_now=rhodz_now,
@@ -79,10 +89,8 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
             deepatmo_divzu=deepatmo_divzu,
             rhodz_new=rhodz_new,
             tracer_new=tracer_new,
-            k=k,
             p_dtime=p_dtime,
             ivadv_tracer=ivadv_tracer,
-            iadv_slev_jt=iadv_slev_jt,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
