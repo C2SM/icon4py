@@ -182,7 +182,7 @@ def test_setup_program_specify_inputs(
     ],
 )
 def test_selected_fusion_options(program: str, expected: dict) -> None:
-    descriptor = {"optimization_args": {"optimization_hooks": {}}}
+    descriptor: dict[str, typing.Any] = {"optimization_args": {"optimization_hooks": {}}}
     options = model_options.get_dace_options(program, None, **descriptor)["optimization_args"]
     assert all(options[key] == value for key, value in expected.items())
     assert "vertical_split_shared_output_data" not in options
