@@ -395,7 +395,7 @@ class GridFile:
             if indices is not None and indices.size > 0:
                 # apply the selection to the correct dimension
                 data = np.take(data, data_alloc.as_numpy(indices), axis=(1 if transpose else 0))
-            data = np.array(data, dtype=dtype).ravel(order="K").reshape(target_shape)
+            data = np.array(data, dtype=dtype).ravel(order="K").reshape(target_shape)  # type: ignore[call-overload]  # GT4Py scalar classes are not accepted as DTypeLike by numpy stubs
             return np.transpose(data) if transpose else data
         except KeyError as err:
             msg = f"{name} does not exist in dataset"
