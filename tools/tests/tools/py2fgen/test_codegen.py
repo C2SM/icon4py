@@ -265,7 +265,11 @@ end module
 
 def test_python_wrapper(dummy_plugin: BindingsLibrary) -> None:
     interface = generate_python_wrapper(dummy_plugin)
-    expected = """import pkgutil
+    expected = """# mypy: ignore-errors
+# Verbatim generator output: the generated 'ffi.def_extern' wrappers are
+# unannotated by design and import the compiled 'icon4py_bindings' C
+# extension, which has no type stubs.
+import pkgutil
 from icon4py.tools.py2fgen import runtime_config
 
 for callable_name in runtime_config.EXTRA_CALLABLES:
