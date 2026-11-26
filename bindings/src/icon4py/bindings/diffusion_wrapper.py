@@ -216,7 +216,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     # Metric state
     metric_state = DiffusionMetricState(
         theta_ref_mc=theta_ref_mc,
-        wgtfac_c=wgtfac_c,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        wgtfac_c=wgtfac_c,
         zd_intcoef=zd_intcoef,
         zd_vertoffset=zd_vertoffset,
         zd_diffcoef=zd_diffcoef,
@@ -233,13 +233,13 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=e_bln_c_s,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=geofac_div,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        geofac_n2s=geofac_n2s,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        geofac_grg_x=geofac_grg_x,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
-        geofac_grg_y=geofac_grg_y,  # type: ignore[arg-type]  # GT4Py field dim variance, accepted at runtime
+        geofac_div=geofac_div,
+        geofac_n2s=geofac_n2s,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
 
