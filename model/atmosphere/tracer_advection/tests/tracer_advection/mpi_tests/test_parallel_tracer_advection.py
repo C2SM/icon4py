@@ -17,6 +17,7 @@ from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,
+    icon,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
