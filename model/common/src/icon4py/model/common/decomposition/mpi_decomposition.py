@@ -11,6 +11,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from types import ModuleType
@@ -412,6 +413,13 @@ class GlobalReductions(Reductions):
     horizontal dimension size (num_cells, num_edges, num_vertices). The correct
     mask is resolved from buffer.shape[0], ensuring only owned (non-halo)
     elements participate in the reduction.
+
+    The global number of elements a reduction runs over is computed without
+    communication, from the global number of owned points of the horizontal
+    dimension (communicated once per dimension, on its first use) and the
+    trailing shape of the buffer. This assumes that all ranks have the same
+    number of vertical levels, i.e. pass buffers of the same trailing shape to
+    a reduction. A 0-d buffer contributes one element per rank.
     """
 
     # TODO (jcanton,msimberg,nfarabullini): the reductions may be better if
@@ -420,6 +428,7 @@ class GlobalReductions(Reductions):
 
     process_props: decomp_defs.ProcessProperties
     _owner_masks: dict[int, data_alloc.NDArray] = dataclasses.field(default_factory=dict)
+    _global_owned_sizes: dict[int, int] = dataclasses.field(default_factory=dict)
 
     def __init__(
         self,
@@ -428,6 +437,7 @@ class GlobalReductions(Reductions):
     ) -> None:
         self.process_props = process_props
         self._owner_masks = {}
+        self._global_owned_sizes = {}
         for dim in (dims.CellDim, dims.EdgeDim, dims.VertexDim):
             mask = decomposition_info.owner_mask(dim)
             size = mask.shape[0]
@@ -462,6 +472,25 @@ class GlobalReductions(Reductions):
                 f"dimension (known sizes: {list(self._owner_masks.keys())})."
             )
         return self._owner_masks[first_dim_size]
+
+    def _global_size(self, buffer: data_alloc.NDArray) -> int:
+        """Global number of elements a reduction of the (unmasked) `buffer` runs over.
+
+        Only the first call for a horizontal dimension communicates, which is safe
+        because the reductions are collective: the global number of owned points of
+        that dimension is cached and every later call is local.
+        """
+        if buffer.ndim == 0:
+            return self.process_props.comm_size
+        first_dim_size = buffer.shape[0]
+        global_owned_size = self._global_owned_sizes.get(first_dim_size)
+        if global_owned_size is None:
+            owner_mask = self._resolve_owner_mask(buffer)
+            global_owned_size = self.process_props.comm.allreduce(
+                int(owner_mask.sum()), op=mpi4py.MPI.SUM
+            )
+            self._global_owned_sizes[first_dim_size] = global_owned_size
+        return global_owned_size * math.prod(buffer.shape[1:])
 
     @staticmethod
     def _min_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
@@ -508,7 +537,8 @@ class GlobalReductions(Reductions):
         global_reduction: mpi4py.MPI.Op,
     ) -> state_utils.ScalarType:
         array_ns = data_alloc.array_namespace(buffer)
-        local_red_val = local_reduction(buffer)
+        # a 0-d buffer already is its own local reduction: skip the kernel launch
+        local_red_val = buffer if buffer.ndim == 0 else local_reduction(buffer)
         recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
         if hasattr(
             array_ns, "cuda"
@@ -517,18 +547,11 @@ class GlobalReductions(Reductions):
         self.process_props.comm.Allreduce(local_red_val, recv_buffer, global_reduction)
         return recv_buffer.item()
 
-    def _calc_buffer_size(
-        self,
-        buffer: data_alloc.NDArray,
-    ) -> state_utils.ScalarType:
-        array_ns = data_alloc.array_namespace(buffer)
-        return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM)
-
     def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        if self._global_size(buffer) == 0:
+            raise ValueError("global_min requires a non-empty buffer")
         buffer = self._prepare_buffer(buffer)
         array_ns = data_alloc.array_namespace(buffer)
-        if self._calc_buffer_size(buffer) == 0:
-            raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
             buffer if buffer.size != 0 else self._min_identity(buffer.dtype, array_ns),
             array_ns.min,
@@ -536,10 +559,10 @@ class GlobalReductions(Reductions):
         )
 
     def max(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        if self._global_size(buffer) == 0:
+            raise ValueError("global_max requires a non-empty buffer")
         buffer = self._prepare_buffer(buffer)
         array_ns = data_alloc.array_namespace(buffer)
-        if self._calc_buffer_size(buffer) == 0:
-            raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
             buffer if buffer.size != 0 else self._max_identity(buffer.dtype, array_ns),
             array_ns.max,
@@ -553,17 +576,17 @@ class GlobalReductions(Reductions):
         on the decomposition. A NaN or infinite entry on any rank raises ``ValueError`` on
         every rank.
         """
-        buffer = self._prepare_buffer(buffer)
-        if self._calc_buffer_size(buffer) == 0:
+        if self._global_size(buffer) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
+        buffer = self._prepare_buffer(buffer)
         return self._sum(buffer)
 
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        buffer = self._prepare_buffer(buffer)
         # computed once, for the check and the division: going through `sum` would reduce it twice
-        global_buffer_size = self._calc_buffer_size(buffer)
+        global_buffer_size = self._global_size(buffer)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
+        buffer = self._prepare_buffer(buffer)
         return self._sum(buffer) / global_buffer_size
 
     def _sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:

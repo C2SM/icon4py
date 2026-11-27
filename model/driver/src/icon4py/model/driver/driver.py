@@ -552,8 +552,19 @@ class Icon4pyDriver:
     # omit spinup feature and the option that if the model starts from IFS or COSMO data
     # horizontal cfl is not ported
     def _adjust_ndyn_substeps_var(self, dycore_diagnostics: states.DycoreDiagnostics) -> None:
+        """
+        Adapt the number of dynamics substeps to the global maximum vertical CFL number.
+
+        TODO: the global maximum is a blocking GPU-aware ``MPI_Allreduce`` on a 0-d
+        device array at every time step, during which the GPU idles. Alternatives:
+        - reduce on the host, ``comm.allreduce(float(max_vertical_cfl), op=MPI.MAX)``,
+            to avoid the latency of GPU-aware MPI for a single value;
+        - start a non-blocking ``Iallreduce`` after the last dynamics substep and wait
+            for it after diffusion (which does not change ``max_vertical_cfl``), to
+            overlap the communication with the diffusion kernels.
+        """
         global_max_vertical_cfl = self.global_reductions.max(
-            self._xp.asarray(dycore_diagnostics.max_vertical_cfl.ndarray[()], dtype=ta.wpfloat),
+            dycore_diagnostics.max_vertical_cfl.ndarray
         )
         if (
             global_max_vertical_cfl
