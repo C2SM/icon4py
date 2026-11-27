@@ -35,7 +35,7 @@ from icon4py.bindings import (
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, field, model_backends, quantities as qty
-from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc, field_utils, profiling
 from icon4py.tools import py2fgen
 
 
@@ -51,6 +51,7 @@ class SolveNonhydroGranule:
 granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 
+@profiling.annotate()
 @icon4py_export.export
 def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
@@ -300,6 +301,7 @@ type NumpyFloatArray1D = Annotated[
 ]
 
 
+@profiling.annotate()
 @icon4py_export.export
 def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     rho_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],

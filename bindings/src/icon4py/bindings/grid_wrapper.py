@@ -24,6 +24,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, mo
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid, vertical
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import profiling
 from icon4py.tools import py2fgen
 
 
@@ -62,6 +63,7 @@ type NumpyBoolArray1D = Annotated[
 ]
 
 
+@profiling.annotate()
 @icon4py_export.export
 def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     cell_starts: NumpyInt32Array1D,
