@@ -1,48 +1,49 @@
 geometry: {}
-metrics: {}
+metrics:
+  rayleigh_coeff: 0.1
 interpolation: {}
 vertical_grid:
   num_levels: 35
-  model_top_height: 20000.0
+  model_top_height: 23500.0
   lowest_layer_thickness: 0.0
 topography:
   type: jablonowski_williamson
 initial_condition:
   type: jablonowski_williamson
-nonhydrostatic: {}
-diffusion: {}
+  baroclinic_amplitude: 0.0
+nonhydrostatic:
+  fourth_order_divdamp_factor: 0.004
+  fourth_order_divdamp_factor2: 0.004
+  fourth_order_divdamp_factor3: 0.004
+  fourth_order_divdamp_factor4: 0.004
+diffusion:
+  apply_to_temperature: False
+  hdiff_efdt_ratio: 10.0
+  smagorinski_scaling_factor: 0.025
 prescribed_tendencies:
   data_path:
 driver:
   experiment_name: jablonowski_williamson
   profiling_options:
-  dtime: 300 seconds
+  dtime: 75 seconds
   enable_statistics_logging: True
   start_of_simulation: 2008-01-01T00:00:00
   start_of_timestepping: 2008-01-01T00:00:00
   end_of_simulation:
-    type: numsteps
-    value: 720
+    type: absolute
+    value: 2008-01-15T00:00:00
 tracer_config:
-  qv: true
-  qc: true
-  qr: true
-  qi: true
-  qs: true
-  qg: true
+  qv: false
+  qc: false
+  qr: false
+  qi: false
+  qs: false
+  qg: false
 tracer_advection:
-  horizontal_advection_type: second_order_linear_miura
-  horizontal_advection_limiter: positive_definite
-  vertical_advection_type: third_order_ppm
-  vertical_advection_limiter: semi_monotonic
 graupel:
-muphys: {}
-tmx: {}
+muphys:
+tmx:
 surface:
-  surface_flux_type: fixed_heat_fluxes
-  kinematic_sensible_heat_flux: 0.0
-  kinematic_latent_heat_flux: 0.0
-  sea_surface_temperature: 300.0
 physics_coupling: sequential
 io:
   output_path: output_sample
@@ -52,35 +53,12 @@ io:
         - eastward_wind
         - northward_wind
         - air_density
-        - dimensionless_exner_function
+        - exner_function
         - virtual_potential_temperature
         - upward_air_velocity
-        - specific_humidity
-        - specific_cloud_content
-        - specific_rain_content
-        - specific_ice_content
-        - specific_snow_content
-        - specific_graupel_content
       output_interval:
         type: numsteps
-        value: 6
-      timesteps_per_file: 0
-      backend: netcdf
-      mode: gather
-      horizontal_chunk_size:
-      horizontal_shard_size:
-      nc_title: ICON4Py Simulation
-      nc_comment: ICON inspired code in Python and GT4Py
-    - basename: precipitation
-      variables:
-        - rainfall_flux
-        - snowfall_flux
-        - graupelfall_flux
-        - icefall_flux
-        - precipitation_energy_flux
-      output_interval:
-        type: numsteps
-        value: 1
+        value: 48
       timesteps_per_file: 0
       backend: netcdf
       mode: gather

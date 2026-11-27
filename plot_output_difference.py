@@ -58,7 +58,7 @@ import numpy as np
 import xarray as xr
 
 
-TIME_BLOCK = 32  # number of output times read at once (bounds the memory use)
+TIME_BLOCK = 1 #32  # number of output times read at once (bounds the memory use)
 TIME_MATCH_TOLERANCE_S = 1e-3
 TIME_UNIT_SECONDS = {"seconds": 1.0, "second": 1.0, "s": 1.0, "minutes": 60.0, "minute": 60.0, "hours": 3600.0, "hour": 3600.0, "days": 86400.0, "day": 86400.0}
 STAT_KEYS = ("max_a", "max_b", "mean_a", "mean_b", "maxabs_a", "maxabs_b", "maxabs_diff", "meanabs_diff", "rms_diff", "nan_a", "nan_b", "nan_mismatch")
@@ -97,7 +97,7 @@ def reorder_rank_blocks(data: xr.Dataset) -> xr.Dataset:
     return data.isel(cell=order)
 
 
-def open_data(files: list[pathlib.Path]) -> xr.Dataset:
+def open_data(files: list[pathlib.Path], every: int) -> xr.Dataset:
     engine = "zarr" if files[0].suffix == ".zarr" else None
     if len(files) == 1:
         data = xr.open_dataset(files[0], engine=engine, decode_times=False)
@@ -107,6 +107,8 @@ def open_data(files: list[pathlib.Path]) -> xr.Dataset:
             files, engine=engine, decode_times=False, combine="nested", concat_dim="time",
             data_vars="minimal", coords="minimal", compat="override", join="override",
         )
+    if every > 1:
+        data = data.isel(time=slice(None, None, every))
     return reorder_rank_blocks(data)
 
 
@@ -196,8 +198,15 @@ def weighted_mean(x: np.ndarray, valid: np.ndarray, weight: np.ndarray) -> np.nd
     """(time,) area-weighted mean over the valid cells of every level, averaged over the levels."""
     with np.errstate(invalid="ignore", divide="ignore"), warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)  # levels / times without any valid cell -> NaN
+        # valid = valid & (np.abs(x) > 0.0)
         per_level = (np.where(valid, x, np.nan) @ weight) / (valid @ weight)
         return np.nanmean(per_level, axis=1)
+        # valid = valid | (np.abs(x) > 1.e-12)
+        # per_level = (np.where(valid, x, np.nan) @ weight) / (valid @ weight)
+        # mean = np.nanmean(np.where(np.abs(per_level) > 1.e-12, per_level, np.nan), axis=1)
+        # nan_mask = np.isnan(mean)
+        # mean[nan_mask] = 0.0
+        # return mean
 
 
 def masked_max(x: np.ndarray, valid: np.ndarray) -> np.ndarray:
@@ -217,6 +226,7 @@ def time_series(
     nlev = int(np.prod([da_a.sizes[d] for d in other_dims])) if other_dims else 1
     out = {k: np.empty(nt) for k in STAT_KEYS}
     for start in range(0, nt, TIME_BLOCK):
+        print(f"    output times {start + 1} ... {min(start + TIME_BLOCK, nt)} of {nt}")
         sl = slice(start, start + TIME_BLOCK)
         a = np.asarray(da_a.isel(time=ia[sl]).values, dtype=np.float64).reshape(-1, nlev, weight.size)
         b = np.asarray(da_b.isel(time=ib[sl]).values, dtype=np.float64).reshape(-1, nlev, weight.size)
@@ -397,6 +407,11 @@ def main() -> None:
     p.add_argument("--labels", nargs=2, default=None, metavar=("A", "B"), help="legend labels (default: directory names)")
     p.add_argument("--plot-dir", type=pathlib.Path, default=None, help="default: ./plots_diff_<A>_vs_<B>")
     p.add_argument("--csv", action="store_true", help="also write all time series as CSV")
+    p.add_argument(
+        "--every", type=int, default=1, metavar="N",
+        help="read only every N-th output time of the 3D group (default: 1, all); the "
+        "surface fluxes are still integrated over all precipitation samples",
+    )
     args = p.parse_args()
 
     files_a, files_b = find_data_files(args.run_a, args.group), find_data_files(args.run_b, args.group)
@@ -405,7 +420,7 @@ def main() -> None:
     labels = tuple(args.labels) if args.labels else (run_label(files_a[0]), run_label(files_b[0]))
     if labels[0] == labels[1]:
         labels = (f"{labels[0]} (A)", f"{labels[1]} (B)")
-    data_a, data_b = open_data(files_a), open_data(files_b)
+    data_a, data_b = open_data(files_a, args.every), open_data(files_b, args.every)
     if data_a.sizes["cell"] != data_b.sizes["cell"]:
         raise SystemExit(f"error: {data_a.sizes['cell']} cells in A, {data_b.sizes['cell']} in B")
     weight = check_same_grid(open_grid(files_a[0]), open_grid(files_b[0]), data_a.sizes["cell"])

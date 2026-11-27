@@ -1,0 +1,718 @@
+<title>__TITLE__</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: an instrument console. Title strip, a dark 3D viewport with HUD overlays,
+   a transport bar for time, then a wrapping grid of control groups. The 3D scene stays
+   dark in both themes (it is the "screen"); the console around it follows the theme. */
+:root {
+  --bg: #edf0f4;
+  --panel: #ffffff;
+  --fg: #142033;
+  --muted: #586579;
+  --line: #d2d8e1;
+  --accent: #1d5fbf;
+  --scene: #0a1020;
+  --scene-fg: #c7d1e2;
+  --scene-muted: #7f8ba1;
+  --liquid: #4ea3ff;
+  --ice: #ff5fcf;
+  --up: #ff9a2e;
+  --down: #22c3b0;
+  --calm: #9aa4b6;
+  --floor-lo: #1a2436;
+  --floor-hi: #c3cde0;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1119; --panel: #121a26; --fg: #e3e8f0; --muted: #929fb2; --line: #243043; --accent: #74abff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1119; --panel: #121a26; --fg: #e3e8f0; --muted: #929fb2; --line: #243043; --accent: #74abff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 var(--font-sans);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 24px;
+}
+.app { max-width: 1280px; margin: 0 auto; display: grid; gap: 12px; }
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.top h1 { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+.top .meta { margin: 0; color: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; min-width: 0; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.viewer {
+  position: relative;
+  height: min(72vh, 780px);
+  min-height: 340px;
+  background: var(--scene);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.viewer canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+.hud { position: absolute; pointer-events: none; color: var(--scene-fg); font-family: var(--font-mono); }
+.hud-time { top: 12px; left: 14px; display: grid; gap: 2px; }
+.hud-time #tLabel { font-size: 1.6rem; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.hud-time #tStats { font-size: 0.74rem; color: var(--scene-muted); font-variant-numeric: tabular-nums; }
+.hud-legend {
+  left: 14px; bottom: 12px; display: grid; gap: 6px; font-size: 0.72rem;
+  background: color-mix(in srgb, var(--scene) 78%, transparent); padding: 8px 10px; border-radius: 8px;
+}
+.legend-row { display: flex; align-items: center; gap: 8px; }
+.sw { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.ramp { width: 110px; height: 8px; border-radius: 4px; flex: none; }
+.legend-row .ends { color: var(--scene-muted); }
+.hud-help { right: 14px; bottom: 12px; font-size: 0.7rem; color: var(--scene-muted); text-align: right; }
+.status {
+  position: absolute; inset: 0; display: grid; place-items: center; color: var(--scene-fg);
+  font-family: var(--font-mono); font-size: 0.9rem; padding: 24px; text-align: center;
+  background: var(--scene);
+}
+
+.transport {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+}
+.transport input[type="range"] { flex: 1 1 220px; min-width: 0; }
+.transport .readout { min-width: 9ch; color: var(--muted); }
+button {
+  font: 500 0.85rem var(--font-sans); color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--panel); border-color: var(--accent); min-width: 6.5em; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+select { font: 0.85rem var(--font-sans); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; }
+input[type="range"] { accent-color: var(--accent); }
+
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+fieldset {
+  margin: 0; min-width: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+  padding: 10px 14px 12px; display: grid; gap: 8px; align-content: start;
+}
+legend { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
+.check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.check .sw { width: 10px; height: 10px; }
+.slider { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; align-items: center; }
+.slider label { font-size: 0.85rem; }
+.slider output { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.slider input { grid-column: 1 / -1; width: 100%; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+.note { margin: 0; font-size: 0.78rem; color: var(--muted); }
+@media (max-width: 720px) {
+  .hud-help { display: none; }
+}
+@media (max-width: 560px) {
+  .hud-time #tLabel { font-size: 1.25rem; }
+  .ramp { width: 80px; }
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1 id="title">__TITLE__</h1>
+    <p class="meta" id="meta">loading…</p>
+  </header>
+
+  <section class="viewer" id="viewer" data-src="__DATA_SRC__">
+    <canvas id="scene" tabindex="0" aria-label="3D view of the cloud liquid, cloud ice and wind; drag to rotate"></canvas>
+    <div class="hud hud-time"><span id="tLabel">t = –</span><span id="tStats"></span></div>
+    <div class="hud hud-legend" id="legend" hidden>
+      <div class="legend-row"><span class="sw" style="background: var(--liquid)"></span><span id="lgLiquid">liquid</span></div>
+      <div class="legend-row"><span class="sw" style="background: var(--ice)"></span><span id="lgIce">ice</span></div>
+      <div class="legend-row"><span class="ramp" style="background: linear-gradient(90deg, var(--down), var(--calm), var(--up))"></span><span id="lgWind" class="ends">w</span></div>
+      <div class="legend-row"><span class="ramp" style="background: linear-gradient(90deg, var(--floor-lo), var(--floor-hi))"></span><span id="lgFloor" class="ends">floor</span></div>
+    </div>
+    <div class="hud hud-help">drag: rotate · right-drag: pan · scroll: zoom<br>space: play/pause · ← →: step</div>
+    <div class="status" id="status">Loading the simulation output…</div>
+  </section>
+
+  <section class="transport" aria-label="Time">
+    <button id="play" class="primary" type="button">Pause</button>
+    <button id="prev" type="button" aria-label="Previous output time">◀</button>
+    <button id="next" type="button" aria-label="Next output time">▶</button>
+    <input id="frame" type="range" min="0" max="0" value="0" step="1" aria-label="Output time">
+    <span id="frameLabel" class="mono readout">–</span>
+    <label for="fps">Speed</label>
+    <select id="fps">
+      <option value="2">2 fps</option>
+      <option value="4">4 fps</option>
+      <option value="8" selected>8 fps</option>
+      <option value="12">12 fps</option>
+      <option value="24">24 fps</option>
+    </select>
+  </section>
+
+  <section class="controls">
+    <fieldset>
+      <legend>Layers</legend>
+      <label class="check"><input id="showLiquid" type="checkbox" checked><span class="sw" style="background: var(--liquid)"></span><span id="ckLiquid">Liquid</span></label>
+      <label class="check"><input id="showIce" type="checkbox" checked><span class="sw" style="background: var(--ice)"></span><span id="ckIce">Ice</span></label>
+      <label class="check"><input id="showWind" type="checkbox" checked><span class="sw" style="background: var(--up)"></span>Wind arrows</label>
+      <label class="check"><input id="showFloor" type="checkbox" checked><span class="sw" style="background: var(--floor-hi)"></span>Column water on the floor</label>
+    </fieldset>
+    <fieldset>
+      <legend>Hydrometeors</legend>
+      <div class="slider"><label for="thr">Threshold</label><output id="thrOut" for="thr"></output><input id="thr" type="range"></div>
+      <div class="slider"><label for="psize">Point size</label><output id="psizeOut" for="psize"></output><input id="psize" type="range" min="0.4" max="4" step="0.1" value="1.6"></div>
+      <div class="slider"><label for="opacity">Opacity</label><output id="opacityOut" for="opacity"></output><input id="opacity" type="range" min="0.01" max="0.5" step="0.01" value="0.08"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Wind</legend>
+      <div class="slider"><label for="alen">Arrow length</label><output id="alenOut" for="alen"></output><input id="alen" type="range" min="0.2" max="3" step="0.1" value="1"></div>
+      <div class="slider"><label for="amin">Hide arrows slower than</label><output id="aminOut" for="amin"></output><input id="amin" type="range" min="0" max="20" step="0.5" value="0"></div>
+      <label class="check"><input id="relWind" type="checkbox">Subtract the mean wind at each height</label>
+    </fieldset>
+    <fieldset>
+      <legend>View</legend>
+      <div class="slider"><label for="exag">Vertical exaggeration</label><output id="exagOut" for="exag"></output><input id="exag" type="range" min="1" max="6" step="0.5" value="2"></div>
+      <label class="check"><input id="autoRotate" type="checkbox">Rotate automatically</label>
+      <div class="row">
+        <button id="viewReset" type="button">Oblique</button>
+        <button id="viewTop" type="button">Top</button>
+        <button id="viewSouth" type="button">From −y</button>
+        <button id="viewWest" type="button">From −x</button>
+      </div>
+    </fieldset>
+  </section>
+  <p class="note" id="notes"></p>
+</div>
+
+<script id="cloud3d-data" type="application/json">__DATA_INLINE__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const status = $("status");
+
+  function fail(message) {
+    status.hidden = false;
+    status.textContent = message;
+  }
+
+  function decode(text, Type) {
+    const bin = atob(text);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Type(bytes.buffer);
+  }
+
+  async function loadRecords() {
+    const inline = $("cloud3d-data").textContent.trim();
+    if (inline) return JSON.parse(inline);
+    const src = $("viewer").dataset.src;
+    const response = await fetch(src);
+    if (!response.ok) throw new Error("could not read " + src + " (HTTP " + response.status + ")");
+    return response.json();
+  }
+
+  function cssColor(name) {
+    return new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue(name).trim());
+  }
+
+  function fmt(value, digits) {
+    if (value === 0) return "0";
+    const a = Math.abs(value);
+    if (a >= 100) return value.toFixed(0);
+    if (a >= 1) return value.toFixed(Math.max(0, digits - 1));
+    return value.toPrecision(digits);
+  }
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  async function start() {
+    if (typeof THREE === "undefined" || !THREE.OrbitControls) {
+      fail("Could not load three.js from the CDN. The viewer needs an internet connection.");
+      return;
+    }
+    let records;
+    try {
+      records = await loadRecords();
+    } catch (err) {
+      fail("Could not load the data: " + err.message);
+      return;
+    }
+    const H = records[0];
+    const N = H.nCell;
+    const X = decode(H.x, Float32Array);
+    const Y = decode(H.y, Float32Array);
+    const Z = decode(H.z, Float32Array);
+    const xc = 0.5 * (H.xwin[0] + H.xwin[1]);
+    const yc = 0.5 * (H.ywin[0] + H.ywin[1]);
+    const Lx = H.xwin[1] - H.xwin[0];
+    const Ly = H.ywin[1] - H.ywin[0];
+    const zmax = H.zmax;
+    const nFrames = records.length - 1;
+
+    // world: x east, y up (height), z = -north, centred on the domain; world.scale.y = exaggeration
+    const wx = (x) => x - xc;
+    const wz = (y) => -(y - yc);
+
+    // decode every output time once (a few MB)
+    const frames = records.slice(1).map((r) => ({
+      t: r.t,
+      stats: r.s,
+      L: { i: decode(r.L.i, Uint32Array), v: decode(r.L.v, Uint8Array) },
+      I: { i: decode(r.I.i, Uint32Array), v: decode(r.I.v, Uint8Array) },
+      W: decode(r.W, Int8Array),
+      F: decode(r.F, Uint8Array),
+    }));
+    const capacity = {
+      L: Math.max(1, ...frames.map((f) => f.L.i.length)),
+      I: Math.max(1, ...frames.map((f) => f.I.i.length)),
+    };
+
+    // ---------------------------------------------------------------- renderer
+    const canvas = $("scene");
+    const viewer = $("viewer");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.localClippingEnabled = true;
+    const scene = new THREE.Scene();
+    scene.background = cssColor("--scene");
+    const camera = new THREE.PerspectiveCamera(38, 1, 1, 5000);
+    const controls = new THREE.OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.autoRotateSpeed = 0.6;
+    const world = new THREE.Group();
+    scene.add(world);
+    const labels = new THREE.Group();
+    scene.add(labels);
+
+    const colors = {
+      liquid: cssColor("--liquid"), ice: cssColor("--ice"), up: cssColor("--up"), down: cssColor("--down"),
+      calm: cssColor("--calm"), floorLo: cssColor("--floor-lo"), floorHi: cssColor("--floor-hi"),
+      text: getComputedStyle(document.documentElement).getPropertyValue("--scene-fg").trim(),
+      grid: new THREE.Color("#2a3650"), box: new THREE.Color("#53617c"),
+    };
+
+    // ---------------------------------------------------------------- floor and box
+    const tri = decode(H.floor.tri, Float32Array);
+    const owner = decode(H.floor.owner, Uint32Array);
+    const nTri = owner.length;
+    const floorPos = new Float32Array(nTri * 9);
+    for (let k = 0; k < nTri; k++) {
+      for (let c = 0; c < 3; c++) {
+        floorPos[9 * k + 3 * c] = wx(tri[6 * k + 2 * c]);
+        floorPos[9 * k + 3 * c + 1] = 0;
+        floorPos[9 * k + 3 * c + 2] = wz(tri[6 * k + 2 * c + 1]);
+      }
+    }
+    const floorCol = new Float32Array(nTri * 9);
+    const floorGeo = new THREE.BufferGeometry();
+    floorGeo.setAttribute("position", new THREE.BufferAttribute(floorPos, 3));
+    floorGeo.setAttribute("color", new THREE.BufferAttribute(floorCol, 3).setUsage(THREE.DynamicDrawUsage));
+    const clip = [
+      new THREE.Plane(new THREE.Vector3(1, 0, 0), Lx / 2), new THREE.Plane(new THREE.Vector3(-1, 0, 0), Lx / 2),
+      new THREE.Plane(new THREE.Vector3(0, 0, 1), Ly / 2), new THREE.Plane(new THREE.Vector3(0, 0, -1), Ly / 2),
+    ];
+    const floor = new THREE.Mesh(floorGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, clippingPlanes: clip, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }));
+    world.add(floor);
+
+    function lineObject(points, color, opacity) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(points), 3));
+      return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
+    }
+    const gridPts = [];
+    const gridStep = 10;
+    for (let x = Math.ceil(H.xwin[0] / gridStep) * gridStep; x <= H.xwin[1]; x += gridStep) gridPts.push(wx(x), 0.01, -Ly / 2, wx(x), 0.01, Ly / 2);
+    for (let y = Math.ceil(H.ywin[0] / gridStep) * gridStep; y <= H.ywin[1]; y += gridStep) gridPts.push(-Lx / 2, 0.01, wz(y), Lx / 2, 0.01, wz(y));
+    world.add(lineObject(gridPts, colors.grid, 0.55));
+    const bx = Lx / 2, bz = Ly / 2;
+    const corners = [[-bx, -bz], [bx, -bz], [bx, bz], [-bx, bz]];
+    const boxPts = [];
+    for (let k = 0; k < 4; k++) {
+      const [ax, az] = corners[k];
+      const [cx, cz] = corners[(k + 1) % 4];
+      boxPts.push(ax, 0, az, cx, 0, cz, ax, zmax, az, cx, zmax, cz, ax, 0, az, ax, zmax, az);
+    }
+    world.add(lineObject(boxPts, colors.box, 0.8));
+
+    // ---------------------------------------------------------------- hydrometeor clouds
+    const vertexShader = `
+      attribute float aVal;
+      uniform float uSize;
+      uniform float uScale;
+      uniform float uCut;
+      varying float vA;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * mv;
+        if (aVal < uCut) { vA = -1.0; gl_PointSize = 0.0; return; }
+        vA = clamp((aVal - uCut) / max(1.0 - uCut, 1e-3), 0.0, 1.0);
+        gl_PointSize = max(uSize * (0.4 + 0.6 * vA) * uScale / -mv.z, 1.0);
+      }`;
+    const fragmentShader = `
+      uniform vec3 uC0;
+      uniform vec3 uC1;
+      uniform float uOpacity;
+      varying float vA;
+      void main() {
+        if (vA < 0.0) discard;
+        vec2 p = gl_PointCoord * 2.0 - 1.0;
+        float r2 = dot(p, p);
+        if (r2 > 1.0) discard;
+        float f = (1.0 - r2) * (1.0 - r2);
+        gl_FragColor = vec4(mix(uC0, uC1, vA), f * uOpacity * (0.25 + 0.75 * vA));
+      }`;
+
+    function makeCloud(color, cap) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(cap * 3), 3).setUsage(THREE.DynamicDrawUsage));
+      geo.setAttribute("aVal", new THREE.BufferAttribute(new Float32Array(cap), 1).setUsage(THREE.DynamicDrawUsage));
+      geo.setDrawRange(0, 0);
+      const dim = color.clone().multiplyScalar(0.45);
+      const bright = color.clone().lerp(new THREE.Color(1, 1, 1), 0.55);
+      const mat = new THREE.ShaderMaterial({
+        uniforms: {
+          uC0: { value: dim }, uC1: { value: bright }, uSize: { value: 1 }, uScale: { value: 1 },
+          uCut: { value: 0 }, uOpacity: { value: 0.08 },
+        },
+        vertexShader, fragmentShader, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      });
+      const points = new THREE.Points(geo, mat);
+      points.frustumCulled = false;
+      world.add(points);
+      return points;
+    }
+    const clouds = { L: makeCloud(colors.liquid, capacity.L), I: makeCloud(colors.ice, capacity.I) };
+    const meta = { L: H.liquid, I: H.ice };
+
+    function fillCloud(key, f) {
+      const pts = clouds[key];
+      const pos = pts.geometry.attributes.position.array;
+      const val = pts.geometry.attributes.aVal.array;
+      const idx = f[key].i, v = f[key].v;
+      for (let n = 0; n < idx.length; n++) {
+        const cell = idx[n] % N, lev = (idx[n] - cell) / N;
+        pos[3 * n] = wx(X[cell]);
+        pos[3 * n + 1] = Z[lev];
+        pos[3 * n + 2] = wz(Y[cell]);
+        val[n] = v[n] / 255;
+      }
+      pts.geometry.setDrawRange(0, idx.length);
+      pts.geometry.attributes.position.needsUpdate = true;
+      pts.geometry.attributes.aVal.needsUpdate = true;
+    }
+
+    // ---------------------------------------------------------------- wind arrows
+    const vCell = decode(H.wind.cell, Uint32Array);
+    const vLev = decode(H.wind.level, Uint32Array);
+    const nArrow = vCell.length;
+    const arrowPos = new Float32Array(nArrow * 18);
+    const arrowCol = new Float32Array(nArrow * 18);
+    const arrowGeo = new THREE.BufferGeometry();
+    arrowGeo.setAttribute("position", new THREE.BufferAttribute(arrowPos, 3).setUsage(THREE.DynamicDrawUsage));
+    arrowGeo.setAttribute("color", new THREE.BufferAttribute(arrowCol, 3).setUsage(THREE.DynamicDrawUsage));
+    const arrows = new THREE.LineSegments(arrowGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9 }));
+    arrows.frustumCulled = false;
+    world.add(arrows);
+    const levelsOfArrows = Array.from(new Set(vLev));
+
+    function fillArrows(f) {
+      const unit = H.wind.unit;
+      const u = new Float32Array(nArrow), v = new Float32Array(nArrow), w = new Float32Array(nArrow);
+      for (let n = 0; n < nArrow; n++) {
+        u[n] = f.W[3 * n] * unit;
+        v[n] = f.W[3 * n + 1] * unit;
+        w[n] = f.W[3 * n + 2] * unit;
+      }
+      if (state.relative) {
+        for (const lev of levelsOfArrows) {
+          let su = 0, sv = 0, c = 0;
+          for (let n = 0; n < nArrow; n++) if (vLev[n] === lev) { su += u[n]; sv += v[n]; c++; }
+          for (let n = 0; n < nArrow; n++) if (vLev[n] === lev) { u[n] -= su / c; v[n] -= sv / c; }
+        }
+      }
+      const scale = state.arrowLength * H.wind.lengthFactor * H.wind.dx / H.wind.speedRef; // km per m/s
+      const col = new THREE.Color();
+      for (let n = 0; n < nArrow; n++) {
+        const o = 18 * n;
+        const tx = wx(X[vCell[n]]), ty = Z[vLev[n]], tz = wz(Y[vCell[n]]);
+        const speed = Math.hypot(u[n], v[n], w[n]);
+        const dx = u[n] * scale, dy = w[n] * scale, dz = -v[n] * scale;
+        if (speed < Math.max(state.minSpeed, 1e-6)) {
+          for (let k = 0; k < 6; k++) { arrowPos[o + 3 * k] = tx; arrowPos[o + 3 * k + 1] = ty; arrowPos[o + 3 * k + 2] = tz; }
+          continue;
+        }
+        const len = Math.hypot(dx, dy, dz);
+        // head in the plane of the arrow and the horizontal perpendicular
+        let px = -dz, pz = dx;
+        let ph = Math.hypot(px, pz);
+        if (ph < 1e-6 * len) { px = 1; pz = 0; ph = 1; }
+        px *= (0.12 * len) / ph; pz *= (0.12 * len) / ph;
+        const hx = tx + 0.7 * dx, hy = ty + 0.7 * dy, hz = tz + 0.7 * dz;
+        const ex = tx + dx, ey = ty + dy, ez = tz + dz;
+        const seg = [tx, ty, tz, ex, ey, ez, ex, ey, ez, hx + px, hy, hz + pz, ex, ey, ez, hx - px, hy, hz - pz];
+        for (let k = 0; k < 18; k++) arrowPos[o + k] = seg[k];
+        const s = Math.max(-1, Math.min(1, w[n] / H.wind.wMax));
+        col.copy(colors.calm).lerp(s >= 0 ? colors.up : colors.down, Math.abs(s));
+        for (let k = 0; k < 6; k++) { arrowCol[o + 3 * k] = col.r; arrowCol[o + 3 * k + 1] = col.g; arrowCol[o + 3 * k + 2] = col.b; }
+      }
+      arrowGeo.attributes.position.needsUpdate = true;
+      arrowGeo.attributes.color.needsUpdate = true;
+    }
+
+    function fillFloor(f) {
+      const col = new THREE.Color();
+      for (let k = 0; k < nTri; k++) {
+        const b = state.showFloor ? f.F[owner[k]] : 0;
+        if (b === 0) col.copy(colors.floorLo);
+        else col.copy(colors.floorLo).lerp(colors.floorHi, 0.15 + 0.85 * (b - 1) / 254);
+        for (let c = 0; c < 3; c++) { floorCol[9 * k + 3 * c] = col.r; floorCol[9 * k + 3 * c + 1] = col.g; floorCol[9 * k + 3 * c + 2] = col.b; }
+      }
+      floorGeo.attributes.color.needsUpdate = true;
+    }
+
+    // ---------------------------------------------------------------- axis labels
+    function textSprite(text, heightKm) {
+      const c = document.createElement("canvas");
+      const ctx = c.getContext("2d");
+      const px = 48;
+      ctx.font = "500 " + px + "px " + getComputedStyle(document.documentElement).getPropertyValue("--font-mono");
+      const w = Math.ceil(ctx.measureText(text).width) + 16;
+      c.width = w; c.height = px + 16;
+      ctx.font = "500 " + px + "px " + getComputedStyle(document.documentElement).getPropertyValue("--font-mono");
+      ctx.fillStyle = colors.text;
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, 8, c.height / 2);
+      const tex = new THREE.CanvasTexture(c);
+      tex.minFilter = THREE.LinearFilter;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+      sprite.scale.set((heightKm * w) / c.height, heightKm, 1);
+      return sprite;
+    }
+    function buildLabels() {
+      for (const s of labels.children) { s.material.map.dispose(); s.material.dispose(); }
+      labels.clear();
+      const e = state.exag;
+      const h = 0.028 * Math.max(Lx, Ly);
+      const xStep = Lx > 60 ? 20 : 10;
+      for (let x = Math.ceil(H.xwin[0] / xStep) * xStep; x <= H.xwin[1] + 1e-6; x += xStep) {
+        const s = textSprite(String(Math.round(x)), h); s.position.set(wx(x), 0, Ly / 2 + 1.6 * h); labels.add(s);
+      }
+      const yStep = Ly > 60 ? 20 : 10;
+      for (let y = Math.ceil(H.ywin[0] / yStep) * yStep; y <= H.ywin[1] + 1e-6; y += yStep) {
+        const s = textSprite(String(Math.round(y)), h); s.position.set(Lx / 2 + 1.6 * h, 0, wz(y)); labels.add(s);
+      }
+      const zStep = zmax > 10 ? 2 : 1;
+      for (let z = 0; z <= zmax + 1e-6; z += zStep) {
+        const s = textSprite(String(z), h); s.position.set(-Lx / 2 - 1.4 * h, z * e, Ly / 2 + 1.4 * h); labels.add(s);
+      }
+      const ax = textSprite("x (km)", h * 1.1); ax.position.set(0, 0, Ly / 2 + 3.6 * h); labels.add(ax);
+      const ay = textSprite("y (km)", h * 1.1); ay.position.set(Lx / 2 + 4.2 * h, 0, 0); labels.add(ay);
+      const az = textSprite("z (km)", h * 1.1); az.position.set(-Lx / 2 - 1.4 * h, (zmax + zStep) * e, Ly / 2 + 1.4 * h); labels.add(az);
+    }
+
+    // ---------------------------------------------------------------- state and UI
+    const state = {
+      frame: Math.min(nFrames - 1, Math.round(0.5 * (nFrames - 1))),
+      playing: !reduceMotion && nFrames > 1,
+      fps: 8,
+      exag: H.zexag || 2,
+      threshold: H.liquid.threshold,
+      size: 1.6,
+      opacity: 0.08,
+      arrowLength: 1,
+      minSpeed: 0,
+      relative: false,
+      showLiquid: true, showIce: true, showWind: true, showFloor: true,
+    };
+
+    function cutFor(m) {
+      return Math.max(0, Math.log(state.threshold / m.min) / Math.log(m.max / m.min));
+    }
+
+    function applyAppearance() {
+      world.scale.y = state.exag;
+      const scaleNow = renderer.getDrawingBufferSize(new THREE.Vector2()).y / (2 * Math.tan((camera.fov * Math.PI) / 360));
+      for (const key of ["L", "I"]) {
+        const u = clouds[key].material.uniforms;
+        u.uSize.value = state.size * H.spacing;
+        u.uScale.value = scaleNow;
+        u.uCut.value = cutFor(meta[key]);
+        u.uOpacity.value = state.opacity;
+      }
+      clouds.L.visible = state.showLiquid;
+      clouds.I.visible = state.showIce;
+      arrows.visible = state.showWind && nArrow > 0;
+    }
+
+    function showFrame(k) {
+      state.frame = k;
+      const f = frames[k];
+      fillCloud("L", f);
+      fillCloud("I", f);
+      fillArrows(f);
+      fillFloor(f);
+      $("frame").value = String(k);
+      $("tLabel").textContent = "t = " + f.t.toFixed(f.t % 1 ? 1 : 0) + " min";
+      $("frameLabel").textContent = (k + 1) + " / " + nFrames;
+      if (f.stats) {
+        const [lmax, imax, wmin, wmax] = f.stats;
+        $("tStats").textContent = "max liquid " + fmt(lmax, 3) + " g/kg · max ice " + fmt(imax, 3) + " g/kg · " +
+          (H.wind.hasW === false ? "w not in the output" : "w " + fmt(wmin, 2) + " … " + fmt(wmax, 2) + " m/s");
+      }
+    }
+
+    function setView(kind) {
+      const R = 1.55 * Math.max(Lx, Ly);
+      const target = new THREE.Vector3(0, 0.3 * zmax * state.exag, 0);
+      const el = (kind === "top" ? 89.5 : kind === "oblique" ? 24 : 4) * Math.PI / 180;
+      const az = kind === "west" ? -90 * Math.PI / 180 : kind === "oblique" ? -32 * Math.PI / 180 : 0;
+      // azimuth measured from the -y side (+z in world) towards -x
+      camera.position.set(target.x + R * Math.cos(el) * Math.sin(az), target.y + R * Math.sin(el), target.z + R * Math.cos(el) * Math.cos(az));
+      controls.target.copy(target);
+      controls.update();
+    }
+
+    function resize() {
+      const w = viewer.clientWidth, h = viewer.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / Math.max(h, 1);
+      camera.updateProjectionMatrix();
+      applyAppearance();
+    }
+
+    function bindRange(id, key, format, after) {
+      const input = $(id), out = $(id + "Out");
+      const update = () => {
+        state[key] = parseFloat(input.value);
+        if (out) out.textContent = format(state[key]);
+        after();
+      };
+      input.addEventListener("input", update);
+      input.value = String(state[key]);
+      if (out) out.textContent = format(state[key]);
+    }
+
+    // threshold slider in log10(g/kg)
+    const thr = $("thr");
+    const tMin = Math.log10(H.liquid.min);
+    const tMax = Math.log10(Math.max(H.liquid.max, H.ice.max));
+    thr.min = tMin.toFixed(2); thr.max = (tMax - 0.3).toFixed(2); thr.step = "0.05";
+    thr.value = Math.log10(state.threshold).toFixed(2);
+    const thrText = () => fmt(state.threshold, 2) + " g/kg";
+    $("thrOut").textContent = thrText();
+    thr.addEventListener("input", () => { state.threshold = Math.pow(10, parseFloat(thr.value)); $("thrOut").textContent = thrText(); applyAppearance(); });
+
+    bindRange("psize", "size", (v) => v.toFixed(1) + " × " + H.spacing.toFixed(1) + " km", applyAppearance);
+    bindRange("opacity", "opacity", (v) => v.toFixed(2), applyAppearance);
+    bindRange("alen", "arrowLength", (v) => fmt(H.wind.speedRef, 2) + " m/s = " + fmt(v * H.wind.lengthFactor * H.wind.dx, 2) + " km", () => { fillArrows(frames[state.frame]); updateLegend(); });
+    $("amin").max = String(H.wind.speedRef);
+    bindRange("amin", "minSpeed", (v) => v.toFixed(1) + " m/s", () => fillArrows(frames[state.frame]));
+    let exagBefore = state.exag;
+    bindRange("exag", "exag", (v) => v.toFixed(1) + "×", () => {
+      const ratio = state.exag / exagBefore;
+      exagBefore = state.exag;
+      controls.target.y *= ratio;
+      camera.position.y = controls.target.y + (camera.position.y - controls.target.y / ratio);
+      controls.update();
+      applyAppearance();
+      buildLabels();
+    });
+
+    for (const [id, key] of [["showLiquid", "showLiquid"], ["showIce", "showIce"], ["showWind", "showWind"], ["showFloor", "showFloor"], ["relWind", "relative"]]) {
+      const box = $(id);
+      box.checked = state[key];
+      box.addEventListener("change", () => {
+        state[key] = box.checked;
+        applyAppearance();
+        if (key === "showFloor") fillFloor(frames[state.frame]);
+        if (key === "relative") fillArrows(frames[state.frame]);
+      });
+    }
+    const rot = $("autoRotate");
+    rot.checked = false;
+    rot.addEventListener("change", () => { controls.autoRotate = rot.checked; });
+
+    const fpsSel = $("fps");
+    fpsSel.value = String(state.fps);
+    fpsSel.addEventListener("change", () => { state.fps = parseFloat(fpsSel.value); });
+
+    const playBtn = $("play");
+    function setPlaying(on) {
+      state.playing = on && nFrames > 1;
+      playBtn.textContent = state.playing ? "Pause" : "Play";
+    }
+    playBtn.addEventListener("click", () => setPlaying(!state.playing));
+    const step = (d) => { setPlaying(false); showFrame((state.frame + d + nFrames) % nFrames); };
+    $("prev").addEventListener("click", () => step(-1));
+    $("next").addEventListener("click", () => step(1));
+    const slider = $("frame");
+    slider.max = String(nFrames - 1);
+    slider.addEventListener("input", () => { setPlaying(false); showFrame(parseInt(slider.value, 10)); });
+    document.addEventListener("keydown", (e) => {
+      const tag = (e.target && e.target.tagName) || "";
+      if (["INPUT", "SELECT", "TEXTAREA"].includes(tag)) return;
+      if (e.key === " " && tag !== "BUTTON") { e.preventDefault(); setPlaying(!state.playing); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); step(1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
+    });
+    $("viewReset").addEventListener("click", () => setView("oblique"));
+    $("viewTop").addEventListener("click", () => setView("top"));
+    $("viewSouth").addEventListener("click", () => setView("south"));
+    $("viewWest").addEventListener("click", () => setView("west"));
+
+    function updateLegend() {
+      const names = (m, fallback) => (m.names && m.names.length ? m.names.join("+") : fallback);
+      $("lgLiquid").textContent = "liquid " + names(H.liquid, "qc+qr") + " (" + fmt(H.liquid.max, 3) + " g/kg max)";
+      $("lgIce").textContent = "ice " + names(H.ice, "qi+qs+qg") + " (" + fmt(H.ice.max, 3) + " g/kg max)";
+      $("ckLiquid").textContent = "Liquid " + names(H.liquid, "qc+qr");
+      $("ckIce").textContent = "Ice " + names(H.ice, "qi+qs+qg");
+      $("lgWind").textContent = (H.wind.hasW === false ? "w not in the output (arrows horizontal) · " : "w −" + fmt(H.wind.wMax, 2) + " … +" + fmt(H.wind.wMax, 2) + " m/s · ") + fmt(H.wind.speedRef, 2) + " m/s = " + fmt(state.arrowLength * H.wind.lengthFactor * H.wind.dx, 2) + " km";
+      $("lgFloor").textContent = "LWP+IWP " + fmt(H.floor.min, 2) + " … " + fmt(H.floor.max, 2) + " kg/m²";
+      $("legend").hidden = false;
+    }
+
+    $("meta").textContent = H.title + " · " + Lx.toFixed(0) + " × " + Ly.toFixed(0) + " km torus, cell spacing " + H.spacing.toFixed(1) +
+      " km · " + Z.length + " levels below " + fmt(zmax, 3) + " km · " + nFrames + " output times, " + frames[0].t.toFixed(0) + "–" + frames[nFrames - 1].t.toFixed(0) + " min";
+    $("notes").textContent = "Each dot is one model cell whose specific content exceeds the threshold, drawn at its centre with brightness and size growing with log q. " +
+      "Arrows start at every " + H.wind.dx + " km and " + H.wind.dz + " km and show (u, v, w); in the stretched vertical they keep their direction. " +
+      "The floor shows the column liquid + ice water path." + (H.wind.relative ? " The wind was written relative to its horizontal mean at each height." : "");
+
+    // ---------------------------------------------------------------- go
+    status.hidden = true;
+    buildLabels();
+    updateLegend();
+    setView("oblique");
+    if (typeof ResizeObserver !== "undefined") new ResizeObserver(resize).observe(viewer);
+    else window.addEventListener("resize", resize);
+    resize();
+    showFrame(state.frame);
+    setPlaying(state.playing);
+
+    let last = performance.now();
+    function tick(now) {
+      if (state.playing && now - last >= 1000 / state.fps) {
+        last = now;
+        showFrame((state.frame + 1) % nFrames);
+      }
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  start().catch((err) => fail("The viewer stopped: " + err.message));
+})();
+</script>

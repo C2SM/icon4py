@@ -58,6 +58,20 @@ SURFACE_WATER_FLUXES = ("rainfall_flux", "snowfall_flux", "graupelfall_flux", "i
 SURFACE_ENERGY_FLUX = "precipitation_energy_flux"
 
 
+def set_fonts(size: float) -> None:
+    """Base font size; titles, labels, ticks and legends scale with it."""
+    plt.rcParams.update({
+        "font.size": size,
+        "axes.titlesize": size,
+        "axes.labelsize": size,
+        "xtick.labelsize": 0.9 * size,
+        "ytick.labelsize": 0.9 * size,
+        "legend.fontsize": 0.8 * size,
+        "lines.linewidth": 2.0,
+        "lines.markersize": 8.0,
+    })
+
+
 def layer_thickness(data: xr.Dataset) -> np.ndarray:
     """Thickness (m) of the full levels from the half-level heights (top to bottom)."""
     h = data["height"].values
@@ -131,6 +145,7 @@ def surface_outflow(precip: xr.Dataset, t_out: np.ndarray, weights: np.ndarray) 
     water = np.empty(t_out.size - 1)
     energy = np.empty(t_out.size - 1)
     for i in range(1, t_out.size):
+        print(f"surface outflow: output time {i}/{t_out.size - 1}")
         sel = (t_p > t_out[i - 1]) & (t_p <= t_out[i])
         water[i - 1] = np.sum(water_flux[sel] * dt_p[sel])
         energy[i - 1] = np.sum(energy_flux[sel] * dt_p[sel])
@@ -153,6 +168,8 @@ def main() -> None:
     args = p.parse_args()
     if args.every < 1:
         p.error("--every must be >= 1")
+
+    set_fonts(14.0)
 
     data, grid = open_output(args.output_dir, args.group)
     n_all = data.sizes["time"]
@@ -275,7 +292,7 @@ def main() -> None:
         for ax, ncol in ((ax_m, 1), (ax_e, 1), (ax_c, 1)):
             ax.axhline(0.0, color="0.7", lw=0.6, zorder=0)
             ax.set_xlabel("time / min")
-            ax.legend(ncol=ncol, fontsize=8, frameon=False)
+            ax.legend(ncol=ncol, frameon=False)
             ax.spines[["top", "right"]].set_visible(False)
             if args.end_time is not None:
                 ax.set_xlim(right=args.end_time)
@@ -315,9 +332,9 @@ def main() -> None:
         input_ie=ie - ie[0],
         input_pe=pe - pe[0],
         input_ke=ke - ke[0],
-        input_te=te - te[0],
+        input_te=(te - te[0]), #  / te[0]
         input_sfc_water=cum_sfc_water,
-        input_sfc_energy=cum_sfc_energy,
+        input_sfc_energy=cum_sfc_energy, #  / te[0]
         output_file=plot_dir / "mass_total_energy_budgets.png",
         cumulative=True,
     )

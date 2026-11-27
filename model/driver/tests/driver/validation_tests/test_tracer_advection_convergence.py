@@ -6,6 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import json
+import os
+import pathlib
 from typing import Final
 
 import gt4py.next.typing as gtx_typing
@@ -41,6 +44,49 @@ _HORIZONTAL_CONVERGENCE_GRIDS: Final = (
     test_defs.Grids.TORUS_400X462_250M,
 )
 _VERTICAL_CONVERGENCE_GRID: Final = test_defs.Grids.TORUS_1000X1000_250M
+#: If set, every test case writes its errors to <dir>/<test>_<experiment_case>.json (after
+#: each resolution, so the file exists even when a later run or the convergence check fails).
+_ERROR_OUTPUT_DIR_ENV: Final = "ICON4PY_CONVERGENCE_OUTPUT_DIR"
+
+
+def _write_errors(
+    *,
+    test_name: str,
+    experiment_case: str,
+    backend: gtx_typing.Backend,
+    resolutions: list[str],
+    grid_spacing: list[float],
+    error_l1: list[float],
+    error_linf: list[float],
+    l1_acceptable_range: tuple[float, float],
+    linf_acceptable_range: tuple[float, float],
+    dtime: float,
+    num_steps: int,
+) -> None:
+    output_dir = os.environ.get(_ERROR_OUTPUT_DIR_ENV)
+    if not output_dir:
+        return
+    record: dict = {
+        "test": test_name,
+        "experiment_case": experiment_case,
+        "backend": getattr(backend, "name", str(backend)),
+        "resolutions": resolutions,
+        "grid_spacing": [float(h) for h in grid_spacing],
+        "error_l1": [float(e) for e in error_l1],
+        "error_linf": [float(e) for e in error_linf],
+        "l1_acceptable_range": [float(v) for v in l1_acceptable_range],
+        "linf_acceptable_range": [float(v) for v in linf_acceptable_range],
+        "dtime": dtime,
+        "num_steps": num_steps,
+    }
+    if len(grid_spacing) >= 2:
+        for norm, errors in (("l1", error_l1), ("linf", error_linf)):
+            fit = linregress(np.log(grid_spacing), np.log(errors))
+            record[f"order_{norm}"] = float(fit.slope)
+            record[f"order_{norm}_stderr"] = float(fit.stderr)
+    path = pathlib.Path(output_dir)
+    path.mkdir(parents=True, exist_ok=True)
+    (path / f"{test_name}_{experiment_case}.json").write_text(json.dumps(record, indent=2) + "\n")
 
 
 def _compute_relative_errors(
@@ -200,6 +246,19 @@ def test_horizontal_tracer_advection_convergence(
                 geometry_meta.MEAN_EDGE_LENGTH
             )
         )
+        _write_errors(
+            test_name="horizontal",
+            experiment_case=experiment_case,
+            backend=backend,
+            resolutions=[g.name for g in _HORIZONTAL_CONVERGENCE_GRIDS[: i + 1]],
+            grid_spacing=mean_edge_length,
+            error_l1=error_l1,
+            error_linf=error_linf,
+            l1_acceptable_range=l1_acceptable_range,
+            linf_acceptable_range=linf_acceptable_range,
+            dtime=experiment_config.driver.dtime.total_seconds(),
+            num_steps=num_steps,
+        )
 
     _check_convergence(
         l1_acceptable_range=l1_acceptable_range,
@@ -314,6 +373,20 @@ def test_vertical_tracer_advection_convergence(
         )
         error_l1.append(current_error_l1)
         error_linf.append(current_error_linf)
+        done_levels = list(num_levels[: len(error_l1)])
+        _write_errors(
+            test_name="vertical",
+            experiment_case=experiment_case,
+            backend=backend,
+            resolutions=[f"{n} levels" for n in done_levels],
+            grid_spacing=[experiment_config.vertical_grid.model_top_height / n for n in done_levels],
+            error_l1=error_l1,
+            error_linf=error_linf,
+            l1_acceptable_range=l1_acceptable_range,
+            linf_acceptable_range=linf_acceptable_range,
+            dtime=experiment_config_local.driver.dtime.total_seconds(),
+            num_steps=num_steps,
+        )
 
     mean_thickness = experiment_config.vertical_grid.model_top_height / np.array(
         num_levels, dtype=float

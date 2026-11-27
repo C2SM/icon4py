@@ -63,6 +63,20 @@ LIQUID = ("qc", "qr")
 ICE = ("qi", "qs", "qg")
 
 
+def set_fonts(size: float) -> None:
+    """Base font size; titles, labels, ticks and legends scale with it."""
+    plt.rcParams.update({
+        "font.size": size,
+        "axes.titlesize": size,
+        "axes.labelsize": size,
+        "xtick.labelsize": 0.9 * size,
+        "ytick.labelsize": 0.9 * size,
+        "legend.fontsize": 0.8 * size,
+        "lines.linewidth": 2.0,
+        "lines.markersize": 8.0,
+    })
+
+
 # --------------------------------------------------------------------------------------
 # grid
 # --------------------------------------------------------------------------------------
@@ -280,9 +294,9 @@ def plot_cwp_y_profile(
     ax1.set_xlabel("y (km)")
     ax1.set_ylabel(r"x-mean condensed water path  (kg m$^{-2}$)")
     ax1.grid(lw=0.4, alpha=0.5)
-    ax1.legend(fontsize=8, ncols=2)
+    ax1.legend(ncols=2)
     ax1.set_title(
-        "profiles (dots: bin means, lines: periodic cubic spline, ▼: maxima)", fontsize=10
+        "profiles (dots: bin means, lines: periodic cubic spline, ▼: maxima)"
     )
 
     if len(t_sel) > 1:
@@ -303,7 +317,7 @@ def plot_cwp_y_profile(
     ax2.set_xlim(edges_km[0], edges_km[-1])
     ax2.set_xlabel("y (km)")
     ax2.set_ylabel("time (min)")
-    ax2.set_title("time-y diagram (red: detected maxima)", fontsize=10)
+    ax2.set_title("time-y diagram (red: detected maxima)")
 
     counts = np.array([pk.count for pk in peaks])
     separation = np.array(
@@ -323,8 +337,8 @@ def plot_cwp_y_profile(
     ax3b.set_ylabel("separation of the two maxima (km)", color="tab:red")
     ax3b.tick_params(axis="y", colors="tab:red")
     ax3b.set_ylim(bottom=0.0)
-    ax3.set_title("number of maxima (black), separation (red)", fontsize=10)
-    fig.suptitle(title, fontsize=11)
+    ax3.set_title("number of maxima (black), separation (red)")
+    fig.suptitle(title)
     fig.savefig(out, dpi=120)
     plt.close(fig)
     print(out)
@@ -389,6 +403,7 @@ def main() -> None:  # noqa: PLR0915 [too-many-statements] linear plotting scrip
     p.add_argument("--fps", type=int, default=4)
     args = p.parse_args()
 
+    set_fonts(14.0)
     data, grid = open_output(args.output_dir, args.group)
     polys, owner, xwin, ywin = cell_polygons(grid)
     area = grid["cell_area"].values
@@ -493,13 +508,13 @@ def main() -> None:  # noqa: PLR0915 [too-many-statements] linear plotting scrip
             )
             cb.set_label(panel["unit"])
             ax.set_title(
-                f"{panel['title']}    domain mean {float(field @ area_weights):.3g}", fontsize=10
+                f"{panel['title']}    domain mean {float(field @ area_weights):.3g}"
             )
         for ax in axs[-1] if ncols > 1 else axs[-1:]:
             ax.set_xlabel("x (km)")
         for ax in axs[:, 0] if ncols > 1 else axs:
             ax.set_ylabel("y (km)")
-        fig.suptitle(f"t = {t_min[it]:.0f} min{zinfo}", fontsize=11)
+        fig.suptitle(f"t = {t_min[it]:.0f} min{zinfo}")
         out = plot_dir / f"water_path_map_{it:04d}.png"
         fig.savefig(out, dpi=120)
         plt.close(fig)

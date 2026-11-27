@@ -12,7 +12,7 @@
 ###SBATCH --gpus-per-task=1
 ###SBATCH --gres-flags=allow-task-sharing
 #SBATCH --partition=normal
-#SBATCH --time=02:30:00
+#SBATCH --time=24:00:00
 
 # gpus-per-node=4 means 4 GPUs per node, and 1 task per node, so each task gets 4 GPUs.
 
@@ -40,16 +40,17 @@ export GHEX_TRANSPORT_BACKEND=MPI
 export PYTHONOPTIMIZE=2
 # export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx17300m_res3290m/torus_100000mx17300m_res3290m.nc
 # export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res100m/torus_100000mx100000m_res100m.nc
-# export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res500m/torus_100000mx100000m_res500m.nc
-export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res5000m/torus_100000mx100000m_res5000m.nc
-export CONFIG_FILE=/capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/warm_bubble.yaml
+export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res500m/torus_100000mx100000m_res500m.nc
+# export INPUT_GRID=/capstor/scratch/cscs/cong/icon4py/testdata/grids/torus_100000mx100000m_res5000m/torus_100000mx100000m_res5000m.nc
+# export CONFIG_FILE=/capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/warm_bubble.yaml
+export CONFIG_FILE=/capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/warm_bubble_benchmark.yaml
 
 #  --print-distributed-debug-msg
 # cpu run
-srun --cpu-bind=cores bash -c 'export CUDA_VISIBLE_DEVICES=$SLURM_LOCALID; /capstor/scratch/cscs/cong/icon4py/.venv/bin/python /capstor/scratch/cscs/cong/icon4py/model/driver/src/icon4py/model/driver/main.py --config-file-path $CONFIG_FILE --grid-file-path $INPUT_GRID --icon4py-backend gtfn_cpu --log-level warning; true'
+# srun --cpu-bind=cores bash -c 'export CUDA_VISIBLE_DEVICES=$SLURM_LOCALID; /capstor/scratch/cscs/cong/icon4py/.venv/bin/python /capstor/scratch/cscs/cong/icon4py/model/driver/src/icon4py/model/driver/main.py --config-file-path $CONFIG_FILE --grid-file-path $INPUT_GRID --icon4py-backend gtfn_cpu --log-level warning; true'
 # gpu run
-# export CUPY_CACHE_DIR=/capstor/scratch/cscs/cong/test_repo/cupy_cache/rank_$SLURM_PROCID;
-# srun --cpu-bind=cores bash -c 'export CUDA_VISIBLE_DEVICES=$SLURM_LOCALID; /capstor/scratch/cscs/cong/icon4py/.venv/bin/python /capstor/scratch/cscs/cong/icon4py/model/driver/src/icon4py/model/driver/main.py --config-file-path $CONFIG_FILE --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning; true'
+export CUPY_CACHE_DIR=/capstor/scratch/cscs/cong/test_repo/cupy_cache/rank_$SLURM_PROCID;
+srun --cpu-bind=cores bash -c 'export CUDA_VISIBLE_DEVICES=$SLURM_LOCALID; /capstor/scratch/cscs/cong/icon4py/.venv/bin/python /capstor/scratch/cscs/cong/icon4py/model/driver/src/icon4py/model/driver/main.py --config-file-path $CONFIG_FILE --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning; true'
 # srun --cpu-bind=cores --gpu-bind=single:1 bash -c '/capstor/scratch/cscs/cong/icon4py/.venv/bin/python /capstor/scratch/cscs/cong/icon4py/model/driver/src/icon4py/model/driver/main.py --config-file-path /capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/warm_bubble.yaml --grid-file-path $INPUT_GRID --icon4py-backend gtfn_gpu --log-level warning; true'
 # srun --cpu-bind=cores bash -c '/capstor/scratch/cscs/cong/icon4py/.venv/bin/python /capstor/scratch/cscs/cong/icon4py/model/driver/src/icon4py/model/driver/main.py --config-file-path /capstor/scratch/cscs/cong/icon4py/model/testing/src/icon4py/model/testing/experiment_configs/warm_bubble.yaml --grid-file-path $INPUT_GRID --icon4py-backend gtfn_cpu --log-level warning; true'
 
