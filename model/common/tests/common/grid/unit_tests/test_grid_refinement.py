@@ -9,10 +9,13 @@
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal as h_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures import backend, cpu_allocator, grid_description
 
@@ -157,7 +160,6 @@ def test_compute_domain_bounds_for_limited_area_grid(
     assert grid.limited_area, "Test expects limited area grid"
     refinement_field = grid.refinement_control
     decomposition_info = grid_manager.decomposition_info
-
     start_index, end_index = refinement.compute_domain_bounds(
         dim, refinement_field, decomposition_info=decomposition_info
     )
@@ -190,9 +192,11 @@ def test_compute_domain_bounds_for_global_grid(
     grid = grid_manager.grid
     refinement_fields = grid.refinement_control
     decomposition_info = grid_manager.decomposition_info
+
     start_index, end_index = refinement.compute_domain_bounds(
-        dim, refinement_fields, decomposition_info
+        dim, refinement_fields, decomposition_info=decomposition_info
     )
+
     for k, v in start_index.items():
         assert isinstance(v, gtx.int32)
         if k.zone.is_halo() or k.zone is h_grid.Zone.END:
@@ -210,3 +214,53 @@ def test_compute_domain_bounds_for_global_grid(
             assert v == grid.size[k.dim], (
                 f"Expected end index '{grid.size[k.dim]}' for {dim} in {k.zone}, but got '{v}'"
             )
+
+
+_OWNED = decomposition.DecompositionFlag.OWNED
+_HALO_1 = decomposition.DecompositionFlag.FIRST_HALO_LEVEL
+_HALO_2 = decomposition.DecompositionFlag.SECOND_HALO_LEVEL
+_HALO_3 = decomposition.DecompositionFlag.THIRD_HALO_LEVEL
+
+_NEGATIVE = set(range(-4, 0))
+
+_KEPT_WITH_OWNED = {
+    dims.CellDim: {
+        _HALO_1: {1, 2},
+        _HALO_2: {1},
+    },
+    dims.EdgeDim: {
+        _HALO_1: {1, 2, 3, 4, 5, 6} | _NEGATIVE,
+        _HALO_2: {1, 2, 3, 4},
+        _HALO_3: {1, 2},
+    },
+    dims.VertexDim: {
+        _HALO_1: {1, 2} | _NEGATIVE,
+        _HALO_2: {1},
+    },
+}
+
+_REFIN_VALUES = np.arange(-4, 29, dtype=np.int32)
+
+
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
+def test_is_placed_with_owned_owned_points(dim: gtx.Dimension) -> None:
+    halo_levels = np.full(_REFIN_VALUES.shape, _OWNED, dtype=np.int32)
+    with_owned = refinement.is_placed_with_owned(dim, halo_levels, _REFIN_VALUES)
+    assert with_owned.all(), "owned points are always placed with the owned points"
+
+
+@pytest.mark.parametrize(
+    "dim, halo_level",
+    [(dim, level) for dim, levels in _KEPT_WITH_OWNED.items() for level in levels],
+)
+def test_is_placed_with_owned_matches_icon(
+    dim: gtx.Dimension, halo_level: decomposition.DecompositionFlag
+) -> None:
+    halo_levels = np.full(_REFIN_VALUES.shape, halo_level, dtype=np.int32)
+    with_owned = refinement.is_placed_with_owned(dim, halo_levels, _REFIN_VALUES)
+
+    expected = np.isin(_REFIN_VALUES, list(_KEPT_WITH_OWNED[dim][halo_level]))
+    mismatch = _REFIN_VALUES[with_owned != expected]
+    assert mismatch.size == 0, (
+        f"{dim.value}, halo level {halo_level}: placement differs from ICON for refin_ctl {mismatch}"
+    )

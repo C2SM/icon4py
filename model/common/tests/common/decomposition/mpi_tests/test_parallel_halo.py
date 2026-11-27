@@ -45,6 +45,11 @@ def test_element_ownership_is_unique(
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         process_props=process_props,
+        refinement_control={
+            dims.CellDim: np.zeros(simple_neighbor_tables["C2E2C"].shape[0], dtype=np.int32),
+            dims.EdgeDim: np.zeros(simple_neighbor_tables["E2C"].shape[0], dtype=np.int32),
+            dims.VertexDim: np.zeros(simple_neighbor_tables["V2E"].shape[0], dtype=np.int32),
+        },
         allocator=backend,
     )
 

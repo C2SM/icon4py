@@ -11,12 +11,11 @@ import math
 from typing import Final
 
 from gt4py import next as gtx
-from gt4py.next import where
 
 import icon4py.model.common.field_type_aliases as fa
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import C2E, V2E
+from icon4py.model.common.dimension import C2E
 from icon4py.model.common.grid import gridfile, icon as icon_grid, utils as grid_utils
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.math import distance_array_ns, projection
@@ -74,25 +73,43 @@ def compute_geofac_div(
     return geofac_div
 
 
-@gtx.field_operator
 def compute_geofac_rot(
-    dual_edge_length: fa.EdgeField[gtx.float64],
-    edge_orientation: gtx.Field[[dims.VertexDim, dims.V2EDim], gtx.float64],
-    dual_area: fa.VertexField[gtx.float64],
-    owner_mask: fa.VertexField[bool],
-) -> gtx.Field[[dims.VertexDim, dims.V2EDim], gtx.float64]:
+    *,
+    dual_edge_length: data_alloc.NDArray,
+    edge_orientation: data_alloc.NDArray,
+    dual_area: data_alloc.NDArray,
+    owner_mask: data_alloc.NDArray,
+    v2e: data_alloc.NDArray,
+    horizontal_start: gtx.int32,
+) -> data_alloc.NDArray:
     """
     Compute geometrical factor for curl.
+
+    As ICON (mo_intp_coeffs.f90), it is zero on halo vertices, before `horizontal_start` and in
+    the V2E slots without an edge (pentagons, lateral boundary).
 
     Args:
         dual_edge_length:
         edge_orientation:
         dual_area:
         owner_mask:
+        v2e:
+        horizontal_start:
 
     Returns:
+        geometric factor for curl, Field[VertexDim, V2EDim]
     """
-    geofac_rot = where(owner_mask, dual_edge_length(V2E) * edge_orientation / dual_area, 0.0)
+    array_ns = data_alloc.array_namespace(dual_edge_length)
+    v2e = v2e[horizontal_start:]
+    has_edge = (v2e != MISSING) & owner_mask[horizontal_start:, None]
+    geofac_rot = array_ns.zeros(edge_orientation.shape)
+    geofac_rot[horizontal_start:] = array_ns.where(
+        has_edge,
+        dual_edge_length[array_ns.where(has_edge, v2e, 0)]
+        * edge_orientation[horizontal_start:]
+        / dual_area[horizontal_start:, None],
+        0.0,
+    )
     return geofac_rot
 
 

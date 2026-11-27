@@ -97,8 +97,6 @@ def _run_driver_compare_single_multi_rank(
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
-    if experiment_description.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     if model_backends.is_cpu_backend(backend) and test_utils.is_gtfn_backend(backend):
         atol = 1e-12
@@ -115,12 +113,15 @@ def _run_driver_compare_single_multi_rank(
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
-    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
-
-    config = driver_config.read_experiment_config_from_yaml(config_file_path / "config.yml")
-
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
-    single_rank_config = config.with_overrides(driver={"end_of_simulation": end_of_simulation})
+    dt_utils.download_experiment(experiment_description, single_rank_process_props)
+
+    single_rank_config_path = dt_utils.get_path_for_experiment(
+        experiment_description, single_rank_process_props
+    )
+    single_rank_config = driver_config.read_experiment_config_from_yaml(
+        single_rank_config_path / "config.yml"
+    ).with_overrides(driver={"end_of_simulation": end_of_simulation})
     single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=single_rank_config.vertical_grid,
@@ -134,7 +135,7 @@ def _run_driver_compare_single_multi_rank(
         backend=backend,
     )
 
-    multi_rank_config = config.with_overrides(driver={"end_of_simulation": end_of_simulation})
+    multi_rank_config = single_rank_config
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=multi_rank_config.vertical_grid,

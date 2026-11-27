@@ -220,16 +220,21 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(geofac_div)
 
-        geofac_rot = factory.EmbeddedFieldOperatorProvider(
-            # needs to be computed on fieldview-embedded backend
-            func=interpolation_fields.compute_geofac_rot.with_backend(None),
+        geofac_rot = factory.NumpyDataProvider(
+            func=interpolation_fields.compute_geofac_rot,
+            fields=(attrs.GEOFAC_ROT,),
             domain=(dims.VertexDim, dims.V2EDim),
-            fields={attrs.GEOFAC_ROT: attrs.GEOFAC_ROT},
             deps={
                 "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
                 "edge_orientation": geometry_attrs.VERTEX_EDGE_ORIENTATION,
                 "dual_area": geometry_attrs.DUAL_AREA,
                 "owner_mask": "vertex_owner_mask",
+            },
+            connectivities={"v2e": dims.V2EDim},
+            params={
+                "horizontal_start": self._grid.start_index(
+                    vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                )
             },
             do_exchange=True,
         )

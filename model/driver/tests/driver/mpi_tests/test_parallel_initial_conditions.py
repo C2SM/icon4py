@@ -57,8 +57,6 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     backend: gtx_typing.Backend,
     download_ser_data: None,
 ) -> None:
-    if experiment.description.grid.limited_area:
-        pytest.xfail("Limited-area grids not yet supported")
 
     if model_backends.is_cpu_backend(backend_like) and test_utils.is_gtfn_backend(
         model_options.customize_backend(program=None, backend=backend_like)
@@ -87,7 +85,11 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     grid_file_path = grid_utils._download_grid_file(experiment.description.grid)
 
     single_rank_process_props = decomp_defs.SingleNodeProcessProperties()
-    single_rank_config = experiment.config
+    dt_utils.download_experiment(experiment.description, single_rank_process_props)
+    single_rank_config = driver_config.read_experiment_config_from_yaml(
+        dt_utils.get_path_for_experiment(experiment.description, single_rank_process_props)
+        / "config.yml"
+    )
     single_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=single_rank_config.vertical_grid,
@@ -133,6 +135,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         global_reductions=single_rank_icon4py_driver.global_reductions,
         dycore_diagnostics=single_rank_dycore_diagnostics,
         tracer_prep_adv_state=single_rank_prep_adv,
+        decomposition_info=single_rank_icon4py_driver.decomposition_info,
     )
     single_rank_diagnostic = state.allocate(
         states.Diagnostics, single_rank_icon4py_driver.grid, allocator
@@ -152,7 +155,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         prep_adv=single_rank_prep_adv,
     )
 
-    multi_rank_config = experiment.config
+    multi_rank_config = single_rank_config
     multi_rank_grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=multi_rank_config.vertical_grid,
@@ -196,6 +199,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         global_reductions=multi_rank_icon4py_driver.global_reductions,
         dycore_diagnostics=multi_rank_dycore_diagnostics,
         tracer_prep_adv_state=multi_rank_prep_adv,
+        decomposition_info=multi_rank_icon4py_driver.decomposition_info,
     )
     multi_rank_diagnostic = state.allocate(
         states.Diagnostics, multi_rank_icon4py_driver.grid, allocator

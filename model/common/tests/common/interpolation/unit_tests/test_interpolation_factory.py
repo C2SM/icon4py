@@ -159,11 +159,8 @@ def test_get_geofac_rot(
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.GEOFAC_ROT).asnumpy()
-    horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     assert field.shape == (grid.num_vertices, V2E_SIZE)
-    assert test_helpers.dallclose(
-        field_ref.asnumpy()[horizontal_start:, :], field[horizontal_start:, :]
-    )
+    assert test_helpers.dallclose(field_ref.asnumpy(), field)
 
 
 @pytest.mark.level("integration")

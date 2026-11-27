@@ -117,7 +117,11 @@ def check_local_global_field(
             if actual.shape[0] > 0 and desired.shape[0] > 0:
                 # abuse err_msg to print the domain region
                 test_utils.assert_dallclose(
-                    actual, desired, atol=atol, rtol=rtol, err_msg=entry_type.name
+                    actual,
+                    desired,
+                    atol=atol,
+                    rtol=rtol,
+                    err_msg=entry_type.name,
                 )
 
     # Compare owned local field, excluding halos, against global reference
@@ -157,7 +161,11 @@ def check_local_global_field(
 
         # abuse err_msg to print the domain region
         test_utils.assert_dallclose(
-            sorted_, global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
+            sorted_,
+            global_reference_field,
+            atol=atol,
+            rtol=rtol,
+            err_msg="internal",
         )
 
 
