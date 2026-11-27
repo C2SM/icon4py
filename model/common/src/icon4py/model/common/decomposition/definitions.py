@@ -24,7 +24,7 @@ import numpy as np
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base
 from icon4py.model.common.old_states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 log = logging.getLogger(__name__)
@@ -720,6 +720,7 @@ def get_runtype(with_mpi: bool = False) -> RunType:
         return SingleNodeRun()
 
 
+@profiling.annotate()
 @functools.singledispatch
 def get_process_properties(runtime: RunType, comm_id: int | None = None) -> ProcessProperties:
     raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")

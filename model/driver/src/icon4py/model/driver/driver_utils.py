@@ -65,7 +65,7 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.old_states import static_fields
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 from icon4py.model.driver import config as driver_config, driver_constants, driver_states
 
 
@@ -136,6 +136,7 @@ def validate_granule_state_consistency(
             )
 
 
+@profiling.annotate()
 def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
@@ -762,6 +763,7 @@ def make_handler(
     return handler
 
 
+@profiling.annotate()
 def configure_logging(
     logging_level: str,
     print_distributed_debug_msg: bool,
