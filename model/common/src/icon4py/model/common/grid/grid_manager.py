@@ -481,26 +481,28 @@ class GridManager:
         # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables))
 
-        # Following ICON (mo_complete_subdivision.f90), remap E2C for halo rim edges
-        # in the lateral boundary zones: point the missing side to the one valid local
-        # cell instead of INVALID_INDEX, so stencils reading E2C never go out of bounds.
-        # This must happen after E2C2E is derived, because the RBF stencil needs the
-        # original INVALID_INDEX to avoid a singular matrix.
-        # This should only affect limited area grids, and bring no changes to
-        # global and torus grid.
+        # Stencils on the lateral boundary zones read E2C and E2C2V of the halo edges placed
+        # with the owned ones. After deriving E2C2E, whose RBF matrix is singular otherwise.
+        # No-op on global and torus grids.
         if self._decomposition_info.is_distributed():
             edges = self._decomposition_info.global_index(dims.EdgeDim)
-            e2c = neighbor_tables[dims.E2C]
-            patched = (
-                (e2c == gridfile.GridFile.INVALID_INDEX)
-                & (global_neighbor_tables[dims.E2C][edges] != gridfile.GridFile.INVALID_INDEX)
-                & refinement.is_placed_with_owned(
-                    dims.EdgeDim,
-                    self._decomposition_info.halo_levels(dims.EdgeDim),
-                    global_refinement_control[dims.EdgeDim][edges],
-                )[:, None]
+            with_owned = refinement.is_placed_with_owned(
+                dims.EdgeDim,
+                self._decomposition_info.halo_levels(dims.EdgeDim),
+                global_refinement_control[dims.EdgeDim][edges],
             )
-            neighbor_tables[dims.E2C] = xp.where(patched, e2c[:, ::-1], e2c)
+            global_e2c = global_neighbor_tables[dims.E2C][edges]
+            global_e2c2v = _construct_diamond_vertices(
+                global_neighbor_tables[dims.E2V][edges],
+                global_neighbor_tables[dims.C2V],
+                global_e2c,
+            )
+            neighbor_tables[dims.E2C] = _remap_invalid_neighbors(
+                neighbor_tables[dims.E2C], global_e2c, with_owned
+            )
+            neighbor_tables[dims.E2C2V] = _remap_invalid_neighbors(
+                neighbor_tables[dims.E2C2V], global_e2c2v, with_owned
+            )
 
         refinement_fields = self._read_grid_refinement_fields(allocator)
 
@@ -632,6 +634,28 @@ def _get_derived_connectivities(
         dims.E2C2E: e2c2e,
         dims.E2C2EO: e2c2e0,
     }
+
+
+def _remap_invalid_neighbors(
+    neighbor_table: data_alloc.NDArray,
+    global_neighbor_table: data_alloc.NDArray,
+    rows: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    """
+    Point neighbors that are on another rank to a valid neighbor of the same row.
+
+    As ICON (mo_complete_subdivision.f90, remap_patch_indices), for the entries of `rows` only.
+    Neighbors missing in the global grid stay INVALID_INDEX. `global_neighbor_table` holds
+    the global neighbors of the same rows as `neighbor_table`.
+    """
+    array_ns = data_alloc.array_namespace(neighbor_table)
+    on_other_rank = (
+        (neighbor_table == gridfile.GridFile.INVALID_INDEX)
+        & (global_neighbor_table != gridfile.GridFile.INVALID_INDEX)
+        & rows[:, None]
+    )
+    max_valid_neighbor = neighbor_table.max(axis=1, keepdims=True)
+    return array_ns.where(on_other_rank, max_valid_neighbor, neighbor_table)
 
 
 def _construct_diamond_vertices(
