@@ -17,6 +17,7 @@ from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.common import backend_configuration as backend_cfg, dimension, model_backends
+from icon4py.model.common.utils import profiling
 
 
 log = logging.getLogger(__name__)
@@ -169,6 +170,7 @@ def get_options(
     return backend_descriptor
 
 
+@profiling.annotate()
 def customize_backend(
     program: gtx_typing.Program | gtx.typing.FieldOperator | None,
     backend: model_backends.BackendLike,

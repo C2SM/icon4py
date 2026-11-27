@@ -41,6 +41,7 @@ from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.utils import profiling
 from icon4py.model.common.utils.time_utils import relativetime_from_iso8601
 
 
@@ -229,6 +230,7 @@ class ExperimentConfig(config_io.ConfigWithShared):
         return dataclasses.replace(self, **replacements)
 
 
+@profiling.annotate()
 def read_experiment_config_from_yaml(config_file_path: pathlib.Path) -> ExperimentConfig:
     """Read an :class:`ExperimentConfig`, resolving relative ``data_path`` entries against the file's directory."""
     config = config_io.read_yaml_str(config_file_path.read_text(), ExperimentConfig)

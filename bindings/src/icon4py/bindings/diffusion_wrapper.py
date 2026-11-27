@@ -52,6 +52,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.tools import py2fgen
+from icon4py.model.common.utils import profiling
 
 
 logger = logging.getLogger(__name__)
@@ -66,6 +67,7 @@ class DiffusionGranule:
 granule: DiffusionGranule | None = None
 
 
+@profiling.annotate()
 @icon4py_export.export
 def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     theta_ref_mc: fa.CellKField[wpfloat],
@@ -265,6 +267,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         gtx.wait_for_compilation()
 
 
+@profiling.annotate()
 @icon4py_export.export
 def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],

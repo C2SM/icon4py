@@ -49,7 +49,7 @@ from icon4py.model.common.initial_condition import apply as ic_apply
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.old_states import static_fields
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils, profiling
 from icon4py.model.driver import (
     config as driver_config,
     driver_constants,
@@ -1083,6 +1083,7 @@ def initialize_driver_states(
     return ds
 
 
+@profiling.annotate()
 def run_driver(
     *,
     config: driver_config.ExperimentConfig,

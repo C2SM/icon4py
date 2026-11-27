@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import typing
 from collections.abc import Callable
@@ -20,6 +21,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
 )
 from icon4py.model.common import component, quantity, state
 from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.utils import profiling
 
 
 if typing.TYPE_CHECKING:
@@ -59,31 +61,41 @@ class PhysicsProcess[I: state.State, O: state.State](
     # NOTE: temporary, replaced in part 08 (updates): the cache holds the process's `Update`
     # state, the tendencies it contributes, instead of its whole `Output`.
     _cache: O | None = dataclasses.field(default=None, init=False)
+    _profiling_range: contextlib.AbstractContextManager[None] = dataclasses.field(
+        init=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         self.Output = self.component.Output
+        # Named after the wrapped component, so the range tells the processes apart.
+        self._profiling_range = profiling.annotate(
+            f"PhysicsProcess.run[{type(self.component).__name__}]"
+        )
 
     def run(self, input: physics_state.PhysicsState, output: O) -> O:
-        # NOTE: temporary, replaced in parts 07 (tendencies) and 08 (updates): the tendencies are
-        # the process's `Update` state instead of the `Tendency` leaves of its `Output`.
-        if not self.time_control.is_in_window(input.step_start):
-            for field in state.fields(output, kind=quantity.Tendency).values():
-                field.ndarray[...] = 0.0  # type: ignore[index]
-            return output
+        with self._profiling_range:
+            # NOTE: temporary, replaced in parts 07 (tendencies) and 08 (updates): the tendencies
+            # are the process's `Update` state instead of the `Tendency` leaves of its `Output`.
+            if not self.time_control.is_in_window(input.step_start):
+                for field in state.fields(output, kind=quantity.Tendency).values():
+                    field.ndarray[...] = 0.0  # type: ignore[index]
+                return output
 
-        # NOTE: different from ICON when the first step in the window does not compute, i.e. a
-        # window opening before the simulation start off the `process_dtime` grid, or a restart
-        # in the window: ICON recycles its zero-initialized memory until the next compute step,
-        # here the process computes on that first step.
-        if self.time_control.computes_at(input.step_start) or self._cache is None:
-            # NOTE: temporary, replaced in part 02 (collect), see `collect_input`.
-            self.component.run(self.collect_input(input), output)
-            if self.time_control.skips_steps:
-                # The cache is needed iff the process does not compute at
-                # every step of the driver
-                if self._cache is None:
-                    self._cache = state.allocate(self.component.Output, self.grid, self.allocator)
-                state.copy(output, self._cache, kind=quantity.Tendency)
-        else:
-            state.copy(self._cache, output, kind=quantity.Tendency)
-        return output
+            # NOTE: different from ICON when the first step in the window does not compute, i.e. a
+            # window opening before the simulation start off the `process_dtime` grid, or a restart
+            # in the window: ICON recycles its zero-initialized memory until the next compute step,
+            # here the process computes on that first step.
+            if self.time_control.computes_at(input.step_start) or self._cache is None:
+                # NOTE: temporary, replaced in part 02 (collect), see `collect_input`.
+                self.component.run(self.collect_input(input), output)
+                if self.time_control.skips_steps:
+                    # The cache is needed iff the process does not compute at
+                    # every step of the driver
+                    if self._cache is None:
+                        self._cache = state.allocate(
+                            self.component.Output, self.grid, self.allocator
+                        )
+                    state.copy(output, self._cache, kind=quantity.Tendency)
+            else:
+                state.copy(self._cache, output, kind=quantity.Tendency)
+            return output

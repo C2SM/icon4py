@@ -18,6 +18,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
+from icon4py.model.common.utils import profiling
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 
 
@@ -27,6 +28,7 @@ app = typer.Typer(no_args_is_help=True)
 
 
 @app.command()
+@profiling.annotate()
 def main(
     *,
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],

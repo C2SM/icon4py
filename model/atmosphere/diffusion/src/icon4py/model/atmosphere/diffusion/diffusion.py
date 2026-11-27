@@ -51,7 +51,7 @@ from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 """
@@ -798,6 +798,7 @@ class Diffusion(component.Component):
             smag_offset = self.smag_offset
         return diff_multfac_vn, smag_limit, smag_offset
 
+    @profiling.annotate()
     def run(self, input: Input, output: Output) -> Output:
         """
         Do one diffusion step.

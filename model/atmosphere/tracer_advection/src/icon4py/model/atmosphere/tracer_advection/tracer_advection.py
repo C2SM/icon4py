@@ -44,7 +44,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 """
@@ -159,6 +159,7 @@ class Advection(component.Component, ABC):
         hfl_tracer: field.Field[qty.HorizontalTracerFluxOnEdgeK]
         vfl_tracer: field.Field[qty.VerticalTracerFluxOnCellKHalf]
 
+    @profiling.annotate()
     def run(self, input: Input, output: Output) -> Output:
         self._prepare(input)
         for name in states.TRACERS:

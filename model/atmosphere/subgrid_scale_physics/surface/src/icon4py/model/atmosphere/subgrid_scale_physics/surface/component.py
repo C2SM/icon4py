@@ -22,6 +22,7 @@ from icon4py.model.common import (
     quantities as qty,
     state,
 )
+from icon4py.model.common.utils import profiling
 
 
 if TYPE_CHECKING:
@@ -71,6 +72,7 @@ class Surface(component.Component["Surface.Input", "Surface.Output"]):
         self._lowest_level = dims.KDim(grid.num_levels - 1)
         self._surface_level = dims.KHalfDim(grid.num_levels)
 
+    @profiling.annotate()
     def run(self, input: Input, output: Output) -> Output:
         """One step of the surface scheme, from the surface pressure and the lowest-level air temperature."""
         self._compute(
