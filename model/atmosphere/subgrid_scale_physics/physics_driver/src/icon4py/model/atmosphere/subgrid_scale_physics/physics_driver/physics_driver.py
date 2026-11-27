@@ -40,7 +40,7 @@ from icon4py.model.common.physics.thermodynamics import (
     compute_temperature,
     compute_tendencies,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 if TYPE_CHECKING:
@@ -250,6 +250,7 @@ class PhysicsDriver(component.Component["PhysicsDriver.Input", "PhysicsDriver.Ou
             self._grid, dims.EdgeDim, dims.KDim, allocator=self._allocator
         )
 
+    @profiling.annotate()
     def run(self, input: Input, output: Output) -> Output:
         dt_seconds = self.dtime.total_seconds()
         component.copy_to_output(input, output)

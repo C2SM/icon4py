@@ -32,7 +32,7 @@ from icon4py.model.common import (
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.physics.thermodynamics import compute_tendencies
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 if TYPE_CHECKING:
@@ -130,6 +130,7 @@ class Muphys(component.Component["Muphys.Input", "Muphys.Output"]):
             )
         )
 
+    @profiling.annotate()
     def run(self, input: Input, output: Output) -> Output:
         """
         Run the granule and return the tendencies.

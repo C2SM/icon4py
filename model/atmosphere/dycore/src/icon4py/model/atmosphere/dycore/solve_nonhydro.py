@@ -67,7 +67,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, v
 from icon4py.model.common.math import smagorinsky, vertical_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.old_states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 log = logging.getLogger(__name__)
@@ -1122,6 +1122,7 @@ class SolveNonhydro(component.Component):
             self._dtime_previous_substep = dtime
         return self.rayleigh_damping_factor
 
+    @profiling.annotate()
     def run(self, input: Input, output: Output) -> Output:
         """
         Update the prognostic variables (`output`) after the dynamical process over one substep.

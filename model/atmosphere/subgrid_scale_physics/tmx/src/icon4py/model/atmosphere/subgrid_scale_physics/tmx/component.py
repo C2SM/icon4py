@@ -22,6 +22,7 @@ from icon4py.model.common import (
     state,
     type_alias as ta,
 )
+from icon4py.model.common.utils import profiling
 
 
 if TYPE_CHECKING:
@@ -110,6 +111,7 @@ class Tmx(component.Component["Tmx.Input", "Tmx.Output"]):
         self._diagnostic_state = state.allocate(tmx_states.TmxDiagnosticState, grid, allocator)
         self._new_state = state.allocate(tmx_states.TmxNewState, grid, allocator)
 
+    @profiling.annotate()
     def run(self, input: Input, output: Output) -> Output:
 
         self._tmx.run(
