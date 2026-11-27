@@ -26,7 +26,7 @@ from icon4py.model.common.decomposition.definitions import (
     SingleNodeExchange,
     SingleNodeReductions,
 )
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -485,10 +485,26 @@ class GlobalReductions(Reductions):
     def _sum_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
         return array_ns.asarray([dtype.type(0)])
 
+    @staticmethod
+    def _max_nan_as_inf(buffer: data_alloc.NDArray) -> data_alloc.ScalarLikeArray:
+        """Local maximum, replaced by +inf when it is NaN.
+
+        ``MPI.MAX`` compares with ``>``, which is false for NaN, so a NaN would survive the
+        reduction on some ranks only. +inf compares reliably, so every rank sees that the
+        buffer is not finite and all of them raise together.
+        """
+        array_ns = data_alloc.array_namespace(buffer)
+        local_max = array_ns.max(buffer)
+        return array_ns.where(array_ns.isfinite(local_max), local_max, array_ns.inf).astype(
+            buffer.dtype
+        )
+
     def _reduce(
         self,
         buffer: data_alloc.NDArray,
-        local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
+        local_reduction: Callable[
+            [data_alloc.NDArray], data_alloc.ScalarT | data_alloc.ScalarLikeArray
+        ],
         global_reduction: mpi4py.MPI.Op,
     ) -> state_utils.ScalarType:
         array_ns = data_alloc.array_namespace(buffer)
@@ -531,31 +547,45 @@ class GlobalReductions(Reductions):
         )
 
     def sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        """Sum of the owned entries over all ranks.
+
+        Floating-point buffers use ICON's order-insensitive sum, so the result does not depend
+        on the decomposition. A NaN or infinite entry on any rank raises ``ValueError`` on
+        every rank.
+        """
         buffer = self._prepare_buffer(buffer)
-        array_ns = data_alloc.array_namespace(buffer)
         if self._calc_buffer_size(buffer) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
-        return self._reduce(
-            buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
-            array_ns.sum,
-            mpi4py.MPI.SUM,
-        )
+        return self._sum(buffer)
 
     def mean(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         buffer = self._prepare_buffer(buffer)
-        array_ns = data_alloc.array_namespace(buffer)
+        # computed once, for the check and the division: going through `sum` would reduce it twice
         global_buffer_size = self._calc_buffer_size(buffer)
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
+        return self._sum(buffer) / global_buffer_size
 
-        return (
-            self._reduce(
-                (buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)),
+    def _sum(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        """Sum of a prepared buffer that is non-empty over all ranks."""
+        array_ns = data_alloc.array_namespace(buffer)
+        if not np.issubdtype(buffer.dtype, np.floating):
+            return self._reduce(
+                buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
                 array_ns.sum,
                 mpi4py.MPI.SUM,
             )
-            / global_buffer_size
+        magnitudes = (
+            array_ns.abs(buffer) if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)
         )
+        abs_max = self._reduce(magnitudes, self._max_nan_as_inf, mpi4py.MPI.MAX)
+        return decomp_defs.order_insensitive_sum(buffer, abs_max, allreduce=self._allreduce_exact)
+
+    def _allreduce_exact(self, total: int) -> int:
+        # ICON reduces its two int64 sums with an integer MPI sum; here they are combined into
+        # one Python integer of up to 93 bits per rank, which the pickling ``allreduce`` adds
+        # exactly
+        return self.process_props.comm.allreduce(total, op=mpi4py.MPI.SUM)
 
 
 @decomp_defs.create_reduction.register(MPICommProcessProperties)

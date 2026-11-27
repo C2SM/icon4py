@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics_ste
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import reference_funcs, stencil_tests
 

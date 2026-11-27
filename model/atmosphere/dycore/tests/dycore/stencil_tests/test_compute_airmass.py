@@ -14,7 +14,7 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_airmass import compute_airmass
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 

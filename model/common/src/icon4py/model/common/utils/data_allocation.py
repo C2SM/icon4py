@@ -25,7 +25,7 @@ from icon4py.model.common.utils import device_utils
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as grid_base
-    from icon4py.model.common.states import utils as state_utils
+    from icon4py.model.common.old_states import utils as state_utils
 
 
 log = logging.getLogger(__name__)

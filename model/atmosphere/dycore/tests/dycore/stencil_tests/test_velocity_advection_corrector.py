@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.velocity_advection_corrector impor
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.old_states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
 from .test_velocity_advection_terms import (
