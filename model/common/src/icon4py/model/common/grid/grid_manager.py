@@ -265,21 +265,6 @@ class GridManager:
         local_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         local_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
 
-        vertex_to_edge = self._get_index_field(
-            gridfile.ConnectivityName.V2E, indices=local_vertex_indices, array_ns=xp
-        )
-        vertex_edge_orientation = xp.where(
-            vertex_to_edge != gridfile.GridFile.INVALID_INDEX,
-            xp.asarray(
-                self._reader.int_variable(
-                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
-                    transpose=True,
-                    apply_offset=False,
-                    indices=local_vertex_indices,
-                )
-            ),
-            -1,
-        )
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
@@ -352,7 +337,12 @@ class GridManager:
             ),
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
                 (dims.VertexDim, dims.V2EDim),
-                vertex_edge_orientation,
+                self._reader.int_variable(
+                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
+                    transpose=True,
+                    apply_offset=False,
+                    indices=local_vertex_indices,
+                ),
                 allocator=allocator,
             ),
         }

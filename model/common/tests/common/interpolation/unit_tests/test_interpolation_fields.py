@@ -112,36 +112,24 @@ def test_compute_geofac_div(
 
 
 @pytest.mark.level("unit")
-@pytest.mark.embedded_only
 @pytest.mark.datatest
 def test_compute_geofac_rot(
-    experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    mesh = icon_grid
-    dual_edge_length = grid_savepoint.dual_edge_length()
-    edge_orientation = grid_savepoint.vertex_edge_orientation()
-    dual_area = grid_savepoint.vertex_dual_area()
-    owner_mask = grid_savepoint.v_owner_mask()
     geofac_rot_ref = interpolation_savepoint.geofac_rot()
-    geofac_rot = data_alloc.zero_field(mesh, dims.VertexDim, dims.V2EDim)
     horizontal_start = icon_grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    horizontal_end = icon_grid.start_index(vertex_domain(h_grid.Zone.END))
-
-    compute_geofac_rot.with_backend(backend)(
-        dual_edge_length,
-        edge_orientation,
-        dual_area,
-        owner_mask,
-        out=geofac_rot,
-        domain={dims.VertexDim: (horizontal_start, horizontal_end)},
-        offset_provider={"V2E": mesh.get_connectivity("V2E")},
+    geofac_rot = compute_geofac_rot(
+        dual_edge_length=grid_savepoint.dual_edge_length().ndarray,
+        edge_orientation=grid_savepoint.vertex_edge_orientation().ndarray,
+        dual_area=grid_savepoint.vertex_dual_area().ndarray,
+        owner_mask=grid_savepoint.v_owner_mask().ndarray,
+        v2e=icon_grid.get_connectivity(dims.V2E).ndarray,
+        horizontal_start=horizontal_start,
     )
-
-    assert test_helpers.dallclose(geofac_rot.asnumpy(), geofac_rot_ref.asnumpy())
+    assert test_helpers.dallclose(data_alloc.as_numpy(geofac_rot), geofac_rot_ref.asnumpy())
 
 
 @pytest.mark.level("unit")
